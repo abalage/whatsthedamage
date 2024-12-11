@@ -1,0 +1,121 @@
+{
+  "csv": {
+      "dialect": "excel-tab",
+      "delimiter": "\t",
+      "date_attribute": "könyvelés dátuma",
+      "date_attribute_format": "%Y.%m.%d",
+      "sum_attribute": "összeg"
+  },
+  "main": {
+    "locale": "hu_HU.UTF-8",
+    "selected_attributes": [
+      "könyvelés dátuma",
+      "típus",
+      "partner elnevezése",
+      "category",
+      "összeg"
+    ]
+  },
+  "enricher_pattern_sets": {
+    "partner elnevezése": {
+      "grocery": [
+        "Lidl.*",
+        "Lip.ti.*",
+        "Aldi.*",
+        "rossmann.*",
+        "penny.*",
+        "dm.[0-9]+.*",
+        "spar.*",
+        "elelmisz.*",
+        "abc.*",
+        "cba.*",
+        "TESCO.*[0-9]+.*",
+        "COOP",
+        "Auchan.*"
+      ],
+      "clothes": [
+        "pepco.*",
+        "kik.*",
+        "ha.da.*",
+        "humana.*",
+        "decathlon.*",
+        "deichman.*",
+        "müller.*",
+        "takko.*",
+        "tizproba.*",
+        "h&m.*"
+      ],
+      "health": [
+        "patika.*",
+        "gyogyszer.*",
+        "GYO.GYSZERTA*",
+        "GYOGYASZATI"
+      ],
+      "payments": [
+        "nav.*",
+        "Nemzeti Adó- és Vámhivatal"
+      ],
+      "cars": [
+        "mol.[0-9]+",
+        "shell.*",
+        "omv.*",
+        "top.ku.*t.*",
+        "TopKut",
+        "hu-go.*",
+        "auto",
+        "MOL Nyrt"
+      ],
+      "utilities": [
+        "yettel.*",
+        "vodafone.*",
+        "telenor.*",
+        "mvm.*",
+        "upc.*",
+        "e.on",
+        "eon",
+        "édv.*",
+        "biztosító.*",
+        "MOHU.*",
+        "DV Zrt",
+        "NHKV Zrt"
+      ],
+      "home_maintenance": [
+        "kerteszet.*",
+        "gazdabolt.*",
+        "Bauhaus",
+        "obi.*",
+        "ROTAVILL",
+        "Diego"
+      ]
+    },
+    "típus": {
+      "loan": [
+        "hitel.*",
+        "késedelmi.*"
+      ],
+      "withdrawals": [
+        "Készpénzfelvét.*"
+      ],
+      "fees": [
+        "Tranzakciós.*",
+        "Üzenetdíj.*",
+        "Csomag díj.*",
+        "jutaléka.*",
+        "Kártyadíj.*",
+        "díja.*"
+      ],
+      "deposits": [
+        "jóváírás"
+      ],
+      "refunds": [
+        "visszatérítés.*"
+      ],
+      "interest": [
+        "Kamat.*"
+      ],
+      "transfers": [
+        "Azonnali Ft átvezetés"
+      ]
+    }
+  }
+}

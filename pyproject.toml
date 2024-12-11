@@ -1,0 +1,61 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "whatsthedamage"
+version = "0.1.0"
+description = "A package to process KHBHU CSV files"
+keywords = ["csv", "account", "report"]
+readme = "README.md"
+authors = [
+    { name = "Balázs NÉMETH", email = "balagetech@protonmail.com" }
+]
+maintainers = [
+  {name = "Balázs NÉMETH", email = "balagetech@protonmail.com"}
+]
+classifiers=[
+    "Development Status :: 3 - Alpha",
+    "Programming Language :: Python :: 3.6",
+    'Operating System :: OS Independent',
+]
+license = {text = "GNU General Public License v3"}
+requires-python = ">= 3.9"
+dependencies = [
+    "pandas>=1.5.0"
+]
+
+[project.optional-dependencies]
+dev = [
+    "coverage",  # testing
+    "mypy",  # linting
+    "pytest",  # testing
+    "ruff",  # linting
+    "mccabe", # linting
+    "panda-stubs", # mypy
+]
+
+[project.scripts]
+whatsthedamage = "whatsthedamage.cli:main"
+
+[project.urls]
+bugs = "https://github.com/abalage/whatsthedamage/issues"
+changelog = "https://github.com/abalage/whatsthedamage/blob/master/changelog.md"
+homepage = "https://github.com/abalage/whatsthedamage"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.package-data]
+"*" = ["*.*"]
+
+# Mypy
+# ----
+
+[tool.mypy]
+files = "src"
+
+# Use strict defaults
+strict = true
+warn_unreachable = true
+warn_no_return = true

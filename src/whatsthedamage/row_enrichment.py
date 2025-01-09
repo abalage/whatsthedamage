@@ -37,26 +37,30 @@ class RowEnrichment:
         for row in self.rows:
             # Check if the category is not set or is 'other'
             current_category = getattr(row, 'category', None)
-            if current_category is None or current_category == 'other':
-                attribute_value = getattr(row, attribute_name, None)
-                if attribute_value:
-                    matched = False
-                    compiled_patterns = {
-                        category: [re.compile(pattern, re.IGNORECASE) for pattern in patterns]
-                        for category, patterns in category_patterns.items()
-                    }
-                    for category, patterns in compiled_patterns.items():
-                        for pattern in patterns:
-                            if pattern.search(attribute_value):
-                                setattr(row, 'category', category)  # Add attribute with category name
-                                matched = True
-                                break
-                        if matched:
-                            break
-                    if not matched:
-                        setattr(row, 'category', 'other')  # Default to 'other' if no match
-                else:
-                    setattr(row, 'category', 'other')  # Default to 'other' if no match
+            if current_category is not None and current_category != 'other':
+                continue
+
+            attribute_value = getattr(row, attribute_name, None)
+            if not attribute_value:
+                setattr(row, 'category', 'other')  # Default to 'other' if no match
+                continue
+
+            matched = False
+            compiled_patterns = {
+                category: [re.compile(pattern, re.IGNORECASE) for pattern in patterns]
+                for category, patterns in category_patterns.items()
+            }
+            for category, patterns in compiled_patterns.items():
+                for pattern in patterns:
+                    if pattern.search(attribute_value):
+                        setattr(row, 'category', category)  # Add attribute with category name
+                        matched = True
+                        break
+                if matched:
+                    break
+
+            if not matched:
+                setattr(row, 'category', 'other')  # Default to 'other' if no match
 
     def categorize_by_attribute(self, attribute_name: str) -> dict[str, list['CsvRow']]:
         """

@@ -116,6 +116,10 @@ def process_rows(
             # Categorize rows by specificed attribute
             set_rows_dict = enricher.categorize_by_attribute(args.category)
 
+            # Filter rows by category name if provided
+            if args.filter:
+                set_rows_dict = {k: v for k, v in set_rows_dict.items() if k == args.filter}
+
             # Initialize the summarizer with the categorized rows
             summarizer = RowSummarizer(set_rows_dict, sum_attribute)
 
@@ -195,6 +199,7 @@ def main() -> None:
                         help='Save the result into a CSV file with the specified filename.')
     parser.add_argument('--nowrap', '-n', action='store_true',
                         help='Do not wrap the output text. Useful for viewing the output without line wraps.')
+    parser.add_argument('--filter', '-f', type=str, help='Filter by a specific category. Use it conjunction with --verbose.')
 
     # Parse the arguments
     args = parser.parse_args()

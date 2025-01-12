@@ -16,5 +16,5 @@ setup(
     data_files=[('share/doc/whatsthedamage', ['config.json.default'])],
     python_requires='>=3.9',
     url='https://github.com/abalage/whatsthedamage',
-    version='0.1.0',
+    version='0.2.0',
 )

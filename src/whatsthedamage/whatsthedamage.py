@@ -187,7 +187,7 @@ def main() -> None:
                         help='End date in format YYYY.MM.DD.')
     parser.add_argument('--verbose', '-v', action='store_true',
                         help='Print categorized rows for troubleshooting.')
-    parser.add_argument('--version', action='version', version='CSV Processor 0.1.0',
+    parser.add_argument('--version', action='version', version='What\'s the Damage',
                         help='Show the version of the program.')
     parser.add_argument('--config', '-c', type=str, default='config.json.default',
                         help='Path to the configuration file. (default: config.json.default)')

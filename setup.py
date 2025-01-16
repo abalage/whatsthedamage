@@ -1,4 +1,4 @@
-from setuptools import setup, find_packages
+from setuptools import setup
 
 setup(
     author='Balázs NÉMETH',
@@ -12,7 +12,6 @@ setup(
     long_description=open('README.md').read(),
     long_description_content_type='text/markdown',
     name='whatsthedamage',
-    # packages=find_packages(),
     data_files=[('share/doc/whatsthedamage', ['config.json.default'])],
     python_requires='>=3.9',
     url='https://github.com/abalage/whatsthedamage',

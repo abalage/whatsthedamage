@@ -37,6 +37,13 @@ jobs:
       matrix:
         python-version: ["3.11", "3.12"]    
     steps:
+    - uses: actions/checkout@v4
+      with:
+        persist-credentials: false
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v3
+      with:
+        python-version: ${{ matrix.python-version }}
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
@@ -50,8 +57,6 @@ jobs:
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
     - name: Test with tox
       run: |
-        pwd
-        find .
         tox
 
   publish-to-pypi:
@@ -60,6 +65,7 @@ jobs:
     if: startsWith(github.ref, 'refs/tags/')  # only publish to PyPI on tag pushes
     needs:
     - build
+    - test
     runs-on: ubuntu-latest
     environment:
       name: pypi
@@ -123,6 +129,7 @@ jobs:
     name: Publish Python 🐍 distribution 📦 to TestPyPI
     needs:
     - build
+    - test
     runs-on: ubuntu-latest
 
     environment:

@@ -15,8 +15,8 @@ maintainers = [
   {name = "Balázs NÉMETH", email = "balagetech@protonmail.com"}
 ]
 classifiers=[
-    "Development Status :: 3 - Alpha",
-    "Programming Language :: Python :: 3.6",
+    "Development Status :: 4 - Beta",
+    "Programming Language :: Python :: 3",
     'Operating System :: OS Independent',
 ]
 license = {text = "GNU General Public License v3"}

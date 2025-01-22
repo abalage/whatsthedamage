@@ -13,7 +13,7 @@ class RowEnrichment:
         self.rows = rows
         self.pattern_sets = pattern_sets
         self.categorized: dict[str, list['CsvRow']] = {"other": []}
-        self.sum_attribute = None
+        self.sum_attribute = ""
 
     def set_sum_attribute(self, sum_attribute: str) -> None:
         """

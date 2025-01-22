@@ -22,6 +22,7 @@ def setup_data():
 
 def test_initialize(setup_data):
     _, _, row_enrichment = setup_data
+    row_enrichment.initialize()
     assert "category1" in row_enrichment.categorized
     assert "category2" in row_enrichment.categorized
     assert "other" in row_enrichment.categorized

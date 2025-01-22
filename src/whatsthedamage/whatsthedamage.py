@@ -112,6 +112,8 @@ def process_rows(
         for set_name, set_rows in filtered_set.items():
             # Add attribute 'category' based on a specified other attribute matching against a set of patterns
             enricher = RowEnrichment(set_rows, cfg_pattern_sets)
+            enricher.set_sum_attribute(sum_attribute)
+            enricher.initialize()
 
             # Categorize rows by specificed attribute
             set_rows_dict = enricher.categorize_by_attribute(args.category)

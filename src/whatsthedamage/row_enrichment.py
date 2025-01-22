@@ -13,7 +13,15 @@ class RowEnrichment:
         self.rows = rows
         self.pattern_sets = pattern_sets
         self.categorized: dict[str, list['CsvRow']] = {"other": []}
-        self.initialize()
+        self.sum_attribute = ""
+
+    def set_sum_attribute(self, sum_attribute: str) -> None:
+        """
+        Set the sum attribute.
+
+        :param sum_attribute: str: The name of the attribute to sum.
+        """
+        self.sum_attribute = sum_attribute
 
     def initialize(self) -> None:
         """
@@ -60,6 +68,11 @@ class RowEnrichment:
                     break
 
             if not matched:
+                # catch any not matched possible deposits
+                sum_value = getattr(row, self.sum_attribute, None)
+                if sum_value is not None and int(sum_value) > 0:
+                    setattr(row, 'category', 'deposits')
+                    continue
                 setattr(row, 'category', 'other')  # Default to 'other' if no match
 
     def categorize_by_attribute(self, attribute_name: str) -> dict[str, list['CsvRow']]:

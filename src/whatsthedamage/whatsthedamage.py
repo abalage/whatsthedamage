@@ -40,7 +40,7 @@ __all__ = ['main']
 
 def load_config(config_path: str) -> dict[str, dict[str, dict[str, str]]]:
     try:
-        with open(config_path, 'r') as file:
+        with open(config_path, 'r', encoding='utf-8') as file:
             config: dict[str, dict[str, dict[str, str]]] = json.load(file)
             if 'csv' not in config or 'main' not in config or 'enricher_pattern_sets' not in config:
                 raise KeyError("Configuration file must contain 'csv', 'main' and 'enricher_pattern_sets' keys.")

@@ -2,10 +2,22 @@ import pandas as pd
 import locale
 from typing import Optional, Dict
 
+"""
+A module for formatting pandas DataFrames with optional currency formatting and nowrap options.
+"""
+
+
 class DataFrameFormatter:
-    def __init__(self):
-        self.nowrap = False
-        self.no_currency_format = False
+    def __init__(self) -> None:
+        """
+        Initializes the DataFrameFormatter with default settings.
+        Attributes:
+            nowrap (bool): If True, disables text wrapping. Default is False.
+            no_currency_format (bool): If True, disables currency formatting. Default is False.
+        """
+
+        self.nowrap: bool = False
+        self.no_currency_format: bool = False
 
     def set_nowrap(self, nowrap: bool) -> None:
         self.nowrap = nowrap
@@ -14,6 +26,15 @@ class DataFrameFormatter:
         self.no_currency_format = no_currency_format
 
     def format_dataframe(self, data_for_pandas: Dict[str, Dict[str, float]]) -> pd.DataFrame:
+        """
+        Formats a given dictionary of data into a pandas DataFrame with optional currency formatting.
+        Args:
+            data_for_pandas (Dict[str, Dict[str, float]]): The input data to be formatted into a DataFrame.
+                The outer dictionary keys represent the columns, and the inner dictionary keys represent the rows.
+        Returns:
+            pd.DataFrame: The formatted DataFrame with optional currency formatting.
+        """
+
         # Set pandas to display all columns and rows without truncation
         pd.set_option('display.max_columns', None)
         pd.set_option('display.max_rows', None)

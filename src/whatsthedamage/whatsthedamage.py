@@ -24,8 +24,6 @@ import json
 import argparse
 import locale
 import sys
-from typing import Optional, Any
-from whatsthedamage.csv_row import CsvRow
 from whatsthedamage.csv_file_reader import CsvFileReader
 from whatsthedamage.rows_processor import RowsProcessor
 from whatsthedamage.data_frame_formatter import DataFrameFormatter

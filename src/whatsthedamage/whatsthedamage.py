@@ -7,7 +7,6 @@ Functions:
 
     set_locale(locale_str: str) -> None:
         Sets the locale for currency formatting.
-
     print_categorized_rows(
         Prints categorized rows based on the selected attributes.
 
@@ -33,6 +32,7 @@ from whatsthedamage.date_converter import DateConverter
 from whatsthedamage.row_filter import RowFilter
 from whatsthedamage.row_enrichment import RowEnrichment
 from whatsthedamage.row_summarizer import RowSummarizer
+from whatsthedamage.data_frame_formatter import DataFrameFormatter
 
 
 __all__ = ['main']
@@ -151,33 +151,6 @@ def process_rows(
     return data_for_pandas
 
 
-def format_dataframe(data_for_pandas: dict[str, dict[str, float]], args: argparse.Namespace) -> pd.DataFrame:
-    # Set pandas to display all columns and rows without truncation
-    pd.set_option('display.max_columns', None)
-    pd.set_option('display.max_rows', None)
-    pd.set_option('display.width', 130)
-    if args.nowrap:
-        pd.set_option('display.expand_frame_repr', False)
-
-    # Create a DataFrame from the data
-    df = pd.DataFrame(data_for_pandas)
-
-    # Sort the DataFrame by index (which are the categories)
-    df = df.sort_index()
-
-    # Format the DataFrame with currency values
-    if not args.no_currency_format:
-        def format_currency(value: Optional[float]) -> str:
-            if value is None:
-                return 'N/A'
-            if isinstance(value, (int, float)):
-                return locale.currency(value, grouping=True)
-            return str(value)  # type: ignore[unreachable]
-
-        df = df.apply(lambda row: row.apply(format_currency), axis=1)
-    return df
-
-
 def main() -> None:
     # Set up argument parser
     parser = argparse.ArgumentParser(description="A CLI tool to process KHBHU CSV files.")
@@ -227,8 +200,13 @@ def main() -> None:
         config,
         args)
 
-    # Set pandas to display all columns and rows
-    df = format_dataframe(data_for_pandas, args)
+    # Create an instance of DataFrameFormatter
+    formatter = DataFrameFormatter()
+    formatter.set_nowrap(args.nowrap)
+    formatter.set_no_currency_format(args.no_currency_format)
+
+    # Format the DataFrame
+    df = formatter.format_dataframe(data_for_pandas)
 
     # Print the DataFrame
     if args.output:

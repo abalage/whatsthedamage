@@ -94,15 +94,15 @@ class RowsProcessor:
                 # Convert month number to name if set_name is a number
                 try:
                     set_name = DateConverter.convert_month_number_to_name(int(set_name))
-                except ValueError:
+                except (ValueError, TypeError):
                     start_date_str = DateConverter.convert_from_epoch(
                         self._start_date,
                         self.date_attribute_format
-                    ) if self._start_date else None
+                    ) if self._start_date else "Unknown Start Date"
                     end_date_str = DateConverter.convert_from_epoch(
                         self._end_date,
                         self.date_attribute_format
-                    ) if self._end_date else None
+                    ) if self._end_date else "Unknown End Date"
                     set_name = str(start_date_str) + " - " + str(end_date_str)
 
                 data_for_pandas[set_name] = summary

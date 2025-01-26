@@ -24,14 +24,10 @@ import json
 import argparse
 import locale
 import sys
-import pandas as pd
 from typing import Optional, Any
 from whatsthedamage.csv_row import CsvRow
 from whatsthedamage.csv_file_reader import CsvFileReader
-from whatsthedamage.date_converter import DateConverter
-from whatsthedamage.row_filter import RowFilter
-from whatsthedamage.row_enrichment import RowEnrichment
-from whatsthedamage.row_summarizer import RowSummarizer
+from whatsthedamage.rows_processor import RowsProcessor
 from whatsthedamage.data_frame_formatter import DataFrameFormatter
 
 
@@ -57,98 +53,6 @@ def set_locale(locale_str: str) -> None:
     except locale.Error:
         print(f"Warning: Locale '{locale_str}' is not supported. Falling back to default locale.", file=sys.stderr)
         locale.setlocale(locale.LC_ALL, '')
-
-
-def print_categorized_rows(
-        set_name: str,
-        set_rows_dict: dict[str, list[CsvRow]],
-        selected_attributes: list[str]) -> None:
-
-    print(f"\nSet name: {set_name}")
-    for type_value, rowset in set_rows_dict.items():
-        print(f"\nType: {type_value}")
-        for row in rowset:
-            selected_values = {attr: getattr(row, attr, None) for attr in selected_attributes}
-            print(selected_values)
-
-
-def process_rows(
-        rows: list['CsvRow'],
-        config: Any,
-        args: argparse.Namespace) -> dict[str, dict[str, float]]:
-
-    date_attribute = config['csv']['date_attribute']
-    date_attribute_format = config['csv']['date_attribute_format']
-    sum_attribute = config['csv']['sum_attribute']
-    selected_attributes = config['main']['selected_attributes']
-    cfg_pattern_sets = config['enricher_pattern_sets']
-
-    # Convert start and end dates to epoch time
-    start_date: Optional[int] = DateConverter.convert_to_epoch(
-        args.start_date,
-        date_attribute_format
-    ) if args.start_date else None
-
-    end_date: Optional[int] = DateConverter.convert_to_epoch(
-        args.end_date,
-        date_attribute_format
-    ) if args.end_date else None
-
-    # Filter rows by date if start_date or end_date is provided
-    row_filter = RowFilter(rows, date_attribute_format)
-    if start_date and end_date:
-        filtered_sets = row_filter.filter_by_date(date_attribute, start_date, end_date)
-    else:
-        filtered_sets = row_filter.filter_by_month(date_attribute)
-
-    if args.verbose:
-        print("Summary of attribute '" + sum_attribute + "' grouped by '" + args.category + "':")
-
-    data_for_pandas = {}
-
-    for filtered_set in filtered_sets:
-        # set_name is the month or date range
-        # set_rows is the list of CsvRow objects
-        for set_name, set_rows in filtered_set.items():
-            # Add attribute 'category' based on a specified other attribute matching against a set of patterns
-            enricher = RowEnrichment(set_rows, cfg_pattern_sets)
-            enricher.set_sum_attribute(sum_attribute)
-            enricher.initialize()
-
-            # Categorize rows by specificed attribute
-            set_rows_dict = enricher.categorize_by_attribute(args.category)
-
-            # Filter rows by category name if provided
-            if args.filter:
-                set_rows_dict = {k: v for k, v in set_rows_dict.items() if k == args.filter}
-
-            # Initialize the summarizer with the categorized rows
-            summarizer = RowSummarizer(set_rows_dict, sum_attribute)
-
-            # Summarize the values of the given attribute by category
-            summary = summarizer.summarize()
-
-            # Convert month number to name if set_name is a number
-            try:
-                set_name = DateConverter.convert_month_number_to_name(int(set_name))
-            except ValueError:
-                start_date_str = DateConverter.convert_from_epoch(
-                    start_date,
-                    date_attribute_format
-                ) if start_date else None
-                end_date_str = DateConverter.convert_from_epoch(
-                    end_date,
-                    date_attribute_format
-                ) if end_date else None
-                set_name = str(start_date_str) + " - " + str(end_date_str)
-
-            data_for_pandas[set_name] = summary
-
-            # Print categorized rows if verbose
-            if args.verbose:
-                print_categorized_rows(set_name, set_rows_dict, selected_attributes)
-
-    return data_for_pandas
 
 
 def main() -> None:
@@ -195,10 +99,16 @@ def main() -> None:
     rows = csv_reader.get_rows()
 
     # Process the rows
-    data_for_pandas = process_rows(
-        rows,
-        config,
-        args)
+    processor = RowsProcessor(config)
+
+    # Pass the arguments to the processor
+    processor.set_start_date(args.start_date)
+    processor.set_end_date(args.end_date)
+    processor.set_verbose(args.verbose)
+    processor.set_category(args.category)
+    processor.set_filter(args.filter)
+
+    data_for_pandas = processor.process_rows(rows)
 
     # Create an instance of DataFrameFormatter
     formatter = DataFrameFormatter()

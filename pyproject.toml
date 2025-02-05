@@ -22,7 +22,8 @@ classifiers=[
 license = {text = "GNU General Public License v3"}
 requires-python = ">= 3.9"
 dependencies = [
-    "pandas>=1.5.0"
+    "pandas>=1.5.0",
+    "pydantic>=2.10.0"
 ]
 
 [project.optional-dependencies]

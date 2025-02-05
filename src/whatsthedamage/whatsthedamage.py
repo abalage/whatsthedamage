@@ -12,27 +12,15 @@ Functions:
         The main function receives arguments, loads the configuration, reads the CSV file,
         processes the rows, and prints or saves the result.
 """
-import json
 import locale
 import sys
 from whatsthedamage.csv_file_reader import CsvFileReader
 from whatsthedamage.rows_processor import RowsProcessor
 from whatsthedamage.data_frame_formatter import DataFrameFormatter
+from whatsthedamage.config import AppArgs, load_config
 
 
 __all__ = ['main']
-
-
-def load_config(config_path: str) -> dict[str, dict[str, dict[str, str]]]:
-    try:
-        with open(config_path, 'r', encoding='utf-8') as file:
-            config: dict[str, dict[str, dict[str, str]]] = json.load(file)
-            if 'csv' not in config or 'main' not in config or 'enricher_pattern_sets' not in config:
-                raise KeyError("Configuration file must contain 'csv', 'main' and 'enricher_pattern_sets' keys.")
-        return config
-    except json.JSONDecodeError:
-        print(f"Error: Configuration file '{config_path}' is not a valid JSON.", file=sys.stderr)
-        exit(1)
 
 
 def set_locale(locale_str: str) -> None:
@@ -49,13 +37,13 @@ def main(args: AppArgs) -> str | None:
     config = load_config(str(args['config']))
 
     # Set the locale for currency formatting
-    set_locale(str(config['main']['locale']))
+    set_locale(config.main.locale)
 
     # Create a CsvReader object and read the file contents
     csv_reader = CsvFileReader(
-        args.filename,
-        str(config['csv']['dialect']),
-        str(config['csv']['delimiter'])
+        str(args['filename']),
+        str(config.csv.dialect),
+        str(config.csv.delimiter)
     )
     csv_reader.read()
     rows = csv_reader.get_rows()

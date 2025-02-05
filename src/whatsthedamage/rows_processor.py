@@ -1,4 +1,4 @@
-from typing import Any, Optional
+from typing import Optional, Dict, List
 from whatsthedamage.csv_row import CsvRow
 from whatsthedamage.date_converter import DateConverter
 from whatsthedamage.row_filter import RowFilter
@@ -11,7 +11,7 @@ RowsProcessor processes rows of CSV data. It filters, enriches, categorizes, and
 
 
 class RowsProcessor:
-    def __init__(self):
+    def __init__(self) -> None:
         """
         Initializes the RowsProcessor.
 
@@ -28,16 +28,16 @@ class RowsProcessor:
             _filter (None): Placeholder for the filter.
         """
 
-        self._date_attribute: Optional[str] = None
-        self._date_attribute_format: Optional[str] = None
-        self._sum_attribute: Optional[str] = None
-        self._selected_attributes: Optional[list[str]] = None
-        self._cfg_pattern_sets: Optional[dict] = None
+        self._date_attribute: str = ''
+        self._date_attribute_format: str = ''
+        self._sum_attribute: str = ''
+        self._selected_attributes: list[str] = []
+        self._cfg_pattern_sets: Dict[str, Dict[str, List[str]]] = {}
 
         self._start_date: Optional[int] = None
         self._end_date: Optional[int] = None
         self._verbose = False
-        self._category: Optional[str] = None
+        self._category: str = ''
         self._filter: Optional[str] = None
 
     def set_date_attribute(self, date_attribute: str) -> None:
@@ -52,7 +52,7 @@ class RowsProcessor:
     def set_selected_attributes(self, selected_attributes: list[str]) -> None:
         self._selected_attributes = selected_attributes
 
-    def set_cfg_pattern_sets(self, cfg_pattern_sets: dict) -> None:
+    def set_cfg_pattern_sets(self, cfg_pattern_sets: Dict[str, Dict[str, List[str]]]) -> None:
         self._cfg_pattern_sets = cfg_pattern_sets
 
     def set_start_date(self, start_date: Optional[str]) -> None:
@@ -70,7 +70,7 @@ class RowsProcessor:
     def set_verbose(self, verbose: bool) -> None:
         self._verbose = verbose
 
-    def set_category(self, category: Optional[str]) -> None:
+    def set_category(self, category: str) -> None:
         self._category = category
 
     def set_filter(self, filter: Optional[str]) -> None:

@@ -62,7 +62,7 @@ def main(args: AppArgs) -> str | None:
     processor.set_start_date(args.get('start_date'))
     processor.set_end_date(args.get('end_date'))
     processor.set_verbose(args.get('verbose', False))
-    processor.set_category(args.get('category'))
+    processor.set_category(args.get('category', 'category'))
     processor.set_filter(args.get('filter'))
 
     data_for_pandas = processor.process_rows(rows)

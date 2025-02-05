@@ -1,7 +1,7 @@
 import pytest
 import json
-from pydantic import ValidationError
-from whatsthedamage.config import load_config, AppConfig, CsvConfig, MainConfig
+from whatsthedamage.config import load_config, AppConfig
+
 
 def test_load_config_valid_file(tmp_path):
     config_data = {
@@ -30,6 +30,7 @@ def test_load_config_valid_file(tmp_path):
     assert config.csv.dialect == "excel"
     assert config.main.locale == "en_US"
 
+
 def test_load_config_invalid_json(tmp_path):
     invalid_json = "{invalid_json}"
     config_file = tmp_path / "config.json"
@@ -37,6 +38,7 @@ def test_load_config_invalid_json(tmp_path):
 
     with pytest.raises(SystemExit):
         load_config(str(config_file))
+
 
 def test_load_config_validation_error(tmp_path):
     invalid_config_data = {

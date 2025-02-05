@@ -59,11 +59,11 @@ def main(args: AppArgs) -> str | None:
     processor.set_cfg_pattern_sets(config.enricher_pattern_sets)
 
     # Pass the arguments to the processor
-    processor.set_start_date(args.start_date)
-    processor.set_end_date(args.end_date)
-    processor.set_verbose(args.verbose)
-    processor.set_category(args.category)
-    processor.set_filter(args.filter)
+    processor.set_start_date(args.get('start_date'))
+    processor.set_end_date(args.get('end_date'))
+    processor.set_verbose(args.get('verbose', False))
+    processor.set_category(args.get('category'))
+    processor.set_filter(args.get('filter'))
 
     data_for_pandas = processor.process_rows(rows)
 

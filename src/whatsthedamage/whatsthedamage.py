@@ -75,8 +75,10 @@ def main(args: AppArgs) -> str | None:
     # Format the DataFrame
     df = formatter.format_dataframe(data_for_pandas)
 
-    # Print the DataFrame
-    if args.output:
-        df.to_csv(args.output, index=True, header=True, sep=';', decimal=',')
+    # Different output format depending on client request
+    if args.get('output_format') == 'html':
+        return df.to_html(classes='table table-striped')
+    elif args.get('output'):
+        return df.to_csv(args.get('output'), index=True, header=True, sep=';', decimal=',')
     else:
-        print(df)
+        return df.to_string()

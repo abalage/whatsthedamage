@@ -49,7 +49,14 @@ def main(args: AppArgs) -> str | None:
     rows = csv_reader.get_rows()
 
     # Process the rows
-    processor = RowsProcessor(config)
+    processor = RowsProcessor()
+
+    # Pass the configuration to the processor
+    processor.set_date_attribute(config.csv.date_attribute)
+    processor.set_date_attribute_format(config.csv.date_attribute_format)
+    processor.set_sum_attribute(config.csv.sum_attribute)
+    processor.set_selected_attributes(config.main.selected_attributes)
+    processor.set_cfg_pattern_sets(config.enricher_pattern_sets)
 
     # Pass the arguments to the processor
     processor.set_start_date(args.start_date)

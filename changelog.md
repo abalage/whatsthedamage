@@ -1,5 +1,35 @@
 # Changelog
 
+## [0.3.0] - 2025-02-05
+### Added
+- **Feature**: Single source version number. (commit: c2f1286)
+- **Break**: Use unmatched positive amounts as deposits. (commit: 2087d6)
+- **Fix**: Use proper access methods. (commit: 86cdf39)
+- **Tests**: Fix flake8 and mypy regressions. (commit: 398f8df)
+- **Break**: Different format is returned depending on caller. (commit: c276ddd)
+- **Break**: `RowsProcessor` should use setters instead of accessing the config object. (commit: eec7448)
+- **Break**: Use config models to enforce format and types. (commit: 27077da)
+- **Break**: CLI should act as a CLI 'client' to the main module. (commit: 16cbd0e)
+
+## [0.2.2] - 2025-01-26
+### Changed
+- **Break**: Different format is returned depending on caller. (commit: c276ddd)
+- **Break**: `RowsProcessor` should use setters instead of accessing the config object. (commit: eec7448)
+- **Break**: Use config models to enforce format and types. (commit: 27077da)
+- **Break**: CLI should act as a CLI 'client' to the main module. (commit: 16cbd0e)
+- **Fix**: Use proper access methods. (commit: 86cdf39)
+- **Tests**: Fix flake8 and mypy regressions. (commit: 398f8df)
+
+### Added
+- **Test**: Add coverage report. (commit: 8a675eb)
+- **Test**: Add tests for `rows_processor`. (commit: 112e232)
+- **Test**: Add type hinting and documentation. (commit: 8c58fbc)
+
+### Changed
+- **Chore**: Improve error handling. (commit: ee6c302)
+- **Break**: Encapsulate rows processing into a class method. (commit: c47f6dd)
+- **Break**: Move data frame formatting into its own class. (commit: bf1d391)
+
 ## [0.2.1] - 2025-01-21
 ### Changed
 - **Chore**: Minor version update to 0.2.1. (commit: c271eae)

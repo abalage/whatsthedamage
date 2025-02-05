@@ -37,7 +37,7 @@ dev = [
 ]
 
 [project.scripts]
-whatsthedamage = "whatsthedamage.cli:main"
+whatsthedamage = "whatsthedamage.cli:main_cli"
 
 [project.urls]
 bugs = "https://github.com/abalage/whatsthedamage/issues"

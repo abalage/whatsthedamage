@@ -7,21 +7,12 @@ Functions:
 
     set_locale(locale_str: str) -> None:
         Sets the locale for currency formatting.
-    print_categorized_rows(
-        Prints categorized rows based on the selected attributes.
 
-    process_rows(
-        Processes the rows by filtering, enriching, categorizing, and summarizing them.
-
-    format_dataframe(data_for_pandas: dict[str, dict[str, float]], args: argparse.Namespace) -> pd.DataFrame:
-        Formats the processed data into a pandas DataFrame with optional currency formatting.
-
-    main() -> None:
-        The main function that sets up the argument parser, loads the configuration, reads the CSV file,
+    main(args: dict[str, str | bool | None]) -> str | None:
+        The main function receives arguments, loads the configuration, reads the CSV file,
         processes the rows, and prints or saves the result.
 """
 import json
-import argparse
 import locale
 import sys
 from whatsthedamage.csv_file_reader import CsvFileReader
@@ -53,36 +44,9 @@ def set_locale(locale_str: str) -> None:
         locale.setlocale(locale.LC_ALL, '')
 
 
-def main() -> None:
-    # Set up argument parser
-    parser = argparse.ArgumentParser(description="A CLI tool to process KHBHU CSV files.")
-    parser.add_argument('filename', type=str,
-                        help='The CSV file to read.')
-    parser.add_argument('--start-date', type=str,
-                        help='Start date in format YYYY.MM.DD.')
-    parser.add_argument('--end-date', type=str,
-                        help='End date in format YYYY.MM.DD.')
-    parser.add_argument('--verbose', '-v', action='store_true',
-                        help='Print categorized rows for troubleshooting.')
-    parser.add_argument('--version', action='version', version='What\'s the Damage',
-                        help='Show the version of the program.')
-    parser.add_argument('--config', '-c', type=str, default='config.json.default',
-                        help='Path to the configuration file. (default: config.json.default)')
-    parser.add_argument('--category', type=str, default='category',
-                        help='The attribute to categorize by. (default: category)')
-    parser.add_argument('--no-currency-format', action='store_true',
-                        help='Disable currency formatting. Useful for importing the data into a spreadsheet.')
-    parser.add_argument('--output', '-o', type=str,
-                        help='Save the result into a CSV file with the specified filename.')
-    parser.add_argument('--nowrap', '-n', action='store_true',
-                        help='Do not wrap the output text. Useful for viewing the output without line wraps.')
-    parser.add_argument('--filter', '-f', type=str, help='Filter by category. Use it conjunction with --verbose.')
-
-    # Parse the arguments
-    args = parser.parse_args()
-
+def main(args: AppArgs) -> str | None:
     # Load the configuration file
-    config = load_config(args.config)
+    config = load_config(str(args['config']))
 
     # Set the locale for currency formatting
     set_locale(str(config['main']['locale']))
@@ -110,8 +74,8 @@ def main() -> None:
 
     # Create an instance of DataFrameFormatter
     formatter = DataFrameFormatter()
-    formatter.set_nowrap(args.nowrap)
-    formatter.set_no_currency_format(args.no_currency_format)
+    formatter.set_nowrap(args.get('nowrap', False))
+    formatter.set_no_currency_format(args.get('no_currency_format', False))
 
     # Format the DataFrame
     df = formatter.format_dataframe(data_for_pandas)

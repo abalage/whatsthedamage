@@ -11,17 +11,15 @@ RowsProcessor processes rows of CSV data. It filters, enriches, categorizes, and
 
 
 class RowsProcessor:
-    def __init__(self, config: Any):
+    def __init__(self):
         """
-        Initializes the RowsProcessor with the given configuration.
-        Args:
-            config (Any): Configuration dictionary containing various settings.
+        Initializes the RowsProcessor.
+
         Attributes:
-            config (Any): Stores the provided configuration.
             date_attribute (str): The attribute name for the date in the CSV.
             date_attribute_format (str): The format of the date attribute.
             sum_attribute (str): The attribute name for the sum in the CSV.
-            selected_attributes (list): List of selected attributes from the main configuration.
+            selected_attributes (list): List of selected attributes.
             cfg_pattern_sets (dict): Dictionary of pattern sets for the enricher.
             _start_date (None): Placeholder for the start date.
             _end_date (None): Placeholder for the end date.
@@ -30,13 +28,11 @@ class RowsProcessor:
             _filter (None): Placeholder for the filter.
         """
 
-        self.config = config
-
-        self.date_attribute = config['csv']['date_attribute']
-        self.date_attribute_format = config['csv']['date_attribute_format']
-        self.sum_attribute = config['csv']['sum_attribute']
-        self.selected_attributes = config['main']['selected_attributes']
-        self.cfg_pattern_sets = config['enricher_pattern_sets']
+        self._date_attribute: Optional[str] = None
+        self._date_attribute_format: Optional[str] = None
+        self._sum_attribute: Optional[str] = None
+        self._selected_attributes: Optional[list[str]] = None
+        self._cfg_pattern_sets: Optional[dict] = None
 
         self._start_date: Optional[int] = None
         self._end_date: Optional[int] = None
@@ -44,16 +40,31 @@ class RowsProcessor:
         self._category: Optional[str] = None
         self._filter: Optional[str] = None
 
+    def set_date_attribute(self, date_attribute: str) -> None:
+        self._date_attribute = date_attribute
+
+    def set_date_attribute_format(self, date_attribute_format: str) -> None:
+        self._date_attribute_format = date_attribute_format
+
+    def set_sum_attribute(self, sum_attribute: str) -> None:
+        self._sum_attribute = sum_attribute
+
+    def set_selected_attributes(self, selected_attributes: list[str]) -> None:
+        self._selected_attributes = selected_attributes
+
+    def set_cfg_pattern_sets(self, cfg_pattern_sets: dict) -> None:
+        self._cfg_pattern_sets = cfg_pattern_sets
+
     def set_start_date(self, start_date: Optional[str]) -> None:
         self._start_date = DateConverter.convert_to_epoch(
             start_date,
-            self.date_attribute_format
+            self._date_attribute_format
         ) if start_date else None
 
     def set_end_date(self, end_date: Optional[str]) -> None:
         self._end_date = DateConverter.convert_to_epoch(
             end_date,
-            self.date_attribute_format
+            self._date_attribute_format
         ) if end_date else None
 
     def set_verbose(self, verbose: bool) -> None:
@@ -109,14 +120,14 @@ class RowsProcessor:
         """
 
         # Filter rows by date if start_date or end_date is provided
-        row_filter = RowFilter(rows, self.date_attribute_format)
+        row_filter = RowFilter(rows, self._date_attribute_format)
         if self._start_date and self._end_date:
-            filtered_sets = row_filter.filter_by_date(self.date_attribute, self._start_date, self._end_date)
+            filtered_sets = row_filter.filter_by_date(self._date_attribute, self._start_date, self._end_date)
         else:
-            filtered_sets = row_filter.filter_by_month(self.date_attribute)
+            filtered_sets = row_filter.filter_by_month(self._date_attribute)
 
         if self._verbose:
-            print("Summary of attribute '" + self.sum_attribute + "' grouped by '" + self._category + "':")
+            print("Summary of attribute '" + self._sum_attribute + "' grouped by '" + self._category + "':")
 
         data_for_pandas = {}
 
@@ -125,8 +136,8 @@ class RowsProcessor:
             # set_rows is the list of CsvRow objects
             for set_name, set_rows in filtered_set.items():
                 # Add attribute 'category' based on a specified other attribute matching against a set of patterns
-                enricher = RowEnrichment(set_rows, self.cfg_pattern_sets)
-                enricher.set_sum_attribute(self.sum_attribute)
+                enricher = RowEnrichment(set_rows, self._cfg_pattern_sets)
+                enricher.set_sum_attribute(self._sum_attribute)
                 enricher.initialize()
 
                 # Categorize rows by specified attribute
@@ -140,7 +151,7 @@ class RowsProcessor:
                     set_rows_dict = {k: v for k, v in set_rows_dict.items() if k == self._filter}
 
                 # Initialize the summarizer with the categorized rows
-                summarizer = RowSummarizer(set_rows_dict, self.sum_attribute)
+                summarizer = RowSummarizer(set_rows_dict, self._sum_attribute)
 
                 # Summarize the values of the given attribute by category
                 summary = summarizer.summarize()
@@ -151,11 +162,11 @@ class RowsProcessor:
                 except (ValueError, TypeError):
                     start_date_str = DateConverter.convert_from_epoch(
                         self._start_date,
-                        self.date_attribute_format
+                        self._date_attribute_format
                     ) if self._start_date else "Unknown Start Date"
                     end_date_str = DateConverter.convert_from_epoch(
                         self._end_date,
-                        self.date_attribute_format
+                        self._date_attribute_format
                     ) if self._end_date else "Unknown End Date"
                     set_name = str(start_date_str) + " - " + str(end_date_str)
 
@@ -163,6 +174,6 @@ class RowsProcessor:
 
                 # Print categorized rows if verbose
                 if self._verbose:
-                    self.print_categorized_rows(set_name, set_rows_dict, self.selected_attributes)
+                    self.print_categorized_rows(set_name, set_rows_dict, self._selected_attributes)
 
         return data_for_pandas

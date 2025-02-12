@@ -56,16 +56,18 @@ class RowsProcessor:
         self._cfg_pattern_sets = cfg_pattern_sets
 
     def set_start_date(self, start_date: Optional[str]) -> None:
-        self._start_date = DateConverter.convert_to_epoch(
-            start_date,
-            self._date_attribute_format
-        ) if start_date else None
+        if start_date:
+            start_date = DateConverter.convert_date_format(start_date, self._date_attribute_format)
+            self._start_date = DateConverter.convert_to_epoch(start_date, self._date_attribute_format)
+        else:
+            self._start_date = None
 
     def set_end_date(self, end_date: Optional[str]) -> None:
-        self._end_date = DateConverter.convert_to_epoch(
-            end_date,
-            self._date_attribute_format
-        ) if end_date else None
+        if end_date:
+            end_date = DateConverter.convert_date_format(end_date, self._date_attribute_format)
+            self._end_date = DateConverter.convert_to_epoch(end_date, self._date_attribute_format)
+        else:
+            self._end_date = None
 
     def set_verbose(self, verbose: bool) -> None:
         self._verbose = verbose

@@ -1,5 +1,6 @@
 from datetime import datetime, timezone
 from typing import Optional
+from dateutil import parser
 
 
 class DateConverter:
@@ -55,3 +56,19 @@ class DateConverter:
             return datetime(1900, month_number, 1).strftime('%B')
         else:
             raise ValueError("Invalid month number. Please enter a number between 1 and 12.")
+
+    @staticmethod
+    def convert_date_format(date_str: str, date_format: str) -> str:
+        """
+        Convert a date string to the specified format.
+
+        :param date_str: The date string to convert.
+        :param date_format: The format to convert the date string to (e.g., '%Y-%m-%d').
+        :return: The formatted date string.
+        :raises ValueError: If the date format is not recognized.
+        """
+        try:
+            date_obj: datetime = parser.parse(date_str)
+            return date_obj.strftime(date_format)
+        except ValueError:
+            raise ValueError(f"Date format for '{date_str}' not recognized.")

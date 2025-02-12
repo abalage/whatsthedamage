@@ -8,8 +8,8 @@ def parse_arguments() -> AppArgs:
     # Set up argument parser
     parser = argparse.ArgumentParser(description="A CLI tool to process KHBHU CSV files.")
     parser.add_argument('filename', type=str, help='The CSV file to read.')
-    parser.add_argument('--start-date', type=str, help='Start date in format YYYY.MM.DD.')
-    parser.add_argument('--end-date', type=str, help='End date in format YYYY.MM.DD.')
+    parser.add_argument('--start-date', type=str, help='Start date (e.g. YYYY.MM.DD.)')
+    parser.add_argument('--end-date', type=str, help='End date (e.g. YYYY.MM.DD.)')
     parser.add_argument('--verbose', '-v', action='store_true', help='Print categorized rows for troubleshooting.')
     parser.add_argument('--version', action='version', version='What\'s the Damage', help='Show the version of the program.')  # noqa: E501
     parser.add_argument('--config', '-c', type=str, default='config.json.default', help='Path to the configuration file. (default: config.json.default)')  # noqa: E501

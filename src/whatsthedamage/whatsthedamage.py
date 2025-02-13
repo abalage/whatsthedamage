@@ -77,7 +77,7 @@ def main(args: AppArgs) -> str | None:
 
     # Different output format depending on client request
     if args.get('output_format') == 'html':
-        return df.to_html(classes='table table-striped')
+        return df.to_html(border=0)
     elif args.get('output'):
         return df.to_csv(args.get('output'), index=True, header=True, sep=';', decimal=',')
     else:

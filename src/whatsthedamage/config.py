@@ -54,3 +54,6 @@ def load_config(config_path: str) -> AppConfig:
     except ValidationError as e:
         print(f"Error: Configuration validation error: {e}", file=sys.stderr)
         exit(1)
+    except FileNotFoundError:
+        print(f"Error: Configuration file '{config_path}' not found.", file=sys.stderr)
+        exit(1)

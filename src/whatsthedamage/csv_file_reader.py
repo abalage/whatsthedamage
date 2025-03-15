@@ -1,5 +1,5 @@
 import csv
-from typing import Sequence, Dict
+from typing import Sequence, Dict, List
 from whatsthedamage.csv_row import CsvRow
 
 
@@ -18,12 +18,12 @@ class CsvFileReader:
         :param delimiter: The delimiter to use for the CSV reader.
         :param mapping: Dictionary to map CSV column names to different names.
         """
-        self.filename: str = filename
-        self.dialect: str = dialect
-        self.delimiter: str = delimiter
-        self.headers: Sequence[str] = []  # List to store header names
-        self.rows: list[CsvRow] = []  # List to store CsvRow objects
-        self.mapping: Dict[str, str] = mapping
+        self._filename: str = filename
+        self._dialect: str = dialect
+        self._delimiter: str = delimiter
+        self._headers: Sequence[str] = []  # List to store header names
+        self._rows: List[CsvRow] = []  # List to store CsvRow objects
+        self._mapping: Dict[str, str] = mapping
 
     def read(self) -> None:
         """
@@ -32,14 +32,14 @@ class CsvFileReader:
         :return: None
         """
         try:
-            with open(self.filename, mode='r', newline='', encoding='utf-8') as file:
-                csvreader = csv.DictReader(file, dialect=self.dialect, delimiter=self.delimiter, restkey='leftover')
+            with open(self._filename, mode='r', newline='', encoding='utf-8') as file:
+                csvreader = csv.DictReader(file, dialect=self._dialect, delimiter=self._delimiter, restkey='leftover')
                 if csvreader.fieldnames is None:
                     raise ValueError("CSV file is empty or missing headers.")
-                self.headers = csvreader.fieldnames  # Save the header
-                self.rows = [CsvRow(row, self.mapping) for row in csvreader]
+                self._headers = csvreader.fieldnames  # Save the header
+                self._rows = [CsvRow(row, self._mapping) for row in csvreader]
         except FileNotFoundError:
-            print(f"Error: The file '{self.filename}' was not found.")
+            print(f"Error: The file '{self._filename}' was not found.")
         except Exception as e:
             print(f"An error occurred while reading the CSV file: {e}")
 
@@ -49,12 +49,12 @@ class CsvFileReader:
 
         :return: A list of header names.
         """
-        return self.headers
+        return self._headers
 
-    def get_rows(self) -> list[CsvRow]:
+    def get_rows(self) -> List[CsvRow]:
         """
         Get the rows of the CSV file as CsvRow objects.
 
         :return: A list of CsvRow objects.
         """
-        return self.rows
+        return self._rows

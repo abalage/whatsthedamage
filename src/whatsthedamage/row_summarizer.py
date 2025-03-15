@@ -1,24 +1,25 @@
+from typing import Dict, List
 from whatsthedamage.csv_row import CsvRow
 
 
 class RowSummarizer:
-    def __init__(self, rows: dict[str, list['CsvRow']]) -> None:
+    def __init__(self, rows: Dict[str, List[CsvRow]]) -> None:
         """
-        Initialize the RowSummarizer with a list of CsvRow objects.
+        Initialize the RowSummarizer with a dictionary of categorized CsvRow objects.
 
-        :param rows: List of CsvRow objects to summarize.
+        :param rows: Dictionary with category names as keys and lists of CsvRow objects as values.
         """
-        self.rows = rows
+        self._rows = rows
 
-    def summarize(self) -> dict[str, float]:
+    def summarize(self) -> Dict[str, float]:
         """
         Summarize the values of the 'amount' attribute in categorized rows.
 
-        :return: A dictionary with category names as keys and formatted total values as values.
-        Adding overall balance as a key 'balance'.
+        :return: A dictionary with category names as keys and total values as values.
+                 Adds an overall balance as a key 'balance'.
         """
-        categorized_rows = self.rows
-        summary: dict[str, float] = {}
+        categorized_rows = self._rows
+        summary: Dict[str, float] = {}
 
         balance = 0.0
         for category, rows in categorized_rows.items():

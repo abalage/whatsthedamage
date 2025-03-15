@@ -33,6 +33,11 @@ class RowEnrichment:
         :param attribute_name: str: The name of the attribute to check for categorization.
         :param category_patterns: dict[str, list[str]]: 'category names' -> 'lists of regex patterns'.
         """
+        compiled_patterns = {
+            category: [re.compile(pattern, re.IGNORECASE) for pattern in patterns]
+            for category, patterns in category_patterns.items()
+        }
+
         for row in self.rows:
             # Check if the category is not set or is 'other'
             current_category = getattr(row, 'category', None)
@@ -44,27 +49,41 @@ class RowEnrichment:
                 setattr(row, 'category', 'other')  # Default to 'other' if no match
                 continue
 
-            matched = False
-            compiled_patterns = {
-                category: [re.compile(pattern, re.IGNORECASE) for pattern in patterns]
-                for category, patterns in category_patterns.items()
-            }
-            for category, patterns in compiled_patterns.items():
-                for pattern in patterns:
-                    if pattern.search(attribute_value):
-                        setattr(row, 'category', category)  # Add attribute with category name
-                        matched = True
-                        break
-                if matched:
-                    break
+            if not self.match_patterns(row, attribute_value, compiled_patterns):
+                self.categorize_as_deposits(row)
 
-            if not matched:
-                # catch any not matched possible deposits
-                amount_value = getattr(row, 'amount', None)
-                if amount_value is not None and int(amount_value) > 0:
-                    setattr(row, 'category', 'deposits')
-                    continue
-                setattr(row, 'category', 'other')  # Default to 'other' if no match
+    def match_patterns(
+        self,
+        row: 'CsvRow',
+        attribute_value: str,
+        compiled_patterns: dict[str, list[re.Pattern[str]]]
+    ) -> bool:
+        """
+        Match the attribute value against compiled patterns and set the category if a match is found.
+
+        :param row: CsvRow object to categorize.
+        :param attribute_value: The value of the attribute to match.
+        :param compiled_patterns: Compiled regex patterns for each category.
+        :return: True if a match is found, False otherwise.
+        """
+        for category, patterns in compiled_patterns.items():
+            for pattern in patterns:
+                if pattern.search(attribute_value):
+                    setattr(row, 'category', category)  # Add attribute with category name
+                    return True
+        return False
+
+    def categorize_as_deposits(self, row: 'CsvRow') -> None:
+        """
+        Categorize a CsvRow object as 'deposits' if the 'amount' attribute is positive.
+
+        :param row: CsvRow object to categorize.
+        """
+        amount_value = getattr(row, 'amount', None)
+        if amount_value is not None and int(amount_value) > 0:
+            setattr(row, 'category', 'deposits')
+        else:
+            setattr(row, 'category', 'other')  # Default to 'other' if no match
 
     def categorize_by_attribute(self, attribute_name: str) -> dict[str, list['CsvRow']]:
         """

@@ -2,19 +2,17 @@
   "csv": {
       "dialect": "excel-tab",
       "delimiter": "\t",
-      "date_attribute": "könyvelés dátuma",
       "date_attribute_format": "%Y.%m.%d",
-      "sum_attribute": "összeg"
+      "attribute_mapping": {
+        "date": "könyvelés dátuma",
+        "type": "típus",
+        "partner": "partner elnevezése",
+        "amount": "összeg",
+        "currency": "összeg devizaneme"
+      }
   },
   "main": {
-    "locale": "hu_HU.UTF-8",
-    "selected_attributes": [
-      "könyvelés dátuma",
-      "típus",
-      "partner elnevezése",
-      "category",
-      "összeg"
-    ]
+    "locale": "hu_HU.UTF-8"
   },
   "enricher_pattern_sets": {
     "partner elnevezése": {

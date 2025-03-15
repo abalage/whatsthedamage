@@ -34,13 +34,11 @@ class RowFilter:
 
     def filter_by_date(
             self,
-            date_attribute: str,
             start_date: int,
             end_date: int) -> tuple[dict[str, list['CsvRow']], ...]:
         """
         Filter rows based on a date range for a specified attribute.
 
-        :param date_attribute: The name of the date attribute to filter by.
         :param start_date: The start date in epoch time.
         :param end_date: The end date in epoch time.
         :return: A tuple of list of filtered CsvRow objects.
@@ -48,7 +46,7 @@ class RowFilter:
         filtered_rows: list['CsvRow'] = []
         for row in self.rows:
             date_value: Optional[int] = DateConverter.convert_to_epoch(
-                getattr(row, date_attribute, None),
+                getattr(row, 'date', None),
                 self.date_format
             )
             if date_value is not None:
@@ -58,15 +56,14 @@ class RowFilter:
         # FIXME '99' is a special key for rows that do not fall within the specified date range
         return {"99": filtered_rows},
 
-    def filter_by_month(self, date_attribute: str) -> tuple[dict[str, list['CsvRow']], ...]:
+    def filter_by_month(self) -> tuple[dict[str, list['CsvRow']], ...]:
         """
         Filter rows based on the month parsed from a specified attribute.
 
-        :param date_attribute: The name of the date attribute to filter by.
         :return: A tuple of list of filtered CsvRow objects.
         """
         for row in self.rows:
-            month_name = self.get_month_number(getattr(row, date_attribute, None))
+            month_name = self.get_month_number(getattr(row, 'date', None))
             if month_name is not None:
                 for month in self.months:
                     if month_name in month:

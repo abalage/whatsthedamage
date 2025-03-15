@@ -26,14 +26,12 @@ class AppArgs(TypedDict):
 class CsvConfig(BaseModel):
     dialect: str
     delimiter: str
-    date_attribute: str
     date_attribute_format: str
-    sum_attribute: str
+    attribute_mapping: Dict[str, str]
 
 
 class MainConfig(BaseModel):
     locale: str
-    selected_attributes: List[str]
 
 
 class AppConfig(BaseModel):

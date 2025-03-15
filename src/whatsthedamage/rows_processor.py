@@ -16,10 +16,7 @@ class RowsProcessor:
         Initializes the RowsProcessor.
 
         Attributes:
-            date_attribute (str): The attribute name for the date in the CSV.
             date_attribute_format (str): The format of the date attribute.
-            sum_attribute (str): The attribute name for the sum in the CSV.
-            selected_attributes (list): List of selected attributes.
             cfg_pattern_sets (dict): Dictionary of pattern sets for the enricher.
             _start_date (None): Placeholder for the start date.
             _end_date (None): Placeholder for the end date.
@@ -28,10 +25,7 @@ class RowsProcessor:
             _filter (None): Placeholder for the filter.
         """
 
-        self._date_attribute: str = ''
         self._date_attribute_format: str = ''
-        self._sum_attribute: str = ''
-        self._selected_attributes: list[str] = []
         self._cfg_pattern_sets: Dict[str, Dict[str, List[str]]] = {}
 
         self._start_date: Optional[int] = None
@@ -40,17 +34,8 @@ class RowsProcessor:
         self._category: str = ''
         self._filter: Optional[str] = None
 
-    def set_date_attribute(self, date_attribute: str) -> None:
-        self._date_attribute = date_attribute
-
     def set_date_attribute_format(self, date_attribute_format: str) -> None:
         self._date_attribute_format = date_attribute_format
-
-    def set_sum_attribute(self, sum_attribute: str) -> None:
-        self._sum_attribute = sum_attribute
-
-    def set_selected_attributes(self, selected_attributes: list[str]) -> None:
-        self._selected_attributes = selected_attributes
 
     def set_cfg_pattern_sets(self, cfg_pattern_sets: Dict[str, Dict[str, List[str]]]) -> None:
         self._cfg_pattern_sets = cfg_pattern_sets
@@ -81,29 +66,24 @@ class RowsProcessor:
     def print_categorized_rows(
             self,
             set_name: str,
-            set_rows_dict: dict[str, list[CsvRow]],
-            selected_attributes: list[str]) -> None:
-
+            set_rows_dict: dict[str, list[CsvRow]]) -> None:
         """
-        Prints categorized rows from a dictionary of row sets.
+        Prints categorized rows from a dictionary.
 
         Args:
             set_name (str): The name of the set to be printed.
-            set_rows_dict (dict[str, list[CsvRow]]): A dict of types where values are lists of CsvRow objects.
-            selected_attributes (list[str]): A list of attribute names to be selected.
+            set_rows_dict (dict[str, list[CsvRow]]): A dictionary of type values and a lists of CsvRow objects.
 
         Returns:
             None
         """
-
         print(f"\nSet name: {set_name}")
         for type_value, rowset in set_rows_dict.items():
             print(f"\nType: {type_value}")
             for row in rowset:
-                selected_values = {attr: getattr(row, attr, None) for attr in selected_attributes}
-                print(selected_values)
+                print(row)
 
-    def process_rows(self, rows: list['CsvRow']) -> dict[str, dict[str, float]]:
+    def process_rows(self, rows: list[CsvRow]) -> dict[str, dict[str, float]]:
         """
         Processes a list of CsvRow objects and returns a summary of specified attributes grouped by a category.
         Args:
@@ -124,12 +104,12 @@ class RowsProcessor:
         # Filter rows by date if start_date or end_date is provided
         row_filter = RowFilter(rows, self._date_attribute_format)
         if self._start_date and self._end_date:
-            filtered_sets = row_filter.filter_by_date(self._date_attribute, self._start_date, self._end_date)
+            filtered_sets = row_filter.filter_by_date(self._start_date, self._end_date)
         else:
-            filtered_sets = row_filter.filter_by_month(self._date_attribute)
+            filtered_sets = row_filter.filter_by_month()
 
         if self._verbose:
-            print("Summary of attribute '" + self._sum_attribute + "' grouped by '" + self._category + "':")
+            print("Summary of attribute 'amount' grouped by '" + self._category + "':")
 
         data_for_pandas = {}
 
@@ -139,7 +119,6 @@ class RowsProcessor:
             for set_name, set_rows in filtered_set.items():
                 # Add attribute 'category' based on a specified other attribute matching against a set of patterns
                 enricher = RowEnrichment(set_rows, self._cfg_pattern_sets)
-                enricher.set_sum_attribute(self._sum_attribute)
                 enricher.initialize()
 
                 # Categorize rows by specified attribute
@@ -153,7 +132,7 @@ class RowsProcessor:
                     set_rows_dict = {k: v for k, v in set_rows_dict.items() if k == self._filter}
 
                 # Initialize the summarizer with the categorized rows
-                summarizer = RowSummarizer(set_rows_dict, self._sum_attribute)
+                summarizer = RowSummarizer(set_rows_dict)
 
                 # Summarize the values of the given attribute by category
                 summary = summarizer.summarize()
@@ -176,6 +155,6 @@ class RowsProcessor:
 
                 # Print categorized rows if verbose
                 if self._verbose:
-                    self.print_categorized_rows(set_name, set_rows_dict, self._selected_attributes)
+                    self.print_categorized_rows(set_name, set_rows_dict)
 
         return data_for_pandas

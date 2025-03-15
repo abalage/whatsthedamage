@@ -43,7 +43,8 @@ def main(args: AppArgs) -> str | None:
     csv_reader = CsvFileReader(
         str(args['filename']),
         str(config.csv.dialect),
-        str(config.csv.delimiter)
+        str(config.csv.delimiter),
+        dict(config.csv.attribute_mapping)
     )
     csv_reader.read()
     rows = csv_reader.get_rows()
@@ -52,10 +53,7 @@ def main(args: AppArgs) -> str | None:
     processor = RowsProcessor()
 
     # Pass the configuration to the processor
-    processor.set_date_attribute(config.csv.date_attribute)
     processor.set_date_attribute_format(config.csv.date_attribute_format)
-    processor.set_sum_attribute(config.csv.sum_attribute)
-    processor.set_selected_attributes(config.main.selected_attributes)
     processor.set_cfg_pattern_sets(config.enricher_pattern_sets)
 
     # Pass the arguments to the processor

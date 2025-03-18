@@ -15,7 +15,7 @@
     "locale": "hu_HU.UTF-8"
   },
   "enricher_pattern_sets": {
-    "partner elnevezése": {
+    "partner": {
       "grocery": [
         "Lidl.*",
         "Lip.ti.*",
@@ -86,7 +86,7 @@
         "Diego"
       ]
     },
-    "típus": {
+    "type": {
       "loan": [
         "hitel.*",
         "késedelmi.*"

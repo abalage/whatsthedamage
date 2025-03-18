@@ -1,13 +1,17 @@
 # Class representing a single row of data in the CSV file
 class CsvRow:
-    def __init__(self, row: dict[str, str]) -> None:
+    def __init__(self, row: dict[str, str], mapping: dict[str, str]) -> None:
         """
         Initialize the CsvRow object with header values as attributes.
 
-        :param kwargs: Key-value pairs representing the CSV header and corresponding values.
+        :param row: Key-value pairs representing the CSV header and corresponding values.
+        :param mapping: Mapping of standardized attributes to CSV headers.
         """
-        for key, value in row.items():
-            setattr(self, key, value)
+        self.date = row.get(mapping.get('date', ''), '')
+        self.type = row.get(mapping.get('type', ''), '')
+        self.partner = row.get(mapping.get('partner', ''), '')
+        self.amount = float(row.get(mapping.get('amount', ''), 0))
+        self.currency = row.get(mapping.get('currency', ''), '')
 
     def __repr__(self) -> str:
         """
@@ -15,4 +19,29 @@ class CsvRow:
 
         :return: A string representation of the CsvRow.
         """
-        return f"<CsvRow({', '.join(f'{k}={v}' for k, v in self.__dict__.items())})>"
+        return (
+            f"<CsvRow("
+            f"date={self.date}, "
+            f"type={self.type}, "
+            f"partner={self.partner}, "
+            f"amount={self.amount}, "
+            f"currency={self.currency}"
+            f")>"
+        )
+
+    def __eq__(self, other: object) -> bool:
+        """
+        Check if two CsvRow objects are equal based on their attributes.
+
+        :param other: The other CsvRow object to compare with.
+        :return: True if the objects are equal, False otherwise.
+        """
+        if not isinstance(other, CsvRow):
+            return False
+        return (
+            self.date == other.date and
+            self.type == other.type and
+            self.partner == other.partner and
+            self.amount == other.amount and
+            self.currency == other.currency
+        )

@@ -11,18 +11,18 @@ def formatter():
 
 def test_set_nowrap(formatter):
     formatter.set_nowrap(True)
-    assert formatter.nowrap is True
+    assert formatter._nowrap is True
 
     formatter.set_nowrap(False)
-    assert formatter.nowrap is False
+    assert formatter._nowrap is False
 
 
 def test_set_no_currency_format(formatter):
     formatter.set_no_currency_format(True)
-    assert formatter.no_currency_format is True
+    assert formatter._no_currency_format is True
 
     formatter.set_no_currency_format(False)
-    assert formatter.no_currency_format is False
+    assert formatter._no_currency_format is False
 
 
 def test_format_dataframe_without_currency_format(formatter):

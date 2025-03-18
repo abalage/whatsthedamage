@@ -10,7 +10,7 @@ class CsvRow:
         self.date = row.get(mapping.get('date', ''), '')
         self.type = row.get(mapping.get('type', ''), '')
         self.partner = row.get(mapping.get('partner', ''), '')
-        self.amount = row.get(mapping.get('amount', ''), '')
+        self.amount = float(row.get(mapping.get('amount', ''), 0))
         self.currency = row.get(mapping.get('currency', ''), '')
 
     def __repr__(self) -> str:
@@ -27,4 +27,21 @@ class CsvRow:
             f"amount={self.amount}, "
             f"currency={self.currency}"
             f")>"
+        )
+
+    def __eq__(self, other: object) -> bool:
+        """
+        Check if two CsvRow objects are equal based on their attributes.
+
+        :param other: The other CsvRow object to compare with.
+        :return: True if the objects are equal, False otherwise.
+        """
+        if not isinstance(other, CsvRow):
+            return False
+        return (
+            self.date == other.date and
+            self.type == other.type and
+            self.partner == other.partner and
+            self.amount == other.amount and
+            self.currency == other.currency
         )

@@ -1,8 +1,9 @@
+from typing import Dict, List, Optional
 from whatsthedamage.csv_row import CsvRow
-from whatsthedamage.csv_file_reader import CsvFileReader
+from whatsthedamage.csv_file_handler import CsvFileHandler
 from whatsthedamage.rows_processor import RowsProcessor
 from whatsthedamage.data_frame_formatter import DataFrameFormatter
-from whatsthedamage.config import AppArgs, AppConfig, load_config
+from whatsthedamage.config import AppArgs, AppConfig
 
 
 class CSVProcessor:
@@ -28,12 +29,12 @@ class CSVProcessor:
         self.args = args
         self.processor = RowsProcessor()
 
-    def process(self) -> str | None:
+    def process(self) -> Optional[str]:
         """
         Processes the CSV file and returns the formatted result.
 
         Returns:
-            str | None: The formatted result as a string or None.
+            Optional[str]: The formatted result as a string or None.
         """
         self._set_processor_config()
         rows = self._read_csv_file()
@@ -52,14 +53,14 @@ class CSVProcessor:
         self.processor.set_category(self.args.get('category', 'category'))
         self.processor.set_filter(self.args.get('filter'))
 
-    def _read_csv_file(self) -> list[CsvRow]:
+    def _read_csv_file(self) -> List[CsvRow]:
         """
         Reads the CSV file and returns the rows.
 
         Returns:
-            list[CsvRow]: The list of CsvRow objects.
+            List[CsvRow]: The list of CsvRow objects.
         """
-        csv_reader = CsvFileReader(
+        csv_reader = CsvFileHandler(
             str(self.args['filename']),
             str(self.config.csv.dialect),
             str(self.config.csv.delimiter),
@@ -68,15 +69,15 @@ class CSVProcessor:
         csv_reader.read()
         return csv_reader.get_rows()
 
-    def _format_data(self, data_for_pandas: dict) -> str | None:
+    def _format_data(self, data_for_pandas: Dict[str, Dict[str, float]]) -> Optional[str]:
         """
         Formats the data using DataFrameFormatter.
 
         Args:
-            data_for_pandas (dict): The data to format.
+            data_for_pandas (Dict[str, Dict[str, float]]): The data to format.
 
         Returns:
-            str | None: The formatted data as a string or None.
+            Optional[str]: The formatted data as a string or None.
         """
         formatter = DataFrameFormatter()
         formatter.set_nowrap(self.args.get('nowrap', False))

@@ -63,3 +63,8 @@ files = "src"
 strict = true
 warn_unreachable = true
 warn_no_return = true
+
+[tool.pytest.ini_options]
+pythonpath = [
+    ".", "src"
+]

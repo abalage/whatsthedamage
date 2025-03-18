@@ -12,7 +12,8 @@ def test_convert_to_epoch_valid_date():
 def test_convert_to_epoch_invalid_date():
     date_str = "invalid_date"
     date_format = "%Y.%m.%d"
-    assert DateConverter.convert_to_epoch(date_str, date_format) is None
+    with pytest.raises(ValueError):
+        DateConverter.convert_to_epoch(date_str, date_format)
 
 
 def test_convert_to_epoch_none_date():
@@ -32,7 +33,8 @@ def test_convert_from_epoch_invalid_epoch():
     # AD 1 is before the epoch
     epoch = -62194560000
     date_format = "%Y.%m.%d"
-    assert DateConverter.convert_from_epoch(epoch, date_format) is None
+    with pytest.raises(ValueError):
+        DateConverter.convert_from_epoch(epoch, date_format)
 
 
 def test_convert_from_epoch_none_epoch():

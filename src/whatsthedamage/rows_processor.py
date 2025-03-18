@@ -14,168 +14,213 @@ class RowsProcessor:
     def __init__(self) -> None:
         """
         Initializes the RowsProcessor.
-
-        Attributes:
-            date_attribute (str): The attribute name for the date in the CSV.
-            date_attribute_format (str): The format of the date attribute.
-            sum_attribute (str): The attribute name for the sum in the CSV.
-            selected_attributes (list): List of selected attributes.
-            cfg_pattern_sets (dict): Dictionary of pattern sets for the enricher.
-            _start_date (None): Placeholder for the start date.
-            _end_date (None): Placeholder for the end date.
-            _verbose (bool): Flag for verbose mode.
-            _category (None): Placeholder for the category.
-            _filter (None): Placeholder for the filter.
         """
-
-        self._date_attribute: str = ''
         self._date_attribute_format: str = ''
-        self._sum_attribute: str = ''
-        self._selected_attributes: list[str] = []
         self._cfg_pattern_sets: Dict[str, Dict[str, List[str]]] = {}
-
         self._start_date: Optional[int] = None
         self._end_date: Optional[int] = None
         self._verbose = False
         self._category: str = ''
         self._filter: Optional[str] = None
 
-    def set_date_attribute(self, date_attribute: str) -> None:
-        self._date_attribute = date_attribute
-
     def set_date_attribute_format(self, date_attribute_format: str) -> None:
+        """
+        Sets the date attribute format.
+
+        Args:
+            date_attribute_format (str): The format of the date attribute.
+        """
         self._date_attribute_format = date_attribute_format
 
-    def set_sum_attribute(self, sum_attribute: str) -> None:
-        self._sum_attribute = sum_attribute
-
-    def set_selected_attributes(self, selected_attributes: list[str]) -> None:
-        self._selected_attributes = selected_attributes
-
     def set_cfg_pattern_sets(self, cfg_pattern_sets: Dict[str, Dict[str, List[str]]]) -> None:
+        """
+        Sets the configuration pattern sets.
+
+        Args:
+            cfg_pattern_sets (Dict[str, Dict[str, List[str]]]): Dictionary of pattern sets for the enricher.
+        """
         self._cfg_pattern_sets = cfg_pattern_sets
 
     def set_start_date(self, start_date: Optional[str]) -> None:
-        if start_date:
-            start_date = DateConverter.convert_date_format(start_date, self._date_attribute_format)
-            self._start_date = DateConverter.convert_to_epoch(start_date, self._date_attribute_format)
-        else:
-            self._start_date = None
+        """
+        Sets the start date.
+
+        Args:
+            start_date (Optional[str]): The start date as a string.
+        """
+        self._start_date = self._convert_date_to_epoch(start_date)
 
     def set_end_date(self, end_date: Optional[str]) -> None:
-        if end_date:
-            end_date = DateConverter.convert_date_format(end_date, self._date_attribute_format)
-            self._end_date = DateConverter.convert_to_epoch(end_date, self._date_attribute_format)
-        else:
-            self._end_date = None
+        """
+        Sets the end date.
+
+        Args:
+            end_date (Optional[str]): The end date as a string.
+        """
+        self._end_date = self._convert_date_to_epoch(end_date)
 
     def set_verbose(self, verbose: bool) -> None:
+        """
+        Sets the verbose mode.
+
+        Args:
+            verbose (bool): Flag for verbose mode.
+        """
         self._verbose = verbose
 
     def set_category(self, category: str) -> None:
+        """
+        Sets the category attribute.
+
+        Args:
+            category (str): The category attribute.
+        """
         self._category = category
 
     def set_filter(self, filter: Optional[str]) -> None:
+        """
+        Sets the filter attribute.
+
+        Args:
+            filter (Optional[str]): The filter attribute.
+        """
         self._filter = filter
 
-    def print_categorized_rows(
-            self,
-            set_name: str,
-            set_rows_dict: dict[str, list[CsvRow]],
-            selected_attributes: list[str]) -> None:
-
+    def process_rows(self, rows: List[CsvRow]) -> Dict[str, Dict[str, float]]:
         """
-        Prints categorized rows from a dictionary of row sets.
+        Processes a list of CsvRow objects and returns a summary of specified attributes grouped by a category.
+
+        Args:
+            rows (List[CsvRow]): List of CsvRow objects to be processed.
+
+        Returns:
+            Dict[str, Dict[str, float]]: A dictionary where keys are date ranges or month names, and values are
+                                         dictionaries summarizing the specified attribute by category.
+        """
+        filtered_sets = self._filter_rows(rows)
+        data_for_pandas = {}
+
+        for filtered_set in filtered_sets:
+            for set_name, set_rows in filtered_set.items():
+                set_rows_dict = self._enrich_and_categorize_rows(set_rows)
+                set_rows_dict = self._apply_filter(set_rows_dict)
+                summary = self._summarize_rows(set_rows_dict)
+                set_name = self._format_set_name(set_name)
+                data_for_pandas[set_name] = summary
+
+                if self._verbose:
+                    self._print_categorized_rows(set_name, set_rows_dict)
+
+        return data_for_pandas
+
+    def _convert_date_to_epoch(self, date_str: Optional[str]) -> Optional[int]:
+        """
+        Converts a date string to epoch time.
+
+        Args:
+            date_str (Optional[str]): The date string to convert.
+
+        Returns:
+            Optional[int]: The epoch time or None if the date string is None.
+        """
+        if date_str:
+            date_str = DateConverter.convert_date_format(date_str, self._date_attribute_format)
+            return DateConverter.convert_to_epoch(date_str, self._date_attribute_format)
+        return None
+
+    def _filter_rows(self, rows: List[CsvRow]) -> List[Dict[str, List[CsvRow]]]:
+        """
+        Filters rows by date or month.
+
+        Args:
+            rows (List[CsvRow]): List of CsvRow objects to be filtered.
+
+        Returns:
+            List[Dict[str, List[CsvRow]]]: A list of dictionaries with filtered rows.
+        """
+        row_filter = RowFilter(rows, self._date_attribute_format)
+        if self._start_date and self._end_date:
+            return list(row_filter.filter_by_date(self._start_date, self._end_date))
+        return list(row_filter.filter_by_month())
+
+    def _enrich_and_categorize_rows(self, rows: List[CsvRow]) -> Dict[str, List[CsvRow]]:
+        """
+        Enriches and categorizes rows by the specified attribute.
+
+        Args:
+            rows (List[CsvRow]): List of CsvRow objects to be enriched and categorized.
+
+        Returns:
+            Dict[str, List[CsvRow]]: A dictionary of categorized rows.
+
+        Raises:
+            ValueError: If the category attribute is not set.
+        """
+        if not self._category:
+            raise ValueError("Category attribute is not set")
+        enricher = RowEnrichment(rows, self._cfg_pattern_sets)
+        enricher.initialize()
+        return enricher.categorize_by_attribute(self._category)
+
+    def _apply_filter(self, rows_dict: Dict[str, List[CsvRow]]) -> Dict[str, List[CsvRow]]:
+        """
+        Applies the filter to the categorized rows.
+
+        Args:
+            rows_dict (Dict[str, List[CsvRow]]): A dictionary of categorized rows.
+
+        Returns:
+            Dict[str, List[CsvRow]]: A dictionary of filtered rows.
+        """
+        if self._filter:
+            return {k: v for k, v in rows_dict.items() if k == self._filter}
+        return rows_dict
+
+    def _summarize_rows(self, rows_dict: Dict[str, List[CsvRow]]) -> Dict[str, float]:
+        """
+        Summarizes the values of the given attribute by category.
+
+        Args:
+            rows_dict (Dict[str, List[CsvRow]]): A dictionary of categorized rows.
+
+        Returns:
+            Dict[str, float]: A dictionary summarizing the specified attribute by category.
+        """
+        summarizer = RowSummarizer(rows_dict)
+        return summarizer.summarize()
+
+    def _format_set_name(self, set_name: str) -> str:
+        """
+        Formats the set name by converting month numbers to names or formatting date ranges.
+
+        Args:
+            set_name (str): The set name to format.
+
+        Returns:
+            str: The formatted set name.
+        """
+        try:
+            return DateConverter.convert_month_number_to_name(int(set_name))
+        except (ValueError, TypeError):
+            start_date_str = DateConverter.convert_from_epoch(
+                self._start_date, self._date_attribute_format) if self._start_date else "Unknown Start Date"
+            end_date_str = DateConverter.convert_from_epoch(
+                self._end_date, self._date_attribute_format) if self._end_date else "Unknown End Date"
+            return f"{start_date_str} - {end_date_str}"
+
+    def _print_categorized_rows(self, set_name: str, rows_dict: Dict[str, List[CsvRow]]) -> None:
+        """
+        Prints categorized rows from a dictionary.
 
         Args:
             set_name (str): The name of the set to be printed.
-            set_rows_dict (dict[str, list[CsvRow]]): A dict of types where values are lists of CsvRow objects.
-            selected_attributes (list[str]): A list of attribute names to be selected.
+            rows_dict (Dict[str, List[CsvRow]]): A dictionary of type values and lists of CsvRow objects.
 
         Returns:
             None
         """
-
         print(f"\nSet name: {set_name}")
-        for type_value, rowset in set_rows_dict.items():
+        for type_value, rowset in rows_dict.items():
             print(f"\nType: {type_value}")
             for row in rowset:
-                selected_values = {attr: getattr(row, attr, None) for attr in selected_attributes}
-                print(selected_values)
-
-    def process_rows(self, rows: list['CsvRow']) -> dict[str, dict[str, float]]:
-        """
-        Processes a list of CsvRow objects and returns a summary of specified attributes grouped by a category.
-        Args:
-            rows (list[CsvRow]): List of CsvRow objects to be processed.
-        Returns:
-            dict[str, dict[str, float]]: A dictionary where keys are date ranges or month names, and values are
-                                         dictionaries summarizing the specified attribute by category.
-        The function performs the following steps:
-        1. Filters rows by date if start_date or end_date is provided, otherwise filters by month.
-        2. Enriches rows by adding a 'category' attribute based on specified patterns.
-        3. Categorizes rows by the specified attribute.
-        4. Filters rows by category name if a filter is provided.
-        5. Summarizes the values of the given attribute by category.
-        6. Converts month numbers to names or formats date ranges.
-        7. Prints categorized rows if verbose mode is enabled.
-        """
-
-        # Filter rows by date if start_date or end_date is provided
-        row_filter = RowFilter(rows, self._date_attribute_format)
-        if self._start_date and self._end_date:
-            filtered_sets = row_filter.filter_by_date(self._date_attribute, self._start_date, self._end_date)
-        else:
-            filtered_sets = row_filter.filter_by_month(self._date_attribute)
-
-        if self._verbose:
-            print("Summary of attribute '" + self._sum_attribute + "' grouped by '" + self._category + "':")
-
-        data_for_pandas = {}
-
-        for filtered_set in filtered_sets:
-            # set_name is the month or date range
-            # set_rows is the list of CsvRow objects
-            for set_name, set_rows in filtered_set.items():
-                # Add attribute 'category' based on a specified other attribute matching against a set of patterns
-                enricher = RowEnrichment(set_rows, self._cfg_pattern_sets)
-                enricher.set_sum_attribute(self._sum_attribute)
-                enricher.initialize()
-
-                # Categorize rows by specified attribute
-                if self._category:
-                    set_rows_dict = enricher.categorize_by_attribute(self._category)
-                else:
-                    raise ValueError("Category attribute is not set")
-
-                # Filter rows by category name if provided
-                if self._filter:
-                    set_rows_dict = {k: v for k, v in set_rows_dict.items() if k == self._filter}
-
-                # Initialize the summarizer with the categorized rows
-                summarizer = RowSummarizer(set_rows_dict, self._sum_attribute)
-
-                # Summarize the values of the given attribute by category
-                summary = summarizer.summarize()
-
-                # Convert month number to name if set_name is a number
-                try:
-                    set_name = DateConverter.convert_month_number_to_name(int(set_name))
-                except (ValueError, TypeError):
-                    start_date_str = DateConverter.convert_from_epoch(
-                        self._start_date,
-                        self._date_attribute_format
-                    ) if self._start_date else "Unknown Start Date"
-                    end_date_str = DateConverter.convert_from_epoch(
-                        self._end_date,
-                        self._date_attribute_format
-                    ) if self._end_date else "Unknown End Date"
-                    set_name = str(start_date_str) + " - " + str(end_date_str)
-
-                data_for_pandas[set_name] = summary
-
-                # Print categorized rows if verbose
-                if self._verbose:
-                    self.print_categorized_rows(set_name, set_rows_dict, self._selected_attributes)
-
-        return data_for_pandas
+                print(repr(row))

@@ -40,18 +40,18 @@ def test_get_month_number(row_filter):
 def test_filter_by_date(row_filter):
     start_date = int(datetime(2023, 1, 1).timestamp())
     end_date = int(datetime(2023, 12, 31).timestamp())
-    filtered_rows = row_filter.filter_by_date("date", start_date, end_date)
+    filtered_rows = row_filter.filter_by_date(start_date, end_date)
     assert len(filtered_rows[0]["99"]) == 12
 
     start_date = int(datetime(2023, 6, 1).timestamp())
     end_date = int(datetime(2023, 6, 30).timestamp())
-    filtered_rows = row_filter.filter_by_date("date", start_date, end_date)
+    filtered_rows = row_filter.filter_by_date(start_date, end_date)
     assert len(filtered_rows[0]["99"]) == 1
     assert filtered_rows[0]["99"][0].date == "2023-06-10"
 
 
 def test_filter_by_month(row_filter):
-    filtered_months = row_filter.filter_by_month("date")
+    filtered_months = row_filter.filter_by_month()
     assert len(filtered_months) == 12
     assert len(filtered_months[0]["01"]) == 1
     assert len(filtered_months[1]["02"]) == 1

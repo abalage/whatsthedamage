@@ -3,7 +3,7 @@ from typing import Sequence, Dict, List
 from whatsthedamage.csv_row import CsvRow
 
 
-class CsvFileReader:
+class CsvFileHandler:
     def __init__(
             self,
             filename: str,
@@ -34,14 +34,18 @@ class CsvFileReader:
         try:
             with open(self._filename, mode='r', newline='', encoding='utf-8') as file:
                 csvreader = csv.DictReader(file, dialect=self._dialect, delimiter=self._delimiter, restkey='leftover')
-                if csvreader.fieldnames is None:
+                if csvreader.fieldnames is None or all(fieldname is None for fieldname in csvreader.fieldnames):
                     raise ValueError("CSV file is empty or missing headers.")
                 self._headers = csvreader.fieldnames  # Save the header
                 self._rows = [CsvRow(row, self._mapping) for row in csvreader]
+                if not self._rows:
+                    raise ValueError("CSV file is empty or missing headers.")
         except FileNotFoundError:
             print(f"Error: The file '{self._filename}' was not found.")
+            raise
         except Exception as e:
             print(f"An error occurred while reading the CSV file: {e}")
+            raise
 
     def get_headers(self) -> Sequence[str]:
         """
@@ -58,3 +62,25 @@ class CsvFileReader:
         :return: A list of CsvRow objects.
         """
         return self._rows
+
+    def write(self, filename: str, rows: List[CsvRow]) -> None:
+        """
+        Write the CsvRow objects into a CSV file.
+
+        :param filename: The path to the CSV file to write.
+        :param rows: A list of CsvRow objects to write to the file.
+        :return: None
+        """
+        if not rows:
+            raise ValueError("No rows to write to the CSV file.")
+
+        headers = list(self._mapping.keys())
+
+        try:
+            with open(filename, mode='w', newline='', encoding='utf-8') as file:
+                writer = csv.DictWriter(file, fieldnames=headers, dialect=self._dialect, delimiter=self._delimiter)
+                writer.writeheader()
+                for row in rows:
+                    writer.writerow(row.__dict__)
+        except Exception as e:
+            print(f"An error occurred while writing to the CSV file: {e}")

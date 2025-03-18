@@ -223,4 +223,4 @@ class RowsProcessor:
         for type_value, rowset in rows_dict.items():
             print(f"\nType: {type_value}")
             for row in rowset:
-                print(row)
+                print(repr(row))

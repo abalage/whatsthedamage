@@ -14,7 +14,7 @@ def test_row_summarizer_single_category():
             MockCsvRow(amount='5.5')
         ]
     }
-    summarizer = RowSummarizer(rows, 'amount')
+    summarizer = RowSummarizer(rows)
     result = summarizer.summarize()
     assert result == {'category1': 36.0, 'balance': 36.0}
 
@@ -30,7 +30,7 @@ def test_row_summarizer_multiple_categories():
             MockCsvRow(amount='5.0')
         ]
     }
-    summarizer = RowSummarizer(rows, 'amount')
+    summarizer = RowSummarizer(rows)
     result = summarizer.summarize()
     assert result == {'category1': 30.5, 'category2': 20.0, 'balance': 50.5}
 
@@ -43,7 +43,7 @@ def test_row_summarizer_invalid_values():
             MockCsvRow(amount='5.5')
         ]
     }
-    summarizer = RowSummarizer(rows, 'amount')
+    summarizer = RowSummarizer(rows)
     result = summarizer.summarize()
     assert result == {'category1': 16.0, 'balance': 16.0}
 
@@ -56,13 +56,13 @@ def test_row_summarizer_missing_attribute():
             MockCsvRow(amount='5.5')
         ]
     }
-    summarizer = RowSummarizer(rows, 'amount')
+    summarizer = RowSummarizer(rows)
     result = summarizer.summarize()
     assert result == {'category1': 16.0, 'balance': 16.0}
 
 
 def test_row_summarizer_empty_rows():
     rows = {}
-    summarizer = RowSummarizer(rows, 'amount')
+    summarizer = RowSummarizer(rows)
     result = summarizer.summarize()
     assert result == {'balance': 0.0}

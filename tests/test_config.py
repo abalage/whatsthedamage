@@ -1,6 +1,6 @@
 import pytest
 import json
-from whatsthedamage.config import load_config, AppConfig
+from whatsthedamage.config import load_config, AppConfig, AppArgs
 
 
 def test_load_config_valid_file(tmp_path):
@@ -8,13 +8,11 @@ def test_load_config_valid_file(tmp_path):
         "csv": {
             "dialect": "excel",
             "delimiter": ",",
-            "date_attribute": "date",
             "date_attribute_format": "%Y-%m-%d",
-            "sum_attribute": "amount"
+            "attribute_mapping": {"date": "date", "amount": "sum"}
         },
         "main": {
-            "locale": "en_US",
-            "selected_attributes": ["attribute1", "attribute2"]
+            "locale": "en_US"
         },
         "enricher_pattern_sets": {
             "pattern1": {
@@ -45,13 +43,11 @@ def test_load_config_validation_error(tmp_path):
         "csv": {
             "dialect": "excel",
             "delimiter": ",",
-            "date_attribute": "date",
             "date_attribute_format": "%Y-%m-%d"
-            # Missing sum_attribute
+            # Missing attribute_mapping
         },
         "main": {
-            "locale": "en_US",
-            "selected_attributes": ["attribute1", "attribute2"]
+            "locale": "en_US"
         },
         "enricher_pattern_sets": {
             "pattern1": {
@@ -64,3 +60,47 @@ def test_load_config_validation_error(tmp_path):
 
     with pytest.raises(SystemExit):
         load_config(str(config_file))
+
+
+def test_load_config_file_not_found():
+    with pytest.raises(SystemExit):
+        load_config("non_existent_config.json")
+
+
+def test_app_args_required_fields():
+    args = AppArgs(
+        category="test_category",
+        config="test_config",
+        filename="test_file",
+        no_currency_format=False,
+        nowrap=False,
+        output_format="json",
+        verbose=True
+    )
+    assert args["category"] == "test_category"
+    assert args["config"] == "test_config"
+    assert args["filename"] == "test_file"
+    assert args["no_currency_format"] is False
+    assert args["nowrap"] is False
+    assert args["output_format"] == "json"
+    assert args["verbose"] is True
+
+
+def test_app_args_optional_fields():
+    args = AppArgs(
+        category="test_category",
+        config="test_config",
+        filename="test_file",
+        no_currency_format=False,
+        nowrap=False,
+        output_format="json",
+        verbose=True,
+        end_date="2023-12-31",
+        filter="test_filter",
+        output="test_output",
+        start_date="2023-01-01"
+    )
+    assert args["end_date"] == "2023-12-31"
+    assert args["filter"] == "test_filter"
+    assert args["output"] == "test_output"
+    assert args["start_date"] == "2023-01-01"

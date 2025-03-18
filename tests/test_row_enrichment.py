@@ -4,14 +4,14 @@ from whatsthedamage.csv_row import CsvRow
 
 
 @pytest.fixture
-def setup_data():
+def setup_data(mapping):
     rows = [
-        CsvRow({"attribute1": "value1", "attribute2": "value2"}),
-        CsvRow({"attribute1": "value3", "attribute2": "value4"}),
-        CsvRow({"attribute1": "value5", "attribute2": "value6"})
+        CsvRow({"date": "value1", "type": "value2"}, mapping),
+        CsvRow({"date": "value3", "type": "value4"}, mapping),
+        CsvRow({"date": "value5", "type": "value6"}, mapping)
     ]
     pattern_sets = {
-        "attribute1": {
+        "date": {
             "category1": ["value1", "value3"],
             "category2": ["value5"]
         }
@@ -30,7 +30,7 @@ def test_initialize(setup_data):
 
 def test_add_category_attribute(setup_data):
     rows, pattern_sets, row_enrichment = setup_data
-    row_enrichment.add_category_attribute("attribute1", pattern_sets["attribute1"])
+    row_enrichment.add_category_attribute("date", pattern_sets["date"])
     assert rows[0].category == "category1"
     assert rows[1].category == "category1"
     assert rows[2].category == "category2"
@@ -38,7 +38,7 @@ def test_add_category_attribute(setup_data):
 
 def test_categorize_by_attribute(setup_data):
     _, _, row_enrichment = setup_data
-    categorized = row_enrichment.categorize_by_attribute("attribute1")
+    categorized = row_enrichment.categorize_by_attribute("date")
     assert "value1" in categorized
     assert "value3" in categorized
     assert "value5" in categorized

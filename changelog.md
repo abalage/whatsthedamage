@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.4.0] - 2025-03-18
+### Changed
+- **Chore**: Standardize data objects and get rid of ambiguous config settings in order to accommodate almost any type of CSVs.
+- **Chore**: Improve code quality by using best practices like encapsulation, single responsibility, signaling private methods and attributes, etc.
+- **Chore**: Attempts to generalize and share test dependencies like CsvRow fixtures among test cases
+- **Chore**: Performance optimization to RowEnrichment class.
+- **Break**: Renaming CsvFileReader to CsvFileHandler to avoid confusion about recently added write() method
+- **Break**: Config file format has changed to reflect data object standardization
+
 ## [0.3.0] - 2025-02-05
 ### Added
 - **Feature**: Single source version number. (commit: c2f1286)

@@ -4,6 +4,8 @@ An opinionated CLI tool written in Python to process K&H HU's bank account trans
 
 The predefined settings works best with CSVs exported from K&H HU, but I made efforts to customize the behavior and potentially work with any other CSV format other finance companies may produce.
 
+A separate web interface called [whatsthedamage-web](https://github.com/abalage/whatsthedamage-web) is also available.
+
 ## Why?
 
 I tried some self-hosted software like [Firefly III](https://www.firefly-iii.org/) and [Actualbudget](https://actualbudget. to create detailed reports about my accounting. However, I found that either the learning curve is too high or the burden of manually categorizing transactions is too great.
@@ -48,7 +50,9 @@ Use `pipx install .` to deploy the package.
 
 ## Usage:
 ```
-usage: whatsthedamage [-h] [--start-date START_DATE] [--end-date END_DATE] [--verbose] [--version] [--config CONFIG] [--category CATEGORY] [--no-currency-format] [--output OUTPUT] [--nowrap] filename
+usage: whatsthedamage [-h] [--start-date START_DATE] [--end-date END_DATE] [--verbose] [--version] [--config CONFIG] [--category CATEGORY] [--no-currency-format] [--output OUTPUT]
+                      [--output-format OUTPUT_FORMAT] [--nowrap] [--filter FILTER]
+                      filename
 
 A CLI tool to process KHBHU CSV files.
 
@@ -58,8 +62,8 @@ positional arguments:
 options:
   -h, --help            show this help message and exit
   --start-date START_DATE
-                        Start date in format YYYY.MM.DD.
-  --end-date END_DATE   End date in format YYYY.MM.DD.
+                        Start date (e.g. YYYY.MM.DD.)
+  --end-date END_DATE   End date (e.g. YYYY.MM.DD.)
   --verbose, -v         Print categorized rows for troubleshooting.
   --version             Show the version of the program.
   --config CONFIG, -c CONFIG
@@ -68,7 +72,12 @@ options:
   --no-currency-format  Disable currency formatting. Useful for importing the data into a spreadsheet.
   --output OUTPUT, -o OUTPUT
                         Save the result into a CSV file with the specified filename.
+  --output-format OUTPUT_FORMAT
+                        Supported formats are: html, csv. (default: csv).
   --nowrap, -n          Do not wrap the output text. Useful for viewing the output without line wraps.
+  --filter FILTER, -f FILTER
+                        Filter by category. Use it conjunction with --verbose.
+
 ```
 
 ## Things which need attention
@@ -85,21 +94,25 @@ The configuration file must contain 'csv', 'main' and 'enricher_pattern_sets' ke
     "dialect": "excel-tab",
     "delimiter": "\t",
     "date_attribute_format": "%Y.%m.%d",
-    "date_attribute": "könyvelés dátuma",
-    "sum_attribute": "összeg"
+    "attribute_mapping": {
+      "date": "könyvelés dátuma",
+      "type": "típus",
+      "partner": "partner elnevezése",
+      "amount": "összeg",
+      "currency": "összeg devizaneme"
+    }
   },
   "main": {
     "locale": "hu_HU.UTF-8",
-    "selected_attributes": <attributes_to_print>
   },
   "enricher_pattern_sets": {
-    "partner elnevezése": {
+    "partner": {
       "grocery": [
         "bolt.*",
         "abc.*",
       ]
     },
-    "típus": {
+    "type": {
       "loan": [
         "hitel.*",
         "késedelmi.*"

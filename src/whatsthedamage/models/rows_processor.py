@@ -1,9 +1,9 @@
 from typing import Optional, Dict, List
-from whatsthedamage.csv_row import CsvRow
-from whatsthedamage.date_converter import DateConverter
-from whatsthedamage.row_filter import RowFilter
-from whatsthedamage.row_enrichment import RowEnrichment
-from whatsthedamage.row_summarizer import RowSummarizer
+from whatsthedamage.models.csv_row import CsvRow
+from whatsthedamage.models.date_converter import DateConverter
+from whatsthedamage.models.row_filter import RowFilter
+from whatsthedamage.models.row_enrichment import RowEnrichment
+from whatsthedamage.models.row_summarizer import RowSummarizer
 
 """
 RowsProcessor processes rows of CSV data. It filters, enriches, categorizes, and summarizes the rows.

@@ -1,6 +1,6 @@
 import re
 from typing import List, Dict
-from whatsthedamage.csv_row import CsvRow
+from whatsthedamage.models.csv_row import CsvRow
 
 
 class RowEnrichment:

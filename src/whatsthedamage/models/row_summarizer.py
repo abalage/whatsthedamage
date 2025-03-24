@@ -1,5 +1,5 @@
 from typing import Dict, List
-from whatsthedamage.csv_row import CsvRow
+from whatsthedamage.models.csv_row import CsvRow
 
 
 class RowSummarizer:

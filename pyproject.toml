@@ -5,8 +5,8 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "whatsthedamage"
 dynamic = ["version"]
-description = "A package to process KHBHU CSV files"
-keywords = ["csv", "account", "report"]
+description = "A package to process KHBHU CSV files and a web application written in Flask"
+keywords = ["csv", "account", "report", "web"]
 readme = "README.md"
 authors = [
     { name = "Balázs NÉMETH", email = "balagetech@protonmail.com" }
@@ -34,11 +34,19 @@ dev = [
     "pytest-cov",  # testing
     "ruff",  # linting
     "mccabe", # linting
-    "panda-stubs", # mypy
+    "pandas-stubs", # mypy
+]
+web = [
+    "flask>=2.0.0",
+    "Flask-WTF>=1.2.2",
+    "wtforms>=3.2.1",
+    "werkzeug>=3.1.0",
+    "python-magic>=0.4.27",
+    "lxml>=5.3.0"
 ]
 
 [project.scripts]
-whatsthedamage = "whatsthedamage.cli:main_cli"
+whatsthedamage = "whatsthedamage.controllers.cli:main_cli"
 
 [project.urls]
 bugs = "https://github.com/abalage/whatsthedamage/issues"
@@ -58,6 +66,7 @@ package-dir = {"" = "src"}
 
 [tool.mypy]
 files = "src"
+ignore_missing_imports = true
 
 # Use strict defaults
 strict = true

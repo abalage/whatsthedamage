@@ -11,8 +11,8 @@ Functions:
 """
 import locale
 import sys
-from whatsthedamage.csv_processor import CSVProcessor
-from whatsthedamage.config import AppArgs, load_config
+from whatsthedamage.models.csv_processor import CSVProcessor
+from whatsthedamage.config.config import AppArgs, load_config
 
 
 __all__ = ['main']
@@ -32,7 +32,7 @@ def set_locale(locale_str: str) -> None:
         locale.setlocale(locale.LC_ALL, '')
 
 
-def main(args: AppArgs) -> str | None:
+def main(args: AppArgs) -> str:
     """
     The main function receives arguments, loads the configuration, reads the CSV file,
     processes the rows, and prints or saves the result.

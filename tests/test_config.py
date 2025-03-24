@@ -1,6 +1,6 @@
 import pytest
 import json
-from whatsthedamage.config import load_config, AppConfig, AppArgs
+from whatsthedamage.config.config import load_config, AppConfig, AppArgs
 
 
 def test_load_config_valid_file(tmp_path):

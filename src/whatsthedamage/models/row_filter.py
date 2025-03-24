@@ -1,5 +1,5 @@
-from whatsthedamage.date_converter import DateConverter
-from whatsthedamage.csv_row import CsvRow
+from whatsthedamage.models.date_converter import DateConverter
+from whatsthedamage.models.csv_row import CsvRow
 from datetime import datetime
 from typing import Optional, List, Dict, Tuple
 

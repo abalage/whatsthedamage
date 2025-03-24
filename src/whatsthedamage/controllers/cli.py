@@ -1,7 +1,7 @@
 """Console script for whatsthedamage."""
 import argparse
-from whatsthedamage.whatsthedamage import main
-from whatsthedamage.config import AppArgs
+from whatsthedamage.controllers.whatsthedamage import main
+from whatsthedamage.config.config import AppArgs
 
 
 def parse_arguments() -> AppArgs:

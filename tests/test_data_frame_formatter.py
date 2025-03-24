@@ -1,6 +1,6 @@
 import pytest
 import pandas as pd
-from whatsthedamage.data_frame_formatter import DataFrameFormatter
+from whatsthedamage.models.data_frame_formatter import DataFrameFormatter
 import locale
 
 

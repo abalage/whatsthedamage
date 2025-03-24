@@ -1,7 +1,7 @@
 import pytest
-from whatsthedamage.rows_processor import RowsProcessor
-from whatsthedamage.date_converter import DateConverter
-from whatsthedamage.config import AppConfig, CsvConfig, MainConfig
+from whatsthedamage.models.rows_processor import RowsProcessor
+from whatsthedamage.models.date_converter import DateConverter
+from whatsthedamage.config.config import AppConfig, CsvConfig, MainConfig
 
 
 @pytest.fixture

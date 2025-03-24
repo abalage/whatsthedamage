@@ -1,6 +1,6 @@
 import pytest
 from datetime import datetime
-from whatsthedamage.row_filter import RowFilter
+from whatsthedamage.models.row_filter import RowFilter
 
 
 class MockCsvRow:

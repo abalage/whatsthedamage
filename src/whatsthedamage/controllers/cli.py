@@ -1,7 +1,7 @@
 """Console script for whatsthedamage."""
 import argparse
-from whatsthedamage.whatsthedamage import main
-from whatsthedamage.config import AppArgs
+from whatsthedamage.controllers.whatsthedamage import main as process_csv
+from whatsthedamage.config.config import AppArgs
 
 
 def parse_arguments() -> AppArgs:
@@ -41,7 +41,7 @@ def parse_arguments() -> AppArgs:
 
 def main_cli() -> None:
     args = parse_arguments()
-    df = main(args)
+    df = process_csv(args)
     print(df)
 
 

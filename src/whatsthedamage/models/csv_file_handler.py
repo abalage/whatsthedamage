@@ -1,6 +1,6 @@
 import csv
 from typing import Sequence, Dict, List
-from whatsthedamage.csv_row import CsvRow
+from whatsthedamage.models.csv_row import CsvRow
 
 
 class CsvFileHandler:

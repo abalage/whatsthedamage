@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.5.0] - 2025-03-25
+### Changed
+- **Break**: Reorganize project layout to better fit MVC architecture
+- **Feature**: Migrate web interface (Flask) to use a single repository
+- **Chore**: Harmonize API calls between CLI and Web app
+
 ## [0.4.0] - 2025-03-18
 ### Changed
 - **Chore**: Standardize data objects and get rid of ambiguous config settings in order to accommodate almost any type of CSVs.

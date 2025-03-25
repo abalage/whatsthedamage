@@ -1,9 +1,9 @@
-from typing import Dict, List, Optional
-from whatsthedamage.csv_row import CsvRow
-from whatsthedamage.csv_file_handler import CsvFileHandler
-from whatsthedamage.rows_processor import RowsProcessor
-from whatsthedamage.data_frame_formatter import DataFrameFormatter
-from whatsthedamage.config import AppArgs, AppConfig
+from typing import Dict, List
+from whatsthedamage.models.csv_row import CsvRow
+from whatsthedamage.models.csv_file_handler import CsvFileHandler
+from whatsthedamage.models.rows_processor import RowsProcessor
+from whatsthedamage.models.data_frame_formatter import DataFrameFormatter
+from whatsthedamage.config.config import AppArgs, AppConfig
 
 
 class CSVProcessor:
@@ -29,7 +29,7 @@ class CSVProcessor:
         self.args = args
         self.processor = RowsProcessor()
 
-    def process(self) -> Optional[str]:
+    def process(self) -> str:
         """
         Processes the CSV file and returns the formatted result.
 
@@ -69,7 +69,7 @@ class CSVProcessor:
         csv_reader.read()
         return csv_reader.get_rows()
 
-    def _format_data(self, data_for_pandas: Dict[str, Dict[str, float]]) -> Optional[str]:
+    def _format_data(self, data_for_pandas: Dict[str, Dict[str, float]]) -> str:
         """
         Formats the data using DataFrameFormatter.
 
@@ -87,6 +87,11 @@ class CSVProcessor:
         if self.args.get('output_format') == 'html':
             return df.to_html(border=0)
         elif self.args.get('output'):
-            return df.to_csv(self.args.get('output'), index=True, header=True, sep=';', decimal=',')
+            if self.args.get('output'):
+                # FIXME normally returns None but confuses callers, stringify it
+                return str(df.to_csv(self.args.get('output'), index=True, header=True, sep=';', decimal=','))
+            else:
+                # always returns string
+                return df.to_csv(None, index=True, header=True, sep=';', decimal=',')
         else:
             return df.to_string()

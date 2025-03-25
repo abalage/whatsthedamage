@@ -1,10 +1,10 @@
 # whatsthedamage
 
-An opinionated CLI tool written in Python to process K&H HU's bank account transaction exports in CSV files.
+An opinionated tool written in Python to process K&H HU's bank account transaction exports in CSV files.
 
 The predefined settings works best with CSVs exported from K&H HU, but I made efforts to customize the behavior and potentially work with any other CSV format other finance companies may produce.
 
-A separate web interface called [whatsthedamage-web](https://github.com/abalage/whatsthedamage-web) is also available.
+The project contains a web interface using Flask.
 
 ## Why?
 

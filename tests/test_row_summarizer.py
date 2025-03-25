@@ -1,4 +1,4 @@
-from whatsthedamage.row_summarizer import RowSummarizer
+from whatsthedamage.models.row_summarizer import RowSummarizer
 
 
 class MockCsvRow:

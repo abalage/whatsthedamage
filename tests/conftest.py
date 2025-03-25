@@ -1,5 +1,5 @@
 import pytest
-from whatsthedamage.csv_row import CsvRow
+from whatsthedamage.models.csv_row import CsvRow
 
 
 @pytest.fixture

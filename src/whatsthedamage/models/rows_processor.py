@@ -48,7 +48,11 @@ class RowsProcessor:
         Args:
             start_date (Optional[str]): The start date as a string.
         """
-        self._start_date = self._convert_date_to_epoch(start_date)
+        if start_date:
+            formatted_date = DateConverter.convert_date_format(start_date, self._date_attribute_format)
+            self._start_date = DateConverter.convert_to_epoch(formatted_date, self._date_attribute_format)
+        else:
+            self._start_date = None
 
     def set_end_date(self, end_date: Optional[str]) -> None:
         """
@@ -57,7 +61,11 @@ class RowsProcessor:
         Args:
             end_date (Optional[str]): The end date as a string.
         """
-        self._end_date = self._convert_date_to_epoch(end_date)
+        if end_date:
+            formatted_date = DateConverter.convert_date_format(end_date, self._date_attribute_format)
+            self._end_date = DateConverter.convert_to_epoch(formatted_date, self._date_attribute_format)
+        else:
+            self._end_date = None
 
     def set_verbose(self, verbose: bool) -> None:
         """
@@ -112,21 +120,6 @@ class RowsProcessor:
                     self._print_categorized_rows(set_name, set_rows_dict)
 
         return data_for_pandas
-
-    def _convert_date_to_epoch(self, date_str: Optional[str]) -> Optional[int]:
-        """
-        Converts a date string to epoch time.
-
-        Args:
-            date_str (Optional[str]): The date string to convert.
-
-        Returns:
-            Optional[int]: The epoch time or None if the date string is None.
-        """
-        if date_str:
-            date_str = DateConverter.convert_date_format(date_str, self._date_attribute_format)
-            return DateConverter.convert_to_epoch(date_str, self._date_attribute_format)
-        return None
 
     def _filter_rows(self, rows: List[CsvRow]) -> List[Dict[str, List[CsvRow]]]:
         """

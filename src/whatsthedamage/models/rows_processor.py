@@ -4,6 +4,8 @@ from whatsthedamage.models.csv_row import CsvRow
 from whatsthedamage.models.row_enrichment import RowEnrichment
 from whatsthedamage.models.row_filter import RowFilter
 from whatsthedamage.models.row_summarizer import RowSummarizer
+from whatsthedamage.utils.date_converter import DateConverter
+from whatsthedamage.utils.row_printer import print_categorized_rows
 
 """
 RowsProcessor processes rows of CSV data. It filters, enriches, categorizes, and summarizes the rows.
@@ -66,7 +68,7 @@ class RowsProcessor:
                 data_for_pandas[set_name] = summary
 
                 if self._verbose:
-                    self._print_categorized_rows(set_name, set_rows_dict)
+                    print_categorized_rows(set_name, set_rows_dict)
 
         return data_for_pandas
 
@@ -149,20 +151,3 @@ class RowsProcessor:
             end_date_str = DateConverter.convert_from_epoch(
                 self._end_date_epoch, self._date_attribute_format)
             return f"{start_date_str} - {end_date_str}"
-
-    def _print_categorized_rows(self, set_name: str, rows_dict: Dict[str, List[CsvRow]]) -> None:
-        """
-        Prints categorized rows from a dictionary.
-
-        Args:
-            set_name (str): The name of the set to be printed.
-            rows_dict (Dict[str, List[CsvRow]]): A dictionary of type values and lists of CsvRow objects.
-
-        Returns:
-            None
-        """
-        print(f"\nSet name: {set_name}")
-        for type_value, rowset in rows_dict.items():
-            print(f"\nType: {type_value}")
-            for row in rowset:
-                print(repr(row))

@@ -1,5 +1,5 @@
 import pytest
-from whatsthedamage.models.date_converter import DateConverter
+from whatsthedamage.utils.date_converter import DateConverter
 
 
 def test_convert_to_epoch_valid_date():

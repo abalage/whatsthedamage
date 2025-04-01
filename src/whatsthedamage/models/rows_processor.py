@@ -1,9 +1,11 @@
 from typing import Optional, Dict, List
+from whatsthedamage.config.config import AppContext
 from whatsthedamage.models.csv_row import CsvRow
-from whatsthedamage.models.date_converter import DateConverter
-from whatsthedamage.models.row_filter import RowFilter
 from whatsthedamage.models.row_enrichment import RowEnrichment
+from whatsthedamage.models.row_filter import RowFilter
 from whatsthedamage.models.row_summarizer import RowSummarizer
+from whatsthedamage.utils.date_converter import DateConverter
+from whatsthedamage.utils.row_printer import print_categorized_rows
 
 """
 RowsProcessor processes rows of CSV data. It filters, enriches, categorizes, and summarizes the rows.
@@ -11,88 +13,37 @@ RowsProcessor processes rows of CSV data. It filters, enriches, categorizes, and
 
 
 class RowsProcessor:
-    def __init__(self) -> None:
+    def __init__(self, context: AppContext) -> None:
         """
-        Initializes the RowsProcessor.
-        """
-        self._date_attribute_format: str = ''
-        self._cfg_pattern_sets: Dict[str, Dict[str, List[str]]] = {}
-        self._start_date: Optional[int] = None
-        self._end_date: Optional[int] = None
-        self._verbose = False
-        self._category: str = ''
-        self._filter: Optional[str] = None
-
-    def set_date_attribute_format(self, date_attribute_format: str) -> None:
-        """
-        Sets the date attribute format.
+        Initializes the RowsProcessor with the application context.
 
         Args:
-            date_attribute_format (str): The format of the date attribute.
+            context (AppContext): The application context containing configuration and arguments.
         """
-        self._date_attribute_format = date_attribute_format
+        self.context = context
+        self._date_attribute_format: str = context.config.csv.date_attribute_format
+        self._cfg_pattern_sets: Dict[str, Dict[str, List[str]]] = context.config.enricher_pattern_sets
+        self._start_date: Optional[str] = context.args.get("start_date", None)
+        self._end_date: Optional[str] = context.args.get("end_date", None)
+        self._verbose: bool = context.args.get("verbose", False)
+        self._category: str = context.args.get("category", "")
+        self._filter: Optional[str] = context.args.get("filter", None)
 
-    def set_cfg_pattern_sets(self, cfg_pattern_sets: Dict[str, Dict[str, List[str]]]) -> None:
-        """
-        Sets the configuration pattern sets.
-
-        Args:
-            cfg_pattern_sets (Dict[str, Dict[str, List[str]]]): Dictionary of pattern sets for the enricher.
-        """
-        self._cfg_pattern_sets = cfg_pattern_sets
-
-    def set_start_date(self, start_date: Optional[str]) -> None:
-        """
-        Sets the start date.
-
-        Args:
-            start_date (Optional[str]): The start date as a string.
-        """
-        if start_date:
-            formatted_date = DateConverter.convert_date_format(start_date, self._date_attribute_format)
-            self._start_date = DateConverter.convert_to_epoch(formatted_date, self._date_attribute_format)
-        else:
-            self._start_date = None
-
-    def set_end_date(self, end_date: Optional[str]) -> None:
-        """
-        Sets the end date.
-
-        Args:
-            end_date (Optional[str]): The end date as a string.
-        """
-        if end_date:
-            formatted_date = DateConverter.convert_date_format(end_date, self._date_attribute_format)
-            self._end_date = DateConverter.convert_to_epoch(formatted_date, self._date_attribute_format)
-        else:
-            self._end_date = None
-
-    def set_verbose(self, verbose: bool) -> None:
-        """
-        Sets the verbose mode.
-
-        Args:
-            verbose (bool): Flag for verbose mode.
-        """
-        self._verbose = verbose
-
-    def set_category(self, category: str) -> None:
-        """
-        Sets the category attribute.
-
-        Args:
-            category (str): The category attribute.
-        """
-        self._category = category
-
-    def set_filter(self, filter: Optional[str]) -> None:
-        """
-        Sets the filter attribute.
-
-        Args:
-            filter (Optional[str]): The filter attribute.
-        """
-        self._filter = filter
+        # Convert start and end dates to epoch if provided
+        if self._start_date:
+            formatted_start_date = DateConverter.convert_date_format(
+                self._start_date, self._date_attribute_format
+            )
+            self._start_date_epoch: Optional[int] = DateConverter.convert_to_epoch(
+                formatted_start_date, self._date_attribute_format
+            )
+        if self._end_date:
+            formatted_end_date = DateConverter.convert_date_format(
+                self._end_date, self._date_attribute_format
+            )
+            self._end_date_epoch: Optional[int] = DateConverter.convert_to_epoch(
+                formatted_end_date, self._date_attribute_format
+            )
 
     def process_rows(self, rows: List[CsvRow]) -> Dict[str, Dict[str, float]]:
         """
@@ -117,7 +68,7 @@ class RowsProcessor:
                 data_for_pandas[set_name] = summary
 
                 if self._verbose:
-                    self._print_categorized_rows(set_name, set_rows_dict)
+                    print_categorized_rows(set_name, set_rows_dict)
 
         return data_for_pandas
 
@@ -132,8 +83,8 @@ class RowsProcessor:
             List[Dict[str, List[CsvRow]]]: A list of dictionaries with filtered rows.
         """
         row_filter = RowFilter(rows, self._date_attribute_format)
-        if self._start_date and self._end_date:
-            return list(row_filter.filter_by_date(self._start_date, self._end_date))
+        if self._start_date_epoch and self._end_date_epoch:
+            return list(row_filter.filter_by_date(self._start_date_epoch, self._end_date_epoch))
         return list(row_filter.filter_by_month())
 
     def _enrich_and_categorize_rows(self, rows: List[CsvRow]) -> Dict[str, List[CsvRow]]:
@@ -196,24 +147,7 @@ class RowsProcessor:
             return DateConverter.convert_month_number_to_name(int(set_name))
         except (ValueError, TypeError):
             start_date_str = DateConverter.convert_from_epoch(
-                self._start_date, self._date_attribute_format) if self._start_date else "Unknown Start Date"
+                self._start_date_epoch, self._date_attribute_format)
             end_date_str = DateConverter.convert_from_epoch(
-                self._end_date, self._date_attribute_format) if self._end_date else "Unknown End Date"
+                self._end_date_epoch, self._date_attribute_format)
             return f"{start_date_str} - {end_date_str}"
-
-    def _print_categorized_rows(self, set_name: str, rows_dict: Dict[str, List[CsvRow]]) -> None:
-        """
-        Prints categorized rows from a dictionary.
-
-        Args:
-            set_name (str): The name of the set to be printed.
-            rows_dict (Dict[str, List[CsvRow]]): A dictionary of type values and lists of CsvRow objects.
-
-        Returns:
-            None
-        """
-        print(f"\nSet name: {set_name}")
-        for type_value, rowset in rows_dict.items():
-            print(f"\nType: {type_value}")
-            for row in rowset:
-                print(repr(row))

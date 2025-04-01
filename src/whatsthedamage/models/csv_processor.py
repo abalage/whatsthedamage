@@ -3,7 +3,7 @@ from whatsthedamage.models.csv_row import CsvRow
 from whatsthedamage.models.csv_file_handler import CsvFileHandler
 from whatsthedamage.models.rows_processor import RowsProcessor
 from whatsthedamage.models.data_frame_formatter import DataFrameFormatter
-from whatsthedamage.config.config import AppArgs, AppConfig
+from whatsthedamage.config.config import AppContext
 
 
 class CSVProcessor:
@@ -17,7 +17,7 @@ class CSVProcessor:
         processor (RowsProcessor): The RowsProcessor instance used to process the rows.
     """
 
-    def __init__(self, config: AppConfig, args: AppArgs) -> None:
+    def __init__(self, context: AppContext) -> None:
         """
         Initializes the CSVProcessor with configuration and arguments.
 
@@ -25,9 +25,10 @@ class CSVProcessor:
             config (AppConfig): The configuration object.
             args (AppArgs): The application arguments.
         """
-        self.config = config
-        self.args = args
-        self.processor = RowsProcessor()
+        self.context = context
+        self.config = context.config
+        self.args = context.args
+        self.processor = RowsProcessor(self.context)
 
     def process(self) -> str:
         """
@@ -36,22 +37,9 @@ class CSVProcessor:
         Returns:
             Optional[str]: The formatted result as a string or None.
         """
-        self._set_processor_config()
         rows = self._read_csv_file()
         data_for_pandas = self.processor.process_rows(rows)
         return self._format_data(data_for_pandas)
-
-    def _set_processor_config(self) -> None:
-        """
-        Sets the configuration for the RowsProcessor.
-        """
-        self.processor.set_date_attribute_format(self.config.csv.date_attribute_format)
-        self.processor.set_cfg_pattern_sets(self.config.enricher_pattern_sets)
-        self.processor.set_start_date(self.args.get('start_date'))
-        self.processor.set_end_date(self.args.get('end_date'))
-        self.processor.set_verbose(self.args.get('verbose', False))
-        self.processor.set_category(self.args.get('category', 'category'))
-        self.processor.set_filter(self.args.get('filter'))
 
     def _read_csv_file(self) -> List[CsvRow]:
         """

@@ -40,6 +40,19 @@ class AppConfig(BaseModel):
     enricher_pattern_sets: Dict[str, Dict[str, List[str]]]
 
 
+class AppContext:
+    """
+    AppContext encapsulates the application configuration and arguments.
+
+    Attributes:
+        config (AppConfig): The application configuration.
+        args (AppArgs): The application arguments.
+    """
+    def __init__(self, config: AppConfig, args: AppArgs):
+        self.config: AppConfig = config
+        self.args: AppArgs = args
+
+
 def load_config(config_path: str) -> AppConfig:
     try:
         with open(config_path, 'r', encoding='utf-8') as file:

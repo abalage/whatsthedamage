@@ -1,93 +1,54 @@
 import pytest
 from whatsthedamage.models.rows_processor import RowsProcessor
-from whatsthedamage.models.date_converter import DateConverter
-from whatsthedamage.config.config import AppConfig, CsvConfig, MainConfig
+from whatsthedamage.utils.date_converter import DateConverter
 
 
 @pytest.fixture
-def rows_processor():
-    return RowsProcessor()
+def rows_processor(app_context):
+    return RowsProcessor(app_context)
 
 
-@pytest.fixture
-def app_config():
-    csv_config = CsvConfig(
-        dialect="excel",
-        delimiter=",",
-        date_attribute_format="%Y-%m-%d",
-        attribute_mapping={"date": "date", "amount": "amount"},
-    )
-    main_config = MainConfig(
-        locale="en_US",
-        selected_attributes=["date", "amount"]
-    )
-    enricher_pattern_sets = {
-        "category1": {
-            "pattern1": ["value1", "value2"],
-            "pattern2": ["value3", "value4"]
-        }
-    }
-    return AppConfig(csv=csv_config, main=main_config, enricher_pattern_sets=enricher_pattern_sets)
+def test_filter_rows_by_date(rows_processor, csv_rows):
+    rows_processor._start_date = 1672531200  # Example start date (2023-01-01)
+    rows_processor._end_date = 1672617600    # Example end date (2023-01-02)
+    filtered_rows = rows_processor._filter_rows(csv_rows)
+    assert isinstance(filtered_rows, list)
+    for filtered_set in filtered_rows:
+        for _, rows in filtered_set.items():
+            for row in rows:
+                row_timestamp = DateConverter.convert_to_epoch(row.date, rows_processor._date_attribute_format)
+                assert rows_processor._start_date <= row_timestamp <= rows_processor._end_date
 
 
-def test_set_date_attribute_format(rows_processor, app_config):
-    rows_processor.set_date_attribute_format(app_config.csv.date_attribute_format)
-    assert rows_processor._date_attribute_format == app_config.csv.date_attribute_format
+def test_enrich_and_categorize_rows(rows_processor, csv_rows):
+    rows_processor._category = "Test Category"
+    categorized_rows = rows_processor._enrich_and_categorize_rows(csv_rows)
+    assert isinstance(categorized_rows, dict)
+    for category, rows in categorized_rows.items():
+        assert isinstance(category, str)
+        assert isinstance(rows, list)
 
 
-def test_set_cfg_pattern_sets(rows_processor, app_config):
-    rows_processor.set_cfg_pattern_sets(app_config.enricher_pattern_sets)
-    assert rows_processor._cfg_pattern_sets == app_config.enricher_pattern_sets
+def test_apply_filter(rows_processor, csv_rows):
+    rows_processor._filter = "type1"
+    rows_dict = {"type1": csv_rows, "type2": csv_rows}
+    filtered_rows = rows_processor._apply_filter(rows_dict)
+    assert "type1" in filtered_rows
+    assert "type2" not in filtered_rows
 
 
-def test_set_start_date(rows_processor, app_config):
-    rows_processor.set_date_attribute_format(app_config.csv.date_attribute_format)
-    rows_processor.set_start_date("2023-01-01")
-    assert rows_processor._start_date == DateConverter.convert_to_epoch("2023-01-01", app_config.csv.date_attribute_format)  # noqa: E501
+def test_process_rows_with_valid_data(app_context, csv_rows):
+    """
+    Test RowsProcessor.process_rows with valid data.
+    """
+    processor = RowsProcessor(app_context)
+    result = processor.process_rows(csv_rows)
 
-
-def test_set_end_date(rows_processor, app_config):
-    rows_processor.set_date_attribute_format(app_config.csv.date_attribute_format)
-    rows_processor.set_end_date("2023-12-31")
-    assert rows_processor._end_date == DateConverter.convert_to_epoch("2023-12-31", app_config.csv.date_attribute_format)  # noqa: E501
-
-
-def test_set_verbose(rows_processor):
-    rows_processor.set_verbose(True)
-    assert rows_processor._verbose is True
-
-
-def test_set_category(rows_processor, app_config):
-    rows_processor.set_category("category")
-    assert rows_processor._category == "category"
-
-
-def test_set_filter(rows_processor):
-    rows_processor.set_filter("filter")
-    assert rows_processor._filter == "filter"
-
-
-def test_print_categorized_rows(capsys, rows_processor, csv_rows):
-    rows_processor.set_verbose(True)
-    rows_dict = {"type1": csv_rows}
-    rows_processor._print_categorized_rows("Test Set", rows_dict)
-    captured = capsys.readouterr()
-    assert "Set name: Test Set" in captured.out
-    assert "Type: type1" in captured.out
-    for row in csv_rows:
-        assert repr(row) in captured.out
-
-
-def test_process_rows(rows_processor, app_config, csv_rows, capsys):
-    rows_processor.set_date_attribute_format(app_config.csv.date_attribute_format)
-    rows_processor.set_cfg_pattern_sets(app_config.enricher_pattern_sets)
-    rows_processor.set_start_date("2023-01-01")
-    rows_processor.set_end_date("2023-12-31")
-    rows_processor.set_category("category")
-    rows_processor.set_filter("filter")
-    rows_processor.set_verbose(True)
-
-    summary = rows_processor.process_rows(csv_rows)
-
-    assert isinstance(summary, dict)
-    assert "January" in summary or "2023-01-01 - 2023-12-31" in summary
+    assert isinstance(result, dict)
+    assert len(result) > 0
+    for key, value in result.items():
+        assert isinstance(key, str)
+        assert isinstance(value, dict)
+        for sub_key, sub_value in value.items():
+            assert isinstance(sub_key, str)
+            assert isinstance(sub_value, float)

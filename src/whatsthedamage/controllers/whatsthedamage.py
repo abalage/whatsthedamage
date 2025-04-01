@@ -12,7 +12,7 @@ Functions:
 import locale
 import sys
 from whatsthedamage.models.csv_processor import CSVProcessor
-from whatsthedamage.config.config import AppArgs, load_config
+from whatsthedamage.config.config import AppArgs, AppContext, load_config
 
 
 __all__ = ['main']
@@ -46,9 +46,12 @@ def main(args: AppArgs) -> str:
     # Load the configuration file
     config = load_config(str(args['config']))
 
+    # Create AppContext
+    context = AppContext(config, args)
+
     # Set the locale for currency formatting
     set_locale(config.main.locale)
 
     # Process the CSV file
-    processor = CSVProcessor(config, args)
+    processor = CSVProcessor(context)
     return processor.process()

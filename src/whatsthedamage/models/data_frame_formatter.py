@@ -1,10 +1,23 @@
 import pandas as pd
 import locale
-from typing import Optional, Dict
+from typing import Dict
 
 """
 A module for formatting pandas DataFrames with optional currency formatting and nowrap options.
 """
+
+
+def format_currency(value: float) -> str:
+    """
+    Formats a numeric value as a currency string.
+
+    :param value: The numeric value to format. Must be a float.
+    :return: The formatted currency string.
+    :raises TypeError: If the value is not a float.
+    """
+    if not isinstance(value, float):
+        raise TypeError(f"Expected a float, but got {type(value).__name__}")
+    return locale.currency(value, grouping=True)
 
 
 class DataFrameFormatter:
@@ -57,12 +70,5 @@ class DataFrameFormatter:
 
         # Format the DataFrame with currency values
         if not self._no_currency_format:
-            def format_currency(value: Optional[float]) -> str:
-                if value is None:
-                    return 'N/A'
-                if isinstance(value, (int, float)):
-                    return locale.currency(value, grouping=True)
-                return str(value)  # type: ignore[unreachable]
-
             df = df.apply(lambda row: row.apply(format_currency), axis=1)
         return df

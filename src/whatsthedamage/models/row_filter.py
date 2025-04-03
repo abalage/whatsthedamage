@@ -1,7 +1,7 @@
 from whatsthedamage.utils.date_converter import DateConverter
 from whatsthedamage.models.csv_row import CsvRow
 from datetime import datetime
-from typing import Optional, List, Dict, Tuple
+from typing import List, Dict, Tuple
 
 
 class RowFilter:
@@ -20,25 +20,26 @@ class RowFilter:
             {"09": []}, {"10": []}, {"11": []}, {"12": []}
         )
 
-    def get_month_number(self, date_value: Optional[str]) -> Optional[str]:
+    def get_month_number(self, date_value: str) -> str:
         """
         Extract the full month number from the date attribute.
 
         :param date_value: Received as string argument.
         :return: The full month number.
+        :raises ValueError: If the date_value is invalid or cannot be parsed.
         """
-        if date_value is not None:
+        if date_value:
             try:
                 date_obj = datetime.strptime(date_value, self._date_format)
                 return date_obj.strftime('%m')
             except ValueError:
-                return None
-        return None
+                raise ValueError(f"Invalid date format for '{date_value}'")
+        raise ValueError("Date value cannot be None")
 
     def filter_by_date(
             self,
-            start_date: int,
-            end_date: int) -> tuple[dict[str, list['CsvRow']], ...]:
+            start_date: float,
+            end_date: float) -> tuple[dict[str, list['CsvRow']], ...]:
         """
         Filter rows based on a date range for a specified attribute.
 
@@ -48,13 +49,13 @@ class RowFilter:
         """
         filtered_rows: list['CsvRow'] = []
         for row in self._rows:
-            date_value: Optional[int] = DateConverter.convert_to_epoch(
-                getattr(row, 'date', None),
+            date_value: int = DateConverter.convert_to_epoch(
+                getattr(row, 'date'),
                 self._date_format
             )
-            if date_value is not None:
-                if (start_date is None or date_value >= start_date) and (end_date is None or date_value <= end_date):
-                    filtered_rows.append(row)
+
+            if start_date <= date_value <= end_date:
+                filtered_rows.append(row)
 
         # FIXME '99' is a special key for rows that do not fall within the specified date range
         return {"99": filtered_rows},
@@ -66,7 +67,7 @@ class RowFilter:
         :return: A tuple of dictionaries with month names as keys and lists of filtered CsvRow objects as values.
         """
         for row in self._rows:
-            month_name = self.get_month_number(getattr(row, 'date', None))
+            month_name = self.get_month_number(getattr(row, 'date'))
             if month_name is not None:
                 for month in self._months:
                     if month_name in month:

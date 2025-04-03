@@ -1,11 +1,10 @@
 from datetime import datetime, timezone
-from typing import Optional
 from dateutil import parser
 
 
 class DateConverter:
     @staticmethod
-    def convert_to_epoch(date_str: Optional[str], date_format: str) -> Optional[int]:
+    def convert_to_epoch(date_str: str, date_format: str) -> int:
         """
         Convert a date string to epoch time.
 
@@ -20,10 +19,10 @@ class DateConverter:
                 return int(date_obj.timestamp())
             except ValueError:
                 raise ValueError(f"Invalid date format for '{date_str}'")
-        return None
+        raise ValueError("Date string cannot be None or empty")
 
     @staticmethod
-    def convert_from_epoch(epoch: Optional[float], date_format: str) -> Optional[str]:
+    def convert_from_epoch(epoch: float, date_format: str) -> str:
         """
         Convert an epoch time to a date string.
 
@@ -38,7 +37,7 @@ class DateConverter:
                 return date_obj.strftime(date_format)
             except (ValueError, OverflowError, OSError):
                 raise ValueError(f"Invalid epoch value '{epoch}'")
-        return None
+        raise ValueError("Epoch value cannot be None or empty")
 
     @staticmethod
     def convert_month_number_to_name(month_number: int) -> str:

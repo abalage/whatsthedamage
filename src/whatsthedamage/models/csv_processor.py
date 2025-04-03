@@ -35,7 +35,7 @@ class CSVProcessor:
         Processes the CSV file and returns the formatted result.
 
         Returns:
-            Optional[str]: The formatted result as a string or None.
+            str: The formatted result as a string or None.
         """
         rows = self._read_csv_file()
         data_for_pandas = self.processor.process_rows(rows)
@@ -65,7 +65,7 @@ class CSVProcessor:
             data_for_pandas (Dict[str, Dict[str, float]]): The data to format.
 
         Returns:
-            Optional[str]: The formatted data as a string or None.
+            str: The formatted data as a string or None.
         """
         formatter = DataFrameFormatter()
         formatter.set_nowrap(self.args.get('nowrap', False))

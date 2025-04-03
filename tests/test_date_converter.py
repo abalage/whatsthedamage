@@ -16,12 +16,6 @@ def test_convert_to_epoch_invalid_date():
         DateConverter.convert_to_epoch(date_str, date_format)
 
 
-def test_convert_to_epoch_none_date():
-    date_str = None
-    date_format = "%Y.%m.%d"
-    assert DateConverter.convert_to_epoch(date_str, date_format) is None
-
-
 def test_convert_from_epoch_valid_epoch():
     epoch = 1696464000
     date_format = "%Y.%m.%d"
@@ -35,12 +29,6 @@ def test_convert_from_epoch_invalid_epoch():
     date_format = "%Y.%m.%d"
     with pytest.raises(ValueError):
         DateConverter.convert_from_epoch(epoch, date_format)
-
-
-def test_convert_from_epoch_none_epoch():
-    epoch = None
-    date_format = "%Y.%m.%d"
-    assert DateConverter.convert_from_epoch(epoch, date_format) is None
 
 
 def test_convert_month_number_to_name_valid():

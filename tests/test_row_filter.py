@@ -34,7 +34,8 @@ def row_filter(sample_rows):
 def test_get_month_number(row_filter):
     assert row_filter.get_month_number("2023-01-15") == "01"
     assert row_filter.get_month_number("2023-12-10") == "12"
-    assert row_filter.get_month_number(None) is None
+    with pytest.raises(ValueError, match="Date value cannot be None"):
+        row_filter.get_month_number(None)
 
 
 def test_filter_by_date(row_filter):

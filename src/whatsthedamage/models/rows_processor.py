@@ -24,7 +24,9 @@ class RowsProcessor:
         self._date_attribute_format: str = context.config.csv.date_attribute_format
         self._cfg_pattern_sets: Dict[str, Dict[str, List[str]]] = context.config.enricher_pattern_sets
         self._start_date: Optional[str] = context.args.get("start_date", None)
+        self._start_date_epoch: Optional[int] = None
         self._end_date: Optional[str] = context.args.get("end_date", None)
+        self._end_date_epoch: Optional[int] = None
         self._verbose: bool = context.args.get("verbose", False)
         self._category: str = context.args.get("category", "")
         self._filter: Optional[str] = context.args.get("filter", None)

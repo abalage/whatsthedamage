@@ -30,6 +30,7 @@ class RowsProcessor:
         self._verbose: bool = context.args.get("verbose", False)
         self._category: str = context.args.get("category", "")
         self._filter: Optional[str] = context.args.get("filter", None)
+        self._currency: str = ""
 
         # Convert start and end dates to epoch if provided
         if self._start_date:
@@ -47,6 +48,27 @@ class RowsProcessor:
                 formatted_end_date, self._date_attribute_format
             )
 
+    def get_currency(self) -> str:
+        """
+        Getter for the currency.
+
+        Returns:
+            Optional[str]: The currency value.
+        """
+        return self._currency
+
+    def set_currency(self, filtered_sets: List[Dict[str, List[CsvRow]]]) -> None:
+        """
+        Setter for the currency. Determines the currency based on filtered_sets.
+
+        Args:
+            filtered_sets (List[Dict[str, List[CsvRow]]]): Filtered sets of rows.
+        """
+        self._currency = next(
+            (set_rows[0].currency for filtered_set in filtered_sets for set_rows in filtered_set.values() if set_rows),
+            ""
+        )
+
     def process_rows(self, rows: List[CsvRow]) -> Dict[str, Dict[str, float]]:
         """
         Processes a list of CsvRow objects and returns a summary of specified attributes grouped by a category.
@@ -59,6 +81,7 @@ class RowsProcessor:
                                          dictionaries summarizing the specified attribute by category.
         """
         filtered_sets = self._filter_rows(rows)
+        self.set_currency(filtered_sets)
         data_for_pandas = {}
 
         for filtered_set in filtered_sets:

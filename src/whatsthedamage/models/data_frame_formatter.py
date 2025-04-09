@@ -1,23 +1,9 @@
 import pandas as pd
-import locale
 from typing import Dict
 
 """
 A module for formatting pandas DataFrames with optional currency formatting and nowrap options.
 """
-
-
-def format_currency(value: float) -> str:
-    """
-    Formats a numeric value as a currency string.
-
-    :param value: The numeric value to format. Must be a float.
-    :return: The formatted currency string.
-    :raises TypeError: If the value is not a float.
-    """
-    if not isinstance(value, float):
-        raise TypeError(f"Expected a float, but got {type(value).__name__}")
-    return locale.currency(value, grouping=True)
 
 
 class DataFrameFormatter:
@@ -47,12 +33,13 @@ class DataFrameFormatter:
         """
         self._no_currency_format = no_currency_format
 
-    def format_dataframe(self, data_for_pandas: Dict[str, Dict[str, float]]) -> pd.DataFrame:
+    def format_dataframe(self, data_for_pandas: Dict[str, Dict[str, float]], currency: str) -> pd.DataFrame:
         """
         Formats a given dictionary of data into a pandas DataFrame with optional currency formatting.
 
         :param data_for_pandas: The input data to be formatted into a DataFrame.
             The outer dictionary keys represent the columns, and the inner dictionary keys represent the rows.
+        :param currency: The currency to use for formatting (e.g., "USD", "EUR").
         :return: The formatted DataFrame with optional currency formatting.
         """
         # Set pandas to display all columns and rows without truncation
@@ -70,5 +57,10 @@ class DataFrameFormatter:
 
         # Format the DataFrame with currency values
         if not self._no_currency_format:
-            df = df.apply(lambda row: row.apply(format_currency), axis=1)
+            df = df.apply(
+                lambda row: row.apply(
+                    lambda value: f"{value:.2f} {currency}" if isinstance(value, (int, float)) else value
+                ),
+                axis=1
+            )
         return df

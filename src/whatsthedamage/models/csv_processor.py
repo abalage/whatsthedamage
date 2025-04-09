@@ -70,7 +70,8 @@ class CSVProcessor:
         formatter = DataFrameFormatter()
         formatter.set_nowrap(self.args.get('nowrap', False))
         formatter.set_no_currency_format(self.args.get('no_currency_format', False))
-        df = formatter.format_dataframe(data_for_pandas)
+        currency = self.processor.get_currency()
+        df = formatter.format_dataframe(data_for_pandas, currency=currency)
 
         if self.args.get('output_format') == 'html':
             return df.to_html(border=0)

@@ -11,9 +11,6 @@
         "currency": "összeg devizaneme"
       }
   },
-  "main": {
-    "locale": "hu_HU.UTF-8"
-  },
   "enricher_pattern_sets": {
     "partner": {
       "grocery": [

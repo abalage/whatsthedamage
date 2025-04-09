@@ -1,7 +1,6 @@
 import pytest
 import pandas as pd
 from whatsthedamage.models.data_frame_formatter import DataFrameFormatter
-import locale
 
 
 @pytest.fixture
@@ -25,56 +24,71 @@ def test_set_no_currency_format(formatter):
     assert formatter._no_currency_format is False
 
 
-def test_format_dataframe_without_currency_format(formatter):
+def test_format_dataframe_with_currency(formatter):
+    data = {
+        "Category1": {"Item1": 10.5, "Item2": 20.75},
+        "Category2": {"Item1": 5.0, "Item2": 15.25}
+    }
+    currency = "EUR"
+    expected_data = {
+        "Category1": {"Item1": "10.50 EUR", "Item2": "20.75 EUR"},
+        "Category2": {"Item1": "5.00 EUR", "Item2": "15.25 EUR"}
+    }
+    expected_df = pd.DataFrame(expected_data).sort_index()
+
+    result_df = formatter.format_dataframe(data, currency)
+
+    pd.testing.assert_frame_equal(result_df, expected_df)
+
+
+def test_format_dataframe_without_currency(formatter):
     formatter.set_no_currency_format(True)
     data = {
-        'Category1': {'Item1': 10.0, 'Item2': 20.0},
-        'Category2': {'Item1': 30.0, 'Item2': 40.0}
+        "Category1": {"Item1": 10.5, "Item2": 20.75},
+        "Category2": {"Item1": 5.0, "Item2": 15.25}
     }
-    df = formatter.format_dataframe(data)
+    currency = "EUR"
     expected_df = pd.DataFrame(data).sort_index()
-    pd.testing.assert_frame_equal(df, expected_df)
+
+    result_df = formatter.format_dataframe(data, currency)
+
+    pd.testing.assert_frame_equal(result_df, expected_df)
 
 
-def test_format_dataframe_with_currency_format(formatter):
-    locale.setlocale(locale.LC_ALL, 'en_US.UTF-8')
-
+def test_format_dataframe_with_nowrap(formatter):
+    formatter.set_nowrap(True)
     data = {
-        'Category1': {'Item1': 10.0, 'Item2': 20.0},
-        'Category2': {'Item1': 30.0, 'Item2': 40.0}
+        "Category1": {"Item1": 10.5, "Item2": 20.75},
+        "Category2": {"Item1": 5.0, "Item2": 15.25}
     }
-    formatter.set_no_currency_format(False)
-    df = formatter.format_dataframe(data)
+    currency = "EUR"
+    formatter.format_dataframe(data, currency)
 
-    def format_currency(value):
-        return locale.currency(value, grouping=True)
+    assert pd.get_option('display.expand_frame_repr') is False
 
+
+def test_format_dataframe_with_empty_data(formatter):
+    data = {}
+    currency = "EUR"
+    expected_df = pd.DataFrame(data)
+
+    result_df = formatter.format_dataframe(data, currency)
+
+    pd.testing.assert_frame_equal(result_df, expected_df)
+
+
+def test_format_dataframe_with_non_numeric_values(formatter):
+    data = {
+        "Category1": {"Item1": "N/A", "Item2": 20.75},
+        "Category2": {"Item1": 5.0, "Item2": "Unknown"}
+    }
+    currency = "EUR"
     expected_data = {
-        'Category1': {'Item1': format_currency(10.0), 'Item2': format_currency(20.0)},
-        'Category2': {'Item1': format_currency(30.0), 'Item2': format_currency(40.0)}
+        "Category1": {"Item1": "N/A", "Item2": "20.75 EUR"},
+        "Category2": {"Item1": "5.00 EUR", "Item2": "Unknown"}
     }
     expected_df = pd.DataFrame(expected_data).sort_index()
-    pd.testing.assert_frame_equal(df, expected_df)
 
+    result_df = formatter.format_dataframe(data, currency)
 
-def test_format_dataframe_with_none_values(formatter):
-    locale.setlocale(locale.LC_ALL, 'en_US.UTF-8')
-
-    data = {
-        'Category1': {'Item1': None, 'Item2': 20.0},
-        'Category2': {'Item1': 30.0, 'Item2': None}
-    }
-    formatter.set_no_currency_format(False)
-    df = formatter.format_dataframe(data)
-
-    def format_currency(value):
-        if value is None:
-            return 'N/A'
-        return locale.currency(value, grouping=True)
-
-    expected_data = {
-        'Category1': {'Item1': '$nan', 'Item2': format_currency(20.0)},
-        'Category2': {'Item1': format_currency(30.0), 'Item2': '$nan'}
-    }
-    expected_df = pd.DataFrame(expected_data).sort_index()
-    pd.testing.assert_frame_equal(df, expected_df)
+    pd.testing.assert_frame_equal(result_df, expected_df)

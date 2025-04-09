@@ -30,13 +30,8 @@ class CsvConfig(BaseModel):
     attribute_mapping: Dict[str, str]
 
 
-class MainConfig(BaseModel):
-    locale: str
-
-
 class AppConfig(BaseModel):
     csv: CsvConfig
-    main: MainConfig
     enricher_pattern_sets: Dict[str, Dict[str, List[str]]]
 
 

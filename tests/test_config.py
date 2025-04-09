@@ -11,9 +11,6 @@ def test_load_config_valid_file(tmp_path):
             "date_attribute_format": "%Y-%m-%d",
             "attribute_mapping": {"date": "date", "amount": "sum"}
         },
-        "main": {
-            "locale": "en_US"
-        },
         "enricher_pattern_sets": {
             "pattern1": {
                 "subpattern1": ["value1", "value2"]
@@ -26,7 +23,6 @@ def test_load_config_valid_file(tmp_path):
     config = load_config(str(config_file))
     assert isinstance(config, AppConfig)
     assert config.csv.dialect == "excel"
-    assert config.main.locale == "en_US"
 
 
 def test_load_config_invalid_json(tmp_path):
@@ -45,9 +41,6 @@ def test_load_config_validation_error(tmp_path):
             "delimiter": ",",
             "date_attribute_format": "%Y-%m-%d"
             # Missing attribute_mapping
-        },
-        "main": {
-            "locale": "en_US"
         },
         "enricher_pattern_sets": {
             "pattern1": {

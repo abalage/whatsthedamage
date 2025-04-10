@@ -19,6 +19,7 @@ def parse_arguments() -> AppArgs:
     parser.add_argument('--output-format', type=str, default='csv', help='Supported formats are: html, csv. (default: csv).')  # noqa: E501
     parser.add_argument('--nowrap', '-n', action='store_true', help='Do not wrap the output text. Useful for viewing the output without line wraps.')  # noqa: E501
     parser.add_argument('--filter', '-f', type=str, help='Filter by category. Use it conjunction with --verbose.')
+    parser.add_argument('--lang', '-l', type=str, help='Language for localization.')
 
     # Parse the arguments
     parsed_args = parser.parse_args()
@@ -35,6 +36,7 @@ def parse_arguments() -> AppArgs:
         'output': parsed_args.output,
         'start_date': parsed_args.start_date,
         'verbose': parsed_args.verbose,
+        'lang': parsed_args.lang,
     }
     return args
 

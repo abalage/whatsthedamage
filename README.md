@@ -142,6 +142,34 @@ A list of frequent transaction categories a bank account may have.
 - **Payments**: Scheduled payments for bills or loans, which can be set up as automatic payments.
 - **Refunds**: Money returned to the account, often from returned purchases or corrections of previous transactions.
 
+## Localization
+Install `gettext` and `poedit`.
+
+1. Extract translatable strings into a .pot file:
+```bash
+xgettext -o locale/en/LC_MESSAGES/messages.pot utils/date_converter.py
+```
+
+2. Create a .po file for each language (e.g., Hungarian):
+```bash
+msginit -l en -o locale/en/LC_MESSAGES/messages.po --input locale/en/LC_MESSAGES/messages.pot
+```
+
+3. Make sure to change encoding from ACII to UTF-8.
+```bash
+sed -i 's/ASCII/UTF-8/g' locale/en/LC_MESSAGES/messages.po
+```
+
+3. Edit the .po file to add translations (creates the .mo file upon Save):
+```bash
+poedit locale/en/LC_MESSAGES/messages.po
+```
+
+4. Compile the .po file into a .mo file:
+```bash
+msgfmt locale/en/LC_MESSAGES/messages.po -o locale/en/LC_MESSAGES/messages.mo
+```
+
 ## Bugs
 
 - Fix time skew issues:

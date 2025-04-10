@@ -21,6 +21,7 @@ class AppArgs(TypedDict):
     output: str | None
     start_date: str | None
     verbose: bool
+    lang: str | None
 
 
 class CsvConfig(BaseModel):

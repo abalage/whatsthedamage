@@ -9,8 +9,9 @@ Functions:
         The main function receives arguments, loads the configuration, reads the CSV file,
         processes the rows, and prints or saves the result.
 """
-import locale
-import sys
+import os
+import gettext
+import importlib.resources as resources
 from whatsthedamage.models.csv_processor import CSVProcessor
 from whatsthedamage.config.config import AppArgs, AppContext, load_config
 
@@ -18,18 +19,28 @@ from whatsthedamage.config.config import AppArgs, AppContext, load_config
 __all__ = ['main']
 
 
-def set_locale(locale_str: str) -> None:
+def set_locale(locale_str: str | None) -> None:
     """
-    Sets the locale for currency formatting.
+    Sets the locale for the application, allowing override of the system locale.
 
     Args:
-        locale_str (str): The locale string to set.
+        locale_str (str | None): The language code (e.g., 'en', 'hu'). If None, defaults to the system locale.
     """
-    try:
-        locale.setlocale(locale.LC_ALL, locale_str)
-    except locale.Error:
-        print(f"Warning: Locale '{locale_str}' is not supported. Falling back to default locale.", file=sys.stderr)
-        locale.setlocale(locale.LC_ALL, '')
+    # Default to system locale if no language is provided
+    if not locale_str:
+        locale_str = os.getenv("LANG", "en").split(".")[0]  # Use system locale or fallback to 'en'
+
+    # Override the LANGUAGE environment variable
+    os.environ["LANGUAGE"] = locale_str
+
+    with resources.path("whatsthedamage", "locale") as localedir:
+        try:
+            gettext.bindtextdomain('messages', str(localedir))
+            gettext.textdomain('messages')
+            gettext.translation('messages', str(localedir), languages=[locale_str], fallback=False).install()
+        except FileNotFoundError:
+            print(f"Warning: Locale '{locale_str}' not found. Falling back to default.")
+            gettext.translation('messages', str(localedir), fallback=True).install()
 
 
 def main(args: AppArgs) -> str:
@@ -43,14 +54,14 @@ def main(args: AppArgs) -> str:
     Returns:
         str | None: The formatted result as a string or None.
     """
+    # Set the locale
+    set_locale(args['lang'])
+
     # Load the configuration file
     config = load_config(str(args['config']))
 
     # Create AppContext
     context = AppContext(config, args)
-
-    # Set the locale for currency formatting
-    set_locale(config.main.locale)
 
     # Process the CSV file
     processor = CSVProcessor(context)

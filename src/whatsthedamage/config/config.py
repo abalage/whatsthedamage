@@ -21,6 +21,7 @@ class AppArgs(TypedDict):
     output: str | None
     start_date: str | None
     verbose: bool
+    lang: str | None
 
 
 class CsvConfig(BaseModel):
@@ -30,13 +31,8 @@ class CsvConfig(BaseModel):
     attribute_mapping: Dict[str, str]
 
 
-class MainConfig(BaseModel):
-    locale: str
-
-
 class AppConfig(BaseModel):
     csv: CsvConfig
-    main: MainConfig
     enricher_pattern_sets: Dict[str, Dict[str, List[str]]]
 
 

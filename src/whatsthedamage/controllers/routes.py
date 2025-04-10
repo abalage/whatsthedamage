@@ -93,7 +93,8 @@ def process() -> Response:
             nowrap=False,
             output='html',
             output_format='html',
-            filter=form.filter.data
+            filter=form.filter.data,
+            lang="en",
         )
 
         # Store form data in session

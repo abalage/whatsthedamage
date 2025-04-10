@@ -25,23 +25,23 @@ The slang phrase "what's the damage?" is often used to ask about the cost or pri
 
 Example output on console. The values in the following example are arbitrary.
 ```
-                          január          február
-balance            129.576,00 Ft  1.086.770,00 Ft
-cars              -106.151,00 Ft    -54.438,00 Ft
-clothes            -14.180,00 Ft          0,00 Ft
-deposits           725.313,00 Ft  1.112.370,00 Ft
-fees                -2.494,00 Ft     -2.960,00 Ft
-grocery           -172.257,00 Ft   -170.511,00 Ft
-health             -12.331,00 Ft    -25.000,00 Ft
-home_maintenance         0,00 Ft    -43.366,00 Ft
-interest                 5,00 Ft          8,00 Ft
-loan               -59.183,00 Ft    -59.183,00 Ft
-other              -86.411,00 Ft    -26.582,00 Ft
-payments           -25.500,00 Ft    583.580,00 Ft
-refunds                890,00 Ft        890,00 Ft
-transfers                0,00 Ft          0,00 Ft
-utilities          -68.125,00 Ft    -78.038,00 Ft
-withdrawals        -50.000,00 Ft   -150.000,00 Ft
+                         January          February
+balance            129576.00 HUF    1086770.00 HUF
+cars              -106151.00 HUF     -54438.00 HUF
+clothes            -14180.00 HUF          0.00 HUF
+deposits           725313.00 HUF    1112370.00 HUF
+fees                -2494.00 HUF      -2960.00 HUF
+grocery           -172257.00 HUF    -170511.00 HUF
+health             -12331.00 HUF     -25000.00 HUF
+home_maintenance        0.00 HUF     -43366.00 HUF
+interest                5.00 HUF          8.00 HUF
+loan               -59183.00 HUF     -59183.00 HUF
+other              -86411.00 HUF     -26582.00 HUF
+payments           -25500.00 HUF     583580.00 HUF
+refunds               890.00 HUF        890.00 HUF
+transfers               0.00 HUF          0.00 HUF
+utilities          -68125.00 HUF     -78038.00 HUF
+withdrawals        -50000.00 HUF    -150000.00 HUF
 
 ```
 ## Install
@@ -83,11 +83,11 @@ options:
 ## Things which need attention
 
 - The categorization process may fail to categories transactions because of the quality of the regular expressions. In such situations the transaction will be categorized as 'other'.
-- The configured locale (default to Hungarian) sets the currency format (HUF). The tool assumes that accounts exports only use a single currency.
+- The tool assumes that accounts exports only use a single currency.
 
 ### Configuration File (config.json):
 
-The configuration file must contain 'csv', 'main' and 'enricher_pattern_sets' keys with the following structure:
+The configuration file must contain 'csv', and 'enricher_pattern_sets' keys with the following structure:
 ```json
 {
   "csv": {
@@ -101,9 +101,6 @@ The configuration file must contain 'csv', 'main' and 'enricher_pattern_sets' ke
       "amount": "összeg",
       "currency": "összeg devizaneme"
     }
-  },
-  "main": {
-    "locale": "hu_HU.UTF-8",
   },
   "enricher_pattern_sets": {
     "partner": {
@@ -144,6 +141,34 @@ A list of frequent transaction categories a bank account may have.
 - **Transfers**: Movements of money between accounts, either within the same bank or to different banks.
 - **Payments**: Scheduled payments for bills or loans, which can be set up as automatic payments.
 - **Refunds**: Money returned to the account, often from returned purchases or corrections of previous transactions.
+
+## Localization
+Install `gettext` and `poedit`.
+
+1. Extract translatable strings into a .pot file:
+```bash
+xgettext -o locale/en/LC_MESSAGES/messages.pot utils/date_converter.py
+```
+
+2. Create a .po file for each language (e.g., Hungarian):
+```bash
+msginit -l en -o locale/en/LC_MESSAGES/messages.po --input locale/en/LC_MESSAGES/messages.pot
+```
+
+3. Make sure to change encoding from ACII to UTF-8.
+```bash
+sed -i 's/ASCII/UTF-8/g' locale/en/LC_MESSAGES/messages.po
+```
+
+3. Edit the .po file to add translations (creates the .mo file upon Save):
+```bash
+poedit locale/en/LC_MESSAGES/messages.po
+```
+
+4. Compile the .po file into a .mo file:
+```bash
+msgfmt locale/en/LC_MESSAGES/messages.po -o locale/en/LC_MESSAGES/messages.mo
+```
 
 ## Bugs
 

@@ -1,0 +1,71 @@
+# English translations for PACKAGE package.
+# Copyright (C) 2025 THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# Németh Balázs <balagetech@protonmail.com>, 2025.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: whatsthedamage-1.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-04-10 15:34+0200\n"
+"PO-Revision-Date: 2025-04-10 15:37+0200\n"
+"Last-Translator: Balázs Németh <balagetech@protonmail.com>\n"
+"Language-Team: English\n"
+"Language: en\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Generator: Poedit 3.2.2\n"
+
+#: utils/date_converter.py:59
+msgid "January"
+msgstr "January"
+
+#: utils/date_converter.py:60
+msgid "February"
+msgstr "February"
+
+#: utils/date_converter.py:61
+msgid "March"
+msgstr "March"
+
+#: utils/date_converter.py:62
+msgid "April"
+msgstr "April"
+
+#: utils/date_converter.py:63
+msgid "May"
+msgstr "May"
+
+#: utils/date_converter.py:64
+msgid "June"
+msgstr "June"
+
+#: utils/date_converter.py:65
+msgid "July"
+msgstr "July"
+
+#: utils/date_converter.py:66
+msgid "August"
+msgstr "August"
+
+#: utils/date_converter.py:67
+msgid "September"
+msgstr "September"
+
+#: utils/date_converter.py:68
+msgid "October"
+msgstr "October"
+
+#: utils/date_converter.py:69
+msgid "November"
+msgstr "November"
+
+#: utils/date_converter.py:70
+msgid "December"
+msgstr "December"
+
+#: utils/date_converter.py:74
+msgid "Invalid month number. Please enter a number between 1 and 12."
+msgstr "Invalid month number. Please enter a number between 1 and 12."

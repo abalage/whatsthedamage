@@ -1,6 +1,6 @@
 import pytest
 from whatsthedamage.models.csv_row import CsvRow
-from whatsthedamage.config.config import AppConfig, CsvConfig, MainConfig, AppContext
+from whatsthedamage.config.config import AppConfig, CsvConfig, AppContext
 from whatsthedamage.config.config import AppArgs
 
 
@@ -37,12 +37,6 @@ def app_context():
         attribute_mapping={"date": "date", "amount": "amount"},
     )
 
-    # Create the MainConfig object
-    main_config = MainConfig(
-        locale="en_US",
-        selected_attributes=["date", "amount"]
-    )
-
     # Define enricher pattern sets
     enricher_pattern_sets = {
         "category1": {
@@ -54,7 +48,6 @@ def app_context():
     # Create the AppConfig object
     app_config = AppConfig(
         csv=csv_config,
-        main=main_config,
         enricher_pattern_sets=enricher_pattern_sets
     )
 

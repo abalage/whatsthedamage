@@ -12,13 +12,13 @@ def parse_arguments() -> AppArgs:
     parser.add_argument('--end-date', type=str, help='End date (e.g. YYYY.MM.DD.)')
     parser.add_argument('--verbose', '-v', action='store_true', help='Print categorized rows for troubleshooting.')
     parser.add_argument('--version', action='version', version='What\'s the Damage', help='Show the version of the program.')  # noqa: E501
-    parser.add_argument('--config', '-c', type=str, default='config.json.default', help='Path to the configuration file. (default: config.json.default)')  # noqa: E501
+    parser.add_argument('--config', '-c', type=str, default='config.yml.default', help='Path to the configuration file. (default: config.yml.default)')  # noqa: E501
     parser.add_argument('--category', type=str, default='category', help='The attribute to categorize by. (default: category)')  # noqa: E501
     parser.add_argument('--no-currency-format', action='store_true', help='Disable currency formatting. Useful for importing the data into a spreadsheet.')  # noqa: E501
     parser.add_argument('--output', '-o', type=str, help='Save the result into a CSV file with the specified filename.')  # noqa: E501
     parser.add_argument('--output-format', type=str, default='csv', help='Supported formats are: html, csv. (default: csv).')  # noqa: E501
     parser.add_argument('--nowrap', '-n', action='store_true', help='Do not wrap the output text. Useful for viewing the output without line wraps.')  # noqa: E501
-    parser.add_argument('--filter', '-f', type=str, help='Filter by category. Use it conjunction with --verbose.')
+    parser.add_argument('--filter', '-f', type=str, help='Filter by category. Use it in conjunction with --verbose.')
     parser.add_argument('--lang', '-l', type=str, help='Language for localization.')
 
     # Parse the arguments

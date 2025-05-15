@@ -13,7 +13,8 @@ def client():
         'TESTING': True,
         'UPLOAD_FOLDER': '/tmp/uploads'
     }
-    app = create_app(config_class=config)
+    app = create_app()
+    app.config.from_mapping(config)
     app.register_blueprint(bp, name='test_bp')
     with app.test_client() as client:
         with app.app_context():
@@ -65,7 +66,7 @@ def test_process_route(client, monkeypatch, csv_rows, mapping):
     data = {
         'csrf_token': csrf_token,
         'filename': (BytesIO(read_file(sample_csv_path)), 'sample.csv'),
-        'config': (BytesIO(read_file('config.json.default')), 'config.json.default'),
+        'config': (BytesIO(read_file('config.yml.default')), 'config.yml.default'),
         'start_date': '2023-01-01',
         'end_date': '2023-12-31',
     }
@@ -119,7 +120,7 @@ def test_process_route_invalid_data(client, monkeypatch):
 
     data = {
         'csrf_token': csrf_token,
-        'config': (BytesIO(read_file('config.json.default')), 'config.json.default')
+        'config': (BytesIO(read_file('config.yml.default')), 'config.yml.default')
         # Missing other required fields
     }
     response = client.post('/process', data=data, content_type='multipart/form-data')
@@ -138,7 +139,7 @@ def test_process_route_missing_file(client, monkeypatch):
 
     data = {
         'csrf_token': csrf_token,
-        'config': (BytesIO(read_file('config.json.default')), 'config.json.default'),
+        'config': (BytesIO(read_file('config.yml.default')), 'config.yml.default'),
         'start_date': '2023-01-01',
         'end_date': '2023-12-31',
     }
@@ -187,7 +188,7 @@ def test_process_route_invalid_end_date(client, monkeypatch, csv_rows, mapping):
     data = {
         'csrf_token': csrf_token,
         'filename': (BytesIO(read_file(sample_csv_path)), 'sample.csv'),
-        'config': (BytesIO(read_file('config.json.default')), 'config.json.default'),
+        'config': (BytesIO(read_file('config.yml.default')), 'config.yml.default'),
         'start_date': '2023-01-01',
         'end_date': 'invalid-date',
     }
@@ -216,7 +217,7 @@ def test_download_route_with_result(client, monkeypatch, csv_rows, mapping):
     data = {
         'csrf_token': csrf_token,
         'filename': (BytesIO(read_file(sample_csv_path)), 'sample.csv'),
-        'config': (BytesIO(read_file('config.json.default')), 'config.json.default'),
+        'config': (BytesIO(read_file('config.yml.default')), 'config.yml.default'),
         'start_date': '2023-01-01',
         'end_date': '2023-12-31',
         'no_currency_format': True,
@@ -246,7 +247,7 @@ def test_process_route_invalid_date(client, monkeypatch, csv_rows, mapping):
     data = {
         'csrf_token': csrf_token,
         'filename': (BytesIO(read_file(sample_csv_path)), 'sample.csv'),
-        'config': (BytesIO(read_file('config.json.default')), 'config.json.default'),
+        'config': (BytesIO(read_file('config.yml.default')), 'config.yml.default'),
         'start_date': 'invalid-date',
         'end_date': '2023-12-31',
     }

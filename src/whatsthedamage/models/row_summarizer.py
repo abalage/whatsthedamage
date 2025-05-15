@@ -1,5 +1,6 @@
 from typing import Dict, List
 from whatsthedamage.models.csv_row import CsvRow
+from whatsthedamage.config.config import get_category_name
 
 
 class RowSummarizer:
@@ -33,5 +34,5 @@ class RowSummarizer:
                     print(f"Warning: Could not convert value '{value}' to float for category '{category}'")
             summary[category] = total
 
-        summary['balance'] = balance
+        summary[get_category_name('balance')] = balance
         return summary

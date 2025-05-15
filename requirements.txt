@@ -1,6 +1,7 @@
 # Core dependencies
 pandas>=1.5.0
 pydantic>=2.10.0
+pyyaml>=6.0
 
 # Web app dependencies (optional)
 # To install these, use: pip install -r requirements.txt[web]

@@ -1,5 +1,5 @@
 from typing import Optional, Dict, List
-from whatsthedamage.config.config import AppContext
+from whatsthedamage.config.config import AppContext, EnricherPatternSets
 from whatsthedamage.models.csv_row import CsvRow
 from whatsthedamage.models.row_enrichment import RowEnrichment
 from whatsthedamage.models.row_filter import RowFilter
@@ -22,7 +22,7 @@ class RowsProcessor:
         """
         self.context = context
         self._date_attribute_format: str = context.config.csv.date_attribute_format
-        self._cfg_pattern_sets: Dict[str, Dict[str, List[str]]] = context.config.enricher_pattern_sets
+        self._cfg_pattern_sets: EnricherPatternSets = context.config.enricher_pattern_sets
         self._start_date: Optional[str] = context.args.get("start_date", None)
         self._start_date_epoch: float = 0
         self._end_date: Optional[str] = context.args.get("end_date", None)

@@ -1,71 +1,156 @@
-# Hungarian translations for PACKAGE package.
+# English translations for PACKAGE package.
 # Copyright (C) 2025 THE PACKAGE'S COPYRIGHT HOLDER
 # This file is distributed under the same license as the PACKAGE package.
 # Németh Balázs <balagetech@protonmail.com>, 2025.
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: \n"
+"Project-Id-Version: whatsthedamage-1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-04-10 14:41+0200\n"
-"PO-Revision-Date: 2025-04-10 14:58+0200\n"
+"POT-Creation-Date: 2025-05-15 08:56+0200\n"
+"PO-Revision-Date: 2025-05-15 08:57+0200\n"
 "Last-Translator: Balázs Németh <balagetech@protonmail.com>\n"
-"Language-Team: Hungarian <translation-team-hu@lists.sourceforge.net>\n"
-"Language: hu\n"
+"Language-Team: Hungarian\n"
+"Language: hu_HU\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 "X-Generator: Poedit 3.2.2\n"
 
-#: src/whatsthedamage/utils/date_converter.py:62
+#: config/config.py:42
+msgid "Grocery"
+msgstr "Bevásárlás"
+
+#: config/config.py:43
+msgid "Clothes"
+msgstr "Ruházat"
+
+#: config/config.py:44
+msgid "Health"
+msgstr "Egészség"
+
+#: config/config.py:45
+msgid "Payment"
+msgstr "Fizetés"
+
+#: config/config.py:46
+msgid "Vehicle"
+msgstr "Jármű"
+
+#: config/config.py:47
+msgid "Utility"
+msgstr "Rezsi"
+
+#: config/config.py:48
+msgid "Home Maintenance"
+msgstr "Otthon karbantartás"
+
+#: config/config.py:49
+msgid "Loan"
+msgstr "Hitel"
+
+#: config/config.py:50
+msgid "Withdrawal"
+msgstr "Pénzfelvétel"
+
+#: config/config.py:51
+msgid "Fee"
+msgstr "Díj"
+
+#: config/config.py:52
+msgid "Deposit"
+msgstr "Bevétel"
+
+#: config/config.py:53
+msgid "Refund"
+msgstr "Visszatérítés"
+
+#: config/config.py:54
+msgid "Interest"
+msgstr "Kamat"
+
+#: config/config.py:55
+msgid "Transfer"
+msgstr "Átvezetés"
+
+#: config/config.py:56
+msgid "Other"
+msgstr "Egyéb"
+
+#: config/config.py:57
+msgid "Balance"
+msgstr "Egyenleg"
+
+#: utils/date_converter.py:56
 msgid "January"
 msgstr "Január"
 
-#: src/whatsthedamage/utils/date_converter.py:63
+#: utils/date_converter.py:57
 msgid "February"
 msgstr "Február"
 
-#: src/whatsthedamage/utils/date_converter.py:64
+#: utils/date_converter.py:58
 msgid "March"
 msgstr "Március"
 
-#: src/whatsthedamage/utils/date_converter.py:65
+#: utils/date_converter.py:59
 msgid "April"
 msgstr "Április"
 
-#: src/whatsthedamage/utils/date_converter.py:66
+#: utils/date_converter.py:60
 msgid "May"
 msgstr "Május"
 
-#: src/whatsthedamage/utils/date_converter.py:67
+#: utils/date_converter.py:61
 msgid "June"
 msgstr "Június"
 
-#: src/whatsthedamage/utils/date_converter.py:68
+#: utils/date_converter.py:62
 msgid "July"
 msgstr "Július"
 
-#: src/whatsthedamage/utils/date_converter.py:69
+#: utils/date_converter.py:63
 msgid "August"
 msgstr "Augusztus"
 
-#: src/whatsthedamage/utils/date_converter.py:70
+#: utils/date_converter.py:64
 msgid "September"
 msgstr "Szeptember"
 
-#: src/whatsthedamage/utils/date_converter.py:71
+#: utils/date_converter.py:65
 msgid "October"
 msgstr "Október"
 
-#: src/whatsthedamage/utils/date_converter.py:72
+#: utils/date_converter.py:66
 msgid "November"
 msgstr "November"
 
-#: src/whatsthedamage/utils/date_converter.py:73
+#: utils/date_converter.py:67
 msgid "December"
 msgstr "December"
 
-#: src/whatsthedamage/utils/date_converter.py:77
+#: utils/date_converter.py:71
 msgid "Invalid month number. Please enter a number between 1 and 12."
-msgstr "Érvénytelen hónap szám. A hónap száma 1 és 12 között kell hogy legyen."
+msgstr "Érvénytelen hónap. A hónap száma 1 és 12 között kell hogy legyen."
+
+#~ msgid "Cars"
+#~ msgstr "Autók"
+
+#~ msgid "cars"
+#~ msgstr "autó"
+
+#~ msgid "loan"
+#~ msgstr "hitel"
+
+#~ msgid "Grocery Stores"
+#~ msgstr "Bevásárlás"
+
+#~ msgid "Clothing Stores"
+#~ msgstr "Ruházat"
+
+#~ msgid "Health & Pharmacy"
+#~ msgstr "Egészség"
+
+#~ msgid "Cars & Fuel"
+#~ msgstr "Autó fenntartás"

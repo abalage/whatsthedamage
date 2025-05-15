@@ -1,0 +1,96 @@
+csv:
+  dialect: "excel-tab"
+  delimiter: "\t"
+  date_attribute_format: "%Y.%m.%d"
+  attribute_mapping:
+    date: "könyvelés dátuma"
+    type: "típus"
+    partner: "partner elnevezése"
+    amount: "összeg"
+    currency: "összeg devizaneme"
+
+enricher_pattern_sets:
+  partner:
+    grocery:
+      - "Lidl.*"
+      - "Lip.ti.*"
+      - "Aldi.*"
+      - "rossmann.*"
+      - "penny.*"
+      - "dm.[0-9]+.*"
+      - "spar.*"
+      - "elelmisz.*"
+      - "abc.*"
+      - "cba.*"
+      - "TESCO.*[0-9]+.*"
+      - "COOP"
+      - "Auchan.*"
+    clothes:
+      - "pepco.*"
+      - "kik.*"
+      - "ha.da.*"
+      - "humana.*"
+      - "decathlon.*"
+      - "deichman.*"
+      - "müller.*"
+      - "takko.*"
+      - "tizproba.*"
+      - "h&m.*"
+    health:
+      - "patika.*"
+      - "gyogyszer.*"
+      - "GYO.GYSZERTA*"
+      - "GYOGYASZATI"
+    payment:
+      - "nav.*"
+      - "Nemzeti Adó- és Vámhivatal"
+    vehicle:
+      - "mol.[0-9]+"
+      - "shell.*"
+      - "omv.*"
+      - "top.ku.*t.*"
+      - "TopKut"
+      - "hu-go.*"
+      - "auto"
+      - "MOL Nyrt"
+    utility:
+      - "yettel.*"
+      - "vodafone.*"
+      - "telenor.*"
+      - "mvm.*"
+      - "upc.*"
+      - "e.on"
+      - "eon"
+      - "édv.*"
+      - "biztosító.*"
+      - "MOHU.*"
+      - "DV Zrt"
+      - "NHKV Zrt"
+    home_maintenance:
+      - "kerteszet.*"
+      - "gazdabolt.*"
+      - "Bauhaus"
+      - "obi.*"
+      - "ROTAVILL"
+      - "Diego"
+  type:
+    loan:
+      - "hitel.*"
+      - "késedelmi.*"
+    withdrawal:
+      - "Készpénzfelvét.*"
+    fee:
+      - "Tranzakciós.*"
+      - "Üzenetdíj.*"
+      - "Csomag díj.*"
+      - "jutaléka.*"
+      - "Kártyadíj.*"
+      - "díja.*"
+    deposit:
+      - "jóváírás"
+    refund:
+      - "visszatérítés.*"
+    interest:
+      - "Kamat.*"
+    transfer:
+      - "Azonnali Ft átvezetés"

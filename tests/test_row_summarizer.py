@@ -16,7 +16,7 @@ def test_row_summarizer_single_category():
     }
     summarizer = RowSummarizer(rows)
     result = summarizer.summarize()
-    assert result == {'category1': 36.0, 'balance': 36.0}
+    assert result == {'category1': 36.0, 'Balance': 36.0}
 
 
 def test_row_summarizer_multiple_categories():
@@ -32,7 +32,7 @@ def test_row_summarizer_multiple_categories():
     }
     summarizer = RowSummarizer(rows)
     result = summarizer.summarize()
-    assert result == {'category1': 30.5, 'category2': 20.0, 'balance': 50.5}
+    assert result == {'category1': 30.5, 'category2': 20.0, 'Balance': 50.5}
 
 
 def test_row_summarizer_invalid_values():
@@ -45,7 +45,7 @@ def test_row_summarizer_invalid_values():
     }
     summarizer = RowSummarizer(rows)
     result = summarizer.summarize()
-    assert result == {'category1': 16.0, 'balance': 16.0}
+    assert result == {'category1': 16.0, 'Balance': 16.0}
 
 
 def test_row_summarizer_missing_attribute():
@@ -58,11 +58,11 @@ def test_row_summarizer_missing_attribute():
     }
     summarizer = RowSummarizer(rows)
     result = summarizer.summarize()
-    assert result == {'category1': 16.0, 'balance': 16.0}
+    assert result == {'category1': 16.0, 'Balance': 16.0}
 
 
 def test_row_summarizer_empty_rows():
     rows = {}
     summarizer = RowSummarizer(rows)
     result = summarizer.summarize()
-    assert result == {'balance': 0.0}
+    assert result == {'Balance': 0.0}

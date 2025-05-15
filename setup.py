@@ -12,7 +12,7 @@ setup(
     long_description=open('README.md').read(),
     long_description_content_type='text/markdown',
     name='whatsthedamage',
-    data_files=[('share/doc/whatsthedamage', ['config.json.default'])],
+    data_files=[('share/doc/whatsthedamage', ['config.yml.default'])],
     python_requires='>=3.9',
     url='https://github.com/abalage/whatsthedamage',
 )

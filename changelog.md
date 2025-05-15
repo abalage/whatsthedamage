@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.6.0] - 2025-05-15
+### Changed
+- **Break**: Add `AppContext` to reduce coupling between config objects and application logic.
+- **Break**: Move utility functions and classes into a dedicated `utils` directory.
+- **Break**: Remove locale-based formatting; now rely on the value of the currency for formatting.
+- **Break**: Switch configuration storage from JSON to YAML format.
+- **Break**: Update config format and follow up changes in the web component.
+- **Feature**: Add localization support with English and Hungarian languages.
+- **Feature**: Localize datasets returned by the program.
+- **Chore**: Remove `Optional` type hints and raise exceptions instead for missing values.
+- **Fix**: Define missing variable in constructor.
+- **Other**: Add initial gettext support for improved localization.
+- **Other**: Rework enricher pattern sets for better maintainability.
+
 ## [0.5.0] - 2025-03-25
 ### Changed
 - **Break**: Reorganize project layout to better fit MVC architecture

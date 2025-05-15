@@ -4,7 +4,7 @@ The configuration is coming from two directions:
 2. read from a configuration file (AppConfig object).
 '''
 from typing import TypedDict, List, Dict
-import json
+import yaml
 import sys
 from pydantic import BaseModel, ValidationError
 
@@ -50,16 +50,25 @@ class AppContext:
 
 
 def load_config(config_path: str) -> AppConfig:
+    """
+    Load the application configuration from a YAML file.
+
+    :param config_path: Path to the YAML configuration file.
+    :return: An AppConfig object.
+    """
     try:
         with open(config_path, 'r', encoding='utf-8') as file:
-            config_data = json.load(file)
+            config_data = yaml.safe_load(file)
             config = AppConfig(**config_data)
         return config
-    except json.JSONDecodeError:
-        print(f"Error: Configuration file '{config_path}' is not a valid JSON.", file=sys.stderr)
+    except yaml.YAMLError as e:
+        print(f"Error: Configuration file '{config_path}' is not a valid YAML: {e}", file=sys.stderr)
         exit(1)
     except ValidationError as e:
         print(f"Error: Configuration validation error: {e}", file=sys.stderr)
+        exit(1)
+    except ValueError as e:
+        print(f"Error: {e}", file=sys.stderr)
         exit(1)
     except FileNotFoundError:
         print(f"Error: Configuration file '{config_path}' not found.", file=sys.stderr)

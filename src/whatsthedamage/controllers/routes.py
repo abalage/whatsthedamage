@@ -17,13 +17,13 @@ import magic
 
 bp: Blueprint = Blueprint('main', __name__)
 
-ALLOWED_EXTENSIONS = {'csv', 'json'}
+ALLOWED_EXTENSIONS = {'csv', 'yml', 'yaml'}
 
 
 def allowed_file(file_path: str) -> bool:
     mime = magic.Magic(mime=True)
     file_type = mime.from_file(file_path)
-    return file_type in {'text/csv', 'text/plain', 'application/json'}
+    return file_type in {'text/csv', 'text/plain', 'application/x-yaml'}
 
 
 def clear_upload_folder() -> None:
@@ -79,7 +79,7 @@ def process() -> Response:
                 return make_response(redirect(url_for('main.index')))
 
         if not allowed_file(filename_path) or (config_path and not allowed_file(config_path)):
-            flash('Invalid file type. Only CSV and JSON files are allowed.', 'danger')
+            flash('Invalid file type. Only CSV and YAML files are allowed.', 'danger')
             return make_response(redirect(url_for('main.index')))
 
         args: AppArgs = AppArgs(

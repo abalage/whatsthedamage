@@ -1,47 +1,72 @@
 import pytest
 from whatsthedamage.models.row_enrichment import RowEnrichment
-from whatsthedamage.models.csv_row import CsvRow
+from whatsthedamage.config.config import EnricherPatternSets
 
 
 @pytest.fixture
-def setup_data(mapping):
-    rows = [
-        CsvRow({"date": "value1", "type": "value2"}, mapping),
-        CsvRow({"date": "value3", "type": "value4"}, mapping),
-        CsvRow({"date": "value5", "type": "value6"}, mapping)
-    ]
-    pattern_sets = {
-        "date": {
-            "category1": ["value1", "value3"],
-            "category2": ["value5"]
+def pattern_sets():
+    return EnricherPatternSets(
+        partner={
+            "bank_category": ["bank"],
+            "other_category": ["other"]
+        },
+        type={
+            "deposit_category": ["deposit"],
+            "withdrawal_category": ["withdrawal"]
         }
-    }
-    row_enrichment = RowEnrichment(rows, pattern_sets)
-    return rows, pattern_sets, row_enrichment
+    )
 
 
-def test_initialize(setup_data):
-    _, _, row_enrichment = setup_data
-    row_enrichment.initialize()
-    assert "category1" in row_enrichment.categorized
-    assert "category2" in row_enrichment.categorized
-    assert "other" in row_enrichment.categorized
+def test_add_category_attribute_by_partner(csv_rows, pattern_sets):
+    enricher = RowEnrichment(csv_rows, pattern_sets)
+    enricher.add_category_attribute("partner", pattern_sets.model_dump()["partner"])
+    # Both rows have partner 'bank', should be categorized as 'bank_category'
+    for row in csv_rows:
+        assert getattr(row, "category") == "bank_category"
 
 
-def test_add_category_attribute(setup_data):
-    rows, pattern_sets, row_enrichment = setup_data
-    row_enrichment.add_category_attribute("date", pattern_sets["date"])
-    assert rows[0].category == "category1"
-    assert rows[1].category == "category1"
-    assert rows[2].category == "category2"
+def test_add_category_attribute_by_type(csv_rows, pattern_sets):
+    enricher = RowEnrichment(csv_rows, pattern_sets)
+    enricher.add_category_attribute("type", pattern_sets.model_dump()["type"])
+    # Both rows have type 'deposit', should be categorized as 'deposit_category'
+    for row in csv_rows:
+        assert getattr(row, "category") == "deposit_category"
 
 
-def test_categorize_by_attribute(setup_data):
-    _, _, row_enrichment = setup_data
-    categorized = row_enrichment.categorize_by_attribute("date")
-    assert "value1" in categorized
-    assert "value3" in categorized
-    assert "value5" in categorized
-    assert len(categorized["value1"]) == 1
-    assert len(categorized["value3"]) == 1
-    assert len(categorized["value5"]) == 1
+def test_add_category_attribute_no_match_sets_deposit(csv_rows, pattern_sets):
+    # Change type so it doesn't match any pattern, but amount > 0
+    for row in csv_rows:
+        row.type = "unknown"
+    enricher = RowEnrichment(csv_rows, pattern_sets)
+    enricher.add_category_attribute("type", pattern_sets.model_dump()["type"])
+    # Should fall back to 'deposit' because amount > 0
+    for row in csv_rows:
+        assert getattr(row, "category") == "Deposit" or getattr(row, "category") == "deposit"
+
+
+def test_add_category_attribute_no_match_and_negative_amount(csv_rows, pattern_sets):
+    # Change type so it doesn't match any pattern, and amount <= 0
+    for row in csv_rows:
+        row.type = "unknown"
+        row.amount = -10
+    enricher = RowEnrichment(csv_rows, pattern_sets)
+    enricher.add_category_attribute("type", pattern_sets.model_dump()["type"])
+    # Should fall back to 'Other'
+    for row in csv_rows:
+        assert getattr(row, "category") == "Other"
+
+
+def test_add_category_attribute_matches_pattern_on_type(csv_rows, pattern_sets):
+    enricher = RowEnrichment(csv_rows, pattern_sets)
+    enricher.add_category_attribute("type", pattern_sets.model_dump()["type"])
+    # Both rows have type 'deposit', should be categorized as 'deposit_category'
+    for row in csv_rows:
+        assert getattr(row, "category") == "deposit_category"
+
+
+def test_add_category_attribute_matches_pattern_on_partner(csv_rows, pattern_sets):
+    enricher = RowEnrichment(csv_rows, pattern_sets)
+    enricher.add_category_attribute("partner", pattern_sets.model_dump()["partner"])
+    # Both rows have partner 'bank', should be categorized as 'bank_category'
+    for row in csv_rows:
+        assert getattr(row, "category") == "bank_category"

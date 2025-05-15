@@ -1,10 +1,11 @@
 import re
 from typing import List, Dict
 from whatsthedamage.models.csv_row import CsvRow
+from whatsthedamage.config.config import EnricherPatternSets, get_category_name
 
 
 class RowEnrichment:
-    def __init__(self, rows: List[CsvRow], pattern_sets: Dict[str, Dict[str, List[str]]]):
+    def __init__(self, rows: List[CsvRow], pattern_sets: EnricherPatternSets):
         """
         Initialize the RowEnrichment with a list of CsvRow objects.
 
@@ -13,17 +14,21 @@ class RowEnrichment:
         """
         self.rows = rows
         self.pattern_sets = pattern_sets
-        self.categorized: Dict[str, List[CsvRow]] = {"other": []}
+        self.categorized: Dict[str, List[CsvRow]] = {get_category_name('other'): []}
 
     def initialize(self) -> None:
         """
         Initialize the categorization process by calling add_category_attribute for each attribute.
         """
-        for attribute_name, category_patterns in self.pattern_sets.items():
+        # Convert the Pydantic model to a dictionary
+        pattern_sets_dict = self.pattern_sets.model_dump()
+
+        for attribute_name, category_patterns in pattern_sets_dict.items():
             # Ensure all categories are present in the categorized dictionary
             for category in category_patterns.keys():
-                if category not in self.categorized:
-                    self.categorized[category] = []
+                localized_category = get_category_name(category)
+                if localized_category not in self.categorized:
+                    self.categorized[localized_category] = []
             self.add_category_attribute(attribute_name, category_patterns)
 
     def add_category_attribute(self, attribute_name: str, category_patterns: Dict[str, List[str]]) -> None:
@@ -41,7 +46,7 @@ class RowEnrichment:
 
             attribute_value = getattr(row, attribute_name, None)
             if not attribute_value:
-                self._set_category(row, 'other')
+                self._set_category(row, get_category_name('other'))
                 continue
 
             if not self._match_patterns(row, attribute_value, compiled_patterns):
@@ -67,7 +72,7 @@ class RowEnrichment:
         :return: True if the category is set and not 'other', False otherwise.
         """
         current_category = getattr(row, 'category', None)
-        return current_category is not None and current_category != 'other'
+        return current_category is not None and current_category != get_category_name('other')
 
     def _set_category(self, row: CsvRow, category: str) -> None:
         """
@@ -76,7 +81,12 @@ class RowEnrichment:
         :param row: CsvRow object to categorize.
         :param category: The category to set.
         """
-        setattr(row, 'category', category)
+        # Only localize if not already localized
+        if category not in self.categorized:
+            localized_name = get_category_name(category)
+        else:
+            localized_name = category
+        setattr(row, 'category', localized_name)
 
     def _match_patterns(
         self,
@@ -101,15 +111,15 @@ class RowEnrichment:
 
     def _categorize_as_deposits(self, row: CsvRow) -> None:
         """
-        Categorize a CsvRow object as 'deposits' if the 'amount' attribute is positive.
+        Categorize a CsvRow object as 'deposit' if the 'amount' attribute is positive.
 
         :param row: CsvRow object to categorize.
         """
         amount_value = getattr(row, 'amount', None)
         if amount_value is not None and int(amount_value) > 0:
-            self._set_category(row, 'deposits')
+            self._set_category(row, get_category_name('deposit'))
         else:
-            self._set_category(row, 'other')
+            self._set_category(row, get_category_name('other'))
 
     def categorize_by_attribute(self, attribute_name: str) -> Dict[str, List[CsvRow]]:
         """

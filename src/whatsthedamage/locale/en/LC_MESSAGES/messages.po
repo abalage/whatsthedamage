@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: whatsthedamage-1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-04-10 15:34+0200\n"
-"PO-Revision-Date: 2025-04-10 15:37+0200\n"
+"POT-Creation-Date: 2025-05-15 08:56+0200\n"
+"PO-Revision-Date: 2025-05-15 08:56+0200\n"
 "Last-Translator: Balázs Németh <balagetech@protonmail.com>\n"
 "Language-Team: English\n"
 "Language: en\n"
@@ -18,54 +18,139 @@ msgstr ""
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 "X-Generator: Poedit 3.2.2\n"
 
-#: utils/date_converter.py:59
+#: config/config.py:42
+msgid "Grocery"
+msgstr "Grocery"
+
+#: config/config.py:43
+msgid "Clothes"
+msgstr "Clothes"
+
+#: config/config.py:44
+msgid "Health"
+msgstr "Health"
+
+#: config/config.py:45
+msgid "Payment"
+msgstr "Payment"
+
+#: config/config.py:46
+msgid "Vehicle"
+msgstr "Vehicle"
+
+#: config/config.py:47
+msgid "Utility"
+msgstr "Utility"
+
+#: config/config.py:48
+msgid "Home Maintenance"
+msgstr "Home Maintenance"
+
+#: config/config.py:49
+msgid "Loan"
+msgstr "Loan"
+
+#: config/config.py:50
+msgid "Withdrawal"
+msgstr "Withdrawal"
+
+#: config/config.py:51
+msgid "Fee"
+msgstr "Fee"
+
+#: config/config.py:52
+msgid "Deposit"
+msgstr "Deposit"
+
+#: config/config.py:53
+msgid "Refund"
+msgstr "Refund"
+
+#: config/config.py:54
+msgid "Interest"
+msgstr "Interest"
+
+#: config/config.py:55
+msgid "Transfer"
+msgstr "Transfer"
+
+#: config/config.py:56
+msgid "Other"
+msgstr "Other"
+
+#: config/config.py:57
+msgid "Balance"
+msgstr "Balance"
+
+#: utils/date_converter.py:56
 msgid "January"
 msgstr "January"
 
-#: utils/date_converter.py:60
+#: utils/date_converter.py:57
 msgid "February"
 msgstr "February"
 
-#: utils/date_converter.py:61
+#: utils/date_converter.py:58
 msgid "March"
 msgstr "March"
 
-#: utils/date_converter.py:62
+#: utils/date_converter.py:59
 msgid "April"
 msgstr "April"
 
-#: utils/date_converter.py:63
+#: utils/date_converter.py:60
 msgid "May"
 msgstr "May"
 
-#: utils/date_converter.py:64
+#: utils/date_converter.py:61
 msgid "June"
 msgstr "June"
 
-#: utils/date_converter.py:65
+#: utils/date_converter.py:62
 msgid "July"
 msgstr "July"
 
-#: utils/date_converter.py:66
+#: utils/date_converter.py:63
 msgid "August"
 msgstr "August"
 
-#: utils/date_converter.py:67
+#: utils/date_converter.py:64
 msgid "September"
 msgstr "September"
 
-#: utils/date_converter.py:68
+#: utils/date_converter.py:65
 msgid "October"
 msgstr "October"
 
-#: utils/date_converter.py:69
+#: utils/date_converter.py:66
 msgid "November"
 msgstr "November"
 
-#: utils/date_converter.py:70
+#: utils/date_converter.py:67
 msgid "December"
 msgstr "December"
 
-#: utils/date_converter.py:74
+#: utils/date_converter.py:71
 msgid "Invalid month number. Please enter a number between 1 and 12."
 msgstr "Invalid month number. Please enter a number between 1 and 12."
+
+#~ msgid "Cars"
+#~ msgstr "Cars"
+
+#~ msgid "cars"
+#~ msgstr "cars"
+
+#~ msgid "loan"
+#~ msgstr "loan"
+
+#~ msgid "Grocery Stores"
+#~ msgstr "Grocery Stores"
+
+#~ msgid "Clothing Stores"
+#~ msgstr "Clothing Stores"
+
+#~ msgid "Health & Pharmacy"
+#~ msgstr "Health & Pharmacy"
+
+#~ msgid "Cars & Fuel"
+#~ msgstr "Cars & Fuel"

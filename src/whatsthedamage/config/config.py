@@ -59,8 +59,8 @@ AVAILABLE_CATEGORIES = [
 
 
 class EnricherPatternSets(BaseModel):
-    partner: Dict[str, List[str]] = Field(default_factory=dict)
     type: Dict[str, List[str]] = Field(default_factory=dict)
+    partner: Dict[str, List[str]] = Field(default_factory=dict)
 
 
 class AppConfig(BaseModel):

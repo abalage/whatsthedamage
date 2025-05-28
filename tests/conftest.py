@@ -19,11 +19,25 @@ def mapping():
 def csv_rows(mapping):
     return [
         CsvRow(
-            {'date': "2023-01-01", 'type': 'deposit', 'partner': 'bank', 'amount': 100, 'currency': 'EUR'},
-            mapping),
+            {
+                "date": "2023-01-01",
+                "type": "deposit",
+                "partner": "bank",
+                "amount": "100",
+                "currency": "EUR",
+            },
+            mapping,
+        ),
         CsvRow(
-            {'date': "2023-01-02", 'type': 'deposit', 'partner': 'bank', 'amount': 200, 'currency': 'EUR'},
-            mapping),
+            {
+                "date": "2023-01-02",
+                "type": "deposit",
+                "partner": "bank",
+                "amount": "200",
+                "currency": "EUR",
+            },
+            mapping,
+        ),
     ]
 
 
@@ -37,13 +51,12 @@ def app_context():
         attribute_mapping={"date": "date", "amount": "amount"},
     )
 
-    # Define enricher pattern sets
-    enricher_pattern_sets = {
-        "category1": {
-            "pattern1": ["value1", "value2"],
-            "pattern2": ["value3", "value4"]
-        }
-    }
+    # Create the EnricherPatternSets object
+    from whatsthedamage.config.config import EnricherPatternSets
+    enricher_pattern_sets = EnricherPatternSets(
+        type={"pattern1": ["value1", "value2"], "pattern2": ["value3", "value4"]},
+        partner={}
+    )
 
     # Create the AppConfig object
     app_config = AppConfig(
@@ -51,20 +64,21 @@ def app_context():
         enricher_pattern_sets=enricher_pattern_sets
     )
 
-    # Create the AppArgs object
-    app_args = AppArgs(
-        category="category1",
-        config="config.json",
-        end_date="2023-12-31",
-        filename="data.csv",
-        filter="filter_criteria",
-        no_currency_format=False,
-        nowrap=False,
-        output_format="json",
-        output=None,
-        start_date="2023-01-01",
-        verbose=True
-    )
+    # Create the AppArgs dictionary
+    app_args: AppArgs = {
+        "category": "category1",
+        "config": "config.yml",
+        "filename": "data.csv",
+        "no_currency_format": False,
+        "nowrap": False,
+        "output_format": "html",
+        "verbose": True,
+        "end_date": "2023-12-31",
+        "filter": None,
+        "output": None,
+        "start_date": "2023-01-01",
+        "lang": None,
+    }
 
     # Return the AppContext object
     return AppContext(config=app_config, args=app_args)

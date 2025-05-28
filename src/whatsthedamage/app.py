@@ -1,21 +1,15 @@
 from flask import Flask
 import os
 from whatsthedamage.controllers.routes import bp as main_bp
+from whatsthedamage.config.flask_config import FlaskAppConfig
 from typing import Optional
 
 
-class AppConfig:
-    UPLOAD_FOLDER: str = 'uploads'
-    MAX_CONTENT_LENGTH: int = 16 * 1024 * 1024  # 16 MB
-    SECRET_KEY: bytes = os.urandom(24)
-    DEFAULT_WHATSTHEDAMAGE_CONFIG: str = 'config.yml.default'
-
-
-def create_app(config_class: Optional[AppConfig] = None) -> Flask:
+def create_app(config_class: Optional[FlaskAppConfig] = None) -> Flask:
     app: Flask = Flask(__name__, template_folder='view/templates')
 
     # Load default configuration from a class
-    app.config.from_object(AppConfig)
+    app.config.from_object(FlaskAppConfig)
 
     if config_class:
         app.config.from_object(config_class)

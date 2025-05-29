@@ -18,6 +18,19 @@
                 <li class="nav-item">
                     <a class="nav-link" href="/about">About</a>
                 </li>
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="langDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        Language
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="langDropdown">
+                        <li>
+                            <a class="dropdown-item" href="{{ url_for('main.set_language', lang_code='en') }}">🇬🇧 English</a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item" href="{{ url_for('main.set_language', lang_code='hu') }}">🇭🇺 Magyar</a>
+                        </li>
+                    </ul>
+                </li>
             </ul>
         </div>
     </div>

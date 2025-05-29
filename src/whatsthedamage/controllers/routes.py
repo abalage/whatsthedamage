@@ -39,6 +39,14 @@ def clear_upload_folder() -> None:
             print(f'Failed to delete {file_path}. Reason: {e}')
 
 
+def get_languages() -> list[str]:
+    return current_app.config.get('LANGUAGES', [])
+
+
+def get_default_language() -> str:
+    return current_app.config.get('DEFAULT_LANGUAGE', 'en')
+
+
 @bp.route('/')
 def index() -> Response:
     form: UploadForm = UploadForm()
@@ -94,7 +102,7 @@ def process() -> Response:
             output='html',
             output_format='html',
             filter=form.filter.data,
-            lang="en",
+            lang=session.get('lang', get_default_language())
         )
 
         # Store form data in session
@@ -169,3 +177,12 @@ def privacy() -> Response:
 @bp.route('/about')
 def about() -> Response:
     return make_response(render_template('about.html'))
+
+@bp.route('/set_language/<lang_code>')
+def set_language(lang_code: str) -> Response:
+    if lang_code in get_languages():
+        session['lang'] = lang_code
+        flash(f"Language changed to {lang_code.upper()}.", "success")
+    else:
+        flash("Selected language is not supported.", "danger")
+    return make_response(redirect(request.referrer or url_for('main.index')))

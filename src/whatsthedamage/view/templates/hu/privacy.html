@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+    <meta charset="UTF-8">
+    <title>Adatkezelési tájékoztató</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous" defer></script>
+    <script defer>
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('email').innerHTML = '<a href="mailto:' + 'balagetech' + '@' + 'protonmail.com">balagetech' + '@' + 'protonmail.com</a>';
+        });
+    </script>
+</head>
+<body>
+    <header>
+        {% include 'header.html' %}
+    </header>
+    <main class="container">
+        <h1>Adatkezelési tájékoztató</h1>
+        <p><strong>Hatályos:</strong> 2025-02-03</p>
+        <h2>1. Bevezetés</h2>
+        <p>Üdvözlünk a Whatsthedamage alkalmazásban (a továbbiakban: „Alkalmazás”). Ez az adatkezelési tájékoztató bemutatja, hogyan gyűjtjük, használjuk, tesszük közzé és védjük személyes adataidat az Alkalmazás használata során. Elkötelezettek vagyunk a magánéleted védelme mellett, és biztosítjuk, hogy személyes adataidat a GDPR és más vonatkozó adatvédelmi jogszabályok szerint kezeljük.</p>
+        <h2>2. Gyűjtött adatok köre</h2>
+        <p>Az Alkalmazás használata során az alábbi személyes adatokat gyűjthetjük és kezelhetjük:</p>
+        <ul>
+            <li><strong>Személyazonosításra alkalmas adatok:</strong> Ide tartozhat a neved, e-mail címed, valamint minden egyéb információ, amelyet a CSV fájlok feltöltésekor megadsz.</li>
+            <li><strong>Bankszámla-információk:</strong> Ide tartoznak a bankszámlaszámok és a tranzakciókhoz kapcsolódó számlanevek.</li>
+            <li><strong>Tranzakciós adatok:</strong> A feltöltött bankszámla-tranzakciós előzményekben található információk, amelyek tartalmazhatják:
+                <ul>
+                    <li>Partnernevek: A tranzakciókban részt vevő személyek vagy szervezetek nevei.</li>
+                    <li>Tranzakcióazonosítók: Egyedi azonosítók, amelyek segítik a tranzakciók nyomon követését.</li>
+                    <li>Partner számlanevek: A tranzakciókban szereplő partnerekhez tartozó számlanevek.</li>
+                    <li>Deviza-információk: A tranzakciókhoz kapcsolódó átváltási árfolyamok vagy devizaadatok.</li>
+                    <li>Megjegyzések: Bármilyen további megjegyzés vagy komment, amelyet a CSV fájlban szerepeltetsz.</li>
+                </ul>
+            </li>
+        </ul>
+        <p>Ezen adatok gyűjtésével célunk, hogy pontos és átfogó jelentéseket tudjunk készíteni a tranzakciós előzményeid alapján.</p>
+        <h2>3. Adatkezelés célja</h2>
+        <p>Személyes adataidat az alábbi célból kezeljük:</p>
+        <ul>
+            <li>Jelentések készítése a feltöltött tranzakciós előzmények alapján.</li>
+        </ul>
+        <h2>4. Adatkezelés jogalapja</h2>
+        <p>Személyes adataidat a GDPR szerinti alábbi jogalapok alapján kezeljük:</p>
+        <ul>
+            <li><strong>Hozzájárulás:</strong> Az Alkalmazás használatával és adataid feltöltésével hozzájárulsz az adatkezeléshez a jelen tájékoztatóban leírtak szerint.</li>
+            <li><strong>Szerződés teljesítése:</strong> Az adatkezelés szükséges az általad igénybe vett szolgáltatás teljesítéséhez.</li>
+        </ul>
+        <h2>5. Adatmegőrzés</h2>
+        <p>Személyes adataidat csak addig őrizzük meg, ameddig az adatgyűjtés céljának teljesítéséhez szükséges, illetve a jogszabályi, számviteli vagy jelentési kötelezettségek teljesítéséhez. Minden feltöltött tartalom a jelentés elkészülte után azonnal törlésre kerül.</p>
+        <h2>6. Adatbiztonság</h2>
+        <p>Megfelelő technikai és szervezési intézkedéseket alkalmazunk személyes adataid védelme érdekében, hogy megakadályozzuk a jogosulatlan hozzáférést, elvesztést vagy megsemmisülést. Felhívjuk azonban a figyelmedet, hogy az internetes adatátvitel vagy elektronikus tárolás soha nem 100%-ban biztonságos.</p>
+        <h2>7. Érintetti jogok</h2>
+        <p>A GDPR értelmében az alábbi jogok illetnek meg személyes adataiddal kapcsolatban:</p>
+        <ul>
+            <li><strong>Hozzáféréshez való jog:</strong> Jogosult vagy tájékoztatást kérni az általunk kezelt személyes adataidról.</li>
+            <li><strong>Helyesbítéshez való jog:</strong> Jogosult vagy kérni az általunk kezelt pontatlan vagy hiányos adatok helyesbítését.</li>
+            <li><strong>Törléshez való jog:</strong> Bizonyos feltételek mellett kérheted személyes adataid törlését.</li>
+            <li><strong>Adatkezelés korlátozásához való jog:</strong> Bizonyos feltételek mellett kérheted az adatkezelés korlátozását.</li>
+            <li><strong>Adathordozhatósághoz való jog:</strong> Jogosult vagy kérni, hogy az általunk kezelt adatokat másik szervezetnek vagy közvetlenül neked továbbítsuk.</li>
+        </ul>
+        <p>E jogok gyakorlásához kérjük, vedd fel velünk a kapcsolatot a következő címen: <span id="email"></span>.</p>
+        <h2>8. Az adatkezelési tájékoztató módosítása</h2>
+        <p>Az adatkezelési tájékoztatót időről időre frissíthetjük. A módosítások azonnal hatályba lépnek, amint az Alkalmazásban közzétesszük őket. Az Alkalmazás további használata a módosítások után a feltételek elfogadását jelenti.</p>
+        <h2>9. Kapcsolatfelvétel</h2>
+        <p>Ha kérdésed vagy észrevételed van az adatkezelési tájékoztatóval vagy adatkezelési gyakorlatunkkal kapcsolatban, kérjük, vedd fel velünk a kapcsolatot a következő címen: <span id="email"></span>.</p>
+        <p>Az Alkalmazás használatával elismered, hogy elolvastad, megértetted és elfogadod ezt az adatkezelési tájékoztatót.</p>
+    </main>
+    <footer class="bg-success text-white text-center py-3 mt-3">
+        {% include 'footer.html' %}
+    </footer>
+</body>
+</html>
+

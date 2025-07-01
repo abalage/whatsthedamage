@@ -128,30 +128,27 @@ A list of frequent transaction categories a bank account may have.
 Custom categories (like "Vehicle", "Grocery", etc.) are user-defined via config, and the listed categories are just examples. Feel free to add your own categories into config.yml.
 
 ## Localization
-Install `gettext` and `poedit`.
-
-1. Extract translatable strings into a .pot file:
+1. Install and configure `babel` and `poedit`.  
 ```bash
-cd src/whatsthedamage
-xgettext -o locale/en/LC_MESSAGES/messages.pot config/config.py utils/date_converter.py
+pipx install babel
+cat <<EOL > babel.cfg
+[python: **.py]
+[jinja2: **.html]
+extensions=jinja2.ext.i18n
+EOL
 ```
 
-2. Create a .po file for each language (e.g., Hungarian):
+2. Extract translatable strings into a .pot file:  
 ```bash
-msginit -l en -o locale/en/LC_MESSAGES/messages.po --input locale/en/LC_MESSAGES/messages.pot
+pybabel extract -F babel.cfg -o src/whatsthedamage/locale/en/LC_MESSAGES/messages.pot src/whatsthedamage/
 ```
 
-3. In case the file has been recently created make sure to change encoding from ASCII to UTF-8.
-```bash
-sed -i 's/ASCII/UTF-8/g' locale/en/LC_MESSAGES/messages.po
-```
-
-4. Edit the .po file to add translations (creates the .mo file upon Save):
+3. Edit the .po file to add translations (creates the .mo file upon Save):
 ```bash
 poedit locale/en/LC_MESSAGES/messages.po
 ```
 
-5. (optional) Compile the .po file into a .mo file. Poedit will do this for you:
+4. (optional) Compile the .po file into a .mo file. Poedit will do this for you:
 ```bash
 msgfmt locale/en/LC_MESSAGES/messages.po -o locale/en/LC_MESSAGES/messages.mo
 ```

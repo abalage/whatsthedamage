@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.6.3] - 2025-07-01
+### Changed
+- **Feature**: Add localiztion to Flask frontend by using gettext for dynamic texts. Static files are served as-is.
+
+## [0.6.2] - 2025-05-18
+### Changed
+- **Fix**: always categorize first by using type attribute
+
+## [0.6.1] - 2025-05-15
+### Changed
+- **Chore**: update README to reflect changes since 0.4.0
+
 ## [0.6.0] - 2025-05-15
 ### Changed
 - **Break**: Add `AppContext` to reduce coupling between config objects and application logic.

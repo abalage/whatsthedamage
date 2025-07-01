@@ -11,18 +11,15 @@
         {% include 'header.html' %}
     </header>
     <main class="container">
-        <h1>About ‘whatsthedamage‘</h1>
+        <h1>What's the Damage</h1>
         <p>This tool is designed to process CSV files and generate insightful reports. It relies on your bank's export functionality to save your historical data into CSV format.</p>
-        <p>It is an opinionated tool written in Python to process K&H HU's bank account transaction exports in CSV files.
-        The predefined settings works best with CSVs exported from K&H HU, but I made efforts to customize the behavior and potentially work with any other CSV format other finance companies may produce.
-
-        The tool origially was meant to be a CLI tool, but I decided to make it a web application to make it more accessible to a wider audience. </p>
-        <p>Both the CLI and the Web app are published under GPL-3.0 license.</p>
+        <p>The predefined settings works best with CSVs exported from K&H Bank, but efforts were made to be able to customize it and potentially work with any other CSV format other finance companies may produce.</p>
+        <p>It is published under GPL-3.0 license.</p>
         <h2>The problem it solves</h2>
-        <p>Your bank may provide you useful reports about your finances. I can either rely on these reports, if available, or generate my own.</p>
-        <p>I consider my financial details to be a private matter between myself and my chosen bank. To process my bank account exports, I need a solution that ensures only I have access to the data. So no 3rd party solution was acceptable for me.</p>
+        <p>My bank service provider gives me reports about my finances but they are not detailed enough, so I created my own.</p>
+        <p>Also my financial details are a private matter between myself and my chosen bank. To process my bank account exports, I need a solution that ensures only I have access to the data.</p>
 
-        <p class="bg-warning">The web site does not keep any of your data. All uploaded content is removed as soon as the report is created.</p>
+        <p class="bg-warning">This application does not keep or sell any of your data. All uploaded content is removed as soon as the report is created.</p>
         <h2>Main Features</h2>
         <ul>
             <li><strong>Automated Categorization:</strong> Categorizes transactions into well-known accounting categories such as deposits and payments, as well as custom categories using regular expressions.</li>
@@ -35,8 +32,7 @@
         <h2>Resources</h2>
         <ul>
             <li>For the source code and documentation visit the GitHub repository of <a href="https://github.com/abalage/whatsthedamage">whatsthedamage</a></li>
-            <li>For the source code and documentation visit the GitHub repository of <a href="https://github.com/abalage/whatsthedamage-web">whatsthedamage-web</a></li>
-            <li>To read about how this tool was made, please visit the <a href="https://balagetech.com/introducing-whatsthedamage-to-process-your-bank-account-exports/">blog post</a>.</li>
+            <li>To read about how this tool was made, please visit the <a href="https://balagetech.com/introducing-whatsthedamage-to-process-your-bank-account-exports/">Introducing whatsthedamage to process your bank account exports</a> blog post.</li>
         </ul>
 
     </main>

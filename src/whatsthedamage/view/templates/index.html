@@ -40,18 +40,18 @@
                 <div class="col-md-6 mb-3">
                     <div class="card">
                         <div class="card-header bg-success text-white">
-                            File Uploads
+                            {{ _('File Uploads') }}
                         </div>
                         <div class="card-body bg-light">
                             <div class="mb-3">
-                                {{ form.filename.label(class="form-label") }}
-                                {{ form.filename(class="form-control") }}
-                                <div id="fileHelp" class="form-text">Upload your CSV file containing the exported bank account history here.</div>
+                                <label for="filename" class="form-label">{{ _('CSV file:') }}</label>
+                                {{ form.filename(class="form-control", id="filename") }}
+                                <div id="fileHelp" class="form-text">{{ _('Upload your CSV file containing the exported bank account history here.') }}</div>
                             </div>
                             <div class="mb-3">
-                                {{ form.config.label(class="form-label") }}
-                                {{ form.config(class="form-control") }}
-                                <div id="configHelp" class="form-text">Upload your configuration file here, or the default configuration will be used.</div>
+                                <label for="config" class="form-label">{{ _('Configuration file:') }}</label>
+                                {{ form.config(class="form-control", id="config") }}
+                                <div id="configHelp" class="form-text">{{ _('Upload your configuration file here, or the default configuration will be used.') }}</div>
                             </div>
                         </div>
                     </div>
@@ -59,23 +59,23 @@
                 <div class="col-md-6 mb-3">
                     <div class="card">
                         <div class="card-header bg-success text-white">
-                            Filters
+                            {{ _('Filters') }}
                         </div>
                         <div class="card-body bg-light">
                             <div class="mb-3">
-                                {{ form.start_date.label(class="form-label") }}
-                                {{ form.start_date(class="form-control") }}
-                                <div id="dateStartHelp" class="form-text">Filter results starting from this date.</div>
+                                <label for="start_date" class="form-label">{{ _('Start date:') }}</label>
+                                {{ form.start_date(class="form-control", id="start_date") }}
+                                <div id="dateStartHelp" class="form-text">{{ _('Filter results starting from this date.') }}</div>
                             </div>
                             <div class="mb-3">
-                                {{ form.end_date.label(class="form-label") }}
-                                {{ form.end_date(class="form-control") }}
-                                <div id="dateEndHelp" class="form-text">Filter results up until this date.</div>
+                                <label for="end_date" class="form-label">{{ _('End date:') }}</label>
+                                {{ form.end_date(class="form-control", id="end_date") }}
+                                <div id="dateEndHelp" class="form-text">{{ _('Filter results up until this date.') }}</div>
                             </div>
                             <div class="mb-3">
-                                {{ form.filter.label(class="form-label") }}
-                                {{ form.filter(class="form-control") }}
-                                <div id="filterHelp" class="form-text">Filter by category. (default = 'category')</div>
+                                <label for="filter" class="form-label">{{ _('Category filter:') }}</label>
+                                {{ form.filter(class="form-control", id="filter") }}
+                                <div id="filterHelp" class="form-text">{{ _("Filter by category. (default = 'category')") }}</div>
                             </div>
                         </div>
                     </div>
@@ -85,18 +85,18 @@
                 <div class="col-md-12 mb-3">
                     <div class="card">
                         <div class="card-header bg-success text-white">
-                            Advanced settings
+                            {{ _('Advanced settings') }}
                         </div>
                         <div class="card-body bg-light">
                             <div class="mb-3 form-check">
-                                {{ form.verbose(class="form-check-input") }}
-                                {{ form.verbose.label(class="form-check-label") }}
-                                <div id="verboseHelp" class="form-text">Enable detailed logging in the backend service's console.</div>
+                                {{ form.verbose(class="form-check-input", id="verbose") }}
+                                <label for="verbose" class="form-check-label">{{ _('Enable verbose logging') }}</label>
+                                <div id="verboseHelp" class="form-text">{{ _("Enable detailed logging in the backend service's console.") }}</div>
                             </div>
                             <div class="mb-3 form-check">
-                                {{ form.no_currency_format(class="form-check-input") }}
-                                {{ form.no_currency_format.label(class="form-check-label") }}
-                                <div id="currencyHelp" class="form-text">Select this option to exclude currency symbols in the exported CSV. You can format the cells in your spreadsheet application instead.</div>
+                                {{ form.no_currency_format(class="form-check-input", id="no_currency_format") }}
+                                <label for="no_currency_format" class="form-check-label">{{ _('No currency formatting') }}</label>
+                                <div id="currencyHelp" class="form-text">{{ _('Select this option to exclude currency symbols in the exported CSV. You can format the cells in your spreadsheet application instead.') }}</div>
                             </div>
                         </div>
                     </div>
@@ -104,10 +104,10 @@
             </div>
             <div class="row">
                 <div class="col-md-6">
-                    <button type="submit" class="btn btn-primary mt-3">Submit</button>
+                    <button type="submit" class="btn btn-primary mt-3">{{ _('Submit') }}</button>
                 </div>
                 <div class="col-md-6 text-end">
-                    <button type="button" class="btn btn-secondary mt-3" onclick="clearForm()">Clear Form</button>
+                    <button type="button" class="btn btn-secondary mt-3" onclick="clearForm()">{{ _('Clear Form') }}</button>
                 </div>
             </div>
         </form>

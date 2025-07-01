@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+    <meta charset="UTF-8">
+    <title>Jogi nyilatkozat</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous" defer></script>
+    <script defer>
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('email').innerHTML = '<a href="mailto:' + 'balagetech' + '@' + 'protonmail.com">balagetech' + '@' + 'protonmail.com</a>';
+        });
+    </script>
+</head>
+<body>
+    <header>
+        {% include 'header.html' %}
+    </header>
+    <main class="container">
+        <h1>Jogi nyilatkozat</h1>
+        <p><strong>Hatályos:</strong> 2025-02-03</p>
+        <h2>1. Bevezetés</h2>
+        <p>Üdvözlünk a Whatsthedamage alkalmazásban (a továbbiakban: „Alkalmazás”). Az Alkalmazás használatával elfogadod az alábbi feltételeket. Amennyiben nem értesz egyet ezekkel, kérjük, ne használd az Alkalmazást.</p>
+        <h2>2. Adatkezelés</h2>
+        <p>Az Alkalmazás célja, hogy banki tranzakciós előzményeket dolgozzon fel CSV formátumban. A jelentés elkészülte után minden feltöltött tartalom véglegesen törlésre kerül rendszerünkből. Nem tárolunk semmilyen adatot, így biztosítva a magánszférádat és bizalmasságot.</p>
+        <h2>3. Jótállás kizárása</h2>
+        <p>Bár igyekszünk pontos és megbízható jelentéseket nyújtani, az Alkalmazás „ahogy van” állapotban kerül biztosításra, bármilyen kifejezett vagy vélelmezett garancia nélkül. Nem garantáljuk a jelentések pontosságát, teljességét vagy megbízhatóságát.</p>
+        <h2>4. Felelősség korlátozása</h2>
+        <p>Az Alkalmazás használatával tudomásul veszed és elfogadod, hogy a <a href="https://balagetech.com">balagetech.com</a> nem vállal felelősséget a jelentésekben előforduló hibákért, pontatlanságokért vagy hiányosságokért. A jelentések alapján hozott döntésekért teljes felelősséget vállalsz. A <a href="https://balagetech.com">balagetech.com</a> semmilyen esetben sem felelős semmilyen közvetlen, közvetett, járulékos, különleges vagy következményi kárért, amely az Alkalmazás használatából ered.</p>
+        <h2>5. Felhasználói felelősség</h2>
+        <p>Kizárólag te vagy felelős azért, hogy a feltöltött adatok megfeleljenek minden vonatkozó jogszabálynak és előírásnak. Biztosítanod kell, hogy rendelkezel a szükséges jogokkal a CSV fájlokban szereplő adatok feltöltéséhez és feldolgozásához.</p>
+        <h2>6. A jogi nyilatkozat módosítása</h2>
+        <p>Fenntartjuk a jogot, hogy ezt a jogi nyilatkozatot bármikor módosítsuk. A módosítások azonnal hatályba lépnek, amint az Alkalmazásban közzétesszük őket. Az Alkalmazás további használata a módosítások után a feltételek elfogadását jelenti.</p>
+        <h2>7. Kapcsolatfelvétel</h2>
+        <p>Ha kérdésed vagy észrevételed van ezzel a jogi nyilatkozattal kapcsolatban, kérjük, vedd fel velünk a kapcsolatot a következő címen: <span id="email"></span>.</p>
+        <h2>8. Irányadó jog</h2>
+        <p>Ez a jogi nyilatkozat a magyar jog szerint értelmezendő és annak hatálya alá tartozik, a kollíziós szabályok figyelembevétele nélkül.</p>
+        <p>Az Alkalmazás használatával elismered, hogy elolvastad, megértetted és elfogadod ezt a jogi nyilatkozatot.</p>
+    </main>
+    <footer class="bg-success text-white text-center py-3 mt-3">
+        {% include 'footer.html' %}
+    </footer>
+</body>
+</html>

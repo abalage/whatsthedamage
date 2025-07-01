@@ -14,6 +14,7 @@ import shutil
 import pandas as pd
 from io import StringIO
 import magic
+from whatsthedamage.utils.flask_locale import get_locale, get_languages, get_default_language
 
 bp: Blueprint = Blueprint('main', __name__)
 
@@ -39,12 +40,9 @@ def clear_upload_folder() -> None:
             print(f'Failed to delete {file_path}. Reason: {e}')
 
 
-def get_languages() -> list[str]:
-    return current_app.config.get('LANGUAGES', [])
-
-
-def get_default_language() -> str:
-    return current_app.config.get('DEFAULT_LANGUAGE', 'en')
+def get_lang_template(template_name: str) -> str:
+    lang = get_locale()
+    return f"{lang}/{template_name}"
 
 
 @bp.route('/')
@@ -166,17 +164,18 @@ def download() -> Response:
 
 @bp.route('/legal')
 def legal() -> Response:
-    return make_response(render_template('legal.html'))
+    return make_response(render_template(get_lang_template('legal.html')))
 
 
 @bp.route('/privacy')
 def privacy() -> Response:
-    return make_response(render_template('privacy.html'))
+    return make_response(render_template(get_lang_template('privacy.html')))
 
 
 @bp.route('/about')
 def about() -> Response:
-    return make_response(render_template('about.html'))
+    return make_response(render_template(get_lang_template('about.html')))
+
 
 @bp.route('/set_language/<lang_code>')
 def set_language(lang_code: str) -> Response:

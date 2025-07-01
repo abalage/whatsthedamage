@@ -6,9 +6,9 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: whatsthedamage-1.0\n"
-"Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-05-15 08:56+0200\n"
-"PO-Revision-Date: 2025-05-15 08:56+0200\n"
+"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"POT-Creation-Date: 2025-07-01 22:33+0200\n"
+"PO-Revision-Date: 2025-07-01 22:34+0200\n"
 "Last-Translator: Balázs Németh <balagetech@protonmail.com>\n"
 "Language-Team: English\n"
 "Language: en\n"
@@ -18,121 +18,250 @@ msgstr ""
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 "X-Generator: Poedit 3.2.2\n"
 
-#: config/config.py:42
+#: src/whatsthedamage/config/config.py:42
 msgid "Grocery"
 msgstr "Grocery"
 
-#: config/config.py:43
+#: src/whatsthedamage/config/config.py:43
 msgid "Clothes"
 msgstr "Clothes"
 
-#: config/config.py:44
+#: src/whatsthedamage/config/config.py:44
 msgid "Health"
 msgstr "Health"
 
-#: config/config.py:45
+#: src/whatsthedamage/config/config.py:45
 msgid "Payment"
 msgstr "Payment"
 
-#: config/config.py:46
+#: src/whatsthedamage/config/config.py:46
 msgid "Vehicle"
 msgstr "Vehicle"
 
-#: config/config.py:47
+#: src/whatsthedamage/config/config.py:47
 msgid "Utility"
 msgstr "Utility"
 
-#: config/config.py:48
+#: src/whatsthedamage/config/config.py:48
 msgid "Home Maintenance"
 msgstr "Home Maintenance"
 
-#: config/config.py:49
+#: src/whatsthedamage/config/config.py:49
 msgid "Loan"
 msgstr "Loan"
 
-#: config/config.py:50
+#: src/whatsthedamage/config/config.py:50
 msgid "Withdrawal"
 msgstr "Withdrawal"
 
-#: config/config.py:51
+#: src/whatsthedamage/config/config.py:51
 msgid "Fee"
 msgstr "Fee"
 
-#: config/config.py:52
+#: src/whatsthedamage/config/config.py:52
 msgid "Deposit"
 msgstr "Deposit"
 
-#: config/config.py:53
+#: src/whatsthedamage/config/config.py:53
 msgid "Refund"
 msgstr "Refund"
 
-#: config/config.py:54
+#: src/whatsthedamage/config/config.py:54
 msgid "Interest"
 msgstr "Interest"
 
-#: config/config.py:55
+#: src/whatsthedamage/config/config.py:55
 msgid "Transfer"
 msgstr "Transfer"
 
-#: config/config.py:56
+#: src/whatsthedamage/config/config.py:56
 msgid "Other"
 msgstr "Other"
 
-#: config/config.py:57
+#: src/whatsthedamage/config/config.py:57
 msgid "Balance"
 msgstr "Balance"
 
-#: utils/date_converter.py:56
+#: src/whatsthedamage/utils/date_converter.py:56
 msgid "January"
 msgstr "January"
 
-#: utils/date_converter.py:57
+#: src/whatsthedamage/utils/date_converter.py:57
 msgid "February"
 msgstr "February"
 
-#: utils/date_converter.py:58
+#: src/whatsthedamage/utils/date_converter.py:58
 msgid "March"
 msgstr "March"
 
-#: utils/date_converter.py:59
+#: src/whatsthedamage/utils/date_converter.py:59
 msgid "April"
 msgstr "April"
 
-#: utils/date_converter.py:60
+#: src/whatsthedamage/utils/date_converter.py:60
 msgid "May"
 msgstr "May"
 
-#: utils/date_converter.py:61
+#: src/whatsthedamage/utils/date_converter.py:61
 msgid "June"
 msgstr "June"
 
-#: utils/date_converter.py:62
+#: src/whatsthedamage/utils/date_converter.py:62
 msgid "July"
 msgstr "July"
 
-#: utils/date_converter.py:63
+#: src/whatsthedamage/utils/date_converter.py:63
 msgid "August"
 msgstr "August"
 
-#: utils/date_converter.py:64
+#: src/whatsthedamage/utils/date_converter.py:64
 msgid "September"
 msgstr "September"
 
-#: utils/date_converter.py:65
+#: src/whatsthedamage/utils/date_converter.py:65
 msgid "October"
 msgstr "October"
 
-#: utils/date_converter.py:66
+#: src/whatsthedamage/utils/date_converter.py:66
 msgid "November"
 msgstr "November"
 
-#: utils/date_converter.py:67
+#: src/whatsthedamage/utils/date_converter.py:67
 msgid "December"
 msgstr "December"
 
-#: utils/date_converter.py:71
+#: src/whatsthedamage/utils/date_converter.py:71
 msgid "Invalid month number. Please enter a number between 1 and 12."
 msgstr "Invalid month number. Please enter a number between 1 and 12."
+
+#: src/whatsthedamage/view/templates/header.html:4
+msgid "Generate reports from your bank account CSV history."
+msgstr "Generate reports from your bank account CSV history."
+
+#: src/whatsthedamage/view/templates/header.html:11
+msgid "Home"
+msgstr "Home"
+
+#: src/whatsthedamage/view/templates/header.html:14
+msgid "Privacy"
+msgstr "Privacy"
+
+#: src/whatsthedamage/view/templates/header.html:17
+msgid "Legal"
+msgstr "Legal"
+
+#: src/whatsthedamage/view/templates/header.html:20
+msgid "About"
+msgstr "About"
+
+#: src/whatsthedamage/view/templates/header.html:24
+msgid "Language"
+msgstr "Language"
+
+#: src/whatsthedamage/view/templates/index.html:43
+msgid "File Uploads"
+msgstr ""
+
+#: src/whatsthedamage/view/templates/index.html:47
+msgid "CSV file:"
+msgstr ""
+
+#: src/whatsthedamage/view/templates/index.html:49
+msgid "Upload your CSV file containing the exported bank account history here."
+msgstr ""
+
+#: src/whatsthedamage/view/templates/index.html:52
+msgid "Configuration file:"
+msgstr ""
+
+#: src/whatsthedamage/view/templates/index.html:54
+msgid ""
+"Upload your configuration file here, or the default configuration will be "
+"used."
+msgstr ""
+
+#: src/whatsthedamage/view/templates/index.html:62
+msgid "Filters"
+msgstr ""
+
+#: src/whatsthedamage/view/templates/index.html:66
+msgid "Start date:"
+msgstr ""
+
+#: src/whatsthedamage/view/templates/index.html:68
+msgid "Filter results starting from this date."
+msgstr ""
+
+#: src/whatsthedamage/view/templates/index.html:71
+msgid "End date:"
+msgstr ""
+
+#: src/whatsthedamage/view/templates/index.html:73
+msgid "Filter results up until this date."
+msgstr ""
+
+#: src/whatsthedamage/view/templates/index.html:76
+msgid "Category filter:"
+msgstr ""
+
+#: src/whatsthedamage/view/templates/index.html:78
+msgid "Filter by category. (default = 'category')"
+msgstr ""
+
+#: src/whatsthedamage/view/templates/index.html:88
+msgid "Advanced settings"
+msgstr ""
+
+#: src/whatsthedamage/view/templates/index.html:93
+msgid "Enable verbose logging"
+msgstr ""
+
+#: src/whatsthedamage/view/templates/index.html:94
+msgid "Enable detailed logging in the backend service's console."
+msgstr ""
+
+#: src/whatsthedamage/view/templates/index.html:98
+msgid "No currency formatting"
+msgstr ""
+
+#: src/whatsthedamage/view/templates/index.html:99
+msgid ""
+"Select this option to exclude currency symbols in the exported CSV. You can "
+"format the cells in your spreadsheet application instead."
+msgstr ""
+
+#: src/whatsthedamage/view/templates/index.html:107
+msgid "Submit"
+msgstr ""
+
+#: src/whatsthedamage/view/templates/index.html:110
+msgid "Clear Form"
+msgstr ""
+
+#: src/whatsthedamage/view/templates/result.html:5
+msgid "Result"
+msgstr ""
+
+#: src/whatsthedamage/view/templates/result.html:33
+msgid "Processed results"
+msgstr ""
+
+#: src/whatsthedamage/view/templates/result.html:43
+msgid "Back"
+msgstr ""
+
+#: src/whatsthedamage/view/templates/result.html:46
+msgid "Download CSV"
+msgstr ""
+
+#: src/whatsthedamage/view/templates/result.html:51
+msgid ""
+"Note: Should you want to have better results in importing the generated CSV "
+"file, please make sure to check \"No Currenty Format\" on the previous form."
+msgstr ""
+
+#~ msgid "What's the Damage?"
+#~ msgstr "What's the Damage?"
 
 #~ msgid "Cars"
 #~ msgstr "Cars"

@@ -1,26 +1,27 @@
+<link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}">
 <nav class="navbar navbar-expand-lg navbar-dark bg-success mb-3">
     <div class="container-fluid">
-        <a class="navbar-brand" href="/">What's the Damage?</a><span class="text-white align-middle">Generate reports from your bank account CSV history.</span>
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+        <a class="navbar-brand" href="/">"What's the Damage?"</a><span class="text-white align-middle">{{ _("Generate reports from your bank account CSV history.") }}</span>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation>
             <span class="navbar-toggler-icon"></span>
         </button>
         <div class="collapse navbar-collapse" id="navbarNav">
             <ul class="navbar-nav ms-auto">
                 <li class="nav-item">
-                    <a class="nav-link" href="/">Home</a>
+                    <a class="nav-link" href="/">{{ _('Home') }}</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="/privacy">Privacy</a>
+                    <a class="nav-link" href="/privacy">{{ _('Privacy') }}</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="/legal">Legal</a>
+                    <a class="nav-link" href="/legal">{{ _('Legal') }}</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="/about">About</a>
+                    <a class="nav-link" href="/about">{{ _('About') }}</a>
                 </li>
                 <li class="nav-item dropdown">
                     <a class="nav-link dropdown-toggle" href="#" id="langDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                        Language
+                        {{ _('Language') }}
                     </a>
                     <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="langDropdown">
                         <li>

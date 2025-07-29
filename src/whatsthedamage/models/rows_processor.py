@@ -5,7 +5,7 @@ from whatsthedamage.models.row_enrichment import RowEnrichment
 from whatsthedamage.models.row_filter import RowFilter
 from whatsthedamage.models.row_summarizer import RowSummarizer
 from whatsthedamage.utils.date_converter import DateConverter
-from whatsthedamage.utils.row_printer import print_categorized_rows
+from whatsthedamage.utils.row_printer import print_categorized_rows, print_training_data
 
 """
 RowsProcessor processes rows of CSV data. It filters, enriches, categorizes, and summarizes the rows.
@@ -31,6 +31,7 @@ class RowsProcessor:
         self._category: str = context.args.get("category", "")
         self._filter: Optional[str] = context.args.get("filter", None)
         self._currency: str = ""
+        self._training_data: str | None = context.args.get("training_data", None)
 
         # Convert start and end dates to epoch if provided
         if self._start_date:
@@ -83,17 +84,27 @@ class RowsProcessor:
         filtered_sets = self._filter_rows(rows)
         self.set_currency(filtered_sets)
         data_for_pandas = {}
+        all_set_rows_dict = {}
 
         for filtered_set in filtered_sets:
             for set_name, set_rows in filtered_set.items():
                 set_rows_dict = self._enrich_and_categorize_rows(set_rows)
                 set_rows_dict = self._apply_filter(set_rows_dict)
                 summary = self._summarize_rows(set_rows_dict)
-                set_name = self._format_set_name(set_name)
-                data_for_pandas[set_name] = summary
+                formatted_set_name = self._format_set_name(set_name)
+                data_for_pandas[formatted_set_name] = summary
 
-                if self._verbose:
-                    print_categorized_rows(set_name, set_rows_dict)
+                # Merge all categorized rows for training data/categorized print
+                for cat, row_list in set_rows_dict.items():
+                    if cat not in all_set_rows_dict:
+                        all_set_rows_dict[cat] = []
+                    all_set_rows_dict[cat].extend(row_list)
+
+        # Only print once at the end
+        if self._verbose:
+            print_categorized_rows("All", all_set_rows_dict)
+        elif self._training_data:
+            print_training_data(all_set_rows_dict, self._training_data)
 
         return data_for_pandas
 

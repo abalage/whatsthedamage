@@ -72,7 +72,7 @@ class RowEnrichment:
         :return: True if the category is set and not 'other', False otherwise.
         """
         current_category = getattr(row, 'category', None)
-        return current_category is not None and current_category != get_category_name('other')
+        return current_category not in (None, "", get_category_name('other'))
 
     def _set_category(self, row: CsvRow, category: str) -> None:
         """

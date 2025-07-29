@@ -7,11 +7,12 @@ class CsvRow:
         :param row: Key-value pairs representing the CSV header and corresponding values.
         :param mapping: Mapping of standardized attributes to CSV headers.
         """
-        self.date = row.get(mapping.get('date', ''), '')
-        self.type = row.get(mapping.get('type', ''), '')
-        self.partner = row.get(mapping.get('partner', ''), '')
+        self.date = row.get(mapping.get('date', ''), '').strip()
+        self.type = row.get(mapping.get('type', ''), '').strip()
+        self.partner = row.get(mapping.get('partner', ''), '').strip()
         self.amount = float(row.get(mapping.get('amount', ''), 0))
-        self.currency = row.get(mapping.get('currency', ''), '')
+        self.currency = row.get(mapping.get('currency', ''), '').strip()
+        self.category = ""
 
     def __repr__(self) -> str:
         """
@@ -25,7 +26,8 @@ class CsvRow:
             f"type={self.type}, "
             f"partner={self.partner}, "
             f"amount={self.amount}, "
-            f"currency={self.currency}"
+            f"currency={self.currency}, "
+            f"category={self.category}"
             f")>"
         )
 
@@ -43,5 +45,6 @@ class CsvRow:
             self.type == other.type and
             self.partner == other.partner and
             self.amount == other.amount and
-            self.currency == other.currency
+            self.currency == other.currency and
+            self.category == other.category
         )

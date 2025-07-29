@@ -22,6 +22,7 @@ class AppArgs(TypedDict):
     output: str | None
     start_date: str | None
     verbose: bool
+    training_data: str | None
     lang: str | None
 
 

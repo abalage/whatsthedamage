@@ -100,7 +100,8 @@ def process() -> Response:
             output='html',
             output_format='html',
             filter=form.filter.data,
-            lang=session.get('lang', get_default_language())
+            lang=session.get('lang', get_default_language()),
+            training_data=None
         )
 
         # Store form data in session

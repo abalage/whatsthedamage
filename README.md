@@ -53,7 +53,7 @@ Use `pipx install .` to deploy the package.
 ## Usage:
 ```
 usage: whatsthedamage [-h] [--start-date START_DATE] [--end-date END_DATE] [--verbose] [--version] [--config CONFIG] [--category CATEGORY] [--no-currency-format] [--output OUTPUT]
-                      [--output-format OUTPUT_FORMAT] [--nowrap] [--filter FILTER] [--lang LANG]
+                      [--output-format OUTPUT_FORMAT] [--nowrap] [--filter FILTER] [--lang LANG] [--training-data [{basic,full}]]
                       filename
 
 A CLI tool to process KHBHU CSV files.
@@ -80,6 +80,8 @@ options:
   --filter FILTER, -f FILTER
                         Filter by category. Use it in conjunction with --verbose.
   --lang LANG, -l LANG  Language for localization.
+  --training-data [{basic,full}]
+                        Print training data in JSON format to STDERR. Use 2> redirection to save it to a file. Use 'full' for all attributes.
 ```
 
 ## Web interface

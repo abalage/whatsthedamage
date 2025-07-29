@@ -11,7 +11,8 @@ def mapping():
         'type': 'type',
         'partner': 'partner',
         'amount': 'amount',
-        'currency': 'currency'
+        'currency': 'currency',
+        'category': 'category',
     }
 
 
@@ -25,6 +26,7 @@ def csv_rows(mapping):
                 "partner": "bank",
                 "amount": "100",
                 "currency": "EUR",
+                "category": "income",
             },
             mapping,
         ),
@@ -35,6 +37,7 @@ def csv_rows(mapping):
                 "partner": "bank",
                 "amount": "200",
                 "currency": "EUR",
+                "category": "income",
             },
             mapping,
         ),
@@ -78,6 +81,7 @@ def app_context():
         "output": None,
         "start_date": "2023-01-01",
         "lang": None,
+        "training_data": None,
     }
 
     # Return the AppContext object

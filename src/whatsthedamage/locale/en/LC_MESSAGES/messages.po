@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: whatsthedamage-1.0\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2025-07-01 22:33+0200\n"
-"PO-Revision-Date: 2025-07-01 22:34+0200\n"
+"POT-Creation-Date: 2025-08-02 20:16+0200\n"
+"PO-Revision-Date: 2025-08-02 20:16+0200\n"
 "Last-Translator: Balázs Németh <balagetech@protonmail.com>\n"
 "Language-Team: English\n"
 "Language: en\n"
@@ -18,67 +18,71 @@ msgstr ""
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 "X-Generator: Poedit 3.2.2\n"
 
-#: src/whatsthedamage/config/config.py:42
+#: src/whatsthedamage/config/config.py:43
 msgid "Grocery"
 msgstr "Grocery"
 
-#: src/whatsthedamage/config/config.py:43
+#: src/whatsthedamage/config/config.py:44
 msgid "Clothes"
 msgstr "Clothes"
 
-#: src/whatsthedamage/config/config.py:44
+#: src/whatsthedamage/config/config.py:45
 msgid "Health"
 msgstr "Health"
 
-#: src/whatsthedamage/config/config.py:45
+#: src/whatsthedamage/config/config.py:46
 msgid "Payment"
 msgstr "Payment"
 
-#: src/whatsthedamage/config/config.py:46
+#: src/whatsthedamage/config/config.py:47
 msgid "Vehicle"
 msgstr "Vehicle"
 
-#: src/whatsthedamage/config/config.py:47
+#: src/whatsthedamage/config/config.py:48
 msgid "Utility"
 msgstr "Utility"
 
-#: src/whatsthedamage/config/config.py:48
+#: src/whatsthedamage/config/config.py:49
 msgid "Home Maintenance"
 msgstr "Home Maintenance"
 
-#: src/whatsthedamage/config/config.py:49
+#: src/whatsthedamage/config/config.py:50
+msgid "Sports Recreation"
+msgstr "Sports Recreation"
+
+#: src/whatsthedamage/config/config.py:51
 msgid "Loan"
 msgstr "Loan"
 
-#: src/whatsthedamage/config/config.py:50
+#: src/whatsthedamage/config/config.py:52
 msgid "Withdrawal"
 msgstr "Withdrawal"
 
-#: src/whatsthedamage/config/config.py:51
+#: src/whatsthedamage/config/config.py:53
 msgid "Fee"
 msgstr "Fee"
 
-#: src/whatsthedamage/config/config.py:52
+#: src/whatsthedamage/config/config.py:54
 msgid "Deposit"
 msgstr "Deposit"
 
-#: src/whatsthedamage/config/config.py:53
+#: src/whatsthedamage/config/config.py:55
 msgid "Refund"
 msgstr "Refund"
 
-#: src/whatsthedamage/config/config.py:54
+#: src/whatsthedamage/config/config.py:56
 msgid "Interest"
 msgstr "Interest"
 
-#: src/whatsthedamage/config/config.py:55
+#: src/whatsthedamage/config/config.py:57
 msgid "Transfer"
 msgstr "Transfer"
 
-#: src/whatsthedamage/config/config.py:56
+#: src/whatsthedamage/config/config.py:58
 msgid "Other"
 msgstr "Other"
 
-#: src/whatsthedamage/config/config.py:57
+#: src/whatsthedamage/config/config.py:59
 msgid "Balance"
 msgstr "Balance"
 

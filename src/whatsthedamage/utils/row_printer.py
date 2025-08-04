@@ -23,15 +23,12 @@ def print_categorized_rows(set_name: str, rows_dict: Dict[str, List[CsvRow]]) ->
             print(repr(row))
 
 
-def print_training_data(rows_dict: Dict[str, List[CsvRow]], verbosity: str | None = "basic") -> None:
+def print_training_data(rows_dict: Dict[str, List[CsvRow]]) -> None:
     """
-    Prints all objects of all rowsets from rows_dict as a JSON array to STDERR,
-    By default, excludes the 'date' attribute and rows where the 'category' attribute is 'Other' or 'Egyéb'.
-    Use 'full' verbosity to include all attributes.
+    Prints all objects of all rowsets from rows_dict as a JSON array to STDERR.
 
     Args:
         rows_dict (Dict[str, List[CsvRow]]): A dictionary of type values and lists of CsvRow objects.
-        verbosity (str | None): The verbosity level for the output.
 
     Returns:
         None
@@ -40,9 +37,5 @@ def print_training_data(rows_dict: Dict[str, List[CsvRow]], verbosity: str | Non
     for rowset in rows_dict.values():
         for row in rowset:
             row_dict = row.__dict__.copy()
-            if verbosity == "basic":
-                if getattr(row, "category", None) in ("Other", "Egyéb"):
-                    continue
-                row_dict.pop("date", None)
             all_rows.append(row_dict)
     print(json.dumps(all_rows, separators=(",", ":"), ensure_ascii=False), file=sys.stderr)

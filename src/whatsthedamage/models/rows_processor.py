@@ -31,7 +31,7 @@ class RowsProcessor:
         self._category: str = context.args.get("category", "")
         self._filter: Optional[str] = context.args.get("filter", None)
         self._currency: str = ""
-        self._training_data: str | None = context.args.get("training_data", None)
+        self._training_data: bool = context.args.get("training_data", False)
 
         # Convert start and end dates to epoch if provided
         if self._start_date:
@@ -104,7 +104,7 @@ class RowsProcessor:
         if self._verbose:
             print_categorized_rows("All", all_set_rows_dict)
         elif self._training_data:
-            print_training_data(all_set_rows_dict, self._training_data)
+            print_training_data(all_set_rows_dict)
 
         return data_for_pandas
 

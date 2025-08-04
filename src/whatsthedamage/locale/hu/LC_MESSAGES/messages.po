@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: whatsthedamage-1.0\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2025-08-02 20:16+0200\n"
-"PO-Revision-Date: 2025-08-02 20:17+0200\n"
+"POT-Creation-Date: 2025-08-02 21:35+0200\n"
+"PO-Revision-Date: 2025-08-02 21:36+0200\n"
 "Last-Translator: Balázs Németh <balagetech@protonmail.com>\n"
 "Language-Team: Hungarian\n"
 "Language: hu_HU\n"
@@ -51,38 +51,42 @@ msgid "Sports Recreation"
 msgstr "Sport Rekreáció"
 
 #: src/whatsthedamage/config/config.py:51
+msgid "Insurance"
+msgstr "Biztosítás"
+
+#: src/whatsthedamage/config/config.py:52
 msgid "Loan"
 msgstr "Hitel"
 
-#: src/whatsthedamage/config/config.py:52
+#: src/whatsthedamage/config/config.py:53
 msgid "Withdrawal"
 msgstr "Pénzfelvétel"
 
-#: src/whatsthedamage/config/config.py:53
+#: src/whatsthedamage/config/config.py:54
 msgid "Fee"
 msgstr "Díj"
 
-#: src/whatsthedamage/config/config.py:54
+#: src/whatsthedamage/config/config.py:55
 msgid "Deposit"
 msgstr "Bevétel"
 
-#: src/whatsthedamage/config/config.py:55
+#: src/whatsthedamage/config/config.py:56
 msgid "Refund"
 msgstr "Visszatérítés"
 
-#: src/whatsthedamage/config/config.py:56
+#: src/whatsthedamage/config/config.py:57
 msgid "Interest"
 msgstr "Kamat"
 
-#: src/whatsthedamage/config/config.py:57
+#: src/whatsthedamage/config/config.py:58
 msgid "Transfer"
 msgstr "Átvezetés"
 
-#: src/whatsthedamage/config/config.py:58
+#: src/whatsthedamage/config/config.py:59
 msgid "Other"
 msgstr "Egyéb"
 
-#: src/whatsthedamage/config/config.py:59
+#: src/whatsthedamage/config/config.py:60
 msgid "Balance"
 msgstr "Egyenleg"
 

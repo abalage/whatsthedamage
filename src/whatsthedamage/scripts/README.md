@@ -7,8 +7,8 @@ A script using scikit-learn to train ML models to predict categories.
 ## Usage
 
 ```bash
-python3 src/whatsthedamage/scripts/train_model.py train <TRAINING_DATA_JSON_PATH>
-python3 src/whatsthedamage/scripts/train_model.py predict <MODEL_PATH> <TEST_DATA_JSON_PATH>
+python3 src/whatsthedamage/scripts/train_module.py train <TRAINING_DATA_JSON_PATH>
+python3 src/whatsthedamage/scripts/train_module.py predict <MODEL_PATH> <TEST_DATA_JSON_PATH>
 ```
 
 ## Example data structure for training and test data

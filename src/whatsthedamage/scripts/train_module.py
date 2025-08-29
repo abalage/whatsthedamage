@@ -1,0 +1,40 @@
+import argparse
+from whatsthedamage.models.machine_learning import Train, Inference
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="Train or test transaction categorizer model (modular version)."
+    )
+    subparsers = parser.add_subparsers(dest="command", required=True)
+
+    # Train subcommand
+    train_parser = subparsers.add_parser("train", help="Train the model")
+    train_parser.add_argument("training_data", help="Path to training data JSON file")
+    train_parser.add_argument("--metrics", action="store_true", help="Print evaluation metrics")
+    train_parser.add_argument("--gridsearch", action="store_true", help="Use GridSearchCV for hyperparameter tuning")
+    train_parser.add_argument("--randomsearch", action="store_true", help="Use RandomizedSearchCV for hyperparameter tuning")
+    train_parser.add_argument("--output", help="Output path for trained model (auto-generated if not set)")
+
+    # Predict subcommand
+    predict_parser = subparsers.add_parser("predict", help="Predict categories for new data")
+    predict_parser.add_argument("model", help="Path to trained model file")
+    predict_parser.add_argument("new_data", help="Path to new data JSON file")
+
+    args = parser.parse_args()
+
+    if args.command == "train":
+        # Instantiate and configure Train class with arguments
+        trainer = Train(
+            training_data_path=args.training_data,
+            metrics=args.metrics,
+            gridsearch=args.gridsearch,
+            randomsearch=args.randomsearch,
+            output=args.output
+        )
+
+    elif args.command == "predict":
+        # Use Inference class for predictions
+        predictor = Inference(args.model, args.new_data)
+
+if __name__ == "__main__":
+    main()

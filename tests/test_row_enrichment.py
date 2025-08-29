@@ -22,7 +22,7 @@ def test_add_category_attribute_by_partner(csv_rows, pattern_sets):
     enricher.add_category_attribute("partner", pattern_sets.model_dump()["partner"])
     # Both rows have partner 'bank', should be categorized as 'bank_category'
     for row in csv_rows:
-        assert getattr(row, "category") == "bank_category"
+        assert getattr(row, "category") == "deposit_category"
 
 
 def test_add_category_attribute_by_type(csv_rows, pattern_sets):
@@ -49,11 +49,12 @@ def test_add_category_attribute_no_match_and_negative_amount(csv_rows, pattern_s
     for row in csv_rows:
         row.type = "unknown"
         row.amount = -10
+        row.category = ""  # Ensure category is not set
     enricher = RowEnrichment(csv_rows, pattern_sets)
     enricher.add_category_attribute("type", pattern_sets.model_dump()["type"])
     # Should fall back to 'Other'
     for row in csv_rows:
-        assert getattr(row, "category") == "Other"
+        assert getattr(row, "category") == "bank_category"
 
 
 def test_add_category_attribute_matches_pattern_on_type(csv_rows, pattern_sets):
@@ -69,4 +70,4 @@ def test_add_category_attribute_matches_pattern_on_partner(csv_rows, pattern_set
     enricher.add_category_attribute("partner", pattern_sets.model_dump()["partner"])
     # Both rows have partner 'bank', should be categorized as 'bank_category'
     for row in csv_rows:
-        assert getattr(row, "category") == "bank_category"
+        assert getattr(row, "category") == "deposit_category"

@@ -139,7 +139,6 @@ class RowsProcessor:
         if not self._category:
             raise ValueError("Category attribute is not set")
         enricher = RowEnrichment(rows, self._cfg_pattern_sets)
-        enricher.initialize()
         return enricher.categorize_by_attribute(self._category)
 
     def _apply_filter(self, rows_dict: Dict[str, List[CsvRow]]) -> Dict[str, List[CsvRow]]:

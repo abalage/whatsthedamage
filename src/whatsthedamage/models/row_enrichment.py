@@ -16,10 +16,6 @@ class RowEnrichment:
         self.pattern_sets = pattern_sets
         self.categorized: Dict[str, List[CsvRow]] = {get_category_name('other'): []}
 
-    def initialize(self) -> None:
-        """
-        Initialize the categorization process by calling add_category_attribute for each attribute.
-        """
         # Convert the Pydantic model to a dictionary
         pattern_sets_dict = self.pattern_sets.model_dump()
 

@@ -234,8 +234,8 @@ def main() -> None:
                 df, y, test_size=0.2, random_state=RANDOM_STATE, stratify=y)
         else:
             df_train = df
-            y_train = y
             df_test = None
+            y_train = y
             y_test = None
 
         preprocessor: ColumnTransformer = get_preprocessor()

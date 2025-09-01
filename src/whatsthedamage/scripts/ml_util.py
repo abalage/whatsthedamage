@@ -22,6 +22,20 @@ def main():
 
     args = parser.parse_args()
 
+    # ML subcommand validation
+    if args.command == 'ml':
+        # --train and --inference require --model
+        if (args.train or args.inference) and not args.model:
+            parser.error("--model is required when using --train or --inference.")
+
+        # --metrics, --gridsearch, --randomsearch only allowed with --train
+        if (args.metrics or args.gridsearch or args.randomsearch) and not args.train:
+            parser.error("--metrics, --gridsearch, and --randomsearch are only allowed with --train.")
+
+        # --gridsearch and --randomsearch are mutually exclusive
+        if args.gridsearch and args.randomsearch:
+            parser.error("--gridsearch and --randomsearch cannot be used together.")
+
     if args.command == "train":
         # Instantiate and configure Train class with arguments
         trainer = Train(

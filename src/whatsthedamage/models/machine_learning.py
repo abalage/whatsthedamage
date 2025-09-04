@@ -180,9 +180,8 @@ class Train:
                 ],
             }
         }
-
         self.pipe: Pipeline = self.get_pipeline()
-        self.model: Pipeline = self.train()
+        self.model: Any = self.train()
 
         if self.metrics and self.df_test is not None and self.y_test is not None:
             self.evaluate()
@@ -254,8 +253,11 @@ class Train:
         """Evaluate the model and print metrics."""
         y_pred: Any = self.model.predict(self.df_test)
         print("\nModel Evaluation Metrics:")
-        print("Accuracy:", accuracy_score(self.y_test, y_pred))
-        print(classification_report(self.y_test, y_pred))
+        if self.y_test is not None:
+            print("Accuracy:", accuracy_score(self.y_test, y_pred))
+            print(classification_report(self.y_test, y_pred))
+        else:
+            print("Warning: y_test is None, cannot compute accuracy or classification report.")
 
 
 class Inference:

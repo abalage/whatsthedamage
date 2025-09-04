@@ -40,7 +40,7 @@ def main() -> None:
 
     if args.command == "train":
         # Instantiate and configure Train class with arguments
-        trainer = Train(
+        Train(
             training_data_path=args.training_data,
             metrics=args.metrics,
             gridsearch=args.gridsearch,
@@ -50,7 +50,7 @@ def main() -> None:
 
     elif args.command == "predict":
         # Use Inference class for predictions
-        predict = Inference(args.model, args.new_data)
+        predict = Inference(args.new_data)
         predict.print_inference_data(args.confidence)
 
 

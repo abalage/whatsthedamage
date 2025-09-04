@@ -134,7 +134,7 @@ class Train:
         self.df_test = None
         self.y_train = None
         self.y_test = None
-        self.model_save_path = self.output if self.output else get_model_filename()
+        self.model_save_path = self.output if self.output else ml_config.model_path
 
         self.config = ml_config
 

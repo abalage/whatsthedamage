@@ -1,4 +1,4 @@
-from typing import Optional, Dict, List
+from typing import Optional, Dict, List, Union
 from whatsthedamage.config.config import AppContext, EnricherPatternSets
 from whatsthedamage.models.csv_row import CsvRow
 from whatsthedamage.models.row_enrichment import RowEnrichment
@@ -140,6 +140,7 @@ class RowsProcessor:
         """
         if not self._category:
             raise ValueError("Category attribute is not set")
+        enricher: Union[RowEnrichmentML, RowEnrichment]
         if self._ml:
             enricher = RowEnrichmentML(rows)
         else:

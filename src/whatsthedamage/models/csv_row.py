@@ -12,7 +12,7 @@ class CsvRow:
         self.partner = row.get(mapping.get('partner', ''), '').strip()
         self.amount = float(row.get(mapping.get('amount', ''), 0))
         self.currency = row.get(mapping.get('currency', ''), '').strip()
-        self.category = ""
+        self.category = row.get(mapping.get('category', ''), '').strip()
 
     def __repr__(self) -> str:
         """

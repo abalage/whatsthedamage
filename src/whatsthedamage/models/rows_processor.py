@@ -2,6 +2,7 @@ from typing import Optional, Dict, List
 from whatsthedamage.config.config import AppContext, EnricherPatternSets
 from whatsthedamage.models.csv_row import CsvRow
 from whatsthedamage.models.row_enrichment import RowEnrichment
+from whatsthedamage.models.row_enrichment_ml import RowEnrichmentML
 from whatsthedamage.models.row_filter import RowFilter
 from whatsthedamage.models.row_summarizer import RowSummarizer
 from whatsthedamage.utils.date_converter import DateConverter
@@ -32,6 +33,7 @@ class RowsProcessor:
         self._filter: Optional[str] = context.args.get("filter", None)
         self._currency: str = ""
         self._training_data: bool = context.args.get("training_data", False)
+        self._ml: bool = context.args.get("ml", False)
 
         # Convert start and end dates to epoch if provided
         if self._start_date:
@@ -84,7 +86,7 @@ class RowsProcessor:
         filtered_sets = self._filter_rows(rows)
         self.set_currency(filtered_sets)
         data_for_pandas = {}
-        all_set_rows_dict = {}
+        all_set_rows_dict: Dict[str, List[CsvRow]] = {}
 
         for filtered_set in filtered_sets:
             for set_name, set_rows in filtered_set.items():
@@ -138,7 +140,10 @@ class RowsProcessor:
         """
         if not self._category:
             raise ValueError("Category attribute is not set")
-        enricher = RowEnrichment(rows, self._cfg_pattern_sets)
+        if self._ml:
+            enricher = RowEnrichmentML(rows)
+        else:
+            enricher = RowEnrichment(rows, self._cfg_pattern_sets)
         return enricher.categorize_by_attribute(self._category)
 
     def _apply_filter(self, rows_dict: Dict[str, List[CsvRow]]) -> Dict[str, List[CsvRow]]:

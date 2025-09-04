@@ -1,7 +1,8 @@
 import argparse
 from whatsthedamage.models.machine_learning import Train, Inference
 
-def main():
+
+def main() -> None:
     parser = argparse.ArgumentParser(
         description="Train or test transaction categorizer model (modular version)."
     )
@@ -11,14 +12,15 @@ def main():
     train_parser = subparsers.add_parser("train", help="Train the model")
     train_parser.add_argument("training_data", help="Path to training data JSON file")
     train_parser.add_argument("--metrics", action="store_true", help="Print evaluation metrics")
-    train_parser.add_argument("--gridsearch", action="store_true", help="Use GridSearchCV for hyperparameter tuning")
-    train_parser.add_argument("--randomsearch", action="store_true", help="Use RandomizedSearchCV for hyperparameter tuning")
-    train_parser.add_argument("--output", help="Output path for trained model (auto-generated if not set)")
+    train_parser.add_argument("--gridsearch", action="store_true", help="Use GridSearchCV for hyperparameter tuning")  # noqa: E501
+    train_parser.add_argument("--randomsearch", action="store_true", help="Use RandomizedSearchCV for hyperparameter tuning")  # noqa: E501
+    train_parser.add_argument("--output", help="Output directory for trained model (auto-generated if not exists)")
 
     # Predict subcommand
     predict_parser = subparsers.add_parser("predict", help="Predict categories for new data")
     predict_parser.add_argument("model", help="Path to trained model file")
     predict_parser.add_argument("new_data", help="Path to new data JSON file")
+    predict_parser.add_argument("--confidence", action="store_true", help="Show prediction confidence scores and verbose data")  # noqa: E501
 
     args = parser.parse_args()
 
@@ -48,7 +50,9 @@ def main():
 
     elif args.command == "predict":
         # Use Inference class for predictions
-        predictor = Inference(args.model, args.new_data)
+        predict = Inference(args.model, args.new_data)
+        predict.print_inference_data(args.confidence)
+
 
 if __name__ == "__main__":
     main()

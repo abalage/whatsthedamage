@@ -82,6 +82,7 @@ def app_context():
         "start_date": "2023-01-01",
         "lang": None,
         "training_data": False,
+        "ml": False,
     }
 
     # Return the AppContext object

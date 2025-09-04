@@ -24,6 +24,7 @@ class AppArgs(TypedDict):
     verbose: bool
     training_data: bool
     lang: str | None
+    ml: bool
 
 
 class CsvConfig(BaseModel):

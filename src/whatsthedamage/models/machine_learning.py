@@ -1,7 +1,7 @@
 import sys
 import json
 import pandas as pd
-from typing import List, Any, Dict
+from typing import List, Any, Dict, Union
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from sklearn.compose import ColumnTransformer
@@ -10,9 +10,11 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split, GridSearchCV, RandomizedSearchCV
 from sklearn.metrics import classification_report, accuracy_score
 import joblib
-#from whatsthedamage.config.config import MLConfig
+from whatsthedamage.models.csv_row import CsvRow
 from pydantic import BaseModel
 from datetime import datetime
+import os
+
 
 def load_json_data(filepath: str) -> Any:
     try:
@@ -28,20 +30,16 @@ def load_json_data(filepath: str) -> Any:
         print(f"Error: An unexpected error occurred while reading '{filepath}': {e}")
         sys.exit(1)
 
-def get_model_filename() -> str:
-    # FIXME should be available without instantiation, MLConfig class might be overkill
-    config = MLConfig()
-    """Generate a unique model filename based on timestamp."""
-    now = datetime.now().strftime("%Y%m%d_%H%M")
-    return f"model_{config.classifier_short_name}_{now}.joblib"
 
-def save(model: Pipeline, output: str, manifest: dict) -> None:
-    """Save the trained model and its manifest metadata to disk."""
-    if output == "":
-        output = get_model_filename()
-    # Ensure correct suffixes
-    model_save_path = output if output.endswith(".joblib") else output + ".joblib"
-    model_manifest_save_path = output if output.endswith(".manifest.json") else output + ".manifest.json"
+def save(model: Pipeline, output_dir: str, manifest: Dict[str, Any]) -> None:
+    """Save the trained model and its manifest metadata to disk in the specified directory."""
+    if not os.path.isdir(output_dir):
+        os.makedirs(output_dir, exist_ok=True)
+    model_filename = f"model-{ml_config.classifier_short_name}-{ml_config.model_version}.joblib"
+    model_save_path = os.path.join(output_dir, model_filename)
+    model_manifest_save_path = os.path.join(
+        output_dir, model_filename.replace(".joblib", ".manifest.json")
+    )
 
     try:
         joblib.dump(model, model_save_path)
@@ -57,6 +55,7 @@ def save(model: Pipeline, output: str, manifest: dict) -> None:
     except Exception as e:
         print(f"Error: Failed to save manifest to '{model_manifest_save_path}': {e}")
 
+
 def load(model_path: str) -> Pipeline:
     """Load a model from disk."""
     try:
@@ -66,6 +65,7 @@ def load(model_path: str) -> Pipeline:
         sys.exit(1)
 
     return model
+
 
 class MLConfig(BaseModel):
     hungarian_type_stop_words: List[str] = [
@@ -81,10 +81,22 @@ class MLConfig(BaseModel):
     random_state: int = 42
     min_samples_split: int = 10
     n_estimators: int = 200
+    model_version: str = "v1alpha"
+    model_path: str = "src/whatsthedamage/static/model-{short}-{ver}.joblib".format(
+        short=classifier_short_name, ver=model_version
+    )
+    manifest_path: str = "src/whatsthedamage/static/model-{short}-{ver}.manifest.json".format(
+        short=classifier_short_name, ver=model_version
+    )
+
+
+# Singleton instance of MLConfig
+ml_config = MLConfig()
+
 
 class TrainingData:
     def __init__(self, training_data_path: str):
-        self.required_columns: set[str] = {"type", "partner", "currency", "amount", "category"}
+        self.required_columns: set[str] = {"type", "partner", "currency", "amount"}
         raw_data = load_json_data(training_data_path)
         df = pd.DataFrame(raw_data)
         self._df = self._validate_and_clean_data(df)
@@ -108,6 +120,7 @@ class TrainingData:
     def get_training_data(self) -> pd.DataFrame:
         return self._df
 
+
 class Train:
 
     """Train the model with the provided training data."""
@@ -123,7 +136,7 @@ class Train:
         self.y_test = None
         self.model_save_path = self.output if self.output else get_model_filename()
 
-        self.config = MLConfig()
+        self.config = ml_config
 
         tdo = TrainingData(self.training_data_path)
         print(f"Loaded {len(tdo.get_training_data())} rows from {self.training_data_path}")
@@ -149,6 +162,7 @@ class Train:
         # FIXME not the nicest place to put this
         MANIFEST = {
             "model_file": self.model_save_path,
+            "model_version": self.config.model_version,
             "training_data": self.training_data_path,
             "training_date": datetime.now().isoformat(),
             "parameters": {
@@ -195,7 +209,7 @@ class Train:
             ]
         )
         return self.preprocessor
-    
+
     def get_pipeline(self) -> Pipeline:
         """Return the full model pipeline."""
         if not self.preprocessor:
@@ -208,7 +222,7 @@ class Train:
                 n_estimators=self.config.n_estimators))
         ])
 
-    def train(self, gridsearch=False, randomsearch=False) -> Pipeline:
+    def train(self, gridsearch: bool = False, randomsearch: bool = False) -> Pipeline:
         """Train the model, optionally with hyperparameter search."""
         pipe = self.get_pipeline()
         param_grid: Dict[str, List[Any]] = {
@@ -243,15 +257,25 @@ class Train:
         print("Accuracy:", accuracy_score(self.y_test, y_pred))
         print(classification_report(self.y_test, y_pred))
 
-class Inference:
-    def __init__(self, model_path: str, new_data: str):
-        self.model: Pipeline = load(model_path)
-        self.df_new: pd.DataFrame = pd.DataFrame(load_json_data(new_data))
 
-        pd.set_option('display.max_columns', None)
-        pd.set_option('display.max_rows', None)
-        pd.set_option('display.width', 130)
-        pd.set_option('display.expand_frame_repr', False)
+class Inference:
+    def __init__(self, new_data: Union[str, List[CsvRow]]) -> None:
+        self.config = ml_config
+        self.model: Pipeline = load(self.config.model_path)
+        self.df_new: pd.DataFrame
+
+        if isinstance(new_data, str):
+            # Assume it's a JSON file path
+            loaded = load_json_data(new_data)
+            self.df_new = pd.DataFrame(loaded)
+        elif isinstance(new_data, List):
+            # Assume it's a list of CsvRow objects or dicts
+            self.df_new = pd.DataFrame([row.__dict__ for row in new_data])
+        else:
+            raise ValueError("Input must be a JSON file path or a List[dict].")
+
+        if self.df_new.empty:
+            raise ValueError("Input DataFrame is empty.")
 
         # Predict categories
         predicted_categories = self.model.predict(self.df_new)
@@ -263,4 +287,38 @@ class Inference:
         self.df_new["predicted_category"] = predicted_categories
         self.df_new["prediction_confidence"] = confidence.round(2)
 
-        print(self.df_new[["type", "partner", "amount", "currency", "category", "predicted_category", "prediction_confidence"]])
+    def get_predictions(self) -> List[CsvRow]:
+        """Return predictions as a list of CsvRow objects with 'category' overwritten."""
+
+        # Prepare DataFrame: keep only CsvRow fields, overwrite 'category'
+        df_filtered = self.df_new.copy()
+        df_filtered["category"] = df_filtered["predicted_category"]
+
+        # Create a List[CsvRow] object.
+        loc = [
+            CsvRow(
+                row.to_dict(),
+                mapping={
+                    "date": "date",
+                    "type": "type",
+                    "partner": "partner",
+                    "amount": "amount",
+                    "currency": "currency",
+                    "category": "category"
+                }
+            ) for _, row in df_filtered.iterrows()
+        ]
+        return loc
+
+    def print_inference_data(self, with_confidence: bool = False) -> None:
+        """Print the DataFrame with inference data."""
+
+        pd.set_option('display.max_columns', None)
+        pd.set_option('display.max_rows', None)
+        pd.set_option('display.width', 130)
+        pd.set_option('display.expand_frame_repr', False)
+
+        if with_confidence:
+            print(self.df_new[["type", "partner", "amount", "currency", "category", "predicted_category", "prediction_confidence"]])  # noqa: E501
+        else:
+            print(self.df_new[["type", "partner", "amount", "currency", "predicted_category"]])

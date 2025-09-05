@@ -78,6 +78,7 @@ class MLConfig(BaseModel):
         "crv", "sumup", "www"
     ]
     classifier_short_name: str = "rf"
+    classifier_imbalance_threshold: float = 0.2
     random_state: int = 42
     min_samples_split: int = 10
     n_estimators: int = 200
@@ -149,6 +150,19 @@ class Train:
             self.df, self.y, test_size=self.config.test_size, random_state=self.config.random_state, stratify=self.y
         )
 
+        # Print class distribution
+        print("Class distribution in training set:")
+        print(self.y_train.value_counts())
+
+        # Optionally, set class_weight if imbalance is detected
+        imbalance_threshold = self.config.classifier_imbalance_threshold  # e.g., if any class <20% of samples
+        class_counts = self.y_train.value_counts(normalize=True)
+        if class_counts.min() < imbalance_threshold:
+            print("Warning: Class imbalance detected. Setting class_weight='balanced' for classifier.")
+            self.class_weight = "balanced"
+        else:
+            self.class_weight = None
+
         # Use feature_columns from config
         self.X_train = self.df_train[self.config.feature_columns]
         self.X_test = self.df_test[self.config.feature_columns]
@@ -210,12 +224,15 @@ class Train:
     def get_pipeline(self) -> Pipeline:
         """Return the full model pipeline."""
         preprocessor = self.get_preprocessor()
+        classifier = RandomForestClassifier(
+            random_state=self.config.random_state,
+            min_samples_split=self.config.min_samples_split,
+            n_estimators=self.config.n_estimators,
+            class_weight=getattr(self, "class_weight", None)
+        )
         return Pipeline([
             ("preprocessor", preprocessor),
-            ("classifier", RandomForestClassifier(
-                random_state=self.config.random_state,
-                min_samples_split=self.config.min_samples_split,
-                n_estimators=self.config.n_estimators))
+            ("classifier", classifier)
         ])
 
     def train(self, gridsearch: bool = False, randomsearch: bool = False) -> Pipeline:

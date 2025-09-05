@@ -11,7 +11,6 @@ def main() -> None:
     # Train subcommand
     train_parser = subparsers.add_parser("train", help="Train the model")
     train_parser.add_argument("training_data", help="Path to training data JSON file")
-    train_parser.add_argument("--metrics", action="store_true", help="Print evaluation metrics")
     train_parser.add_argument("--gridsearch", action="store_true", help="Use GridSearchCV for hyperparameter tuning")  # noqa: E501
     train_parser.add_argument("--randomsearch", action="store_true", help="Use RandomizedSearchCV for hyperparameter tuning")  # noqa: E501
     train_parser.add_argument("--output", help="Output directory for trained model (auto-generated if not exists)")
@@ -30,9 +29,9 @@ def main() -> None:
         if (args.train or args.inference) and not args.model:
             parser.error("--model is required when using --train or --inference.")
 
-        # --metrics, --gridsearch, --randomsearch only allowed with --train
-        if (args.metrics or args.gridsearch or args.randomsearch) and not args.train:
-            parser.error("--metrics, --gridsearch, and --randomsearch are only allowed with --train.")
+        # --gridsearch, --randomsearch only allowed with --train
+        if (args.gridsearch or args.randomsearch) and not args.train:
+            parser.error("--gridsearch, and --randomsearch are only allowed with --train.")
 
         # --gridsearch and --randomsearch are mutually exclusive
         if args.gridsearch and args.randomsearch:
@@ -42,7 +41,6 @@ def main() -> None:
         # Instantiate and configure Train class with arguments
         Train(
             training_data_path=args.training_data,
-            metrics=args.metrics,
             gridsearch=args.gridsearch,
             randomsearch=args.randomsearch,
             output=args.output

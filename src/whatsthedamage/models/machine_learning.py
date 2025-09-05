@@ -81,7 +81,8 @@ class MLConfig(BaseModel):
     random_state: int = 42
     min_samples_split: int = 10
     n_estimators: int = 200
-    model_version: str = "v1alpha"
+    test_size: float = 0.2
+    model_version: str = "v2alpha"
     model_path: str = "src/whatsthedamage/static/model-{short}-{ver}.joblib".format(
         short=classifier_short_name, ver=model_version
     )
@@ -122,11 +123,9 @@ class TrainingData:
 
 
 class Train:
-
     """Train the model with the provided training data."""
-    def __init__(self, training_data_path: str, metrics: bool, gridsearch: bool, randomsearch: bool, output: str = ""):
+    def __init__(self, training_data_path: str, gridsearch: bool, randomsearch: bool, output: str = ""):
         self.training_data_path = training_data_path
-        self.metrics = metrics
         self.gridsearch = gridsearch
         self.randomsearch = randomsearch
         self.output = output
@@ -142,20 +141,16 @@ class Train:
         print(f"Loaded {len(tdo.get_training_data())} rows from {self.training_data_path}")
 
         self.df: pd.DataFrame = tdo.get_training_data()
-        self.y: pd.Series = tdo.get_training_data()["category"]
+        self.y: pd.Series = self.df["category"]
 
-        if self.metrics:
-            # FIXME hardcoded amount of test size
-            self.df_train, self.df_test, self.y_train, self.y_test = train_test_split(
-                self.df, self.y, test_size=0.2, random_state=self.config.random_state, stratify=self.y)
-        else:
-            self.df_train = self.df
-            self.df_test = None
-            self.y_train = self.y
-            self.y_test = None
+        # Always split data to prevent Data Leakage
+        self.df_train, self.df_test, self.y_train, self.y_test = train_test_split(
+            self.df, self.y, test_size=self.config.test_size, random_state=self.config.random_state, stratify=self.y
+        )
 
         self.preprocessor: ColumnTransformer = self.get_preprocessor()
 
+        # Fit preprocessor ONLY on training data
         X_train: Any = self.preprocessor.fit_transform(self.df_train)
         print(f"Feature matrix shape after preprocessing: {X_train.shape}")
 
@@ -169,11 +164,12 @@ class Train:
                 "classifier_short_name": self.config.classifier_short_name,
                 "random_state": self.config.random_state,
                 "min_samples_split": self.config.min_samples_split,
-                "n_estimators": self.config.n_estimators,
+                "n_estimators": self.config.n_estimators
             },
             "data_info": {
                 "row_count": len(self.df),
                 "num_features": X_train.shape[1],
+                "test_size": self.config.test_size,
                 "columns": [
                     # Only columns used in ColumnTransformer
                     "type", "partner", "currency", "amount"
@@ -183,7 +179,8 @@ class Train:
         self.pipe: Pipeline = self.get_pipeline()
         self.model: Any = self.train()
 
-        if self.metrics and self.df_test is not None and self.y_test is not None:
+        # Always evaluate if test data is available
+        if self.df_test is not None and self.y_test is not None:
             self.evaluate()
 
         save(self.model, self.model_save_path, MANIFEST)
@@ -233,31 +230,37 @@ class Train:
         if gridsearch:
             print("Using GridSearchCV for hyperparameter tuning...")
             grid_search: GridSearchCV = GridSearchCV(pipe, param_grid, cv=3, n_jobs=-1)
-            grid_search.fit(self.df, self.y)
+            if self.df_train is None or self.y_train is None:
+                raise ValueError("Training data (df_train or y_train) is None.")
+            grid_search.fit(self.df_train, self.y_train)
             print("Best parameters:", grid_search.best_params_)
             self.model = grid_search.best_estimator_
         elif randomsearch:
             print("Using RandomizedSearchCV for hyperparameter tuning...")
             random_search: RandomizedSearchCV = RandomizedSearchCV(
                 pipe, param_dist, n_iter=10, cv=3, n_jobs=-1, random_state=self.config.random_state)
-            random_search.fit(self.df, self.y)
+            if self.df_train is None or self.y_train is None:
+                raise ValueError("Training data (df_train or y_train) is None.")
+            random_search.fit(self.df_train, self.y_train)
             print("Best parameters:", random_search.best_params_)
             self.model = random_search.best_estimator_
         else:
-            pipe.fit(self.df, self.y)
+            if self.df_train is None or self.y_train is None:
+                raise ValueError("Training data (df_train or y_train) is None.")
+            pipe.fit(self.df_train, self.y_train)
             self.model = pipe
 
         return self.model
 
     def evaluate(self) -> None:
         """Evaluate the model and print metrics."""
-        y_pred: Any = self.model.predict(self.df_test)
-        print("\nModel Evaluation Metrics:")
         if self.y_test is not None:
+            y_pred: Any = self.model.predict(self.df_test)
+            print("\nModel Evaluation Metrics:")
             print("Accuracy:", accuracy_score(self.y_test, y_pred))
             print(classification_report(self.y_test, y_pred))
         else:
-            print("Warning: y_test is None, cannot compute accuracy or classification report.")
+            print("Error: y_test is None. Cannot evaluate model.")
 
 
 class Inference:

@@ -89,6 +89,7 @@ class MLConfig(BaseModel):
     manifest_path: str = "src/whatsthedamage/static/model-{short}-{ver}.manifest.json".format(
         short=classifier_short_name, ver=model_version
     )
+    feature_columns: List[str] = ["type", "partner", "currency", "amount"]
 
 
 # Singleton instance of MLConfig
@@ -97,7 +98,7 @@ ml_config = MLConfig()
 
 class TrainingData:
     def __init__(self, training_data_path: str):
-        self.required_columns: set[str] = {"type", "partner", "currency", "amount"}
+        self.required_columns: set[str] = set(ml_config.feature_columns)
         raw_data = load_json_data(training_data_path)
         df = pd.DataFrame(raw_data)
         self._df = self._validate_and_clean_data(df)
@@ -148,11 +149,11 @@ class Train:
             self.df, self.y, test_size=self.config.test_size, random_state=self.config.random_state, stratify=self.y
         )
 
-        self.preprocessor: ColumnTransformer = self.get_preprocessor()
+        # Use feature_columns from config
+        self.X_train = self.df_train[self.config.feature_columns]
+        self.X_test = self.df_test[self.config.feature_columns]
 
-        # Fit preprocessor ONLY on training data
-        X_train: Any = self.preprocessor.fit_transform(self.df_train)
-        print(f"Feature matrix shape after preprocessing: {X_train.shape}")
+        self.preprocessor: ColumnTransformer = self.get_preprocessor()
 
         # FIXME not the nicest place to put this
         MANIFEST = {
@@ -168,14 +169,14 @@ class Train:
             },
             "data_info": {
                 "row_count": len(self.df),
-                "num_features": X_train.shape[1],
+                "feature_matrix_shape": self.preprocessor.fit_transform(self.X_train).shape,
                 "test_size": self.config.test_size,
-                "columns": [
-                    # Only columns used in ColumnTransformer
-                    "type", "partner", "currency", "amount"
-                ],
+                "feature_columns": self.config.feature_columns,
             }
         }
+
+        print(f"Feature matrix shape after preprocessing: {MANIFEST['data_info']['feature_matrix_shape']}")
+
         self.pipe: Pipeline = self.get_pipeline()
         self.model: Any = self.train()
 
@@ -208,10 +209,9 @@ class Train:
 
     def get_pipeline(self) -> Pipeline:
         """Return the full model pipeline."""
-        if not self.preprocessor:
-            self.get_preprocessor()
+        preprocessor = self.get_preprocessor()
         return Pipeline([
-            ("preprocessor", self.preprocessor),
+            ("preprocessor", preprocessor),
             ("classifier", RandomForestClassifier(
                 random_state=self.config.random_state,
                 min_samples_split=self.config.min_samples_split,
@@ -230,24 +230,24 @@ class Train:
         if gridsearch:
             print("Using GridSearchCV for hyperparameter tuning...")
             grid_search: GridSearchCV = GridSearchCV(pipe, param_grid, cv=3, n_jobs=-1)
-            if self.df_train is None or self.y_train is None:
-                raise ValueError("Training data (df_train or y_train) is None.")
-            grid_search.fit(self.df_train, self.y_train)
+            if self.X_train is None or self.y_train is None:
+                raise ValueError("Training data (X_train or y_train) is None.")
+            grid_search.fit(self.X_train, self.y_train)
             print("Best parameters:", grid_search.best_params_)
             self.model = grid_search.best_estimator_
         elif randomsearch:
             print("Using RandomizedSearchCV for hyperparameter tuning...")
             random_search: RandomizedSearchCV = RandomizedSearchCV(
                 pipe, param_dist, n_iter=10, cv=3, n_jobs=-1, random_state=self.config.random_state)
-            if self.df_train is None or self.y_train is None:
-                raise ValueError("Training data (df_train or y_train) is None.")
-            random_search.fit(self.df_train, self.y_train)
+            if self.X_train is None or self.y_train is None:
+                raise ValueError("Training data (X_train or y_train) is None.")
+            random_search.fit(self.X_train, self.y_train)
             print("Best parameters:", random_search.best_params_)
             self.model = random_search.best_estimator_
         else:
-            if self.df_train is None or self.y_train is None:
-                raise ValueError("Training data (df_train or y_train) is None.")
-            pipe.fit(self.df_train, self.y_train)
+            if self.X_train is None or self.y_train is None:
+                raise ValueError("Training data (X_train or y_train) is None.")
+            pipe.fit(self.X_train, self.y_train)
             self.model = pipe
 
         return self.model
@@ -255,7 +255,7 @@ class Train:
     def evaluate(self) -> None:
         """Evaluate the model and print metrics."""
         if self.y_test is not None:
-            y_pred: Any = self.model.predict(self.df_test)
+            y_pred: Any = self.model.predict(self.X_test)
             print("\nModel Evaluation Metrics:")
             print("Accuracy:", accuracy_score(self.y_test, y_pred))
             print(classification_report(self.y_test, y_pred))
@@ -282,11 +282,11 @@ class Inference:
         if self.df_new.empty:
             raise ValueError("Input DataFrame is empty.")
 
-        # Predict categories
-        predicted_categories = self.model.predict(self.df_new)
+        # Use feature_columns from config for inference
+        X_new = self.df_new[self.config.feature_columns]
 
-        # Get prediction probabilities (confidence)
-        proba = self.model.predict_proba(self.df_new)
+        predicted_categories = self.model.predict(X_new)
+        proba = self.model.predict_proba(X_new)
         confidence = proba.max(axis=1)
 
         self.df_new["predicted_category"] = predicted_categories

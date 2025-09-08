@@ -168,8 +168,17 @@ class Train:
         self.X_test = self.df_test[self.config.feature_columns]
 
         self.preprocessor: ColumnTransformer = self.get_preprocessor()
+        self.pipe: Pipeline = self.get_pipeline()
+        self.model: Any = self.train()
 
-        # FIXME not the nicest place to put this
+        # Always evaluate if test data is available
+        if self.df_test is not None and self.y_test is not None:
+            self.evaluate()
+
+        # Get processed feature matrix shape after fitting the pipeline
+        processed_shape = self.model.named_steps["preprocessor"].transform(self.X_train).shape
+
+        # Create MANIFEST after training and evaluation
         MANIFEST = {
             "model_file": self.model_save_path,
             "model_version": self.config.model_version,
@@ -183,20 +192,13 @@ class Train:
             },
             "data_info": {
                 "row_count": len(self.df),
-                "feature_matrix_shape": self.preprocessor.fit_transform(self.X_train).shape,
+                "feature_matrix_shape": processed_shape,
                 "test_size": self.config.test_size,
                 "feature_columns": self.config.feature_columns,
             }
         }
 
-        print(f"Feature matrix shape after preprocessing: {MANIFEST['data_info']['feature_matrix_shape']}")
-
-        self.pipe: Pipeline = self.get_pipeline()
-        self.model: Any = self.train()
-
-        # Always evaluate if test data is available
-        if self.df_test is not None and self.y_test is not None:
-            self.evaluate()
+        print(f"Feature matrix shape after preprocessing: {processed_shape}")
 
         save(self.model, self.model_save_path, MANIFEST)
 

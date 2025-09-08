@@ -125,20 +125,15 @@ class TrainingData:
 
 
 class Train:
-    """Train the model with the provided training data."""
-    def __init__(self, training_data_path: str, gridsearch: bool, randomsearch: bool, output: str = ""):
+    """Prepare data and pipeline for model training."""
+    def __init__(self, training_data_path: str, output: str = ""):
         self.training_data_path = training_data_path
-        self.gridsearch = gridsearch
-        self.randomsearch = randomsearch
         self.output = output
-        self.df_train = None
-        self.df_test = None
-        self.y_train = None
-        self.y_test = None
         self.model_save_path = self.output if self.output else ml_config.model_path
-
         self.config = ml_config
+        self.class_weight = None
 
+        # Load and validate data
         tdo = TrainingData(self.training_data_path)
         print(f"Loaded {len(tdo.get_training_data())} rows from {self.training_data_path}")
 
@@ -150,57 +145,23 @@ class Train:
             self.df, self.y, test_size=self.config.test_size, random_state=self.config.random_state, stratify=self.y
         )
 
-        # Print class distribution
-        print("Class distribution in training set:")
-        print(self.y_train.value_counts())
-
         # Optionally, set class_weight if imbalance is detected
-        imbalance_threshold = self.config.classifier_imbalance_threshold  # e.g., if any class <20% of samples
         class_counts = self.y_train.value_counts(normalize=True)
-        if class_counts.min() < imbalance_threshold:
+        if class_counts.min() < self.config.classifier_imbalance_threshold:
             print("Warning: Class imbalance detected. Setting class_weight='balanced' for classifier.")
+            # Print class distribution
+            print("Class distribution in training set:")
+            print(self.y_train.value_counts())
             self.class_weight = "balanced"
-        else:
-            self.class_weight = None
 
-        # Use feature_columns from config
+        # Prepare feature columns
         self.X_train = self.df_train[self.config.feature_columns]
         self.X_test = self.df_test[self.config.feature_columns]
 
+        # Prepare preprocessor and pipeline
         self.preprocessor: ColumnTransformer = self.get_preprocessor()
         self.pipe: Pipeline = self.get_pipeline()
-        self.model: Any = self.train()
-
-        # Always evaluate if test data is available
-        if self.df_test is not None and self.y_test is not None:
-            self.evaluate()
-
-        # Get processed feature matrix shape after fitting the pipeline
-        processed_shape = self.model.named_steps["preprocessor"].transform(self.X_train).shape
-
-        # Create MANIFEST after training and evaluation
-        MANIFEST = {
-            "model_file": self.model_save_path,
-            "model_version": self.config.model_version,
-            "training_data": self.training_data_path,
-            "training_date": datetime.now().isoformat(),
-            "parameters": {
-                "classifier_short_name": self.config.classifier_short_name,
-                "random_state": self.config.random_state,
-                "min_samples_split": self.config.min_samples_split,
-                "n_estimators": self.config.n_estimators
-            },
-            "data_info": {
-                "row_count": len(self.df),
-                "feature_matrix_shape": processed_shape,
-                "test_size": self.config.test_size,
-                "feature_columns": self.config.feature_columns,
-            }
-        }
-
-        print(f"Feature matrix shape after preprocessing: {processed_shape}")
-
-        save(self.model, self.model_save_path, MANIFEST)
+        self.model: Pipeline = self.pipe
 
     def get_preprocessor(self) -> ColumnTransformer:
         """Return the feature engineering pipeline."""
@@ -237,8 +198,47 @@ class Train:
             ("classifier", classifier)
         ])
 
-    def train(self, gridsearch: bool = False, randomsearch: bool = False) -> Pipeline:
+    def train(self) -> None:
         """Train the model, optionally with hyperparameter search."""
+        pipe = self.get_pipeline()
+        if self.X_train is None or self.y_train is None:
+            raise ValueError("Training data (X_train or y_train) is None.")
+        pipe.fit(self.X_train, self.y_train)
+        self.model = pipe
+
+        # Always evaluate if test data is available
+        if self.df_test is not None and self.y_test is not None:
+            self.evaluate()
+
+        # Get processed feature matrix shape after fitting the pipeline
+        processed_shape = self.model.named_steps["preprocessor"].transform(self.X_train).shape
+
+        # Create MANIFEST after training and evaluation
+        MANIFEST = {
+            "model_file": self.model_save_path,
+            "model_version": self.config.model_version,
+            "training_data": self.training_data_path,
+            "training_date": datetime.now().isoformat(),
+            "parameters": {
+                "classifier_short_name": self.config.classifier_short_name,
+                "random_state": self.config.random_state,
+                "min_samples_split": self.config.min_samples_split,
+                "n_estimators": self.config.n_estimators
+            },
+            "data_info": {
+                "row_count": len(self.df),
+                "feature_matrix_shape": processed_shape,
+                "test_size": self.config.test_size,
+                "feature_columns": self.config.feature_columns,
+            }
+        }
+
+        print(f"Feature matrix shape after preprocessing: {processed_shape}")
+
+        save(self.model, self.model_save_path, MANIFEST)
+
+    def hyperparameter_tuning(self, method: str) -> None:
+        """Perform hyperparameter tuning."""
         pipe = self.get_pipeline()
         param_grid: Dict[str, List[Any]] = {
             "classifier__n_estimators": [50, 100, 200],
@@ -246,15 +246,14 @@ class Train:
             "classifier__min_samples_split": [2, 5, 10],
         }
         param_dist: Dict[str, List[Any]] = param_grid.copy()
-        if gridsearch:
+        if method == "grid":
             print("Using GridSearchCV for hyperparameter tuning...")
             grid_search: GridSearchCV = GridSearchCV(pipe, param_grid, cv=3, n_jobs=-1)
             if self.X_train is None or self.y_train is None:
                 raise ValueError("Training data (X_train or y_train) is None.")
             grid_search.fit(self.X_train, self.y_train)
             print("Best parameters:", grid_search.best_params_)
-            self.model = grid_search.best_estimator_
-        elif randomsearch:
+        elif method == "random":
             print("Using RandomizedSearchCV for hyperparameter tuning...")
             random_search: RandomizedSearchCV = RandomizedSearchCV(
                 pipe, param_dist, n_iter=10, cv=3, n_jobs=-1, random_state=self.config.random_state)
@@ -262,14 +261,8 @@ class Train:
                 raise ValueError("Training data (X_train or y_train) is None.")
             random_search.fit(self.X_train, self.y_train)
             print("Best parameters:", random_search.best_params_)
-            self.model = random_search.best_estimator_
         else:
-            if self.X_train is None or self.y_train is None:
-                raise ValueError("Training data (X_train or y_train) is None.")
-            pipe.fit(self.X_train, self.y_train)
-            self.model = pipe
-
-        return self.model
+            print("No hyperparameter tuning method selected.")
 
     def evaluate(self) -> None:
         """Evaluate the model and print metrics."""

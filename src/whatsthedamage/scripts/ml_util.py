@@ -39,12 +39,18 @@ def main() -> None:
 
     if args.command == "train":
         # Instantiate and configure Train class with arguments
-        Train(
+        train = Train(
             training_data_path=args.training_data,
-            gridsearch=args.gridsearch,
-            randomsearch=args.randomsearch,
             output=args.output
         )
+
+        if args.gridsearch or args.randomsearch:
+            train.hyperparameter_tuning(
+                method="grid" if args.gridsearch else "random"
+            )
+
+        else:
+            train.train()
 
     elif args.command == "predict":
         # Use Inference class for predictions

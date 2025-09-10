@@ -274,39 +274,39 @@ class Inference:
     def __init__(self, new_data: Union[str, List[CsvRow]]) -> None:
         self.config = ml_config
         self.model: Pipeline = load(self.config.model_path)
-        self.df_new: pd.DataFrame
 
+        # Prepare input DataFrame
         if isinstance(new_data, str):
-            # Assume it's a JSON file path
             loaded = load_json_data(new_data)
-            self.df_new = pd.DataFrame(loaded)
+            df_input = pd.DataFrame(loaded)
         elif isinstance(new_data, List):
-            # Assume it's a list of CsvRow objects or dicts
-            self.df_new = pd.DataFrame([row.__dict__ for row in new_data])
+            df_input = pd.DataFrame([row.__dict__ for row in new_data])
         else:
             raise ValueError("Input must be a JSON file path or a List[dict].")
 
-        if self.df_new.empty:
+        if df_input.empty:
             raise ValueError("Input DataFrame is empty.")
 
-        # Use feature_columns from config for inference
-        X_new = self.df_new[self.config.feature_columns]
+        # Select only relevant columns for inference and create a copy to avoid SettingWithCopyWarning
+        self.df_features = df_input[self.config.feature_columns].copy()  # <-- .copy() is safe here
 
-        predicted_categories = self.model.predict(X_new)
-        proba = self.model.predict_proba(X_new)
+        # Predict categories and confidence
+        predicted_categories = self.model.predict(self.df_features)
+        proba = self.model.predict_proba(self.df_features)
         confidence = proba.max(axis=1)
 
-        self.df_new["predicted_category"] = predicted_categories
-        self.df_new["prediction_confidence"] = confidence.round(2)
+        # Add prediction columns directly to df_features
+        self.df_features["predicted_category"] = predicted_categories
+        self.df_features["prediction_confidence"] = confidence.round(2)
+
+        # Use df_features as the output DataFrame
+        self.df_output = self.df_features
 
     def get_predictions(self) -> List[CsvRow]:
         """Return predictions as a list of CsvRow objects with 'category' overwritten."""
-
-        # Prepare DataFrame: keep only CsvRow fields, overwrite 'category'
-        df_filtered = self.df_new.copy()
+        df_filtered = self.df_output
         df_filtered["category"] = df_filtered["predicted_category"]
 
-        # Create a List[CsvRow] object.
         loc = [
             CsvRow(
                 row.to_dict(),
@@ -324,13 +324,12 @@ class Inference:
 
     def print_inference_data(self, with_confidence: bool = False) -> None:
         """Print the DataFrame with inference data."""
-
         pd.set_option('display.max_columns', None)
         pd.set_option('display.max_rows', None)
         pd.set_option('display.width', 130)
         pd.set_option('display.expand_frame_repr', False)
 
+        cols = self.config.feature_columns + ["predicted_category"]
         if with_confidence:
-            print(self.df_new[["type", "partner", "amount", "currency", "category", "predicted_category", "prediction_confidence"]])  # noqa: E501
-        else:
-            print(self.df_new[["type", "partner", "amount", "currency", "predicted_category"]])
+            cols += ["prediction_confidence"]
+        print(self.df_output[cols])

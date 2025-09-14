@@ -31,11 +31,17 @@ def load_json_data(filepath: str) -> Any:
         sys.exit(1)
 
 
-def save(model: Pipeline, output_dir: str, manifest: Dict[str, Any]) -> None:
+def save(
+    model: Pipeline,
+    output_dir: str,
+    manifest: Dict[str, Any],
+    classifier_short_name: str,
+    model_version: str
+) -> None:
     """Save the trained model and its manifest metadata to disk in the specified directory."""
     if not os.path.isdir(output_dir):
         os.makedirs(output_dir, exist_ok=True)
-    model_filename = f"model-{ml_config.classifier_short_name}-{ml_config.model_version}.joblib"
+    model_filename = f"model-{classifier_short_name}-{model_version}.joblib"
     model_save_path = os.path.join(output_dir, model_filename)
     model_manifest_save_path = os.path.join(
         output_dir, model_filename.replace(".joblib", ".manifest.json")
@@ -99,8 +105,8 @@ ml_config = MLConfig()
 
 
 class TrainingData:
-    def __init__(self, training_data_path: str):
-        self.required_columns: set[str] = set(ml_config.feature_columns)
+    def __init__(self, training_data_path: str, config: MLConfig):
+        self.required_columns: set[str] = set(config.feature_columns)
         raw_data = load_json_data(training_data_path)
         df = pd.DataFrame(raw_data)
         self._df = self._validate_and_clean_data(df)
@@ -127,15 +133,15 @@ class TrainingData:
 
 class Train:
     """Prepare data and pipeline for model training."""
-    def __init__(self, training_data_path: str, output: str = ""):
+    def __init__(self, training_data_path: str, output: str = "", config: MLConfig):
         self.training_data_path = training_data_path
         self.output = output
-        self.model_save_path = self.output if self.output else ml_config.model_path
-        self.config = ml_config
+        self.config = config
+        self.model_save_path = self.output if self.output else self.config.model_path
         self.class_weight = None
 
         # Load and validate data
-        tdo = TrainingData(self.training_data_path)
+        tdo = TrainingData(self.training_data_path, config=self.config)
         self.df: pd.DataFrame = tdo.get_training_data()
         self.y: pd.Series = self.df["category"]
 
@@ -232,7 +238,13 @@ class Train:
 
         print(f"Feature matrix shape after preprocessing: {processed_shape}")
 
-        save(self.model, self.model_save_path, MANIFEST)
+        save(
+            self.model,
+            self.model_save_path,
+            MANIFEST,
+            self.config.classifier_short_name,
+            self.config.model_version
+        )
 
     def hyperparameter_tuning(self, method: str) -> None:
         """Perform hyperparameter tuning."""
@@ -271,8 +283,8 @@ class Train:
 
 
 class Inference:
-    def __init__(self, new_data: Union[str, List[CsvRow]]) -> None:
-        self.config = ml_config
+    def __init__(self, new_data: Union[str, List[CsvRow]], config: MLConfig) -> None:
+        self.config = config
         self.model: Pipeline = load(self.config.model_path)
 
         # Prepare input DataFrame

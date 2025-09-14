@@ -1,5 +1,5 @@
 import argparse
-from whatsthedamage.models.machine_learning import Train, Inference
+from whatsthedamage.models.machine_learning import Train, Inference, MLConfig
 
 
 def main() -> None:
@@ -41,6 +41,7 @@ def main() -> None:
         # Instantiate and configure Train class with arguments
         train = Train(
             training_data_path=args.training_data,
+            config=MLConfig(),
             output=args.output
         )
 
@@ -54,7 +55,7 @@ def main() -> None:
 
     elif args.command == "predict":
         # Use Inference class for predictions
-        predict = Inference(args.new_data)
+        predict = Inference(args.new_data, config=MLConfig())
         predict.print_inference_data(args.confidence)
 
 

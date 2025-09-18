@@ -17,10 +17,10 @@ def print_categorized_rows(set_name: str, rows_dict: Dict[str, List[CsvRow]]) ->
         None
     """
     print(f"\nSet name: {set_name}")
-    for type_value, rowset in rows_dict.items():
-        print(f"\nType: {type_value}")
-        for row in rowset:
-            print(repr(row))
+    for type_value in sorted(rows_dict.keys()):
+        print(f"\nType: {type_value}", file=sys.stderr)
+        for row in sorted(rows_dict[type_value], key=lambda r: repr(r)):
+            print(repr(row), file=sys.stderr)
 
 
 def print_training_data(rows_dict: Dict[str, List[CsvRow]]) -> None:

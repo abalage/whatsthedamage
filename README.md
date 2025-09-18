@@ -6,6 +6,8 @@ The predefined settings works best with CSVs exported from K&H HU, but I made ef
 
 The project contains a web interface using Flask.
 
+An experimental Machine Learning model already exists to help reducing the burden of writing regular expressions.
+
 ## Why?
 
 I tried some self-hosted software like [Firefly III](https://www.firefly-iii.org/) and [Actualbudget](https://actualbudget). to create detailed reports about my accounting. However, I found that either the learning curve is too high or the burden of manually categorizing transactions is too great.
@@ -46,6 +48,25 @@ Utility            -68125.00 HUF     -78038.00 HUF
 Withdrawal         -50000.00 HUF    -150000.00 HUF
 
 ```
+
+### Machine Learning categorization (experimental)
+
+Writing regular expressions might be easy for IT professionals, but it is definitely hard or even impossible for others. Maintaining them can also be challenging, even for professionals.
+
+Using a machine learning model can automatically learn patterns from a given transaction history, making categorization faster and probably more accurate without manual rule creation.
+
+If you want to read more about the ML model used by `whatsthedamage`, check out its own [README.md](src/whatsthedamage/scripts/README.md) file.
+
+The repository has an experimental pre-built model.  
+
+The model currently relies on the English language. Language-agnostic models are planned for the future.
+
+**Warning**
+ - The model is expected to be opinionated. Predicted categories could be completely wrong.
+ - The model is currently persisted using 'joblib', which may pose a security risk of executing arbitrary code upon loading. __Use the model you trust; use it at your own risk.__
+
+Try experimenting with it by providing the `--ml` command line argument to `whatsthedamage`.
+
 ## Install
 
 Use `pipx install .` to deploy the package.
@@ -53,7 +74,7 @@ Use `pipx install .` to deploy the package.
 ## Usage:
 ```
 usage: whatsthedamage [-h] [--start-date START_DATE] [--end-date END_DATE] [--verbose] [--version] [--config CONFIG] [--category CATEGORY] [--no-currency-format] [--output OUTPUT]
-                      [--output-format OUTPUT_FORMAT] [--nowrap] [--filter FILTER] [--lang LANG] [--training-data [{basic,full}]]
+                      [--output-format OUTPUT_FORMAT] [--nowrap] [--filter FILTER] [--lang LANG] [--training-data] [--ml]
                       filename
 
 A CLI tool to process KHBHU CSV files.
@@ -68,20 +89,17 @@ options:
   --end-date END_DATE   End date (e.g. YYYY.MM.DD.)
   --verbose, -v         Print categorized rows for troubleshooting.
   --version             Show the version of the program.
-  --config CONFIG, -c CONFIG
-                        Path to the configuration file. (default: config.yml.default)
+  --config, -c CONFIG   Path to the configuration file. (default: config.yml.default)
   --category CATEGORY   The attribute to categorize by. (default: category)
   --no-currency-format  Disable currency formatting. Useful for importing the data into a spreadsheet.
-  --output OUTPUT, -o OUTPUT
-                        Save the result into a CSV file with the specified filename.
+  --output, -o OUTPUT   Save the result into a CSV file with the specified filename.
   --output-format OUTPUT_FORMAT
                         Supported formats are: html, csv. (default: csv).
   --nowrap, -n          Do not wrap the output text. Useful for viewing the output without line wraps.
-  --filter FILTER, -f FILTER
-                        Filter by category. Use it in conjunction with --verbose.
-  --lang LANG, -l LANG  Language for localization.
-  --training-data [{basic,full}]
-                        Print training data in JSON format to STDERR. Use 2> redirection to save it to a file. Use 'full' for all attributes.
+  --filter, -f FILTER   Filter by category. Use it in conjunction with --verbose.
+  --lang, -l LANG       Language for localization.
+  --training-data       Print training data in JSON format to STDERR. Use 2> redirection to save it to a file.
+  --ml                  Use machine learning for categorization instead of regular expressions. (experimental)
 ```
 
 ## Web interface
@@ -118,18 +136,31 @@ Note: Regexp values are not stored as raw strings, so watch out for possible bac
 
 A list of frequent transaction categories a bank account may have.
 
+- **Balance**: Your total balance per time period. Basically the sum of all deposits minus the sum of all your purchases.
+- **Clothes**: Clothing related purchases.
 - **Deposit**: Money added to the account, such as direct deposits from employers, cash deposits, or transfers from other accounts.
-- **Withdrawal**: Money taken out of the account, including ATM withdrawals, cash withdrawals at the bank, and electronic transfers.
-- **Purchase**: Transactions made using a debit card or checks to pay for goods and services.
 - **Fee**: Charges applied by the bank, such as monthly maintenance fees, overdraft fees, or ATM fees.
+- **Grocery**: Everything considered to sustain your life. Mostly food and other basic things required by your household.
+- **Health**: Medicines, vising a doctor, etc.
+- **Home Maintenance**: Spendings on your housing, maintencance, reconstruction, etc.
 - **Interest**: Earnings on the account balance, typically seen in savings accounts or interest-bearing checking accounts.
-- **Transfer**: Movements of money between accounts, either within the same bank or to different banks.
+- **Loan**: Any type of loans, mortgage.
+- **Other**: Any transactions which do not fit into any of the other categories.
 - **Payment**: Scheduled payments for bills or loans, which can be set up as automatic payments.
+- **Purchase**: Transactions made using a debit card or checks to pay for goods and services. (This is not explicitly used by `whatsthedamage`)
 - **Refund**: Money returned to the account, often from returned purchases or corrections of previous transactions.
+- **Sports Recreation**: Spending related to sports and recreations like massage, going into a bar or cinema.
+- **Transfer**: Movements of money between accounts, either within the same bank or to different banks.
+- **Utility**: Regular, monthly recurring payments for stuff like Rent, Electricity, Gas, Water, Phone bills, etc.
+- **Vehicle**: All purchases - except Insurance - related to owning a vehicle.
+- **Withdrawal**: Money taken out of the account, including ATM withdrawals, cash withdrawals at the bank, and electronic transfers.
 
 Custom categories (like "Vehicle", "Grocery", etc.) are user-defined via config, and the listed categories are just examples. Feel free to add your own categories into config.yml.
 
 ## Localization
+
+The application by default uses the English language and it has optional support for Hungarian.
+
 1. Install and configure `babel` and `poedit`.  
 ```bash
 pipx install babel
@@ -160,6 +191,7 @@ msgfmt locale/en/LC_MESSAGES/messages.po -o locale/en/LC_MESSAGES/messages.mo
 - Fix time skew issues:
   - The 'könyvelés dátuma' attribute is most likely in local time but converting into epoch assumes UTC. Without timezone information we can only guess.
   - The arguments `--start-date` and `--end-date` assumes hours, minutes and seconds to be 00:00:00 and not 23:59:59.
+- Migrate joblib to skops.io or ONNX.
 - A docker image is planned for the future to make it easier to start using it.
 
 ## Contributing

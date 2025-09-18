@@ -42,6 +42,8 @@ class RowEnrichment:
 
             attribute_value = getattr(row, attribute_name, None)
             if not attribute_value:
+                if attribute_name == 'type':
+                    row.set_attribute(row, 'type', 'card_reservation')
                 self._set_category(row, get_category_name('other'))
                 continue
 

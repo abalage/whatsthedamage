@@ -19,6 +19,13 @@ class RowEnrichmentML:
         """
         Enrich rows using the ML model.
         """
+
+        # In case 'type' attribute is empty then set it to 'card_reservation'
+        # This is a quirk to handle missing types in some bank exports
+        for row in self.rows:
+            if not row.type or row.type.strip() == "":
+                row.set_attribute(row, 'type', 'card_reservation')
+
         predict = Inference(self.rows)
 
         predictions = predict.get_predictions()

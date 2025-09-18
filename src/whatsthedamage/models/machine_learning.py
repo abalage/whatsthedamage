@@ -81,7 +81,7 @@ class MLConfig(BaseModel):
         "es", "bt", "kft", "zrt", "rt", "nyrt", "ev", "korlatolt", "felelossegu",
         "tarsasag", "alapitvany", "kisker", "szolgaltato", "kereskedelmi",
         "kereskedes", "sz", "u.", "utca", "ut", "&", "huf", "otpmobl", "paypal",
-        "crv", "sumup", "www"
+        "crv", "sumup", "www", "toltoall"
     ]
     classifier_short_name: str = "rf"
     classifier_imbalance_threshold: float = 0.2
@@ -90,7 +90,7 @@ class MLConfig(BaseModel):
     n_estimators: int = 200
     max_depth: Union[int, None] = None
     test_size: float = 0.2
-    model_version: str = "v2alpha"
+    model_version: str = "v4alpha_en"
     model_path: str = "src/whatsthedamage/static/model-{short}-{ver}.joblib".format(
         short=classifier_short_name, ver=model_version
     )
@@ -98,10 +98,6 @@ class MLConfig(BaseModel):
         short=classifier_short_name, ver=model_version
     )
     feature_columns: List[str] = ["type", "partner", "currency", "amount"]
-
-
-# Singleton instance of MLConfig
-ml_config = MLConfig()
 
 
 class TrainingData:
@@ -133,12 +129,19 @@ class TrainingData:
 
 class Train:
     """Prepare data and pipeline for model training."""
-    def __init__(self, training_data_path: str, output: str = "", config: MLConfig):
+    def __init__(
+        self,
+        training_data_path: str,
+        config: Optional[MLConfig] = None,
+        output: str = "",
+        verbose: bool = False
+    ) -> None:
         self.training_data_path = training_data_path
         self.output = output
-        self.config = config
+        self.config = config or MLConfig()
         self.model_save_path = self.output if self.output else self.config.model_path
         self.class_weight = None
+        self.verbose = verbose
 
         # Load and validate data
         tdo = TrainingData(self.training_data_path, config=self.config)
@@ -153,8 +156,9 @@ class Train:
         # Detect class imbalance
         class_counts = self.y_train.value_counts(normalize=True)
         if class_counts.min() < self.config.classifier_imbalance_threshold:
-            print("Class distribution in training set:")
-            print(self.y_train.value_counts())
+            if self.verbose:
+                print("Class distribution in training set:")
+                print(self.y_train.value_counts())
             self.class_weight = "balanced"
         else:
             self.class_weight = None
@@ -166,7 +170,7 @@ class Train:
         # Create the preprocessor ONCE and use everywhere
         self.preprocessor: ColumnTransformer = self._create_preprocessor()
         self.pipe: Pipeline = self._create_pipeline()
-        self.model: Optional[Pipeline] = None
+        self.model: Any = None
 
     def _create_preprocessor(self) -> ColumnTransformer:
         """Create and return the feature engineering pipeline."""
@@ -247,27 +251,33 @@ class Train:
         )
 
     def hyperparameter_tuning(self, method: str) -> None:
-        """Perform hyperparameter tuning."""
+        """Perform hyperparameter tuning and evaluate the best model."""
         cross_validation_params: Dict[str, List[Any]] = {
             "classifier__n_estimators": [50, 100, 200],
             "classifier__max_depth": [None, 10, 20, 30],
             "classifier__min_samples_split": [2, 5, 10],
         }
         grid_search = GridSearchCV(self.pipe, cross_validation_params, cv=3, n_jobs=-1)
-        random_search = RandomizedSearchCV(self.pipe, cross_validation_params, n_iter=10, cv=3, n_jobs=-1, random_state=self.config.random_state)
+        random_search = RandomizedSearchCV(
+            self.pipe, cross_validation_params, n_iter=10, cv=3, n_jobs=-1,
+            random_state=self.config.random_state
+        )
 
-        # Check once before branching
         if self.X_train is None or self.y_train is None:
             raise ValueError("Training data (X_train or y_train) is None.")
 
         if method == "grid":
-            print("Using GridSearchCV for hyperparameter tuning...")
+            print("Using GridSearchCV for hyperparameter tuning. This may take a while.")
             grid_search.fit(self.X_train, self.y_train)
             print("Best parameters:", grid_search.best_params_)
+            self.model = grid_search.best_estimator_
+            self.evaluate()
         elif method == "random":
-            print("Using RandomizedSearchCV for hyperparameter tuning...")
+            print("Using RandomizedSearchCV for hyperparameter tuning. This may take a while.")
             random_search.fit(self.X_train, self.y_train)
             print("Best parameters:", random_search.best_params_)
+            self.model = random_search.best_estimator_
+            self.evaluate()
         else:
             print("No hyperparameter tuning method selected.")
 
@@ -283,8 +293,8 @@ class Train:
 
 
 class Inference:
-    def __init__(self, new_data: Union[str, List[CsvRow]], config: MLConfig) -> None:
-        self.config = config
+    def __init__(self, new_data: Union[str, List[CsvRow]], config: Optional[MLConfig] = None) -> None:
+        self.config = config or MLConfig()
         self.model: Pipeline = load(self.config.model_path)
 
         # Prepare input DataFrame

@@ -1,5 +1,5 @@
 import argparse
-from whatsthedamage.models.machine_learning import Train, Inference, MLConfig
+from whatsthedamage.models.machine_learning import Train, Inference
 
 
 def main() -> None:
@@ -13,6 +13,7 @@ def main() -> None:
     train_parser.add_argument("training_data", help="Path to training data JSON file")
     train_parser.add_argument("--gridsearch", action="store_true", help="Use GridSearchCV for hyperparameter tuning")  # noqa: E501
     train_parser.add_argument("--randomsearch", action="store_true", help="Use RandomizedSearchCV for hyperparameter tuning")  # noqa: E501
+    train_parser.add_argument("--verbose", "-v", action="store_true", help="Enable verbose output during training")
     train_parser.add_argument("--output", help="Output directory for trained model (auto-generated if not exists)")
 
     # Predict subcommand
@@ -41,8 +42,8 @@ def main() -> None:
         # Instantiate and configure Train class with arguments
         train = Train(
             training_data_path=args.training_data,
-            config=MLConfig(),
-            output=args.output
+            output=args.output,
+            verbose=args.verbose
         )
 
         if args.gridsearch or args.randomsearch:
@@ -55,7 +56,7 @@ def main() -> None:
 
     elif args.command == "predict":
         # Use Inference class for predictions
-        predict = Inference(args.new_data, config=MLConfig())
+        predict = Inference(args.new_data)
         predict.print_inference_data(args.confidence)
 
 

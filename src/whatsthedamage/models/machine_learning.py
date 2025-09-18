@@ -90,7 +90,7 @@ class MLConfig(BaseModel):
     n_estimators: int = 200
     max_depth: Union[int, None] = None
     test_size: float = 0.2
-    model_version: str = "v4alpha_en"
+    model_version: str = "v5alpha_en"
     model_path: str = "src/whatsthedamage/static/model-{short}-{ver}.joblib".format(
         short=classifier_short_name, ver=model_version
     )

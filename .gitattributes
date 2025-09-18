@@ -1,0 +1,2 @@
+src/whatsthedamage/static/model-rf-v5alpha_en.joblib filter=lfs diff=lfs merge=lfs -text
+src/whatsthedamage/static/model-rf-v5alpha_en.manifest.json filter=lfs diff=lfs merge=lfs -text

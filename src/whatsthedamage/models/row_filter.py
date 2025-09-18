@@ -14,11 +14,6 @@ class RowFilter:
         """
         self._rows = rows
         self._date_format = date_format
-        self._months: Tuple[Dict[str, List[CsvRow]], ...] = (
-            {"01": []}, {"02": []}, {"03": []}, {"04": []},
-            {"05": []}, {"06": []}, {"07": []}, {"08": []},
-            {"09": []}, {"10": []}, {"11": []}, {"12": []}
-        )
 
     def get_month_number(self, date_value: str) -> str:
         """
@@ -66,10 +61,12 @@ class RowFilter:
 
         :return: A tuple of dictionaries with month names as keys and lists of filtered CsvRow objects as values.
         """
+        months: Dict[str, List[CsvRow]] = {}
         for row in self._rows:
             month_name = self.get_month_number(getattr(row, 'date'))
             if month_name is not None:
-                for month in self._months:
-                    if month_name in month:
-                        month[month_name].append(row)
-        return self._months
+                if month_name not in months:
+                    months[month_name] = []
+                months[month_name].append(row)
+
+        return tuple({k: v} for k, v in months.items())

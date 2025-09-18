@@ -16,10 +16,6 @@ class RowEnrichment:
         self.pattern_sets = pattern_sets
         self.categorized: Dict[str, List[CsvRow]] = {get_category_name('other'): []}
 
-    def initialize(self) -> None:
-        """
-        Initialize the categorization process by calling add_category_attribute for each attribute.
-        """
         # Convert the Pydantic model to a dictionary
         pattern_sets_dict = self.pattern_sets.model_dump()
 
@@ -46,6 +42,8 @@ class RowEnrichment:
 
             attribute_value = getattr(row, attribute_name, None)
             if not attribute_value:
+                if attribute_name == 'type':
+                    row.set_attribute(row, 'type', 'card_reservation')
                 self._set_category(row, get_category_name('other'))
                 continue
 
@@ -72,7 +70,7 @@ class RowEnrichment:
         :return: True if the category is set and not 'other', False otherwise.
         """
         current_category = getattr(row, 'category', None)
-        return current_category is not None and current_category != get_category_name('other')
+        return current_category not in (None, "", get_category_name('other'))
 
     def _set_category(self, row: CsvRow, category: str) -> None:
         """

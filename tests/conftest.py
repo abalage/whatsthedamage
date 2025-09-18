@@ -2,6 +2,7 @@ import pytest
 from whatsthedamage.models.csv_row import CsvRow
 from whatsthedamage.config.config import AppConfig, CsvConfig, AppContext
 from whatsthedamage.config.config import AppArgs
+from whatsthedamage.config.config import EnricherPatternSets
 
 
 @pytest.fixture
@@ -11,7 +12,8 @@ def mapping():
         'type': 'type',
         'partner': 'partner',
         'amount': 'amount',
-        'currency': 'currency'
+        'currency': 'currency',
+        'category': 'category',
     }
 
 
@@ -24,7 +26,7 @@ def csv_rows(mapping):
                 "type": "deposit",
                 "partner": "bank",
                 "amount": "100",
-                "currency": "EUR",
+                "currency": "EUR"
             },
             mapping,
         ),
@@ -34,11 +36,25 @@ def csv_rows(mapping):
                 "type": "deposit",
                 "partner": "bank",
                 "amount": "200",
-                "currency": "EUR",
+                "currency": "EUR"
             },
             mapping,
         ),
     ]
+
+
+@pytest.fixture
+def pattern_sets():
+    return EnricherPatternSets(
+        partner={
+            "bank_category": ["bank"],
+            "other_category": ["other"]
+        },
+        type={
+            "deposit_category": ["deposit"],
+            "withdrawal_category": ["withdrawal"]
+        }
+    )
 
 
 @pytest.fixture
@@ -78,6 +94,8 @@ def app_context():
         "output": None,
         "start_date": "2023-01-01",
         "lang": None,
+        "training_data": False,
+        "ml": False,
     }
 
     # Return the AppContext object

@@ -24,7 +24,7 @@ class RowEnrichmentML:
         # This is a quirk to handle missing types in some bank exports
         for row in self.rows:
             if not row.type or row.type.strip() == "":
-                row.set_attribute(row, 'type', 'card_reservation')
+                row.type = 'card_reservation'
 
         predict = Inference(self.rows)
 
@@ -37,7 +37,7 @@ class RowEnrichmentML:
             if " " in category_str:
                 category_str = category_str.replace(" ", "_")
             localized_category = get_category_name(category_str.lower())
-            setattr(row, "category", localized_category)
+            row.category = localized_category
             if localized_category not in self.categorized:
                 self.categorized[localized_category] = []
 

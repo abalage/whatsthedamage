@@ -10,7 +10,8 @@ def setup_data():
         'type': 'deposit',
         'partner': 'Foo Bar',
         'amount': '1000',
-        'currency': 'EUR'
+        'currency': 'EUR',
+        'category': ''
     }
 
 
@@ -18,7 +19,7 @@ def test_csv_row_empty(mapping):
     row_data = {}
     csv_row = CsvRow(row_data, mapping)
 
-    assert repr(csv_row) == "<CsvRow(date=, type=, partner=, amount=0.0, currency=)>"
+    assert repr(csv_row) == "<CsvRow(date=, type=, partner=, amount=0.0, currency=, category=)>"
 
 
 def test_csv_row_initialization(setup_data, mapping):
@@ -34,7 +35,7 @@ def test_csv_row_initialization(setup_data, mapping):
 def test_csv_row_repr(setup_data, mapping):
     csv_row = CsvRow(setup_data, mapping)
 
-    expected_repr = "<CsvRow(date=1990-01-01, type=deposit, partner=Foo Bar, amount=1000.0, currency=EUR)>"
+    expected_repr = "<CsvRow(date=1990-01-01, type=deposit, partner=Foo Bar, amount=1000.0, currency=EUR, category=)>"
     assert repr(csv_row) == expected_repr
 
 

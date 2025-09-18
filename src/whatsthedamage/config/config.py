@@ -22,7 +22,9 @@ class AppArgs(TypedDict):
     output: str | None
     start_date: str | None
     verbose: bool
+    training_data: bool
     lang: str | None
+    ml: bool
 
 
 class CsvConfig(BaseModel):
@@ -46,6 +48,8 @@ AVAILABLE_CATEGORIES = [
     CategoryDefinition(id="vehicle", default_name=_("Vehicle"), patterns=[]),
     CategoryDefinition(id="utility", default_name=_("Utility"), patterns=[]),
     CategoryDefinition(id="home_maintenance", default_name=_("Home Maintenance"), patterns=[]),
+    CategoryDefinition(id="sports_recreation", default_name=_("Sports Recreation"), patterns=[]),
+    CategoryDefinition(id="insurance", default_name=_("Insurance"), patterns=[]),
     CategoryDefinition(id="loan", default_name=_("Loan"), patterns=[]),
     CategoryDefinition(id="withdrawal", default_name=_("Withdrawal"), patterns=[]),
     CategoryDefinition(id="fee", default_name=_("Fee"), patterns=[]),

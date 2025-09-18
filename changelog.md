@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.7.0] - 2025-09-18
+### Changed
+- **Feature**: (experimental) Add a self-developed Machine Learning (ML) algorithm to categorize transacions instead of regular expressions. See `ml_util.py` or `--ml` CLI argument.
+- **Feature**: Export processed data in a format suitable for ML model training
+- **Feature**: Add scikit-learn dependency
+- **Feature**: Add new categories 'Insurance' and 'Sports Recreation'
+- **Tests**: Upgrade tox environment from python3.11 to python3.13
+- **Break**: Month names are no longer static but dynamically calculated. Side effect is that in the report the ordering of months is reversed.
+- **Fix:**: Override empty 'type' attributes which might coming from card reservations. Increases accuracy of the ML model.
+
 ## [0.6.3] - 2025-07-01
 ### Changed
 - **Feature**: Add localiztion to Flask frontend by using gettext for dynamic texts. Static files are served as-is.

@@ -48,3 +48,13 @@ class CsvRow:
             self.currency == other.currency and
             self.category == other.category
         )
+
+    def set_attribute(self, row: 'CsvRow', attr_name: str, attr_value: str) -> None:
+        """
+        Set an attribute of a CsvRow object.
+
+        :param row: CsvRow object to modify.
+        :param attr_name: The name of the attribute to set.
+        :param attr_value: The value to set the attribute to.
+        """
+        setattr(row, attr_name, attr_value)

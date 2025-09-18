@@ -43,8 +43,8 @@ class RowEnrichment:
             attribute_value = getattr(row, attribute_name, None)
             if not attribute_value:
                 if attribute_name == 'type':
-                    row.set_attribute(row, 'type', 'card_reservation')
-                self._set_category(row, get_category_name('other'))
+                    row.type = 'card_reservation'
+                row.category = get_category_name('other')
                 continue
 
             if not self._match_patterns(row, attribute_value, compiled_patterns):
@@ -84,7 +84,7 @@ class RowEnrichment:
             localized_name = get_category_name(category)
         else:
             localized_name = category
-        setattr(row, 'category', localized_name)
+        row.category = localized_name
 
     def _match_patterns(
         self,

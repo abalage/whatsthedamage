@@ -76,6 +76,8 @@ def test_app_args_required_fields():
         "output": None,
         "start_date": None,
         "lang": None,
+        "training_data": False,
+        "ml": False,
     }
     assert args["category"] == "test_category"
     assert args["config"] == "test_config"
@@ -100,8 +102,12 @@ def test_app_args_optional_fields():
         "output": "test_output",
         "start_date": "2023-01-01",
         "lang": None,
+        "training_data": True,
+        "ml": True,
     }
     assert args["end_date"] == "2023-12-31"
     assert args["filter"] == "test_filter"
     assert args["output"] == "test_output"
     assert args["start_date"] == "2023-01-01"
+    assert args["training_data"] is True
+    assert args["ml"] is True

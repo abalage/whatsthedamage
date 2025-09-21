@@ -22,13 +22,10 @@ def load_json_data(filepath: str) -> Any:
             return json.load(f)
     except FileNotFoundError:
         print(f"Error: File '{filepath}' not found.")
-        sys.exit(1)
-    except json.JSONDecodeError as e:
-        print(f"Error: Failed to decode JSON file '{filepath}': {e}")
-        sys.exit(1)
+    except json.JSONDecodeError:
+        print(f"Error: File '{filepath}' is not valid JSON.")
     except Exception as e:
         print(f"Error: An unexpected error occurred while reading '{filepath}': {e}")
-        sys.exit(1)
 
 
 def save(
@@ -52,7 +49,6 @@ def save(
         print(f"Model training complete and saved as {model_save_path}")
     except Exception as e:
         print(f"Error: Failed to save model to '{model_save_path}': {e}")
-        sys.exit(1)
 
     try:
         with open(model_manifest_save_path, "w", encoding="utf-8") as f:
@@ -68,7 +64,6 @@ def load(model_path: str) -> Pipeline:
         model = joblib.load(model_path)
     except Exception as e:
         print(f"Error: Failed to load model from '{model_path}': {e}")
-        sys.exit(1)
 
     return model
 
@@ -111,16 +106,13 @@ class TrainingData:
         missing_columns: set[str] = self.required_columns - set(df.columns)
         if missing_columns:
             print(f"Error: Missing required columns: {', '.join(missing_columns)}")
-            sys.exit(1)
         if df.empty:
             print("Error: Loaded DataFrame is empty.")
-            sys.exit(1)
         if df.isnull().any().any():
             print("Warning: Data contains missing values. Dropping rows with missing values.")
             df = df.dropna()
             if df.empty:
                 print("Error: All rows were dropped due to missing values.")
-                sys.exit(1)
         return df
 
     def get_training_data(self) -> pd.DataFrame:

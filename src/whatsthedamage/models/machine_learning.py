@@ -1,4 +1,3 @@
-import sys
 import json
 import pandas as pd
 from typing import List, Any, Dict, Union, Optional
@@ -22,13 +21,13 @@ def load_json_data(filepath: str) -> Any:
             return json.load(f)
     except FileNotFoundError:
         print(f"Error: File '{filepath}' not found.")
-        sys.exit(1)
-    except json.JSONDecodeError as e:
-        print(f"Error: Failed to decode JSON file '{filepath}': {e}")
-        sys.exit(1)
+        return None
+    except json.JSONDecodeError:
+        print(f"Error: File '{filepath}' is not valid JSON.")
+        return None
     except Exception as e:
         print(f"Error: An unexpected error occurred while reading '{filepath}': {e}")
-        sys.exit(1)
+        return None
 
 
 def save(
@@ -39,20 +38,21 @@ def save(
     model_version: str
 ) -> None:
     """Save the trained model and its manifest metadata to disk in the specified directory."""
-    if not os.path.isdir(output_dir):
-        os.makedirs(output_dir, exist_ok=True)
     model_filename = f"model-{classifier_short_name}-{model_version}.joblib"
     model_save_path = os.path.join(output_dir, model_filename)
     model_manifest_save_path = os.path.join(
         output_dir, model_filename.replace(".joblib", ".manifest.json")
     )
 
+    dir_path = output_dir if os.path.isdir(output_dir) else os.path.dirname(output_dir)
+    if dir_path and not os.path.isdir(dir_path):
+        os.makedirs(dir_path, exist_ok=True)
+
     try:
         joblib.dump(model, model_save_path)
         print(f"Model training complete and saved as {model_save_path}")
     except Exception as e:
         print(f"Error: Failed to save model to '{model_save_path}': {e}")
-        sys.exit(1)
 
     try:
         with open(model_manifest_save_path, "w", encoding="utf-8") as f:
@@ -64,11 +64,11 @@ def save(
 
 def load(model_path: str) -> Pipeline:
     """Load a model from disk."""
+    model: Any = None
     try:
         model = joblib.load(model_path)
     except Exception as e:
         print(f"Error: Failed to load model from '{model_path}': {e}")
-        sys.exit(1)
 
     return model
 
@@ -108,20 +108,15 @@ class TrainingData:
         self._df = self._validate_and_clean_data(df)
 
     def _validate_and_clean_data(self, df: pd.DataFrame) -> pd.DataFrame:
-        missing_columns: set[str] = self.required_columns - set(df.columns)
-        if missing_columns:
-            print(f"Error: Missing required columns: {', '.join(missing_columns)}")
-            sys.exit(1)
+        missing_columns = [col for col in self.required_columns if col not in df.columns]
         if df.empty:
-            print("Error: Loaded DataFrame is empty.")
-            sys.exit(1)
-        if df.isnull().any().any():
-            print("Warning: Data contains missing values. Dropping rows with missing values.")
-            df = df.dropna()
-            if df.empty:
-                print("Error: All rows were dropped due to missing values.")
-                sys.exit(1)
-        return df
+            raise ValueError("Loaded DataFrame is empty.")
+        if missing_columns:
+            raise ValueError(f"Missing required columns: {', '.join(missing_columns)}")
+        df_clean = df.dropna(subset=list(self.required_columns))
+        if df_clean.empty:
+            raise ValueError("All rows were dropped due to missing values.")
+        return df_clean
 
     def get_training_data(self) -> pd.DataFrame:
         return self._df
@@ -147,6 +142,14 @@ class Train:
         tdo = TrainingData(self.training_data_path, config=self.config)
         self.df: pd.DataFrame = tdo.get_training_data()
         self.y: pd.Series = self.df["category"]
+
+        # Validate class sizes for stratified split
+        class_counts = self.y.value_counts()
+        if (class_counts < 2).any():
+            raise ValueError(
+                f"Each class must have at least 2 samples for stratified splitting. "
+                f"Found class counts: {class_counts.to_dict()}"
+            )
 
         # Always split data to prevent Data Leakage
         self.df_train, self.df_test, self.y_train, self.y_test = train_test_split(
@@ -296,8 +299,11 @@ class Inference:
     def __init__(self, new_data: Union[str, List[CsvRow]], config: Optional[MLConfig] = None) -> None:
         self.config = config or MLConfig()
         self.model: Pipeline = load(self.config.model_path)
+        self.df_input = self._prepare_input_data(new_data)
+        self.df_output = self._make_predictions(self.df_input)
 
-        # Prepare input DataFrame
+    def _prepare_input_data(self, new_data: Union[str, List[CsvRow]]) -> pd.DataFrame:
+        """Prepare input data as a DataFrame."""
         if isinstance(new_data, str):
             loaded = load_json_data(new_data)
             df_input = pd.DataFrame(loaded)
@@ -308,28 +314,24 @@ class Inference:
 
         if df_input.empty:
             raise ValueError("Input DataFrame is empty.")
+        return df_input
 
-        # Select only relevant columns for inference and create a copy to avoid SettingWithCopyWarning
-        self.df_features = df_input[self.config.feature_columns].copy()  # <-- .copy() is safe here
-
-        # Predict categories and confidence
-        predicted_categories = self.model.predict(self.df_features)
-        proba = self.model.predict_proba(self.df_features)
+    def _make_predictions(self, df_input: pd.DataFrame) -> pd.DataFrame:
+        """Make predictions and add them to the DataFrame."""
+        predicted_categories = self.model.predict(df_input)
+        proba = self.model.predict_proba(df_input)
         confidence = proba.max(axis=1)
-
-        # Add prediction columns directly to df_features
-        self.df_features["predicted_category"] = predicted_categories
-        self.df_features["prediction_confidence"] = confidence.round(2)
-
-        # Use df_features as the output DataFrame
-        self.df_output = self.df_features
+        df_output = df_input.copy()
+        df_output["predicted_category"] = predicted_categories
+        df_output["prediction_confidence"] = confidence
+        return df_output
 
     def get_predictions(self) -> List[CsvRow]:
         """Return predictions as a list of CsvRow objects with 'category' overwritten."""
-        df_filtered = self.df_output
+        df_filtered = self.df_output.copy()
         df_filtered["category"] = df_filtered["predicted_category"]
 
-        loc = [
+        return [
             CsvRow(
                 row.to_dict(),
                 mapping={
@@ -342,7 +344,6 @@ class Inference:
                 }
             ) for _, row in df_filtered.iterrows()
         ]
-        return loc
 
     def print_inference_data(self, with_confidence: bool = False) -> None:
         """Print the DataFrame with inference data."""

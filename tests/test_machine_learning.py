@@ -17,16 +17,6 @@ from whatsthedamage.models.machine_learning import (
 )
 
 
-# Dummy CsvRow for mocking
-class DummyCsvRow:
-    def __init__(self, data, mapping=None):
-        self.data = data
-        self.mapping = mapping or {}
-
-    def to_dict(self):
-        return self.data
-
-
 @pytest.fixture
 def valid_json(tmp_path):
     data = [
@@ -77,10 +67,10 @@ def train_obj_enough_data(tmp_path):
 
 @pytest.fixture
 def inference_obj(tmp_path):
-    # Create dummy input data
+    # Create test data that matches the expected input format
     data = [
-        {"type": "Alpha", "partner": "Bravo", "currency": "EUR", "amount": 10, "category": "X"},
-        {"type": "Charlie", "partner": "Delta", "currency": "USD", "amount": 20, "category": "Y"}
+        {"type": "Alpha", "partner": "Bravo", "currency": "EUR", "amount": 10},
+        {"type": "Charlie", "partner": "Delta", "currency": "USD", "amount": 20}
     ]
     file = tmp_path / "input.json"
     file.write_text(json.dumps(data), encoding="utf-8")
@@ -92,8 +82,8 @@ def inference_obj(tmp_path):
     dummy_model.predict.return_value = ["X", "Y"]
     dummy_model.predict_proba.return_value = np.array([[0.99, 0.01], [0.95, 0.05]])
 
-    with mock.patch("whatsthedamage.models.machine_learning.CsvRow", DummyCsvRow), \
-         mock.patch("whatsthedamage.models.machine_learning.load", return_value=dummy_model):
+    # Patch the model loading
+    with mock.patch("whatsthedamage.models.machine_learning.load", return_value=dummy_model):
         obj = Inference(str(file), config)
         return obj
 
@@ -265,12 +255,12 @@ def test_train_not_enough_class_samples(train_obj_not_enough_data):
         train_obj_not_enough_data()
 
 
-@mock.patch("whatsthedamage.models.machine_learning.CsvRow", DummyCsvRow)
 def test_inference_get_predictions(inference_obj):
     predictions = inference_obj.get_predictions()
     assert isinstance(predictions, list)
-    assert all(isinstance(row, DummyCsvRow) for row in predictions)
-    cats = [row.data["category"] for row in predictions]
+    assert len(predictions) == 2  # We expect 2 predictions based on our test data
+    assert all(hasattr(row, 'category') for row in predictions)  # Check that category attribute exists
+    cats = [row.category for row in predictions]
     assert cats == ["X", "Y"]
 
 

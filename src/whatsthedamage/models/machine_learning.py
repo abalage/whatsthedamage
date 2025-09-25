@@ -91,13 +91,29 @@ class MLConfig(BaseModel):
     max_depth: Union[int, None] = None
     test_size: float = 0.2
     model_version: str = "v5alpha_en"
-    model_path: str = "src/whatsthedamage/static/model-{short}-{ver}.joblib".format(
-        short=classifier_short_name, ver=model_version
-    )
-    manifest_path: str = "src/whatsthedamage/static/model-{short}-{ver}.manifest.json".format(
-        short=classifier_short_name, ver=model_version
-    )
     feature_columns: List[str] = ["type", "partner", "currency", "amount"]
+
+    @property
+    def model_path(self) -> str:
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        static_dir = os.path.join(base_dir, "..", "static")
+        return os.path.abspath(
+            os.path.join(
+                static_dir,
+                f"model-{self.classifier_short_name}-{self.model_version}.joblib"
+            )
+        )
+
+    @property
+    def manifest_path(self) -> str:
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        static_dir = os.path.join(base_dir, "..", "static")
+        return os.path.abspath(
+            os.path.join(
+                static_dir,
+                f"model-{self.classifier_short_name}-{self.model_version}.manifest.json"
+            )
+        )
 
 
 class TrainingData:

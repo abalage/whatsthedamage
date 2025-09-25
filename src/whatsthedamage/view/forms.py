@@ -11,3 +11,4 @@ class UploadForm(FlaskForm):  # type: ignore
     filter = StringField()
     verbose = BooleanField()
     no_currency_format = BooleanField()
+    ml = BooleanField(default=True)

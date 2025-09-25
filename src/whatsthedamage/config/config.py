@@ -28,10 +28,16 @@ class AppArgs(TypedDict):
 
 
 class CsvConfig(BaseModel):
-    dialect: str
-    delimiter: str
-    date_attribute_format: str
-    attribute_mapping: Dict[str, str]
+    dialect: str = Field(default="excel-tab")
+    delimiter: str = Field(default="\t")
+    date_attribute_format: str = Field(default="%Y.%m.%d")
+    attribute_mapping: Dict[str, str] = Field(default_factory=lambda: {
+        "date": "könyvelés dátuma",
+        "type": "típus",
+        "partner": "partner elnevezése",
+        "amount": "összeg",
+        "currency": "összeg devizaneme"
+    })
 
 
 class CategoryDefinition(BaseModel):
@@ -85,13 +91,19 @@ class AppContext:
         self.args: AppArgs = args
 
 
-def load_config(config_path: str) -> AppConfig:
+def load_config(config_path: str | None) -> AppConfig:
     """
     Load the application configuration from a YAML file.
 
     :param config_path: Path to the YAML configuration file.
     :return: An AppConfig object.
     """
+    if not config_path or config_path == "":
+        print("Warning: No configuration file provided, using default settings.", file=sys.stderr)
+        return AppConfig(
+            csv=CsvConfig(),
+            enricher_pattern_sets=EnricherPatternSets()
+        )
     try:
         with open(config_path, 'r', encoding='utf-8') as file:
             config_data = yaml.safe_load(file)

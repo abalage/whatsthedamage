@@ -58,7 +58,7 @@ def main(args: AppArgs) -> str:
     set_locale(args['lang'])
 
     # Load the configuration file
-    config = load_config(str(args['config']))
+    config = load_config(args['config'])
 
     # Create AppContext
     context = AppContext(config, args)

@@ -12,7 +12,7 @@ def parse_arguments() -> AppArgs:
     parser.add_argument('--end-date', type=str, help='End date (e.g. YYYY.MM.DD.)')
     parser.add_argument('--verbose', '-v', action='store_true', help='Print categorized rows for troubleshooting.')
     parser.add_argument('--version', action='version', version='What\'s the Damage', help='Show the version of the program.')  # noqa: E501
-    parser.add_argument('--config', '-c', type=str, default='config.yml.default', help='Path to the configuration file. (default: config.yml.default)')  # noqa: E501
+    parser.add_argument('--config', '-c', type=str, help='Path to the configuration file.')
     parser.add_argument('--category', type=str, default='category', help='The attribute to categorize by. (default: category)')  # noqa: E501
     parser.add_argument('--no-currency-format', action='store_true', help='Disable currency formatting. Useful for importing the data into a spreadsheet.')  # noqa: E501
     parser.add_argument('--output', '-o', type=str, help='Save the result into a CSV file with the specified filename.')  # noqa: E501

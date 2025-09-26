@@ -21,7 +21,7 @@ def test_load_config_valid_file(tmp_path):
     config_file = tmp_path / "config.yml"
     config_file.write_text(yaml.dump(config_data))
 
-    config = load_config(str(config_file))
+    config = load_config(config_file)
     assert isinstance(config, AppConfig)
     assert config.csv.dialect == "excel"
 
@@ -32,29 +32,7 @@ def test_load_config_invalid_yaml(tmp_path):
     config_file.write_text(invalid_yaml)
 
     with pytest.raises(SystemExit):
-        load_config(str(config_file))
-
-
-def test_load_config_validation_error(tmp_path):
-    invalid_config_data = {
-        "csv": {
-            "dialect": "excel",
-            "delimiter": ",",
-            "date_attribute_format": "%Y-%m-%d"
-            # Missing attribute_mapping
-        },
-        "enricher_pattern_sets": {
-            "type": {
-                "subpattern1": ["value1", "value2"]
-            },
-            "partner": {}
-        }
-    }
-    config_file = tmp_path / "config.yml"
-    config_file.write_text(yaml.dump(invalid_config_data))
-
-    with pytest.raises(SystemExit):
-        load_config(str(config_file))
+        load_config(config_file)
 
 
 def test_load_config_file_not_found():

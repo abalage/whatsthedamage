@@ -132,7 +132,7 @@ Should you want to check your regular expressions then you can use a handy onlin
 
 Note: Regexp values are not stored as raw strings, so watch out for possible backslashes. For more information, see [What exactly is a raw string regex and how can you use it?](https://stackoverflow.com/questions/12871066/what-exactly-is-a-raw-string-regex-and-how-can-you-use-it).
 
-### Transaction categories
+## Transaction categories
 
 A list of frequent transaction categories a bank account may have.
 
@@ -185,14 +185,6 @@ poedit locale/en/LC_MESSAGES/messages.po
 ```bash
 msgfmt locale/en/LC_MESSAGES/messages.po -o locale/en/LC_MESSAGES/messages.mo
 ```
-
-## Bugs, TODO
-
-- Fix time skew issues:
-  - The 'könyvelés dátuma' attribute is most likely in local time but converting into epoch assumes UTC. Without timezone information we can only guess.
-  - The arguments `--start-date` and `--end-date` assumes hours, minutes and seconds to be 00:00:00 and not 23:59:59.
-- Migrate joblib to skops.io or ONNX.
-- A docker image is planned for the future to make it easier to start using it.
 
 ## Contributing
 

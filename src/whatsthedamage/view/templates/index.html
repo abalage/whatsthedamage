@@ -98,6 +98,16 @@
                                 <label for="no_currency_format" class="form-check-label">{{ _('No currency formatting') }}</label>
                                 <div id="currencyHelp" class="form-text">{{ _('Select this option to exclude currency symbols in the exported CSV. You can format the cells in your spreadsheet application instead.') }}</div>
                             </div>
+                            <div class="mb-3 form-check">
+                                {{ form.ml(class="form-check-input", id="ml") }}
+                                <label for="ml" class="form-check-label">
+                                    {{ _('Use Machine Learning model for categorization') }}
+                                    <span class="text-muted">({{ config.ML_MODEL }})</span>
+                                </label>
+                                <div id="mlHelp" class="form-text">
+                                    {{ _('Uncheck to use regular expressions instead of the ML model.') }}
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>

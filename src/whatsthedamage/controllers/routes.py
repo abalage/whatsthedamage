@@ -190,3 +190,21 @@ def set_language(lang_code: str) -> Response:
     else:
         flash("Selected language is not supported.", "danger")
     return make_response(redirect(request.referrer or url_for('main.index')))
+
+
+@bp.route('/health')
+def health() -> Response:
+    try:
+        # Simple check to see if the upload folder is writable
+        test_file_path = os.path.join(current_app.config['UPLOAD_FOLDER'], 'health_check.tmp')
+        with open(test_file_path, 'w') as f:
+            f.write('health check')
+        os.remove(test_file_path)
+
+        return make_response({"status": "healthy"}, 200)
+
+    except Exception as e:
+        return make_response(
+            {"status": "unhealthy", "reason": f"Unexpected error: {e}"},
+            503
+        )

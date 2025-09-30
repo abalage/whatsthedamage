@@ -1,6 +1,6 @@
 # Version control
-.git
-.gitignore
+#.git
+#.gitignore
 
 # Development and IDE files
 .vscode/

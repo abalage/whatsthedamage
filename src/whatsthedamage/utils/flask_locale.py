@@ -1,5 +1,6 @@
 from flask import session, request, current_app
 from whatsthedamage.config.flask_config import FlaskAppConfig
+from typing import Iterator
 
 
 def get_locale() -> str:
@@ -9,11 +10,12 @@ def get_locale() -> str:
         return str(lang)  # Ensure return type is str
 
     # 2. Try to detect from browser
-    accept_languages = request.accept_languages.values()
+    accept_languages: Iterator[str] = request.accept_languages.values()
     for browser_lang in accept_languages:
-        code = browser_lang.split('-')[0]
-        if code in FlaskAppConfig.LANGUAGES:
-            return code
+        if isinstance(browser_lang, str):  # Type guard
+            code = browser_lang.split('-')[0]
+            if code in FlaskAppConfig.LANGUAGES:
+                return code
 
     # 3. Fallback to config default
     return FlaskAppConfig.DEFAULT_LANGUAGE

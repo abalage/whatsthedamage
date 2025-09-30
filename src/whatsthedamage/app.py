@@ -52,6 +52,8 @@ def create_app(config_class: Optional[FlaskAppConfig] = None) -> Flask:
     return app
 
 
+# Create the app instance for Gunicorn
+app = create_app()
+
 if __name__ == '__main__':
-    app = create_app(None)
     app.run(debug=True)

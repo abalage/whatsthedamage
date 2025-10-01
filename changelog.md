@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.7.1] - 2025-10-01
+### Added
+- **Feature**: Add Docker support for easier deployment.
+- **Feature**: Add basic `/health` endpoint.
+- **Feature**: Add Makefile support for streamlined development workflow.
+
+### Changed
+- **Tests**: Migrate from flake8 to ruff for linting.
+- **Tests**: Fix errors reported by mypy.
+- **Docker**: Use consistent version logic for Docker tags.
+- **Docker**: Update Dockerfile for improved compatibility.
+
 ## [0.7.0] - 2025-09-18
 ### Changed
 - **Feature**: (experimental) Add a self-developed Machine Learning (ML) algorithm to categorize transacions instead of regular expressions. See `ml_util.py` or `--ml` CLI argument.

@@ -2,28 +2,20 @@
 
 An opinionated open source tool written in Python to process K&H HU's bank account transaction exports in CSV files.
 
-The predefined settings works best with CSVs exported from K&H HU, but I made efforts to customize the behavior and potentially work with any other CSV format other finance companies may produce.
+The predefined settings works best with CSVs exported from K&H HU, efforts were made to be able to customize the behavior and potentially work with any other CSV format other finance companies may produce.
 
-The project contains a web interface using Flask.
+The project contains a command line tool as well as a web interface for easier usage.
 
-An experimental Machine Learning model already exists to help reducing the burden of writing regular expressions.
+An experimental Machine Learning model is also available to help reducing the burden of writing regular expressions.
 
-## Why?
+_The slang phrase "what's the damage?" is often used to ask about the cost or price of something, typically in a casual or informal context. The phrase is commonly used in social settings, especially when discussing expenses or the results of an event._
 
-I tried some self-hosted software like [Firefly III](https://www.firefly-iii.org/) and [Actualbudget](https://actualbudget). to create detailed reports about my accounting. However, I found that either the learning curve is too high or the burden of manually categorizing transactions is too great.
-
-I wanted something much simpler to use that still provides the required details and works with transaction exports that one can download from their online banking.
-
-## The name
-
-The slang phrase "what's the damage?" is often used to ask about the cost or price of something, typically in a casual or informal context. The phrase is commonly used in social settings, especially when discussing expenses or the results of an event.
-
-## Features:
- - Categorizes transactions into well known accounting categories like deposits, payments, etc.
+## Features
+ - Categorizes transactions into well known [accounting categories](#transaction-categories).
  - Categorizes transactions into custom categories by using regular expressions.
  - Transactions can be filtered by start and end dates. If no filter is set, grouping is based on the number of months.
  - Shows a report about the summarized amounts grouped by transaction categories.
- - Reports can be saved as CSV file as well.
+ - Reports can be saved into CSV or HTML files.
  - Localization support. Currently English (default) and Hungarian languages are supported.
  - Web interface for easier use.
 
@@ -69,7 +61,29 @@ Try experimenting with it by providing the `--ml` command line argument to `what
 
 ## Install
 
-Use `pipx install .` to deploy the package.
+This chapter describes how to install `whatsthedamage` in production. For development purposes check out the [Development](#development) chapter.
+
+### Manual install
+
+The package is published to [https://pypi.org/project/whatsthedamage/](https://pypi.org/project/whatsthedamage/) therefore you can use pip / pipx to install it.
+```shell
+$ pipx install whatsthedamage
+$ pip install --user whatsthedamage
+```
+
+The web interface requires you to start WSGI server (ie. gunicorn) manually.
+
+<FIXME>
+
+### Docker image
+
+There is also an experimental Docker image you can use hosted on GitHub.
+
+```shell
+$ docker run --rm -ti --publish 5000:5000/tcp ghcr.io/abalage/whatsthedamage:latest
+```
+
+You can access the web interface on [http://localhost:5000](http://localhost:5000).
 
 ## Usage:
 ```
@@ -102,31 +116,18 @@ options:
   --ml                  Use machine learning for categorization instead of regular expressions. (experimental)
 ```
 
-## Web interface
-
-Currently you can only run it locally by using Flask.
-```bash
-pip3 install -r requirements.txt
-cd src/whatsthedamage
-python3 -m flask run
-```
-
-Access the web interface on [http://0.0.0.0:5000](http://0.0.0.0:5000).
-
-## Things which need attention
-
-- The categorization process may fail to categorize transactions because of the quality of the regular expressions. In such situations the transaction will be categorized as 'other'.
-- The tool assumes that account exports only use a single currency.
-
 ### Configuration File (config.yml):
 
 The config file format and syntax has considerably changed in v0.6.0. Please refer to the default config file for details.
 
 A default configuration file is provided as `config.yml.default`. The installed package installs it to `<venv>/whatsthedamage/share/doc/whatsthedamage/config.yml.default`.
 
-## Troubleshooting
-In case you want to troubleshoot why a certain transaction got into a specific category, turn on verbose mode by setting either `-v` or `--verbose` on the command line.  
-By default only those attributes (columns) are printed which are set in `selected_attributes` in config file. The attribute `category` is created by the tool.
+If you do not want to create a configuration file then you can try the experimental [Machine Learning](#machine-learning-categorization-experimental) mode to categorize transactions.
+
+### Troubleshooting
+
+To troubleshoot why a transaction was assigned to a particular category, enable verbose mode using the `-v` or `--verbose` command line option.  
+By default, only the attributes (columns) specified by `selected_attributes` in the configuration file are displayed. The `category` attribute is generated by the tool.
 
 Should you want to check your regular expressions then you can use a handy online tool like https://regex101.com/.
 
@@ -134,7 +135,7 @@ Note: Regexp values are not stored as raw strings, so watch out for possible bac
 
 ## Transaction categories
 
-A list of frequent transaction categories a bank account may have.
+This is the list of transaction categories `whatsthedamage` uses by default.
 
 - **Balance**: Your total balance per time period. Basically the sum of all deposits minus the sum of all your purchases.
 - **Clothes**: Clothing related purchases.
@@ -147,7 +148,6 @@ A list of frequent transaction categories a bank account may have.
 - **Loan**: Any type of loans, mortgage.
 - **Other**: Any transactions which do not fit into any of the other categories.
 - **Payment**: Scheduled payments for bills or loans, which can be set up as automatic payments.
-- **Purchase**: Transactions made using a debit card or checks to pay for goods and services. (This is not explicitly used by `whatsthedamage`)
 - **Refund**: Money returned to the account, often from returned purchases or corrections of previous transactions.
 - **Sports Recreation**: Spending related to sports and recreations like massage, going into a bar or cinema.
 - **Transfer**: Movements of money between accounts, either within the same bank or to different banks.
@@ -155,38 +155,58 @@ A list of frequent transaction categories a bank account may have.
 - **Vehicle**: All purchases - except Insurance - related to owning a vehicle.
 - **Withdrawal**: Money taken out of the account, including ATM withdrawals, cash withdrawals at the bank, and electronic transfers.
 
-Custom categories (like "Vehicle", "Grocery", etc.) are user-defined via config, and the listed categories are just examples. Feel free to add your own categories into config.yml.
+Custom categories can be user-defined via config. Feel free to add your own categories into config.yml.
 
-## Localization
+Note: the Machine Learning model was trained on the categories listed here.
 
-The application by default uses the English language and it has optional support for Hungarian.
+## Limitations
 
-1. Install and configure `babel` and `poedit`.  
-```bash
-pipx install babel
-cat <<EOL > babel.cfg
-[python: **.py]
-[jinja2: **.html]
-extensions=jinja2.ext.i18n
-EOL
+- The categorization process may fail to categorize transactions because of the quality of the regular expressions / ML model. The transaction might be categorized as 'other'.
+- The tool assumes that account exports only use a single currency.
+
+## Development
+
+The repository comes with a Makefile using 'GNU make' to automatize recurring actions. Here is the usage of the Makefile.
+
+```shell
+$ make help
+Development workflow:
+  dev            - Create venv, install pip-tools, sync all requirements
+  web            - Run Flask development server
+  test           - Run tests using tox
+  image          - Build Podman image with version tag
+  lang           - Extract translatable strings to English .pot file
+
+Dependency management:
+  compile-deps   - Compile requirements files from pyproject.toml
+  update-deps    - Update requirements to latest versions
+  compile-deps-secure - Generate requirements with hashes
+
+Cleanup:
+  clean          - Clean up build files
+  mrproper       - Clean + remove virtual environment
 ```
 
-2. Extract translatable strings into a .pot file:  
+### Localization
+
+The application by default uses the English language, however it also supports Hungarian language.
+
+For translation support the tool uses Python's [gettext](https://docs.python.org/3/library/gettext.html) library.
+
+1. To update the English .pot file with new translatable strings use `make lang`.
+```shell
+$ make lang
+```
+2. Create or edit the .po file to add translations by a tool like `poedit`.
+```shell
+$ poedit locale/en/LC_MESSAGES/messages.po
+```
+3. Compile the .po file into a .mo file. (`poedit` will do this for you):
 ```bash
-pybabel extract -F babel.cfg -o src/whatsthedamage/locale/en/LC_MESSAGES/messages.pot src/whatsthedamage/
+$ msgfmt locale/en/LC_MESSAGES/messages.po -o locale/en/LC_MESSAGES/messages.mo
 ```
 
-3. Edit the .po file to add translations (creates the .mo file upon Save):
-```bash
-poedit locale/en/LC_MESSAGES/messages.po
-```
-
-4. (optional) Compile the .po file into a .mo file. Poedit will do this for you:
-```bash
-msgfmt locale/en/LC_MESSAGES/messages.po -o locale/en/LC_MESSAGES/messages.mo
-```
-
-## Contributing
+### Contributing
 
 Contributions are welcome! If you have ideas for improvements, bug fixes, new features, or additional documentation, feel free to open an issue or submit a pull request.
 

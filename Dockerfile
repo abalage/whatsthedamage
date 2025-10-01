@@ -1,9 +1,11 @@
 FROM python:3.13-trixie
 
+# Accept version as build argument
+ARG APP_VERSION=dev
+
 # Set environment variables for Python
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
-ENV SETUPTOOLS_SCM_PRETEND_VERSION_FOR_WHATSTHEDAMAGE=v0.7.1
 
 # Install system dependencies (including curl for health checks)
 # RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -20,10 +22,10 @@ RUN mkdir /app && chown -R appuser:appuser /app
 WORKDIR /app
 
 # Copy dependency files as root first
-COPY pyproject.toml requirements.txt ./
+COPY pyproject.toml requirements.txt requirements-web.txt ./
 
 # Install Python dependencies as root (system-wide)
-RUN pip install --no-cache-dir -r requirements.txt  
+RUN pip install --no-cache-dir -r requirements.txt -r requirements-web.txt
 
 # Copy the application code
 COPY . .
@@ -35,7 +37,8 @@ RUN chown -R appuser:appuser /app
 USER appuser
 
 # Install the package in editable mode
-RUN pip install --user -e .
+RUN --mount=source=.git,target=.git,type=bind \
+    pip install --user -e .
 
 # Expose port 5000
 EXPOSE 5000

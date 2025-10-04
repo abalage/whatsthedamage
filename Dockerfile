@@ -1,4 +1,4 @@
-FROM python:3.13-trixie
+FROM python:3.13-slim-trixie
 
 # Accept version as build argument
 ARG APP_VERSION=dev
@@ -8,9 +8,11 @@ ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
 # Install system dependencies (including curl for health checks)
-# RUN apt-get update && apt-get install -y --no-install-recommends \
-#     curl \
-#     && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    file \
+    git \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
 
 # Create a non-root user with home directory
 RUN groupadd -r appuser && useradd -r -g appuser -m appuser

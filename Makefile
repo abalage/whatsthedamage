@@ -10,7 +10,7 @@ PODMAN := /usr/bin/podman
 DOCKER_IMAGE := whatsthedamage
 VERSION ?= $(shell set -o pipefail; python3 -m setuptools_scm 2>/dev/null | sed 's/\+/_/' || echo "latest")
 
-.PHONY: web test lang clean mrproper image compile-deps update-deps compile-deps-secure help
+.PHONY: docs web test lang clean mrproper image compile-deps update-deps compile-deps-secure help docs
 
 # =============================================================================
 # DEVELOPMENT TARGETS
@@ -41,6 +41,11 @@ test: dev
 
 lang: dev
 	$(PYBABEL) extract -F babel.cfg -o src/whatsthedamage/locale/en/LC_MESSAGES/messages.pot src/whatsthedamage/
+
+# Build Sphinx documentation
+docs:
+	$(PYTHON) $(VENV)/bin/sphinx-apidoc -f -M -T -o docs/ src/
+	export SPHINXBUILD=../$(VENV)/bin/sphinx-build && $(MAKE) -C docs clean html
 
 # =============================================================================
 # PODMAN TARGETS
@@ -109,6 +114,7 @@ help:
 	@echo "  test           - Run tests using tox"
 	@echo "  image          - Build Podman image with version tag"
 	@echo "  lang           - Extract translatable strings to English .pot file"
+	@echo "  docs           - Build Sphinx documentation"
 	@echo ""
 	@echo "Dependency management:"
 	@echo "  compile-deps   - Compile requirements files from pyproject.toml"

@@ -73,7 +73,14 @@ $ pip install --user whatsthedamage
 
 The web interface requires you to start WSGI server (ie. gunicorn) manually.
 
-<FIXME>
+Gunicorn requires either a configuration file or proper command line arguments passed when invoked from command line.
+
+The repository contains an example [gunicorn_conf.py](gunicorn_conf.py) you can use out of the box.
+
+```shell
+$ cd
+$ gunicorn --config gunicorn_conf.py whatsthedamage.app:app
+```
 
 ### Docker image
 
@@ -103,7 +110,7 @@ options:
   --end-date END_DATE   End date (e.g. YYYY.MM.DD.)
   --verbose, -v         Print categorized rows for troubleshooting.
   --version             Show the version of the program.
-  --config, -c CONFIG   Path to the configuration file. (default: config.yml.default)
+  --config, -c CONFIG   Path to the configuration file.
   --category CATEGORY   The attribute to categorize by. (default: category)
   --no-currency-format  Disable currency formatting. Useful for importing the data into a spreadsheet.
   --output, -o OUTPUT   Save the result into a CSV file with the specified filename.
@@ -116,11 +123,11 @@ options:
   --ml                  Use machine learning for categorization instead of regular expressions. (experimental)
 ```
 
-### Configuration File (config.yml):
+### Configuration File
 
-The config file format and syntax has considerably changed in v0.6.0. Please refer to the default config file for details.
+The config file format and syntax has considerably changed in v0.6.0 (JSON to YAML). Please refer to the default config file for details.
 
-A default configuration file is provided as `config.yml.default`. The installed package installs it to `<venv>/whatsthedamage/share/doc/whatsthedamage/config.yml.default`.
+A default configuration file is provided as [config.yml.default](docs/config.yml.default).
 
 If you do not want to create a configuration file then you can try the experimental [Machine Learning](#machine-learning-categorization-experimental) mode to categorize transactions.
 

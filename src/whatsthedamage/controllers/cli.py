@@ -1,6 +1,7 @@
 """Console script for whatsthedamage."""
 import argparse
 from whatsthedamage.controllers.whatsthedamage import main as process_csv
+from whatsthedamage.utils.version import get_version
 from whatsthedamage.config.config import AppArgs
 
 
@@ -11,7 +12,7 @@ def parse_arguments() -> AppArgs:
     parser.add_argument('--start-date', type=str, help='Start date (e.g. YYYY.MM.DD.)')
     parser.add_argument('--end-date', type=str, help='End date (e.g. YYYY.MM.DD.)')
     parser.add_argument('--verbose', '-v', action='store_true', help='Print categorized rows for troubleshooting.')
-    parser.add_argument('--version', action='version', version='What\'s the Damage', help='Show the version of the program.')  # noqa: E501
+    parser.add_argument('--version', action='version', version=f"whatsthedamage v{get_version()}", help='Show the version of the program.')  # noqa: E501
     parser.add_argument('--config', '-c', type=str, help='Path to the configuration file.')
     parser.add_argument('--category', type=str, default='category', help='The attribute to categorize by. (default: category)')  # noqa: E501
     parser.add_argument('--no-currency-format', action='store_true', help='Disable currency formatting. Useful for importing the data into a spreadsheet.')  # noqa: E501

@@ -52,21 +52,19 @@ def test_index_route(client):
     assert b'<form' in response.data
 
 
-def test_process_route(client, monkeypatch, csv_rows, mapping):
+def test_process_route(client, monkeypatch, csv_rows, mapping, config_yml_default_path):
     def mock_process_csv(args):
         return '<table class="table table-bordered table-striped"></table>'
 
     monkeypatch.setattr('whatsthedamage.controllers.routes.process_csv', mock_process_csv)
 
     csrf_token = get_csrf_token(client)
-
-    # Create sample CSV file using the imported function
     sample_csv_path = create_sample_csv_from_fixture(csv_rows, mapping)
 
     data = {
         'csrf_token': csrf_token,
         'filename': (BytesIO(read_file(sample_csv_path)), 'sample.csv'),
-        'config': (BytesIO(read_file('config.yml.default')), 'config.yml.default'),
+        'config': (BytesIO(read_file(config_yml_default_path)), 'config.yml.default'),
         'start_date': '2023-01-01',
         'end_date': '2023-12-31',
     }
@@ -110,7 +108,7 @@ def test_clear_upload_folder(client):
         assert not os.path.exists(test_file_path)
 
 
-def test_process_route_invalid_data(client, monkeypatch):
+def test_process_route_invalid_data(client, monkeypatch, config_yml_default_path):
     def mock_process_csv(args):
         return "<table class='dataframe'></table>"
 
@@ -120,7 +118,7 @@ def test_process_route_invalid_data(client, monkeypatch):
 
     data = {
         'csrf_token': csrf_token,
-        'config': (BytesIO(read_file('config.yml.default')), 'config.yml.default')
+        'config': (BytesIO(read_file(config_yml_default_path)), 'config.yml.default')
         # Missing other required fields
     }
     response = client.post('/process', data=data, content_type='multipart/form-data')
@@ -129,7 +127,7 @@ def test_process_route_invalid_data(client, monkeypatch):
     assert response.status_code == 302  # Expecting a redirect due to validation failure
 
 
-def test_process_route_missing_file(client, monkeypatch):
+def test_process_route_missing_file(client, monkeypatch, config_yml_default_path):
     def mock_process_csv():
         return "<table class='dataframe'></table>"
 
@@ -139,7 +137,7 @@ def test_process_route_missing_file(client, monkeypatch):
 
     data = {
         'csrf_token': csrf_token,
-        'config': (BytesIO(read_file('config.yml.default')), 'config.yml.default'),
+        'config': (BytesIO(read_file(config_yml_default_path)), 'config.yml.default'),
         'start_date': '2023-01-01',
         'end_date': '2023-12-31',
     }
@@ -156,8 +154,6 @@ def test_process_route_missing_config(client, monkeypatch, csv_rows, mapping):
     monkeypatch.setattr('whatsthedamage.controllers.routes.process_csv', mock_process_csv)
 
     csrf_token = get_csrf_token(client)
-
-    # Create sample CSV file using the imported function
     sample_csv_path = create_sample_csv_from_fixture(csv_rows, mapping)
 
     data = {
@@ -165,6 +161,7 @@ def test_process_route_missing_config(client, monkeypatch, csv_rows, mapping):
         'filename': (BytesIO(read_file(sample_csv_path)), 'sample.csv'),
         'start_date': '2023-01-01',
         'end_date': '2023-12-31',
+        'ml': True,  # <-- ML mode enabled, config can be missing
     }
     response = client.post('/process', data=data, content_type='multipart/form-data')
     if response.status_code != 200:
@@ -174,21 +171,19 @@ def test_process_route_missing_config(client, monkeypatch, csv_rows, mapping):
     os.remove(sample_csv_path)
 
 
-def test_process_route_invalid_end_date(client, monkeypatch, csv_rows, mapping):
+def test_process_route_invalid_end_date(client, monkeypatch, csv_rows, mapping, config_yml_default_path):
     def mock_process_csv(args):
         return "<table class='dataframe'></table>"
 
     monkeypatch.setattr('whatsthedamage.controllers.routes.process_csv', mock_process_csv)
 
     csrf_token = get_csrf_token(client)
-
-    # Create sample CSV file using the imported function
     sample_csv_path = create_sample_csv_from_fixture(csv_rows, mapping)
 
     data = {
         'csrf_token': csrf_token,
         'filename': (BytesIO(read_file(sample_csv_path)), 'sample.csv'),
-        'config': (BytesIO(read_file('config.yml.default')), 'config.yml.default'),
+        'config': (BytesIO(read_file(config_yml_default_path)), 'config.yml.default'),
         'start_date': '2023-01-01',
         'end_date': 'invalid-date',
     }
@@ -201,7 +196,7 @@ def test_process_route_invalid_end_date(client, monkeypatch, csv_rows, mapping):
     os.remove(sample_csv_path)
 
 
-def test_download_route_with_result(client, monkeypatch, csv_rows, mapping):
+def test_download_route_with_result(client, monkeypatch, csv_rows, mapping, config_yml_default_path):
     def mock_process_csv(args):
         return ("<table class='dataframe'><tr><td>Unnamed: 0</td>"
                 "<td>2023.01.01 - 2023.12.31</td></tr><tr><td>balance</td>"
@@ -210,14 +205,12 @@ def test_download_route_with_result(client, monkeypatch, csv_rows, mapping):
     monkeypatch.setattr('whatsthedamage.controllers.routes.process_csv', mock_process_csv)
 
     csrf_token = get_csrf_token(client)
-
-    # Create sample CSV file using the imported function
     sample_csv_path = create_sample_csv_from_fixture(csv_rows, mapping)
 
     data = {
         'csrf_token': csrf_token,
         'filename': (BytesIO(read_file(sample_csv_path)), 'sample.csv'),
-        'config': (BytesIO(read_file('config.yml.default')), 'config.yml.default'),
+        'config': (BytesIO(read_file(config_yml_default_path)), 'config.yml.default'),
         'start_date': '2023-01-01',
         'end_date': '2023-12-31',
         'no_currency_format': True,
@@ -233,21 +226,19 @@ def test_download_route_with_result(client, monkeypatch, csv_rows, mapping):
     os.remove(sample_csv_path)
 
 
-def test_process_route_invalid_date(client, monkeypatch, csv_rows, mapping):
+def test_process_route_invalid_date(client, monkeypatch, csv_rows, mapping, config_yml_default_path):
     def mock_process_csv(args):
         return "<table class='dataframe'></table>"
 
     monkeypatch.setattr('whatsthedamage.controllers.routes.process_csv', mock_process_csv)
 
     csrf_token = get_csrf_token(client)
-
-    # Create sample CSV file using the imported function
     sample_csv_path = create_sample_csv_from_fixture(csv_rows, mapping)
 
     data = {
         'csrf_token': csrf_token,
         'filename': (BytesIO(read_file(sample_csv_path)), 'sample.csv'),
-        'config': (BytesIO(read_file('config.yml.default')), 'config.yml.default'),
+        'config': (BytesIO(read_file(config_yml_default_path)), 'config.yml.default'),
         'start_date': 'invalid-date',
         'end_date': '2023-12-31',
     }

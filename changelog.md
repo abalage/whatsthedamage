@@ -1,10 +1,11 @@
 # Changelog
 
-## [0.7.1] - 2025-10-01
+## [0.7.1] - 2025-10-07
 ### Added
 - **Feature**: Add Docker support for easier deployment.
 - **Feature**: Add basic `/health` endpoint.
 - **Feature**: Add Makefile support for streamlined development workflow.
+- **Feature**: Add sphinx autodoc for generating API Reference documentation.
 
 ### Changed
 - **Tests**: Migrate from flake8 to ruff for linting.

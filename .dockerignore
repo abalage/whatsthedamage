@@ -1,0 +1,54 @@
+# Version control
+.git
+.gitignore
+.github
+.gitattributes
+
+# Development and IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Python cache and bytecode
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual environments
+venv/
+.venv/
+env/
+ENV/
+
+# Testing
+tests/
+.pytest_cache/
+.coverage
+coverage.xml
+*.log
+.tox/
+.mypy_cache/
+.ruff_cache/
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Environment files
+.env
+.env.local
+
+# Docker files (optional, to avoid copying into context)
+Dockerfile*
+.dockerignore
+
+# Other unnecessary files
+*.tmp
+.cache/

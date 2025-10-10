@@ -3,6 +3,7 @@ FROM python:3.13-slim-trixie
 # Accept version as build argument
 ARG VERSION=dev
 ENV SETUPTOOLS_SCM_PRETEND_VERSION_FOR_WHATSTHEDAMAGE=$VERSION
+ENV USER=appuser
 
 # Set environment variables for Python
 ENV PYTHONDONTWRITEBYTECODE=1
@@ -16,10 +17,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Create a non-root user with home directory
-RUN groupadd -r appuser && useradd -r -g appuser -m appuser
+RUN groupadd -r ${USER} && useradd -r -g ${USER} -m ${USER}
 
 # Create app directory and set ownership
-RUN mkdir /app && chown -R appuser:appuser /app
+RUN mkdir /app && chown -R ${USER}:${USER} /app
 
 # Set working directory
 WORKDIR /app
@@ -34,10 +35,13 @@ RUN pip install --no-cache-dir -r requirements.txt -r requirements-web.txt
 COPY . .
 
 # Fix ownership of all copied files
-RUN chown -R appuser:appuser /app
+RUN chown -R ${USER}:${USER} /app
 
 # Switch to non-root user
-USER appuser
+USER ${USER}
+
+# Add local bin to PATH for appuser
+ENV PATH="/home/${USER}/.local/bin:${PATH}"
 
 # Install the package in editable mode
 RUN pip install --no-cache-dir --no-deps --user -e .

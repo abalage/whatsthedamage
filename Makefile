@@ -8,7 +8,8 @@ TOX := $(VENV)/bin/tox
 PODMAN := /usr/bin/podman
 
 DOCKER_IMAGE := whatsthedamage
-VERSION ?= $(shell set -o pipefail; python3 -m setuptools_scm 2>/dev/null | sed 's/\+/_/' || echo "latest")
+DOCKER_TAG ?= $(shell set -o pipefail; python3 -m setuptools_scm 2>/dev/null | sed 's/\+/_/' || echo "latest")
+VERSION ?= $(shell set -o pipefail; python3 -m setuptools_scm 2>/dev/null || echo "latest")
 
 .PHONY: docs web test lang clean mrproper image compile-deps update-deps compile-deps-secure help docs
 
@@ -54,7 +55,7 @@ docs:
 # Build Podman image with version tag
 image:
 	@echo "Building Podman image with version: $(VERSION)"
-	$(PODMAN) build --format docker -t $(DOCKER_IMAGE):$(VERSION) .
+	$(PODMAN) build --build-arg VERSION=$(VERSION) --format docker -t $(DOCKER_IMAGE):$(DOCKER_TAG) .
 
 # =============================================================================
 # DEPENDENCY MANAGEMENT

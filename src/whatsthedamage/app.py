@@ -3,6 +3,7 @@ import os
 from whatsthedamage.controllers.routes import bp as main_bp
 from whatsthedamage.config.flask_config import FlaskAppConfig
 from whatsthedamage.utils.flask_locale import get_locale
+from whatsthedamage.utils.version import get_version
 from typing import Optional, Any
 import gettext
 
@@ -44,7 +45,7 @@ def create_app(config_class: Optional[FlaskAppConfig] = None) -> Flask:
 
     @app.context_processor
     def inject_gettext() -> dict[str, Any]:
-        return dict(_=g._, ngettext=g.ngettext)
+        return dict(_=g._, ngettext=g.ngettext, app_version=get_version())
     # --- END: Gettext integration for templates ---
 
     app.register_blueprint(main_bp)

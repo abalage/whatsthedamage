@@ -1,7 +1,8 @@
 FROM python:3.13-slim-trixie
 
 # Accept version as build argument
-ARG APP_VERSION=dev
+ARG VERSION=dev
+ENV SETUPTOOLS_SCM_PRETEND_VERSION_FOR_WHATSTHEDAMAGE=$VERSION
 
 # Set environment variables for Python
 ENV PYTHONDONTWRITEBYTECODE=1
@@ -39,8 +40,7 @@ RUN chown -R appuser:appuser /app
 USER appuser
 
 # Install the package in editable mode
-RUN --mount=source=.git,target=.git,type=bind \
-    pip install --user -e .
+RUN pip install --no-cache-dir --no-deps --user -e .
 
 # Expose port 5000
 EXPOSE 5000

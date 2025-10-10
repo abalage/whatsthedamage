@@ -183,6 +183,7 @@ Development workflow:
   test           - Run tests using tox
   image          - Build Podman image with version tag
   lang           - Extract translatable strings to English .pot file
+  docs           - Build Sphinx documentation
 
 Dependency management:
   compile-deps   - Compile requirements files from pyproject.toml

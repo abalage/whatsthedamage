@@ -9,7 +9,7 @@ PODMAN := /usr/bin/podman
 
 DOCKER_IMAGE := whatsthedamage
 DOCKER_TAG ?= $(shell set -o pipefail; python3 -m setuptools_scm 2>/dev/null | sed 's/\+/_/' || echo "latest")
-VERSION ?= $(shell set -o pipefail; python3 -m setuptools_scm 2>/dev/null || echo "latest")
+VERSION ?= $(shell set -o pipefail; python3 -m setuptools_scm 2>/dev/null || echo "v0.0.0")
 
 .PHONY: docs web test lang clean mrproper image compile-deps update-deps compile-deps-secure help docs
 

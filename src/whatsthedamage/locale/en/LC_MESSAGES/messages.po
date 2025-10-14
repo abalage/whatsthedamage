@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: whatsthedamage-1.0\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2025-08-02 21:35+0200\n"
-"PO-Revision-Date: 2025-08-02 21:35+0200\n"
+"POT-Creation-Date: 2025-10-14 20:56+0200\n"
+"PO-Revision-Date: 2025-10-14 20:58+0200\n"
 "Last-Translator: Balázs Németh <balagetech@protonmail.com>\n"
 "Language-Team: English\n"
 "Language: en\n"
@@ -16,77 +16,77 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
-"X-Generator: Poedit 3.2.2\n"
+"X-Generator: Poedit 3.6\n"
 
-#: src/whatsthedamage/config/config.py:43
+#: src/whatsthedamage/config/config.py:50
 msgid "Grocery"
 msgstr "Grocery"
 
-#: src/whatsthedamage/config/config.py:44
+#: src/whatsthedamage/config/config.py:51
 msgid "Clothes"
 msgstr "Clothes"
 
-#: src/whatsthedamage/config/config.py:45
+#: src/whatsthedamage/config/config.py:52
 msgid "Health"
 msgstr "Health"
 
-#: src/whatsthedamage/config/config.py:46
+#: src/whatsthedamage/config/config.py:53
 msgid "Payment"
 msgstr "Payment"
 
-#: src/whatsthedamage/config/config.py:47
+#: src/whatsthedamage/config/config.py:54
 msgid "Vehicle"
 msgstr "Vehicle"
 
-#: src/whatsthedamage/config/config.py:48
+#: src/whatsthedamage/config/config.py:55
 msgid "Utility"
 msgstr "Utility"
 
-#: src/whatsthedamage/config/config.py:49
+#: src/whatsthedamage/config/config.py:56
 msgid "Home Maintenance"
 msgstr "Home Maintenance"
 
-#: src/whatsthedamage/config/config.py:50
+#: src/whatsthedamage/config/config.py:57
 msgid "Sports Recreation"
 msgstr "Sports Recreation"
 
-#: src/whatsthedamage/config/config.py:51
+#: src/whatsthedamage/config/config.py:58
 msgid "Insurance"
 msgstr "Insurance"
 
-#: src/whatsthedamage/config/config.py:52
+#: src/whatsthedamage/config/config.py:59
 msgid "Loan"
 msgstr "Loan"
 
-#: src/whatsthedamage/config/config.py:53
+#: src/whatsthedamage/config/config.py:60
 msgid "Withdrawal"
 msgstr "Withdrawal"
 
-#: src/whatsthedamage/config/config.py:54
+#: src/whatsthedamage/config/config.py:61
 msgid "Fee"
 msgstr "Fee"
 
-#: src/whatsthedamage/config/config.py:55
+#: src/whatsthedamage/config/config.py:62
 msgid "Deposit"
 msgstr "Deposit"
 
-#: src/whatsthedamage/config/config.py:56
+#: src/whatsthedamage/config/config.py:63
 msgid "Refund"
 msgstr "Refund"
 
-#: src/whatsthedamage/config/config.py:57
+#: src/whatsthedamage/config/config.py:64
 msgid "Interest"
 msgstr "Interest"
 
-#: src/whatsthedamage/config/config.py:58
+#: src/whatsthedamage/config/config.py:65
 msgid "Transfer"
 msgstr "Transfer"
 
-#: src/whatsthedamage/config/config.py:59
+#: src/whatsthedamage/config/config.py:66
 msgid "Other"
 msgstr "Other"
 
-#: src/whatsthedamage/config/config.py:60
+#: src/whatsthedamage/config/config.py:67
 msgid "Balance"
 msgstr "Balance"
 
@@ -168,41 +168,44 @@ msgstr "Language"
 
 #: src/whatsthedamage/view/templates/index.html:43
 msgid "File Uploads"
-msgstr ""
+msgstr "File Uploads"
 
 #: src/whatsthedamage/view/templates/index.html:47
 msgid "CSV file:"
-msgstr ""
+msgstr "CSV file:"
 
 #: src/whatsthedamage/view/templates/index.html:49
 msgid "Upload your CSV file containing the exported bank account history here."
 msgstr ""
+"Upload your CSV file containing the exported bank account history here."
 
 #: src/whatsthedamage/view/templates/index.html:52
 msgid "Configuration file:"
-msgstr ""
+msgstr "Configuration file:"
 
 #: src/whatsthedamage/view/templates/index.html:54
 msgid ""
 "Upload your configuration file here, or the default configuration will be "
 "used."
 msgstr ""
+"Upload your configuration file here, or the default configuration will be "
+"used."
 
 #: src/whatsthedamage/view/templates/index.html:62
 msgid "Filters"
-msgstr ""
+msgstr "Filters"
 
 #: src/whatsthedamage/view/templates/index.html:66
 msgid "Start date:"
-msgstr ""
+msgstr "Start date:"
 
 #: src/whatsthedamage/view/templates/index.html:68
 msgid "Filter results starting from this date."
-msgstr ""
+msgstr "Filter results starting from this date."
 
 #: src/whatsthedamage/view/templates/index.html:71
 msgid "End date:"
-msgstr ""
+msgstr "End date:"
 
 #: src/whatsthedamage/view/templates/index.html:73
 msgid "Filter results up until this date."
@@ -238,11 +241,19 @@ msgid ""
 "format the cells in your spreadsheet application instead."
 msgstr ""
 
-#: src/whatsthedamage/view/templates/index.html:107
+#: src/whatsthedamage/view/templates/index.html:104
+msgid "Use Machine Learning model for categorization"
+msgstr ""
+
+#: src/whatsthedamage/view/templates/index.html:108
+msgid "Uncheck to use regular expressions instead of the ML model."
+msgstr ""
+
+#: src/whatsthedamage/view/templates/index.html:117
 msgid "Submit"
 msgstr ""
 
-#: src/whatsthedamage/view/templates/index.html:110
+#: src/whatsthedamage/view/templates/index.html:120
 msgid "Clear Form"
 msgstr ""
 

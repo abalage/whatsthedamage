@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "whatsthedamage"
 dynamic = ["version"]
-description = "A package to process KHBHU CSV files and a web application written in Flask"
+description = "A package to process bank account exports in CSV files. With optionally a web interface."
 keywords = ["csv", "account", "report", "web"]
 readme = "README.md"
 authors = [

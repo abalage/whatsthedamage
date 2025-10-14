@@ -1,8 +1,8 @@
 # whatsthedamage
 
-An opinionated open source tool written in Python to process K&H HU's bank account transaction exports in CSV files.
+An opinionated open source tool written in Python to process bank account transaction exports in CSV files.
 
-The predefined settings works best with CSVs exported from K&H HU, efforts were made to be able to customize the behavior and potentially work with any other CSV format other finance companies may produce.
+Efforts were made to be able to customize the behavior and potentially work with any CSV format finance companies may produce.
 
 The project contains a command line tool as well as a web interface for easier usage.
 

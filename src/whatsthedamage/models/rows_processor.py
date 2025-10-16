@@ -6,7 +6,7 @@ from whatsthedamage.models.row_enrichment_ml import RowEnrichmentML
 from whatsthedamage.models.row_filter import RowFilter
 from whatsthedamage.models.row_summarizer import RowSummarizer
 from whatsthedamage.utils.date_converter import DateConverter
-from whatsthedamage.utils.row_printer import print_categorized_rows, print_training_data
+from whatsthedamage.view.row_printer import print_categorized_rows, print_training_data
 
 """
 RowsProcessor processes rows of CSV data. It filters, enriches, categorizes, and summarizes the rows.

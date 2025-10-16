@@ -58,7 +58,7 @@ web = [
 ]
 
 [project.scripts]
-whatsthedamage = "whatsthedamage.controllers.cli:main_cli"
+whatsthedamage = "whatsthedamage.cli_app:main"
 
 [project.urls]
 bugs = "https://github.com/abalage/whatsthedamage/issues"

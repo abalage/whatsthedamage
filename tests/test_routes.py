@@ -54,7 +54,7 @@ def test_index_route(client):
 
 def test_process_route(client, monkeypatch, csv_rows, mapping, config_yml_default_path):
     def mock_process_csv(args):
-        return '<table class="table table-bordered table-striped"></table>'
+        return '<table><thead><tr><th></th><th>Total</th></tr></thead><tbody><tr><th>balance</th><td>100.0</td></tr></tbody></table>'
 
     monkeypatch.setattr('whatsthedamage.controllers.routes.process_csv', mock_process_csv)
 
@@ -78,7 +78,12 @@ def test_process_route(client, monkeypatch, csv_rows, mapping, config_yml_defaul
         print_form_errors(client)
 
     assert response.status_code == 200
-    assert b'<table class="table table-bordered table-striped">' in response.data
+    # Check that session contains the processed result
+    with client.session_transaction() as sess:
+        assert 'result' in sess
+        assert 'table_data' in sess
+        assert 'headers' in sess['table_data']
+        assert 'rows' in sess['table_data']
 
     os.remove(sample_csv_path)
 

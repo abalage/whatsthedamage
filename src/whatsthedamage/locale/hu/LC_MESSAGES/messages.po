@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: whatsthedamage-1.0\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2025-10-14 20:56+0200\n"
-"PO-Revision-Date: 2025-10-14 21:00+0200\n"
+"POT-Creation-Date: 2025-10-28 21:14+0100\n"
+"PO-Revision-Date: 2025-10-28 21:15+0100\n"
 "Last-Translator: Balázs Németh <balagetech@protonmail.com>\n"
 "Language-Team: Hungarian\n"
 "Language: hu_HU\n"
@@ -89,6 +89,10 @@ msgstr "Egyéb"
 #: src/whatsthedamage/config/config.py:67
 msgid "Balance"
 msgstr "Egyenleg"
+
+#: src/whatsthedamage/models/csv_processor.py:80
+msgid "Categories"
+msgstr "Kategóriák"
 
 #: src/whatsthedamage/utils/date_converter.py:56
 msgid "January"
@@ -264,19 +268,19 @@ msgstr "Űrlap törlése"
 msgid "Result"
 msgstr "Eredmény"
 
-#: src/whatsthedamage/view/templates/result.html:33
+#: src/whatsthedamage/view/templates/result.html:62
 msgid "Processed results"
 msgstr "Feldolgozott eredmények"
 
-#: src/whatsthedamage/view/templates/result.html:43
+#: src/whatsthedamage/view/templates/result.html:95
 msgid "Back"
 msgstr "Vissza"
 
-#: src/whatsthedamage/view/templates/result.html:46
+#: src/whatsthedamage/view/templates/result.html:98
 msgid "Download CSV"
 msgstr "CSV letöltése"
 
-#: src/whatsthedamage/view/templates/result.html:51
+#: src/whatsthedamage/view/templates/result.html:103
 msgid ""
 "Note: Should you want to have better results in importing the generated CSV "
 "file, please make sure to check \"No Currenty Format\" on the previous form."

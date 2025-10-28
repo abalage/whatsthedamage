@@ -4,7 +4,7 @@ from flask import (
     session, flash, current_app, Response
 )
 from whatsthedamage.view.forms import UploadForm
-from typing import Optional
+from typing import Optional, Dict, List, Union
 from werkzeug.utils import secure_filename
 from werkzeug.security import safe_join
 from whatsthedamage.config.config import AppArgs
@@ -23,7 +23,7 @@ ALLOWED_EXTENSIONS = {'csv', 'yml', 'yaml'}
 
 def allowed_file(file_path: str) -> bool:
     mime = magic.Magic(mime=True)
-    file_type = mime.from_file(file_path)
+    file_type: str = mime.from_file(file_path)
     return file_type in {'text/csv', 'text/plain', 'application/x-yaml'}
 
 
@@ -41,7 +41,7 @@ def clear_upload_folder() -> None:
 
 
 def get_lang_template(template_name: str) -> str:
-    lang = get_locale()
+    lang: str = get_locale()
     return f"{lang}/{template_name}"
 
 
@@ -49,7 +49,7 @@ def get_lang_template(template_name: str) -> str:
 def index() -> Response:
     form: UploadForm = UploadForm()
     if 'form_data' in session:
-        form_data: dict[str, str] = session['form_data']
+        form_data: Dict[str, str] = session['form_data']
         form.filename.data = form_data.get('filename')
         form.config.data = form_data.get('config')
 
@@ -146,21 +146,21 @@ def clear() -> Response:
 
 @bp.route('/download', methods=['GET'])
 def download() -> Response:
-    result = session.get('result')
+    result: Optional[str] = session.get('result')
     if not result:
         flash('No result available for download.', 'danger')
         return make_response(redirect(url_for('main.index')))
 
     # Convert the HTML table to a DataFrame
-    df = pd.read_html(StringIO(result))[0]
+    df: pd.DataFrame = pd.read_html(StringIO(result))[0]
 
     # Convert the DataFrame to CSV
-    csv_buffer = StringIO()
+    csv_buffer: StringIO = StringIO()
     df.to_csv(csv_buffer, index=False)
-    csv_data = csv_buffer.getvalue()
+    csv_data: str = csv_buffer.getvalue()
 
     # Create a response with the CSV data
-    response = make_response(csv_data)
+    response: Response = make_response(csv_data)
     response.headers['Content-Disposition'] = 'attachment; filename=result.csv'
     response.headers['Content-Type'] = 'text/csv'
 
@@ -196,7 +196,7 @@ def set_language(lang_code: str) -> Response:
 def health() -> Response:
     try:
         # Simple check to see if the upload folder is writable
-        test_file_path = os.path.join(current_app.config['UPLOAD_FOLDER'], 'health_check.tmp')
+        test_file_path: str = os.path.join(current_app.config['UPLOAD_FOLDER'], 'health_check.tmp')
         with open(test_file_path, 'w') as f:
             f.write('health check')
         os.remove(test_file_path)

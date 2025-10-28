@@ -52,6 +52,9 @@ class DataFrameFormatter:
         # Create a DataFrame from the data
         df = pd.DataFrame(data_for_pandas)
 
+        # Replace NaN values with 0
+        df = df.fillna(0)
+
         # Sort the DataFrame by index (which are the categories)
         df = df.sort_index()
 

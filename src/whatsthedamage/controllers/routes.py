@@ -15,6 +15,7 @@ import pandas as pd
 from io import StringIO
 import magic
 from whatsthedamage.utils.flask_locale import get_locale, get_languages, get_default_language
+from whatsthedamage.utils.html_parser import TableParser
 
 bp: Blueprint = Blueprint('main', __name__)
 
@@ -117,19 +118,35 @@ def process() -> Response:
             flash(f'Error processing CSV: {e}')
             return make_response(redirect(url_for('main.index')))
 
-        # Hack to make the table look better with Bootstrap as Pandas' CSS support is limited
-        # Also this leaves the choice of output format to the frontend
-        result = result.replace('<table class="dataframe">', '<table class="table table-bordered table-striped">')
-        result = result.replace('<tbody>', '<tbody class="table-group-divider">')
-        result = result.replace('<thead>', '<thead class="table-success">')
+        # Parse HTML table using native Python parser
+        parser: TableParser = TableParser()
+        headers: List[str]
+        rows: List[List[str]]
+        headers, rows = parser.parse_table(result)
 
-        # Store the result in the session
+        # Process rows to extract numeric values for data-order attributes
+        import re
+        processed_rows: List[List[Dict[str, Union[str, float, None]]]] = []
+        for row in rows:
+            processed_row: List[Dict[str, Union[str, float, None]]] = []
+            for i, cell in enumerate(row):
+                if i == 0:  # First column (Categories) - no numeric sorting needed
+                    processed_row.append({'display': cell, 'order': None})
+                else:
+                    # Extract numeric value from currency string for sorting
+                    match = re.match(r'^(-?\d+(?:\.\d+)?)', str(cell))
+                    numeric_value: float = float(match.group(1)) if match else 0
+                    processed_row.append({'display': cell, 'order': numeric_value})
+            processed_rows.append(processed_row)
+
+        # Store both original result and structured data
         session['result'] = result
+        session['table_data'] = {'headers': headers, 'rows': processed_rows}
 
         # Clear the upload folder after processing
         clear_upload_folder()
 
-        return make_response(render_template('result.html', table=result))
+        return make_response(render_template('result.html', headers=headers, rows=processed_rows))
     else:
         for field, errors in form.errors.items():
             for error in errors:

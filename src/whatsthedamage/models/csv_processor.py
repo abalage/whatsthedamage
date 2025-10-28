@@ -4,6 +4,7 @@ from whatsthedamage.models.csv_file_handler import CsvFileHandler
 from whatsthedamage.models.rows_processor import RowsProcessor
 from whatsthedamage.models.data_frame_formatter import DataFrameFormatter
 from whatsthedamage.config.config import AppContext
+from gettext import gettext as _
 
 
 class CSVProcessor:
@@ -74,7 +75,10 @@ class CSVProcessor:
         df = formatter.format_dataframe(data_for_pandas, currency=currency)
 
         if self.args.get('output_format') == 'html':
-            return df.to_html(border=0)
+            # Convert to HTML and manually replace the empty th for index with translatable "Categories"
+            html = df.to_html(border=0)
+            html = html.replace('<th></th>', f'<th>{_("Categories")}</th>', 1)
+            return html
         elif self.args.get('output'):
             if self.args.get('output'):
                 # FIXME normally returns None but confuses callers, stringify it

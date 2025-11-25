@@ -36,7 +36,7 @@ class RowsProcessor:
         self._currency: str = ""
         self._training_data: bool = context.args.get("training_data", False)
         self._ml: bool = context.args.get("ml", False)
-        self._dt_json_data = None
+        self._dt_json_data: DataTablesResponse = DataTablesResponse(data=[])
 
         # Convert start and end dates to epoch if provided
         if self._start_date:

@@ -1,5 +1,6 @@
 from whatsthedamage.utils.date_converter import DateConverter
 from whatsthedamage.models.csv_row import CsvRow
+from whatsthedamage.config.dt_models import DateField
 from datetime import datetime
 from typing import List, Dict, Tuple
 
@@ -30,6 +31,34 @@ class RowFilter:
             except ValueError:
                 raise ValueError(f"Invalid date format for '{date_value}'")
         raise ValueError("Date value cannot be None")
+
+    def get_month_field(self, date_value: str) -> DateField:
+        """
+        Extract month information from a date and create a DateField with proper timestamp.
+
+        Creates a DateField with:
+        - display: Localized month name (e.g., 'January', 'February')
+        - timestamp: Epoch timestamp of the first day of that month
+
+        :param date_value: Date string to extract month from.
+        :return: DateField with month name and timestamp.
+        :raises ValueError: If the date_value is invalid or cannot be parsed.
+        """
+        if not date_value:
+            raise ValueError("Date value cannot be None")
+
+        try:
+            date_obj = datetime.strptime(date_value, self._date_format)
+            # Create first day of the month for timestamp
+            first_day = datetime(date_obj.year, date_obj.month, 1)
+            # Format as YYYY-MM-DD for epoch conversion
+            first_day_str = first_day.strftime(self._date_format)
+            month_timestamp = DateConverter.convert_to_epoch(first_day_str, self._date_format)
+            # Display as localized month name
+            month_display = DateConverter.convert_month_number_to_name(date_obj.month)
+            return DateField(display=month_display, timestamp=month_timestamp)
+        except ValueError:
+            raise ValueError(f"Invalid date format for '{date_value}'")
 
     def filter_by_date(
             self,
@@ -70,3 +99,27 @@ class RowFilter:
                 months[month_name].append(row)
 
         return tuple({k: v} for k, v in months.items())
+
+    def filter_by_month_v2(self) -> Tuple[Tuple[DateField, List[CsvRow]], ...]:
+        """
+        Filter rows based on the month parsed from a specified attribute (v2).
+
+        Returns tuples of (DateField, List[CsvRow]) instead of Dict[str, List[CsvRow]].
+        The DateField contains both display value and proper timestamp based on the 
+        actual year/month from the data.
+
+        :return: A tuple of (DateField, List[CsvRow]) tuples.
+        """
+        months: Dict[str, Tuple[DateField, List[CsvRow]]] = {}
+        for row in self._rows:
+            date_value = getattr(row, 'date')
+            month_field = self.get_month_field(date_value)
+            # Use display value as key to group rows from the same month
+            month_key = month_field.display
+
+            if month_key not in months:
+                months[month_key] = (month_field, [])
+            months[month_key][1].append(row)
+
+        # Return tuple of (DateField, rows) tuples
+        return tuple(months.values())

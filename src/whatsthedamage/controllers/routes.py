@@ -16,6 +16,9 @@ from io import StringIO
 import magic
 from whatsthedamage.utils.flask_locale import get_locale, get_languages, get_default_language
 from whatsthedamage.utils.html_parser import TableParser
+from typing import DefaultDict
+from whatsthedamage.config.dt_models import AggregatedRow
+from collections import defaultdict
 
 bp: Blueprint = Blueprint('main', __name__)
 
@@ -197,34 +200,33 @@ def process_v2() -> Response:
             dt_response = processor.process_v2()
 
             # Convert DataTablesResponse to headers and rows for result.html
-            headers = ['Categories']
+            headers: List[str] = ['Categories']
             # Collect months and their timestamps
-            month_tuples = set()
-            for row in dt_response.data:
-                month_tuples.add((row.month.display, row.month.timestamp))
+            month_tuples: set[tuple[str, int]] = set()
+            for agg_row in dt_response.data:
+                month_tuples.add((agg_row.month.display, agg_row.month.timestamp))
             # Sort by timestamp in descending order (most recent first)
-            sorted_months = [m[0] for m in sorted(month_tuples, key=lambda x: x[1], reverse=True)]
+            sorted_months: List[str] = [m[0] for m in sorted(month_tuples, key=lambda x: x[1], reverse=True)]
             headers += sorted_months
 
             # Build rows: each category, then each month
-            from collections import defaultdict
-            cat_month_map = defaultdict(dict)
-            for row in dt_response.data:
-                cat_month_map[row.category][row.month.display] = row
+            cat_month_map: DefaultDict[str, Dict[str, AggregatedRow]] = defaultdict(dict)
+            for agg_row in dt_response.data:
+                cat_month_map[agg_row.category][agg_row.month.display] = agg_row
 
-            rows = []
+            rows: List[List[Dict[str, Union[str, float, None]]]] = []
             for cat, month_dict in cat_month_map.items():
-                row = []
+                row: List[Dict[str, Union[str, float, None]]] = []
                 row.append({'display': cat, 'order': None})
                 for month in headers[1:]:
-                    agg_row = month_dict.get(month)
-                    if agg_row:
+                    agg_row_data = month_dict.get(month)
+                    if agg_row_data:
                         details_str = '\n'.join([
-                            f"{d.date.display}: {d.amount.display} - {d.merchant}" for d in agg_row.details
+                            f"{d.date.display}: {d.amount.display} - {d.merchant}" for d in agg_row_data.details
                         ])
                         row.append({
-                            'display': agg_row.total.display,
-                            'order': agg_row.total.raw,
+                            'display': agg_row_data.total.display,
+                            'order': agg_row_data.total.raw,
                             'details': details_str
                         })
                     else:

@@ -1,10 +1,12 @@
-from typing import Optional, Dict, List, Union
+from typing import Optional, Dict, List, Union, Tuple
 from whatsthedamage.config.config import AppContext, EnricherPatternSets
+from whatsthedamage.config.dt_models import DataTablesResponse, DateField
 from whatsthedamage.models.csv_row import CsvRow
 from whatsthedamage.models.row_enrichment import RowEnrichment
 from whatsthedamage.models.row_enrichment_ml import RowEnrichmentML
 from whatsthedamage.models.row_filter import RowFilter
 from whatsthedamage.models.row_summarizer import RowSummarizer
+from whatsthedamage.models.dt_response_builder import DataTablesResponseBuilder
 from whatsthedamage.utils.date_converter import DateConverter
 from whatsthedamage.view.row_printer import print_categorized_rows, print_training_data
 
@@ -34,6 +36,7 @@ class RowsProcessor:
         self._currency: str = ""
         self._training_data: bool = context.args.get("training_data", False)
         self._ml: bool = context.args.get("ml", False)
+        self._dt_json_data: DataTablesResponse = DataTablesResponse(data=[])
 
         # Convert start and end dates to epoch if provided
         if self._start_date:
@@ -110,6 +113,60 @@ class RowsProcessor:
 
         return data_for_pandas
 
+    def process_rows_v2(self, rows: List[CsvRow]) -> DataTablesResponse:
+        """
+        Processes a list of CsvRow objects and returns a DataTablesResponse structure for DataTables frontend.
+
+        Uses a builder pattern for transparent, step-by-step construction of the response.
+        Uses v2 filtering that provides DateField objects with accurate timestamps.
+
+        Args:
+            rows (List[CsvRow]): List of CsvRow objects to be processed.
+
+        Returns:
+            DataTablesResponse: DataTables-compatible structure for frontend.
+        """
+        # Filter rows by date or month using v2 method
+        filtered_sets = self._filter_rows_v2(rows)
+        # Set currency from first available row
+        first_rows = next((set_rows for _, set_rows in filtered_sets if set_rows), [])
+        if first_rows:
+            self._currency = first_rows[0].currency
+
+        # Initialize the builder with currency and date format
+        builder = DataTablesResponseBuilder(self._currency, self._date_attribute_format)
+
+        # Process each month/date range
+        for month_field, set_rows in filtered_sets:
+            # Enrich and categorize rows
+            categorized_rows = self._enrich_and_categorize_rows(set_rows)
+            categorized_rows = self._apply_filter(categorized_rows)
+
+            # Summarize amounts by category
+            summary = self._summarize_rows(categorized_rows)
+
+            # Add each category to the builder with DateField
+            for category, category_rows in categorized_rows.items():
+                builder.add_category_data(
+                    category=category,
+                    rows=category_rows,
+                    total_amount=summary[category],
+                    month_field=month_field
+                )
+
+        # Build and store the final response
+        self._dt_json_data = builder.build()
+        return self._dt_json_data
+
+    def get_dt_json_data(self) -> Optional[DataTablesResponse]:
+        """
+        Getter for the DataTables JSON structure.
+
+        Returns:
+            Optional[DataTablesResponse]: The DataTables-compatible JSON structure.
+        """
+        return self._dt_json_data
+
     def _filter_rows(self, rows: List[CsvRow]) -> List[Dict[str, List[CsvRow]]]:
         """
         Filters rows by date or month.
@@ -124,6 +181,36 @@ class RowsProcessor:
         if self._start_date_epoch > 0 and self._end_date_epoch > 0:
             return list(row_filter.filter_by_date(self._start_date_epoch, self._end_date_epoch))
         return list(row_filter.filter_by_month())
+
+    def _filter_rows_v2(self, rows: List[CsvRow]) -> List[Tuple[DateField, List[CsvRow]]]:
+        """
+        Filters rows by date or month (v2).
+
+        Returns DateField objects with proper timestamps instead of string keys.
+        For date ranges, creates a DateField with the start date.
+
+        Args:
+            rows (List[CsvRow]): List of CsvRow objects to be filtered.
+
+        Returns:
+            List[Tuple[DateField, List[CsvRow]]]: A list of tuples with DateField and filtered rows.
+        """
+        row_filter = RowFilter(rows, self._date_attribute_format)
+        if self._start_date_epoch > 0 and self._end_date_epoch > 0:
+            # For date range filtering, create a DateField with the start date
+            filtered = row_filter.filter_by_date(self._start_date_epoch, self._end_date_epoch)
+            # Convert to v2 format with DateField
+            start_date_str = DateConverter.convert_from_epoch(
+                self._start_date_epoch, self._date_attribute_format
+            )
+            # Create DateField for the date range
+            date_field = DateField(
+                display=f"{start_date_str} - {DateConverter.convert_from_epoch(self._end_date_epoch, self._date_attribute_format)}",
+                timestamp=int(self._start_date_epoch)
+            )
+            # Return list of tuples
+            return [(date_field, list(filtered[0].values())[0])]
+        return list(row_filter.filter_by_month_v2())
 
     def _enrich_and_categorize_rows(self, rows: List[CsvRow]) -> Dict[str, List[CsvRow]]:
         """
@@ -192,3 +279,17 @@ class RowsProcessor:
             end_date_str = DateConverter.convert_from_epoch(
                 self._end_date_epoch, self._date_attribute_format)
             return f"{start_date_str} - {end_date_str}"
+
+    def _format_month_name(self, month_field: DateField) -> str:
+        """
+        Returns the month name from a DateField.
+
+        The DateField.display already contains the localized month name or date range.
+
+        Args:
+            month_field (DateField): The DateField containing month information.
+
+        Returns:
+            str: The month name or date range.
+        """
+        return month_field.display

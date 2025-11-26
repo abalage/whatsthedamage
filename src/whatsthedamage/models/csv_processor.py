@@ -4,6 +4,7 @@ from whatsthedamage.models.csv_file_handler import CsvFileHandler
 from whatsthedamage.models.rows_processor import RowsProcessor
 from whatsthedamage.models.data_frame_formatter import DataFrameFormatter
 from whatsthedamage.config.config import AppContext
+from whatsthedamage.config.dt_models import DataTablesResponse
 from gettext import gettext as _
 
 
@@ -41,6 +42,17 @@ class CSVProcessor:
         rows = self._read_csv_file()
         data_for_pandas = self.processor.process_rows(rows)
         return self._format_data(data_for_pandas)
+
+    def process_v2(self) -> 'DataTablesResponse':
+        """
+        Processes the CSV file and returns the DataTablesResponse structure for DataTables frontend (API v2).
+        Only used for ML categorization.
+
+        Returns:
+            DataTablesResponse: The DataTables-compatible structure for frontend.
+        """
+        rows = self._read_csv_file()
+        return self.processor.process_rows_v2(rows)
 
     def _read_csv_file(self) -> List[CsvRow]:
         """

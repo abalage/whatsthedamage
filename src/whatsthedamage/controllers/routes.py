@@ -16,6 +16,9 @@ from io import StringIO
 import magic
 from whatsthedamage.utils.flask_locale import get_locale, get_languages, get_default_language
 from whatsthedamage.utils.html_parser import TableParser
+from typing import DefaultDict
+from whatsthedamage.config.dt_models import AggregatedRow
+from collections import defaultdict
 
 bp: Blueprint = Blueprint('main', __name__)
 
@@ -147,6 +150,94 @@ def process() -> Response:
         clear_upload_folder()
 
         return make_response(render_template('result.html', headers=headers, rows=processed_rows))
+    else:
+        # Handle validation failure
+        for field, errors in form.errors.items():
+            for error in errors:
+                flash(f"Error in {getattr(form, field).label.text}: {error}", 'danger')
+        return make_response(redirect(url_for('main.index')))
+
+@bp.route('/process/v2', methods=['POST'])
+def process_v2() -> Response:
+    form: UploadForm = UploadForm()
+    if form.validate_on_submit():
+        upload_folder: str = current_app.config['UPLOAD_FOLDER']
+        filename: str = secure_filename(form.filename.data.filename)
+        filename_path: str = safe_join(upload_folder, filename)  # type: ignore
+        form.filename.data.save(filename_path)
+
+
+        if not allowed_file(filename_path):
+            flash('Invalid file type. Only CSV and YAML files are allowed.', 'danger')
+            return make_response(redirect(url_for('main.index')))
+
+        args: AppArgs = AppArgs(
+            filename=filename_path,
+            start_date=form.start_date.data.strftime('%Y-%m-%d') if form.start_date.data else None,
+            end_date=form.end_date.data.strftime('%Y-%m-%d') if form.end_date.data else None,
+            verbose=form.verbose.data,
+            config='',
+            category='category',
+            no_currency_format=form.no_currency_format.data,
+            nowrap=False,
+            output='html',
+            output_format='html',
+            filter=form.filter.data,
+            lang=session.get('lang', get_default_language()),
+            training_data=False,
+            ml=form.ml.data,
+        )
+
+        # Store form data in session
+        session['form_data'] = request.form.to_dict()
+
+        try:
+            from whatsthedamage.config.config import AppContext, load_config
+            from whatsthedamage.models.csv_processor import CSVProcessor
+            config_obj = load_config(None)
+            context_obj = AppContext(config_obj, args)
+            processor = CSVProcessor(context_obj)
+            dt_response = processor.process_v2()
+
+            # Convert DataTablesResponse to headers and rows for result.html
+            headers: List[str] = ['Categories']
+            # Collect months and their timestamps
+            month_tuples: set[tuple[str, int]] = set()
+            for agg_row in dt_response.data:
+                month_tuples.add((agg_row.month.display, agg_row.month.timestamp))
+            # Sort by timestamp in descending order (most recent first)
+            sorted_months: List[str] = [m[0] for m in sorted(month_tuples, key=lambda x: x[1], reverse=True)]
+            headers += sorted_months
+
+            # Build rows: each category, then each month
+            cat_month_map: DefaultDict[str, Dict[str, AggregatedRow]] = defaultdict(dict)
+            for agg_row in dt_response.data:
+                cat_month_map[agg_row.category][agg_row.month.display] = agg_row
+
+            rows: List[List[Dict[str, Union[str, float, None]]]] = []
+            for cat, month_dict in cat_month_map.items():
+                row: List[Dict[str, Union[str, float, None]]] = []
+                row.append({'display': cat, 'order': None})
+                for month in headers[1:]:
+                    agg_row_data = month_dict.get(month)
+                    if agg_row_data:
+                        details_str = '\n'.join([
+                            f"{d.date.display}: {d.amount.display} - {d.merchant}" for d in agg_row_data.details
+                        ])
+                        row.append({
+                            'display': agg_row_data.total.display,
+                            'order': agg_row_data.total.raw,
+                            'details': details_str
+                        })
+                    else:
+                        row.append({'display': '', 'order': 0, 'details': ''})
+                rows.append(row)
+
+            clear_upload_folder()
+            return make_response(render_template('result.html', headers=headers, rows=rows))
+        except Exception as e:
+            flash(f'Error processing CSV: {e}')
+            return make_response(redirect(url_for('main.index')))
     else:
         for field, errors in form.errors.items():
             for error in errors:

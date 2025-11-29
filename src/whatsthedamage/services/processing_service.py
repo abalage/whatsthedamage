@@ -12,7 +12,6 @@ import tempfile
 import os
 from whatsthedamage.config.config import AppArgs, AppContext, load_config
 from whatsthedamage.models.csv_processor import CSVProcessor
-from whatsthedamage.config.dt_models import DataTablesResponse
 
 
 FileObject = Union[BinaryIO, TextIO]

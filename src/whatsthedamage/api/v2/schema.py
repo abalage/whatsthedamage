@@ -190,15 +190,18 @@ def get_openapi_schema() -> dict:
                         },
                         "start_date": {
                             "type": "string",
-                            "format": "date",
-                            "description": "Filter transactions from this date (inclusive)",
-                            "example": "2024-01-01"
+                            "description": "Start date for filtering (format from config, default: %Y.%m.%d)",
+                            "example": "2024.01.01"
                         },
                         "end_date": {
                             "type": "string",
-                            "format": "date",
-                            "description": "Filter transactions to this date (inclusive)",
-                            "example": "2024-12-31"
+                            "description": "End date for filtering (format from config, default: %Y.%m.%d)",
+                            "example": "2024.12.31"
+                        },
+                        "date_format": {
+                            "type": "string",
+                            "description": "Date format string (Python strptime format). If not provided, uses config default.",
+                            "example": "%Y.%m.%d"
                         },
                         "ml_enabled": {
                             "type": "boolean",

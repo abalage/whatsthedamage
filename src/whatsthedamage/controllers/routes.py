@@ -72,9 +72,9 @@ def index() -> Response:
     return make_response(render_template('index.html', form=form))
 
 
-@bp.route('/api/v1/process', methods=['POST'])
+@bp.route('/process', methods=['POST'])
 def process_v1() -> Response:
-    """API v1: Process CSV and return summary (JSON or HTML based on Accept header)."""
+    """Process CSV and return summary HTML page for web UI."""
     form: UploadForm = UploadForm()
     if form.validate_on_submit():
         upload_folder: str = current_app.config['UPLOAD_FOLDER']
@@ -165,9 +165,9 @@ def process_v1() -> Response:
                 flash(f"Error in {getattr(form, field).label.text}: {error}", 'danger')
         return make_response(redirect(url_for('main.index')))
 
-@bp.route('/api/v2/process', methods=['POST'])
+@bp.route('/process/v2', methods=['POST'])
 def process_v2() -> Response:
-    """API v2: Process CSV and return detailed DataTables (JSON or HTML based on Accept header)."""
+    """Process CSV and return detailed DataTables HTML page for web UI."""
     form: UploadForm = UploadForm()
     if form.validate_on_submit():
         upload_folder: str = current_app.config['UPLOAD_FOLDER']

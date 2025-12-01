@@ -7,20 +7,6 @@ from whatsthedamage.app import create_app
 from .helpers import create_sample_csv_from_fixture  # Import the function
 
 
-@pytest.fixture
-def client():
-    config = {
-        'TESTING': True,
-        'UPLOAD_FOLDER': '/tmp/uploads'
-    }
-    app = create_app()
-    app.config.from_mapping(config)
-    app.register_blueprint(bp, name='test_bp')
-    with app.test_client() as client:
-        with app.app_context():
-            yield client
-
-
 def get_csrf_token(client):
     response = client.get('/')
     csrf_token = None
@@ -72,7 +58,7 @@ def test_process_route(client, monkeypatch, csv_rows, mapping, config_yml_defaul
     upload_folder = current_app.config['UPLOAD_FOLDER']
     os.makedirs(upload_folder, exist_ok=True)
 
-    response = client.post('/api/v1/process', data=data, content_type='multipart/form-data')
+    response = client.post('/process', data=data, content_type='multipart/form-data')
 
     if response.status_code != 200:
         print_form_errors(client)
@@ -126,7 +112,7 @@ def test_process_route_invalid_data(client, monkeypatch, config_yml_default_path
         'config': (BytesIO(read_file(config_yml_default_path)), 'config.yml.default')
         # Missing other required fields
     }
-    response = client.post('/api/v1/process', data=data, content_type='multipart/form-data')
+    response = client.post('/process', data=data, content_type='multipart/form-data')
     if response.status_code != 302:
         print_form_errors(client)
     assert response.status_code == 302  # Expecting a redirect due to validation failure
@@ -146,7 +132,7 @@ def test_process_route_missing_file(client, monkeypatch, config_yml_default_path
         'start_date': '2023-01-01',
         'end_date': '2023-12-31',
     }
-    response = client.post('/api/v1/process', data=data, content_type='multipart/form-data')
+    response = client.post('/process', data=data, content_type='multipart/form-data')
     if response.status_code != 302:
         print_form_errors(client)
     assert response.status_code == 302  # Expecting a redirect due to missing file
@@ -168,7 +154,7 @@ def test_process_route_missing_config(client, monkeypatch, csv_rows, mapping, mo
         'end_date': '2023-12-31',
         'ml': True,  # <-- ML mode enabled, config can be missing
     }
-    response = client.post('/api/v1/process', data=data, content_type='multipart/form-data')
+    response = client.post('/process', data=data, content_type='multipart/form-data')
     if response.status_code != 200:
         print_form_errors(client)
     assert response.status_code == 200
@@ -192,7 +178,7 @@ def test_process_route_invalid_end_date(client, monkeypatch, csv_rows, mapping, 
         'start_date': '2023-01-01',
         'end_date': 'invalid-date',
     }
-    response = client.post('/api/v1/process', data=data, content_type='multipart/form-data')
+    response = client.post('/process', data=data, content_type='multipart/form-data')
     if response.status_code != 302:
         print_form_errors(client)
     assert response.status_code == 302  # Expecting a redirect due to invalid end date format
@@ -218,7 +204,7 @@ def test_download_route_with_result(client, monkeypatch, csv_rows, mapping, conf
         'end_date': '2023-12-31',
         'no_currency_format': True,
     }
-    client.post('/api/v1/process', data=data, content_type='multipart/form-data')
+    client.post('/process', data=data, content_type='multipart/form-data')
 
     response = client.get('/download')
     assert response.status_code == 200
@@ -245,7 +231,7 @@ def test_process_route_invalid_date(client, monkeypatch, csv_rows, mapping, conf
         'start_date': 'invalid-date',
         'end_date': '2023-12-31',
     }
-    response = client.post('/api/v1/process', data=data, content_type='multipart/form-data')
+    response = client.post('/process', data=data, content_type='multipart/form-data')
     if response.status_code != 302:
         print_form_errors(client)
     assert response.status_code == 302  # Expecting a redirect due to invalid start date format

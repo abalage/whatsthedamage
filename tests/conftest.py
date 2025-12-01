@@ -11,6 +11,7 @@ CONFIG_YML_DEFAULT_PATH = os.path.abspath(
     os.path.join(os.path.dirname(__file__), "../docs/config.yml.default")
 )
 
+
 @pytest.fixture
 def config_yml_default_path():
     return CONFIG_YML_DEFAULT_PATH
@@ -138,3 +139,21 @@ def app_context():
 
     # Return the AppContext object
     return AppContext(config=app_config, args=app_args)
+
+
+@pytest.fixture
+def client():
+    """Flask test client fixture for testing routes and error handlers."""
+    from whatsthedamage.app import create_app
+    from whatsthedamage.controllers.routes import bp
+
+    config = {
+        'TESTING': True,
+        'UPLOAD_FOLDER': '/tmp/uploads'
+    }
+    app = create_app()
+    app.config.from_mapping(config)
+    app.register_blueprint(bp, name='test_bp')
+    with app.test_client() as client:
+        with app.app_context():
+            yield client

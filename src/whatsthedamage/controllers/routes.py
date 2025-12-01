@@ -7,8 +7,8 @@ from whatsthedamage.view.forms import UploadForm
 from typing import Optional, Dict, List, Union
 from werkzeug.utils import secure_filename
 from werkzeug.security import safe_join
-from whatsthedamage.config.config import AppArgs
-from whatsthedamage.controllers.whatsthedamage import main as process_csv
+from whatsthedamage.services.processing_service import ProcessingService
+from whatsthedamage.models.data_frame_formatter import DataFrameFormatter
 import os
 import shutil
 import pandas as pd
@@ -19,10 +19,14 @@ from whatsthedamage.utils.html_parser import TableParser
 from typing import DefaultDict
 from whatsthedamage.config.dt_models import AggregatedRow
 from collections import defaultdict
+from gettext import gettext as _
 
 bp: Blueprint = Blueprint('main', __name__)
 
 ALLOWED_EXTENSIONS = {'csv', 'yml', 'yaml'}
+
+# Initialize service
+_processing_service = ProcessingService()
 
 
 def allowed_file(file_path: str) -> bool:
@@ -68,8 +72,9 @@ def index() -> Response:
     return make_response(render_template('index.html', form=form))
 
 
-@bp.route('/process', methods=['POST'])
-def process() -> Response:
+@bp.route('/api/v1/process', methods=['POST'])
+def process_v1() -> Response:
+    """API v1: Process CSV and return summary (JSON or HTML based on Accept header)."""
     form: UploadForm = UploadForm()
     if form.validate_on_submit():
         upload_folder: str = current_app.config['UPLOAD_FOLDER']
@@ -95,61 +100,64 @@ def process() -> Response:
             flash('Invalid file type. Only CSV and YAML files are allowed.', 'danger')
             return make_response(redirect(url_for('main.index')))
 
-        args: AppArgs = AppArgs(
-            filename=filename_path,
-            start_date=form.start_date.data.strftime('%Y-%m-%d') if form.start_date.data else None,
-            end_date=form.end_date.data.strftime('%Y-%m-%d') if form.end_date.data else None,
-            verbose=form.verbose.data,
-            config=config_path,
-            category='category',
-            no_currency_format=form.no_currency_format.data,
-            nowrap=False,
-            output='html',
-            output_format='html',
-            filter=form.filter.data,
-            lang=session.get('lang', get_default_language()),
-            training_data=False,
-            ml=form.ml.data,
-        )
-
         # Store form data in session
         session['form_data'] = request.form.to_dict()
 
         try:
-            result: str = process_csv(args)
+            # Process using service layer
+            result = _processing_service.process_summary(
+                csv_file_path=filename_path,
+                config_file_path=config_path if config_path else None,
+                start_date=form.start_date.data.strftime('%Y-%m-%d') if form.start_date.data else None,
+                end_date=form.end_date.data.strftime('%Y-%m-%d') if form.end_date.data else None,
+                ml_enabled=form.ml.data,
+                category_filter=form.filter.data,
+                language=session.get('lang', get_default_language())
+            )
+
+            # Format result using DataFrameFormatter
+            processor = result['processor']
+            formatter = DataFrameFormatter()
+            formatter.set_no_currency_format(form.no_currency_format.data)
+
+            # Wrap flattened data in "Total" for formatter
+            monthly_data = {"Total": result['data']}
+            df = formatter.format_dataframe(monthly_data, currency=processor.processor.get_currency())
+
+            # Convert to HTML
+            html_result = df.to_html(border=0)
+            html_result = html_result.replace('<th></th>', f'<th>{_("Categories")}</th>', 1)
+
+            # Parse HTML table for rendering
+            parser: TableParser = TableParser()
+            headers, rows = parser.parse_table(html_result)
+
+            # Process rows to extract numeric values for data-order attributes
+            import re
+            processed_rows: List[List[Dict[str, Union[str, float, None]]]] = []
+            for row in rows:
+                processed_row: List[Dict[str, Union[str, float, None]]] = []
+                for i, cell in enumerate(row):
+                    if i == 0:  # First column (Categories) - no numeric sorting needed
+                        processed_row.append({'display': cell, 'order': None})
+                    else:
+                        # Extract numeric value from currency string for sorting
+                        match = re.match(r'^(-?\d+(?:\.\d+)?)', str(cell))
+                        numeric_value: float = float(match.group(1)) if match else 0
+                        processed_row.append({'display': cell, 'order': numeric_value})
+                processed_rows.append(processed_row)
+
+            # Store both original result and structured data
+            session['result'] = html_result
+            session['table_data'] = {'headers': headers, 'rows': processed_rows}
+
+            # Clear the upload folder after processing
+            clear_upload_folder()
+
+            return make_response(render_template('result.html', headers=headers, rows=processed_rows))
         except Exception as e:
             flash(f'Error processing CSV: {e}')
             return make_response(redirect(url_for('main.index')))
-
-        # Parse HTML table using native Python parser
-        parser: TableParser = TableParser()
-        headers: List[str]
-        rows: List[List[str]]
-        headers, rows = parser.parse_table(result)
-
-        # Process rows to extract numeric values for data-order attributes
-        import re
-        processed_rows: List[List[Dict[str, Union[str, float, None]]]] = []
-        for row in rows:
-            processed_row: List[Dict[str, Union[str, float, None]]] = []
-            for i, cell in enumerate(row):
-                if i == 0:  # First column (Categories) - no numeric sorting needed
-                    processed_row.append({'display': cell, 'order': None})
-                else:
-                    # Extract numeric value from currency string for sorting
-                    match = re.match(r'^(-?\d+(?:\.\d+)?)', str(cell))
-                    numeric_value: float = float(match.group(1)) if match else 0
-                    processed_row.append({'display': cell, 'order': numeric_value})
-            processed_rows.append(processed_row)
-
-        # Store both original result and structured data
-        session['result'] = result
-        session['table_data'] = {'headers': headers, 'rows': processed_rows}
-
-        # Clear the upload folder after processing
-        clear_upload_folder()
-
-        return make_response(render_template('result.html', headers=headers, rows=processed_rows))
     else:
         # Handle validation failure
         for field, errors in form.errors.items():
@@ -157,8 +165,9 @@ def process() -> Response:
                 flash(f"Error in {getattr(form, field).label.text}: {error}", 'danger')
         return make_response(redirect(url_for('main.index')))
 
-@bp.route('/process/v2', methods=['POST'])
+@bp.route('/api/v2/process', methods=['POST'])
 def process_v2() -> Response:
+    """API v2: Process CSV and return detailed DataTables (JSON or HTML based on Accept header)."""
     form: UploadForm = UploadForm()
     if form.validate_on_submit():
         upload_folder: str = current_app.config['UPLOAD_FOLDER']
@@ -166,38 +175,27 @@ def process_v2() -> Response:
         filename_path: str = safe_join(upload_folder, filename)  # type: ignore
         form.filename.data.save(filename_path)
 
-
         if not allowed_file(filename_path):
             flash('Invalid file type. Only CSV and YAML files are allowed.', 'danger')
             return make_response(redirect(url_for('main.index')))
-
-        args: AppArgs = AppArgs(
-            filename=filename_path,
-            start_date=form.start_date.data.strftime('%Y-%m-%d') if form.start_date.data else None,
-            end_date=form.end_date.data.strftime('%Y-%m-%d') if form.end_date.data else None,
-            verbose=form.verbose.data,
-            config='',
-            category='category',
-            no_currency_format=form.no_currency_format.data,
-            nowrap=False,
-            output='html',
-            output_format='html',
-            filter=form.filter.data,
-            lang=session.get('lang', get_default_language()),
-            training_data=False,
-            ml=form.ml.data,
-        )
 
         # Store form data in session
         session['form_data'] = request.form.to_dict()
 
         try:
-            from whatsthedamage.config.config import AppContext, load_config
-            from whatsthedamage.models.csv_processor import CSVProcessor
-            config_obj = load_config(None)
-            context_obj = AppContext(config_obj, args)
-            processor = CSVProcessor(context_obj)
-            dt_response = processor.process_v2()
+            # Process using service layer
+            result = _processing_service.process_with_details(
+                csv_file_path=filename_path,
+                config_file_path=None,  # v2 doesn't use config file
+                start_date=form.start_date.data.strftime('%Y-%m-%d') if form.start_date.data else None,
+                end_date=form.end_date.data.strftime('%Y-%m-%d') if form.end_date.data else None,
+                ml_enabled=form.ml.data,
+                category_filter=form.filter.data,
+                language=session.get('lang', get_default_language())
+            )
+
+            # Extract DataTablesResponse from result
+            dt_response = result['data']
 
             # Convert DataTablesResponse to headers and rows for result.html
             headers: List[str] = ['Categories']

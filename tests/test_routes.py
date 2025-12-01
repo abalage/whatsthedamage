@@ -52,11 +52,11 @@ def test_index_route(client):
     assert b'<form' in response.data
 
 
-def test_process_route(client, monkeypatch, csv_rows, mapping, config_yml_default_path):
-    def mock_process_csv(args):
-        return '<table><thead><tr><th></th><th>Total</th></tr></thead><tbody><tr><th>balance</th><td>100.0</td></tr></tbody></table>'
+def test_process_route(client, monkeypatch, csv_rows, mapping, config_yml_default_path, mock_processing_service_result):
+    def mock_process_summary(**kwargs):
+        return mock_processing_service_result({'balance': 100.0})
 
-    monkeypatch.setattr('whatsthedamage.controllers.routes.process_csv', mock_process_csv)
+    monkeypatch.setattr('whatsthedamage.controllers.routes._processing_service.process_summary', mock_process_summary)
 
     csrf_token = get_csrf_token(client)
     sample_csv_path = create_sample_csv_from_fixture(csv_rows, mapping)
@@ -72,7 +72,7 @@ def test_process_route(client, monkeypatch, csv_rows, mapping, config_yml_defaul
     upload_folder = current_app.config['UPLOAD_FOLDER']
     os.makedirs(upload_folder, exist_ok=True)
 
-    response = client.post('/process', data=data, content_type='multipart/form-data')
+    response = client.post('/api/v1/process', data=data, content_type='multipart/form-data')
 
     if response.status_code != 200:
         print_form_errors(client)
@@ -113,11 +113,11 @@ def test_clear_upload_folder(client):
         assert not os.path.exists(test_file_path)
 
 
-def test_process_route_invalid_data(client, monkeypatch, config_yml_default_path):
-    def mock_process_csv(args):
-        return "<table class='dataframe'></table>"
+def test_process_route_invalid_data(client, monkeypatch, config_yml_default_path, mock_processing_service_result):
+    def mock_process_summary(**kwargs):
+        return mock_processing_service_result()
 
-    monkeypatch.setattr('whatsthedamage.controllers.routes.process_csv', mock_process_csv)
+    monkeypatch.setattr('whatsthedamage.controllers.routes._processing_service.process_summary', mock_process_summary)
 
     csrf_token = get_csrf_token(client)
 
@@ -126,17 +126,17 @@ def test_process_route_invalid_data(client, monkeypatch, config_yml_default_path
         'config': (BytesIO(read_file(config_yml_default_path)), 'config.yml.default')
         # Missing other required fields
     }
-    response = client.post('/process', data=data, content_type='multipart/form-data')
+    response = client.post('/api/v1/process', data=data, content_type='multipart/form-data')
     if response.status_code != 302:
         print_form_errors(client)
     assert response.status_code == 302  # Expecting a redirect due to validation failure
 
 
-def test_process_route_missing_file(client, monkeypatch, config_yml_default_path):
-    def mock_process_csv():
-        return "<table class='dataframe'></table>"
+def test_process_route_missing_file(client, monkeypatch, config_yml_default_path, mock_processing_service_result):
+    def mock_process_summary(**kwargs):
+        return mock_processing_service_result()
 
-    monkeypatch.setattr('whatsthedamage.controllers.routes.process_csv', mock_process_csv)
+    monkeypatch.setattr('whatsthedamage.controllers.routes._processing_service.process_summary', mock_process_summary)
 
     csrf_token = get_csrf_token(client)
 
@@ -146,17 +146,17 @@ def test_process_route_missing_file(client, monkeypatch, config_yml_default_path
         'start_date': '2023-01-01',
         'end_date': '2023-12-31',
     }
-    response = client.post('/process', data=data, content_type='multipart/form-data')
+    response = client.post('/api/v1/process', data=data, content_type='multipart/form-data')
     if response.status_code != 302:
         print_form_errors(client)
     assert response.status_code == 302  # Expecting a redirect due to missing file
 
 
-def test_process_route_missing_config(client, monkeypatch, csv_rows, mapping):
-    def mock_process_csv(args):
-        return "<table class='dataframe'></table>"
+def test_process_route_missing_config(client, monkeypatch, csv_rows, mapping, mock_processing_service_result):
+    def mock_process_summary(**kwargs):
+        return mock_processing_service_result()
 
-    monkeypatch.setattr('whatsthedamage.controllers.routes.process_csv', mock_process_csv)
+    monkeypatch.setattr('whatsthedamage.controllers.routes._processing_service.process_summary', mock_process_summary)
 
     csrf_token = get_csrf_token(client)
     sample_csv_path = create_sample_csv_from_fixture(csv_rows, mapping)
@@ -168,7 +168,7 @@ def test_process_route_missing_config(client, monkeypatch, csv_rows, mapping):
         'end_date': '2023-12-31',
         'ml': True,  # <-- ML mode enabled, config can be missing
     }
-    response = client.post('/process', data=data, content_type='multipart/form-data')
+    response = client.post('/api/v1/process', data=data, content_type='multipart/form-data')
     if response.status_code != 200:
         print_form_errors(client)
     assert response.status_code == 200
@@ -176,11 +176,11 @@ def test_process_route_missing_config(client, monkeypatch, csv_rows, mapping):
     os.remove(sample_csv_path)
 
 
-def test_process_route_invalid_end_date(client, monkeypatch, csv_rows, mapping, config_yml_default_path):
-    def mock_process_csv(args):
-        return "<table class='dataframe'></table>"
+def test_process_route_invalid_end_date(client, monkeypatch, csv_rows, mapping, config_yml_default_path, mock_processing_service_result):
+    def mock_process_summary(**kwargs):
+        return mock_processing_service_result()
 
-    monkeypatch.setattr('whatsthedamage.controllers.routes.process_csv', mock_process_csv)
+    monkeypatch.setattr('whatsthedamage.controllers.routes._processing_service.process_summary', mock_process_summary)
 
     csrf_token = get_csrf_token(client)
     sample_csv_path = create_sample_csv_from_fixture(csv_rows, mapping)
@@ -192,7 +192,7 @@ def test_process_route_invalid_end_date(client, monkeypatch, csv_rows, mapping, 
         'start_date': '2023-01-01',
         'end_date': 'invalid-date',
     }
-    response = client.post('/process', data=data, content_type='multipart/form-data')
+    response = client.post('/api/v1/process', data=data, content_type='multipart/form-data')
     if response.status_code != 302:
         print_form_errors(client)
     assert response.status_code == 302  # Expecting a redirect due to invalid end date format
@@ -201,13 +201,11 @@ def test_process_route_invalid_end_date(client, monkeypatch, csv_rows, mapping, 
     os.remove(sample_csv_path)
 
 
-def test_download_route_with_result(client, monkeypatch, csv_rows, mapping, config_yml_default_path):
-    def mock_process_csv(args):
-        return ("<table class='dataframe'><tr><td>Unnamed: 0</td>"
-                "<td>2023.01.01 - 2023.12.31</td></tr><tr><td>balance</td>"
-                "<td>0.0</td></tr></table>")
+def test_download_route_with_result(client, monkeypatch, csv_rows, mapping, config_yml_default_path, mock_processing_service_result):
+    def mock_process_summary(**kwargs):
+        return mock_processing_service_result({'balance': 0.0})
 
-    monkeypatch.setattr('whatsthedamage.controllers.routes.process_csv', mock_process_csv)
+    monkeypatch.setattr('whatsthedamage.controllers.routes._processing_service.process_summary', mock_process_summary)
 
     csrf_token = get_csrf_token(client)
     sample_csv_path = create_sample_csv_from_fixture(csv_rows, mapping)
@@ -220,22 +218,22 @@ def test_download_route_with_result(client, monkeypatch, csv_rows, mapping, conf
         'end_date': '2023-12-31',
         'no_currency_format': True,
     }
-    client.post('/process', data=data, content_type='multipart/form-data')
+    client.post('/api/v1/process', data=data, content_type='multipart/form-data')
 
     response = client.get('/download')
     assert response.status_code == 200
     assert response.headers['Content-Disposition'] == 'attachment; filename=result.csv'
     assert response.headers['Content-Type'] == 'text/csv'
-    assert b'Unnamed: 0,2023.01.01 - 2023.12.31\nbalance,0.0\n' in response.data
+    assert b'Categories,Total\nbalance,0.0\n' in response.data
 
     os.remove(sample_csv_path)
 
 
-def test_process_route_invalid_date(client, monkeypatch, csv_rows, mapping, config_yml_default_path):
-    def mock_process_csv(args):
-        return "<table class='dataframe'></table>"
+def test_process_route_invalid_date(client, monkeypatch, csv_rows, mapping, config_yml_default_path, mock_processing_service_result):
+    def mock_process_summary(**kwargs):
+        return mock_processing_service_result()
 
-    monkeypatch.setattr('whatsthedamage.controllers.routes.process_csv', mock_process_csv)
+    monkeypatch.setattr('whatsthedamage.controllers.routes._processing_service.process_summary', mock_process_summary)
 
     csrf_token = get_csrf_token(client)
     sample_csv_path = create_sample_csv_from_fixture(csv_rows, mapping)
@@ -247,7 +245,7 @@ def test_process_route_invalid_date(client, monkeypatch, csv_rows, mapping, conf
         'start_date': 'invalid-date',
         'end_date': '2023-12-31',
     }
-    response = client.post('/process', data=data, content_type='multipart/form-data')
+    response = client.post('/api/v1/process', data=data, content_type='multipart/form-data')
     if response.status_code != 302:
         print_form_errors(client)
     assert response.status_code == 302  # Expecting a redirect due to invalid start date format

@@ -15,6 +15,34 @@ CONFIG_YML_DEFAULT_PATH = os.path.abspath(
 def config_yml_default_path():
     return CONFIG_YML_DEFAULT_PATH
 
+
+# Mock classes for testing routes with ProcessingService
+class MockProcessor:
+    """Mock processor that provides currency information."""
+    def get_currency(self):
+        return 'EUR'
+
+
+class MockCSVProcessor:
+    """Mock CSV processor with nested processor."""
+    def __init__(self):
+        self.processor = MockProcessor()
+
+
+@pytest.fixture
+def mock_processing_service_result():
+    """Factory fixture for creating mock ProcessingService results."""
+    def _create_result(data=None):
+        if data is None:
+            data = {}
+        return {
+            'data': data,
+            'metadata': {},
+            'processor': MockCSVProcessor()
+        }
+    return _create_result
+
+
 @pytest.fixture
 def mapping():
     return {

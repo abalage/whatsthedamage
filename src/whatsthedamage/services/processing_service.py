@@ -95,6 +95,7 @@ class ProcessingService:
                 "processing_time": round(processing_time, 2),
                 "row_count": len(rows),
                 "ml_enabled": ml_enabled,
+                "currency": processor.processor.get_currency(),
                 "filters_applied": {
                     "start_date": start_date,
                     "end_date": end_date,

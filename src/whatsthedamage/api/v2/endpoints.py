@@ -1,8 +1,7 @@
-"""API v1 endpoints - Summary processing only.
+"""API v2 endpoints - Detailed transaction processing.
 
 This module provides REST API endpoints for processing CSV transaction files
-and returning summarized totals by category. v1 API returns only aggregated
-summary data (naturally small payloads), without transaction-level details.
+with detailed transaction-level data for DataTables rendering.
 """
 from flask import Blueprint, jsonify
 import time
@@ -11,8 +10,8 @@ from typing import Dict
 from whatsthedamage.services.processing_service import ProcessingService
 from whatsthedamage.models.api_models import (
     ProcessingRequest,
-    SummaryResponse,
-    SummaryMetadata
+    DetailedResponse,
+    DetailedMetadata
 )
 from whatsthedamage.api.helpers import (
     validate_csv_file,
@@ -26,14 +25,14 @@ from whatsthedamage.api.helpers import (
 
 
 # Create Blueprint
-v1_bp = Blueprint('api_v1', __name__, url_prefix='/api/v1')
+v2_bp = Blueprint('api_v2', __name__, url_prefix='/api/v2')
 
 # Initialize service
 _processing_service = ProcessingService()
 
 
-def _build_summary_response(result: Dict, params: ProcessingRequest, processing_time: float) -> SummaryResponse:
-    """Build summary response from processing result.
+def _build_detailed_response(result: Dict, params: ProcessingRequest, processing_time: float) -> DetailedResponse:
+    """Build detailed response from processing result.
 
     Args:
         result: Processing result from service
@@ -41,11 +40,14 @@ def _build_summary_response(result: Dict, params: ProcessingRequest, processing_
         processing_time: Total processing time
 
     Returns:
-        SummaryResponse object
+        DetailedResponse object
     """
-    return SummaryResponse(
-        data=result['data'],
-        metadata=SummaryMetadata(
+    # result['data'] is a DataTablesResponse object
+    datatables_response = result['data']
+
+    return DetailedResponse(
+        data=datatables_response.data,  # List[AggregatedRow] from DataTablesResponse
+        metadata=DetailedMetadata(
             row_count=result['metadata']['row_count'],
             processing_time=processing_time,
             ml_enabled=params.ml_enabled,
@@ -54,9 +56,9 @@ def _build_summary_response(result: Dict, params: ProcessingRequest, processing_
     )
 
 
-@v1_bp.route('/process', methods=['POST'])
+@v2_bp.route('/process', methods=['POST'])
 def process_transactions():
-    """Process CSV transaction file and return summary totals.
+    """Process CSV transaction file and return detailed transaction data.
 
     Accepts multipart/form-data with:
     - csv_file (required): CSV file with bank transactions
@@ -69,7 +71,7 @@ def process_transactions():
     - language (optional): Output language (default: en)
 
     Returns:
-        JSON response with SummaryResponse structure
+        JSON response with DetailedResponse structure containing transaction details
 
     Status Codes:
         200: Successfully processed
@@ -87,7 +89,7 @@ def process_transactions():
         csv_path, config_path = save_uploaded_files(csv_file, config_file)
 
         try:
-            result = _processing_service.process_summary(
+            result = _processing_service.process_with_details(
                 csv_file_path=csv_path,
                 config_file_path=config_path,
                 start_date=params.start_date,
@@ -98,7 +100,7 @@ def process_transactions():
             )
 
             processing_time = time.time() - start_time
-            response = _build_summary_response(result, params, processing_time)
+            response = _build_detailed_response(result, params, processing_time)
 
             return jsonify(response.model_dump()), 200
 
@@ -107,3 +109,7 @@ def process_transactions():
 
     except Exception as e:
         return handle_error(e)
+
+
+# Helper functions
+

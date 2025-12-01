@@ -98,10 +98,11 @@ def main() -> None:
             language=args.get('lang') or 'en'
         )
 
-        # Get currency from service result (set by RowsProcessor)
-        currency = result['metadata'].get('currency', 'HUF')
+        # Get currency from processor (set by RowsProcessor during processing)
+        processor = result['processor']
+        currency = processor.processor.get_currency()
 
-        # Format and display output
+        # Format output
         output = format_output(result['data'], vars(args), currency)
         print(output)
 

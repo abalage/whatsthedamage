@@ -3,6 +3,7 @@ import os
 from whatsthedamage.controllers.routes import bp as main_bp
 from whatsthedamage.api.docs import docs_bp
 from whatsthedamage.api.v1.endpoints import v1_bp
+from whatsthedamage.api.v2.endpoints import v2_bp
 from whatsthedamage.config.flask_config import FlaskAppConfig
 from whatsthedamage.utils.flask_locale import get_locale
 from whatsthedamage.utils.version import get_version
@@ -54,6 +55,7 @@ def create_app(config_class: Optional[FlaskAppConfig] = None) -> Flask:
     app.register_blueprint(main_bp)
     app.register_blueprint(docs_bp)
     app.register_blueprint(v1_bp)
+    app.register_blueprint(v2_bp)
 
     return app
 

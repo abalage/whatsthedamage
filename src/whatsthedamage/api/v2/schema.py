@@ -1,7 +1,7 @@
 """OpenAPI 3.0 schema for whatsthedamage v2 API.
 
 This module defines the OpenAPI specification for the v2 API endpoints.
-V2 API provides detailed transaction-level data with caching and export capabilities.
+V2 API provides detailed transaction-level data for DataTables rendering.
 """
 
 
@@ -17,8 +17,8 @@ def get_openapi_schema() -> dict:
             "title": "whatsthedamage API v2",
             "description": (
                 "REST API for processing bank transaction CSV exports. "
-                "V2 provides detailed transaction-level data with aggregation, "
-                "caching, and CSV export capabilities. "
+                "V2 provides detailed transaction-level data with aggregation "
+                "for DataTables rendering. Client-side export is handled by DataTables. "
                 "Supports both regex-based and ML-based transaction categorization."
             ),
             "version": "2.0.0",
@@ -44,7 +44,7 @@ def get_openapi_schema() -> dict:
                     "description": (
                         "Upload a CSV file containing bank transactions and receive "
                         "detailed transaction data grouped by category and month. "
-                        "Results are cached for export via the /export endpoint. "
+                        "Returns DataTables-compatible JSON for client-side rendering and export. "
                         "Optionally upload a YAML configuration file to customize processing."
                     ),
                     "operationId": "processTransactionsDetailed",
@@ -96,74 +96,6 @@ def get_openapi_schema() -> dict:
                                 "application/json": {
                                     "schema": {
                                         "$ref": "#/components/schemas/ErrorResponse"
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            },
-            "/export/{result_id}": {
-                "get": {
-                    "summary": "Export cached results as CSV",
-                    "description": (
-                        "Download cached processing results as a CSV file. "
-                        "Requires a prior call to POST /process to cache results. "
-                        "Returns 404 if result_id not found or cache expired (TTL exceeded)."
-                    ),
-                    "operationId": "exportResults",
-                    "tags": ["Export"],
-                    "parameters": [
-                        {
-                            "name": "result_id",
-                            "in": "path",
-                            "required": True,
-                            "description": "UUID of cached processing result",
-                            "schema": {
-                                "type": "string",
-                                "format": "uuid",
-                                "example": "550e8400-e29b-41d4-a716-446655440000"
-                            }
-                        }
-                    ],
-                    "responses": {
-                        "200": {
-                            "description": "CSV export stream",
-                            "content": {
-                                "text/csv": {
-                                    "schema": {
-                                        "type": "string",
-                                        "format": "binary",
-                                        "example": (
-                                            "Category,Total,Month,Date,Amount,Merchant\\n"
-                                            "Grocery,-45600.50,January,2024-01-15,-12500.00,TESCO\\n"
-                                        )
-                                    }
-                                }
-                            },
-                            "headers": {
-                                "Content-Disposition": {
-                                    "description": "Attachment filename",
-                                    "schema": {
-                                        "type": "string",
-                                        "example": "attachment; filename=transactions_export.csv"
-                                    }
-                                }
-                            }
-                        },
-                        "404": {
-                            "description": "Result not found or cache expired",
-                            "content": {
-                                "application/json": {
-                                    "schema": {
-                                        "$ref": "#/components/schemas/ErrorResponse"
-                                    },
-                                    "example": {
-                                        "status": "error",
-                                        "error": {
-                                            "code": 404,
-                                            "message": "Results expired, please re-process"
-                                        }
                                     }
                                 }
                             }
@@ -223,19 +155,8 @@ def get_openapi_schema() -> dict:
                 },
                 "DetailedResponse": {
                     "type": "object",
-                    "required": ["status", "data", "metadata"],
+                    "required": ["data", "metadata"],
                     "properties": {
-                        "status": {
-                            "type": "string",
-                            "enum": ["success"],
-                            "description": "Response status"
-                        },
-                        "result_id": {
-                            "type": "string",
-                            "format": "uuid",
-                            "description": "Unique identifier for cached results (use with /export endpoint)",
-                            "example": "550e8400-e29b-41d4-a716-446655440000"
-                        },
                         "data": {
                             "type": "array",
                             "description": "Aggregated transaction rows by category and month",
@@ -261,27 +182,19 @@ def get_openapi_schema() -> dict:
                                     "type": "boolean",
                                     "description": "Whether ML categorization was used"
                                 },
-                                "filters_applied": {
+                                "date_range": {
                                     "type": "object",
-                                    "description": "Filters applied during processing",
+                                    "description": "Date range filter applied",
                                     "properties": {
-                                        "start_date": {
+                                        "start": {
                                             "type": "string",
                                             "format": "date"
                                         },
-                                        "end_date": {
+                                        "end": {
                                             "type": "string",
                                             "format": "date"
-                                        },
-                                        "category": {
-                                            "type": "string"
                                         }
                                     }
-                                },
-                                "cache_ttl": {
-                                    "type": "integer",
-                                    "description": "Cache time-to-live in seconds",
-                                    "example": 3600
                                 }
                             }
                         }

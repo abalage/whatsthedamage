@@ -125,7 +125,6 @@ class SummaryResponse(BaseModel):
 
 class DetailedMetadata(BaseModel):
     """Metadata for detailed response."""
-    result_id: str = Field(description="UUID for subsequent export requests")
     row_count: int = Field(description="Number of rows processed")
     processing_time: float = Field(description="Processing time in seconds")
     ml_enabled: bool = Field(description="Whether ML categorization was used")
@@ -139,13 +138,12 @@ class DetailedResponse(BaseModel):
     """Response model for v2 API (includes transaction details).
     
     Returns transaction-level details grouped by category and month.
-    Includes result_id for subsequent export requests.
     """
     data: List[AggregatedRow] = Field(
         description="List of aggregated rows with transaction details"
     )
     metadata: DetailedMetadata = Field(
-        description="Processing metadata including result_id for exports"
+        description="Processing metadata"
     )
     
     class Config:

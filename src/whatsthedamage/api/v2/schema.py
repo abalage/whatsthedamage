@@ -1,11 +1,12 @@
 """OpenAPI 3.0 schema for whatsthedamage v2 API.
 
 This module defines the OpenAPI specification for the v2 API endpoints.
-V2 API provides detailed transaction-level data for DataTables rendering.
+V2 API focuses on detailed transaction-level data for DataTables rendering.
 """
+from typing import Any
 
 
-def get_openapi_schema() -> dict:
+def get_openapi_schema() -> dict[str, Any]:
     """Generate OpenAPI 3.0 schema for v2 API.
     
     Returns:

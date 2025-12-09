@@ -1,10 +1,8 @@
 """
 Tests for API error handlers.
 """
-import pytest
-from flask import Flask
-from werkzeug.exceptions import BadRequest, RequestEntityTooLarge, NotFound
-from pydantic import ValidationError, field_validator
+from werkzeug.exceptions import BadRequest, RequestEntityTooLarge
+from pydantic import ValidationError
 from whatsthedamage.api.error_handlers import (
     handle_bad_request,
     handle_file_not_found,

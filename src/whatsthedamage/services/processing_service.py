@@ -6,7 +6,7 @@ isolating them from file I/O and configuration details.
 
 Controllers are responsible for saving uploaded files to disk and passing file paths.
 """
-from typing import Dict
+from typing import Dict, Any
 import time
 from whatsthedamage.config.config import AppArgs, AppContext, load_config
 from whatsthedamage.models.csv_processor import CSVProcessor
@@ -34,7 +34,7 @@ class ProcessingService:
         ml_enabled: bool = False,
         category_filter: str | None = None,
         language: str = 'en'
-    ) -> Dict:
+    ) -> Dict[str, Any]:
         """Process CSV file and return summary totals.
         
         This method processes a CSV file and returns aggregated summary data
@@ -113,7 +113,7 @@ class ProcessingService:
         ml_enabled: bool = False,
         category_filter: str | None = None,
         language: str = 'en'
-    ) -> Dict:
+    ) -> Dict[str, Any]:
         """Process CSV file and return detailed transaction data.
 
         This method processes a CSV file and returns detailed transaction-level

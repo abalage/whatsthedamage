@@ -3,7 +3,8 @@
 This module provides endpoints for accessing OpenAPI specifications
 and Swagger UI for interactive API documentation.
 """
-from flask import Blueprint, jsonify, render_template, request
+from flask import Blueprint, jsonify, render_template, request, Response
+from typing import Any
 
 from whatsthedamage.api.v1.schema import get_openapi_schema as get_v1_schema
 from whatsthedamage.api.v2.schema import get_openapi_schema as get_v2_schema
@@ -14,7 +15,7 @@ docs_bp = Blueprint('api_docs', __name__)
 
 
 @docs_bp.route('/api/v1/openapi.json')
-def v1_openapi_spec():
+def v1_openapi_spec() -> Response:
     """Return OpenAPI 3.0 specification for v1 API.
     
     Returns:
@@ -24,7 +25,7 @@ def v1_openapi_spec():
 
 
 @docs_bp.route('/api/v2/openapi.json')
-def v2_openapi_spec():
+def v2_openapi_spec() -> Response:
     """Return OpenAPI 3.0 specification for v2 API.
     
     Returns:
@@ -34,7 +35,7 @@ def v2_openapi_spec():
 
 
 @docs_bp.route('/api/docs')
-def swagger_ui():
+def swagger_ui() -> Any:
     """Render Swagger UI for interactive API documentation.
     
     Query Parameters:
@@ -53,7 +54,7 @@ def swagger_ui():
 
 
 @docs_bp.route('/api/health')
-def health_check():
+def health_check() -> tuple[Response, int]:
     """Health check endpoint for monitoring API availability.
     
     Returns:

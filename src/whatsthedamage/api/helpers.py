@@ -3,17 +3,18 @@
 This module provides common functionality used across API versions
 to avoid code duplication.
 """
-from flask import request, jsonify, current_app
+from flask import request, jsonify, current_app, Response
 from werkzeug.exceptions import BadRequest
 from werkzeug.utils import secure_filename
+from werkzeug.datastructures import FileStorage
 from pydantic import ValidationError
 import os
-from typing import Dict
+from typing import Dict, Optional
 
 from whatsthedamage.models.api_models import ProcessingRequest, ErrorResponse
 
 
-def validate_csv_file():
+def validate_csv_file() -> FileStorage:
     """Validate and extract CSV file from request.
 
     Returns:
@@ -32,7 +33,7 @@ def validate_csv_file():
     return csv_file
 
 
-def get_config_file():
+def get_config_file() -> Optional[FileStorage]:
     """Extract optional config file from request.
 
     Returns:
@@ -63,7 +64,7 @@ def parse_request_params() -> ProcessingRequest:
     )
 
 
-def save_uploaded_files(csv_file, config_file):
+def save_uploaded_files(csv_file: FileStorage, config_file: Optional[FileStorage]) -> tuple[str, Optional[str]]:
     """Save uploaded files to disk.
 
     Args:
@@ -102,7 +103,7 @@ def cleanup_files(csv_path: str, config_path: str | None) -> None:
         os.unlink(config_path)
 
 
-def build_date_range(params: ProcessingRequest) -> Dict[str, str] | None:
+def build_date_range(params: ProcessingRequest) -> Optional[Dict[str, str]]:
     """Build date range dictionary from parameters.
 
     Args:
@@ -123,7 +124,7 @@ def build_date_range(params: ProcessingRequest) -> Dict[str, str] | None:
     return date_range
 
 
-def handle_error(error: Exception) -> tuple:
+def handle_error(error: Exception) -> tuple[Response, int]:
     """Handle exceptions and return appropriate error response.
 
     Args:

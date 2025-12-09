@@ -3,9 +3,9 @@
 This module provides REST API endpoints for processing CSV transaction files
 with detailed transaction-level data for DataTables rendering.
 """
-from flask import Blueprint, jsonify
+from flask import Blueprint, jsonify, Response
 import time
-from typing import Dict
+from typing import Dict, Any
 
 from whatsthedamage.services.processing_service import ProcessingService
 from whatsthedamage.models.api_models import (
@@ -31,7 +31,7 @@ v2_bp = Blueprint('api_v2', __name__, url_prefix='/api/v2')
 _processing_service = ProcessingService()
 
 
-def _build_detailed_response(result: Dict, params: ProcessingRequest, processing_time: float) -> DetailedResponse:
+def _build_detailed_response(result: Dict[str, Any], params: ProcessingRequest, processing_time: float) -> DetailedResponse:
     """Build detailed response from processing result.
 
     Args:
@@ -57,7 +57,7 @@ def _build_detailed_response(result: Dict, params: ProcessingRequest, processing
 
 
 @v2_bp.route('/process', methods=['POST'])
-def process_transactions():
+def process_transactions() -> tuple[Response, int]:
     """Process CSV transaction file and return detailed transaction data.
 
     Accepts multipart/form-data with:

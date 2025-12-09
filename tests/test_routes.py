@@ -1,9 +1,7 @@
 import os
-import pytest
 from flask import session, current_app
-from whatsthedamage.controllers.routes import bp, clear_upload_folder
+from whatsthedamage.controllers.routes import clear_upload_folder
 from io import BytesIO
-from whatsthedamage.app import create_app
 from .helpers import create_sample_csv_from_fixture  # Import the function
 
 

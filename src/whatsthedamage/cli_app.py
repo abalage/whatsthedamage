@@ -2,6 +2,7 @@
 import os
 import gettext
 import importlib.resources as resources
+from typing import Dict, Any
 from whatsthedamage.controllers.cli_controller import CLIController
 from whatsthedamage.services.processing_service import ProcessingService
 from whatsthedamage.models.data_frame_formatter import DataFrameFormatter
@@ -32,7 +33,7 @@ def set_locale(locale_str: str | None) -> None:
             gettext.translation('messages', str(localedir), fallback=True).install()
 
 
-def format_output(data: dict, args: dict, currency: str) -> str:
+def format_output(data: Dict[str, float], args: Dict[str, Any], currency: str) -> str:
     """Format processed data for CLI output.
 
     Args:
@@ -82,13 +83,13 @@ def main() -> None:
     if args.get('verbose') or args.get('training_data'):
         # Fall back to old implementation for verbose/training_data modes
         from whatsthedamage.controllers.whatsthedamage import main as process_csv
-        result = process_csv(args)
-        print(result)
+        output_str = process_csv(args)
+        print(output_str)
         return
 
     # Process using service layer
     try:
-        result = service.process_summary(
+        result: Dict[str, Any] = service.process_summary(
             csv_file_path=args['filename'],
             config_file_path=args.get('config'),
             start_date=args.get('start_date'),
@@ -100,10 +101,11 @@ def main() -> None:
 
         # Get currency from processor (set by RowsProcessor during processing)
         processor = result['processor']
-        currency = processor.processor.get_currency()
+        currency: str = processor.processor.get_currency()
 
         # Format output
-        output = format_output(result['data'], vars(args), currency)
+        data: Dict[str, float] = result['data']
+        output = format_output(data, vars(args), currency)
         print(output)
 
     except FileNotFoundError as e:

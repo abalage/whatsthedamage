@@ -3,7 +3,7 @@ Error handlers for API endpoints.
 
 Converts exceptions to standardized ErrorResponse JSON format.
 """
-from flask import jsonify, Response, request
+from flask import jsonify, Response, request, Flask
 from werkzeug.exceptions import BadRequest, RequestEntityTooLarge
 from pydantic import ValidationError
 from whatsthedamage.models.api_models import ErrorResponse
@@ -130,7 +130,7 @@ def handle_generic_exception(error: Exception) -> tuple[Response, int]:
     return jsonify(error_response.model_dump()), 500
 
 
-def register_error_handlers(app):
+def register_error_handlers(app: Flask) -> None:
     """
     Register all error handlers for the Flask application.
     
@@ -141,41 +141,41 @@ def register_error_handlers(app):
     """
     def is_api_request() -> bool:
         """Check if the current request is for an API endpoint."""
-        return request and request.path.startswith(API_PREFIX)
+        return bool(request and request.path.startswith(API_PREFIX))
     
     # Register handlers only for API routes
     @app.errorhandler(BadRequest)
-    def _handle_bad_request(error):
+    def _handle_bad_request(error: BadRequest) -> tuple[Response, int]:
         if is_api_request():
             return handle_bad_request(error)
         raise error
     
     @app.errorhandler(FileNotFoundError)
-    def _handle_file_not_found(error):
+    def _handle_file_not_found(error: FileNotFoundError) -> tuple[Response, int]:
         if is_api_request():
             return handle_file_not_found(error)
         raise error
     
     @app.errorhandler(ValidationError)
-    def _handle_validation_error(error):
+    def _handle_validation_error(error: ValidationError) -> tuple[Response, int]:
         if is_api_request():
             return handle_validation_error(error)
         raise error
     
     @app.errorhandler(ValueError)
-    def _handle_value_error(error):
+    def _handle_value_error(error: ValueError) -> tuple[Response, int]:
         if is_api_request():
             return handle_value_error(error)
         raise error
     
     @app.errorhandler(RequestEntityTooLarge)
-    def _handle_request_entity_too_large(error):
+    def _handle_request_entity_too_large(error: RequestEntityTooLarge) -> tuple[Response, int]:
         if is_api_request():
             return handle_request_entity_too_large(error)
         raise error
     
     @app.errorhandler(Exception)
-    def _handle_generic_exception(error):
+    def _handle_generic_exception(error: Exception) -> tuple[Response, int]:
         if is_api_request():
             return handle_generic_exception(error)
         raise error

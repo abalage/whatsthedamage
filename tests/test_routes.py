@@ -1,24 +1,8 @@
 import os
-import pytest
 from flask import session, current_app
-from whatsthedamage.controllers.routes import bp, clear_upload_folder
+from whatsthedamage.controllers.routes import clear_upload_folder
 from io import BytesIO
-from whatsthedamage.app import create_app
 from .helpers import create_sample_csv_from_fixture  # Import the function
-
-
-@pytest.fixture
-def client():
-    config = {
-        'TESTING': True,
-        'UPLOAD_FOLDER': '/tmp/uploads'
-    }
-    app = create_app()
-    app.config.from_mapping(config)
-    app.register_blueprint(bp, name='test_bp')
-    with app.test_client() as client:
-        with app.app_context():
-            yield client
 
 
 def get_csrf_token(client):
@@ -52,11 +36,11 @@ def test_index_route(client):
     assert b'<form' in response.data
 
 
-def test_process_route(client, monkeypatch, csv_rows, mapping, config_yml_default_path):
-    def mock_process_csv(args):
-        return '<table><thead><tr><th></th><th>Total</th></tr></thead><tbody><tr><th>balance</th><td>100.0</td></tr></tbody></table>'
+def test_process_route(client, monkeypatch, csv_rows, mapping, config_yml_default_path, mock_processing_service_result):
+    def mock_process_summary(**kwargs):
+        return mock_processing_service_result({'balance': 100.0})
 
-    monkeypatch.setattr('whatsthedamage.controllers.routes.process_csv', mock_process_csv)
+    monkeypatch.setattr('whatsthedamage.controllers.routes._processing_service.process_summary', mock_process_summary)
 
     csrf_token = get_csrf_token(client)
     sample_csv_path = create_sample_csv_from_fixture(csv_rows, mapping)
@@ -113,11 +97,11 @@ def test_clear_upload_folder(client):
         assert not os.path.exists(test_file_path)
 
 
-def test_process_route_invalid_data(client, monkeypatch, config_yml_default_path):
-    def mock_process_csv(args):
-        return "<table class='dataframe'></table>"
+def test_process_route_invalid_data(client, monkeypatch, config_yml_default_path, mock_processing_service_result):
+    def mock_process_summary(**kwargs):
+        return mock_processing_service_result()
 
-    monkeypatch.setattr('whatsthedamage.controllers.routes.process_csv', mock_process_csv)
+    monkeypatch.setattr('whatsthedamage.controllers.routes._processing_service.process_summary', mock_process_summary)
 
     csrf_token = get_csrf_token(client)
 
@@ -132,11 +116,11 @@ def test_process_route_invalid_data(client, monkeypatch, config_yml_default_path
     assert response.status_code == 302  # Expecting a redirect due to validation failure
 
 
-def test_process_route_missing_file(client, monkeypatch, config_yml_default_path):
-    def mock_process_csv():
-        return "<table class='dataframe'></table>"
+def test_process_route_missing_file(client, monkeypatch, config_yml_default_path, mock_processing_service_result):
+    def mock_process_summary(**kwargs):
+        return mock_processing_service_result()
 
-    monkeypatch.setattr('whatsthedamage.controllers.routes.process_csv', mock_process_csv)
+    monkeypatch.setattr('whatsthedamage.controllers.routes._processing_service.process_summary', mock_process_summary)
 
     csrf_token = get_csrf_token(client)
 
@@ -152,11 +136,11 @@ def test_process_route_missing_file(client, monkeypatch, config_yml_default_path
     assert response.status_code == 302  # Expecting a redirect due to missing file
 
 
-def test_process_route_missing_config(client, monkeypatch, csv_rows, mapping):
-    def mock_process_csv(args):
-        return "<table class='dataframe'></table>"
+def test_process_route_missing_config(client, monkeypatch, csv_rows, mapping, mock_processing_service_result):
+    def mock_process_summary(**kwargs):
+        return mock_processing_service_result()
 
-    monkeypatch.setattr('whatsthedamage.controllers.routes.process_csv', mock_process_csv)
+    monkeypatch.setattr('whatsthedamage.controllers.routes._processing_service.process_summary', mock_process_summary)
 
     csrf_token = get_csrf_token(client)
     sample_csv_path = create_sample_csv_from_fixture(csv_rows, mapping)
@@ -176,11 +160,11 @@ def test_process_route_missing_config(client, monkeypatch, csv_rows, mapping):
     os.remove(sample_csv_path)
 
 
-def test_process_route_invalid_end_date(client, monkeypatch, csv_rows, mapping, config_yml_default_path):
-    def mock_process_csv(args):
-        return "<table class='dataframe'></table>"
+def test_process_route_invalid_end_date(client, monkeypatch, csv_rows, mapping, config_yml_default_path, mock_processing_service_result):
+    def mock_process_summary(**kwargs):
+        return mock_processing_service_result()
 
-    monkeypatch.setattr('whatsthedamage.controllers.routes.process_csv', mock_process_csv)
+    monkeypatch.setattr('whatsthedamage.controllers.routes._processing_service.process_summary', mock_process_summary)
 
     csrf_token = get_csrf_token(client)
     sample_csv_path = create_sample_csv_from_fixture(csv_rows, mapping)
@@ -201,13 +185,11 @@ def test_process_route_invalid_end_date(client, monkeypatch, csv_rows, mapping, 
     os.remove(sample_csv_path)
 
 
-def test_download_route_with_result(client, monkeypatch, csv_rows, mapping, config_yml_default_path):
-    def mock_process_csv(args):
-        return ("<table class='dataframe'><tr><td>Unnamed: 0</td>"
-                "<td>2023.01.01 - 2023.12.31</td></tr><tr><td>balance</td>"
-                "<td>0.0</td></tr></table>")
+def test_download_route_with_result(client, monkeypatch, csv_rows, mapping, config_yml_default_path, mock_processing_service_result):
+    def mock_process_summary(**kwargs):
+        return mock_processing_service_result({'balance': 0.0})
 
-    monkeypatch.setattr('whatsthedamage.controllers.routes.process_csv', mock_process_csv)
+    monkeypatch.setattr('whatsthedamage.controllers.routes._processing_service.process_summary', mock_process_summary)
 
     csrf_token = get_csrf_token(client)
     sample_csv_path = create_sample_csv_from_fixture(csv_rows, mapping)
@@ -226,16 +208,16 @@ def test_download_route_with_result(client, monkeypatch, csv_rows, mapping, conf
     assert response.status_code == 200
     assert response.headers['Content-Disposition'] == 'attachment; filename=result.csv'
     assert response.headers['Content-Type'] == 'text/csv'
-    assert b'Unnamed: 0,2023.01.01 - 2023.12.31\nbalance,0.0\n' in response.data
+    assert b'Categories,Total\nbalance,0.0\n' in response.data
 
     os.remove(sample_csv_path)
 
 
-def test_process_route_invalid_date(client, monkeypatch, csv_rows, mapping, config_yml_default_path):
-    def mock_process_csv(args):
-        return "<table class='dataframe'></table>"
+def test_process_route_invalid_date(client, monkeypatch, csv_rows, mapping, config_yml_default_path, mock_processing_service_result):
+    def mock_process_summary(**kwargs):
+        return mock_processing_service_result()
 
-    monkeypatch.setattr('whatsthedamage.controllers.routes.process_csv', mock_process_csv)
+    monkeypatch.setattr('whatsthedamage.controllers.routes._processing_service.process_summary', mock_process_summary)
 
     csrf_token = get_csrf_token(client)
     sample_csv_path = create_sample_csv_from_fixture(csv_rows, mapping)

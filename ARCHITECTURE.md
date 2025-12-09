@@ -11,6 +11,11 @@ The project follows a Model-View-Controller (MVC) pattern for clear separation o
 - **Controllers**: CLI and web routing, orchestration of processing.
 - **Config**: Centralized configuration, context, and pattern sets.
 - **Scripts**: ML model training, feature engineering, documentation.
+- **Services**: Place for business logic.
+
+### Architecture decisions
+- Dependencies point inward (Controller → Service → Model), never outward.
+- Single Responsibility Principle.
 
 ## Major Components
 
@@ -43,7 +48,7 @@ The project follows a Model-View-Controller (MVC) pattern for clear separation o
 - **Documentation**: Sphinx docs and ML model details.
 
 ### 6. API development
-- Keep core business logic in a separate, unversioned Python package (or set of modules) and have both the CLI and Flask layer call into that core.
+- Keep core business logic in a separate Python package (or set of modules) and have both the CLI and Flask layer call into that core.
 - HTTP clients choose endpoint version, CLI users choose package version.
 - One project version (semantic) for the distribution as a whole.
 - Explicit HTTP API versions in the URL for any breaking wire-level change.

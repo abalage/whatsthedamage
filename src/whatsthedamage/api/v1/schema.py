@@ -3,9 +3,10 @@
 This module defines the OpenAPI specification for the v1 API endpoints.
 V1 API focuses on summary-level transaction data (aggregated totals by category).
 """
+from typing import Any
 
 
-def get_openapi_schema() -> dict:
+def get_openapi_schema() -> dict[str, Any]:
     """Generate OpenAPI 3.0 schema for v1 API.
     
     Returns:

@@ -4,9 +4,9 @@ This module provides REST API endpoints for processing CSV transaction files
 and returning summarized totals by category. v1 API returns only aggregated
 summary data (naturally small payloads), without transaction-level details.
 """
-from flask import Blueprint, jsonify
+from flask import Blueprint, jsonify, Response
 import time
-from typing import Dict
+from typing import Dict, Any
 
 from whatsthedamage.services.processing_service import ProcessingService
 from whatsthedamage.models.api_models import (
@@ -32,7 +32,7 @@ v1_bp = Blueprint('api_v1', __name__, url_prefix='/api/v1')
 _processing_service = ProcessingService()
 
 
-def _build_summary_response(result: Dict, params: ProcessingRequest, processing_time: float) -> SummaryResponse:
+def _build_summary_response(result: Dict[str, Any], params: ProcessingRequest, processing_time: float) -> SummaryResponse:
     """Build summary response from processing result.
 
     Args:
@@ -55,7 +55,7 @@ def _build_summary_response(result: Dict, params: ProcessingRequest, processing_
 
 
 @v1_bp.route('/process', methods=['POST'])
-def process_transactions():
+def process_transactions() -> tuple[Response, int]:
     """Process CSV transaction file and return summary totals.
 
     Accepts multipart/form-data with:

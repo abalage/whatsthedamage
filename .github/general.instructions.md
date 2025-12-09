@@ -11,3 +11,6 @@ applyTo: "**"
 # Error Handling
 - Use exceptions for error handling. 
 - Always log errors with contextual information.
+
+# Python Specific overrides
+- Avoid using [Any] type hint unless absolutely necessary.

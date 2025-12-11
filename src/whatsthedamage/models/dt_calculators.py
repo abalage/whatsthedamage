@@ -7,6 +7,7 @@ after all category data has been added to the builder.
 """
 
 from typing import List, TYPE_CHECKING
+from gettext import gettext as _
 from whatsthedamage.config.dt_models import AggregatedRow
 
 if TYPE_CHECKING:
@@ -32,7 +33,7 @@ def create_balance_rows(builder: "DataTablesResponseBuilder") -> List[Aggregated
         
         # Use builder's public helper to create properly formatted row
         balance_row = builder.build_aggregated_row(
-            category="Balance",
+            category=_("Balance"),
             total_amount=total_amount,
             details=[],  # Balance has no detail rows
             month_field=month_field
@@ -63,7 +64,7 @@ def create_total_spendings(builder: "DataTablesResponseBuilder") -> List[Aggrega
     # Access builder's aggregated rows
     for row in builder._aggregated_rows:
         # Skip calculated rows like Balance and Total Spendings
-        if row.category in ["Balance", "Total Spendings"]:
+        if row.category in [_("Balance"), _("Total Spendings")]:
             continue
             
         month_timestamp = row.month.timestamp
@@ -72,15 +73,15 @@ def create_total_spendings(builder: "DataTablesResponseBuilder") -> List[Aggrega
         
         # Sum negative amounts (expenses) as positive values
         if row.total.raw < 0:
-            _, current_total = month_totals[month_timestamp]
-            month_totals[month_timestamp] = (row.month, current_total + abs(row.total.raw))
+            month_field_existing, current_total = month_totals[month_timestamp]
+            month_totals[month_timestamp] = (month_field_existing, current_total + abs(row.total.raw))
     
     # Create rows using builder's helper method
     spendings_rows = []
     for month_timestamp in sorted(month_totals.keys()):
         month_field, total = month_totals[month_timestamp]
         spendings_row = builder.build_aggregated_row(
-            category="Total Spendings",
+            category=_("Total Spendings"),
             total_amount=total,
             details=[],
             month_field=month_field

@@ -9,6 +9,14 @@ whatsthedamage.models package
 Submodules
 ----------
 
+whatsthedamage.models.api\_models module
+----------------------------------------
+
+.. automodule:: whatsthedamage.models.api_models
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
 whatsthedamage.models.csv\_file\_handler module
 -----------------------------------------------
 
@@ -37,6 +45,22 @@ whatsthedamage.models.data\_frame\_formatter module
 ---------------------------------------------------
 
 .. automodule:: whatsthedamage.models.data_frame_formatter
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
+whatsthedamage.models.dt\_calculators module
+--------------------------------------------
+
+.. automodule:: whatsthedamage.models.dt_calculators
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
+whatsthedamage.models.dt\_response\_builder module
+--------------------------------------------------
+
+.. automodule:: whatsthedamage.models.dt_response_builder
    :members:
    :show-inheritance:
    :undoc-members:

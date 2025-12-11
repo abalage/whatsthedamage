@@ -9,10 +9,10 @@ whatsthedamage.controllers package
 Submodules
 ----------
 
-whatsthedamage.controllers.cli module
--------------------------------------
+whatsthedamage.controllers.cli\_controller module
+-------------------------------------------------
 
-.. automodule:: whatsthedamage.controllers.cli
+.. automodule:: whatsthedamage.controllers.cli_controller
    :members:
    :show-inheritance:
    :undoc-members:

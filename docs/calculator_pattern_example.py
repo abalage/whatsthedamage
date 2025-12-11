@@ -7,13 +7,6 @@ and custom calculators.
 
 from whatsthedamage.models.dt_response_builder import DataTablesResponseBuilder
 from whatsthedamage.models.dt_calculators import create_balance_rows, create_total_spendings
-from whatsthedamage.config.dt_models import AggregatedRow
-from typing import List
-
-
-# Example: You can also define custom calculators
-# This example shows how create_total_spendings is already available as a default calculator
-
 
 # Example Usage:
 

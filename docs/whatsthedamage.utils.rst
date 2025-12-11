@@ -25,10 +25,18 @@ whatsthedamage.utils.flask\_locale module
    :show-inheritance:
    :undoc-members:
 
-whatsthedamage.utils.row\_printer module
+whatsthedamage.utils.html\_parser module
 ----------------------------------------
 
-.. automodule:: whatsthedamage.utils.row_printer
+.. automodule:: whatsthedamage.utils.html_parser
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
+whatsthedamage.utils.version module
+-----------------------------------
+
+.. automodule:: whatsthedamage.utils.version
    :members:
    :show-inheritance:
    :undoc-members:

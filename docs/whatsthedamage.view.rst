@@ -16,3 +16,11 @@ whatsthedamage.view.forms module
    :members:
    :show-inheritance:
    :undoc-members:
+
+whatsthedamage.view.row\_printer module
+---------------------------------------
+
+.. automodule:: whatsthedamage.view.row_printer
+   :members:
+   :show-inheritance:
+   :undoc-members:

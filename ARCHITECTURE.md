@@ -31,12 +31,14 @@ The project follows a Model-View-Controller (MVC) pattern for clear separation o
 ### 2. Controllers (`src/whatsthedamage/controllers/`)
 - **CLI Controller**: Entry point for command-line usage (`__main__.py`, `cli_app.py`).
 - **Web Controller**: Flask routes for file upload, processing, and result rendering (`app.py`, `routes.py`).
+- **API Controllers**: REST API endpoints in `api/v1/` and `api/v2/` directories.
 - **Orchestration**: Main logic (`whatsthedamage.py`) coordinates config loading, processing, and output.
 
 ### 3. Views (`src/whatsthedamage/view/`)
 - **row_printer.py**: Console output formatting.
-- **templates/**: Jinja2 templates for HTML output (web frontend).
+- **templates/**: Jinja2 templates for HTML output (server-side rendered web interface).
 - **data_frame_formatter.py**: CSV/HTML table formatting.
+- **Interactive elements**: JavaScript enhancements (fetch API, DataTables) for improved UX without full page reloads.
 
 ### 4. Config (`src/whatsthedamage/config/`)
 - **config.py**: Central config, context, and pattern sets.
@@ -47,14 +49,22 @@ The project follows a Model-View-Controller (MVC) pattern for clear separation o
 - **ML Training**: Scripts for training, evaluating, and tuning ML models.
 - **Documentation**: Sphinx docs and ML model details.
 
-### 6. API development
-- Keep core business logic in a separate Python package (or set of modules) and have both the CLI and Flask layer call into that core.
-- HTTP clients choose endpoint version, CLI users choose package version.
-- One project version (semantic) for the distribution as a whole.
-- Explicit HTTP API versions in the URL for any breaking wire-level change.
-- The CLI is tied to the project version and evolves with it.
-- Uses Flask Blueprints for each API version. 
-- The route handlers for unchanged endpoints call the shared functions.
+### 6. Services (`src/whatsthedamage/services/`)
+- **ProcessingService**: Core business logic shared between web routes, CLI, and REST API.
+- Ensures consistent behavior across all interfaces.
+- Decouples processing logic from presentation/delivery layer.
+
+### 7. API Layer (`src/whatsthedamage/api/`)
+- **REST API** (`/api/v1/`, `/api/v2/`): Provides programmatic access to transaction processing.
+- Uses Flask Blueprints for versioning (`v1_bp`, `v2_bp`).
+- Returns JSON responses for automation, scripting, and potential mobile apps.
+- Shares the same `ProcessingService` as web routes and CLI for consistency.
+- **API Versioning Strategy**:
+  - HTTP clients choose endpoint version via URL (`/api/v1/` vs `/api/v2/`).
+  - CLI users choose package version via installation.
+  - Explicit HTTP API versions in the URL for any breaking wire-level change.
+  - Route handlers for unchanged endpoints can call shared functions.
+- **Documentation**: API documentation available via `/docs` endpoint.
 
 ## Data Flow
 1. **Input**: User uploads or specifies a CSV file (and optional config).
@@ -64,7 +74,37 @@ The project follows a Model-View-Controller (MVC) pattern for clear separation o
    - Filtering by date/month, optional category filter.
 4. **Aggregation**: `RowSummarizer` computes totals per category/time period.
 5. **Formatting**: `DataFrameFormatter` prepares output for console, HTML, or CSV.
-6. **Output**: Results are displayed in CLI or rendered in the web frontend (HTML table, CSV download).
+6. **Output**: Results are displayed in CLI or rendered in the web frontend (HTML table, CSV download) or returned as JSON (API).
+
+## Frontend Architecture: Hybrid Approach
+
+The application uses a **hybrid server-side + progressive enhancement** architecture, combining the simplicity of server-side rendering with selective client-side interactivity.
+
+### Web Interface (`/process`, `/clear`, `/download`)
+- **Server-Side Rendering**: Flask renders HTML templates with Jinja2.
+- **Form Submission**: Traditional POST requests for file uploads and processing.
+- **Full Page Reloads**: Primary navigation pattern for simplicity and reliability.
+- **Session Management**: Flask sessions handle user state between requests.
+
+### Interactive Enhancements
+- **JavaScript Fetch API**: Used for actions that don't require page reloads:
+  - Form clearing (`/clear` endpoint)
+  - File downloads (`/download` endpoint)
+- **DataTables Integration**: Client-side table enhancement for transaction results:
+  - Sorting, searching, pagination without server round-trips
+  - Fixed headers for better UX with large datasets
+  - Operates on server-rendered HTML tables
+- **Progressive Enhancement**: Core functionality works without JavaScript; JS adds convenience.
+
+### REST API (`/api/v1/`, `/api/v2/`)
+- **Purpose**: Programmatic access for automation, scripting, and potential mobile apps.
+- **Separation**: API routes are separate from web routes but share the same service layer.
+- **JSON Responses**: All API endpoints return structured JSON.
+- **Use Cases**:
+  - CI/CD pipelines for automated transaction analysis
+  - Third-party integrations
+  - Future mobile applications
+  - Batch processing scripts
 
 ## Machine Learning Integration
 - ML model (Random Forest) is trained on historical transaction data.
@@ -94,12 +134,14 @@ The project follows a Model-View-Controller (MVC) pattern for clear separation o
 - Known issue: joblib model loading can execute arbitrary code.
 
 ## Key Files & Directories
-- `README.md`: Project overview, CLI usage, config, categories.
+- `README.md`: Project overview, CLI usage, API documentation, config, categories.
 - `src/whatsthedamage/scripts/README.md`: ML details.
 - `Makefile`: Workflow automation.
 - `config/config.py`: Central config/context.
 - `src/whatsthedamage/app.py`: Flask entrypoint.
 - `src/whatsthedamage/view/templates/`: Web frontend templates.
+- `src/whatsthedamage/api/`: REST API endpoints (v1, v2) and OpenAPI documentation.
+- `src/whatsthedamage/services/`: Shared business logic layer.
 
 ---
-For further details, see `README.md`, `AGENTS.md`, and `src/whatsthedamage/scripts/README.md`.
+For further details, see `README.md` (includes comprehensive API documentation), and `src/whatsthedamage/scripts/README.md`.

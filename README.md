@@ -59,6 +59,52 @@ The model currently relies on the English language. Language-agnostic models are
 
 Try experimenting with it by providing the `--ml` command line argument to `whatsthedamage`.
 
+## Architecture Overview
+
+`whatsthedamage` provides **three interfaces** for different use cases:
+
+1. **Command-Line Interface (CLI)** - For local, interactive use and automation scripts
+2. **Web Interface** - Browser-based UI for users who prefer forms over terminal commands
+3. **REST API** - Programmatic access for integrations, CI/CD pipelines, and external applications
+
+All three interfaces share the same **core business logic** (`ProcessingService`), ensuring consistent transaction processing regardless of how you access the tool.
+
+### Interface Comparison
+
+| Feature | CLI | Web UI | REST API |
+|---------|-----|--------|----------|
+| **Access Method** | Terminal commands | Browser forms | HTTP requests |
+| **Authentication** | None | Session-based | None (add if needed) |
+| **Input** | File paths | File upload | Multipart form data |
+| **Output** | Console/CSV/HTML | HTML page | JSON |
+| **Use Case** | Local analysis, scripts | Ad-hoc exploration | Automation, integrations |
+| **Requires Server** | ❌ No | ✅ Yes | ✅ Yes |
+| **Interactive** | ✅ Yes | ✅ Yes | ❌ No (stateless) |
+
+### When to Use What?
+
+**Use the CLI when:**
+- Running locally on your machine
+- Automating with shell scripts
+- Processing files in batch
+- Integrating with terminal workflows
+- You prefer command-line tools
+
+**Use the Web UI when:**
+- You prefer graphical interfaces
+- Sharing access with non-technical users
+- Quick ad-hoc analysis without installing anything
+- You want interactive table features (sorting, searching)
+
+**Use the REST API when:**
+- Integrating with other applications
+- Building custom frontends
+- Automating in CI/CD pipelines
+- Processing transactions from external systems
+- Need programmatic access with JSON responses
+
+For complete REST API documentation, see [API.md](API.md).
+
 ## Install
 
 This chapter describes how to install `whatsthedamage` in production. For development purposes check out the [Development](#development) chapter.

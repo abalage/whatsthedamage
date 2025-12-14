@@ -5,6 +5,9 @@ from whatsthedamage.config.config import AppConfig, CsvConfig, AppContext
 from whatsthedamage.config.config import AppArgs
 from whatsthedamage.config.config import EnricherPatternSets
 
+# Import API fixtures from separate module
+pytest_plugins = ['tests.api_fixtures']
+
 
 # Centralized config.yml.default path
 CONFIG_YML_DEFAULT_PATH = os.path.abspath(

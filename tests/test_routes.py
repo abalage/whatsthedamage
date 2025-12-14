@@ -5,6 +5,22 @@ from io import BytesIO
 from .helpers import create_sample_csv_from_fixture  # Import the function
 
 
+def mock_processing_service(monkeypatch, process_summary_fn=None, process_with_details_fn=None):
+    """Helper to mock ProcessingService via dependency injection."""
+    class MockService:
+        def process_summary(self, **kwargs):
+            if process_summary_fn:
+                return process_summary_fn(**kwargs)
+            return {}
+
+        def process_with_details(self, **kwargs):
+            if process_with_details_fn:
+                return process_with_details_fn(**kwargs)
+            return {}
+
+    monkeypatch.setattr('whatsthedamage.controllers.routes._get_processing_service', lambda: MockService())
+
+
 def get_csrf_token(client):
     response = client.get('/')
     csrf_token = None
@@ -40,7 +56,7 @@ def test_process_route(client, monkeypatch, csv_rows, mapping, config_yml_defaul
     def mock_process_summary(**kwargs):
         return mock_processing_service_result({'balance': 100.0})
 
-    monkeypatch.setattr('whatsthedamage.controllers.routes._processing_service.process_summary', mock_process_summary)
+    mock_processing_service(monkeypatch, process_summary_fn=mock_process_summary)
 
     csrf_token = get_csrf_token(client)
     sample_csv_path = create_sample_csv_from_fixture(csv_rows, mapping)
@@ -101,7 +117,7 @@ def test_process_route_invalid_data(client, monkeypatch, config_yml_default_path
     def mock_process_summary(**kwargs):
         return mock_processing_service_result()
 
-    monkeypatch.setattr('whatsthedamage.controllers.routes._processing_service.process_summary', mock_process_summary)
+    mock_processing_service(monkeypatch, process_summary_fn=mock_process_summary)
 
     csrf_token = get_csrf_token(client)
 
@@ -120,7 +136,7 @@ def test_process_route_missing_file(client, monkeypatch, config_yml_default_path
     def mock_process_summary(**kwargs):
         return mock_processing_service_result()
 
-    monkeypatch.setattr('whatsthedamage.controllers.routes._processing_service.process_summary', mock_process_summary)
+    mock_processing_service(monkeypatch, process_summary_fn=mock_process_summary)
 
     csrf_token = get_csrf_token(client)
 
@@ -140,7 +156,7 @@ def test_process_route_missing_config(client, monkeypatch, csv_rows, mapping, mo
     def mock_process_summary(**kwargs):
         return mock_processing_service_result()
 
-    monkeypatch.setattr('whatsthedamage.controllers.routes._processing_service.process_summary', mock_process_summary)
+    mock_processing_service(monkeypatch, process_summary_fn=mock_process_summary)
 
     csrf_token = get_csrf_token(client)
     sample_csv_path = create_sample_csv_from_fixture(csv_rows, mapping)
@@ -164,7 +180,7 @@ def test_process_route_invalid_end_date(client, monkeypatch, csv_rows, mapping, 
     def mock_process_summary(**kwargs):
         return mock_processing_service_result()
 
-    monkeypatch.setattr('whatsthedamage.controllers.routes._processing_service.process_summary', mock_process_summary)
+    mock_processing_service(monkeypatch, process_summary_fn=mock_process_summary)
 
     csrf_token = get_csrf_token(client)
     sample_csv_path = create_sample_csv_from_fixture(csv_rows, mapping)
@@ -189,7 +205,7 @@ def test_download_route_with_result(client, monkeypatch, csv_rows, mapping, conf
     def mock_process_summary(**kwargs):
         return mock_processing_service_result({'balance': 0.0})
 
-    monkeypatch.setattr('whatsthedamage.controllers.routes._processing_service.process_summary', mock_process_summary)
+    mock_processing_service(monkeypatch, process_summary_fn=mock_process_summary)
 
     csrf_token = get_csrf_token(client)
     sample_csv_path = create_sample_csv_from_fixture(csv_rows, mapping)
@@ -217,7 +233,7 @@ def test_process_route_invalid_date(client, monkeypatch, csv_rows, mapping, conf
     def mock_process_summary(**kwargs):
         return mock_processing_service_result()
 
-    monkeypatch.setattr('whatsthedamage.controllers.routes._processing_service.process_summary', mock_process_summary)
+    mock_processing_service(monkeypatch, process_summary_fn=mock_process_summary)
 
     csrf_token = get_csrf_token(client)
     sample_csv_path = create_sample_csv_from_fixture(csv_rows, mapping)

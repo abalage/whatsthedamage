@@ -8,11 +8,12 @@ from whatsthedamage.api.error_handlers import register_error_handlers
 from whatsthedamage.config.flask_config import FlaskAppConfig
 from whatsthedamage.utils.flask_locale import get_locale
 from whatsthedamage.utils.version import get_version
+from whatsthedamage.services.processing_service import ProcessingService
 from typing import Optional, Any
 import gettext
 
 
-def create_app(config_class: Optional[FlaskAppConfig] = None) -> Flask:
+def create_app(config_class: Optional[FlaskAppConfig] = None, processing_service: Optional[ProcessingService] = None) -> Flask:
     app: Flask = Flask(__name__, template_folder='view/templates', static_folder='view/static')
 
     # Load default configuration from a class
@@ -28,6 +29,11 @@ def create_app(config_class: Optional[FlaskAppConfig] = None) -> Flask:
 
     # Ensure the upload folder exists
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+
+    # Initialize processing service (dependency injection)
+    if processing_service is None:
+        processing_service = ProcessingService()
+    app.extensions['processing_service'] = processing_service
 
     # --- BEGIN: Gettext integration for templates ---
     @app.before_request

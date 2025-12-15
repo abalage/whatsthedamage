@@ -3,7 +3,7 @@
 This module provides REST API endpoints for processing CSV transaction files
 with detailed transaction-level data for DataTables rendering.
 """
-from flask import Blueprint, jsonify, Response
+from flask import Blueprint, jsonify, Response, current_app
 import time
 from typing import Dict, Any
 
@@ -27,8 +27,11 @@ from whatsthedamage.api.helpers import (
 # Create Blueprint
 v2_bp = Blueprint('api_v2', __name__, url_prefix='/api/v2')
 
-# Initialize service
-_processing_service = ProcessingService()
+
+def _get_processing_service() -> ProcessingService:
+    """Get processing service from app extensions (dependency injection)."""
+    from typing import cast
+    return cast(ProcessingService, current_app.extensions['processing_service'])
 
 
 def _build_detailed_response(result: Dict[str, Any], params: ProcessingRequest, processing_time: float) -> DetailedResponse:
@@ -89,7 +92,7 @@ def process_transactions() -> tuple[Response, int]:
         csv_path, config_path = save_uploaded_files(csv_file, config_file)
 
         try:
-            result = _processing_service.process_with_details(
+            result = _get_processing_service().process_with_details(
                 csv_file_path=csv_path,
                 config_file_path=config_path,
                 start_date=params.start_date,

@@ -25,8 +25,11 @@ bp: Blueprint = Blueprint('main', __name__)
 
 ALLOWED_EXTENSIONS = {'csv', 'yml', 'yaml'}
 
-# Initialize service
-_processing_service = ProcessingService()
+
+def _get_processing_service() -> ProcessingService:
+    """Get processing service from app extensions (dependency injection)."""
+    from typing import cast
+    return cast(ProcessingService, current_app.extensions['processing_service'])
 
 
 def allowed_file(file_path: str) -> bool:
@@ -105,7 +108,7 @@ def process_v1() -> Response:
 
         try:
             # Process using service layer
-            result = _processing_service.process_summary(
+            result = _get_processing_service().process_summary(
                 csv_file_path=filename_path,
                 config_file_path=config_path if config_path else None,
                 start_date=form.start_date.data.strftime('%Y-%m-%d') if form.start_date.data else None,
@@ -184,7 +187,7 @@ def process_v2() -> Response:
 
         try:
             # Process using service layer
-            result = _processing_service.process_with_details(
+            result = _get_processing_service().process_with_details(
                 csv_file_path=filename_path,
                 config_file_path=None,  # v2 doesn't use config file
                 start_date=form.start_date.data.strftime('%Y-%m-%d') if form.start_date.data else None,

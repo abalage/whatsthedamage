@@ -4,38 +4,21 @@ from flask import (
     session, flash, current_app, Response
 )
 from whatsthedamage.view.forms import UploadForm
-from typing import Optional, Dict, List, Union
-from werkzeug.utils import secure_filename
-from werkzeug.security import safe_join
-from whatsthedamage.services.processing_service import ProcessingService
-from whatsthedamage.models.data_frame_formatter import DataFrameFormatter
+from whatsthedamage.controllers.routes_helpers import (
+    handle_file_uploads,
+    resolve_config_path,
+    process_summary_and_build_response,
+    process_details_and_build_response
+)
+from typing import Optional, Dict
 import os
 import shutil
 import pandas as pd
 from io import StringIO
-import magic
-from whatsthedamage.utils.flask_locale import get_locale, get_languages, get_default_language
-from whatsthedamage.utils.html_parser import TableParser
-from typing import DefaultDict
-from whatsthedamage.config.dt_models import AggregatedRow
-from collections import defaultdict
-from gettext import gettext as _
+from whatsthedamage.utils.flask_locale import get_locale, get_languages
 
 bp: Blueprint = Blueprint('main', __name__)
-
-ALLOWED_EXTENSIONS = {'csv', 'yml', 'yaml'}
-
-
-def _get_processing_service() -> ProcessingService:
-    """Get processing service from app extensions (dependency injection)."""
-    from typing import cast
-    return cast(ProcessingService, current_app.extensions['processing_service'])
-
-
-def allowed_file(file_path: str) -> bool:
-    mime = magic.Magic(mime=True)
-    file_type: str = mime.from_file(file_path)
-    return file_type in {'text/csv', 'text/plain', 'application/x-yaml'}
+INDEX_ROUTE = 'main.index'
 
 
 def clear_upload_folder() -> None:
@@ -79,178 +62,65 @@ def index() -> Response:
 def process_v1() -> Response:
     """Process CSV and return summary HTML page for web UI."""
     form: UploadForm = UploadForm()
-    if form.validate_on_submit():
-        upload_folder: str = current_app.config['UPLOAD_FOLDER']
-        filename: str = secure_filename(form.filename.data.filename)
-        filename_path: str = safe_join(upload_folder, filename)  # type: ignore
-        form.filename.data.save(filename_path)
+    if not form.validate_on_submit():
+        for field, errors in form.errors.items():
+            for error in errors:
+                flash(f"Error in {getattr(form, field).label.text}: {error}", 'danger')
+        return make_response(redirect(url_for(INDEX_ROUTE)))
 
-        config_path: str = ''
-        if form.config.data:
-            config: str = secure_filename(form.config.data.filename)
-            config_path = safe_join(upload_folder, config)  # type: ignore
-            form.config.data.save(config_path)
-        else:
-            if not form.ml.data:
-                config_path = safe_join(
-                    os.getcwd(), current_app.config['DEFAULT_WHATSTHEDAMAGE_CONFIG']   # type: ignore
-                )
-                if config_path and not os.path.exists(config_path):
-                    flash('Default config file not found. Please upload one.', 'danger')
-                    return make_response(redirect(url_for('main.index')))
+    try:
+        # Handle file uploads
+        files = handle_file_uploads(form)
 
-        if not allowed_file(filename_path) or (config_path and not allowed_file(config_path)):
-            flash('Invalid file type. Only CSV and YAML files are allowed.', 'danger')
-            return make_response(redirect(url_for('main.index')))
+        # Resolve config path (use default if needed)
+        config_path = resolve_config_path(files['config_path'], form.ml.data)
 
         # Store form data in session
         session['form_data'] = request.form.to_dict()
 
-        try:
-            # Process using service layer
-            result = _get_processing_service().process_summary(
-                csv_file_path=filename_path,
-                config_file_path=config_path if config_path else None,
-                start_date=form.start_date.data.strftime('%Y-%m-%d') if form.start_date.data else None,
-                end_date=form.end_date.data.strftime('%Y-%m-%d') if form.end_date.data else None,
-                ml_enabled=form.ml.data,
-                category_filter=form.filter.data,
-                language=session.get('lang', get_default_language())
-            )
+        # Process and build response
+        return process_summary_and_build_response(form, files['csv_path'], config_path, clear_upload_folder)
 
-            # Format result using DataFrameFormatter
-            processor = result['processor']
-            formatter = DataFrameFormatter()
-            formatter.set_no_currency_format(form.no_currency_format.data)
-
-            # Wrap flattened data in "Total" for formatter
-            monthly_data = {"Total": result['data']}
-            df = formatter.format_dataframe(monthly_data, currency=processor.processor.get_currency())
-
-            # Convert to HTML
-            html_result = df.to_html(border=0)
-            html_result = html_result.replace('<th></th>', f'<th>{_("Categories")}</th>', 1)
-
-            # Parse HTML table for rendering
-            parser: TableParser = TableParser()
-            headers, rows = parser.parse_table(html_result)
-
-            # Process rows to extract numeric values for data-order attributes
-            import re
-            processed_rows: List[List[Dict[str, Union[str, float, None]]]] = []
-            for row in rows:
-                processed_row: List[Dict[str, Union[str, float, None]]] = []
-                for i, cell in enumerate(row):
-                    if i == 0:  # First column (Categories) - no numeric sorting needed
-                        processed_row.append({'display': cell, 'order': None})
-                    else:
-                        # Extract numeric value from currency string for sorting
-                        match = re.match(r'^(-?\d+(?:\.\d+)?)', str(cell))
-                        numeric_value: float = float(match.group(1)) if match else 0
-                        processed_row.append({'display': cell, 'order': numeric_value})
-                processed_rows.append(processed_row)
-
-            # Store both original result and structured data
-            session['result'] = html_result
-            session['table_data'] = {'headers': headers, 'rows': processed_rows}
-
-            # Clear the upload folder after processing
-            clear_upload_folder()
-
-            return make_response(render_template('result.html', headers=headers, rows=processed_rows))
-        except Exception as e:
-            flash(f'Error processing CSV: {e}')
-            return make_response(redirect(url_for('main.index')))
-    else:
-        # Handle validation failure
-        for field, errors in form.errors.items():
-            for error in errors:
-                flash(f"Error in {getattr(form, field).label.text}: {error}", 'danger')
-        return make_response(redirect(url_for('main.index')))
+    except ValueError as e:
+        flash(str(e), 'danger')
+        return make_response(redirect(url_for(INDEX_ROUTE)))
+    except Exception as e:
+        flash(f'Error processing CSV: {e}')
+        return make_response(redirect(url_for(INDEX_ROUTE)))
 
 @bp.route('/process/v2', methods=['POST'])
 def process_v2() -> Response:
     """Process CSV and return detailed DataTables HTML page for web UI."""
     form: UploadForm = UploadForm()
-    if form.validate_on_submit():
-        upload_folder: str = current_app.config['UPLOAD_FOLDER']
-        filename: str = secure_filename(form.filename.data.filename)
-        filename_path: str = safe_join(upload_folder, filename)  # type: ignore
-        form.filename.data.save(filename_path)
+    if not form.validate_on_submit():
+        for field, errors in form.errors.items():
+            for error in errors:
+                flash(f"Error in {getattr(form, field).label.text}: {error}", 'danger')
+        return make_response(redirect(url_for(INDEX_ROUTE)))
 
-        if not allowed_file(filename_path):
-            flash('Invalid file type. Only CSV and YAML files are allowed.', 'danger')
-            return make_response(redirect(url_for('main.index')))
+    try:
+        # Handle file uploads
+        files = handle_file_uploads(form)
 
         # Store form data in session
         session['form_data'] = request.form.to_dict()
 
-        try:
-            # Process using service layer
-            result = _get_processing_service().process_with_details(
-                csv_file_path=filename_path,
-                config_file_path=None,  # v2 doesn't use config file
-                start_date=form.start_date.data.strftime('%Y-%m-%d') if form.start_date.data else None,
-                end_date=form.end_date.data.strftime('%Y-%m-%d') if form.end_date.data else None,
-                ml_enabled=form.ml.data,
-                category_filter=form.filter.data,
-                language=session.get('lang', get_default_language())
-            )
+        # Process and build response
+        return process_details_and_build_response(form, files['csv_path'], clear_upload_folder)
 
-            # Extract DataTablesResponse from result
-            dt_response = result['data']
-
-            # Convert DataTablesResponse to headers and rows for result.html
-            headers: List[str] = ['Categories']
-            # Collect months and their timestamps
-            month_tuples: set[tuple[str, int]] = set()
-            for agg_row in dt_response.data:
-                month_tuples.add((agg_row.month.display, agg_row.month.timestamp))
-            # Sort by timestamp in descending order (most recent first)
-            sorted_months: List[str] = [m[0] for m in sorted(month_tuples, key=lambda x: x[1], reverse=True)]
-            headers += sorted_months
-
-            # Build rows: each category, then each month
-            cat_month_map: DefaultDict[str, Dict[str, AggregatedRow]] = defaultdict(dict)
-            for agg_row in dt_response.data:
-                cat_month_map[agg_row.category][agg_row.month.display] = agg_row
-
-            rows: List[List[Dict[str, Union[str, float, None]]]] = []
-            for cat, month_dict in cat_month_map.items():
-                row: List[Dict[str, Union[str, float, None]]] = []
-                row.append({'display': cat, 'order': None})
-                for month in headers[1:]:
-                    agg_row_data = month_dict.get(month)
-                    if agg_row_data:
-                        details_str = '\n'.join([
-                            f"{d.date.display}: {d.amount.display} - {d.merchant}" for d in agg_row_data.details
-                        ])
-                        row.append({
-                            'display': agg_row_data.total.display,
-                            'order': agg_row_data.total.raw,
-                            'details': details_str
-                        })
-                    else:
-                        row.append({'display': '', 'order': 0, 'details': ''})
-                rows.append(row)
-
-            clear_upload_folder()
-            return make_response(render_template('result.html', headers=headers, rows=rows))
-        except Exception as e:
-            flash(f'Error processing CSV: {e}')
-            return make_response(redirect(url_for('main.index')))
-    else:
-        for field, errors in form.errors.items():
-            for error in errors:
-                flash(f"Error in {getattr(form, field).label.text}: {error}", 'danger')
-        return make_response(redirect(url_for('main.index')))
+    except ValueError as e:
+        flash(str(e), 'danger')
+        return make_response(redirect(url_for(INDEX_ROUTE)))
+    except Exception as e:
+        flash(f'Error processing CSV: {e}')
+        return make_response(redirect(url_for(INDEX_ROUTE)))
 
 
 @bp.route('/clear', methods=['POST'])
 def clear() -> Response:
     session.pop('form_data', None)
     flash('Form data cleared.', 'success')
-    return make_response(redirect(url_for('main.index')))
+    return make_response(redirect(url_for(INDEX_ROUTE)))
 
 
 @bp.route('/download', methods=['GET'])
@@ -258,7 +128,7 @@ def download() -> Response:
     result: Optional[str] = session.get('result')
     if not result:
         flash('No result available for download.', 'danger')
-        return make_response(redirect(url_for('main.index')))
+        return make_response(redirect(url_for(INDEX_ROUTE)))
 
     # Convert the HTML table to a DataFrame
     df: pd.DataFrame = pd.read_html(StringIO(result))[0]
@@ -298,7 +168,7 @@ def set_language(lang_code: str) -> Response:
         flash(f"Language changed to {lang_code.upper()}.", "success")
     else:
         flash("Selected language is not supported.", "danger")
-    return make_response(redirect(request.referrer or url_for('main.index')))
+    return make_response(redirect(request.referrer or url_for(INDEX_ROUTE)))
 
 
 @bp.route('/health')

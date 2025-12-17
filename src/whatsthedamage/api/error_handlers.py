@@ -4,7 +4,7 @@ Error handlers for API endpoints.
 Converts exceptions to standardized ErrorResponse JSON format.
 """
 from flask import jsonify, Response, request, Flask
-from werkzeug.exceptions import BadRequest, RequestEntityTooLarge
+from werkzeug.exceptions import BadRequest, RequestEntityTooLarge, HTTPException
 from pydantic import ValidationError
 from whatsthedamage.models.api_models import ErrorResponse
 
@@ -178,4 +178,7 @@ def register_error_handlers(app: Flask) -> None:
     def _handle_generic_exception(error: Exception) -> tuple[Response, int]:
         if is_api_request():
             return handle_generic_exception(error)
+        # For non-API requests, let HTTP exceptions be handled by Flask's default handlers
+        if isinstance(error, HTTPException):
+            return error.get_response(), error.code  # type: ignore
         raise error

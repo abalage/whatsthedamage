@@ -18,7 +18,7 @@ def mock_processing_service(monkeypatch, process_summary_fn=None, process_with_d
                 return process_with_details_fn(**kwargs)
             return {}
 
-    monkeypatch.setattr('whatsthedamage.controllers.routes._get_processing_service', lambda: MockService())
+    monkeypatch.setattr('whatsthedamage.controllers.routes_helpers._get_processing_service', lambda: MockService())
 
 
 def get_csrf_token(client):

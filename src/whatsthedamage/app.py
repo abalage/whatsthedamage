@@ -9,11 +9,16 @@ from whatsthedamage.config.flask_config import FlaskAppConfig
 from whatsthedamage.utils.flask_locale import get_locale
 from whatsthedamage.utils.version import get_version
 from whatsthedamage.services.processing_service import ProcessingService
+from whatsthedamage.services.validation_service import ValidationService
 from typing import Optional, Any
 import gettext
 
 
-def create_app(config_class: Optional[FlaskAppConfig] = None, processing_service: Optional[ProcessingService] = None) -> Flask:
+def create_app(
+    config_class: Optional[FlaskAppConfig] = None,
+    processing_service: Optional[ProcessingService] = None,
+    validation_service: Optional[ValidationService] = None
+) -> Flask:
     app: Flask = Flask(__name__, template_folder='view/templates', static_folder='view/static')
 
     # Load default configuration from a class
@@ -34,6 +39,11 @@ def create_app(config_class: Optional[FlaskAppConfig] = None, processing_service
     if processing_service is None:
         processing_service = ProcessingService()
     app.extensions['processing_service'] = processing_service
+
+    # Initialize validation service (dependency injection)
+    if validation_service is None:
+        validation_service = ValidationService()
+    app.extensions['validation_service'] = validation_service
 
     # --- BEGIN: Gettext integration for templates ---
     @app.before_request

@@ -7,11 +7,17 @@ from flask import request, jsonify, current_app, Response
 from werkzeug.exceptions import BadRequest
 from werkzeug.utils import secure_filename
 from werkzeug.datastructures import FileStorage
-from pydantic import ValidationError
+from pydantic import ValidationError as PydanticValidationError
 import os
-from typing import Dict, Optional
+from typing import Dict, Optional, cast
 
 from whatsthedamage.models.api_models import ProcessingRequest, ErrorResponse
+from whatsthedamage.services.validation_service import ValidationService, ValidationError
+
+
+def _get_validation_service() -> ValidationService:
+    """Get validation service from app extensions (dependency injection)."""
+    return cast(ValidationService, current_app.extensions['validation_service'])
 
 
 def validate_csv_file() -> FileStorage:
@@ -27,8 +33,13 @@ def validate_csv_file() -> FileStorage:
         raise BadRequest("Missing required file: csv_file")
 
     csv_file = request.files['csv_file']
-    if not csv_file.filename:
-        raise BadRequest("No file selected for csv_file")
+    
+    # Use ValidationService for validation
+    validation_service = _get_validation_service()
+    result = validation_service.validate_file_upload(csv_file)
+    
+    if not result.is_valid:
+        raise BadRequest(result.error_message or "Invalid file upload")
 
     return csv_file
 
@@ -40,8 +51,16 @@ def get_config_file() -> Optional[FileStorage]:
         FileStorage | None: The config file object or None
     """
     config_file = request.files.get('config_file')
-    if config_file and not config_file.filename:
+    if not config_file or not config_file.filename:
         return None
+    
+    # Use ValidationService for validation
+    validation_service = _get_validation_service()
+    result = validation_service.validate_file_upload(config_file)
+    
+    if not result.is_valid:
+        raise BadRequest(result.error_message or "Invalid config file upload")
+    
     return config_file
 
 
@@ -140,11 +159,18 @@ def handle_error(error: Exception) -> tuple[Response, int]:
             details={"field": "csv_file"}
         ).model_dump()), 400
 
-    if isinstance(error, ValidationError):
+    if isinstance(error, PydanticValidationError):
         return jsonify(ErrorResponse(
             code=400,
             message="Invalid request parameters",
             details={"errors": [str(err) for err in error.errors()]}
+        ).model_dump()), 400
+    
+    if isinstance(error, ValidationError):
+        return jsonify(ErrorResponse(
+            code=400,
+            message=error.result.error_message or "Validation failed",
+            details=error.result.details or {}
         ).model_dump()), 400
 
     if isinstance(error, FileNotFoundError):

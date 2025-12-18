@@ -8,22 +8,26 @@ from werkzeug.utils import secure_filename
 from werkzeug.security import safe_join
 from whatsthedamage.view.forms import UploadForm
 from whatsthedamage.services.processing_service import ProcessingService
+from whatsthedamage.services.validation_service import ValidationService
 from whatsthedamage.models.data_frame_formatter import DataFrameFormatter
 from whatsthedamage.utils.html_parser import TableParser
 from whatsthedamage.utils.flask_locale import get_default_language
 from whatsthedamage.config.dt_models import AggregatedRow
-from typing import List, Dict, Optional, Union, DefaultDict, Callable
+from typing import List, Dict, Optional, Union, DefaultDict, Callable, cast
 from collections import defaultdict
 from gettext import gettext as _
 import os
-import magic
 import re
 
 
 def _get_processing_service() -> ProcessingService:
     """Get processing service from app extensions (dependency injection)."""
-    from typing import cast
     return cast(ProcessingService, current_app.extensions['processing_service'])
+
+
+def _get_validation_service() -> ValidationService:
+    """Get validation service from app extensions (dependency injection)."""
+    return cast(ValidationService, current_app.extensions['validation_service'])
 
 
 def allowed_file(file_path: str) -> bool:
@@ -36,16 +40,11 @@ def allowed_file(file_path: str) -> bool:
         True if file is CSV or YAML, False otherwise
 
     Note:
-        Uses libmagic for content-based MIME type detection. Accepts text/plain
-        for CSV files as libmagic may return text/plain instead of text/csv when:
-        - File has certain character encodings (Windows-1252, ISO-8859-1)
-        - File contains BOM (Byte Order Mark)
-        - File buffer not fully synced to disk yet
-        Validated externally: mimetype command confirms these are valid CSV files.
+        Uses ValidationService for content-based MIME type detection.
     """
-    mime = magic.Magic(mime=True)
-    file_type: str = mime.from_file(file_path)
-    return file_type in {'text/csv', 'text/plain', 'application/x-yaml'}
+    validation_service = _get_validation_service()
+    result = validation_service.validate_mime_type(file_path)
+    return result.is_valid
 
 
 def handle_file_uploads(form: UploadForm) -> Dict[str, str]:

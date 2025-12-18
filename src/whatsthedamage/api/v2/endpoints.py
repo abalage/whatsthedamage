@@ -5,21 +5,15 @@ with detailed transaction-level data for DataTables rendering.
 """
 from flask import Blueprint, jsonify, Response, current_app
 import time
-from typing import Dict, Any
 
 from whatsthedamage.services.processing_service import ProcessingService
-from whatsthedamage.models.api_models import (
-    ProcessingRequest,
-    DetailedResponse,
-    DetailedMetadata
-)
+from whatsthedamage.services.response_builder_service import ResponseBuilderService
 from whatsthedamage.api.helpers import (
     validate_csv_file,
     get_config_file,
     parse_request_params,
     save_uploaded_files,
     cleanup_files,
-    build_date_range,
     handle_error
 )
 
@@ -34,29 +28,10 @@ def _get_processing_service() -> ProcessingService:
     return cast(ProcessingService, current_app.extensions['processing_service'])
 
 
-def _build_detailed_response(result: Dict[str, Any], params: ProcessingRequest, processing_time: float) -> DetailedResponse:
-    """Build detailed response from processing result.
-
-    Args:
-        result: Processing result from service
-        params: Request parameters
-        processing_time: Total processing time
-
-    Returns:
-        DetailedResponse object
-    """
-    # result['data'] is a DataTablesResponse object
-    datatables_response = result['data']
-
-    return DetailedResponse(
-        data=datatables_response.data,  # List[AggregatedRow] from DataTablesResponse
-        metadata=DetailedMetadata(
-            row_count=result['metadata']['row_count'],
-            processing_time=processing_time,
-            ml_enabled=params.ml_enabled,
-            date_range=build_date_range(params)
-        )
-    )
+def _get_response_builder_service() -> ResponseBuilderService:
+    """Get response builder service from app extensions (dependency injection)."""
+    from typing import cast
+    return cast(ResponseBuilderService, current_app.extensions['response_builder_service'])
 
 
 @v2_bp.route('/process', methods=['POST'])
@@ -103,7 +78,12 @@ def process_transactions() -> tuple[Response, int]:
             )
 
             processing_time = time.time() - start_time
-            response = _build_detailed_response(result, params, processing_time)
+            response = _get_response_builder_service().build_api_detailed_response(
+                datatables_response=result['data'],
+                metadata=result['metadata'],
+                params=params,
+                processing_time=processing_time
+            )
 
             return jsonify(response.model_dump()), 200
 

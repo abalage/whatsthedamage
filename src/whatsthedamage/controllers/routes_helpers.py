@@ -10,6 +10,7 @@ from whatsthedamage.view.forms import UploadForm
 from whatsthedamage.services.processing_service import ProcessingService
 from whatsthedamage.services.validation_service import ValidationService
 from whatsthedamage.services.response_builder_service import ResponseBuilderService
+from whatsthedamage.services.configuration_service import ConfigurationService
 from whatsthedamage.models.data_frame_formatter import DataFrameFormatter
 from whatsthedamage.utils.flask_locale import get_default_language
 from whatsthedamage.config.dt_models import AggregatedRow
@@ -32,6 +33,11 @@ def _get_validation_service() -> ValidationService:
 def _get_response_builder_service() -> ResponseBuilderService:
     """Get response builder service from app extensions (dependency injection)."""
     return cast(ResponseBuilderService, current_app.extensions['response_builder_service'])
+
+
+def _get_configuration_service() -> ConfigurationService:
+    """Get configuration service from app extensions (dependency injection)."""
+    return cast(ConfigurationService, current_app.extensions['configuration_service'])
 
 
 def allowed_file(file_path: str) -> bool:
@@ -97,21 +103,20 @@ def resolve_config_path(config_path: str, ml_enabled: bool) -> Optional[str]:
     Raises:
         ValueError: If default config is required but not found
     """
-    if config_path:
-        return config_path
-
-    if ml_enabled:
-        return None
-
-    # Use default config
-    default_config: str = safe_join(
-        os.getcwd(), current_app.config['DEFAULT_WHATSTHEDAMAGE_CONFIG']  # type: ignore
+    config_service = _get_configuration_service()
+    default_config: Optional[str] = None
+    
+    # Get default config path from Flask config
+    if not ml_enabled:
+        default_config = safe_join(
+            os.getcwd(), current_app.config['DEFAULT_WHATSTHEDAMAGE_CONFIG']  # type: ignore
+        )
+    
+    return config_service.resolve_config_path(
+        user_path=config_path if config_path else None,
+        ml_enabled=ml_enabled,
+        default_config_path=default_config
     )
-
-    if default_config and not os.path.exists(default_config):
-        raise ValueError('Default config file not found. Please upload one.')
-
-    return default_config
 
 
 def process_summary_and_build_response(

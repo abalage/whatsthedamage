@@ -10,9 +10,9 @@ from whatsthedamage.services.processing_service import ProcessingService
 
 
 @pytest.fixture
-def service():
-    """Create ProcessingService instance."""
-    return ProcessingService()
+def service(mock_dependencies):
+    """Create ProcessingService instance with mocked config service."""
+    return ProcessingService(configuration_service=mock_dependencies['config_service'])
 
 
 @pytest.fixture
@@ -33,12 +33,20 @@ def mock_processor():
 @pytest.fixture
 def mock_dependencies(mock_processor):
     """Mock all external dependencies."""
+    # Create mock configuration service
+    mock_config_service = Mock()
+    mock_config_result = Mock()
+    mock_config_result.config = {'csv': {'delimiter': ','}}
+    mock_config_service.load_config.return_value = mock_config_result
+    
     with patch('whatsthedamage.services.processing_service.CSVProcessor') as mock_class, \
-         patch('whatsthedamage.services.processing_service.load_config') as mock_load, \
          patch('whatsthedamage.services.processing_service.AppContext'):
-        mock_load.return_value = {'csv': {'delimiter': ','}}
         mock_class.return_value = mock_processor
-        yield {'processor': mock_processor, 'load_config': mock_load, 'class': mock_class}
+        yield {
+            'processor': mock_processor,
+            'config_service': mock_config_service,
+            'class': mock_class
+        }
 
 
 class TestProcessingService:

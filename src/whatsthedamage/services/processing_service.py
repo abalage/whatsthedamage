@@ -6,10 +6,11 @@ isolating them from file I/O and configuration details.
 
 Controllers are responsible for saving uploaded files to disk and passing file paths.
 """
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 import time
-from whatsthedamage.config.config import AppArgs, AppContext, load_config
+from whatsthedamage.config.config import AppArgs, AppContext
 from whatsthedamage.models.csv_processor import CSVProcessor
+from whatsthedamage.services.configuration_service import ConfigurationService
 
 
 class ProcessingService:
@@ -21,9 +22,13 @@ class ProcessingService:
     Controllers must save uploaded files to disk and pass file paths to this service.
     """
 
-    def __init__(self) -> None:
-        """Initialize the processing service."""
-        pass
+    def __init__(self, configuration_service: Optional[ConfigurationService] = None) -> None:
+        """Initialize the processing service.
+        
+        Args:
+            configuration_service: Service for loading configuration (optional, created if None)
+        """
+        self._config_service = configuration_service or ConfigurationService()
     
     def process_summary(
         self,
@@ -66,8 +71,12 @@ class ProcessingService:
             verbose=False
         )
         
-        # Load config and create context
-        config = load_config(config_file_path)
+        # Load config using ConfigurationService
+        config_result = self._config_service.load_config(config_file_path)
+        config = config_result.config
+        if config is None:
+            raise ValueError(f"Failed to load configuration: {config_result.validation_result.error_message}")
+        
         context = AppContext(config, args)
 
         # Process using existing CSVProcessor
@@ -145,8 +154,12 @@ class ProcessingService:
             verbose=True  # Always verbose for detailed view
         )
 
-        # Load config and create context
-        config = load_config(config_file_path)
+        # Load config using ConfigurationService
+        config_result = self._config_service.load_config(config_file_path)
+        config = config_result.config
+        if config is None:
+            raise ValueError(f"Failed to load configuration: {config_result.validation_result.error_message}")
+        
         context = AppContext(config, args)
 
         # Process using existing CSVProcessor

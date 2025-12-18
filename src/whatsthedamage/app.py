@@ -11,6 +11,7 @@ from whatsthedamage.utils.version import get_version
 from whatsthedamage.services.processing_service import ProcessingService
 from whatsthedamage.services.validation_service import ValidationService
 from whatsthedamage.services.response_builder_service import ResponseBuilderService
+from whatsthedamage.services.configuration_service import ConfigurationService
 from typing import Optional, Any
 import gettext
 
@@ -19,7 +20,8 @@ def create_app(
     config_class: Optional[FlaskAppConfig] = None,
     processing_service: Optional[ProcessingService] = None,
     validation_service: Optional[ValidationService] = None,
-    response_builder_service: Optional[ResponseBuilderService] = None
+    response_builder_service: Optional[ResponseBuilderService] = None,
+    configuration_service: Optional[ConfigurationService] = None
 ) -> Flask:
     app: Flask = Flask(__name__, template_folder='view/templates', static_folder='view/static')
 
@@ -37,9 +39,14 @@ def create_app(
     # Ensure the upload folder exists
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
+    # Initialize configuration service first (dependency injection)
+    if configuration_service is None:
+        configuration_service = ConfigurationService()
+    app.extensions['configuration_service'] = configuration_service
+
     # Initialize processing service (dependency injection)
     if processing_service is None:
-        processing_service = ProcessingService()
+        processing_service = ProcessingService(configuration_service=configuration_service)
     app.extensions['processing_service'] = processing_service
 
     # Initialize validation service (dependency injection)

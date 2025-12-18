@@ -10,6 +10,7 @@ from whatsthedamage.utils.flask_locale import get_locale
 from whatsthedamage.utils.version import get_version
 from whatsthedamage.services.processing_service import ProcessingService
 from whatsthedamage.services.validation_service import ValidationService
+from whatsthedamage.services.response_builder_service import ResponseBuilderService
 from typing import Optional, Any
 import gettext
 
@@ -17,7 +18,8 @@ import gettext
 def create_app(
     config_class: Optional[FlaskAppConfig] = None,
     processing_service: Optional[ProcessingService] = None,
-    validation_service: Optional[ValidationService] = None
+    validation_service: Optional[ValidationService] = None,
+    response_builder_service: Optional[ResponseBuilderService] = None
 ) -> Flask:
     app: Flask = Flask(__name__, template_folder='view/templates', static_folder='view/static')
 
@@ -44,6 +46,11 @@ def create_app(
     if validation_service is None:
         validation_service = ValidationService()
     app.extensions['validation_service'] = validation_service
+
+    # Initialize response builder service (dependency injection)
+    if response_builder_service is None:
+        response_builder_service = ResponseBuilderService()
+    app.extensions['response_builder_service'] = response_builder_service
 
     # --- BEGIN: Gettext integration for templates ---
     @app.before_request

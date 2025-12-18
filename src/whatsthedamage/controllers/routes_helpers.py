@@ -3,21 +3,20 @@
 This module contains extracted helper functions to reduce complexity in routes.py.
 Following the Single Responsibility Principle and DRY patterns.
 """
-from flask import current_app, session, make_response, render_template, Response
+from flask import current_app, session, Response
 from werkzeug.utils import secure_filename
 from werkzeug.security import safe_join
 from whatsthedamage.view.forms import UploadForm
 from whatsthedamage.services.processing_service import ProcessingService
 from whatsthedamage.services.validation_service import ValidationService
+from whatsthedamage.services.response_builder_service import ResponseBuilderService
 from whatsthedamage.models.data_frame_formatter import DataFrameFormatter
-from whatsthedamage.utils.html_parser import TableParser
 from whatsthedamage.utils.flask_locale import get_default_language
 from whatsthedamage.config.dt_models import AggregatedRow
 from typing import List, Dict, Optional, Union, DefaultDict, Callable, cast
 from collections import defaultdict
 from gettext import gettext as _
 import os
-import re
 
 
 def _get_processing_service() -> ProcessingService:
@@ -28,6 +27,11 @@ def _get_processing_service() -> ProcessingService:
 def _get_validation_service() -> ValidationService:
     """Get validation service from app extensions (dependency injection)."""
     return cast(ValidationService, current_app.extensions['validation_service'])
+
+
+def _get_response_builder_service() -> ResponseBuilderService:
+    """Get response builder service from app extensions (dependency injection)."""
+    return cast(ResponseBuilderService, current_app.extensions['response_builder_service'])
 
 
 def allowed_file(file_path: str) -> bool:
@@ -151,30 +155,19 @@ def process_summary_and_build_response(
     html_result = df.to_html(border=0)
     html_result = html_result.replace('<th></th>', f'<th>{_("Categories")}</th>', 1)
 
-    # Parse HTML table for rendering
-    parser: TableParser = TableParser()
-    headers, rows = parser.parse_table(html_result)
-
-    # Process rows to extract numeric values for data-order attributes
-    processed_rows: List[List[Dict[str, Union[str, float, None]]]] = []
-    for row in rows:
-        processed_row: List[Dict[str, Union[str, float, None]]] = []
-        for i, cell in enumerate(row):
-            if i == 0:  # First column (Categories) - no numeric sorting needed
-                processed_row.append({'display': cell, 'order': None})
-            else:
-                # Extract numeric value from currency string for sorting
-                match = re.match(r'^(-?\d+(?:\.\d+)?)', str(cell))
-                numeric_value: float = float(match.group(1)) if match else 0
-                processed_row.append({'display': cell, 'order': numeric_value})
-        processed_rows.append(processed_row)
+    # Parse HTML table for rendering using ResponseBuilderService
+    headers, processed_rows = _get_response_builder_service().prepare_table_for_rendering(html_result)
 
     # Store both original result and structured data
     session['result'] = html_result
     session['table_data'] = {'headers': headers, 'rows': processed_rows}
 
     clear_upload_folder_fn()
-    return make_response(render_template('result.html', headers=headers, rows=processed_rows))
+    return _get_response_builder_service().build_html_response(
+        template='result.html',
+        headers=headers,
+        rows=processed_rows
+    )
 
 
 def process_details_and_build_response(
@@ -241,4 +234,8 @@ def process_details_and_build_response(
         rows.append(row)
 
     clear_upload_folder_fn()
-    return make_response(render_template('result.html', headers=headers, rows=rows))
+    return _get_response_builder_service().build_html_response(
+        template='result.html',
+        headers=headers,
+        rows=rows
+    )

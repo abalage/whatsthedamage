@@ -1,7 +1,7 @@
 from datetime import datetime
 from flask import (
     Blueprint, request, make_response, render_template, redirect, url_for,
-    session, flash, current_app, Response
+    flash, current_app, Response
 )
 from whatsthedamage.view.forms import UploadForm
 from whatsthedamage.controllers.routes_helpers import (
@@ -10,7 +10,8 @@ from whatsthedamage.controllers.routes_helpers import (
     process_summary_and_build_response,
     process_details_and_build_response
 )
-from typing import Optional, Dict
+from whatsthedamage.services.session_service import SessionService
+from typing import Optional
 import os
 import shutil
 import pandas as pd
@@ -19,6 +20,11 @@ from whatsthedamage.utils.flask_locale import get_locale, get_languages
 
 bp: Blueprint = Blueprint('main', __name__)
 INDEX_ROUTE = 'main.index'
+
+
+def _get_session_service() -> SessionService:
+    """Get SessionService instance."""
+    return SessionService()
 
 
 def clear_upload_folder() -> None:
@@ -42,19 +48,21 @@ def get_lang_template(template_name: str) -> str:
 @bp.route('/')
 def index() -> Response:
     form: UploadForm = UploadForm()
-    if 'form_data' in session:
-        form_data: Dict[str, str] = session['form_data']
-        form.filename.data = form_data.get('filename')
-        form.config.data = form_data.get('config')
+    session_service = _get_session_service()
+    if session_service.has_form_data():
+        form_data_obj = session_service.retrieve_form_data()
+        if form_data_obj:
+            form.filename.data = form_data_obj.filename
+            form.config.data = form_data_obj.config
 
-        for date_field in ['start_date', 'end_date']:
-            date_value: Optional[str] = form_data.get(date_field)
-            if date_value:
-                getattr(form, date_field).data = datetime.strptime(date_value, '%Y-%m-%d')
+            for date_field in ['start_date', 'end_date']:
+                date_value: Optional[str] = getattr(form_data_obj, date_field)
+                if date_value:
+                    getattr(form, date_field).data = datetime.strptime(date_value, '%Y-%m-%d')
 
-        form.verbose.data = bool(form_data.get('verbose', False))
-        form.no_currency_format.data = bool(form_data.get('no_currency_format', False))
-        form.filter.data = form_data.get('filter')
+            form.verbose.data = form_data_obj.verbose
+            form.no_currency_format.data = form_data_obj.no_currency_format
+            form.filter.data = form_data_obj.filter
     return make_response(render_template('index.html', form=form))
 
 
@@ -76,7 +84,8 @@ def process_v1() -> Response:
         config_path = resolve_config_path(files['config_path'], form.ml.data)
 
         # Store form data in session
-        session['form_data'] = request.form.to_dict()
+        session_service = _get_session_service()
+        session_service.store_form_data(request.form.to_dict())
 
         # Process and build response
         return process_summary_and_build_response(form, files['csv_path'], config_path, clear_upload_folder)
@@ -103,7 +112,8 @@ def process_v2() -> Response:
         files = handle_file_uploads(form)
 
         # Store form data in session
-        session['form_data'] = request.form.to_dict()
+        session_service = _get_session_service()
+        session_service.store_form_data(request.form.to_dict())
 
         # Process and build response
         return process_details_and_build_response(form, files['csv_path'], clear_upload_folder)
@@ -118,17 +128,21 @@ def process_v2() -> Response:
 
 @bp.route('/clear', methods=['POST'])
 def clear() -> Response:
-    session.pop('form_data', None)
+    session_service = _get_session_service()
+    session_service.clear_session()
     flash('Form data cleared.', 'success')
     return make_response(redirect(url_for(INDEX_ROUTE)))
 
 
 @bp.route('/download', methods=['GET'])
 def download() -> Response:
-    result: Optional[str] = session.get('result')
-    if not result:
+    session_service = _get_session_service()
+    result_data = session_service.retrieve_result()
+    if not result_data:
         flash('No result available for download.', 'danger')
         return make_response(redirect(url_for(INDEX_ROUTE)))
+
+    result, _ = result_data
 
     # Convert the HTML table to a DataFrame
     df: pd.DataFrame = pd.read_html(StringIO(result))[0]
@@ -164,7 +178,8 @@ def about() -> Response:
 @bp.route('/set_language/<lang_code>')
 def set_language(lang_code: str) -> Response:
     if lang_code in get_languages():
-        session['lang'] = lang_code
+        session_service = _get_session_service()
+        session_service.set_language(lang_code)
         flash(f"Language changed to {lang_code.upper()}.", "success")
     else:
         flash("Selected language is not supported.", "danger")

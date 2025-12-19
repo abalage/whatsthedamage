@@ -3,59 +3,17 @@
 This service centralizes validation logic used in file upload handling to
 eliminate duplication between web routes and API endpoints.
 """
-from typing import Optional, Dict, Any, Set
-from dataclasses import dataclass
-from werkzeug.datastructures import FileStorage
+from typing import Optional, Set, TYPE_CHECKING
 from datetime import datetime
 import magic
 import os
 
+from whatsthedamage.utils.validation import ValidationResult, ValidationError
 
-@dataclass
-class ValidationResult:
-    """Result of a validation operation.
+if TYPE_CHECKING:
+    from werkzeug.datastructures import FileStorage
 
-    Attributes:
-        is_valid: Whether validation passed
-        error_message: Human-readable error message if validation failed
-        error_code: Machine-readable error code for API responses
-        details: Additional context about the validation failure
-    """
-    is_valid: bool
-    error_message: Optional[str] = None
-    error_code: Optional[str] = None
-    details: Optional[Dict[str, Any]] = None
-
-    @classmethod
-    def success(cls) -> 'ValidationResult':
-        """Create a successful validation result."""
-        return cls(is_valid=True)
-
-    @classmethod
-    def failure(
-        cls,
-        error_message: str,
-        error_code: str = 'VALIDATION_ERROR',
-        details: Optional[Dict[str, Any]] = None
-    ) -> 'ValidationResult':
-        """Create a failed validation result."""
-        return cls(
-            is_valid=False,
-            error_message=error_message,
-            error_code=error_code,
-            details=details or {}
-        )
-
-
-class ValidationError(Exception):
-    """Exception raised when validation fails.
-
-    This exception wraps a ValidationResult for easier error handling
-    in contexts where exceptions are preferred over result objects.
-    """
-    def __init__(self, result: ValidationResult):
-        self.result = result
-        super().__init__(result.error_message)
+__all__ = ['ValidationService', 'ValidationResult', 'ValidationError']
 
 
 class ValidationService:
@@ -84,7 +42,7 @@ class ValidationService:
         """
         self._allowed_mime_types = allowed_mime_types or self.ALLOWED_MIME_TYPES
 
-    def validate_file_upload(self, file: FileStorage) -> ValidationResult:
+    def validate_file_upload(self, file: "FileStorage") -> ValidationResult:
         """Validate uploaded file has a proper filename.
 
         Args:

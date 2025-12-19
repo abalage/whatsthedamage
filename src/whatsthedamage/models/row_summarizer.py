@@ -1,10 +1,9 @@
-from typing import Dict, List
+from typing import Mapping, Sequence
 from whatsthedamage.models.csv_row import CsvRow
 from whatsthedamage.config.config import get_category_name
 
-
 class RowSummarizer:
-    def __init__(self, rows: Dict[str, List[CsvRow]]) -> None:
+    def __init__(self, rows: Mapping[str, Sequence[CsvRow]]) -> None:
         """
         Initialize the RowSummarizer with a dictionary of categorized CsvRow objects.
 

@@ -47,7 +47,7 @@ enricher_pattern_sets:
 2. Filter rows by date/month (`RowFilter`)
 3. Enrich/categorize rows (`RowEnrichment` or `RowEnrichmentML`)
 4. Summarize by category (`RowSummarizer`)
-5. Format for output (`DataFrameFormatter`)
+5. Format for output (`DataFormattingService`)
 
 ## Security Conventions
 - Never log sensitive data (e.g., account numbers, personal info).

@@ -2,7 +2,7 @@ from typing import Dict, List
 from whatsthedamage.models.csv_row import CsvRow
 from whatsthedamage.models.csv_file_handler import CsvFileHandler
 from whatsthedamage.models.rows_processor import RowsProcessor
-from whatsthedamage.models.data_frame_formatter import DataFrameFormatter
+from whatsthedamage.services.data_formatting_service import DataFormattingService
 from whatsthedamage.config.config import AppContext
 from whatsthedamage.config.dt_models import DataTablesResponse
 from gettext import gettext as _
@@ -72,7 +72,7 @@ class CSVProcessor:
 
     def _format_data(self, data_for_pandas: Dict[str, Dict[str, float]]) -> str:
         """
-        Formats the data using DataFrameFormatter.
+        Formats the data using DataFormattingService.
 
         Args:
             data_for_pandas (Dict[str, Dict[str, float]]): The data to format.
@@ -80,23 +80,14 @@ class CSVProcessor:
         Returns:
             str: The formatted data as a string or None.
         """
-        formatter = DataFrameFormatter()
-        formatter.set_nowrap(self.args.get('nowrap', False))
-        formatter.set_no_currency_format(self.args.get('no_currency_format', False))
-        currency = self.processor.get_currency()
-        df = formatter.format_dataframe(data_for_pandas, currency=currency)
+        formatting_service = DataFormattingService()
 
-        if self.args.get('output_format') == 'html':
-            # Convert to HTML and manually replace the empty th for index with translatable "Categories"
-            html = df.to_html(border=0)
-            html = html.replace('<th></th>', f'<th>{_("Categories")}</th>', 1)
-            return html
-        elif self.args.get('output'):
-            if self.args.get('output'):
-                # FIXME normally returns None but confuses callers, stringify it
-                return str(df.to_csv(self.args.get('output'), index=True, header=True, sep=';', decimal=','))
-            else:
-                # always returns string
-                return df.to_csv(None, index=True, header=True, sep=';', decimal=',')
-        else:
-            return df.to_string()
+        return formatting_service.format_for_output(
+            data=data_for_pandas,
+            currency=self.processor.get_currency(),
+            output_format=self.args.get('output_format'),
+            output_file=self.args.get('output'),
+            nowrap=self.args.get('nowrap', False),
+            no_currency_format=self.args.get('no_currency_format', False),
+            categories_header=_("Categories")
+        )

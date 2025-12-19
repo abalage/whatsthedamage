@@ -12,7 +12,7 @@ from whatsthedamage.services.validation_service import ValidationService
 from whatsthedamage.services.response_builder_service import ResponseBuilderService
 from whatsthedamage.services.configuration_service import ConfigurationService
 from whatsthedamage.services.session_service import SessionService
-from whatsthedamage.models.data_frame_formatter import DataFrameFormatter
+from whatsthedamage.services.data_formatting_service import DataFormattingService
 from whatsthedamage.utils.flask_locale import get_default_language
 from whatsthedamage.config.dt_models import AggregatedRow
 from typing import List, Dict, Optional, Union, DefaultDict, Callable, cast
@@ -44,6 +44,11 @@ def _get_configuration_service() -> ConfigurationService:
 def _get_session_service() -> SessionService:
     """Get session service instance."""
     return SessionService()
+
+
+def _get_data_formatting_service() -> DataFormattingService:
+    """Get data formatting service instance."""
+    return DataFormattingService()
 
 
 def allowed_file(file_path: str) -> bool:
@@ -153,21 +158,21 @@ def process_summary_and_build_response(
         language=session.get('lang', get_default_language())
     )
 
-    # Format result using DataFrameFormatter
+    # Format result using DataFormattingService
     processor = result['processor']
-    formatter = DataFrameFormatter()
-    formatter.set_no_currency_format(form.no_currency_format.data)
+    formatting_service = _get_data_formatting_service()
 
-    # Wrap flattened data in "Total" for formatter
-    monthly_data = {"Total": result['data']}
-    df = formatter.format_dataframe(monthly_data, currency=processor.processor.get_currency())
+    # Use monthly breakdown data (not flattened) to preserve month columns
+    monthly_data = result['monthly_data']
+    html_result = formatting_service.format_as_html_table(
+        monthly_data,
+        currency=processor.processor.get_currency(),
+        no_currency_format=form.no_currency_format.data,
+        categories_header=_("Categories")
+    )
 
-    # Convert to HTML
-    html_result = df.to_html(border=0)
-    html_result = html_result.replace('<th></th>', f'<th>{_("Categories")}</th>', 1)
-
-    # Parse HTML table for rendering using ResponseBuilderService
-    headers, processed_rows = _get_response_builder_service().prepare_table_for_rendering(html_result)
+    # Parse HTML table for rendering
+    headers, processed_rows = formatting_service.prepare_table_for_rendering(html_result)
 
     # Store both original result and structured data using SessionService
     session_service = _get_session_service()

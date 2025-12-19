@@ -3,53 +3,61 @@
 This module contains extracted helper functions to reduce complexity in routes.py.
 Following the Single Responsibility Principle and DRY patterns.
 """
-from flask import current_app, session, make_response, render_template, Response
-from werkzeug.utils import secure_filename
+from flask import current_app, session, Response
 from werkzeug.security import safe_join
 from whatsthedamage.view.forms import UploadForm
 from whatsthedamage.services.processing_service import ProcessingService
-from whatsthedamage.models.data_frame_formatter import DataFrameFormatter
-from whatsthedamage.utils.html_parser import TableParser
+from whatsthedamage.services.validation_service import ValidationService
+from whatsthedamage.services.response_builder_service import ResponseBuilderService
+from whatsthedamage.services.configuration_service import ConfigurationService
+from whatsthedamage.services.session_service import SessionService
+from whatsthedamage.services.data_formatting_service import DataFormattingService
+from whatsthedamage.services.file_upload_service import FileUploadService, FileUploadError
 from whatsthedamage.utils.flask_locale import get_default_language
 from whatsthedamage.config.dt_models import AggregatedRow
-from typing import List, Dict, Optional, Union, DefaultDict, Callable
+from typing import List, Dict, Optional, Union, DefaultDict, Callable, cast
 from collections import defaultdict
 from gettext import gettext as _
 import os
-import magic
-import re
 
 
 def _get_processing_service() -> ProcessingService:
     """Get processing service from app extensions (dependency injection)."""
-    from typing import cast
     return cast(ProcessingService, current_app.extensions['processing_service'])
 
 
-def allowed_file(file_path: str) -> bool:
-    """Check if file is allowed based on MIME type.
+def _get_validation_service() -> ValidationService:
+    """Get validation service from app extensions (dependency injection)."""
+    return cast(ValidationService, current_app.extensions['validation_service'])
 
-    Args:
-        file_path: Path to the file to check
 
-    Returns:
-        True if file is CSV or YAML, False otherwise
+def _get_response_builder_service() -> ResponseBuilderService:
+    """Get response builder service from app extensions (dependency injection)."""
+    return cast(ResponseBuilderService, current_app.extensions['response_builder_service'])
 
-    Note:
-        Uses libmagic for content-based MIME type detection. Accepts text/plain
-        for CSV files as libmagic may return text/plain instead of text/csv when:
-        - File has certain character encodings (Windows-1252, ISO-8859-1)
-        - File contains BOM (Byte Order Mark)
-        - File buffer not fully synced to disk yet
-        Validated externally: mimetype command confirms these are valid CSV files.
-    """
-    mime = magic.Magic(mime=True)
-    file_type: str = mime.from_file(file_path)
-    return file_type in {'text/csv', 'text/plain', 'application/x-yaml'}
+
+def _get_configuration_service() -> ConfigurationService:
+    """Get configuration service from app extensions (dependency injection)."""
+    return cast(ConfigurationService, current_app.extensions['configuration_service'])
+
+
+def _get_file_upload_service() -> FileUploadService:
+    """Get file upload service from app extensions (dependency injection)."""
+    return cast(FileUploadService, current_app.extensions['file_upload_service'])
+
+
+def _get_session_service() -> SessionService:
+    """Get session service instance."""
+    return SessionService()
+
+
+def _get_data_formatting_service() -> DataFormattingService:
+    """Get data formatting service instance."""
+    return DataFormattingService()
 
 
 def handle_file_uploads(form: UploadForm) -> Dict[str, str]:
-    """Handle file uploads and return file paths.
+    """Handle file uploads using FileUploadService.
 
     Args:
         form: The validated upload form containing file data
@@ -58,27 +66,28 @@ def handle_file_uploads(form: UploadForm) -> Dict[str, str]:
         Dict with 'csv_path' and 'config_path' (empty string if no config)
 
     Raises:
-        ValueError: If file validation fails
+        ValueError: If file validation or save fails
     """
     upload_folder: str = current_app.config['UPLOAD_FOLDER']
+    file_upload_service = _get_file_upload_service()
 
-    # Save CSV file
-    filename: str = secure_filename(form.filename.data.filename)
-    csv_path: str = safe_join(upload_folder, filename)  # type: ignore
-    form.filename.data.save(csv_path)
+    try:
+        # Extract config file or None
+        config_file = form.config.data if form.config.data else None
 
-    # Save config file if provided
-    config_path: str = ''
-    if form.config.data:
-        config_filename: str = secure_filename(form.config.data.filename)
-        config_path = safe_join(upload_folder, config_filename)  # type: ignore
-        form.config.data.save(config_path)
+        # Use FileUploadService to save files
+        csv_path, config_path = file_upload_service.save_files(
+            form.filename.data,
+            upload_folder,
+            config_file=config_file
+        )
 
-    # Validate file types
-    if not allowed_file(csv_path) or (config_path and not allowed_file(config_path)):
-        raise ValueError('Invalid file type. Only CSV and YAML files are allowed.')
-
-    return {'csv_path': csv_path, 'config_path': config_path}
+        return {
+            'csv_path': csv_path,
+            'config_path': config_path or ''
+        }
+    except FileUploadError as e:
+        raise ValueError(str(e))
 
 
 def resolve_config_path(config_path: str, ml_enabled: bool) -> Optional[str]:
@@ -94,21 +103,20 @@ def resolve_config_path(config_path: str, ml_enabled: bool) -> Optional[str]:
     Raises:
         ValueError: If default config is required but not found
     """
-    if config_path:
-        return config_path
+    config_service = _get_configuration_service()
+    default_config: Optional[str] = None
 
-    if ml_enabled:
-        return None
+    # Get default config path from Flask config
+    if not ml_enabled:
+        default_config = safe_join(
+            os.getcwd(), current_app.config['DEFAULT_WHATSTHEDAMAGE_CONFIG']  # type: ignore
+        )
 
-    # Use default config
-    default_config: str = safe_join(
-        os.getcwd(), current_app.config['DEFAULT_WHATSTHEDAMAGE_CONFIG']  # type: ignore
+    return config_service.resolve_config_path(
+        user_path=config_path if config_path else None,
+        ml_enabled=ml_enabled,
+        default_config_path=default_config
     )
-
-    if default_config and not os.path.exists(default_config):
-        raise ValueError('Default config file not found. Please upload one.')
-
-    return default_config
 
 
 def process_summary_and_build_response(
@@ -139,43 +147,32 @@ def process_summary_and_build_response(
         language=session.get('lang', get_default_language())
     )
 
-    # Format result using DataFrameFormatter
+    # Format result using DataFormattingService
     processor = result['processor']
-    formatter = DataFrameFormatter()
-    formatter.set_no_currency_format(form.no_currency_format.data)
+    formatting_service = _get_data_formatting_service()
 
-    # Wrap flattened data in "Total" for formatter
-    monthly_data = {"Total": result['data']}
-    df = formatter.format_dataframe(monthly_data, currency=processor.processor.get_currency())
-
-    # Convert to HTML
-    html_result = df.to_html(border=0)
-    html_result = html_result.replace('<th></th>', f'<th>{_("Categories")}</th>', 1)
+    # Use monthly breakdown data (not flattened) to preserve month columns
+    monthly_data = result['monthly_data']
+    html_result = formatting_service.format_as_html_table(
+        monthly_data,
+        currency=processor.processor.get_currency(),
+        no_currency_format=form.no_currency_format.data,
+        categories_header=_("Categories")
+    )
 
     # Parse HTML table for rendering
-    parser: TableParser = TableParser()
-    headers, rows = parser.parse_table(html_result)
+    headers, processed_rows = formatting_service.prepare_table_for_rendering(html_result)
 
-    # Process rows to extract numeric values for data-order attributes
-    processed_rows: List[List[Dict[str, Union[str, float, None]]]] = []
-    for row in rows:
-        processed_row: List[Dict[str, Union[str, float, None]]] = []
-        for i, cell in enumerate(row):
-            if i == 0:  # First column (Categories) - no numeric sorting needed
-                processed_row.append({'display': cell, 'order': None})
-            else:
-                # Extract numeric value from currency string for sorting
-                match = re.match(r'^(-?\d+(?:\.\d+)?)', str(cell))
-                numeric_value: float = float(match.group(1)) if match else 0
-                processed_row.append({'display': cell, 'order': numeric_value})
-        processed_rows.append(processed_row)
-
-    # Store both original result and structured data
-    session['result'] = html_result
-    session['table_data'] = {'headers': headers, 'rows': processed_rows}
+    # Store both original result and structured data using SessionService
+    session_service = _get_session_service()
+    session_service.store_result(html_result, {'headers': headers, 'rows': processed_rows})
 
     clear_upload_folder_fn()
-    return make_response(render_template('result.html', headers=headers, rows=processed_rows))
+    return _get_response_builder_service().build_html_response(
+        template='result.html',
+        headers=headers,
+        rows=processed_rows
+    )
 
 
 def process_details_and_build_response(
@@ -242,4 +239,8 @@ def process_details_and_build_response(
         rows.append(row)
 
     clear_upload_folder_fn()
-    return make_response(render_template('result.html', headers=headers, rows=rows))
+    return _get_response_builder_service().build_html_response(
+        template='result.html',
+        headers=headers,
+        rows=rows
+    )

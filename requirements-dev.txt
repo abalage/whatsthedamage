@@ -113,6 +113,8 @@ pytest-sugar==1.1.1
     # via whatsthedamage (pyproject.toml)
 python-dateutil==2.9.0.post0
     # via pandas
+python-magic==0.4.27
+    # via whatsthedamage (pyproject.toml)
 pytz==2025.2
     # via pandas
 pyyaml==6.0.2

@@ -8,19 +8,19 @@ the REST API endpoints.
 """
 from pydantic import BaseModel, Field, model_validator
 from typing import Optional, Dict, List, Union
-from datetime import datetime
 from whatsthedamage.config.config import CsvConfig
 from whatsthedamage.config.dt_models import (
     AggregatedRow
 )
+from whatsthedamage.services.validation_service import ValidationService
 
 
 class ProcessingRequest(BaseModel):
     """Request model for CSV processing endpoints.
-    
+
     Used by both v1 (summary) and v2 (detailed) APIs. File uploads are handled
     separately via Flask's request.files multipart form data.
-    
+
     Date format is validated against the date_attribute_format from CsvConfig
     (default: "%Y.%m.%d"). If config_file is provided during processing, dates
     should match that config's format.
@@ -54,27 +54,33 @@ class ProcessingRequest(BaseModel):
         description="Date format string (Python strptime format). If not provided, uses CsvConfig default.",
         examples=["%Y.%m.%d", "%Y-%m-%d"]
     )
-    
+
     @model_validator(mode='after')
     def validate_date_formats(self) -> 'ProcessingRequest':
-        """Validate date formats against the provided or default date format."""
+        """Validate date formats and range using ValidationService."""
         # Get date_format or use CsvConfig default
         date_format = self.date_format or CsvConfig().date_attribute_format
-        
-        # Validate start_date
-        if self.start_date is not None:
-            try:
-                datetime.strptime(self.start_date, date_format)
-            except ValueError:
-                raise ValueError(f"start_date must be in {date_format} format")
-        
-        # Validate end_date
-        if self.end_date is not None:
-            try:
-                datetime.strptime(self.end_date, date_format)
-            except ValueError:
-                raise ValueError(f"end_date must be in {date_format} format")
-        
+
+        # Use ValidationService for validation
+        validation_service = ValidationService()
+
+        # Validate start_date format
+        start_result = validation_service.validate_date_format(self.start_date, date_format)
+        if not start_result.is_valid:
+            raise ValueError(start_result.error_message or "Invalid start_date")
+
+        # Validate end_date format
+        end_result = validation_service.validate_date_format(self.end_date, date_format)
+        if not end_result.is_valid:
+            raise ValueError(end_result.error_message or "Invalid end_date")
+
+        # Validate date range (start <= end)
+        range_result = validation_service.validate_date_range(
+            self.start_date, self.end_date, date_format
+        )
+        if not range_result.is_valid:
+            raise ValueError(range_result.error_message or "Invalid date range")
+
         return self
 
 
@@ -91,7 +97,7 @@ class SummaryMetadata(BaseModel):
 
 class SummaryResponse(BaseModel):
     """Response model for v1 API (summary only).
-    
+
     Returns aggregated totals by category with minimal metadata.
     Naturally small payloads suitable for direct JSON responses.
     """
@@ -101,7 +107,7 @@ class SummaryResponse(BaseModel):
     metadata: SummaryMetadata = Field(
         description="Processing metadata (row_count, processing_time, etc.)"
     )
-    
+
     class Config:
         json_schema_extra = {
             "example": {
@@ -136,7 +142,7 @@ class DetailedMetadata(BaseModel):
 
 class DetailedResponse(BaseModel):
     """Response model for v2 API (includes transaction details).
-    
+
     Returns transaction-level details grouped by category and month.
     """
     data: List[AggregatedRow] = Field(
@@ -145,7 +151,7 @@ class DetailedResponse(BaseModel):
     metadata: DetailedMetadata = Field(
         description="Processing metadata"
     )
-    
+
     class Config:
         from_attributes = True
         json_schema_extra = {
@@ -177,7 +183,7 @@ class DetailedResponse(BaseModel):
 
 class ExportRequest(BaseModel):
     """Request model for CSV export endpoint.
-    
+
     Result ID comes from prior /api/v2/process call. No additional
     parameters needed as export uses cached processing results.
     """
@@ -189,7 +195,7 @@ class ExportRequest(BaseModel):
 
 class ErrorResponse(BaseModel):
     """Standardized error response for all API endpoints.
-    
+
     Provides consistent error format across v1 and v2 APIs with
     HTTP status code, message, and optional debugging details.
     """
@@ -205,7 +211,7 @@ class ErrorResponse(BaseModel):
         default=None,
         description="Additional error context and debugging information"
     )
-    
+
     class Config:
         json_schema_extra = {
             "example": {

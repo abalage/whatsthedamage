@@ -5,7 +5,8 @@ import importlib.resources as resources
 from typing import Dict, Any
 from whatsthedamage.controllers.cli_controller import CLIController
 from whatsthedamage.services.processing_service import ProcessingService
-from whatsthedamage.models.data_frame_formatter import DataFrameFormatter
+from whatsthedamage.services.data_formatting_service import DataFormattingService
+from whatsthedamage.config.config import AppArgs
 from gettext import gettext as _
 
 
@@ -33,38 +34,28 @@ def set_locale(locale_str: str | None) -> None:
             gettext.translation('messages', str(localedir), fallback=True).install()
 
 
-def format_output(data: Dict[str, float], args: Dict[str, Any], currency: str) -> str:
+def format_output(data: Dict[str, Dict[str, float]], args: AppArgs, currency: str) -> str:
     """Format processed data for CLI output.
 
     Args:
-        data: Processed data - flattened summary Dict[str, float]
+        data: Processed data with monthly breakdown Dict[month, Dict[category, amount]]
         args: CLI arguments with formatting options
         currency: Currency code for formatting
 
     Returns:
         str: Formatted output string
     """
-    formatter = DataFrameFormatter()
-    formatter.set_nowrap(args.get('nowrap', False))
-    formatter.set_no_currency_format(args.get('no_currency_format', False))
+    formatting_service = DataFormattingService()
 
-    # Wrap flattened data in "Total" month for formatter compatibility
-    # DataFrameFormatter expects Dict[month, Dict[category, amount]]
-    monthly_data = {"Total": data}
-
-    df = formatter.format_dataframe(monthly_data, currency=currency)
-
-    if args.get('output_format') == 'html':
-        # Convert to HTML and manually replace the empty th for index with translatable "Categories"
-        html = df.to_html(border=0)
-        html = html.replace('<th></th>', f'<th>{_("Categories")}</th>', 1)
-        return html
-    elif args.get('output'):
-        # Save to file and return confirmation message
-        df.to_csv(args.get('output'), index=True, header=True, sep=';', decimal=',')
-        return str(df.to_csv(None, index=True, header=True, sep=';', decimal=','))
-    else:
-        return df.to_string()
+    return formatting_service.format_for_output(
+        data=data,
+        currency=currency,
+        output_format=args.get('output_format'),
+        output_file=args.get('output'),
+        nowrap=args.get('nowrap', False),
+        no_currency_format=args.get('no_currency_format', False),
+        categories_header=_("Categories")
+    )
 
 
 def main() -> None:
@@ -99,13 +90,17 @@ def main() -> None:
             language=args.get('lang') or 'en'
         )
 
-        # Get currency from processor (set by RowsProcessor during processing)
+        # Get processor and currency
         processor = result['processor']
         currency: str = processor.processor.get_currency()
 
-        # Format output
-        data: Dict[str, float] = result['data']
-        output = format_output(data, vars(args), currency)
+        # Get monthly breakdown data (before flattening)
+        # Re-process to get monthly data instead of flattened totals
+        rows = processor._read_csv_file()
+        monthly_data: Dict[str, Dict[str, float]] = processor.processor.process_rows(rows)
+
+        # Format output with monthly columns
+        output = format_output(monthly_data, args, currency)
         print(output)
 
     except FileNotFoundError as e:

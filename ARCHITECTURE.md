@@ -4,7 +4,7 @@
 `whatsthedamage` is an open-source Python tool for processing bank transaction CSV exports. It provides both a command-line interface (CLI) and a Flask-based web interface for categorizing, filtering, and summarizing transactions. The project supports customizable CSV formats, localization, and experimental machine learning-based categorization.
 
 ## High-Level Structure
-The project follows a Model-View-Controller (MVC) pattern for clear separation of concerns:
+The project follows a Model-View-Controller (MVC) and Service Layer patterns for clear separation of concerns:
 
 - **Models**: Data representation, row processing, enrichment, filtering, summarization, and ML logic.
 - **Views**: Output formatting for console, HTML, and CSV.
@@ -26,7 +26,6 @@ The project follows a Model-View-Controller (MVC) pattern for clear separation o
 - **RowFilter**: Filters rows by date/month.
 - **RowSummarizer**: Aggregates values by category.
 - **CsvFileHandler / CsvProcessor**: Reads and parses CSV files, manages row objects.
-- **DataFrameFormatter**: Formats aggregated data for output.
 
 ### 2. Controllers (`src/whatsthedamage/controllers/`)
 - **CLI Controller**: Entry point for command-line usage (`__main__.py`, `cli_app.py`).
@@ -73,7 +72,7 @@ The project follows a Model-View-Controller (MVC) pattern for clear separation o
    - Enrichment uses either regex patterns or ML model (if enabled).
    - Filtering by date/month, optional category filter.
 4. **Aggregation**: `RowSummarizer` computes totals per category/time period.
-5. **Formatting**: `DataFrameFormatter` prepares output for console, HTML, or CSV.
+5. **Formatting**: `DataFormattingService` prepares output for console, HTML, CSV, or JSON.
 6. **Output**: Results are displayed in CLI or rendered in the web frontend (HTML table, CSV download) or returned as JSON (API).
 
 ## Frontend Architecture: Hybrid Approach

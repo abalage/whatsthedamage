@@ -14,3 +14,9 @@ applyTo: "**"
 
 # Python Specific overrides
 - Avoid using [Any] type hint unless absolutely necessary.
+- For running python code try to use already existing virtual environment.
+
+# Testing
+- Prefer parameterized tests to reduce code duplication.
+- Use fixtures.
+- Maintainability over 100% coverage.

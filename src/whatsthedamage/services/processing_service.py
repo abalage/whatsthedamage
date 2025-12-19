@@ -100,6 +100,7 @@ class ProcessingService:
 
         return {
             "data": flattened_data,
+            "monthly_data": summary_data_by_month,
             "metadata": {
                 "processing_time": round(processing_time, 2),
                 "row_count": len(rows),

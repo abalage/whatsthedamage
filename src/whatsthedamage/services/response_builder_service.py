@@ -10,9 +10,10 @@ Architecture Patterns:
 - Template Method: Common structure, variant implementations
 - DRY Principle: Single implementation for response building
 """
-from flask import make_response, render_template, Response, jsonify
-from typing import Dict, Any, Optional, List, Union, Tuple
-import re
+from typing import Dict, Any, Optional, List, Union, Tuple, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from flask import Response
 from whatsthedamage.models.api_models import (
     SummaryResponse,
     DetailedResponse,
@@ -21,7 +22,7 @@ from whatsthedamage.models.api_models import (
     ErrorResponse,
     ProcessingRequest
 )
-from whatsthedamage.utils.html_parser import TableParser
+from whatsthedamage.services.data_formatting_service import DataFormattingService
 
 
 class ResponseBuilderService:
@@ -33,7 +34,7 @@ class ResponseBuilderService:
 
     def __init__(self) -> None:
         """Initialize the response builder service."""
-        self._table_parser = TableParser()
+        self._formatting_service = DataFormattingService()
 
     def build_api_summary_response(
         self,
@@ -113,7 +114,7 @@ class ResponseBuilderService:
         headers: List[str],
         rows: List[List[Dict[str, Union[str, float, None]]]],
         **kwargs: Any
-    ) -> Response:
+    ) -> "Response":
         """Build HTML response with proper headers.
 
         Args:
@@ -132,6 +133,8 @@ class ResponseBuilderService:
             ...     rows=[[{'display': 'Grocery', 'order': None}]]
             ... )
         """
+        from flask import make_response, render_template
+
         return make_response(
             render_template(
                 template,
@@ -147,7 +150,7 @@ class ResponseBuilderService:
         default_code: int = 500,
         default_message: str = "Internal server error",
         context: Optional[Dict[str, Any]] = None
-    ) -> tuple[Response, int]:
+    ) -> tuple["Response", int]:
         """Build standardized error response.
 
         Centralizes error response building logic that was duplicated in
@@ -237,6 +240,8 @@ class ResponseBuilderService:
         numeric order values for sortable columns. Used in web UI for
         rendering summary tables with proper sorting.
 
+        Delegates to DataFormattingService for actual parsing and metadata generation.
+
         Args:
             html: HTML table string (from DataFrame.to_html())
 
@@ -248,23 +253,7 @@ class ResponseBuilderService:
             >>> rows[0][1]['display']  # "150.00 HUF"
             >>> rows[0][1]['order']    # 150.0
         """
-        headers, raw_rows = self._table_parser.parse_table(html)
-
-        # Process rows to extract numeric values for data-order attributes
-        processed_rows: List[List[Dict[str, Union[str, float, None]]]] = []
-        for row in raw_rows:
-            processed_row: List[Dict[str, Union[str, float, None]]] = []
-            for i, cell in enumerate(row):
-                if i == 0:  # First column (Categories) - no numeric sorting needed
-                    processed_row.append({'display': cell, 'order': None})
-                else:
-                    # Extract numeric value from currency string for sorting
-                    match = re.match(r'^(-?\d+(?:\.\d+)?)', str(cell))
-                    numeric_value: float = float(match.group(1)) if match else 0
-                    processed_row.append({'display': cell, 'order': numeric_value})
-            processed_rows.append(processed_row)
-
-        return headers, processed_rows
+        return self._formatting_service.prepare_table_for_rendering(html)
 
     # Private helper methods
 

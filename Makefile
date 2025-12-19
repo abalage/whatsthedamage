@@ -5,6 +5,8 @@ PIP := $(VENV)/bin/pip
 PIP_SYNC := $(VENV)/bin/pip-sync
 PIP_COMPILE := $(VENV)/bin/pip-compile
 TOX := $(VENV)/bin/tox
+RUFF := $(VENV)/bin/ruff
+MYPY := $(VENV)/bin/mypy
 PODMAN := /usr/bin/podman
 
 DOCKER_IMAGE := whatsthedamage
@@ -39,6 +41,14 @@ web: dev
 # Run tests using tox
 test: dev
 	$(TOX)
+
+# Run ruff linter/formatter
+ruff: dev
+	$(RUFF) check .
+
+# Run mypy type checker
+mypy: dev
+	$(MYPY) src/
 
 lang: dev
 	$(PYBABEL) extract -F babel.cfg -o src/whatsthedamage/locale/en/LC_MESSAGES/messages.pot src/whatsthedamage/
@@ -113,6 +123,8 @@ help:
 	@echo "  dev            - Create venv, install pip-tools, sync all requirements"
 	@echo "  web            - Run Flask development server"
 	@echo "  test           - Run tests using tox"
+	@echo "  ruff           - Run ruff linter/formatter"
+	@echo "  mypy           - Run mypy type checker"
 	@echo "  image          - Build Podman image with version tag"
 	@echo "  lang           - Extract translatable strings to English .pot file"
 	@echo "  docs           - Build Sphinx documentation"

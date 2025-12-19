@@ -25,6 +25,14 @@ whatsthedamage.controllers.routes module
    :show-inheritance:
    :undoc-members:
 
+whatsthedamage.controllers.routes\_helpers module
+-------------------------------------------------
+
+.. automodule:: whatsthedamage.controllers.routes_helpers
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
 whatsthedamage.controllers.whatsthedamage module
 ------------------------------------------------
 

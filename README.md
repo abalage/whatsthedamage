@@ -13,11 +13,13 @@ _The slang phrase "what's the damage?" is often used to ask about the cost or pr
 ## Features
  - Categorizes transactions into well known [accounting categories](#transaction-categories).
  - Categorizes transactions into custom categories by using regular expressions.
+ - Calculator pattern for extensible custom transaction calculations.
  - Transactions can be filtered by start and end dates. If no filter is set, grouping is based on the number of months.
- - Shows a report about the summarized amounts grouped by transaction categories.
- - Reports can be saved into CSV or HTML files.
+ - Shows a report about the summarized amounts grouped by transaction categories, including Total Spendings.
+ - Reports can be saved into CSV or HTML files with interactive DataTable visualization (sorting, searching).
  - Localization support. Currently English (default) and Hungarian languages are supported.
  - Web interface for easier use.
+ - REST API (v1 and v2) for programmatic access and integrations.
 
 Example output on console. The values in the following example are arbitrary.
 ```
@@ -40,6 +42,12 @@ Utility            -68125.00 HUF     -78038.00 HUF
 Withdrawal         -50000.00 HUF    -150000.00 HUF
 
 ```
+
+### Calculator Pattern for Extensibility
+
+`whatsthedamage` now supports a **calculator pattern** that allows you to define custom transaction calculations beyond the built-in categorization. This makes the tool extensible for specific business logic or custom reporting needs.
+
+For implementation examples, see [calculator_pattern_example.py](docs/calculator_pattern_example.py) in the documentation.
 
 ### Machine Learning categorization (experimental)
 
@@ -67,7 +75,7 @@ Try experimenting with it by providing the `--ml` command line argument to `what
 2. **Web Interface** - Browser-based UI for users who prefer forms over terminal commands
 3. **REST API** - Programmatic access for integrations, CI/CD pipelines, and external applications
 
-All three interfaces share the same **core business logic** (`ProcessingService`), ensuring consistent transaction processing regardless of how you access the tool.
+All three interfaces share the same **core business logic** through a well-defined **service layer** (including `ProcessingService`, `ValidationService`, `ConfigurationService`, and others), ensuring consistent transaction processing regardless of how you access the tool. This architecture was introduced in version 0.8.0 and uses dependency injection for better testability and maintainability.
 
 ### Interface Comparison
 
@@ -216,6 +224,8 @@ Note: the Machine Learning model was trained on the categories listed here.
 
 - The categorization process may fail to categorize transactions because of the quality of the regular expressions / ML model. The transaction might be categorized as 'other'.
 - The tool assumes that account exports only use a single currency.
+- The Machine Learning model is currently English-centric; language-agnostic models are planned for future releases.
+- REST API currently does not include authentication.
 
 ## Development
 
@@ -227,6 +237,8 @@ Development workflow:
   dev            - Create venv, install pip-tools, sync all requirements
   web            - Run Flask development server
   test           - Run tests using tox
+  ruff           - Run ruff linter/formatter
+  mypy           - Run mypy type checker
   image          - Build Podman image with version tag
   lang           - Extract translatable strings to English .pot file
   docs           - Build Sphinx documentation

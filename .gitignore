@@ -165,3 +165,4 @@ config.json
 config.yml
 config.yaml
 .vscode
+.github/prompts/

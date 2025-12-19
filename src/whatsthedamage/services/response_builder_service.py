@@ -172,9 +172,10 @@ class ResponseBuilderService:
             ...     default_message="Validation error"
             ... )
         """
+        from flask import jsonify
         from werkzeug.exceptions import BadRequest
         from pydantic import ValidationError as PydanticValidationError
-        from whatsthedamage.services.validation_service import ValidationError
+        from whatsthedamage.utils.validation import ValidationError
 
         # Determine status code and message based on exception type
         if isinstance(error, BadRequest):

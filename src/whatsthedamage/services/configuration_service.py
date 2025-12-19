@@ -9,7 +9,7 @@ from pathlib import Path
 import os
 
 from whatsthedamage.config.config import AppConfig, load_config as _load_config_internal
-from whatsthedamage.services.validation_service import ValidationResult
+from whatsthedamage.utils.validation import ValidationResult
 
 
 @dataclass

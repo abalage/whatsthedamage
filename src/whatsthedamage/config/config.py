@@ -65,6 +65,7 @@ AVAILABLE_CATEGORIES = [
     CategoryDefinition(id="transfer", default_name=_("Transfer"), patterns=[]),
     CategoryDefinition(id="other", default_name=_("Other"), patterns=[]),
     CategoryDefinition(id="balance", default_name=_("Balance"), patterns=[]),
+    CategoryDefinition(id="total_spendings", default_name=_("Total Spendings"), patterns=[]),
 ]
 
 

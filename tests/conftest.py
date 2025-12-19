@@ -41,6 +41,7 @@ def mock_processing_service_result():
             data = {}
         return {
             'data': data,
+            'monthly_data': {'Total': data},  # Mock monthly breakdown
             'metadata': {},
             'processor': MockCSVProcessor()
         }

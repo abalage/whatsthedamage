@@ -41,14 +41,6 @@ whatsthedamage.models.csv\_row module
    :show-inheritance:
    :undoc-members:
 
-whatsthedamage.models.data\_frame\_formatter module
----------------------------------------------------
-
-.. automodule:: whatsthedamage.models.data_frame_formatter
-   :members:
-   :show-inheritance:
-   :undoc-members:
-
 whatsthedamage.models.dt\_calculators module
 --------------------------------------------
 

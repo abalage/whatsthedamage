@@ -49,16 +49,11 @@ class FileUploadService:
     ) -> str:
         """Save uploaded file securely with validation.
 
-        Args:
-            file: FileStorage object from Flask/Werkzeug
-            upload_folder: Absolute path to upload directory
-            custom_filename: Optional custom filename (will be secured)
-
-        Returns:
-            Absolute path to saved file
-
-        Raises:
-            FileUploadError: If validation fails or save operation fails
+        :param file: FileStorage object from Flask/Werkzeug
+        :param upload_folder: Absolute path to upload directory
+        :param custom_filename: Optional custom filename (will be secured)
+        :return: Absolute path to saved file
+        :raises FileUploadError: If validation fails or save operation fails
         """
         # Validate file upload (filename checks)
         result = self.validation_service.validate_file_upload(file)
@@ -115,16 +110,11 @@ class FileUploadService:
         Convenience method for the common pattern of uploading CSV + config.
         If config file upload fails, CSV is automatically cleaned up.
 
-        Args:
-            csv_file: CSV FileStorage object
-            upload_folder: Absolute path to upload directory
-            config_file: Optional config FileStorage object
-
-        Returns:
-            Tuple of (csv_path, config_path). config_path is None if no config.
-
-        Raises:
-            FileUploadError: If validation or save fails
+        :param csv_file: CSV FileStorage object
+        :param upload_folder: Absolute path to upload directory
+        :param config_file: Optional config FileStorage object
+        :return: Tuple of (csv_path, config_path). config_path is None if no config
+        :raises FileUploadError: If validation or save fails
         """
         csv_path = None
         config_path = None
@@ -150,8 +140,7 @@ class FileUploadService:
     def cleanup_files(self, *file_paths: Optional[str]) -> None:
         """Remove uploaded files safely.
 
-        Args:
-            *file_paths: Variable number of file paths to remove (None values ignored)
+        :param file_paths: Variable number of file paths to remove (None values ignored)
         """
         for file_path in file_paths:
             if file_path:
@@ -160,8 +149,7 @@ class FileUploadService:
     def _safe_remove(self, file_path: str) -> None:
         """Safely remove a file without raising exceptions.
 
-        Args:
-            file_path: Path to file to remove
+        :param file_path: Path to file to remove
         """
         try:
             if os.path.exists(file_path):

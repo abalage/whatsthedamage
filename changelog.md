@@ -1,5 +1,40 @@
 # Changelog
 
+## [0.8.0] - 2025-12-19
+
+Major architectural changes thanks to introducing Service Layer pattern.
+
+API v1 is for backward compatibility, while API v2 is moving ahead with new features.
+
+### Added
+- **Feature**: Add service layer with FileUploadService, SessionService, ConfigurationService, ResponseBuilderService, ValidationService, and DataFormattingService.
+- **Feature**: Add calculator pattern for extensibility.
+- **Feature**: Add OpenAPI specs and implement v1/v2 API endpoints.
+- **Feature**: Add API request/response models for structured processing.
+- **Feature**: Add DataTable to visualize results with sorting capability.
+- **Feature**: Add 'Total Spendings' to CLI output.
+- **Feature**: Add markdowns for Copilot Agent.
+- **Feature**: Add separate `ruff` and `mypy` Makefile shortcuts.
+- **Tests**: Add unit tests for ProcessingService and API.
+
+### Changed
+- **Break**: Use dependency injection for processing_service.
+- **Refactor**: Refactor routes to clean up responsibilities.
+- **Refactor**: Refactor ValidationService to remove web dependency from CLI.
+- **Refactor**: Update CLI to call service layer directly.
+- **Chore**: Python-magic is now base requirement.
+- **Chore**: Remove export endpoint from v2 API.
+- **Chore**: Fix CLI separation of concerns.
+- **Chore**: Move view functions.
+- **Chore**: Remove explicit bank vendor mentions and generalize documentation.
+- **Chore**: Add missing type hints and remove unused imports.
+- **Chore**: Strings should be translatable.
+- **Chore**: Do not track prompt files.
+- **Docs**: Update API documentation and Sphinx docs.
+
+### Fixed
+- **Tests**: Don't break when HTML structure changes.
+
 ## [0.7.1] - 2025-10-07
 ### Added
 - **Feature**: Add Docker support for easier deployment.

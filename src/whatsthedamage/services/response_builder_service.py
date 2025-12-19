@@ -45,16 +45,14 @@ class ResponseBuilderService:
     ) -> SummaryResponse:
         """Build standardized API summary response.
 
-        Args:
-            data: Summary data (flattened category totals)
-            metadata: Processing metadata (row_count, etc.)
-            params: Request parameters
-            processing_time: Total processing time in seconds
+        :param data: Summary data (flattened category totals)
+        :param metadata: Processing metadata (row_count, etc.)
+        :param params: Request parameters
+        :param processing_time: Total processing time in seconds
+        :return: SummaryResponse Pydantic model for v1 API response
 
-        Returns:
-            SummaryResponse: Pydantic model for v1 API response
+        Example::
 
-        Example:
             >>> response = service.build_api_summary_response(
             ...     data={'grocery': 150.0, 'utilities': 80.0},
             ...     metadata={'row_count': 25},
@@ -121,7 +119,7 @@ class ResponseBuilderService:
             template: Template name (e.g., 'result.html')
             headers: Table headers
             rows: Table rows with display/order/details metadata
-            **kwargs: Additional template context variables
+            \\**kwargs: Additional template context variables
 
         Returns:
             Flask Response object with rendered HTML

@@ -47,18 +47,16 @@ class DataFormattingService:
     ) -> str:
         """Format data as HTML table with optional sorting.
 
-        Args:
-            data: Data dictionary where outer keys are columns (months),
-                  inner keys are rows (categories), values are amounts
-            currency: Currency code (e.g., "EUR", "USD")
-            nowrap: If True, disables text wrapping in pandas output
-            no_currency_format: If True, disables currency formatting
-            categories_header: Header text for the categories column
+        :param data: Data dictionary where outer keys are columns (months),
+            inner keys are rows (categories), values are amounts
+        :param currency: Currency code (e.g., "EUR", "USD")
+        :param nowrap: If True, disables text wrapping in pandas output
+        :param no_currency_format: If True, disables currency formatting
+        :param categories_header: Header text for the categories column
+        :return: HTML string with formatted table
 
-        Returns:
-            HTML string with formatted table
+        Example::
 
-        Example:
             >>> data = {"Total": {"Grocery": 150.5, "Utilities": 80.0}}
             >>> html = service.format_as_html_table(data, "EUR")
             >>> assert "150.50 EUR" in html
@@ -105,17 +103,15 @@ class DataFormattingService:
     ) -> str:
         """Format data as CSV string.
 
-        Args:
-            data: Data dictionary where outer keys are columns (months),
-                  inner keys are rows (categories), values are amounts
-            currency: Currency code (e.g., "EUR", "USD")
-            delimiter: CSV delimiter character
-            no_currency_format: If True, disables currency formatting
+        :param data: Data dictionary where outer keys are columns (months),
+            inner keys are rows (categories), values are amounts
+        :param currency: Currency code (e.g., "EUR", "USD")
+        :param delimiter: CSV delimiter character
+        :param no_currency_format: If True, disables currency formatting
+        :return: CSV formatted string
 
-        Returns:
-            CSV formatted string
+        Example::
 
-        Example:
             >>> data = {"January": {"Grocery": 150.5}}
             >>> csv = service.format_as_csv(data, "EUR")
             >>> assert "Grocery,150.50 EUR" in csv
@@ -146,17 +142,15 @@ class DataFormattingService:
     ) -> str:
         """Format data as plain string for console output.
 
-        Args:
-            data: Data dictionary where outer keys are columns (months),
-                  inner keys are rows (categories), values are amounts
-            currency: Currency code (e.g., "EUR", "USD")
-            nowrap: If True, disables text wrapping in pandas output
-            no_currency_format: If True, disables currency formatting
+        :param data: Data dictionary where outer keys are columns (months),
+            inner keys are rows (categories), values are amounts
+        :param currency: Currency code (e.g., "EUR", "USD")
+        :param nowrap: If True, disables text wrapping in pandas output
+        :param no_currency_format: If True, disables currency formatting
+        :return: Plain text formatted string
 
-        Returns:
-            Plain text formatted string
+        Example::
 
-        Example:
             >>> data = {"Total": {"Grocery": 150.5}}
             >>> text = service.format_as_string(data, "EUR")
             >>> assert "Grocery" in text and "150.50 EUR" in text
@@ -191,14 +185,12 @@ class DataFormattingService:
     ) -> str:
         """Format data as JSON string.
 
-        Args:
-            data: Data dictionary to serialize
-            pretty: If True, formats JSON with indentation
+        :param data: Data dictionary to serialize
+        :param pretty: If True, formats JSON with indentation
+        :return: JSON formatted string
 
-        Returns:
-            JSON formatted string
+        Example::
 
-        Example:
             >>> data = {"grocery": 150.5, "utilities": 80.0}
             >>> json_str = service.format_as_json(data)
             >>> assert "grocery" in json_str
@@ -215,19 +207,17 @@ class DataFormattingService:
     ) -> str:
         """Format currency value for display.
 
-        Args:
-            value: Numeric value to format
-            currency: Currency code (e.g., "EUR", "USD")
-            decimal_places: Number of decimal places
+        :param value: Numeric value to format
+        :param currency: Currency code (e.g., "EUR", "USD")
+        :param decimal_places: Number of decimal places
+        :return: Formatted currency string
 
-        Returns:
-            Formatted currency string
+        Example::
 
-        Example:
             >>> formatted = service.format_currency(150.567, "EUR")
             >>> assert formatted == "150.57 EUR"
 
-        Note:
+        .. note::
             Simple formatting is used. Can be extended with babel/locale
             support in the future if needed.
         """
@@ -239,15 +229,12 @@ class DataFormattingService:
     ) -> Tuple[List[str], List[List[str]]]:
         """Parse HTML table into headers and rows.
 
-        Args:
-            html: HTML string containing a table
+        :param html: HTML string containing a table
+        :return: Tuple of (headers, rows) where headers is a list of column header
+            strings and rows is a list of rows, each row is a list of cell values
 
-        Returns:
-            Tuple of (headers, rows) where:
-            - headers: List of column header strings
-            - rows: List of rows, each row is a list of cell values
+        Example::
 
-        Example:
             >>> html = "<table><thead><tr><th>Cat</th></tr></thead></table>"
             >>> headers, rows = service.parse_html_table(html)
             >>> assert headers == ["Cat"]
@@ -264,16 +251,13 @@ class DataFormattingService:
         needed for DataTables or sortable web tables. Each cell becomes a dict
         with 'display' (what to show) and 'order' (what to sort by).
 
-        Args:
-            html: HTML table string
+        :param html: HTML table string
+        :return: Tuple of (headers, enhanced_rows) where headers is a list of
+            column header strings and enhanced_rows is a list of rows, each row
+            is a list of dicts with 'display', 'order', and optionally 'details' keys
 
-        Returns:
-            Tuple of (headers, enhanced_rows) where:
-            - headers: List of column header strings
-            - enhanced_rows: List of rows, each row is a list of dicts with
-              'display', 'order', and optionally 'details' keys
+        Example::
 
-        Example:
             >>> html = "<table><thead><tr><th>Cat</th><th>Jan</th></tr></thead>"
             >>> html += "<tbody><tr><th>Grocery</th><td>150.50 EUR</td></tr></tbody></table>"
             >>> headers, rows = service.prepare_table_for_rendering(html)
@@ -306,13 +290,11 @@ class DataFormattingService:
     def _extract_sort_value(self, cell_value: str) -> Union[float, str]:
         """Extract numeric value for sorting from formatted cell value.
 
-        Args:
-            cell_value: Cell value string (e.g., "150.50 EUR" or "150.50")
+        :param cell_value: Cell value string (e.g., "150.50 EUR" or "150.50")
+        :return: Float value for sorting, or original string if not numeric
 
-        Returns:
-            Float value for sorting, or original string if not numeric
+        Example::
 
-        Example:
             >>> service._extract_sort_value("150.50 EUR")
             150.50
             >>> service._extract_sort_value("N/A")
@@ -350,20 +332,18 @@ class DataFormattingService:
         This is a convenience method that consolidates the common formatting logic
         used across CLI and CSV processor, eliminating duplication.
 
-        Args:
-            data: Data dictionary where outer keys are columns (months),
-                  inner keys are rows (categories), values are amounts
-            currency: Currency code (e.g., "EUR", "USD")
-            output_format: Output format ('html' or None for default)
-            output_file: Path to output file (triggers CSV export)
-            nowrap: If True, disables text wrapping in pandas output
-            no_currency_format: If True, disables currency formatting
-            categories_header: Header text for the categories column
+        :param data: Data dictionary where outer keys are columns (months),
+            inner keys are rows (categories), values are amounts
+        :param currency: Currency code (e.g., "EUR", "USD")
+        :param output_format: Output format ('html' or None for default)
+        :param output_file: Path to output file (triggers CSV export)
+        :param nowrap: If True, disables text wrapping in pandas output
+        :param no_currency_format: If True, disables currency formatting
+        :param categories_header: Header text for the categories column
+        :return: Formatted string (HTML, CSV, or plain text)
 
-        Returns:
-            Formatted string (HTML, CSV, or plain text)
+        Example::
 
-        Example:
             >>> data = {"Total": {"Grocery": 150.5}}
             >>> # HTML output
             >>> html = service.format_for_output(data, "EUR", output_format="html")

@@ -33,6 +33,14 @@ whatsthedamage.utils.html\_parser module
    :show-inheritance:
    :undoc-members:
 
+whatsthedamage.utils.validation module
+--------------------------------------
+
+.. automodule:: whatsthedamage.utils.validation
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
 whatsthedamage.utils.version module
 -----------------------------------
 

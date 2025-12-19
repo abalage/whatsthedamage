@@ -11,6 +11,7 @@ from whatsthedamage.services.processing_service import ProcessingService
 from whatsthedamage.services.validation_service import ValidationService
 from whatsthedamage.services.response_builder_service import ResponseBuilderService
 from whatsthedamage.services.configuration_service import ConfigurationService
+from whatsthedamage.services.session_service import SessionService
 from whatsthedamage.models.data_frame_formatter import DataFrameFormatter
 from whatsthedamage.utils.flask_locale import get_default_language
 from whatsthedamage.config.dt_models import AggregatedRow
@@ -38,6 +39,11 @@ def _get_response_builder_service() -> ResponseBuilderService:
 def _get_configuration_service() -> ConfigurationService:
     """Get configuration service from app extensions (dependency injection)."""
     return cast(ConfigurationService, current_app.extensions['configuration_service'])
+
+
+def _get_session_service() -> SessionService:
+    """Get session service instance."""
+    return SessionService()
 
 
 def allowed_file(file_path: str) -> bool:
@@ -163,9 +169,9 @@ def process_summary_and_build_response(
     # Parse HTML table for rendering using ResponseBuilderService
     headers, processed_rows = _get_response_builder_service().prepare_table_for_rendering(html_result)
 
-    # Store both original result and structured data
-    session['result'] = html_result
-    session['table_data'] = {'headers': headers, 'rows': processed_rows}
+    # Store both original result and structured data using SessionService
+    session_service = _get_session_service()
+    session_service.store_result(html_result, {'headers': headers, 'rows': processed_rows})
 
     clear_upload_folder_fn()
     return _get_response_builder_service().build_html_response(

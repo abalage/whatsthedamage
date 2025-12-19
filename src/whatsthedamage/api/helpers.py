@@ -5,14 +5,13 @@ to avoid code duplication.
 """
 from flask import request, current_app, Response
 from werkzeug.exceptions import BadRequest
-from werkzeug.utils import secure_filename
 from werkzeug.datastructures import FileStorage
-import os
 from typing import Dict, Optional, cast
 
 from whatsthedamage.models.api_models import ProcessingRequest
 from whatsthedamage.services.validation_service import ValidationService
 from whatsthedamage.services.response_builder_service import ResponseBuilderService
+from whatsthedamage.services.file_upload_service import FileUploadService, FileUploadError
 
 
 def _get_validation_service() -> ValidationService:
@@ -23,6 +22,11 @@ def _get_validation_service() -> ValidationService:
 def _get_response_builder_service() -> ResponseBuilderService:
     """Get response builder service from app extensions (dependency injection)."""
     return cast(ResponseBuilderService, current_app.extensions['response_builder_service'])
+
+
+def _get_file_upload_service() -> FileUploadService:
+    """Get file upload service from app extensions (dependency injection)."""
+    return cast(FileUploadService, current_app.extensions['file_upload_service'])
 
 
 def validate_csv_file() -> FileStorage:
@@ -89,7 +93,7 @@ def parse_request_params() -> ProcessingRequest:
 
 
 def save_uploaded_files(csv_file: FileStorage, config_file: Optional[FileStorage]) -> tuple[str, Optional[str]]:
-    """Save uploaded files to disk.
+    """Save uploaded files to disk using FileUploadService.
 
     Args:
         csv_file: CSV file object
@@ -97,34 +101,28 @@ def save_uploaded_files(csv_file: FileStorage, config_file: Optional[FileStorage
 
     Returns:
         tuple: (csv_path, config_path)
+
+    Raises:
+        BadRequest: If file save or validation fails
     """
     upload_folder = current_app.config['UPLOAD_FOLDER']
-    os.makedirs(upload_folder, exist_ok=True)
+    file_upload_service = _get_file_upload_service()
 
-    csv_filename = secure_filename(csv_file.filename or 'upload.csv')
-    csv_path = os.path.join(upload_folder, csv_filename)
-    csv_file.save(csv_path)
-
-    config_path = None
-    if config_file:
-        config_filename = secure_filename(config_file.filename or 'config.yml')
-        config_path = os.path.join(upload_folder, config_filename)
-        config_file.save(config_path)
-
-    return csv_path, config_path
+    try:
+        return file_upload_service.save_files(csv_file, upload_folder, config_file)
+    except FileUploadError as e:
+        raise BadRequest(str(e))
 
 
 def cleanup_files(csv_path: str, config_path: str | None) -> None:
-    """Clean up uploaded files.
+    """Clean up uploaded files using FileUploadService.
 
     Args:
         csv_path: Path to CSV file
         config_path: Path to config file or None
     """
-    if os.path.exists(csv_path):
-        os.unlink(csv_path)
-    if config_path and os.path.exists(config_path):
-        os.unlink(config_path)
+    file_upload_service = _get_file_upload_service()
+    file_upload_service.cleanup_files(csv_path, config_path)
 
 
 def build_date_range(params: ProcessingRequest) -> Optional[Dict[str, str]]:

@@ -4,7 +4,6 @@ This module contains extracted helper functions to reduce complexity in routes.p
 Following the Single Responsibility Principle and DRY patterns.
 """
 from flask import current_app, session, Response
-from werkzeug.utils import secure_filename
 from werkzeug.security import safe_join
 from whatsthedamage.view.forms import UploadForm
 from whatsthedamage.services.processing_service import ProcessingService
@@ -13,6 +12,7 @@ from whatsthedamage.services.response_builder_service import ResponseBuilderServ
 from whatsthedamage.services.configuration_service import ConfigurationService
 from whatsthedamage.services.session_service import SessionService
 from whatsthedamage.services.data_formatting_service import DataFormattingService
+from whatsthedamage.services.file_upload_service import FileUploadService, FileUploadError
 from whatsthedamage.utils.flask_locale import get_default_language
 from whatsthedamage.config.dt_models import AggregatedRow
 from typing import List, Dict, Optional, Union, DefaultDict, Callable, cast
@@ -41,6 +41,11 @@ def _get_configuration_service() -> ConfigurationService:
     return cast(ConfigurationService, current_app.extensions['configuration_service'])
 
 
+def _get_file_upload_service() -> FileUploadService:
+    """Get file upload service from app extensions (dependency injection)."""
+    return cast(FileUploadService, current_app.extensions['file_upload_service'])
+
+
 def _get_session_service() -> SessionService:
     """Get session service instance."""
     return SessionService()
@@ -51,25 +56,8 @@ def _get_data_formatting_service() -> DataFormattingService:
     return DataFormattingService()
 
 
-def allowed_file(file_path: str) -> bool:
-    """Check if file is allowed based on MIME type.
-
-    Args:
-        file_path: Path to the file to check
-
-    Returns:
-        True if file is CSV or YAML, False otherwise
-
-    Note:
-        Uses ValidationService for content-based MIME type detection.
-    """
-    validation_service = _get_validation_service()
-    result = validation_service.validate_mime_type(file_path)
-    return result.is_valid
-
-
 def handle_file_uploads(form: UploadForm) -> Dict[str, str]:
-    """Handle file uploads and return file paths.
+    """Handle file uploads using FileUploadService.
 
     Args:
         form: The validated upload form containing file data
@@ -78,27 +66,28 @@ def handle_file_uploads(form: UploadForm) -> Dict[str, str]:
         Dict with 'csv_path' and 'config_path' (empty string if no config)
 
     Raises:
-        ValueError: If file validation fails
+        ValueError: If file validation or save fails
     """
     upload_folder: str = current_app.config['UPLOAD_FOLDER']
+    file_upload_service = _get_file_upload_service()
 
-    # Save CSV file
-    filename: str = secure_filename(form.filename.data.filename)
-    csv_path: str = safe_join(upload_folder, filename)  # type: ignore
-    form.filename.data.save(csv_path)
+    try:
+        # Extract config file or None
+        config_file = form.config.data if form.config.data else None
 
-    # Save config file if provided
-    config_path: str = ''
-    if form.config.data:
-        config_filename: str = secure_filename(form.config.data.filename)
-        config_path = safe_join(upload_folder, config_filename)  # type: ignore
-        form.config.data.save(config_path)
+        # Use FileUploadService to save files
+        csv_path, config_path = file_upload_service.save_files(
+            form.filename.data,
+            upload_folder,
+            config_file=config_file
+        )
 
-    # Validate file types
-    if not allowed_file(csv_path) or (config_path and not allowed_file(config_path)):
-        raise ValueError('Invalid file type. Only CSV and YAML files are allowed.')
-
-    return {'csv_path': csv_path, 'config_path': config_path}
+        return {
+            'csv_path': csv_path,
+            'config_path': config_path or ''
+        }
+    except FileUploadError as e:
+        raise ValueError(str(e))
 
 
 def resolve_config_path(config_path: str, ml_enabled: bool) -> Optional[str]:
@@ -116,13 +105,13 @@ def resolve_config_path(config_path: str, ml_enabled: bool) -> Optional[str]:
     """
     config_service = _get_configuration_service()
     default_config: Optional[str] = None
-    
+
     # Get default config path from Flask config
     if not ml_enabled:
         default_config = safe_join(
             os.getcwd(), current_app.config['DEFAULT_WHATSTHEDAMAGE_CONFIG']  # type: ignore
         )
-    
+
     return config_service.resolve_config_path(
         user_path=config_path if config_path else None,
         ml_enabled=ml_enabled,

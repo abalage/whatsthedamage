@@ -9,9 +9,11 @@ applyTo: '**/*.py'
 
 - Write clear and concise comments for each function.
 - Ensure functions have descriptive names and include type hints.
-- Provide docstrings following PEP 257 conventions.
+- Provide docstrings following PEP 257 conventions. Use Sphinx flavor where applicable.
 - Use the `typing` module for type annotations (e.g., `List[str]`, `Dict[str, int]`).
+- Avoid using [Any] type hint unless absolutely necessary.
 - Break down complex functions into smaller, more manageable functions.
+- Always use existing virtual environment to run python code unless it does not exist.
 
 ## General Instructions
 
@@ -37,6 +39,9 @@ applyTo: '**/*.py'
 - Account for common edge cases like empty inputs, invalid data types, and large datasets.
 - Include comments for edge cases and the expected behavior in those cases.
 - Write unit tests for functions and document them with docstrings explaining the test cases.
+- Prefer parameterized tests to reduce code duplication.
+- Use fixtures.
+- Try to keep the test files for classes short. Prefer maintainability over 100% coverage.
 
 ## Example of Proper Documentation
 

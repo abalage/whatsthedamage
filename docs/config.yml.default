@@ -8,6 +8,7 @@ csv:
     partner: "partner elnevezése"
     amount: "összeg"
     currency: "összeg devizaneme"
+    account: "könyvelési számla"
 
 enricher_pattern_sets:
   partner:

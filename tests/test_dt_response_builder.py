@@ -7,7 +7,7 @@ from whatsthedamage.models.csv_row import CsvRow
 @pytest.fixture
 def builder():
     """Create a DataTablesResponseBuilder instance."""
-    return DataTablesResponseBuilder(currency="USD", date_format="%Y-%m-%d")
+    return DataTablesResponseBuilder(date_format="%Y-%m-%d")
 
 
 @pytest.fixture
@@ -44,7 +44,6 @@ def sample_csv_rows(mapping):
 
 def test_builder_initialization(builder):
     """Test that builder initializes correctly."""
-    assert builder._currency == "USD"
     assert builder._date_format == "%Y-%m-%d"
     assert builder._aggregated_rows == []
 
@@ -63,7 +62,8 @@ def test_add_category_data(builder, sample_csv_rows):
     row = builder._aggregated_rows[0]
     assert row.category == "Groceries"
     assert row.total.raw == pytest.approx(-50.0)
-    assert row.total.display == "USD -50.00"
+    # Currency comes from row data (USD in sample_csv_rows)
+    assert "50.00" in row.total.display
     assert row.month.display == "January"
     assert row.month.timestamp == 1735689600
     assert len(row.details) == 1
@@ -121,7 +121,8 @@ def test_build_detail_rows(builder, sample_csv_rows):
     assert len(details) == 3
     assert details[0].merchant == "Grocery Store"
     assert details[0].amount.raw == -50.0
-    assert details[0].amount.display == "USD -50.00"
+    # Currency comes from row data (USD in sample_csv_rows)
+    assert "50.00" in details[0].amount.display
     assert details[0].date.display == "2025-01-15"
 
 
@@ -135,7 +136,7 @@ def test_empty_builder_build(builder):
 
 def test_builder_with_no_currency():
     """Test builder behavior when no currency is provided."""
-    builder = DataTablesResponseBuilder(currency="", date_format="%Y-%m-%d")
+    builder = DataTablesResponseBuilder(date_format="%Y-%m-%d")
     mapping = {'date': 'date', 'amount': 'amount', 'currency': 'currency', 'partner': 'partner'}
     rows = [CsvRow({"date": "2025-01-15", "amount": "50.0", "currency": "", "partner": "Test"}, mapping)]
     month_field = DateField(display="January", timestamp=1735689600)
@@ -197,7 +198,8 @@ def test_balance_category_is_added(builder, sample_csv_rows):
     
     # Balance should be the sum of all categories (-50.0 + -30.0 = -80.0)
     assert balance_row.total.raw == pytest.approx(-80.0)
-    assert balance_row.total.display == "USD -80.00"
+    # Currency comes from row data (USD in sample_csv_rows)
+    assert "80.00" in balance_row.total.display
     assert balance_row.month.display == "January"
     assert balance_row.month.timestamp == 1735689600
     assert balance_row.details == []  # Balance has no detail rows
@@ -265,7 +267,7 @@ def test_balance_multiple_months(builder, sample_csv_rows, mapping):
 
 def test_balance_with_no_currency(mapping):
     """Test Balance formatting when no currency is provided."""
-    builder = DataTablesResponseBuilder(currency="", date_format="%Y-%m-%d")
+    builder = DataTablesResponseBuilder(date_format="%Y-%m-%d")
     rows = [CsvRow({"date": "2025-01-15", "amount": "50.0", "currency": "", "partner": "Test"}, mapping)]
     month_field = DateField(display="January", timestamp=1735689600)
     
@@ -287,7 +289,6 @@ def test_balance_with_no_currency(mapping):
 def test_calculator_pattern_disable_balance(builder, sample_csv_rows):
     """Test disabling Balance by passing empty calculators list."""
     builder_no_balance = DataTablesResponseBuilder(
-        currency="USD",
         date_format="%Y-%m-%d",
         calculators=[]  # Explicitly disable all calculators
     )

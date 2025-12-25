@@ -13,8 +13,8 @@ class DetailRow(BaseModel):
     date: DateField
     amount: DisplayRawField
     merchant: str
-    # currency: str
-    # Add other fields as needed
+    currency: str
+    account: str
 
 class AggregatedRow(BaseModel):
     category: str
@@ -24,3 +24,5 @@ class AggregatedRow(BaseModel):
 
 class DataTablesResponse(BaseModel):
     data: List[AggregatedRow]
+    account: str = ""
+    currency: str = ""

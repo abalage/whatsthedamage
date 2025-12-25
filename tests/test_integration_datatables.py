@@ -73,7 +73,11 @@ def csv_rows_with_months(mapping):
 def test_process_rows_v2_timestamps(app_context_v2, csv_rows_with_months):
     """Test that process_rows_v2 generates proper timestamps for months."""
     processor = RowsProcessor(app_context_v2)
-    response = processor.process_rows_v2(csv_rows_with_months)
+    responses_dict = processor.process_rows_v2(csv_rows_with_months)
+    
+    # Extract first account's response
+    assert len(responses_dict) > 0, "Should have at least one account"
+    response = next(iter(responses_dict.values()))
     
     # Verify we have data
     assert len(response.data) > 0
@@ -104,7 +108,11 @@ def test_month_timestamp_values(app_context_v2, csv_rows_with_months):
     from whatsthedamage.utils.date_converter import DateConverter
     
     processor = RowsProcessor(app_context_v2)
-    response = processor.process_rows_v2(csv_rows_with_months)
+    responses_dict = processor.process_rows_v2(csv_rows_with_months)
+    
+    # Extract first account's response
+    assert len(responses_dict) > 0, "Should have at least one account"
+    response = next(iter(responses_dict.values()))
     
     # Expected timestamps for first day of each month in 2025
     expected_timestamps = {

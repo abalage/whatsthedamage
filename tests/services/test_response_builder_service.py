@@ -57,11 +57,17 @@ class TestApiResponseBuilding:
             )
         ]
         dt_response = DataTablesResponse(data=agg_rows)
+        dt_response.account = "ACC123"  # Set account ID
+        dt_response.currency = "HUF"  # Set currency
+        
+        # Create dict of responses by account ID
+        datatables_dict = {"ACC123": dt_response}
+        
         params = ProcessingRequest(ml_enabled=True)
         metadata = {'row_count': 150}
 
         response = service.build_api_detailed_response(
-            datatables_response=dt_response,
+            datatables_response=datatables_dict,
             metadata=metadata,
             params=params,
             processing_time=1.2

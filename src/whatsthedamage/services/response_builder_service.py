@@ -80,24 +80,31 @@ class ResponseBuilderService:
         """Build standardized API detailed response.
 
         Args:
-            datatables_response: DataTablesResponse object with transaction details
+            datatables_response: Dict[str, DataTablesResponse] mapping account to response objects
             metadata: Processing metadata (row_count, etc.)
             params: Request parameters
             processing_time: Total processing time in seconds
 
         Returns:
-            DetailedResponse: Pydantic model for v2 API response
+            DetailedResponse: Pydantic model for v2 API response with array of account responses
 
         Example:
             >>> response = service.build_api_detailed_response(
-            ...     datatables_response=dt_response,
+            ...     datatables_response={'12345': dt_response1, '67890': dt_response2},
             ...     metadata={'row_count': 150},
             ...     params=ProcessingRequest(ml_enabled=True),
             ...     processing_time=1.2
             ... )
         """
+        # Convert dict to array, sorted by account ID
+        aggregated_rows = []
+        for account_id in sorted(datatables_response.keys()):
+            dt_response = datatables_response[account_id]
+            # Add all aggregated rows from this account
+            aggregated_rows.extend(dt_response.data)
+
         return DetailedResponse(
-            data=datatables_response.data,  # List[AggregatedRow]
+            data=aggregated_rows,  # List[AggregatedRow] from all accounts
             metadata=DetailedMetadata(
                 row_count=metadata['row_count'],
                 processing_time=processing_time,
@@ -109,37 +116,44 @@ class ResponseBuilderService:
     def build_html_response(
         self,
         template: str,
-        headers: List[str],
-        rows: List[List[Dict[str, Union[str, float, None]]]],
+        headers: Optional[List[str]] = None,
+        rows: Optional[List[List[Dict[str, Union[str, float, None]]]]] = None,
         **kwargs: Any
     ) -> "Response":
         """Build HTML response with proper headers.
 
         Args:
-            template: Template name (e.g., 'result.html')
-            headers: Table headers
-            rows: Table rows with display/order/details metadata
-            \\**kwargs: Additional template context variables
+            template: Template name (e.g., 'result.html', 'v2_results.html')
+            headers: Table headers (for v1 templates)
+            rows: Table rows with display/order/details metadata (for v1 templates)
+            \\**kwargs: Additional template context variables (e.g., dt_responses for v2)
 
         Returns:
             Flask Response object with rendered HTML
 
         Example:
+            >>> # For v1 template
             >>> response = service.build_html_response(
             ...     template='result.html',
             ...     headers=['Categories', 'January', 'February'],
             ...     rows=[[{'display': 'Grocery', 'order': None}]]
             ... )
+            >>> # For v2 template with multi-account
+            >>> response = service.build_html_response(
+            ...     template='v2_results.html',
+            ...     dt_responses=dt_responses_dict
+            ... )
         """
         from flask import make_response, render_template
 
+        template_context = {**kwargs}
+        if headers is not None:
+            template_context['headers'] = headers
+        if rows is not None:
+            template_context['rows'] = rows
+
         return make_response(
-            render_template(
-                template,
-                headers=headers,
-                rows=rows,
-                **kwargs
-            )
+            render_template(template, **template_context)
         )
 
     def build_error_response(

@@ -14,9 +14,7 @@ from whatsthedamage.services.session_service import SessionService
 from whatsthedamage.services.data_formatting_service import DataFormattingService
 from whatsthedamage.services.file_upload_service import FileUploadService, FileUploadError
 from whatsthedamage.utils.flask_locale import get_default_language
-from whatsthedamage.config.dt_models import AggregatedRow
-from typing import List, Dict, Optional, Union, DefaultDict, Callable, cast
-from collections import defaultdict
+from typing import Dict, Optional, Callable, cast
 from gettext import gettext as _
 import os
 
@@ -153,9 +151,10 @@ def process_summary_and_build_response(
 
     # Use monthly breakdown data (not flattened) to preserve month columns
     monthly_data = result['monthly_data']
+    rows = processor._read_csv_file()
     html_result = formatting_service.format_as_html_table(
         monthly_data,
-        currency=processor.processor.get_currency(),
+        currency=processor.processor.get_currency_from_rows(rows),
         no_currency_format=form.no_currency_format.data,
         categories_header=_("Categories")
     )
@@ -201,46 +200,13 @@ def process_details_and_build_response(
         language=session.get('lang', get_default_language())
     )
 
-    # Extract DataTablesResponse from result
-    dt_response = result['data']
+    # Extract Dict[str, DataTablesResponse] from result
+    dt_responses_by_account = result['data']
 
-    # Convert DataTablesResponse to headers and rows for result.html
-    headers: List[str] = ['Categories']
-    # Collect months and their timestamps
-    month_tuples: set[tuple[str, int]] = set()
-    for agg_row in dt_response.data:
-        month_tuples.add((agg_row.month.display, agg_row.month.timestamp))
-    # Sort by timestamp in descending order (most recent first)
-    sorted_months: List[str] = [m[0] for m in sorted(month_tuples, key=lambda x: x[1], reverse=True)]
-    headers += sorted_months
-
-    # Build rows: each category, then each month
-    cat_month_map: DefaultDict[str, Dict[str, AggregatedRow]] = defaultdict(dict)
-    for agg_row in dt_response.data:
-        cat_month_map[agg_row.category][agg_row.month.display] = agg_row
-
-    rows: List[List[Dict[str, Union[str, float, None]]]] = []
-    for cat, month_dict in cat_month_map.items():
-        row: List[Dict[str, Union[str, float, None]]] = []
-        row.append({'display': cat, 'order': None})
-        for month in headers[1:]:
-            agg_row_data = month_dict.get(month)
-            if agg_row_data:
-                details_str = '\n'.join([
-                    f"{d.date.display}: {d.amount.display} - {d.merchant}" for d in agg_row_data.details
-                ])
-                row.append({
-                    'display': agg_row_data.total.display,
-                    'order': agg_row_data.total.raw,
-                    'details': details_str
-                })
-            else:
-                row.append({'display': '', 'order': 0, 'details': ''})
-        rows.append(row)
-
+    # Pass the dict of responses to template for multi-account rendering
     clear_upload_folder_fn()
     return _get_response_builder_service().build_html_response(
-        template='result.html',
-        headers=headers,
-        rows=rows
+        template='v2_results.html',
+        dt_responses=dt_responses_by_account
     )
+

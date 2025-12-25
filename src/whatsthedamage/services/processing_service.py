@@ -139,7 +139,7 @@ class ProcessingService:
             language: Output language for month names ('en' or 'hu')
 
         Returns:
-            dict: Contains 'data' (DataTablesResponse), 'metadata' (processing info)
+            dict: Contains 'data' (Dict[str, DataTablesResponse]), 'metadata' (processing info)
         """
         start_time = time.time()
 
@@ -165,13 +165,13 @@ class ProcessingService:
 
         # Process using existing CSVProcessor
         processor = CSVProcessor(context)
-        datatables_response = processor.process_v2()
+        datatables_responses = processor.process_v2()
 
         # Build response with metadata
         processing_time = time.time() - start_time
 
         return {
-            "data": datatables_response,
+            "data": datatables_responses,
             "metadata": {
                 "processing_time": round(processing_time, 2),
                 "row_count": len(processor._read_csv_file()),

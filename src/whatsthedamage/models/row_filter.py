@@ -105,7 +105,7 @@ class RowFilter:
         Filter rows based on the month parsed from a specified attribute (v2).
 
         Returns tuples of (DateField, List[CsvRow]) instead of Dict[str, List[CsvRow]].
-        The DateField contains both display value and proper timestamp based on the 
+        The DateField contains both display value and proper timestamp based on the
         actual year/month from the data.
 
         :return: A tuple of (DateField, List[CsvRow]) tuples.
@@ -123,3 +123,24 @@ class RowFilter:
 
         # Return tuple of (DateField, rows) tuples
         return tuple(months.values())
+
+    def filter_by_account(self) -> Dict[str, List[CsvRow]]:
+        """
+        Filter rows by account, grouping transactions by account ID.
+
+        Extracts the account attribute from each CsvRow and groups rows by account.
+        Rows with missing or empty account values are grouped under "Unknown" key.
+
+        :return: A dictionary mapping account ID to list of CsvRow objects.
+        """
+        accounts: Dict[str, List[CsvRow]] = {}
+        for row in self._rows:
+            account = getattr(row, 'account', '').strip()
+            # Use "Unknown" for missing or empty account
+            account_key = account if account else "Unknown"
+
+            if account_key not in accounts:
+                accounts[account_key] = []
+            accounts[account_key].append(row)
+
+        return accounts

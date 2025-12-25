@@ -13,6 +13,7 @@ class CsvRow:
         self.amount = float(row.get(mapping.get('amount', ''), 0))
         self.currency = row.get(mapping.get('currency', ''), '').strip()
         self.category = row.get(mapping.get('category', ''), '').strip()
+        self.account = row.get(mapping.get('account', ''), '').strip()
 
     def __repr__(self) -> str:
         """
@@ -27,7 +28,8 @@ class CsvRow:
             f"partner={self.partner}, "
             f"amount={self.amount}, "
             f"currency={self.currency}, "
-            f"category={self.category}"
+            f"category={self.category}, "
+            f"account={self.account}"
             f")>"
         )
 
@@ -46,5 +48,6 @@ class CsvRow:
             self.partner == other.partner and
             self.amount == other.amount and
             self.currency == other.currency and
-            self.category == other.category
+            self.category == other.category and
+            self.account == other.account
         )

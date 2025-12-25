@@ -36,7 +36,8 @@ class CsvConfig(BaseModel):
         "type": "típus",
         "partner": "partner elnevezése",
         "amount": "összeg",
-        "currency": "összeg devizaneme"
+        "currency": "összeg devizaneme",
+        "account": "könyvelési számla"
     })
 
 

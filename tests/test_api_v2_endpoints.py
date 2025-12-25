@@ -176,12 +176,16 @@ class TestAPIv2DetailedResponseStructure:
                 {
                     'date': {'display': '2024-01-15', 'timestamp': 1705276800},
                     'amount': {'display': '-12,500.00', 'raw': -12500.0},
-                    'merchant': 'TESCO'
+                    'merchant': 'TESCO',
+                    'currency': 'HUF',
+                    'account': ''
                 },
                 {
                     'date': {'display': '2024-01-20', 'timestamp': 1705708800},
                     'amount': {'display': '-32,500.00', 'raw': -32500.0},
-                    'merchant': 'ALDI'
+                    'merchant': 'ALDI',
+                    'currency': 'HUF',
+                    'account': ''
                 }
             ]
         }

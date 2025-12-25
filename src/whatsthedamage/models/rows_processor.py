@@ -33,7 +33,6 @@ class RowsProcessor:
         self._verbose: bool = context.args.get("verbose", False)
         self._category: str = context.args.get("category", "")
         self._filter: Optional[str] = context.args.get("filter", None)
-        self._currency: str = ""
         self._training_data: bool = context.args.get("training_data", False)
         self._ml: bool = context.args.get("ml", False)
         self._dt_json_data: DataTablesResponse = DataTablesResponse(data=[])
@@ -54,26 +53,19 @@ class RowsProcessor:
                 formatted_end_date, self._date_attribute_format
             )
 
-    def get_currency(self) -> str:
+    def get_currency_from_rows(self, rows: List[CsvRow]) -> str:
         """
-        Getter for the currency.
-
-        Returns:
-            Optional[str]: The currency value.
-        """
-        return self._currency
-
-    def set_currency(self, filtered_sets: List[Dict[str, List[CsvRow]]]) -> None:
-        """
-        Setter for the currency. Determines the currency based on filtered_sets.
+        Extracts currency from the first available row.
 
         Args:
-            filtered_sets (List[Dict[str, List[CsvRow]]]): Filtered sets of rows.
+            rows (List[CsvRow]): List of CsvRow objects.
+
+        Returns:
+            str: The currency code, or empty string if no rows or currency not found.
         """
-        self._currency = next(
-            (set_rows[0].currency for filtered_set in filtered_sets for set_rows in filtered_set.values() if set_rows),
-            ""
-        )
+        if rows:
+            return getattr(rows[0], 'currency', '')
+        return ''
 
     def process_rows(self, rows: List[CsvRow]) -> Dict[str, Dict[str, float]]:
         """
@@ -87,7 +79,6 @@ class RowsProcessor:
                                          dictionaries summarizing the specified attribute by category.
         """
         filtered_sets = self._filter_rows(rows)
-        self.set_currency(filtered_sets)
         data_for_pandas = {}
         all_set_rows_dict: Dict[str, List[CsvRow]] = {}
 
@@ -113,50 +104,68 @@ class RowsProcessor:
 
         return data_for_pandas
 
-    def process_rows_v2(self, rows: List[CsvRow]) -> DataTablesResponse:
+    def process_rows_v2(self, rows: List[CsvRow]) -> Dict[str, DataTablesResponse]:
         """
-        Processes a list of CsvRow objects and returns a DataTablesResponse structure for DataTables frontend.
+        Processes a list of CsvRow objects and returns per-account DataTablesResponse structures.
 
+        Groups rows by account first, then processes each account independently.
+        Each account gets its own Balance and Total Spendings calculations.
         Uses a builder pattern for transparent, step-by-step construction of the response.
         Uses v2 filtering that provides DateField objects with accurate timestamps.
 
         Args:
-            rows (List[CsvRow]): List of CsvRow objects to be processed.
+            rows (List[CsvRow]): List of CsvRow objects (potentially from multiple accounts).
 
         Returns:
-            DataTablesResponse: DataTables-compatible structure for frontend.
+            Dict[str, DataTablesResponse]: Mapping of account_id → DataTablesResponse.
         """
-        # Filter rows by date or month using v2 method
-        filtered_sets = self._filter_rows_v2(rows)
-        # Set currency from first available row
-        first_rows = next((set_rows for _, set_rows in filtered_sets if set_rows), [])
-        if first_rows:
-            self._currency = first_rows[0].currency
+        # Group rows by account first
+        row_filter = RowFilter(rows, self._date_attribute_format)
+        rows_by_account = row_filter.filter_by_account()
 
-        # Initialize the builder with currency and date format
-        builder = DataTablesResponseBuilder(self._currency, self._date_attribute_format)
+        responses_by_account: Dict[str, DataTablesResponse] = {}
 
-        # Process each month/date range
-        for month_field, set_rows in filtered_sets:
-            # Enrich and categorize rows
-            categorized_rows = self._enrich_and_categorize_rows(set_rows)
-            categorized_rows = self._apply_filter(categorized_rows)
+        # Process each account independently
+        for account_id, account_rows in rows_by_account.items():
+            # Filter rows by date or month for this account
+            filtered_sets = self._filter_rows_v2(account_rows)
 
-            # Summarize amounts by category
-            summary = self._summarize_rows(categorized_rows)
+            # Initialize the builder with date format only
+            builder = DataTablesResponseBuilder(self._date_attribute_format)
 
-            # Add each category to the builder with DateField
-            for category, category_rows in categorized_rows.items():
-                builder.add_category_data(
-                    category=category,
-                    rows=category_rows,
-                    total_amount=summary[category],
-                    month_field=month_field
-                )
+            # Process each month/date range for this account
+            for month_field, set_rows in filtered_sets:
+                # Enrich and categorize rows
+                categorized_rows = self._enrich_and_categorize_rows(set_rows)
+                categorized_rows = self._apply_filter(categorized_rows)
 
-        # Build and store the final response
-        self._dt_json_data = builder.build()
-        return self._dt_json_data
+                # Summarize amounts by category
+                summary = self._summarize_rows(categorized_rows)
+
+                # Add each category to the builder with DateField
+                for category, category_rows in categorized_rows.items():
+                    builder.add_category_data(
+                        category=category,
+                        rows=category_rows,
+                        total_amount=summary[category],
+                        month_field=month_field
+                    )
+
+            # Build and store the final response for this account
+            account_response = builder.build()
+
+            # Store account identifier and currency in the response
+            account_response.account = account_id
+            account_response.currency = account_rows[0].currency if account_rows else ""
+
+            responses_by_account[account_id] = account_response
+
+        # Store first account's response for backward compatibility with get_dt_json_data
+        if responses_by_account:
+            first_account = next(iter(responses_by_account.keys()))
+            self._dt_json_data = responses_by_account[first_account]
+
+        return responses_by_account
 
     def get_dt_json_data(self) -> Optional[DataTablesResponse]:
         """

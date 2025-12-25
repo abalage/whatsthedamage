@@ -43,13 +43,13 @@ class CSVProcessor:
         data_for_pandas = self.processor.process_rows(rows)
         return self._format_data(data_for_pandas)
 
-    def process_v2(self) -> 'DataTablesResponse':
+    def process_v2(self) -> Dict[str, DataTablesResponse]:
         """
         Processes the CSV file and returns the DataTablesResponse structure for DataTables frontend (API v2).
         Only used for ML categorization.
 
         Returns:
-            DataTablesResponse: The DataTables-compatible structure for frontend.
+            Dict[str, DataTablesResponse]: The DataTables-compatible structure for frontend.
         """
         rows = self._read_csv_file()
         return self.processor.process_rows_v2(rows)
@@ -84,7 +84,7 @@ class CSVProcessor:
 
         return formatting_service.format_for_output(
             data=data_for_pandas,
-            currency=self.processor.get_currency(),
+            currency=self.processor.get_currency_from_rows(self._read_csv_file()),
             output_format=self.args.get('output_format'),
             output_file=self.args.get('output'),
             nowrap=self.args.get('nowrap', False),

@@ -42,6 +42,7 @@ class MockProcessingService:
 
         Returns:
             Result dict matching ProcessingService.process_with_details output
+            Note: Now returns a dict of account_id -> DataTablesResponse
         """
         if rows is None:
             rows = []
@@ -49,9 +50,15 @@ class MockProcessingService:
         class MockDataTablesResponse:
             def __init__(self, data):
                 self.data = data
+                self.account = ""  # Add account attribute
+                self.currency = ""  # Add currency attribute
 
+        # Create mock response with default account
+        mock_response = MockDataTablesResponse(rows)
+        
+        # Return dict of account_id -> response (multi-account structure)
         return {
-            'data': MockDataTablesResponse(rows),
+            'data': {"": mock_response},  # Empty string for default/single account
             'metadata': {'row_count': row_count}
         }
 
@@ -75,7 +82,9 @@ class MockProcessingService:
                 {
                     'date': {'display': '2023-01-01', 'timestamp': 1672531200},
                     'amount': {'display': f'{total:.2f}', 'raw': total},
-                    'merchant': merchant
+                    'merchant': merchant,
+                    'currency': 'USD',  # Add currency field
+                    'account': ''  # Add account field (empty for default account)
                 }
             ]
         }

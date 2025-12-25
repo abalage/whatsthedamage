@@ -14,17 +14,16 @@ RowCalculator = Callable[["DataTablesResponseBuilder"], List[AggregatedRow]]
 class DataTablesResponseBuilder:
     """
     Builds DataTablesResponse in a transparent, step-by-step manner.
-    
+
     This builder encapsulates the logic for converting CSV rows into DataTables-compatible
     structures, providing a clear API for incrementally building the response.
     """
 
-    def __init__(self, currency: str, date_format: str, calculators: Optional[List[RowCalculator]] = None) -> None:
+    def __init__(self, date_format: str, calculators: Optional[List[RowCalculator]] = None) -> None:
         """
         Initializes the DataTablesResponseBuilder.
 
         Args:
-            currency (str): The currency code to use for formatting amounts.
             date_format (str): The date format string for parsing dates.
             calculators (Optional[List[RowCalculator]]): List of calculator functions that generate
                 additional aggregated rows. Each calculator receives the builder instance and returns
@@ -34,7 +33,6 @@ class DataTablesResponseBuilder:
         """
         from whatsthedamage.models.dt_calculators import create_balance_rows, create_total_spendings
 
-        self._currency = currency
         self._date_format = date_format
         self._aggregated_rows: List[AggregatedRow] = []
         self._month_totals: Dict[int, tuple[DateField, float]] = {}
@@ -111,16 +109,21 @@ class DataTablesResponseBuilder:
             date_field = DateField(display=date_display, timestamp=date_timestamp)
 
             amount_value = getattr(row, 'amount', 0.0)
-            row_currency = getattr(row, 'currency', self._currency)
-            amount_display = (
-                f"{row_currency} {amount_value:,.2f}" if row_currency
-                else f"{amount_value:,.2f}"
-            )
+            row_currency = getattr(row, 'currency', '')
+            amount_display = f"{amount_value:,.2f}"
             amount_field = DisplayRawField(display=amount_display, raw=amount_value)
 
             merchant = getattr(row, 'partner', getattr(row, 'merchant', ""))
+            account = getattr(row, 'account', '')
+
             details.append(
-                DetailRow(date=date_field, amount=amount_field, merchant=merchant)
+                DetailRow(
+                    date=date_field,
+                    amount=amount_field,
+                    merchant=merchant,
+                    currency=row_currency,
+                    account=account
+                )
             )
         return details
 
@@ -146,11 +149,8 @@ class DataTablesResponseBuilder:
         Returns:
             AggregatedRow: The aggregated row for DataTables.
         """
-        # Format total amount
-        total_display = (
-            f"{self._currency} {total_amount:,.2f}" if self._currency
-            else f"{total_amount:,.2f}"
-        )
+        # Format total amount without currency
+        total_display = f"{total_amount:,.2f}"
         total_field = DisplayRawField(display=total_display, raw=total_amount)
 
         return AggregatedRow(

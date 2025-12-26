@@ -10,7 +10,7 @@ Architecture Patterns:
 - Template Method: Common structure, variant implementations
 - DRY Principle: Single implementation for response building
 """
-from typing import Dict, Any, Optional, List, Union, Tuple, TYPE_CHECKING
+from typing import Dict, Any, Optional, List, Union, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from flask import Response
@@ -243,30 +243,6 @@ class ResponseBuilderService:
 
         return jsonify(error_response.model_dump()), status_code
 
-    def prepare_table_for_rendering(
-        self,
-        html: str
-    ) -> Tuple[List[str], List[List[Dict[str, Union[str, float, None]]]]]:
-        """Parse HTML table and add sorting metadata.
-
-        Converts HTML table to structured data with display values and
-        numeric order values for sortable columns. Used in web UI for
-        rendering summary tables with proper sorting.
-
-        Delegates to DataFormattingService for actual parsing and metadata generation.
-
-        Args:
-            html: HTML table string (from DataFrame.to_html())
-
-        Returns:
-            tuple: (headers, rows) where rows contain display/order dicts
-
-        Example:
-            >>> headers, rows = service.prepare_table_for_rendering(html_table)
-            >>> rows[0][1]['display']  # "150.00 HUF"
-            >>> rows[0][1]['order']    # 150.0
-        """
-        return self._formatting_service.prepare_table_for_rendering(html)
 
     # Private helper methods
 

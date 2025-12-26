@@ -25,14 +25,6 @@ whatsthedamage.utils.flask\_locale module
    :show-inheritance:
    :undoc-members:
 
-whatsthedamage.utils.html\_parser module
-----------------------------------------
-
-.. automodule:: whatsthedamage.utils.html_parser
-   :members:
-   :show-inheritance:
-   :undoc-members:
-
 whatsthedamage.utils.validation module
 --------------------------------------
 

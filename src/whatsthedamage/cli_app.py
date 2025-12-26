@@ -90,14 +90,10 @@ def main() -> None:
             language=args.get('lang') or 'en'
         )
 
-        # Get processor and currency
-        processor = result['processor']
-        rows = processor._read_csv_file()
-        currency: str = processor.processor.get_currency_from_rows(rows)
-
-        # Get monthly breakdown data (before flattening)
-        # Re-process to get monthly data instead of flattened totals
-        monthly_data: Dict[str, Dict[str, float]] = processor.processor.process_rows(rows)
+        # Extract data from result
+        monthly_data: Dict[str, Dict[str, float]] = result['monthly_data']
+        metadata: Dict[str, Any] = result['metadata']
+        currency: str = metadata.get('currency', '')
 
         # Format output with monthly columns
         output = format_output(monthly_data, args, currency)

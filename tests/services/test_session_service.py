@@ -6,7 +6,6 @@ from flask import Flask, session
 from whatsthedamage.services.session_service import (
     SessionService,
     FormData,
-    TableData,
 )
 
 
@@ -108,41 +107,6 @@ class TestFormData:
         assert restored.ml == original.ml
 
 
-class TestTableData:
-    """Tests for TableData dataclass."""
-
-    @pytest.mark.parametrize("input_data,expected", [
-        # Default/empty
-        ({}, {'headers': [], 'rows': []}),
-        # With data
-        (
-            {
-                'headers': ['Category', 'Amount'],
-                'rows': [[{'data': 'Food', 'sort': 'food'}, {'data': '100.00', 'sort': 100.0}]]
-            },
-            {'headers': ['Category', 'Amount'], 'row_count': 1, 'first_cell': 'Food'}
-        ),
-    ])
-    def test_table_data_from_dict(self, input_data, expected):
-        """Test TableData.from_dict with various inputs."""
-        table_data = TableData.from_dict(input_data)
-        assert table_data.headers == expected['headers']
-        if 'row_count' in expected:
-            assert len(table_data.rows) == expected['row_count']
-            assert table_data.rows[0][0]['data'] == expected['first_cell']
-        else:
-            assert table_data.rows == expected['rows']
-
-    def test_table_data_roundtrip(self, sample_table_data):
-        """Test TableData roundtrip through dict."""
-        original = TableData.from_dict(sample_table_data)
-        data = original.to_dict()
-        restored = TableData.from_dict(data)
-
-        assert restored.headers == original.headers
-        assert len(restored.rows) == len(original.rows)
-
-
 class TestSessionServiceFormData:
     """Tests for SessionService form data management."""
 
@@ -191,9 +155,11 @@ class TestSessionServiceResult:
             # Retrieve
             result = session_service.retrieve_result()
             assert result is not None
-            retrieved_html, retrieved_table = result
+            retrieved_html, retrieved_params = result
             assert retrieved_html == html_result
-            assert retrieved_table.headers == ['Category', 'Amount']
+            # retrieved_params is now a plain dict, not TableData
+            assert isinstance(retrieved_params, dict)
+            assert retrieved_params == sample_table_data
 
     @pytest.mark.parametrize("has_html,has_table,expected_exists", [
         (False, False, False),
@@ -327,9 +293,11 @@ class TestSessionServiceIntegration:
             assert session_service.has_result()
 
             result = session_service.retrieve_result()
-            retrieved_html, retrieved_table = result
+            retrieved_html, retrieved_params = result
             assert 'Category' in retrieved_html
-            assert retrieved_table.headers == ['Category', 'Amount']
+            # retrieved_params is now a plain dict, not TableData
+            assert isinstance(retrieved_params, dict)
+            assert retrieved_params == sample_table_data
 
             # Clear session
             session_service.clear_session()

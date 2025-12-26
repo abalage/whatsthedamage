@@ -152,19 +152,32 @@ def process_summary_and_build_response(
     # Use monthly breakdown data (not flattened) to preserve month columns
     monthly_data = result['monthly_data']
     rows = processor._read_csv_file()
-    html_result = formatting_service.format_as_html_table(
+    currency = processor.processor.get_currency_from_rows(rows)
+
+    # Prepare table data directly from monthly_data (no HTML parsing)
+    headers, processed_rows = formatting_service.prepare_summary_table_data(
         monthly_data,
-        currency=processor.processor.get_currency_from_rows(rows),
+        currency=currency,
         no_currency_format=form.no_currency_format.data,
         categories_header=_("Categories")
     )
 
-    # Parse HTML table for rendering
-    headers, processed_rows = formatting_service.prepare_table_for_rendering(html_result)
+    # Generate HTML for display
+    html_result = formatting_service.format_as_html_table(
+        monthly_data,
+        currency=currency,
+        no_currency_format=form.no_currency_format.data,
+        categories_header=_("Categories")
+    )
 
-    # Store both original result and structured data using SessionService
+    # Store HTML and original data for CSV download (reuse format_as_csv)
     session_service = _get_session_service()
-    session_service.store_result(html_result, {'headers': headers, 'rows': processed_rows})
+    csv_data = {
+        'monthly_data': monthly_data,
+        'currency': currency,
+        'no_currency_format': form.no_currency_format.data
+    }
+    session_service.store_result(html_result, csv_data)
 
     clear_upload_folder_fn()
     return _get_response_builder_service().build_html_response(

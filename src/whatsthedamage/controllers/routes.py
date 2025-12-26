@@ -11,11 +11,10 @@ from whatsthedamage.controllers.routes_helpers import (
     process_details_and_build_response
 )
 from whatsthedamage.services.session_service import SessionService
+from whatsthedamage.services.data_formatting_service import DataFormattingService
 from typing import Optional
 import os
 import shutil
-import pandas as pd
-from io import StringIO
 from whatsthedamage.utils.flask_locale import get_locale, get_languages
 
 bp: Blueprint = Blueprint('main', __name__)
@@ -25,6 +24,11 @@ INDEX_ROUTE = 'main.index'
 def _get_session_service() -> SessionService:
     """Get SessionService instance."""
     return SessionService()
+
+
+def _get_formatting_service() -> DataFormattingService:
+    """Get DataFormattingService instance."""
+    return DataFormattingService()
 
 
 def clear_upload_folder() -> None:
@@ -142,15 +146,15 @@ def download() -> Response:
         flash('No result available for download.', 'danger')
         return make_response(redirect(url_for(INDEX_ROUTE)))
 
-    result, _ = result_data
+    _, csv_params = result_data
 
-    # Convert the HTML table to a DataFrame
-    df: pd.DataFrame = pd.read_html(StringIO(result))[0]
-
-    # Convert the DataFrame to CSV
-    csv_buffer: StringIO = StringIO()
-    df.to_csv(csv_buffer, index=False)
-    csv_data: str = csv_buffer.getvalue()
+    # Use DataFormattingService.format_as_csv() directly with original data
+    formatting_service = _get_formatting_service()
+    csv_data = formatting_service.format_as_csv(
+        data=csv_params.get('monthly_data', {}),
+        currency=csv_params.get('currency', ''),
+        no_currency_format=csv_params.get('no_currency_format', False)
+    )
 
     # Create a response with the CSV data
     response: Response = make_response(csv_data)

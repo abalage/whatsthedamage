@@ -82,8 +82,10 @@ def test_process_route(client, monkeypatch, csv_rows, mapping, config_yml_defaul
     with client.session_transaction() as sess:
         assert 'result' in sess
         assert 'table_data' in sess
-        assert 'headers' in sess['table_data']
-        assert 'rows' in sess['table_data']
+        # table_data now contains CSV generation params
+        assert 'monthly_data' in sess['table_data']
+        assert 'currency' in sess['table_data']
+        assert 'no_currency_format' in sess['table_data']
 
     os.remove(sample_csv_path)
 
@@ -224,7 +226,8 @@ def test_download_route_with_result(client, monkeypatch, csv_rows, mapping, conf
     assert response.status_code == 200
     assert response.headers['Content-Disposition'] == 'attachment; filename=result.csv'
     assert response.headers['Content-Type'] == 'text/csv'
-    assert b'Categories,Total\nbalance,0.0\n' in response.data
+    # CSV uses format_as_csv() which outputs DataFrame with index
+    assert b',Total\nbalance,0.0\n' in response.data
 
     os.remove(sample_csv_path)
 

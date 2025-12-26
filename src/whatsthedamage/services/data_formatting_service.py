@@ -1,7 +1,7 @@
 """Data Formatting Service for standardized data output formatting.
 
 This service centralizes all data formatting logic across web, API, and CLI,
-consolidating logic from DataFrameFormatter, html_parser, and various formatting
+consolidating logic from DataFrameFormatter and various formatting
 scattered in controllers.
 
 Architecture Patterns:
@@ -14,7 +14,6 @@ Architecture Patterns:
 import pandas as pd
 import json
 from typing import Dict, List, Tuple, Union, Optional, Any
-from whatsthedamage.utils.html_parser import TableParser
 
 
 class DataFormattingService:
@@ -22,7 +21,6 @@ class DataFormattingService:
 
     This service consolidates formatting logic that was previously scattered across:
     - DataFrameFormatter for DataFrame/HTML formatting
-    - html_parser.TableParser for HTML parsing
     - routes_helpers for sorting metadata injection
     - csv_processor for CSV export
 
@@ -35,7 +33,7 @@ class DataFormattingService:
 
     def __init__(self) -> None:
         """Initialize the data formatting service."""
-        self._table_parser = TableParser()
+        pass
 
     def format_as_html_table(
         self,
@@ -161,7 +159,7 @@ class DataFormattingService:
         pd.set_option('display.width', 130)
         if nowrap:
             pd.set_option('display.expand_frame_repr', False)
-        
+
         # Create DataFrame
         df = pd.DataFrame(data)
         df = df.fillna(0)
@@ -175,7 +173,7 @@ class DataFormattingService:
                 ),
                 axis=1
             )
-        
+
         return df.to_string()
 
     def format_as_json(
@@ -223,99 +221,80 @@ class DataFormattingService:
         """
         return f"{value:.{decimal_places}f} {currency}"
 
-    def parse_html_table(
+    def prepare_summary_table_data(
         self,
-        html: str
-    ) -> Tuple[List[str], List[List[str]]]:
-        """Parse HTML table into headers and rows.
-
-        :param html: HTML string containing a table
-        :return: Tuple of (headers, rows) where headers is a list of column header
-            strings and rows is a list of rows, each row is a list of cell values
-
-        Example::
-
-            >>> html = "<table><thead><tr><th>Cat</th></tr></thead></table>"
-            >>> headers, rows = service.parse_html_table(html)
-            >>> assert headers == ["Cat"]
-        """
-        return self._table_parser.parse_table(html)
-
-    def prepare_table_for_rendering(
-        self,
-        html: str
+        data: Dict[str, Dict[str, float]],
+        currency: str,
+        no_currency_format: bool = False,
+        categories_header: str = "Categories"
     ) -> Tuple[List[str], List[List[Dict[str, Union[str, float, None]]]]]:
-        """Parse HTML table and add sorting metadata for rendering.
+        """Prepare summary table data with display/order metadata for rendering.
 
-        This method parses an HTML table and enhances it with sorting metadata
-        needed for DataTables or sortable web tables. Each cell becomes a dict
-        with 'display' (what to show) and 'order' (what to sort by).
+        Converts summary data directly to structured format with display values
+        and sorting metadata, without going through HTML parsing. This is the
+        proper way to enhance data before rendering.
 
-        :param html: HTML table string
+        :param data: Data dictionary where outer keys are columns (months),
+            inner keys are rows (categories), values are amounts
+        :param currency: Currency code (e.g., "EUR", "USD")
+        :param no_currency_format: If True, disables currency formatting
+        :param categories_header: Header text for the categories column
         :return: Tuple of (headers, enhanced_rows) where headers is a list of
             column header strings and enhanced_rows is a list of rows, each row
-            is a list of dicts with 'display', 'order', and optionally 'details' keys
+            is a list of dicts with 'display' and 'order' keys
 
         Example::
 
-            >>> html = "<table><thead><tr><th>Cat</th><th>Jan</th></tr></thead>"
-            >>> html += "<tbody><tr><th>Grocery</th><td>150.50 EUR</td></tr></tbody></table>"
-            >>> headers, rows = service.prepare_table_for_rendering(html)
+            >>> data = {"January": {"Grocery": 150.5, "Utilities": 80.0}}
+            >>> headers, rows = service.prepare_summary_table_data(data, "EUR")
+            >>> assert headers == ["Categories", "January"]
+            >>> assert rows[0][0]['display'] == "Grocery"
             >>> assert rows[0][1]['display'] == "150.50 EUR"
-            >>> assert rows[0][1]['order'] == 150.50
+            >>> assert rows[0][1]['order'] == 150.5
         """
-        headers, raw_rows = self.parse_html_table(html)
+        # Create DataFrame from data
+        df = pd.DataFrame(data)
+        df = df.fillna(0)
+        df = df.sort_index()
 
+        # Build headers: Categories + month columns
+        headers = [categories_header] + list(df.columns)
+
+        # Build enhanced rows with display/order metadata
         enhanced_rows: List[List[Dict[str, Union[str, float, None]]]] = []
-        for row_data in raw_rows:
-            enhanced_row: List[Dict[str, Union[str, float, None]]] = []
-            for idx, cell in enumerate(row_data):
-                # First column (categories) has no sorting order
-                if idx == 0:
-                    enhanced_row.append({
-                        'display': cell,
-                        'order': None
-                    })
+
+        for category in df.index:
+            row: List[Dict[str, Union[str, float, None]]] = []
+
+            # First cell: category name (no sorting order)
+            row.append({
+                'display': str(category),
+                'order': None
+            })
+
+            # Remaining cells: numeric values with display and order
+            for column in df.columns:
+                value = df.loc[category, column]
+
+                # Convert to float for consistent handling
+                # Type ignore needed for pandas Scalar type compatibility
+                numeric_value = float(value) if pd.notna(value) else 0.0  # type: ignore[arg-type]
+
+                # Format display value
+                if no_currency_format:
+                    display_value = f"{numeric_value:.2f}"
                 else:
-                    # Extract numeric value for sorting from currency strings
-                    order_value = self._extract_sort_value(cell)
-                    enhanced_row.append({
-                        'display': cell,
-                        'order': order_value
-                    })
-            enhanced_rows.append(enhanced_row)
+                    display_value = f"{numeric_value:.2f} {currency}"
+
+                # Add cell with display and order values
+                row.append({
+                    'display': display_value,
+                    'order': numeric_value
+                })
+
+            enhanced_rows.append(row)
 
         return headers, enhanced_rows
-
-    def _extract_sort_value(self, cell_value: str) -> Union[float, str]:
-        """Extract numeric value for sorting from formatted cell value.
-
-        :param cell_value: Cell value string (e.g., "150.50 EUR" or "150.50")
-        :return: Float value for sorting, or original string if not numeric
-
-        Example::
-
-            >>> service._extract_sort_value("150.50 EUR")
-            150.50
-            >>> service._extract_sort_value("N/A")
-            "N/A"
-        """
-        if not cell_value or cell_value.strip() == '':
-            return 0.0
-
-        # Try to extract numeric value from currency strings like "150.50 EUR"
-        parts = cell_value.strip().split()
-        if len(parts) >= 1:
-            try:
-                return float(parts[0].replace(',', ''))
-            except ValueError:
-                pass
-
-        # Try direct conversion
-        try:
-            return float(cell_value.replace(',', ''))
-        except ValueError:
-            return cell_value
 
     def format_for_output(
         self,

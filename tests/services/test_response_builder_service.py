@@ -59,10 +59,10 @@ class TestApiResponseBuilding:
         dt_response = DataTablesResponse(data=agg_rows)
         dt_response.account = "ACC123"  # Set account ID
         dt_response.currency = "HUF"  # Set currency
-        
+
         # Create dict of responses by account ID
         datatables_dict = {"ACC123": dt_response}
-        
+
         params = ProcessingRequest(ml_enabled=True)
         metadata = {'row_count': 150}
 
@@ -83,66 +83,6 @@ class TestApiResponseBuilding:
 # (test_api_v1_endpoints.py, test_api_v2_endpoints.py, test_routes.py)
 # which provide Flask app context. Unit testing error responses in isolation
 # requires mocking Flask's jsonify(), which adds complexity without value.
-
-
-class TestTableParsingForRendering:
-    """Test HTML table parsing and metadata extraction."""
-
-    @pytest.mark.parametrize("html,expected_headers,expected_cell_values", [
-        # Simple table
-        ("""
-        <table>
-            <thead><tr><th>Categories</th><th>Amount</th></tr></thead>
-            <tbody><tr><th>Grocery</th><td>150.50</td></tr></tbody>
-        </table>
-        """, ["Categories", "Amount"], [("Grocery", None), ("150.50", 150.50)]),
-        
-        # Currency with symbols
-        ("""
-        <table>
-            <thead><tr><th>Categories</th><th>Total</th></tr></thead>
-            <tbody><tr><th>Utilities</th><td>-80.75 HUF</td></tr></tbody>
-        </table>
-        """, ["Categories", "Total"], [("Utilities", None), ("-80.75 HUF", -80.75)]),
-        
-        # Empty cells
-        ("""
-        <table>
-            <thead><tr><th>Categories</th><th>Amount</th></tr></thead>
-            <tbody><tr><th>Other</th><td></td></tr></tbody>
-        </table>
-        """, ["Categories", "Amount"], [("Other", None), ("", 0)]),
-    ])
-    def test_parses_html_tables_with_various_content(
-        self, service, html, expected_headers, expected_cell_values
-    ):
-        """Test parsing HTML tables with different content patterns."""
-        headers, rows = service.prepare_table_for_rendering(html)
-
-        assert headers == expected_headers
-        assert len(rows) == 1
-        for i, (expected_display, expected_order) in enumerate(expected_cell_values):
-            assert rows[0][i]['display'] == expected_display
-            if expected_order is None:
-                assert rows[0][i]['order'] is None
-            elif expected_order == 0:
-                assert rows[0][i]['order'] == 0
-            else:
-                assert abs(rows[0][i]['order'] - expected_order) < 0.01
-
-    def test_first_column_not_sortable(self, service):
-        """Test that first column (categories) has no numeric order."""
-        html = """
-        <table>
-            <thead><tr><th>Categories</th><th>Amount</th></tr></thead>
-            <tbody><tr><th>Test</th><td>100.00</td></tr></tbody>
-        </table>
-        """
-
-        _, rows = service.prepare_table_for_rendering(html)
-
-        assert rows[0][0]['order'] is None  # Categories column
-        assert abs(rows[0][1]['order'] - 100.0) < 0.01  # Amount column
 
 
 class TestDateRangeBuilding:

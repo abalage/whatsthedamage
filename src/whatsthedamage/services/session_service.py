@@ -3,8 +3,8 @@
 This service centralizes session management to eliminate direct session
 manipulation across controllers and provide type-safe access to session data.
 """
-from typing import Optional, Dict, Any, Tuple, List
-from dataclasses import dataclass, field
+from typing import Optional, Dict, Any, Tuple
+from dataclasses import dataclass
 from flask import session
 
 
@@ -35,11 +35,9 @@ class FormData:
     def from_dict(cls, data: Dict[str, Any]) -> 'FormData':
         """Create FormData from dictionary.
 
-        Args:
-            data: Dictionary with form data
-
-        Returns:
-            FormData instance
+        :param data: Dictionary with form data
+        :returns: FormData instance
+        :rtype: FormData
         """
         return cls(
             filename=data.get('filename'),
@@ -55,8 +53,8 @@ class FormData:
     def to_dict(self) -> Dict[str, Any]:
         """Convert FormData to dictionary.
 
-        Returns:
-            Dictionary with form data
+        :returns: Dictionary with form data
+        :rtype: Dict[str, Any]
         """
         return {
             'filename': self.filename,
@@ -67,44 +65,6 @@ class FormData:
             'no_currency_format': self.no_currency_format,
             'filter': self.filter,
             'ml': self.ml
-        }
-
-
-@dataclass
-class TableData:
-    """Type-safe container for table data stored in session.
-
-    Attributes:
-        headers: List of table header strings
-        rows: List of rows, where each row is a list of cell dictionaries
-    """
-    headers: List[str] = field(default_factory=list)
-    rows: List[List[Dict[str, Any]]] = field(default_factory=list)
-
-    @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> 'TableData':
-        """Create TableData from dictionary.
-
-        Args:
-            data: Dictionary with table data
-
-        Returns:
-            TableData instance
-        """
-        return cls(
-            headers=data.get('headers', []),
-            rows=data.get('rows', [])
-        )
-
-    def to_dict(self) -> Dict[str, Any]:
-        """Convert TableData to dictionary.
-
-        Returns:
-            Dictionary with table data
-        """
-        return {
-            'headers': self.headers,
-            'rows': self.rows
         }
 
 
@@ -134,16 +94,15 @@ class SessionService:
     def store_form_data(self, form_data: Dict[str, Any]) -> None:
         """Store form data in session.
 
-        Args:
-            form_data: Dictionary containing form data
+        :param form_data: Dictionary containing form data
         """
         session[self.SESSION_KEY_FORM_DATA] = form_data
 
     def retrieve_form_data(self) -> Optional[FormData]:
         """Retrieve form data from session.
 
-        Returns:
-            FormData object if available, None otherwise
+        :returns: FormData object if available, None otherwise
+        :rtype: Optional[FormData]
         """
         data = session.get(self.SESSION_KEY_FORM_DATA)
         if data:
@@ -153,40 +112,39 @@ class SessionService:
     def has_form_data(self) -> bool:
         """Check if form data exists in session.
 
-        Returns:
-            True if form data exists, False otherwise
+        :returns: True if form data exists, False otherwise
+        :rtype: bool
         """
         return self.SESSION_KEY_FORM_DATA in session
 
-    def store_result(self, html_result: str, table_data: Dict[str, Any]) -> None:
+    def store_result(self, html_result: str, csv_params: Dict[str, Any]) -> None:
         """Store processing result in session.
 
-        Args:
-            html_result: HTML string with formatted result
-            table_data: Dictionary with headers and rows
+        :param html_result: HTML string with formatted result
+        :param csv_params: Dictionary with CSV generation parameters
+            (monthly_data, currency, no_currency_format)
         """
         session[self.SESSION_KEY_RESULT] = html_result
-        session[self.SESSION_KEY_TABLE_DATA] = table_data
+        session[self.SESSION_KEY_TABLE_DATA] = csv_params
 
-    def retrieve_result(self) -> Optional[Tuple[str, TableData]]:
+    def retrieve_result(self) -> Optional[Tuple[str, Dict[str, Any]]]:
         """Retrieve processing result from session.
 
-        Returns:
-            Tuple of (html_result, TableData) if available, None otherwise
+        :returns: Tuple of (html_result, csv_params) if available, None otherwise
+        :rtype: Optional[Tuple[str, Dict[str, Any]]]
         """
         html_result = session.get(self.SESSION_KEY_RESULT)
-        table_data_dict = session.get(self.SESSION_KEY_TABLE_DATA)
+        csv_params = session.get(self.SESSION_KEY_TABLE_DATA)
 
-        if html_result and table_data_dict:
-            table_data = TableData.from_dict(table_data_dict)
-            return html_result, table_data
+        if html_result and csv_params:
+            return html_result, csv_params
         return None
 
     def has_result(self) -> bool:
         """Check if result exists in session.
 
-        Returns:
-            True if result exists, False otherwise
+        :returns: True if result exists, False otherwise
+        :rtype: bool
         """
         return (self.SESSION_KEY_RESULT in session and
                 self.SESSION_KEY_TABLE_DATA in session)
@@ -194,24 +152,23 @@ class SessionService:
     def set_language(self, lang_code: str) -> None:
         """Set user language preference.
 
-        Args:
-            lang_code: Language code (e.g., 'en', 'hu')
+        :param lang_code: Language code (e.g., 'en', 'hu')
         """
         session[self.SESSION_KEY_LANG] = lang_code
 
     def get_language(self) -> str:
         """Get user language preference.
 
-        Returns:
-            Language code from session or default language
+        :returns: Language code from session or default language
+        :rtype: str
         """
         return str(session.get(self.SESSION_KEY_LANG, self.DEFAULT_LANGUAGE))
 
     def has_language(self) -> bool:
         """Check if language preference exists in session.
 
-        Returns:
-            True if language is set, False otherwise
+        :returns: True if language is set, False otherwise
+        :rtype: bool
         """
         return self.SESSION_KEY_LANG in session
 
@@ -236,8 +193,8 @@ class SessionService:
 
         Useful for monitoring and preventing memory leaks from large session data.
 
-        Returns:
-            Approximate size in bytes
+        :returns: Approximate size in bytes
+        :rtype: int
         """
         size = 0
         for key in [self.SESSION_KEY_FORM_DATA, self.SESSION_KEY_RESULT,

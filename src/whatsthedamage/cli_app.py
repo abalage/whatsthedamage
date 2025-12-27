@@ -45,6 +45,8 @@ def format_output(dt_responses: Dict[str, DataTablesResponse], args: AppArgs) ->
     Returns:
         str: Formatted output string
     """
+    # FIXME: Implement service factory pattern for CLI to make DI consistent across all interfaces
+    # CLI should use a factory function to create services with proper dependency injection
     formatting_service = DataFormattingService()
 
     return formatting_service.format_datatables_for_output(

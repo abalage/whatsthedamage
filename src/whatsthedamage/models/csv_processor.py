@@ -91,6 +91,8 @@ class CSVProcessor:
         Returns:
             str: The formatted data as a string or None.
         """
+        # FIXME: CSVProcessor should receive DataFormattingService via dependency injection
+        # Currently instantiates directly since CSVProcessor is used in non-Flask contexts
         formatting_service = DataFormattingService()
 
         return formatting_service.format_for_output(

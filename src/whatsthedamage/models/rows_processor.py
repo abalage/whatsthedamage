@@ -8,7 +8,7 @@ from whatsthedamage.models.row_filter import RowFilter
 from whatsthedamage.models.row_summarizer import RowSummarizer
 from whatsthedamage.models.dt_response_builder import DataTablesResponseBuilder
 from whatsthedamage.utils.date_converter import DateConverter
-from whatsthedamage.view.row_printer import print_categorized_rows, print_training_data
+from whatsthedamage.view.row_printer import print_categorized_rows, print_training_data, print_categorized_rows_v2, print_training_data_v2
 
 """
 RowsProcessor processes rows of CSV data. It filters, enriches, categorizes, and summarizes the rows.
@@ -71,6 +71,9 @@ class RowsProcessor:
         """
         Processes a list of CsvRow objects and returns a summary of specified attributes grouped by a category.
 
+        .. deprecated:: 0.9.0
+            Use :func:`process_rows_v2` instead. This method will be removed in v0.10.0.
+
         Args:
             rows (List[CsvRow]): List of CsvRow objects to be processed.
 
@@ -78,6 +81,13 @@ class RowsProcessor:
             Dict[str, Dict[str, float]]: A dictionary where keys are date ranges or month names, and values are
                                          dictionaries summarizing the specified attribute by category.
         """
+        import warnings
+        warnings.warn(
+            "process_rows() is deprecated. Use process_rows_v2() instead. "
+            "This method will be removed in v0.10.0.",
+            DeprecationWarning,
+            stacklevel=2
+        )
         filtered_sets = self._filter_rows(rows)
         data_for_pandas = {}
         all_set_rows_dict: Dict[str, List[CsvRow]] = {}
@@ -130,8 +140,10 @@ class RowsProcessor:
             # Filter rows by date or month for this account
             filtered_sets = self._filter_rows_v2(account_rows)
 
-            # Initialize the builder with date format only
-            builder = DataTablesResponseBuilder(self._date_attribute_format)
+            # Initialize the builder with date format and skip_details optimization
+            # Skip building DetailRow objects when not in verbose/training_data mode
+            skip_details = not (self._verbose or self._training_data)
+            builder = DataTablesResponseBuilder(self._date_attribute_format, skip_details=skip_details)
 
             # Process each month/date range for this account
             for month_field, set_rows in filtered_sets:
@@ -164,6 +176,12 @@ class RowsProcessor:
         if responses_by_account:
             first_account = next(iter(responses_by_account.keys()))
             self._dt_json_data = responses_by_account[first_account]
+
+        # Print verbose/training_data output if flags are set
+        if self._verbose:
+            print_categorized_rows_v2(responses_by_account)
+        elif self._training_data:
+            print_training_data_v2(responses_by_account)
 
         return responses_by_account
 

@@ -148,11 +148,19 @@ def download() -> Response:
 
     _, csv_params = result_data
 
-    # Use DataFormattingService.format_as_csv() directly with original data
+    # Deserialize DataTablesResponse from dict
+    from whatsthedamage.config.dt_models import DataTablesResponse
+    dt_responses_dict = csv_params.get('dt_responses_dict', {})
+    dt_responses = {
+        account_id: DataTablesResponse.model_validate(dt_dict)
+        for account_id, dt_dict in dt_responses_dict.items()
+    }
+
+    # Use DataFormattingService.format_datatables_as_csv() with DataTablesResponse
     formatting_service = _get_formatting_service()
-    csv_data = formatting_service.format_as_csv(
-        data=csv_params.get('monthly_data', {}),
-        currency=csv_params.get('currency', ''),
+    csv_data = formatting_service.format_datatables_as_csv(
+        dt_responses=dt_responses,
+        delimiter=';',
         no_currency_format=csv_params.get('no_currency_format', False)
     )
 

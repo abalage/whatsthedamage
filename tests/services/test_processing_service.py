@@ -27,6 +27,7 @@ def mock_processor():
         'January 2023': {'Food': 100.0, 'Transport': 200.0}
     }
     mock.process_v2.return_value = Mock(data=[{'category': 'Food', 'total': 100.0}])
+    mock._rows = [Mock(), Mock()]  # Mock cached rows for row_count
     return mock
 
 
@@ -158,6 +159,7 @@ class TestProcessingService:
     def test_process_with_details_empty_data(self, service, mock_dependencies):
         """Test process_with_details with empty CSV."""
         mock_dependencies['processor']._read_csv_file.return_value = []
+        mock_dependencies['processor']._rows = []  # Empty rows for empty CSV
 
         result = service.process_with_details(csv_file_path='/path/to/file.csv')
 
@@ -227,8 +229,8 @@ class TestProcessingService:
 
     @patch('whatsthedamage.services.processing_service.AppContext')
     def test_process_with_details_uses_verbose_true(self, mock_context, service, mock_dependencies):
-        """Test process_with_details sets verbose=True."""
-        service.process_with_details(csv_file_path='/path/to/file.csv')
+        """Test process_with_details sets verbose=True when passed."""
+        service.process_with_details(csv_file_path='/path/to/file.csv', verbose=True)
 
         args = mock_context.call_args[0][1]
         assert args['verbose'] is True

@@ -65,15 +65,33 @@ class MockCSVProcessor:
 
 @pytest.fixture
 def mock_processing_service_result():
-    """Factory fixture for creating mock ProcessingService results."""
+    """Factory fixture for creating mock ProcessingService results with DataTablesResponse."""
+    from whatsthedamage.config.dt_models import DataTablesResponse, AggregatedRow, DisplayRawField, DateField
+    
     def _create_result(data=None):
         if data is None:
             data = {}
+        
+        # Create mock DataTablesResponse
+        agg_rows = []
+        for category, amount in data.items():
+            agg_rows.append(
+                AggregatedRow(
+                    month=DateField(display="Total", timestamp=0),
+                    category=category,
+                    total=DisplayRawField(display=f"{amount:.2f} USD", raw=amount),
+                    details=[]
+                )
+            )
+        
+        dt_response = DataTablesResponse(
+            data=agg_rows,
+            currency="USD"
+        )
+        
         return {
-            'data': data,
-            'monthly_data': {'Total': data},  # Mock monthly breakdown
+            'data': {'default_account': dt_response},
             'metadata': {},
-            'processor': MockCSVProcessor()
         }
     return _create_result
 

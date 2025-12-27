@@ -31,14 +31,25 @@ class CSVProcessor:
         self.config = context.config
         self.args = context.args
         self.processor = RowsProcessor(self.context)
+        self._rows: List[CsvRow] = []  # Cache for rows to avoid re-reading
 
     def process(self) -> str:
         """
         Processes the CSV file and returns the formatted result.
 
+        .. deprecated:: 0.9.0
+            Use :func:`process_v2` instead. This method will be removed in v0.10.0.
+
         Returns:
             str: The formatted result as a string or None.
         """
+        import warnings
+        warnings.warn(
+            "process() is deprecated. Use process_v2() instead. "
+            "This method will be removed in v0.10.0.",
+            DeprecationWarning,
+            stacklevel=2
+        )
         rows = self._read_csv_file()
         data_for_pandas = self.processor.process_rows(rows)
         return self._format_data(data_for_pandas)
@@ -51,8 +62,8 @@ class CSVProcessor:
         Returns:
             Dict[str, DataTablesResponse]: The DataTables-compatible structure for frontend.
         """
-        rows = self._read_csv_file()
-        return self.processor.process_rows_v2(rows)
+        self._rows = self._read_csv_file()
+        return self.processor.process_rows_v2(self._rows)
 
     def _read_csv_file(self) -> List[CsvRow]:
         """

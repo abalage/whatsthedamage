@@ -39,6 +39,10 @@ def _get_response_builder_service() -> ResponseBuilderService:
 def process_transactions() -> tuple[Response, int]:
     """Process CSV transaction file and return summary totals.
 
+    .. deprecated:: 0.9.0
+        API v1 is deprecated. Use API v2 (/api/v2/process) instead.
+        This endpoint will be removed in v0.10.0.
+
     Accepts multipart/form-data with:
     - csv_file (required): CSV file with bank transactions
     - config_file (optional): YAML configuration file
@@ -86,7 +90,13 @@ def process_transactions() -> tuple[Response, int]:
                 processing_time=processing_time
             )
 
-            return jsonify(response.model_dump()), 200
+            # Add deprecation headers
+            json_response = jsonify(response.model_dump())
+            json_response.headers['Deprecation'] = 'true'
+            json_response.headers['Sunset'] = 'version="0.10.0"'
+            json_response.headers['Link'] = '</api/v2/process>; rel="successor-version"'
+
+            return json_response, 200
 
         finally:
             cleanup_files(csv_path, config_path)

@@ -134,8 +134,8 @@ def process_summary_and_build_response(
     Returns:
         Flask response with rendered result.html
     """
-    # Process using service layer
-    result = _get_processing_service().process_summary(
+    # Process using service layer (v2 processing pipeline with DataTablesResponse)
+    result = _get_processing_service().process_with_details(
         csv_file_path=csv_path,
         config_file_path=config_path,
         start_date=form.start_date.data.strftime('%Y-%m-%d') if form.start_date.data else None,
@@ -146,35 +146,34 @@ def process_summary_and_build_response(
     )
 
     # Format result using DataFormattingService
-    processor = result['processor']
     formatting_service = _get_data_formatting_service()
 
-    # Use monthly breakdown data (not flattened) to preserve month columns
-    monthly_data = result['monthly_data']
-    rows = processor._read_csv_file()
-    currency = processor.processor.get_currency_from_rows(rows)
+    # Extract DataTablesResponse per account
+    dt_responses = result['data']
 
-    # Prepare table data directly from monthly_data (no HTML parsing)
-    headers, processed_rows = formatting_service.prepare_summary_table_data(
-        monthly_data,
-        currency=currency,
+    # Prepare table data directly from DataTablesResponse
+    headers, processed_rows = formatting_service.prepare_datatables_summary_table_data(
+        dt_responses,
         no_currency_format=form.no_currency_format.data,
         categories_header=_("Categories")
     )
 
     # Generate HTML for display
-    html_result = formatting_service.format_as_html_table(
-        monthly_data,
-        currency=currency,
+    html_result = formatting_service.format_datatables_as_html_table(
+        dt_responses,
         no_currency_format=form.no_currency_format.data,
         categories_header=_("Categories")
     )
 
-    # Store HTML and original data for CSV download (reuse format_as_csv)
+    # Store HTML and DataTablesResponse for CSV download
     session_service = _get_session_service()
+    # Serialize DataTablesResponse to dict for session storage
+    dt_responses_dict = {
+        account_id: dt_response.model_dump()
+        for account_id, dt_response in dt_responses.items()
+    }
     csv_data = {
-        'monthly_data': monthly_data,
-        'currency': currency,
+        'dt_responses_dict': dt_responses_dict,
         'no_currency_format': form.no_currency_format.data
     }
     session_service.store_result(html_result, csv_data)

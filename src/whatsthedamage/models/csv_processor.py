@@ -37,9 +37,19 @@ class CSVProcessor:
         """
         Processes the CSV file and returns the formatted result.
 
+        .. deprecated:: 0.9.0
+            Use :func:`process_v2` instead. This method will be removed in v0.10.0.
+
         Returns:
             str: The formatted result as a string or None.
         """
+        import warnings
+        warnings.warn(
+            "process() is deprecated. Use process_v2() instead. "
+            "This method will be removed in v0.10.0.",
+            DeprecationWarning,
+            stacklevel=2
+        )
         rows = self._read_csv_file()
         data_for_pandas = self.processor.process_rows(rows)
         return self._format_data(data_for_pandas)

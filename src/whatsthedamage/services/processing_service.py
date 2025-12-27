@@ -9,7 +9,6 @@ Controllers are responsible for saving uploaded files to disk and passing file p
 from typing import Dict, Any, Optional
 import time
 from whatsthedamage.config.config import AppArgs, AppContext
-from whatsthedamage.config.dt_models import DataTablesResponse
 from whatsthedamage.models.csv_processor import CSVProcessor
 from whatsthedamage.services.configuration_service import ConfigurationService
 

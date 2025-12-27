@@ -14,7 +14,28 @@ Architecture Patterns:
 import pandas as pd
 import json
 from typing import Dict, List, Tuple, Union, Optional, Any
+from pydantic import BaseModel
 from whatsthedamage.config.dt_models import DataTablesResponse
+
+
+class SummaryData(BaseModel):
+    """Extracted summary data from a DataTablesResponse for a single account.
+
+    This model encapsulates the summary data extracted from transaction data,
+    providing a simplified format for formatting and display.
+
+    Attributes:
+        summary: Dict mapping month names to category amounts
+            Format: {month_name: {category: amount}}
+        currency: Currency code (e.g., 'EUR', 'USD')
+        account_id: Account identifier this summary belongs to
+    """
+    summary: Dict[str, Dict[str, float]]
+    currency: str
+    account_id: str
+
+    class Config:
+        frozen = True  # Immutable for safe caching
 
 
 class DataFormattingService:
@@ -34,7 +55,7 @@ class DataFormattingService:
 
     def __init__(self) -> None:
         """Initialize the data formatting service."""
-        pass
+        self._summary_cache: Dict[str, SummaryData] = {}  # Cache by account_id
 
     def format_as_html_table(
         self,
@@ -362,6 +383,7 @@ class DataFormattingService:
     def format_datatables_as_html_table(
         self,
         dt_responses: Dict[str, DataTablesResponse],
+        account_id: Optional[str] = None,
         nowrap: bool = False,
         no_currency_format: bool = False,
         categories_header: str = "Categories"
@@ -369,20 +391,28 @@ class DataFormattingService:
         """Format DataTablesResponse as HTML table.
 
         Extracts summary data from DataTablesResponse and formats as HTML.
-        For multi-account data, uses the first account.
 
         :param dt_responses: Dict mapping account_id to DataTablesResponse
+        :param account_id: Account ID to format. If None and multiple accounts exist,
+            raises ValueError. If None and single account exists, uses that account.
         :param nowrap: If True, disables text wrapping in pandas output
         :param no_currency_format: If True, disables currency formatting
         :param categories_header: Header text for the categories column
         :return: HTML string with formatted table
+        :raises ValueError: If multiple accounts exist but no account_id specified
         """
-        # Extract summary from first account (or merge for multi-account)
-        data, currency = self._extract_summary_from_datatables(dt_responses)
+        # Select and validate account
+        selected_account_id = self._select_account(dt_responses, account_id)
+
+        # Extract summary for selected account
+        summary_data = self._extract_summary_from_account(
+            dt_responses[selected_account_id],
+            selected_account_id
+        )
 
         return self.format_as_html_table(
-            data=data,
-            currency=currency,
+            data=summary_data.summary,
+            currency=summary_data.currency,
             nowrap=nowrap,
             no_currency_format=no_currency_format,
             categories_header=categories_header
@@ -391,24 +421,34 @@ class DataFormattingService:
     def format_datatables_as_csv(
         self,
         dt_responses: Dict[str, DataTablesResponse],
+        account_id: Optional[str] = None,
         delimiter: str = ',',
         no_currency_format: bool = False
     ) -> str:
         """Format DataTablesResponse as CSV string.
 
         Extracts summary data from DataTablesResponse and formats as CSV.
-        For multi-account data, uses the first account.
 
         :param dt_responses: Dict mapping account_id to DataTablesResponse
+        :param account_id: Account ID to format. If None and multiple accounts exist,
+            raises ValueError. If None and single account exists, uses that account.
         :param delimiter: CSV delimiter character
         :param no_currency_format: If True, disables currency formatting
         :return: CSV formatted string
+        :raises ValueError: If multiple accounts exist but no account_id specified
         """
-        data, currency = self._extract_summary_from_datatables(dt_responses)
+        # Select and validate account
+        selected_account_id = self._select_account(dt_responses, account_id)
+
+        # Extract summary for selected account
+        summary_data = self._extract_summary_from_account(
+            dt_responses[selected_account_id],
+            selected_account_id
+        )
 
         return self.format_as_csv(
-            data=data,
-            currency=currency,
+            data=summary_data.summary,
+            currency=summary_data.currency,
             delimiter=delimiter,
             no_currency_format=no_currency_format
         )
@@ -416,24 +456,34 @@ class DataFormattingService:
     def format_datatables_as_string(
         self,
         dt_responses: Dict[str, DataTablesResponse],
+        account_id: Optional[str] = None,
         nowrap: bool = False,
         no_currency_format: bool = False
     ) -> str:
         """Format DataTablesResponse as plain string for console output.
 
         Extracts summary data from DataTablesResponse and formats as plain text.
-        For multi-account data, uses the first account.
 
         :param dt_responses: Dict mapping account_id to DataTablesResponse
+        :param account_id: Account ID to format. If None and multiple accounts exist,
+            raises ValueError. If None and single account exists, uses that account.
         :param nowrap: If True, disables text wrapping in pandas output
         :param no_currency_format: If True, disables currency formatting
         :return: Plain text formatted string
+        :raises ValueError: If multiple accounts exist but no account_id specified
         """
-        data, currency = self._extract_summary_from_datatables(dt_responses)
+        # Select and validate account
+        selected_account_id = self._select_account(dt_responses, account_id)
+
+        # Extract summary for selected account
+        summary_data = self._extract_summary_from_account(
+            dt_responses[selected_account_id],
+            selected_account_id
+        )
 
         return self.format_as_string(
-            data=data,
-            currency=currency,
+            data=summary_data.summary,
+            currency=summary_data.currency,
             nowrap=nowrap,
             no_currency_format=no_currency_format
         )
@@ -441,24 +491,34 @@ class DataFormattingService:
     def prepare_datatables_summary_table_data(
         self,
         dt_responses: Dict[str, DataTablesResponse],
+        account_id: Optional[str] = None,
         no_currency_format: bool = False,
         categories_header: str = "Categories"
     ) -> Tuple[List[str], List[List[Dict[str, Union[str, float, None]]]]]:
         """Prepare summary table data from DataTablesResponse with display/order metadata.
 
         Extracts summary data from DataTablesResponse and prepares for rendering.
-        For multi-account data, uses the first account.
 
         :param dt_responses: Dict mapping account_id to DataTablesResponse
+        :param account_id: Account ID to format. If None and multiple accounts exist,
+            raises ValueError. If None and single account exists, uses that account.
         :param no_currency_format: If True, disables currency formatting
         :param categories_header: Header text for the categories column
         :return: Tuple of (headers, enhanced_rows)
+        :raises ValueError: If multiple accounts exist but no account_id specified
         """
-        data, currency = self._extract_summary_from_datatables(dt_responses)
+        # Select and validate account
+        selected_account_id = self._select_account(dt_responses, account_id)
+
+        # Extract summary for selected account
+        summary_data = self._extract_summary_from_account(
+            dt_responses[selected_account_id],
+            selected_account_id
+        )
 
         return self.prepare_summary_table_data(
-            data=data,
-            currency=currency,
+            data=summary_data.summary,
+            currency=summary_data.currency,
             no_currency_format=no_currency_format,
             categories_header=categories_header
         )
@@ -466,6 +526,7 @@ class DataFormattingService:
     def format_datatables_for_output(
         self,
         dt_responses: Dict[str, DataTablesResponse],
+        account_id: Optional[str] = None,
         output_format: Optional[str] = None,
         output_file: Optional[str] = None,
         nowrap: bool = False,
@@ -475,21 +536,31 @@ class DataFormattingService:
         """Format DataTablesResponse for various output types.
 
         This is a convenience method for formatting DataTablesResponse to
-        HTML, CSV file, or console string. For multi-account data, uses the first account.
+        HTML, CSV file, or console string.
 
         :param dt_responses: Dict mapping account_id to DataTablesResponse
+        :param account_id: Account ID to format. If None and multiple accounts exist,
+            raises ValueError. If None and single account exists, uses that account.
         :param output_format: Output format ('html' or None for default)
         :param output_file: Path to output file (triggers CSV export)
         :param nowrap: If True, disables text wrapping in pandas output
         :param no_currency_format: If True, disables currency formatting
         :param categories_header: Header text for the categories column
         :return: Formatted string (HTML, CSV, or plain text)
+        :raises ValueError: If multiple accounts exist but no account_id specified
         """
-        data, currency = self._extract_summary_from_datatables(dt_responses)
+        # Select and validate account
+        selected_account_id = self._select_account(dt_responses, account_id)
+
+        # Extract summary for selected account
+        summary_data = self._extract_summary_from_account(
+            dt_responses[selected_account_id],
+            selected_account_id
+        )
 
         return self.format_for_output(
-            data=data,
-            currency=currency,
+            data=summary_data.summary,
+            currency=summary_data.currency,
             output_format=output_format,
             output_file=output_file,
             nowrap=nowrap,
@@ -497,26 +568,69 @@ class DataFormattingService:
             categories_header=categories_header
         )
 
-    def _extract_summary_from_datatables(
+    def _select_account(
         self,
-        dt_responses: Dict[str, DataTablesResponse]
-    ) -> Tuple[Dict[str, Dict[str, float]], str]:
-        """Extract summary data from DataTablesResponse.
-
-        Converts DataTablesResponse to simplified summary format for formatting.
-        Uses the first account's data (single-account) or first account for multi-account.
+        dt_responses: Dict[str, DataTablesResponse],
+        account_id: Optional[str] = None
+    ) -> str:
+        """Select and validate account from DataTablesResponse dict.
 
         :param dt_responses: Dict mapping account_id to DataTablesResponse
-        :return: Tuple of (summary_dict, currency)
-            summary_dict: Dict[month, Dict[category, amount]]
-            currency: Currency code
+        :param account_id: Optional account ID to select. If None and multiple accounts
+            exist, raises ValueError. If None and single account exists, uses that account.
+        :return: Selected account_id
+        :raises ValueError: If multiple accounts exist but no account_id specified,
+            or if specified account_id not found
         """
         if not dt_responses:
-            return {}, ''
+            raise ValueError("No account data available")
 
-        # Use first account's data
-        first_account_id = next(iter(dt_responses.keys()))
-        dt_response = dt_responses[first_account_id]
+        # If account_id not specified, validate single account
+        if account_id is None:
+            if len(dt_responses) > 1:
+                available_accounts = ', '.join(dt_responses.keys())
+                raise ValueError(
+                    f"Multiple accounts found ({len(dt_responses)}) but no account_id specified. "
+                    f"Available accounts: {available_accounts}. "
+                    f"Please specify account_id parameter."
+                )
+            # Single account - use it
+            account_id = next(iter(dt_responses.keys()))
+
+        # Validate account_id exists
+        if account_id not in dt_responses:
+            available_accounts = ', '.join(dt_responses.keys())
+            raise ValueError(
+                f"Account '{account_id}' not found in responses. "
+                f"Available accounts: {available_accounts}"
+            )
+
+        return account_id
+
+    def _extract_summary_from_account(
+        self,
+        dt_response: DataTablesResponse,
+        account_id: str
+    ) -> SummaryData:
+        """Extract summary data from a single account's DataTablesResponse.
+
+        This method extracts and caches summary data from a DataTablesResponse for
+        a single account. Results are cached by account_id to avoid repeated extraction.
+
+        :param dt_response: DataTablesResponse for a single account
+        :param account_id: Account identifier for caching
+        :return: SummaryData with extracted summary, currency, and account_id
+
+        Example::
+
+            >>> dt_response = DataTablesResponse(...)
+            >>> summary_data = service._extract_summary_from_account(dt_response, '12345')
+            >>> assert summary_data.account_id == '12345'
+            >>> assert summary_data.currency == 'EUR'
+        """
+        # Check cache first
+        if account_id in self._summary_cache:
+            return self._summary_cache[account_id]
 
         # Build summary dict from AggregatedRow data
         summary: Dict[str, Dict[str, float]] = {}
@@ -530,4 +644,12 @@ class DataFormattingService:
 
             summary[month_display][category] = amount
 
-        return summary, dt_response.currency
+        # Create and cache SummaryData
+        summary_data = SummaryData(
+            summary=summary,
+            currency=dt_response.currency,
+            account_id=account_id
+        )
+        self._summary_cache[account_id] = summary_data
+
+        return summary_data

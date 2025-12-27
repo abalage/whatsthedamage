@@ -27,8 +27,10 @@ def _get_session_service() -> SessionService:
 
 
 def _get_formatting_service() -> DataFormattingService:
-    """Get DataFormattingService instance."""
-    return DataFormattingService()
+    """Get DataFormattingService from app extensions (dependency injection)."""
+    from typing import cast
+    from flask import current_app
+    return cast(DataFormattingService, current_app.extensions['data_formatting_service'])
 
 
 def clear_upload_folder() -> None:

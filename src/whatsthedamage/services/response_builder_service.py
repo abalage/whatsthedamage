@@ -32,9 +32,13 @@ class ResponseBuilderService:
     scattered across v1/v2 API endpoints, routes_helpers, and error handlers.
     """
 
-    def __init__(self) -> None:
-        """Initialize the response builder service."""
-        self._formatting_service = DataFormattingService()
+    def __init__(self, formatting_service: Optional[DataFormattingService] = None) -> None:
+        """Initialize the response builder service.
+
+        Args:
+            formatting_service: Optional DataFormattingService instance (injected via DI)
+        """
+        self._formatting_service = formatting_service or DataFormattingService()
 
     def build_api_summary_response(
         self,

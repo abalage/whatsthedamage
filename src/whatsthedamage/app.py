@@ -13,6 +13,7 @@ from whatsthedamage.services.validation_service import ValidationService
 from whatsthedamage.services.response_builder_service import ResponseBuilderService
 from whatsthedamage.services.configuration_service import ConfigurationService
 from whatsthedamage.services.file_upload_service import FileUploadService
+from whatsthedamage.services.data_formatting_service import DataFormattingService
 from typing import Optional, Any
 import gettext
 
@@ -23,7 +24,8 @@ def create_app(
     validation_service: Optional[ValidationService] = None,
     response_builder_service: Optional[ResponseBuilderService] = None,
     configuration_service: Optional[ConfigurationService] = None,
-    file_upload_service: Optional[FileUploadService] = None
+    file_upload_service: Optional[FileUploadService] = None,
+    data_formatting_service: Optional[DataFormattingService] = None
 ) -> Flask:
     app: Flask = Flask(__name__, template_folder='view/templates', static_folder='view/static')
 
@@ -61,9 +63,14 @@ def create_app(
         file_upload_service = FileUploadService(validation_service=validation_service)
     app.extensions['file_upload_service'] = file_upload_service
 
+    # Initialize data formatting service (dependency injection)
+    if data_formatting_service is None:
+        data_formatting_service = DataFormattingService()
+    app.extensions['data_formatting_service'] = data_formatting_service
+
     # Initialize response builder service (dependency injection)
     if response_builder_service is None:
-        response_builder_service = ResponseBuilderService()
+        response_builder_service = ResponseBuilderService(formatting_service=data_formatting_service)
     app.extensions['response_builder_service'] = response_builder_service
 
     # --- BEGIN: Gettext integration for templates ---

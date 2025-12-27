@@ -50,8 +50,8 @@ def _get_session_service() -> SessionService:
 
 
 def _get_data_formatting_service() -> DataFormattingService:
-    """Get data formatting service instance."""
-    return DataFormattingService()
+    """Get data formatting service from app extensions (dependency injection)."""
+    return cast(DataFormattingService, current_app.extensions['data_formatting_service'])
 
 
 def handle_file_uploads(form: UploadForm) -> Dict[str, str]:

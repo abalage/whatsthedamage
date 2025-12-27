@@ -186,11 +186,14 @@ class ProcessingService:
         # Build response with metadata
         processing_time = time.time() - start_time
 
+        # Get row count from cached rows to avoid re-reading CSV
+        row_count = len(processor._rows)
+
         return {
             "data": datatables_responses,
             "metadata": {
                 "processing_time": round(processing_time, 2),
-                "row_count": len(processor._read_csv_file()),
+                "row_count": row_count,
                 "ml_enabled": ml_enabled,
                 "filters_applied": {
                     "start_date": start_date,

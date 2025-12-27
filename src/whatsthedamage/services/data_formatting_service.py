@@ -16,6 +16,7 @@ import json
 from typing import Dict, List, Tuple, Union, Optional, Any
 from pydantic import BaseModel
 from whatsthedamage.config.dt_models import DataTablesResponse
+from gettext import gettext as _
 
 
 class SummaryData(BaseModel):
@@ -41,16 +42,13 @@ class SummaryData(BaseModel):
 class DataFormattingService:
     """Service for formatting data into various output formats.
 
-    This service consolidates formatting logic that was previously scattered across:
-    - DataFrameFormatter for DataFrame/HTML formatting
-    - routes_helpers for sorting metadata injection
-    - csv_processor for CSV export
-
     Supports multiple output formats:
     - HTML tables (with optional sorting metadata)
     - CSV strings
     - JSON strings
     - Currency formatting
+
+    Account aware.
     """
 
     def __init__(self) -> None:
@@ -567,6 +565,104 @@ class DataFormattingService:
             no_currency_format=no_currency_format,
             categories_header=categories_header
         )
+
+    def format_all_accounts_for_output(
+        self,
+        dt_responses: Dict[str, DataTablesResponse],
+        output_format: Optional[str] = None,
+        output_file: Optional[str] = None,
+        nowrap: bool = False,
+        no_currency_format: bool = False,
+        categories_header: str = "Categories"
+    ) -> str:
+        """Format all accounts for output using existing formatters.
+
+        Handles multi-account iteration internally, calling the appropriate
+        existing formatter for each account and combining results with separators.
+
+        :param dt_responses: Dict mapping account_id to DataTablesResponse
+        :param output_format: Output format ('html' or None for default)
+        :param output_file: Path to output file (triggers CSV export)
+        :param nowrap: If True, disables text wrapping in pandas output
+        :param no_currency_format: If True, disables currency formatting
+        :param categories_header: Header text for the categories column
+        :return: Formatted string with all accounts
+        """
+        if not dt_responses:
+            return ""
+
+        outputs = []
+        has_multiple_accounts = len(dt_responses) > 1
+
+        for account_id in sorted(dt_responses.keys()):
+            # Add account header for multi-account scenarios
+            if has_multiple_accounts:
+                # Format account number (add dash every 8 digits)
+                formatted_id = '-'.join(
+                    account_id[i:i+8]
+                    for i in range(0, len(account_id), 8)
+                )
+                separator = "=" * 60
+                header = f"\n{separator}\n{_('Account')}: {formatted_id}\n{separator}\n"
+                outputs.append(header)
+
+            # Use existing formatter for single account
+            output = self.format_datatables_for_output(
+                dt_responses=dt_responses,
+                account_id=account_id,
+                output_format=output_format,
+                output_file=None,  # Handle file writing at end
+                nowrap=nowrap,
+                no_currency_format=no_currency_format,
+                categories_header=categories_header
+            )
+            outputs.append(output)
+
+        # Combine all outputs
+        result = '\n\n'.join(outputs) if has_multiple_accounts else outputs[0]
+
+        # Handle file output once at the end
+        if output_file:
+            with open(output_file, 'w') as f:
+                f.write(result)
+
+        return result
+
+    def prepare_accounts_for_template(
+        self,
+        dt_responses: Dict[str, DataTablesResponse]
+    ) -> Dict[str, Any]:
+        """Prepare accounts data for Jinja2 template rendering.
+
+        Provides structured data that templates can iterate over, including
+        formatted account identifiers and metadata. Templates can still access
+        the underlying DataTablesResponse for detailed rendering.
+
+        :param dt_responses: Dict mapping account_id to DataTablesResponse
+        :return: Dict with 'accounts' list and 'has_multiple_accounts' flag
+        """
+        accounts = []
+
+        for account_id in sorted(dt_responses.keys()):
+            dt_response = dt_responses[account_id]
+
+            # Format account number (add dash every 8 digits)
+            formatted_id = '-'.join(
+                account_id[i:i+8]
+                for i in range(0, len(account_id), 8)
+            )
+
+            accounts.append({
+                'id': account_id,
+                'formatted_id': formatted_id,
+                'currency': dt_response.currency,
+                'dt_response': dt_response,
+            })
+
+        return {
+            'accounts': accounts,
+            'has_multiple_accounts': len(accounts) > 1
+        }
 
     def _select_account(
         self,

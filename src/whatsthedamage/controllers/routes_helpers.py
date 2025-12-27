@@ -15,7 +15,6 @@ from whatsthedamage.services.data_formatting_service import DataFormattingServic
 from whatsthedamage.services.file_upload_service import FileUploadService, FileUploadError
 from whatsthedamage.utils.flask_locale import get_default_language
 from typing import Dict, Optional, Callable, cast
-from gettext import gettext as _
 import os
 
 
@@ -151,21 +150,7 @@ def process_summary_and_build_response(
     # Extract DataTablesResponse per account
     dt_responses = result['data']
 
-    # Prepare table data directly from DataTablesResponse
-    headers, processed_rows = formatting_service.prepare_datatables_summary_table_data(
-        dt_responses,
-        no_currency_format=form.no_currency_format.data,
-        categories_header=_("Categories")
-    )
-
-    # Generate HTML for display
-    html_result = formatting_service.format_datatables_as_html_table(
-        dt_responses,
-        no_currency_format=form.no_currency_format.data,
-        categories_header=_("Categories")
-    )
-
-    # Store HTML and DataTablesResponse for CSV download
+    # Store DataTablesResponse for CSV download
     session_service = _get_session_service()
     # Serialize DataTablesResponse to dict for session storage
     dt_responses_dict = {
@@ -176,13 +161,17 @@ def process_summary_and_build_response(
         'dt_responses_dict': dt_responses_dict,
         'no_currency_format': form.no_currency_format.data
     }
-    session_service.store_result(html_result, csv_data)
+    # Store empty html_result for backward compatibility
+    session_service.store_result('', csv_data)
+
+    # Prepare accounts data for template rendering
+    accounts_data = formatting_service.prepare_accounts_for_template(dt_responses)
 
     clear_upload_folder_fn()
     return _get_response_builder_service().build_html_response(
         template='result.html',
-        headers=headers,
-        rows=processed_rows
+        accounts_data=accounts_data,
+        timing=result.get('timing')
     )
 
 
@@ -215,10 +204,15 @@ def process_details_and_build_response(
     # Extract Dict[str, DataTablesResponse] from result
     dt_responses_by_account = result['data']
 
-    # Pass the dict of responses to template for multi-account rendering
+    # Prepare accounts data for template rendering
+    formatting_service = _get_data_formatting_service()
+    accounts_data = formatting_service.prepare_accounts_for_template(dt_responses_by_account)
+
+    # Pass the prepared data to template for multi-account rendering
     clear_upload_folder_fn()
     return _get_response_builder_service().build_html_response(
         template='v2_results.html',
-        dt_responses=dt_responses_by_account
+        accounts_data=accounts_data,
+        timing=result.get('timing')
     )
 

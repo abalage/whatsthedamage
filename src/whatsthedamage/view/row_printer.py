@@ -1,6 +1,6 @@
 from typing import Dict, List
 from whatsthedamage.models.csv_row import CsvRow
-from whatsthedamage.config.dt_models import DataTablesResponse
+from whatsthedamage.config.dt_models import DataTablesResponse, DetailRow
 import json
 import sys
 
@@ -30,7 +30,8 @@ def print_training_data(rows_dict: Dict[str, List[CsvRow]]) -> None:
     Args:
         rows_dict (Dict[str, List[CsvRow]]): A dictionary of type values and lists of CsvRow objects.
 
-    Example:
+    Example::
+
         [
             {
                 "amount": -1890.0,
@@ -78,7 +79,7 @@ def print_categorized_rows_v2(responses_by_account: Dict[str, DataTablesResponse
         print(f"\n=== Account: {account_id} ===", file=sys.stderr)
 
         # Group details by category
-        category_rows: Dict[str, List] = {}
+        category_rows: Dict[str, List[DetailRow]] = {}
         for agg_row in dt_response.data:
             category = agg_row.category
             if category not in category_rows:

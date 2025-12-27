@@ -1,6 +1,11 @@
 """
 This module processes KHBHU CSV files and provides a CLI tool to categorize and summarize the data.
 
+.. deprecated:: 0.9.0
+    This legacy controller module is deprecated. Use :mod:`whatsthedamage.cli_app` 
+    or the service layer (:class:`whatsthedamage.services.processing_service.ProcessingService`) instead.
+    This module will be removed in v0.10.0.
+
 Functions:
     set_locale(locale_str: str) -> None:
         Sets the locale for currency formatting.
@@ -48,12 +53,25 @@ def main(args: AppArgs) -> str:
     The main function receives arguments, loads the configuration, reads the CSV file,
     processes the rows, and prints or saves the result.
 
+    .. deprecated:: 0.9.0
+        This legacy main function is deprecated. Use :func:`whatsthedamage.cli_app.main` 
+        or the service layer instead. This function will be removed in v0.10.0.
+
     Args:
         args (AppArgs): The application arguments.
 
     Returns:
         str | None: The formatted result as a string or None.
     """
+    import warnings
+    warnings.warn(
+        "whatsthedamage.controllers.whatsthedamage.main() is deprecated. "
+        "Use whatsthedamage.cli_app.main() or ProcessingService instead. "
+        "This function will be removed in v0.10.0.",
+        DeprecationWarning,
+        stacklevel=2
+    )
+    
     # Set the locale
     set_locale(args['lang'])
 

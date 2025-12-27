@@ -85,18 +85,34 @@ def main() -> None:
         # Extract DataTablesResponse per account
         dt_responses: Dict[str, DataTablesResponse] = result['data']
 
-        # Print summary for each account
+        # Process all accounts uniformly
+        all_outputs = []
+        output_file = args.get('output')
+
         for account_id, dt_response in dt_responses.items():
-            # Print account header if multiple accounts
+            # Print account header for multi-account scenarios
             if len(dt_responses) > 1:
                 print(f"\n{'=' * 60}")
                 print(f"Account: {account_id}")
                 print(f"{'=' * 60}")
 
-            # Format and print output for this account
             single_account_data = {account_id: dt_response}
-            output = format_output(single_account_data, args)
+            # Create args copy without output to avoid file overwrite
+            args_copy = dict(args)
+            args_copy['output'] = None
+            output = format_output(single_account_data, args_copy)  # type: ignore[arg-type]
             print(output)
+
+            # Collect for file output if needed
+            if output_file:
+                header = f"Account: {account_id}\n" if len(dt_responses) > 1 else ""
+                all_outputs.append(f"{header}{output}")
+
+        # Write all accounts to file once
+        if output_file and all_outputs:
+            with open(output_file, 'w') as f:
+                separator = '\n\n' if len(dt_responses) > 1 else ''
+                f.write(separator.join(all_outputs))
 
     except FileNotFoundError as e:
         print(f"Error: {e}")

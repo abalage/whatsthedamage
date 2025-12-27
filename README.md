@@ -11,6 +11,7 @@ An experimental Machine Learning model is also available to help reducing the bu
 _The slang phrase "what's the damage?" is often used to ask about the cost or price of something, typically in a casual or informal context. The phrase is commonly used in social settings, especially when discussing expenses or the results of an event._
 
 ## Features
+ - **Multi-account support**: Process CSV exports containing multiple accounts, each with separate currency metadata.
  - Categorizes transactions into well known [accounting categories](#transaction-categories).
  - Categorizes transactions into custom categories by using regular expressions.
  - Calculator pattern for extensible custom transaction calculations.
@@ -19,7 +20,8 @@ _The slang phrase "what's the damage?" is often used to ask about the cost or pr
  - Reports can be saved into CSV or HTML files with interactive DataTable visualization (sorting, searching).
  - Localization support. Currently English (default) and Hungarian languages are supported.
  - Web interface for easier use.
- - REST API (v2 and deprecated v1) for programmatic access and integrations.
+ - REST API v2 for programmatic access and integrations (v1 is deprecated and will be removed in v0.10.0).
+ - **Performance optimizations**: Cached CSV parsing and optional detail row skipping for faster summary generation.
 
 Example output on console. The values in the following example are arbitrary.
 ```
@@ -73,9 +75,9 @@ Try experimenting with it by providing the `--ml` command line argument to `what
 
 1. **Command-Line Interface (CLI)** - For local, interactive use and automation scripts
 2. **Web Interface** - Browser-based UI for users who prefer forms over terminal commands
-3. **REST API** - Programmatic access for integrations, CI/CD pipelines, and external applications
+3. **REST API v2** - Programmatic access for integrations, CI/CD pipelines, and external applications (v1 deprecated)
 
-All three interfaces share the same **core business logic** through a well-defined **service layer** (including `ProcessingService`, `ValidationService`, `ConfigurationService`, and others), ensuring consistent transaction processing regardless of how you access the tool. This architecture was introduced in version 0.8.0 and uses dependency injection for better testability and maintainability.
+All three interfaces share the same **core business logic** through a well-defined **service layer** (including `ProcessingService`, `ValidationService`, `ConfigurationService`, and others), ensuring consistent transaction processing regardless of how you access the tool. The architecture was introduced in version 0.8.0 and further enhanced in 0.9.0 with v2 processing pipeline, multi-account support, and performance optimizations. The unified data format (`DataTablesResponse`) ensures consistency across all clients: CLI, Web, and API.
 
 ### Interface Comparison
 

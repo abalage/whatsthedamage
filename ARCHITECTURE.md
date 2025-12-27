@@ -192,10 +192,10 @@ graph TB
    - `DateConverter` - date parsing and formatting
 
 **Key Data Flow:**
-- **CLI**: CLIController → ProcessingService → CSVProcessor → RowsProcessor → DataFormattingService → console
-- **Web**: Routes → FileUploadService + ValidationService → ProcessingService → Templates
-- **API v1**: endpoints → ValidationService → ProcessingService → ResponseBuilderService → JSON (summary)
-- **API v2**: endpoints → ValidationService → ProcessingService → DataTablesResponseBuilder → JSON (detailed)
+- **CLI**: CLIController → ProcessingService.process_with_details() → CSVProcessor.process_v2() → RowsProcessor.process_rows_v2() → DataFormattingService → console
+- **Web**: Routes → FileUploadService + ValidationService → ProcessingService.process_with_details() → Templates
+- **API v1** (deprecated): endpoints → ValidationService → ProcessingService → ResponseBuilderService → JSON (summary)
+- **API v2**: endpoints → ValidationService → ProcessingService.process_with_details() → DataTablesResponseBuilder → JSON (detailed, multi-account)
 
 **Important Patterns:**
 - **Dependency Injection**: Services injected into controllers (Flask extensions)
@@ -206,12 +206,13 @@ graph TB
 ## Major Components
 
 ### 1. Models (`src/whatsthedamage/models/`)
-- **CsvRow**: Represents a single transaction row.
-- **RowsProcessor**: Orchestrates filtering, enrichment (regex/ML), categorization, and summarization.
+- **CsvRow**: Represents a single transaction row with account metadata (multi-account support).
+- **RowsProcessor**: Orchestrates filtering, enrichment (regex/ML), categorization, and summarization. v2 pipeline (`process_rows_v2()`) is current; v1 (`process_rows()`) is deprecated.
 - **RowEnrichment / RowEnrichmentML**: Categorization via regex or ML.
 - **RowFilter**: Filters rows by date/month.
-- **RowSummarizer**: Aggregates values by category.
-- **CsvFileHandler / CsvProcessor**: Reads and parses CSV files, manages row objects.
+- **RowSummarizer**: Aggregates values by category (legacy, used by deprecated v1).
+- **CsvFileHandler / CsvProcessor**: Reads and parses CSV files, manages row objects. Caches parsed rows in `_rows` for performance. v2 pipeline (`process_v2()`) is current; v1 (`process()`) is deprecated.
+- **DataTablesResponseBuilder**: Builds structured responses for API v2 and web interface, supports calculator pattern and performance optimizations.
 
 ### 2. Controllers (`src/whatsthedamage/controllers/`)
 - **CLI Controller**: Entry point for command-line usage (`__main__.py`, `cli_app.py`).
@@ -237,13 +238,13 @@ graph TB
 ### 6. Services (`src/whatsthedamage/services/`)
 Introduced in version 0.8.0 to extract business logic from controllers and enable dependency injection.
 
-- **ProcessingService**: Core business logic for CSV processing, shared between web routes, CLI, and REST API.
+- **ProcessingService**: Core business logic for CSV processing, shared between web routes, CLI, and REST API. Uses v2 processing pipeline (`process_with_details()`) for multi-account support. Legacy `process_summary()` is deprecated and will be removed in v0.10.0.
 - **ValidationService**: File validation (type, size, content) without web-specific dependencies.
 - **ConfigurationService**: Manages loading and access to configuration settings.
 - **SessionService**: Handles session management for web interface.
 - **FileUploadService**: Manages file upload operations and storage.
 - **ResponseBuilderService**: Constructs responses for different output formats.
-- **DataFormattingService**: Formats processed data for various output targets (console, HTML, CSV, JSON).
+- **DataFormattingService**: Formats processed data for various output targets (console, HTML, CSV, JSON). Supports both legacy pandas DataFrames and the new unified DataTablesResponse format.
 
 **Benefits**:
 - Ensures consistent behavior across all interfaces (CLI, Web, API).
@@ -267,13 +268,14 @@ Introduced in version 0.8.0 to extract business logic from controllers and enabl
 1. **Input**: User uploads or specifies a CSV file (and optional config).
 2. **Validation**: `ValidationService` verifies file type, size, and basic content integrity.
 3. **Configuration**: `ConfigurationService` loads and provides config settings (CSV format, patterns, categories).
-4. **Parsing**: `CsvFileHandler` reads and parses the CSV into `CsvRow` objects.
-5. **Processing**: `ProcessingService` orchestrates the core business logic:
-   - `RowsProcessor` filters, enriches, categorizes, and summarizes rows.
+4. **Parsing**: `CsvFileHandler` reads and parses the CSV into `CsvRow` objects (with account metadata for multi-account support). Parsed rows are cached in `CSVProcessor._rows` to avoid re-reading.
+5. **Processing**: `ProcessingService` orchestrates the core business logic via v2 pipeline:
+   - `RowsProcessor.process_rows_v2()` filters, enriches, categorizes, and builds detailed transaction data.
    - Enrichment uses either regex patterns or ML model (if enabled).
    - Filtering by date/month, optional category filter.
-6. **Aggregation**: `RowSummarizer` computes totals per category/time period, including Total Spendings.
-7. **Formatting**: `DataFormattingService` prepares output for console, HTML, CSV, or JSON.
+   - Returns `DataTablesResponse` objects per account (unified canonical format).
+6. **Aggregation**: `DataTablesResponseBuilder` computes totals per category/time period using calculator pattern (Balance, Total Spendings, custom). Supports performance optimization via `skip_details` flag for summary-only workflows.
+7. **Formatting**: `DataFormattingService` prepares output from `DataTablesResponse` for console, HTML, CSV, or JSON.
 8. **Response**: `ResponseBuilderService` constructs appropriate responses for the delivery channel.
 9. **Output**: Results are displayed in CLI or rendered in the web frontend (HTML table, CSV download) or returned as JSON (API).
 
@@ -341,6 +343,27 @@ The application uses a **hybrid server-side + progressive enhancement** architec
 ## Configuration
 - YAML config file defines CSV format, attribute mapping, enrichment patterns, and categories.
 - Centralized in `config/config.py` and loaded at startup.
+
+## Performance Optimizations
+
+Version 0.9.0 introduces several performance improvements:
+
+### CSV Processing Caching
+- `CSVProcessor` caches parsed rows in `_rows` attribute to avoid re-reading files.
+- Eliminates redundant CSV parsing when processing same file multiple times.
+- Significantly reduces I/O overhead for large CSV files.
+
+### Detail Row Optimization
+- `DataTablesResponseBuilder` supports `skip_details=True` flag.
+- Skips building `DetailRow` objects when only summary data is needed.
+- Used by CLI, web summary route, and deprecated API v1.
+- Reduces memory usage and processing time for summary-only workflows.
+
+### Multi-Account Support
+- `CsvRow` objects now include account metadata.
+- Enables processing of multi-account CSV exports.
+- Each account processed as separate entity with own currency metadata.
+- `DataTablesResponse` structures organized per account.
 
 ## Extensibility
 

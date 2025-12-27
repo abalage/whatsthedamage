@@ -43,7 +43,7 @@ class ProcessingService:
         """Process CSV file and return summary totals.
 
         .. deprecated:: 0.9.0
-            Use :func:`process_summary_v2` instead. This method will be removed in v0.10.0.
+            Use :func:`process_with_details` instead. This method will be removed in v0.10.0.
 
         This method processes a CSV file and returns aggregated summary data
         grouped by category and month. Used by v1 API and CLI.
@@ -62,7 +62,7 @@ class ProcessingService:
         """
         import warnings
         warnings.warn(
-            "process_summary() is deprecated. Use process_summary_v2() instead. "
+            "process_summary() is deprecated. Use process_with_details() instead. "
             "This method will be removed in v0.10.0.",
             DeprecationWarning,
             stacklevel=2

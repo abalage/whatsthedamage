@@ -219,7 +219,9 @@ def test_download_route_with_result(client, monkeypatch, csv_rows, mapping, conf
         'end_date': '2023-12-31',
         'no_currency_format': True,
     }
-    client.post('/process', data=data, content_type='multipart/form-data')
+    process_response = client.post('/process', data=data, content_type='multipart/form-data')
+    # Verify the process route succeeded before testing download
+    assert process_response.status_code == 200, f"Process route failed with status {process_response.status_code}"
 
     response = client.get('/download')
     assert response.status_code == 200

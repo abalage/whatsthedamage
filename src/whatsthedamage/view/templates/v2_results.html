@@ -39,19 +39,14 @@
     <main class="container-fluid">
         <h1 class="text-center p-2 pb-1">{{ _('Processed results') }}</h1>
         
-        {% for account_id in dt_responses.keys() | sort %}
-        {% set dt_response = dt_responses[account_id] %}
+        {% for account in accounts_data.accounts %}
+        {% set dt_response = account.dt_response %}
         <div class="account-section">
             <div class="account-header">
                 <h2>
-                    {# Format account number: add dash after every 8 digits #}
-                    {% set formatted_account = [] %}
-                    {% for i in range(0, account_id|length, 8) %}
-                        {% set _ = formatted_account.append(account_id[i:i+8]) %}
-                    {% endfor %}
-                    {{ formatted_account | join('-') }}
-                    {% if dt_response.currency %}
-                        ({{ dt_response.currency }})
+                    {{ account.formatted_id }}
+                    {% if account.currency %}
+                        ({{ account.currency }})
                     {% endif %}
                 </h2>
             </div>
@@ -59,7 +54,7 @@
             <div class="row">
                 <div class="col-md-12 mb-3">
                     <div class="table-responsive">
-                        <table id="datatable-{{ account_id | replace(':', '-') | replace(' ', '-') }}" class="table table-bordered table-striped" data-datatable="true">
+                        <table id="datatable-{{ account.id | replace(':', '-') | replace(' ', '-') }}" class="table table-bordered table-striped" data-datatable="true">
                             <thead>
                                 <tr>
                                     <th>{{ _('Categories') }}</th>

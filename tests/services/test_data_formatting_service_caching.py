@@ -284,3 +284,290 @@ class TestMultiAccountIntegration:
         # service2 should have empty cache
         assert len(service1._summary_cache) == 1
         assert len(service2._summary_cache) == 0
+
+
+class TestAllWrapperMethodsWithAccountSelection:
+    """Test all wrapper methods with explicit account selection."""
+
+    def test_format_datatables_as_html_with_account_id(
+        self,
+        service,
+        mock_dt_response_account1,
+        mock_dt_response_account2
+    ):
+        """Test HTML formatting with explicit account_id."""
+        dt_responses = {
+            "12345": mock_dt_response_account1,
+            "67890": mock_dt_response_account2
+        }
+
+        # Format account 1 (EUR)
+        html1 = service.format_datatables_as_html_table(dt_responses, account_id="12345")
+        assert "150.50 EUR" in html1
+        assert "EUR" in html1
+        assert "USD" not in html1
+
+        # Format account 2 (USD)
+        html2 = service.format_datatables_as_html_table(dt_responses, account_id="67890")
+        assert "200.00 USD" in html2
+        assert "USD" in html2
+        assert "EUR" not in html2
+
+    def test_format_datatables_as_csv_with_account_id(
+        self,
+        service,
+        mock_dt_response_account1,
+        mock_dt_response_account2
+    ):
+        """Test CSV formatting with explicit account_id."""
+        dt_responses = {
+            "12345": mock_dt_response_account1,
+            "67890": mock_dt_response_account2
+        }
+
+        # Format account 1 with semicolon delimiter
+        csv1 = service.format_datatables_as_csv(dt_responses, account_id="12345", delimiter=";")
+        assert "150.50 EUR" in csv1 or "150.5 EUR" in csv1
+        assert "Grocery" in csv1
+
+        # Format account 2
+        csv2 = service.format_datatables_as_csv(dt_responses, account_id="67890", delimiter=",")
+        assert "200.00 USD" in csv2 or "200.0 USD" in csv2
+        assert "Transport" in csv2
+
+    def test_format_datatables_as_string_with_account_id(
+        self,
+        service,
+        mock_dt_response_account1,
+        mock_dt_response_account2
+    ):
+        """Test string formatting with explicit account_id."""
+        dt_responses = {
+            "12345": mock_dt_response_account1,
+            "67890": mock_dt_response_account2
+        }
+
+        # Format account 1
+        string1 = service.format_datatables_as_string(dt_responses, account_id="12345")
+        assert "Grocery" in string1
+        assert "150.5" in string1 or "150.50" in string1
+
+        # Format account 2
+        string2 = service.format_datatables_as_string(dt_responses, account_id="67890")
+        assert "Transport" in string2
+        assert "200" in string2
+
+    def test_prepare_datatables_summary_table_data_with_account_id(
+        self,
+        service,
+        mock_dt_response_account1,
+        mock_dt_response_account2
+    ):
+        """Test prepare_datatables_summary_table_data with explicit account_id."""
+        dt_responses = {
+            "12345": mock_dt_response_account1,
+            "67890": mock_dt_response_account2
+        }
+
+        # Prepare account 1
+        headers1, rows1 = service.prepare_datatables_summary_table_data(
+            dt_responses,
+            account_id="12345"
+        )
+        assert "January" in headers1
+        # Check that data was prepared
+        assert len(rows1) > 0
+
+        # Prepare account 2
+        headers2, rows2 = service.prepare_datatables_summary_table_data(
+            dt_responses,
+            account_id="67890"
+        )
+        assert "January" in headers2
+        assert len(rows2) > 0
+
+    def test_format_datatables_for_output_with_account_id(
+        self,
+        service,
+        mock_dt_response_account1,
+        mock_dt_response_account2
+    ):
+        """Test format_datatables_for_output with explicit account_id."""
+        dt_responses = {
+            "12345": mock_dt_response_account1,
+            "67890": mock_dt_response_account2
+        }
+
+        # Format output for account 1
+        output1 = service.format_datatables_for_output(
+            dt_responses,
+            account_id="12345",
+            output_format="html"
+        )
+        assert "150.50 EUR" in output1
+        assert "Grocery" in output1
+
+        # Format output for account 2
+        output2 = service.format_datatables_for_output(
+            dt_responses,
+            account_id="67890",
+            output_format="html"
+        )
+        assert "200.00 USD" in output2
+        assert "Transport" in output2
+
+
+class TestCacheBehaviorUnderEdgeCases:
+    """Test caching behavior under edge cases."""
+
+    def test_cache_with_multiple_months(self, service):
+        """Test caching with multi-month data."""
+        dt_response = DataTablesResponse(
+            data=[
+                AggregatedRow(
+                    month=DateField(display="January", timestamp=1704067200),
+                    category="Grocery",
+                    total=DisplayRawField(display="100.00 EUR", raw=100.0),
+                    details=[]
+                ),
+                AggregatedRow(
+                    month=DateField(display="February", timestamp=1706659200),
+                    category="Grocery",
+                    total=DisplayRawField(display="150.00 EUR", raw=150.0),
+                    details=[]
+                ),
+                AggregatedRow(
+                    month=DateField(display="February", timestamp=1706659200),
+                    category="Transport",
+                    total=DisplayRawField(display="50.00 EUR", raw=50.0),
+                    details=[]
+                ),
+            ],
+            currency="EUR"
+        )
+
+        summary_data = service._extract_summary_from_account(dt_response, "multi-month")
+
+        # Check multiple months are extracted
+        assert "January" in summary_data.summary
+        assert "February" in summary_data.summary
+        assert abs(summary_data.summary["January"]["Grocery"] - 100.0) < 0.01
+        assert abs(summary_data.summary["February"]["Grocery"] - 150.0) < 0.01
+        assert abs(summary_data.summary["February"]["Transport"] - 50.0) < 0.01
+
+        # Verify cached
+        assert "multi-month" in service._summary_cache
+
+    def test_cache_with_empty_data(self, service):
+        """Test caching with empty DataTablesResponse."""
+        dt_response = DataTablesResponse(
+            data=[],
+            currency="EUR"
+        )
+
+        summary_data = service._extract_summary_from_account(dt_response, "empty")
+
+        # Empty summary should still be cached
+        assert summary_data.summary == {}
+        assert summary_data.currency == "EUR"
+        assert "empty" in service._summary_cache
+
+    def test_cache_independence_between_methods(
+        self,
+        service,
+        mock_dt_response_account1,
+        mock_dt_response_account2
+    ):
+        """Test that cache works correctly across different wrapper methods."""
+        dt_responses = {
+            "12345": mock_dt_response_account1,
+            "67890": mock_dt_response_account2
+        }
+
+        # Call different methods with different accounts
+        _ = service.format_datatables_as_html_table(
+            {"12345": mock_dt_response_account1},
+            account_id="12345"
+        )
+        _ = service.format_datatables_as_csv(
+            {"67890": mock_dt_response_account2},
+            account_id="67890"
+        )
+
+        # Both should be cached
+        assert len(service._summary_cache) == 2
+        assert "12345" in service._summary_cache
+        assert "67890" in service._summary_cache
+
+
+class TestErrorHandlingComprehensive:
+    """Comprehensive error handling tests."""
+
+    def test_error_message_quality_multiple_accounts(
+        self,
+        service,
+        mock_dt_response_account1,
+        mock_dt_response_account2
+    ):
+        """Test that error messages are clear and helpful."""
+        dt_responses = {
+            "account_abc": mock_dt_response_account1,
+            "account_xyz": mock_dt_response_account2,
+            "account_123": mock_dt_response_account1
+        }
+
+        with pytest.raises(ValueError) as exc_info:
+            service.format_datatables_as_html_table(dt_responses)
+
+        error_msg = str(exc_info.value)
+        # Check all account IDs are mentioned
+        assert "account_abc" in error_msg
+        assert "account_xyz" in error_msg
+        assert "account_123" in error_msg
+        assert "Multiple accounts" in error_msg
+
+    def test_error_on_invalid_account_all_methods(
+        self,
+        service,
+        mock_dt_response_account1
+    ):
+        """Test that all wrapper methods raise error for invalid account_id."""
+        dt_responses = {"12345": mock_dt_response_account1}
+
+        methods = [
+            lambda: service.format_datatables_as_html_table(dt_responses, account_id="invalid"),
+            lambda: service.format_datatables_as_csv(dt_responses, account_id="invalid"),
+            lambda: service.format_datatables_as_string(dt_responses, account_id="invalid"),
+            lambda: service.prepare_datatables_summary_table_data(dt_responses, account_id="invalid"),
+            lambda: service.format_datatables_for_output(dt_responses, account_id="invalid")
+        ]
+
+        for method in methods:
+            with pytest.raises(ValueError) as exc_info:
+                method()
+            assert "not found" in str(exc_info.value)
+            assert "12345" in str(exc_info.value)
+
+    def test_no_error_when_single_account_and_no_id(
+        self,
+        service,
+        mock_dt_response_account1
+    ):
+        """Test that single account works without specifying account_id."""
+        single_account = {"only_account": mock_dt_response_account1}
+
+        # All methods should work without account_id
+        html = service.format_datatables_as_html_table(single_account)
+        assert "150.50 EUR" in html
+
+        csv = service.format_datatables_as_csv(single_account)
+        assert "Grocery" in csv
+
+        string_out = service.format_datatables_as_string(single_account)
+        assert "Grocery" in string_out
+
+        headers, _ = service.prepare_datatables_summary_table_data(single_account)
+        assert "January" in headers
+
+        output = service.format_datatables_for_output(single_account)
+        assert "EUR" in output

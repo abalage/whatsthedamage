@@ -136,7 +136,7 @@ class SessionService:
         html_result = session.get(self.SESSION_KEY_RESULT)
         csv_params = session.get(self.SESSION_KEY_TABLE_DATA)
 
-        if html_result and csv_params:
+        if csv_params is not None:
             return html_result, csv_params
         return None
 

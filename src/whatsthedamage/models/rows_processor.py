@@ -140,8 +140,10 @@ class RowsProcessor:
             # Filter rows by date or month for this account
             filtered_sets = self._filter_rows_v2(account_rows)
 
-            # Initialize the builder with date format only
-            builder = DataTablesResponseBuilder(self._date_attribute_format)
+            # Initialize the builder with date format and skip_details optimization
+            # Skip building DetailRow objects when not in verbose/training_data mode
+            skip_details = not (self._verbose or self._training_data)
+            builder = DataTablesResponseBuilder(self._date_attribute_format, skip_details=skip_details)
 
             # Process each month/date range for this account
             for month_field, set_rows in filtered_sets:

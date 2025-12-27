@@ -1,5 +1,23 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+- **Feature**: Add `process_summary_v2()` facade method to unify CLI/web on v2 processing pipeline.
+- **Feature**: Add v2 view layer functions (`print_categorized_rows_v2()`, `print_training_data_v2()`) for multi-account verbose/training_data output.
+- **Feature**: Add `_convert_datatables_to_summary()` method to transform DataTablesResponse to summary format.
+- **Tests**: Add comprehensive unit tests for DataTablesResponse-to-summary converter.
+
+### Changed
+- **Break**: CLI now uses v2 processing pipeline via `process_summary_v2()` for consistency with multi-account support.
+- **Break**: Web summary route (`/process`) migrated to `process_summary_v2()`.
+- **Refactor**: `process_rows_v2()` now handles verbose/training_data flags directly (no CLI bypass needed).
+
+### Deprecated
+- **API v1** (`/api/v1/process`): Deprecated in favor of API v2. Will be removed in v0.10.0.
+- **ProcessingService.process_summary()**: Use `process_summary_v2()` instead. Will be removed in v0.10.0.
+- **RowsProcessor.process_rows()**: Use `process_rows_v2()` instead. Will be removed in v0.10.0.
+
 ## [0.8.0] - 2025-12-19
 
 Major architectural changes thanks to introducing Service Layer pattern.

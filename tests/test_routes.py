@@ -53,10 +53,10 @@ def test_index_route(client):
 
 
 def test_process_route(client, monkeypatch, csv_rows, mapping, config_yml_default_path, mock_processing_service_result):
-    def mock_process_summary(**kwargs):
+    def mock_process_with_details(**kwargs):
         return mock_processing_service_result({'balance': 100.0})
 
-    mock_processing_service(monkeypatch, process_summary_fn=mock_process_summary)
+    mock_processing_service(monkeypatch, process_with_details_fn=mock_process_with_details)
 
     csrf_token = get_csrf_token(client)
     sample_csv_path = create_sample_csv_from_fixture(csv_rows, mapping)
@@ -82,9 +82,8 @@ def test_process_route(client, monkeypatch, csv_rows, mapping, config_yml_defaul
     with client.session_transaction() as sess:
         assert 'result' in sess
         assert 'table_data' in sess
-        # table_data now contains CSV generation params
-        assert 'monthly_data' in sess['table_data']
-        assert 'currency' in sess['table_data']
+        # table_data now contains serialized DataTablesResponse for CSV generation
+        assert 'dt_responses_dict' in sess['table_data']
         assert 'no_currency_format' in sess['table_data']
 
     os.remove(sample_csv_path)
@@ -116,10 +115,10 @@ def test_clear_upload_folder(client):
 
 
 def test_process_route_invalid_data(client, monkeypatch, config_yml_default_path, mock_processing_service_result):
-    def mock_process_summary(**kwargs):
+    def mock_process_with_details(**kwargs):
         return mock_processing_service_result()
 
-    mock_processing_service(monkeypatch, process_summary_fn=mock_process_summary)
+    mock_processing_service(monkeypatch, process_with_details_fn=mock_process_with_details)
 
     csrf_token = get_csrf_token(client)
 
@@ -135,10 +134,10 @@ def test_process_route_invalid_data(client, monkeypatch, config_yml_default_path
 
 
 def test_process_route_missing_file(client, monkeypatch, config_yml_default_path, mock_processing_service_result):
-    def mock_process_summary(**kwargs):
+    def mock_process_with_details(**kwargs):
         return mock_processing_service_result()
 
-    mock_processing_service(monkeypatch, process_summary_fn=mock_process_summary)
+    mock_processing_service(monkeypatch, process_with_details_fn=mock_process_with_details)
 
     csrf_token = get_csrf_token(client)
 
@@ -155,10 +154,10 @@ def test_process_route_missing_file(client, monkeypatch, config_yml_default_path
 
 
 def test_process_route_missing_config(client, monkeypatch, csv_rows, mapping, mock_processing_service_result):
-    def mock_process_summary(**kwargs):
+    def mock_process_with_details(**kwargs):
         return mock_processing_service_result()
 
-    mock_processing_service(monkeypatch, process_summary_fn=mock_process_summary)
+    mock_processing_service(monkeypatch, process_with_details_fn=mock_process_with_details)
 
     csrf_token = get_csrf_token(client)
     sample_csv_path = create_sample_csv_from_fixture(csv_rows, mapping)
@@ -179,10 +178,10 @@ def test_process_route_missing_config(client, monkeypatch, csv_rows, mapping, mo
 
 
 def test_process_route_invalid_end_date(client, monkeypatch, csv_rows, mapping, config_yml_default_path, mock_processing_service_result):
-    def mock_process_summary(**kwargs):
+    def mock_process_with_details(**kwargs):
         return mock_processing_service_result()
 
-    mock_processing_service(monkeypatch, process_summary_fn=mock_process_summary)
+    mock_processing_service(monkeypatch, process_with_details_fn=mock_process_with_details)
 
     csrf_token = get_csrf_token(client)
     sample_csv_path = create_sample_csv_from_fixture(csv_rows, mapping)
@@ -204,10 +203,10 @@ def test_process_route_invalid_end_date(client, monkeypatch, csv_rows, mapping, 
 
 
 def test_download_route_with_result(client, monkeypatch, csv_rows, mapping, config_yml_default_path, mock_processing_service_result):
-    def mock_process_summary(**kwargs):
-        return mock_processing_service_result({'balance': 0.0})
+    def mock_process_with_details(**kwargs):
+        return mock_processing_service_result({'balance': 100.0})
 
-    mock_processing_service(monkeypatch, process_summary_fn=mock_process_summary)
+    mock_processing_service(monkeypatch, process_with_details_fn=mock_process_with_details)
 
     csrf_token = get_csrf_token(client)
     sample_csv_path = create_sample_csv_from_fixture(csv_rows, mapping)
@@ -226,17 +225,17 @@ def test_download_route_with_result(client, monkeypatch, csv_rows, mapping, conf
     assert response.status_code == 200
     assert response.headers['Content-Disposition'] == 'attachment; filename=result.csv'
     assert response.headers['Content-Type'] == 'text/csv'
-    # CSV uses format_as_csv() which outputs DataFrame with index
-    assert b',Total\nbalance,0.0\n' in response.data
+    # CSV uses semicolon delimiter and outputs correct amount from mock
+    assert b';Total\nbalance;100.0' in response.data
 
     os.remove(sample_csv_path)
 
 
 def test_process_route_invalid_date(client, monkeypatch, csv_rows, mapping, config_yml_default_path, mock_processing_service_result):
-    def mock_process_summary(**kwargs):
+    def mock_process_with_details(**kwargs):
         return mock_processing_service_result()
 
-    mock_processing_service(monkeypatch, process_summary_fn=mock_process_summary)
+    mock_processing_service(monkeypatch, process_with_details_fn=mock_process_with_details)
 
     csrf_token = get_csrf_token(client)
     sample_csv_path = create_sample_csv_from_fixture(csv_rows, mapping)

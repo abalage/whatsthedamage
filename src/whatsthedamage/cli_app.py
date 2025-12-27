@@ -7,6 +7,7 @@ from whatsthedamage.controllers.cli_controller import CLIController
 from whatsthedamage.services.processing_service import ProcessingService
 from whatsthedamage.services.data_formatting_service import DataFormattingService
 from whatsthedamage.config.config import AppArgs
+from whatsthedamage.config.dt_models import DataTablesResponse
 from gettext import gettext as _
 
 
@@ -34,22 +35,20 @@ def set_locale(locale_str: str | None) -> None:
             gettext.translation('messages', str(localedir), fallback=True).install()
 
 
-def format_output(data: Dict[str, Dict[str, float]], args: AppArgs, currency: str) -> str:
+def format_output(dt_responses: Dict[str, DataTablesResponse], args: AppArgs) -> str:
     """Format processed data for CLI output.
 
     Args:
-        data: Processed data with monthly breakdown Dict[month, Dict[category, amount]]
+        dt_responses: DataTablesResponse objects per account
         args: CLI arguments with formatting options
-        currency: Currency code for formatting
 
     Returns:
         str: Formatted output string
     """
     formatting_service = DataFormattingService()
 
-    return formatting_service.format_for_output(
-        data=data,
-        currency=currency,
+    return formatting_service.format_datatables_for_output(
+        dt_responses=dt_responses,
         output_format=args.get('output_format'),
         output_file=args.get('output'),
         nowrap=args.get('nowrap', False),
@@ -69,35 +68,35 @@ def main() -> None:
     # Initialize service
     service = ProcessingService()
 
-    # Check if verbose or training_data mode is requested
-    # These require direct CSVProcessor access for now
-    if args.get('verbose') or args.get('training_data'):
-        # Fall back to old implementation for verbose/training_data modes
-        from whatsthedamage.controllers.whatsthedamage import main as process_csv
-        output_str = process_csv(args)
-        print(output_str)
-        return
-
-    # Process using service layer
+    # Process using service layer (v2 processing pipeline with DataTablesResponse)
     try:
-        result: Dict[str, Any] = service.process_summary(
+        result: Dict[str, Any] = service.process_with_details(
             csv_file_path=args['filename'],
             config_file_path=args.get('config'),
             start_date=args.get('start_date'),
             end_date=args.get('end_date'),
             ml_enabled=args.get('ml', False),
             category_filter=args.get('filter'),
-            language=args.get('lang') or 'en'
+            language=args.get('lang') or 'en',
+            verbose=args.get('verbose', False),
+            training_data=args.get('training_data', False)
         )
 
-        # Extract data from result
-        monthly_data: Dict[str, Dict[str, float]] = result['monthly_data']
-        metadata: Dict[str, Any] = result['metadata']
-        currency: str = metadata.get('currency', '')
+        # Extract DataTablesResponse per account
+        dt_responses: Dict[str, DataTablesResponse] = result['data']
 
-        # Format output with monthly columns
-        output = format_output(monthly_data, args, currency)
-        print(output)
+        # Print summary for each account
+        for account_id, dt_response in dt_responses.items():
+            # Print account header if multiple accounts
+            if len(dt_responses) > 1:
+                print(f"\n{'=' * 60}")
+                print(f"Account: {account_id}")
+                print(f"{'=' * 60}")
+
+            # Format and print output for this account
+            single_account_data = {account_id: dt_response}
+            output = format_output(single_account_data, args)
+            print(output)
 
     except FileNotFoundError as e:
         print(f"Error: {e}")

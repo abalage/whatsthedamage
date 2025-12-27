@@ -9,27 +9,28 @@ Controllers are responsible for saving uploaded files to disk and passing file p
 from typing import Dict, Any, Optional
 import time
 from whatsthedamage.config.config import AppArgs, AppContext
+from whatsthedamage.config.dt_models import DataTablesResponse
 from whatsthedamage.models.csv_processor import CSVProcessor
 from whatsthedamage.services.configuration_service import ConfigurationService
 
 
 class ProcessingService:
     """Service for processing CSV transaction files.
-    
+
     This service orchestrates CSV reading, transaction processing, and categorization
     by delegating to CSVProcessor. It provides metadata about processing.
-    
+
     Controllers must save uploaded files to disk and pass file paths to this service.
     """
 
     def __init__(self, configuration_service: Optional[ConfigurationService] = None) -> None:
         """Initialize the processing service.
-        
+
         Args:
             configuration_service: Service for loading configuration (optional, created if None)
         """
         self._config_service = configuration_service or ConfigurationService()
-    
+
     def process_summary(
         self,
         csv_file_path: str,
@@ -41,10 +42,13 @@ class ProcessingService:
         language: str = 'en'
     ) -> Dict[str, Any]:
         """Process CSV file and return summary totals.
-        
+
+        .. deprecated:: 0.9.0
+            Use :func:`process_summary_v2` instead. This method will be removed in v0.10.0.
+
         This method processes a CSV file and returns aggregated summary data
         grouped by category and month. Used by v1 API and CLI.
-        
+
         Args:
             csv_file_path: Path to CSV file on disk
             config_file_path: Optional path to YAML config file
@@ -53,12 +57,19 @@ class ProcessingService:
             ml_enabled: Use ML-based categorization instead of regex
             category_filter: Filter results to specific category
             language: Output language for month names ('en' or 'hu')
-            
+
         Returns:
             dict: Contains 'data' (summary totals), 'metadata' (processing info)
         """
+        import warnings
+        warnings.warn(
+            "process_summary() is deprecated. Use process_summary_v2() instead. "
+            "This method will be removed in v0.10.0.",
+            DeprecationWarning,
+            stacklevel=2
+        )
         start_time = time.time()
-        
+
         # Build arguments for CSVProcessor
         args = self._build_args(
             filename=csv_file_path,
@@ -70,13 +81,13 @@ class ProcessingService:
             language=language,
             verbose=False
         )
-        
+
         # Load config using ConfigurationService
         config_result = self._config_service.load_config(config_file_path)
         config = config_result.config
         if config is None:
             raise ValueError(f"Failed to load configuration: {config_result.validation_result.error_message}")
-        
+
         context = AppContext(config, args)
 
         # Process using existing CSVProcessor
@@ -122,7 +133,9 @@ class ProcessingService:
         end_date: str | None = None,
         ml_enabled: bool = False,
         category_filter: str | None = None,
-        language: str = 'en'
+        language: str = 'en',
+        verbose: bool = False,
+        training_data: bool = False
     ) -> Dict[str, Any]:
         """Process CSV file and return detailed transaction data.
 
@@ -137,6 +150,8 @@ class ProcessingService:
             ml_enabled: Use ML-based categorization instead of regex
             category_filter: Filter results to specific category
             language: Output language for month names ('en' or 'hu')
+            verbose: Print verbose categorized output to stdout
+            training_data: Print training data JSON to stderr
 
         Returns:
             dict: Contains 'data' (Dict[str, DataTablesResponse]), 'metadata' (processing info)
@@ -152,7 +167,8 @@ class ProcessingService:
             ml_enabled=ml_enabled,
             category_filter=category_filter,
             language=language,
-            verbose=True  # Always verbose for detailed view
+            verbose=verbose,
+            training_data=training_data
         )
 
         # Load config using ConfigurationService
@@ -160,7 +176,7 @@ class ProcessingService:
         config = config_result.config
         if config is None:
             raise ValueError(f"Failed to load configuration: {config_result.validation_result.error_message}")
-        
+
         context = AppContext(config, args)
 
         # Process using existing CSVProcessor
@@ -193,7 +209,8 @@ class ProcessingService:
         ml_enabled: bool = False,
         category_filter: str | None = None,
         language: str = 'en',
-        verbose: bool = False
+        verbose: bool = False,
+        training_data: bool = False
     ) -> AppArgs:
         """Build AppArgs from service parameters.
 
@@ -222,7 +239,7 @@ class ProcessingService:
             verbose=verbose,
             nowrap=False,
             no_currency_format=False,
-            training_data=False,
+            training_data=training_data,
             lang=language,
             ml=ml_enabled
         )

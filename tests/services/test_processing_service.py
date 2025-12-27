@@ -227,8 +227,8 @@ class TestProcessingService:
 
     @patch('whatsthedamage.services.processing_service.AppContext')
     def test_process_with_details_uses_verbose_true(self, mock_context, service, mock_dependencies):
-        """Test process_with_details sets verbose=True."""
-        service.process_with_details(csv_file_path='/path/to/file.csv')
+        """Test process_with_details sets verbose=True when passed."""
+        service.process_with_details(csv_file_path='/path/to/file.csv', verbose=True)
 
         args = mock_context.call_args[0][1]
         assert args['verbose'] is True

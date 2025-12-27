@@ -14,6 +14,7 @@ Architecture Patterns:
 import pandas as pd
 import json
 from typing import Dict, List, Tuple, Union, Optional, Any
+from whatsthedamage.config.dt_models import DataTablesResponse
 
 
 class DataFormattingService:
@@ -357,3 +358,176 @@ class DataFormattingService:
                 nowrap=nowrap,
                 no_currency_format=no_currency_format
             )
+
+    def format_datatables_as_html_table(
+        self,
+        dt_responses: Dict[str, DataTablesResponse],
+        nowrap: bool = False,
+        no_currency_format: bool = False,
+        categories_header: str = "Categories"
+    ) -> str:
+        """Format DataTablesResponse as HTML table.
+
+        Extracts summary data from DataTablesResponse and formats as HTML.
+        For multi-account data, uses the first account.
+
+        :param dt_responses: Dict mapping account_id to DataTablesResponse
+        :param nowrap: If True, disables text wrapping in pandas output
+        :param no_currency_format: If True, disables currency formatting
+        :param categories_header: Header text for the categories column
+        :return: HTML string with formatted table
+        """
+        # Extract summary from first account (or merge for multi-account)
+        data, currency = self._extract_summary_from_datatables(dt_responses)
+
+        return self.format_as_html_table(
+            data=data,
+            currency=currency,
+            nowrap=nowrap,
+            no_currency_format=no_currency_format,
+            categories_header=categories_header
+        )
+
+    def format_datatables_as_csv(
+        self,
+        dt_responses: Dict[str, DataTablesResponse],
+        delimiter: str = ',',
+        no_currency_format: bool = False
+    ) -> str:
+        """Format DataTablesResponse as CSV string.
+
+        Extracts summary data from DataTablesResponse and formats as CSV.
+        For multi-account data, uses the first account.
+
+        :param dt_responses: Dict mapping account_id to DataTablesResponse
+        :param delimiter: CSV delimiter character
+        :param no_currency_format: If True, disables currency formatting
+        :return: CSV formatted string
+        """
+        data, currency = self._extract_summary_from_datatables(dt_responses)
+
+        return self.format_as_csv(
+            data=data,
+            currency=currency,
+            delimiter=delimiter,
+            no_currency_format=no_currency_format
+        )
+
+    def format_datatables_as_string(
+        self,
+        dt_responses: Dict[str, DataTablesResponse],
+        nowrap: bool = False,
+        no_currency_format: bool = False
+    ) -> str:
+        """Format DataTablesResponse as plain string for console output.
+
+        Extracts summary data from DataTablesResponse and formats as plain text.
+        For multi-account data, uses the first account.
+
+        :param dt_responses: Dict mapping account_id to DataTablesResponse
+        :param nowrap: If True, disables text wrapping in pandas output
+        :param no_currency_format: If True, disables currency formatting
+        :return: Plain text formatted string
+        """
+        data, currency = self._extract_summary_from_datatables(dt_responses)
+
+        return self.format_as_string(
+            data=data,
+            currency=currency,
+            nowrap=nowrap,
+            no_currency_format=no_currency_format
+        )
+
+    def prepare_datatables_summary_table_data(
+        self,
+        dt_responses: Dict[str, DataTablesResponse],
+        no_currency_format: bool = False,
+        categories_header: str = "Categories"
+    ) -> Tuple[List[str], List[List[Dict[str, Union[str, float, None]]]]]:
+        """Prepare summary table data from DataTablesResponse with display/order metadata.
+
+        Extracts summary data from DataTablesResponse and prepares for rendering.
+        For multi-account data, uses the first account.
+
+        :param dt_responses: Dict mapping account_id to DataTablesResponse
+        :param no_currency_format: If True, disables currency formatting
+        :param categories_header: Header text for the categories column
+        :return: Tuple of (headers, enhanced_rows)
+        """
+        data, currency = self._extract_summary_from_datatables(dt_responses)
+
+        return self.prepare_summary_table_data(
+            data=data,
+            currency=currency,
+            no_currency_format=no_currency_format,
+            categories_header=categories_header
+        )
+
+    def format_datatables_for_output(
+        self,
+        dt_responses: Dict[str, DataTablesResponse],
+        output_format: Optional[str] = None,
+        output_file: Optional[str] = None,
+        nowrap: bool = False,
+        no_currency_format: bool = False,
+        categories_header: str = "Categories"
+    ) -> str:
+        """Format DataTablesResponse for various output types.
+
+        This is a convenience method for formatting DataTablesResponse to
+        HTML, CSV file, or console string. For multi-account data, uses the first account.
+
+        :param dt_responses: Dict mapping account_id to DataTablesResponse
+        :param output_format: Output format ('html' or None for default)
+        :param output_file: Path to output file (triggers CSV export)
+        :param nowrap: If True, disables text wrapping in pandas output
+        :param no_currency_format: If True, disables currency formatting
+        :param categories_header: Header text for the categories column
+        :return: Formatted string (HTML, CSV, or plain text)
+        """
+        data, currency = self._extract_summary_from_datatables(dt_responses)
+
+        return self.format_for_output(
+            data=data,
+            currency=currency,
+            output_format=output_format,
+            output_file=output_file,
+            nowrap=nowrap,
+            no_currency_format=no_currency_format,
+            categories_header=categories_header
+        )
+
+    def _extract_summary_from_datatables(
+        self,
+        dt_responses: Dict[str, DataTablesResponse]
+    ) -> Tuple[Dict[str, Dict[str, float]], str]:
+        """Extract summary data from DataTablesResponse.
+
+        Converts DataTablesResponse to simplified summary format for formatting.
+        Uses the first account's data (single-account) or first account for multi-account.
+
+        :param dt_responses: Dict mapping account_id to DataTablesResponse
+        :return: Tuple of (summary_dict, currency)
+            summary_dict: Dict[month, Dict[category, amount]]
+            currency: Currency code
+        """
+        if not dt_responses:
+            return {}, ''
+
+        # Use first account's data
+        first_account_id = next(iter(dt_responses.keys()))
+        dt_response = dt_responses[first_account_id]
+
+        # Build summary dict from AggregatedRow data
+        summary: Dict[str, Dict[str, float]] = {}
+        for agg_row in dt_response.data:
+            month_display = agg_row.month.display
+            category = agg_row.category
+            amount = agg_row.total.raw
+
+            if month_display not in summary:
+                summary[month_display] = {}
+
+            summary[month_display][category] = amount
+
+        return summary, dt_response.currency

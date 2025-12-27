@@ -19,7 +19,7 @@ _The slang phrase "what's the damage?" is often used to ask about the cost or pr
  - Reports can be saved into CSV or HTML files with interactive DataTable visualization (sorting, searching).
  - Localization support. Currently English (default) and Hungarian languages are supported.
  - Web interface for easier use.
- - REST API (v1 and v2) for programmatic access and integrations.
+ - REST API (v2 and deprecated v1) for programmatic access and integrations.
 
 Example output on console. The values in the following example are arbitrary.
 ```
@@ -110,8 +110,9 @@ All three interfaces share the same **core business logic** through a well-defin
 - Automating in CI/CD pipelines
 - Processing transactions from external systems
 - Need programmatic access with JSON responses
+- **Use API v2** (v1 is deprecated and will be removed in v0.10.0)
 
-For complete REST API documentation, see [API.md](API.md).
+For complete REST API documentation and v1→v2 migration guide, see [API.md](API.md).
 
 ## Install
 

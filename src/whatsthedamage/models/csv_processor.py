@@ -31,6 +31,7 @@ class CSVProcessor:
         self.config = context.config
         self.args = context.args
         self.processor = RowsProcessor(self.context)
+        self._rows: List[CsvRow] = []  # Cache for rows to avoid re-reading
 
     def process(self) -> str:
         """
@@ -51,8 +52,8 @@ class CSVProcessor:
         Returns:
             Dict[str, DataTablesResponse]: The DataTables-compatible structure for frontend.
         """
-        rows = self._read_csv_file()
-        return self.processor.process_rows_v2(rows)
+        self._rows = self._read_csv_file()
+        return self.processor.process_rows_v2(self._rows)
 
     def _read_csv_file(self) -> List[CsvRow]:
         """

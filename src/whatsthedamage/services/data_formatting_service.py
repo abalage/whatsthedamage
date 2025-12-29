@@ -25,11 +25,13 @@ class SummaryData(BaseModel):
     This model encapsulates the summary data extracted from transaction data,
     providing a simplified format for formatting and display.
 
-    Attributes:
-        summary: Dict mapping month names to category amounts
-            Format: {month_name: {category: amount}}
-        currency: Currency code (e.g., 'EUR', 'USD')
-        account_id: Account identifier this summary belongs to
+    :param summary: Dict mapping month names to category amounts.
+                    Format: {month_name: {category: amount}}
+    :type summary: Dict[str, Dict[str, float]]
+    :param currency: Currency code (e.g., 'EUR', 'USD')
+    :type currency: str
+    :param account_id: Account identifier this summary belongs to
+    :type account_id: str
     """
     summary: Dict[str, Dict[str, float]]
     currency: str

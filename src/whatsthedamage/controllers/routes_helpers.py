@@ -89,7 +89,7 @@ def process_summary_and_build_response(
     """Process CSV for summary view and build HTML response.
 
     .. deprecated:: 0.9.0
-    This method will be removed in v0.10.0. Download functionality will be provided by DataTables.
+       This method will be removed in v0.10.0. Download functionality will be provided by DataTables.
 
     Args:
         form: The upload form with processing parameters

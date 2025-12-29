@@ -4,19 +4,16 @@ This module contains extracted helper functions to reduce complexity in routes.p
 Following the Single Responsibility Principle and DRY patterns.
 """
 from flask import current_app, session, Response
-from werkzeug.security import safe_join
 from whatsthedamage.view.forms import UploadForm
 from whatsthedamage.services.processing_service import ProcessingService
 from whatsthedamage.services.validation_service import ValidationService
 from whatsthedamage.services.response_builder_service import ResponseBuilderService
-from whatsthedamage.services.configuration_service import ConfigurationService
 from whatsthedamage.services.session_service import SessionService
 from whatsthedamage.services.data_formatting_service import DataFormattingService
 from whatsthedamage.services.file_upload_service import FileUploadService, FileUploadError
 from whatsthedamage.utils.flask_locale import get_default_language
 from typing import Dict, Optional, Callable, cast
 from gettext import gettext as _
-import os
 
 
 def _get_processing_service() -> ProcessingService:
@@ -34,24 +31,19 @@ def _get_response_builder_service() -> ResponseBuilderService:
     return cast(ResponseBuilderService, current_app.extensions['response_builder_service'])
 
 
-def _get_configuration_service() -> ConfigurationService:
-    """Get configuration service from app extensions (dependency injection)."""
-    return cast(ConfigurationService, current_app.extensions['configuration_service'])
-
-
 def _get_file_upload_service() -> FileUploadService:
     """Get file upload service from app extensions (dependency injection)."""
     return cast(FileUploadService, current_app.extensions['file_upload_service'])
 
 
 def _get_session_service() -> SessionService:
-    """Get session service instance."""
-    return SessionService()
+    """Get session service from app extensions (dependency injection)."""
+    return cast(SessionService, current_app.extensions['session_service'])
 
 
 def _get_data_formatting_service() -> DataFormattingService:
-    """Get data formatting service instance."""
-    return DataFormattingService()
+    """Get data formatting service from app extensions (dependency injection)."""
+    return cast(DataFormattingService, current_app.extensions['data_formatting_service'])
 
 
 def handle_file_uploads(form: UploadForm) -> Dict[str, str]:
@@ -88,35 +80,6 @@ def handle_file_uploads(form: UploadForm) -> Dict[str, str]:
         raise ValueError(str(e))
 
 
-def resolve_config_path(config_path: str, ml_enabled: bool) -> Optional[str]:
-    """Resolve config file path, using default if not provided.
-
-    Args:
-        config_path: Path to uploaded config file (empty string if none)
-        ml_enabled: Whether ML mode is enabled (doesn't require config)
-
-    Returns:
-        Resolved config path or None if ML mode or no config needed
-
-    Raises:
-        ValueError: If default config is required but not found
-    """
-    config_service = _get_configuration_service()
-    default_config: Optional[str] = None
-
-    # Get default config path from Flask config
-    if not ml_enabled:
-        default_config = safe_join(
-            os.getcwd(), current_app.config['DEFAULT_WHATSTHEDAMAGE_CONFIG']  # type: ignore
-        )
-
-    return config_service.resolve_config_path(
-        user_path=config_path if config_path else None,
-        ml_enabled=ml_enabled,
-        default_config_path=default_config
-    )
-
-
 def process_summary_and_build_response(
     form: UploadForm,
     csv_path: str,
@@ -124,6 +87,9 @@ def process_summary_and_build_response(
     clear_upload_folder_fn: Callable[[], None]
 ) -> Response:
     """Process CSV for summary view and build HTML response.
+
+    .. deprecated:: 0.9.0
+       This method will be removed in v0.10.0. Download functionality will be provided by DataTables.
 
     Args:
         form: The upload form with processing parameters
@@ -151,21 +117,7 @@ def process_summary_and_build_response(
     # Extract DataTablesResponse per account
     dt_responses = result['data']
 
-    # Prepare table data directly from DataTablesResponse
-    headers, processed_rows = formatting_service.prepare_datatables_summary_table_data(
-        dt_responses,
-        no_currency_format=form.no_currency_format.data,
-        categories_header=_("Categories")
-    )
-
-    # Generate HTML for display
-    html_result = formatting_service.format_datatables_as_html_table(
-        dt_responses,
-        no_currency_format=form.no_currency_format.data,
-        categories_header=_("Categories")
-    )
-
-    # Store HTML and DataTablesResponse for CSV download
+    # Store DataTablesResponse for CSV download
     session_service = _get_session_service()
     # Serialize DataTablesResponse to dict for session storage
     dt_responses_dict = {
@@ -176,13 +128,27 @@ def process_summary_and_build_response(
         'dt_responses_dict': dt_responses_dict,
         'no_currency_format': form.no_currency_format.data
     }
-    session_service.store_result(html_result, csv_data)
+    # Store empty html_result for backward compatibility
+    session_service.store_result('', csv_data)
+
+    # Prepare summary table data (headers and rows) for result.html template
+    try:
+        headers, rows = formatting_service.prepare_datatables_summary_table_data(
+            dt_responses=dt_responses,
+            no_currency_format=form.no_currency_format.data,
+            categories_header=_("Categories")
+        )
+
+    except Exception as e:
+        current_app.logger.error(f"Error preparing summary table data: {e}", exc_info=True)
+        current_app.logger.warning("Upgrade whatsthedamage to the latest version to ensure multi-account compatibility.")
+        raise
 
     clear_upload_folder_fn()
     return _get_response_builder_service().build_html_response(
         template='result.html',
         headers=headers,
-        rows=processed_rows
+        rows=rows
     )
 
 
@@ -202,6 +168,8 @@ def process_details_and_build_response(
         Flask response with rendered result.html
     """
     # Process using service layer
+    session_service = SessionService()
+    language = session_service.get_language() or get_default_language()
     result = _get_processing_service().process_with_details(
         csv_file_path=csv_path,
         config_file_path=None,  # v2 doesn't use config file
@@ -209,16 +177,21 @@ def process_details_and_build_response(
         end_date=form.end_date.data.strftime('%Y-%m-%d') if form.end_date.data else None,
         ml_enabled=form.ml.data,
         category_filter=form.filter.data,
-        language=session.get('lang', get_default_language())
+        language=language
     )
 
     # Extract Dict[str, DataTablesResponse] from result
     dt_responses_by_account = result['data']
 
-    # Pass the dict of responses to template for multi-account rendering
+    # Prepare accounts data for template rendering
+    formatting_service = _get_data_formatting_service()
+    accounts_data = formatting_service.prepare_accounts_for_template(dt_responses_by_account)
+
+    # Pass the prepared data to template for multi-account rendering
     clear_upload_folder_fn()
     return _get_response_builder_service().build_html_response(
         template='v2_results.html',
-        dt_responses=dt_responses_by_account
+        accounts_data=accounts_data,
+        timing=result.get('timing')
     )
 

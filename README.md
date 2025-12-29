@@ -21,7 +21,6 @@ _The slang phrase "what's the damage?" is often used to ask about the cost or pr
  - Localization support. Currently English (default) and Hungarian languages are supported.
  - Web interface for easier use.
  - REST API v2 for programmatic access and integrations (v1 is deprecated and will be removed in v0.10.0).
- - **Performance optimizations**: Cached CSV parsing and optional detail row skipping for faster summary generation.
 
 Example output on console. The values in the following example are arbitrary.
 ```

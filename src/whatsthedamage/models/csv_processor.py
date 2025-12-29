@@ -97,7 +97,7 @@ class CSVProcessor:
 
         return formatting_service.format_for_output(
             data=data_for_pandas,
-            currency=self.processor.get_currency_from_rows(self._read_csv_file()),
+            currency=self.processor.get_currency_from_rows(self._rows),
             output_format=self.args.get('output_format'),
             output_file=self.args.get('output'),
             nowrap=self.args.get('nowrap', False),

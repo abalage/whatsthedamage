@@ -1,6 +1,8 @@
 # Changelog
 
-## [Unreleased]
+## [0.9.0]
+
+Last version to support v1 API and old summary based methods (depending on DataFrames).
 
 ### Added
 - **Feature**: Add multi-account support. Each account will be a separate entity. Currency is now belongs to the account's metadata.
@@ -14,6 +16,7 @@
 - **Break**: CsvRow objects now have 'account' metadata.
 - **Refactor**: `process_rows_v2()` now handles verbose/training_data flags directly (no CLI bypass needed).
 - **Refactor**: Remove unnecessary HTML parsing.
+- **Refactor**: `SessionService` now uses dependency injection pattern like other services instead of direct instantiation.
 - **Performance**: Optimize CSV processing by caching parsed rows in `CSVProcessor._rows` to avoid re-reading files.
 - **Performance**: Skip building `DetailRow` objects when only summary data is needed (e.g., CLI, web summary, API v1).
 - **Performance**: Significally reduce the amount of data stored in session storage.
@@ -21,13 +24,16 @@
 - **Chore**: Unify DataFormattingService to support both panda's DataFrames and DataTablesResponse formats.
 - **Chore**: Unify data flow: `Processing → Enhanced Data → Formatting → Output`
 - **Chore**: Update tests to mock `_rows` attribute for improved test isolation.
-- **Docs**: Fix reStructuredText formatting in docstrings.
+- **Docs**: Fix reStructuredText formatting in docstrings for Sphinx compatibility.
 
 ### Deprecated
 - **API v1** (`/api/v1/process`): Deprecated in favor of API v2. Will be removed in v0.10.0.
 - **ProcessingService.process_summary()**: Use `process_with_details()` instead. Will be removed in v0.10.0.
 - **RowsProcessor.process_rows()**: Use `process_rows_v2()` instead. Will be removed in v0.10.0.
 - **CSVProcessor.process()**: Use `process_v2()` instead. Will be removed in v0.10.0.
+
+### Bugs
+- process_v1() is broken because multi-account support was intentionally not added. Upgrade to latest version or use "Use Machine Learning model for categorization" checkbox before submitting your CSV.
 
 ## [0.8.0] - 2025-12-19
 

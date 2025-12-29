@@ -23,8 +23,9 @@ INDEX_ROUTE = 'main.index'
 
 
 def _get_session_service() -> SessionService:
-    """Get SessionService instance."""
-    return SessionService()
+    """Get session service from app extensions (dependency injection)."""
+    from typing import cast
+    return cast(SessionService, current_app.extensions['session_service'])
 
 
 def _get_configuration_service() -> ConfigurationService:

@@ -14,6 +14,7 @@ from whatsthedamage.services.response_builder_service import ResponseBuilderServ
 from whatsthedamage.services.configuration_service import ConfigurationService
 from whatsthedamage.services.file_upload_service import FileUploadService
 from whatsthedamage.services.data_formatting_service import DataFormattingService
+from whatsthedamage.services.session_service import SessionService
 from typing import Optional, Any
 import gettext
 
@@ -25,7 +26,8 @@ def create_app(
     response_builder_service: Optional[ResponseBuilderService] = None,
     configuration_service: Optional[ConfigurationService] = None,
     file_upload_service: Optional[FileUploadService] = None,
-    data_formatting_service: Optional[DataFormattingService] = None
+    data_formatting_service: Optional[DataFormattingService] = None,
+    session_service: Optional[SessionService] = None
 ) -> Flask:
     app: Flask = Flask(__name__, template_folder='view/templates', static_folder='view/static')
 
@@ -67,6 +69,11 @@ def create_app(
     if data_formatting_service is None:
         data_formatting_service = DataFormattingService()
     app.extensions['data_formatting_service'] = data_formatting_service
+
+    # Initialize session service (dependency injection)
+    if session_service is None:
+        session_service = SessionService()
+    app.extensions['session_service'] = session_service
 
     # Initialize response builder service (dependency injection)
     if response_builder_service is None:

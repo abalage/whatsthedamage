@@ -37,8 +37,8 @@ def _get_file_upload_service() -> FileUploadService:
 
 
 def _get_session_service() -> SessionService:
-    """Get session service instance."""
-    return SessionService()
+    """Get session service from app extensions (dependency injection)."""
+    return cast(SessionService, current_app.extensions['session_service'])
 
 
 def _get_data_formatting_service() -> DataFormattingService:

@@ -13,6 +13,7 @@ from whatsthedamage.services.data_formatting_service import DataFormattingServic
 from whatsthedamage.services.file_upload_service import FileUploadService, FileUploadError
 from whatsthedamage.utils.flask_locale import get_default_language
 from typing import Dict, Optional, Callable, cast
+from gettext import gettext as _
 
 
 def _get_processing_service() -> ProcessingService:
@@ -87,6 +88,9 @@ def process_summary_and_build_response(
 ) -> Response:
     """Process CSV for summary view and build HTML response.
 
+    .. deprecated:: 0.9.0
+    This method will be removed in v0.10.0. Download functionality will be provided by DataTables.
+
     Args:
         form: The upload form with processing parameters
         csv_path: Path to CSV file
@@ -127,14 +131,24 @@ def process_summary_and_build_response(
     # Store empty html_result for backward compatibility
     session_service.store_result('', csv_data)
 
-    # Prepare accounts data for template rendering
-    accounts_data = formatting_service.prepare_accounts_for_template(dt_responses)
+    # Prepare summary table data (headers and rows) for result.html template
+    try:
+        headers, rows = formatting_service.prepare_datatables_summary_table_data(
+            dt_responses=dt_responses,
+            no_currency_format=form.no_currency_format.data,
+            categories_header=_("Categories")
+        )
+
+    except Exception as e:
+        current_app.logger.error(f"Error preparing summary table data: {e}", exc_info=True)
+        current_app.logger.warning("Upgrade whatsthedamage to the latest version to ensure multi-account compatibility.")
+        raise
 
     clear_upload_folder_fn()
     return _get_response_builder_service().build_html_response(
         template='result.html',
-        accounts_data=accounts_data,
-        timing=result.get('timing')
+        headers=headers,
+        rows=rows
     )
 
 

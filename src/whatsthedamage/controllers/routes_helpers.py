@@ -168,6 +168,8 @@ def process_details_and_build_response(
         Flask response with rendered result.html
     """
     # Process using service layer
+    session_service = SessionService()
+    language = session_service.get_language() or get_default_language()
     result = _get_processing_service().process_with_details(
         csv_file_path=csv_path,
         config_file_path=None,  # v2 doesn't use config file
@@ -175,7 +177,7 @@ def process_details_and_build_response(
         end_date=form.end_date.data.strftime('%Y-%m-%d') if form.end_date.data else None,
         ml_enabled=form.ml.data,
         category_filter=form.filter.data,
-        language=session.get('lang', get_default_language())
+        language=language
     )
 
     # Extract Dict[str, DataTablesResponse] from result

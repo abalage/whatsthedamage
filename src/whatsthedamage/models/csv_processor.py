@@ -91,11 +91,13 @@ class CSVProcessor:
         Returns:
             str: The formatted data as a string or None.
         """
+        # FIXME: CSVProcessor should receive DataFormattingService via dependency injection
+        # Currently instantiates directly since CSVProcessor is used in non-Flask contexts
         formatting_service = DataFormattingService()
 
         return formatting_service.format_for_output(
             data=data_for_pandas,
-            currency=self.processor.get_currency_from_rows(self._read_csv_file()),
+            currency=self.processor.get_currency_from_rows(self._rows),
             output_format=self.args.get('output_format'),
             output_file=self.args.get('output'),
             nowrap=self.args.get('nowrap', False),

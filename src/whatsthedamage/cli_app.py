@@ -45,9 +45,11 @@ def format_output(dt_responses: Dict[str, DataTablesResponse], args: AppArgs) ->
     Returns:
         str: Formatted output string
     """
+    # FIXME: Implement service factory pattern for CLI to make DI consistent across all interfaces
+    # CLI should use a factory function to create services with proper dependency injection
     formatting_service = DataFormattingService()
 
-    return formatting_service.format_datatables_for_output(
+    return formatting_service.format_all_accounts_for_output(
         dt_responses=dt_responses,
         output_format=args.get('output_format'),
         output_file=args.get('output'),
@@ -85,34 +87,9 @@ def main() -> None:
         # Extract DataTablesResponse per account
         dt_responses: Dict[str, DataTablesResponse] = result['data']
 
-        # Process all accounts uniformly
-        all_outputs = []
-        output_file = args.get('output')
-
-        for account_id, dt_response in dt_responses.items():
-            # Print account header for multi-account scenarios
-            if len(dt_responses) > 1:
-                print(f"\n{'=' * 60}")
-                print(f"Account: {account_id}")
-                print(f"{'=' * 60}")
-
-            single_account_data = {account_id: dt_response}
-            # Create args copy without output to avoid file overwrite
-            args_copy = dict(args)
-            args_copy['output'] = None
-            output = format_output(single_account_data, args_copy)  # type: ignore[arg-type]
-            print(output)
-
-            # Collect for file output if needed
-            if output_file:
-                header = f"Account: {account_id}\n" if len(dt_responses) > 1 else ""
-                all_outputs.append(f"{header}{output}")
-
-        # Write all accounts to file once
-        if output_file and all_outputs:
-            with open(output_file, 'w') as f:
-                separator = '\n\n' if len(dt_responses) > 1 else ''
-                f.write(separator.join(all_outputs))
+        # Format all accounts using service (handles multi-account iteration)
+        output = format_output(dt_responses, args)  # type: ignore[arg-type]
+        print(output)
 
     except FileNotFoundError as e:
         print(f"Error: {e}")

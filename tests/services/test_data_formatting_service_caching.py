@@ -479,10 +479,6 @@ class TestCacheBehaviorUnderEdgeCases:
         mock_dt_response_account2
     ):
         """Test that cache works correctly across different wrapper methods."""
-        dt_responses = {
-            "12345": mock_dt_response_account1,
-            "67890": mock_dt_response_account2
-        }
 
         # Call different methods with different accounts
         _ = service.format_datatables_as_html_table(

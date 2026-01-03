@@ -3,7 +3,6 @@ from flask import (
     Blueprint, request, make_response, render_template, redirect, url_for,
     flash, current_app, Response
 )
-from werkzeug.security import safe_join
 from whatsthedamage.view.forms import UploadForm
 from whatsthedamage.controllers.routes_helpers import (
     handle_file_uploads,
@@ -95,13 +94,10 @@ def process_v2() -> Response:
 
         # Resolve config path using ConfigurationService
         config_service = _get_configuration_service()
-        default_config = None if form.ml.data else safe_join(
-            os.getcwd(), current_app.config['DEFAULT_WHATSTHEDAMAGE_CONFIG']  # type: ignore
-        )
         config_path = config_service.resolve_config_path(
             user_path=files['config_path'] if files['config_path'] else None,
             ml_enabled=form.ml.data,
-            default_config_path=default_config
+            default_config_path=None  # No default config file, will use built-in defaults
         )
 
         # Store form data in session

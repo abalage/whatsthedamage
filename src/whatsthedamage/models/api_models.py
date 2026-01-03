@@ -136,18 +136,6 @@ class DetailedResponse(BaseModel):
         }
 
 
-class ExportRequest(BaseModel):
-    """Request model for CSV export endpoint.
-
-    Result ID comes from prior /api/v2/process call. No additional
-    parameters needed as export uses cached processing results.
-    """
-    result_id: str = Field(
-        description="UUID from prior processing request",
-        examples=["550e8400-e29b-41d4-a716-446655440000"]
-    )
-
-
 class ErrorResponse(BaseModel):
     """Standardized error response for all API endpoints.
 

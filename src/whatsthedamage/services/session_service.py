@@ -3,7 +3,7 @@
 This service centralizes session management to eliminate direct session
 manipulation across controllers and provide type-safe access to session data.
 """
-from typing import Optional, Dict, Any, Tuple
+from typing import Optional, Dict, Any
 from dataclasses import dataclass
 from flask import session
 
@@ -113,38 +113,6 @@ class SessionService:
         """
         return self.SESSION_KEY_FORM_DATA in session
 
-    def store_result(self, html_result: str, csv_params: Dict[str, Any]) -> None:
-        """Store processing result in session.
-
-        :param html_result: HTML string with formatted result
-        :param csv_params: Dictionary with CSV generation parameters
-            (monthly_data, currency)
-        """
-        session[self.SESSION_KEY_RESULT] = html_result
-        session[self.SESSION_KEY_TABLE_DATA] = csv_params
-
-    def retrieve_result(self) -> Optional[Tuple[Optional[str], Dict[str, Any]]]:
-        """Retrieve processing result from session.
-
-        :returns: Tuple of (html_result, csv_params) if available, None otherwise
-        :rtype: Optional[Tuple[Optional[str], Dict[str, Any]]]
-        """
-        html_result = session.get(self.SESSION_KEY_RESULT)
-        csv_params = session.get(self.SESSION_KEY_TABLE_DATA)
-
-        if csv_params is not None:
-            return html_result, csv_params
-        return None
-
-    def has_result(self) -> bool:
-        """Check if result exists in session.
-
-        :returns: True if result exists, False otherwise
-        :rtype: bool
-        """
-        return (self.SESSION_KEY_RESULT in session and
-                self.SESSION_KEY_TABLE_DATA in session)
-
     def set_language(self, lang_code: str) -> None:
         """Set user language preference.
 
@@ -159,14 +127,6 @@ class SessionService:
         :rtype: str
         """
         return str(session.get(self.SESSION_KEY_LANG, self.DEFAULT_LANGUAGE))
-
-    def has_language(self) -> bool:
-        """Check if language preference exists in session.
-
-        :returns: True if language is set, False otherwise
-        :rtype: bool
-        """
-        return self.SESSION_KEY_LANG in session
 
     def clear_form_data(self) -> None:
         """Remove form data from session."""
@@ -183,20 +143,3 @@ class SessionService:
         self.clear_result()
         # Note: Language preference is preserved across clears
         # If you need to clear it too, add: session.pop(self.SESSION_KEY_LANG, None)
-
-    def get_session_size(self) -> int:
-        """Calculate approximate size of session data in bytes.
-
-        Useful for monitoring and preventing memory leaks from large session data.
-
-        :returns: Approximate size in bytes
-        :rtype: int
-        """
-        size = 0
-        for key in [self.SESSION_KEY_FORM_DATA, self.SESSION_KEY_RESULT,
-                    self.SESSION_KEY_TABLE_DATA, self.SESSION_KEY_LANG]:
-            value = session.get(key)
-            if value:
-                # Rough approximation of size
-                size += len(str(value))
-        return size

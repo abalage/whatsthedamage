@@ -138,59 +138,6 @@ class TestSessionServiceFormData:
             assert not session_service.has_form_data()
 
 
-class TestSessionServiceResult:
-    """Tests for SessionService result management."""
-
-    def test_store_and_retrieve_result(self, app, session_service, sample_table_data):
-        """Test storing and retrieving result."""
-        with app.test_request_context():
-            html_result = '<table><tr><td>Test</td></tr></table>'
-
-            # Store
-            session_service.store_result(html_result, sample_table_data)
-            assert session['result'] == html_result
-            assert session['table_data'] == sample_table_data
-
-            # Retrieve
-            result = session_service.retrieve_result()
-            assert result is not None
-            retrieved_html, retrieved_params = result
-            assert retrieved_html == html_result
-            # retrieved_params is now a plain dict, not TableData
-            assert isinstance(retrieved_params, dict)
-            assert retrieved_params == sample_table_data
-
-    @pytest.mark.parametrize("has_html,has_table,expected_exists", [
-        (False, False, False),
-        (True, False, False),
-        (False, True, False),
-        (True, True, True),
-    ])
-    def test_has_result_conditions(self, app, session_service, has_html, has_table, expected_exists):
-        """Test checking if result exists under various conditions."""
-        with app.test_request_context():
-            if has_html:
-                session['result'] = '<table></table>'
-            if has_table:
-                session['table_data'] = {'headers': [], 'rows': []}
-
-            assert session_service.has_result() == expected_exists
-
-    def test_retrieve_result_when_missing(self, app, session_service):
-        """Test retrieving result when none exists."""
-        with app.test_request_context():
-            assert session_service.retrieve_result() is None
-
-    def test_clear_result(self, app, session_service, sample_table_data):
-        """Test clearing result from session."""
-        with app.test_request_context():
-            session_service.store_result('<table></table>', sample_table_data)
-            assert session_service.has_result()
-
-            session_service.clear_result()
-            assert not session_service.has_result()
-
-
 class TestSessionServiceLanguage:
     """Tests for SessionService language management."""
 
@@ -205,32 +152,28 @@ class TestSessionServiceLanguage:
             session_service.set_language(lang_code)
             assert session['lang'] == expected
             assert session_service.get_language() == expected
-            assert session_service.has_language()
 
     def test_get_language_default(self, app, session_service):
         """Test getting language returns default when not set."""
         with app.test_request_context():
-            assert not session_service.has_language()
             assert session_service.get_language() == SessionService.DEFAULT_LANGUAGE
 
 
 class TestSessionServiceClear:
     """Tests for SessionService clear operations."""
 
-    def test_clear_session_preserves_language(self, app, session_service, sample_form_data, sample_table_data):
+    def test_clear_session_preserves_language(self, app, session_service, sample_form_data):
         """Test clearing all session data preserves language preference."""
         with app.test_request_context():
             # Set all session data
             session_service.store_form_data(sample_form_data)
-            session_service.store_result('<table></table>', sample_table_data)
             session_service.set_language('hu')
 
             # Clear session
             session_service.clear_session()
 
-            # Check form data and result are cleared, language preserved
+            # Check form data cleared, language preserved
             assert not session_service.has_form_data()
-            assert not session_service.has_result()
             assert session_service.get_language() == 'hu'
 
     def test_clear_session_when_empty(self, app, session_service):
@@ -238,44 +181,13 @@ class TestSessionServiceClear:
         with app.test_request_context():
             session_service.clear_session()  # Should not raise exception
             assert not session_service.has_form_data()
-            assert not session_service.has_result()
-
-
-class TestSessionServiceSize:
-    """Tests for SessionService size tracking."""
-
-    @pytest.mark.parametrize("setup_data,min_expected_size", [
-        (lambda s: None, 0),  # Empty
-        (lambda s: s.store_form_data({'filename': 'test.csv'}), 20),  # With form data
-        (lambda s: (
-            s.store_form_data({'filename': 'test.csv'}),
-            s.set_language('en')
-        ), 20),  # With multiple data
-    ])
-    def test_get_session_size(self, app, session_service, setup_data, min_expected_size):
-        """Test session size calculation."""
-        with app.test_request_context():
-            setup_data(session_service)
-            size = session_service.get_session_size()
-            assert size >= min_expected_size
-
-    def test_get_session_size_large_result(self, app, session_service):
-        """Test session size with large HTML result."""
-        with app.test_request_context():
-            large_html = '<table>' + '<tr><td>data</td></tr>' * 1000 + '</table>'
-            table_data = {
-                'headers': ['Category'],
-                'rows': [[{'data': 'Test', 'sort': 'test'}] for _ in range(1000)]
-            }
-            session_service.store_result(large_html, table_data)
-            assert session_service.get_session_size() > 10000
 
 
 class TestSessionServiceIntegration:
     """Integration tests for SessionService."""
 
-    def test_full_workflow(self, app, session_service, sample_form_data, sample_table_data):
-        """Test complete workflow: store form, process, store result, retrieve, clear."""
+    def test_full_workflow(self, app, session_service, sample_form_data):
+        """Test complete workflow: store form, retrieve, clear."""
         with app.test_request_context():
             # Store form data
             session_service.store_form_data(sample_form_data)
@@ -286,22 +198,9 @@ class TestSessionServiceIntegration:
             assert retrieved_form.filename == 'test.csv'
             assert retrieved_form.verbose is True
 
-            # Store and retrieve result
-            html_result = '<table><tr><th>Category</th><th>Amount</th></tr></table>'
-            session_service.store_result(html_result, sample_table_data)
-            assert session_service.has_result()
-
-            result = session_service.retrieve_result()
-            retrieved_html, retrieved_params = result
-            assert 'Category' in retrieved_html
-            # retrieved_params is now a plain dict, not TableData
-            assert isinstance(retrieved_params, dict)
-            assert retrieved_params == sample_table_data
-
             # Clear session
             session_service.clear_session()
             assert not session_service.has_form_data()
-            assert not session_service.has_result()
 
     def test_session_isolation(self, app):
         """Test that different SessionService instances share Flask session."""

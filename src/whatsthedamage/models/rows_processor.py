@@ -52,20 +52,6 @@ class RowsProcessor:
                 formatted_end_date, self._date_attribute_format
             )
 
-    def get_currency_from_rows(self, rows: List[CsvRow]) -> str:
-        """
-        Extracts currency from the first available row.
-
-        Args:
-            rows (List[CsvRow]): List of CsvRow objects.
-
-        Returns:
-            str: The currency code, or empty string if no rows or currency not found.
-        """
-        if rows:
-            return getattr(rows[0], 'currency', '')
-        return ''
-
     def process_rows_v2(self, rows: List[CsvRow]) -> Dict[str, DataTablesResponse]:
         """
         Processes a list of CsvRow objects and returns per-account DataTablesResponse structures.
@@ -127,7 +113,7 @@ class RowsProcessor:
 
             responses_by_account[account_id] = account_response
 
-        # Store first account's response for backward compatibility with get_dt_json_data
+        # Store first account's response
         if responses_by_account:
             first_account = next(iter(responses_by_account.keys()))
             self._dt_json_data = responses_by_account[first_account]
@@ -139,15 +125,6 @@ class RowsProcessor:
             print_training_data_v2(responses_by_account)
 
         return responses_by_account
-
-    def get_dt_json_data(self) -> Optional[DataTablesResponse]:
-        """
-        Getter for the DataTables JSON structure.
-
-        Returns:
-            Optional[DataTablesResponse]: The DataTables-compatible JSON structure.
-        """
-        return self._dt_json_data
 
     def _filter_rows_v2(self, rows: List[CsvRow]) -> List[Tuple[DateField, List[CsvRow]]]:
         """

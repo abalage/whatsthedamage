@@ -127,11 +127,11 @@ class SessionService:
         session[self.SESSION_KEY_RESULT] = html_result
         session[self.SESSION_KEY_TABLE_DATA] = csv_params
 
-    def retrieve_result(self) -> Optional[Tuple[str, Dict[str, Any]]]:
+    def retrieve_result(self) -> Optional[Tuple[Optional[str], Dict[str, Any]]]:
         """Retrieve processing result from session.
 
         :returns: Tuple of (html_result, csv_params) if available, None otherwise
-        :rtype: Optional[Tuple[str, Dict[str, Any]]]
+        :rtype: Optional[Tuple[Optional[str], Dict[str, Any]]]
         """
         html_result = session.get(self.SESSION_KEY_RESULT)
         csv_params = session.get(self.SESSION_KEY_TABLE_DATA)

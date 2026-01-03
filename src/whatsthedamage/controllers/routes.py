@@ -7,7 +7,6 @@ from werkzeug.security import safe_join
 from whatsthedamage.view.forms import UploadForm
 from whatsthedamage.controllers.routes_helpers import (
     handle_file_uploads,
-    process_summary_and_build_response,
     process_details_and_build_response
 )
 from whatsthedamage.services.session_service import SessionService
@@ -81,9 +80,9 @@ def index() -> Response:
     return make_response(render_template('index.html', form=form))
 
 
-@bp.route('/process', methods=['POST'])
-def process_v1() -> Response:
-    """Process CSV and return summary HTML page for web UI."""
+@bp.route('/process/v2', methods=['POST'])
+def process_v2() -> Response:
+    """Process CSV and return detailed DataTables HTML page for web UI."""
     form: UploadForm = UploadForm()
     if not form.validate_on_submit():
         for field, errors in form.errors.items():
@@ -111,35 +110,7 @@ def process_v1() -> Response:
         session_service.store_form_data(request.form.to_dict())
 
         # Process and build response
-        return process_summary_and_build_response(form, files['csv_path'], config_path, clear_upload_folder)
-
-    except ValueError as e:
-        flash(str(e), 'danger')
-        return make_response(redirect(url_for(INDEX_ROUTE)))
-    except Exception as e:
-        flash(f'Error processing CSV: {e}')
-        return make_response(redirect(url_for(INDEX_ROUTE)))
-
-@bp.route('/process/v2', methods=['POST'])
-def process_v2() -> Response:
-    """Process CSV and return detailed DataTables HTML page for web UI."""
-    form: UploadForm = UploadForm()
-    if not form.validate_on_submit():
-        for field, errors in form.errors.items():
-            for error in errors:
-                flash(f"Error in {getattr(form, field).label.text}: {error}", 'danger')
-        return make_response(redirect(url_for(INDEX_ROUTE)))
-
-    try:
-        # Handle file uploads
-        files = handle_file_uploads(form)
-
-        # Store form data in session
-        session_service = _get_session_service()
-        session_service.store_form_data(request.form.to_dict())
-
-        # Process and build response
-        return process_details_and_build_response(form, files['csv_path'], clear_upload_folder)
+        return process_details_and_build_response(form, files['csv_path'], clear_upload_folder, config_path )
 
     except ValueError as e:
         flash(str(e), 'danger')
@@ -155,40 +126,6 @@ def clear() -> Response:
     session_service.clear_session()
     flash('Form data cleared.', 'success')
     return make_response(redirect(url_for(INDEX_ROUTE)))
-
-
-@bp.route('/download', methods=['GET'])
-def download() -> Response:
-    session_service = _get_session_service()
-    result_data = session_service.retrieve_result()
-    if not result_data:
-        flash('No result available for download.', 'danger')
-        return make_response(redirect(url_for(INDEX_ROUTE)))
-
-    _, csv_params = result_data
-
-    # Deserialize DataTablesResponse from dict
-    from whatsthedamage.config.dt_models import DataTablesResponse
-    dt_responses_dict = csv_params.get('dt_responses_dict', {})
-    dt_responses = {
-        account_id: DataTablesResponse.model_validate(dt_dict)
-        for account_id, dt_dict in dt_responses_dict.items()
-    }
-
-    # Use DataFormattingService.format_datatables_as_csv() with DataTablesResponse
-    formatting_service = _get_formatting_service()
-    csv_data = formatting_service.format_datatables_as_csv(
-        dt_responses=dt_responses,
-        delimiter=';',
-        no_currency_format=csv_params.get('no_currency_format', False)
-    )
-
-    # Create a response with the CSV data
-    response: Response = make_response(csv_data)
-    response.headers['Content-Disposition'] = 'attachment; filename=result.csv'
-    response.headers['Content-Type'] = 'text/csv'
-
-    return response
 
 
 @bp.route('/legal')

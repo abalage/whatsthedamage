@@ -84,51 +84,6 @@ class ProcessingRequest(BaseModel):
         return self
 
 
-class SummaryMetadata(BaseModel):
-    """Metadata for summary response."""
-    row_count: int = Field(description="Number of rows processed")
-    processing_time: float = Field(description="Processing time in seconds")
-    ml_enabled: bool = Field(description="Whether ML categorization was used")
-    date_range: Optional[Dict[str, str]] = Field(
-        default=None,
-        description="Date range filter applied (start and end dates)"
-    )
-
-
-class SummaryResponse(BaseModel):
-    """Response model for v1 API (summary only).
-
-    Returns aggregated totals by category with minimal metadata.
-    Naturally small payloads suitable for direct JSON responses.
-    """
-    data: Dict[str, float] = Field(
-        description="Summary data with category totals (category name -> total amount)"
-    )
-    metadata: SummaryMetadata = Field(
-        description="Processing metadata (row_count, processing_time, etc.)"
-    )
-
-    class Config:
-        json_schema_extra = {
-            "example": {
-                "data": {
-                    "grocery": -45000.00,
-                    "utilities": -12000.00,
-                    "salary": 350000.00
-                },
-                "metadata": {
-                    "row_count": 3,
-                    "processing_time": 0.15,
-                    "ml_enabled": False,
-                    "date_range": {
-                        "start": "2024-01-01",
-                        "end": "2024-12-31"
-                    }
-                }
-            }
-        }
-
-
 class DetailedMetadata(BaseModel):
     """Metadata for detailed response."""
     row_count: int = Field(description="Number of rows processed")

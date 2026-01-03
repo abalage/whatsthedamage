@@ -14,17 +14,6 @@
                     }
                 });
         }
-        document.addEventListener('DOMContentLoaded', function() {
-            var mlCheckbox = document.getElementById('ml');
-            var form = mlCheckbox ? mlCheckbox.form : null;
-            if (mlCheckbox && form) {
-                function updateFormAction() {
-                    form.action = mlCheckbox.checked ? '/process/v2' : '/process';
-                }
-                mlCheckbox.addEventListener('change', updateFormAction);
-                updateFormAction(); // Set initial action
-            }
-        });
     </script>
 </head>
 <body>
@@ -45,7 +34,7 @@
                 </div>
             {% endif %}
         {% endwith %}
-        <form action="/process" method="post" enctype="multipart/form-data">
+        <form action="/process/v2" method="post" enctype="multipart/form-data">
             {{ form.hidden_tag() }}
             <div class="row">
                 <div class="col-md-6 mb-3">

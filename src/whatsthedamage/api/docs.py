@@ -6,22 +6,11 @@ and Swagger UI for interactive API documentation.
 from flask import Blueprint, jsonify, render_template, request, Response
 from typing import Any
 
-from whatsthedamage.api.v1.schema import get_openapi_schema as get_v1_schema
 from whatsthedamage.api.v2.schema import get_openapi_schema as get_v2_schema
 
 
 # Create blueprint
 docs_bp = Blueprint('api_docs', __name__)
-
-
-@docs_bp.route('/api/v1/openapi.json')
-def v1_openapi_spec() -> Response:
-    """Return OpenAPI 3.0 specification for v1 API.
-    
-    Returns:
-        JSON response containing OpenAPI spec
-    """
-    return jsonify(get_v1_schema())
 
 
 @docs_bp.route('/api/v2/openapi.json')
@@ -39,16 +28,16 @@ def swagger_ui() -> Any:
     """Render Swagger UI for interactive API documentation.
     
     Query Parameters:
-        version (str): API version to display (v1 or v2). Defaults to v1.
+        version (str): API version to display (v2). Defaults to v2.
     
     Returns:
         HTML page with Swagger UI
     """
-    version = request.args.get('version', 'v1')
+    version = request.args.get('version', 'v2')
     
     # Validate version parameter
-    if version not in ['v1', 'v2']:
-        version = 'v1'
+    if version not in ['v2']:
+        version = 'v2'
     
     return render_template('api_docs.html', version=version)
 

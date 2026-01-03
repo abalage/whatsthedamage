@@ -5,7 +5,7 @@ for better maintainability and overview.
 """
 import pytest
 from whatsthedamage.services.response_builder_service import ResponseBuilderService
-from whatsthedamage.models.api_models import ProcessingRequest, SummaryResponse, DetailedResponse
+from whatsthedamage.models.api_models import ProcessingRequest, DetailedResponse
 from whatsthedamage.config.dt_models import AggregatedRow, DisplayRawField, DateField, DataTablesResponse
 
 
@@ -17,34 +17,6 @@ def service():
 
 class TestApiResponseBuilding:
     """Test API response building (v1 summary and v2 detailed)."""
-
-    @pytest.mark.parametrize("ml_enabled,start_date,end_date,expected_date_range", [
-        (True, "2024.01.01", "2024.12.31", {'start': '2024.01.01', 'end': '2024.12.31'}),
-        (False, "2024.01.01", None, {'start': '2024.01.01'}),
-        (True, None, "2024.12.31", {'end': '2024.12.31'}),
-        (False, None, None, None),
-    ])
-    def test_builds_summary_response_with_various_params(
-        self, service, ml_enabled, start_date, end_date, expected_date_range
-    ):
-        """Test building summary responses with different parameter combinations."""
-        params = ProcessingRequest(
-            ml_enabled=ml_enabled,
-            start_date=start_date,
-            end_date=end_date
-        )
-        data = {'grocery': 150.0, 'utilities': 80.0}
-        metadata = {'row_count': 25}
-
-        response = service.build_api_summary_response(
-            data=data, metadata=metadata, params=params, processing_time=0.5
-        )
-
-        assert isinstance(response, SummaryResponse)
-        assert response.data == data
-        assert response.metadata.row_count == 25
-        assert response.metadata.ml_enabled == ml_enabled
-        assert response.metadata.date_range == expected_date_range
 
     def test_builds_detailed_response_with_transactions(self, service):
         """Test building detailed response with transaction data."""
@@ -105,25 +77,3 @@ class TestDateRangeBuilding:
 
 class TestIntegration:
     """Integration test for complete workflows."""
-
-    def test_complete_api_workflow(self, service):
-        """Test complete API response building workflow."""
-        params = ProcessingRequest(
-            start_date="2024.01.01",
-            end_date="2024.12.31",
-            ml_enabled=True
-        )
-        data = {'grocery': 150.0}
-        metadata = {'row_count': 25}
-
-        # Build response
-        response = service.build_api_summary_response(
-            data=data, metadata=metadata, params=params, processing_time=0.5
-        )
-
-        # Verify serialization
-        response_dict = response.model_dump()
-        assert 'data' in response_dict
-        assert 'metadata' in response_dict
-        assert response_dict['metadata']['ml_enabled'] is True
-        assert response_dict['metadata']['row_count'] == 25

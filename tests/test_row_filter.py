@@ -49,20 +49,3 @@ def test_filter_by_date(row_filter):
     filtered_rows = row_filter.filter_by_date(start_date, end_date)
     assert len(filtered_rows[0]["99"]) == 1
     assert filtered_rows[0]["99"][0].date == "2023-06-10"
-
-
-def test_filter_by_month(row_filter):
-    filtered_months = row_filter.filter_by_month()
-    assert len(filtered_months) == 12
-    assert len(filtered_months[0]["01"]) == 1
-    assert len(filtered_months[1]["02"]) == 1
-    assert len(filtered_months[2]["03"]) == 1
-    assert len(filtered_months[3]["04"]) == 1
-    assert len(filtered_months[4]["05"]) == 1
-    assert len(filtered_months[5]["06"]) == 1
-    assert len(filtered_months[6]["07"]) == 1
-    assert len(filtered_months[7]["08"]) == 1
-    assert len(filtered_months[8]["09"]) == 1
-    assert len(filtered_months[9]["10"]) == 1
-    assert len(filtered_months[10]["11"]) == 1
-    assert len(filtered_months[11]["12"]) == 1

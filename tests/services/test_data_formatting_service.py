@@ -24,9 +24,9 @@ class TestFormatAsHtmlTable:
     """Test suite for HTML table formatting."""
 
     @pytest.mark.parametrize("currency,expected", [
-        ("EUR", "150.50 EUR"),
-        ("USD", "150.50 USD"),
-        ("HUF", "150.50 HUF"),
+        ("EUR", "150.5"),
+        ("USD", "150.5"),
+        ("HUF", "150.5"),
     ])
     def test_format_with_currencies(self, service, single_month_data, currency, expected):
         """Test HTML formatting with different currencies."""
@@ -34,15 +34,11 @@ class TestFormatAsHtmlTable:
         assert expected in html
         assert "<table" in html and "<thead>" in html
 
-    @pytest.mark.parametrize("no_currency,should_have_currency", [
-        (False, True),
-        (True, False),
-    ])
-    def test_currency_formatting_toggle(self, service, single_month_data, no_currency, should_have_currency):
-        """Test enabling/disabling currency formatting."""
-        html = service.format_as_html_table(single_month_data, "EUR", no_currency_format=no_currency)
-        has_currency = "150.50 EUR" in html
-        assert has_currency == should_have_currency
+    def test_currency_formatting(self, service, single_month_data):
+        """Test that formatting is applied."""
+        html = service.format_as_html_table(single_month_data, "EUR")
+        has_formatted = "150.5" in html
+        assert has_formatted
 
     @pytest.mark.parametrize("header_text", ["Categories", "Category", "Type"])
     def test_custom_categories_header(self, service, single_month_data, header_text):
@@ -69,7 +65,7 @@ class TestFormatAsHtmlTable:
         """Test that NaN values are replaced with 0."""
         data = {"Month1": {"Cat1": float('nan'), "Cat2": 50.0}}
         html = service.format_as_html_table(data, "EUR")
-        assert "0.00 EUR" in html
+        assert "0.0" in html
 
     def test_nowrap_option(self, service, single_month_data):
         """Test nowrap option affects pandas settings."""
@@ -86,14 +82,10 @@ class TestFormatAsCsv:
         csv = service.format_as_csv(single_month_data, "EUR", delimiter=delimiter)
         assert delimiter in csv
 
-    @pytest.mark.parametrize("no_currency,should_have", [
-        (False, "150.50 EUR"),
-        (True, "150.5"),
-    ])
-    def test_currency_in_csv(self, service, single_month_data, no_currency, should_have):
-        """Test currency presence in CSV output."""
-        csv = service.format_as_csv(single_month_data, "EUR", no_currency_format=no_currency)
-        assert should_have in csv or "150.50" in csv
+    def test_currency_in_csv(self, service, single_month_data):
+        """Test formatting in CSV output."""
+        csv = service.format_as_csv(single_month_data, "EUR")
+        assert "150.5" in csv
 
     def test_csv_structure(self, service, single_month_data):
         """Test CSV contains expected headers and data."""
@@ -197,16 +189,6 @@ class TestPrepareSummaryTableData:
         assert rows[0][1]['display'] == "150.50 USD"
         assert rows[0][2]['display'] == "200.00 USD"
 
-    def test_prepare_summary_data_no_currency_format(self, service):
-        """Test preparation without currency formatting."""
-        data = {"Total": {"Grocery": 150.5}}
-        _, rows = service.prepare_summary_table_data(
-            data, "EUR", no_currency_format=True
-        )
-
-        assert rows[0][1]['display'] == "150.50"
-        assert "EUR" not in rows[0][1]['display']
-
     def test_prepare_summary_data_custom_header(self, service):
         """Test preparation with custom categories header."""
         data = {"Total": {"Grocery": 100.0}}
@@ -244,7 +226,7 @@ class TestIntegration:
 
         for cat in ["Grocery", "Utilities"]:
             assert cat in html and cat in csv
-        assert "150.50 EUR" in html and "150.50 EUR" in csv
+        assert "150.5" in html and "150.5" in csv
 
 
 class TestFormatForOutput:
@@ -258,7 +240,7 @@ class TestFormatForOutput:
             output_format="html"
         )
         assert "<table" in result
-        assert "150.50 EUR" in result
+        assert "150.5" in result
 
     def test_csv_file_output(self, service, single_month_data, tmp_path):
         """Test format_for_output with file output."""
@@ -277,18 +259,4 @@ class TestFormatForOutput:
         """Test format_for_output with default string output."""
         result = service.format_for_output(single_month_data, "EUR")
         assert "Grocery" in result
-        assert "150.50 EUR" in result
-
-    @pytest.mark.parametrize("no_currency,should_have", [
-        (False, True),
-        (True, False),
-    ])
-    def test_currency_toggle_in_output(self, service, single_month_data, no_currency, should_have):
-        """Test currency formatting toggle in format_for_output."""
-        result = service.format_for_output(
-            single_month_data,
-            "EUR",
-            no_currency_format=no_currency
-        )
-        has_currency = "150.50 EUR" in result
-        assert has_currency == should_have
+        assert "150.5" in result

@@ -62,7 +62,6 @@ class DataFormattingService:
         data: Dict[str, Dict[str, float]],
         currency: str,
         nowrap: bool = False,
-        no_currency_format: bool = False,
         categories_header: str = "Categories"
     ) -> str:
         """Format data as HTML table with optional sorting.
@@ -71,7 +70,6 @@ class DataFormattingService:
             inner keys are rows (categories), values are amounts
         :param currency: Currency code (e.g., "EUR", "USD")
         :param nowrap: If True, disables text wrapping in pandas output
-        :param no_currency_format: If True, disables currency formatting
         :param categories_header: Header text for the categories column
         :return: HTML string with formatted table
 
@@ -79,7 +77,7 @@ class DataFormattingService:
 
             >>> data = {"Total": {"Grocery": 150.5, "Utilities": 80.0}}
             >>> html = service.format_as_html_table(data, "EUR")
-            >>> assert "150.50 EUR" in html
+            >>> assert "150.5" in html
         """
         # Configure pandas display options
         pd.set_option('display.max_columns', None)
@@ -97,15 +95,6 @@ class DataFormattingService:
         # Sort by index (categories)
         df = df.sort_index()
 
-        # Format with currency if enabled
-        if not no_currency_format:
-            df = df.apply(
-                lambda row: row.apply(
-                    lambda value: f"{value:.2f} {currency}" if isinstance(value, (int, float)) else value
-                ),
-                axis=1
-            )
-
         # Convert to HTML
         html = df.to_html(border=0)
 
@@ -119,7 +108,6 @@ class DataFormattingService:
         data: Dict[str, Dict[str, float]],
         currency: str,
         delimiter: str = ',',
-        no_currency_format: bool = False
     ) -> str:
         """Format data as CSV string.
 
@@ -127,28 +115,18 @@ class DataFormattingService:
             inner keys are rows (categories), values are amounts
         :param currency: Currency code (e.g., "EUR", "USD")
         :param delimiter: CSV delimiter character
-        :param no_currency_format: If True, disables currency formatting
         :return: CSV formatted string
 
         Example::
 
             >>> data = {"January": {"Grocery": 150.5}}
             >>> csv = service.format_as_csv(data, "EUR")
-            >>> assert "Grocery,150.50 EUR" in csv
+            >>> assert "Grocery,150.5" in csv
         """
         # Create DataFrame
         df = pd.DataFrame(data)
         df = df.fillna(0)
         df = df.sort_index()
-
-        # Format with currency if enabled
-        if not no_currency_format:
-            df = df.apply(
-                lambda row: row.apply(
-                    lambda value: f"{value:.2f} {currency}" if isinstance(value, (int, float)) else value
-                ),
-                axis=1
-            )
 
         # Convert to CSV string
         return df.to_csv(sep=delimiter)
@@ -157,8 +135,7 @@ class DataFormattingService:
         self,
         data: Dict[str, Dict[str, float]],
         currency: str,
-        nowrap: bool = False,
-        no_currency_format: bool = False
+        nowrap: bool = False
     ) -> str:
         """Format data as plain string for console output.
 
@@ -166,14 +143,13 @@ class DataFormattingService:
             inner keys are rows (categories), values are amounts
         :param currency: Currency code (e.g., "EUR", "USD")
         :param nowrap: If True, disables text wrapping in pandas output
-        :param no_currency_format: If True, disables currency formatting
         :return: Plain text formatted string
 
         Example::
 
             >>> data = {"Total": {"Grocery": 150.5}}
             >>> text = service.format_as_string(data, "EUR")
-            >>> assert "Grocery" in text and "150.50 EUR" in text
+            >>> assert "Grocery" in text and "150.5" in text
         """
         # Configure pandas display options
         pd.set_option('display.max_columns', None)
@@ -186,15 +162,6 @@ class DataFormattingService:
         df = pd.DataFrame(data)
         df = df.fillna(0)
         df = df.sort_index()
-
-        # Format with currency if enabled
-        if not no_currency_format:
-            df = df.apply(
-                lambda row: row.apply(
-                    lambda value: f"{value:.2f} {currency}" if isinstance(value, (int, float)) else value
-                ),
-                axis=1
-            )
 
         return df.to_string()
 
@@ -247,7 +214,6 @@ class DataFormattingService:
         self,
         data: Dict[str, Dict[str, float]],
         currency: str,
-        no_currency_format: bool = False,
         categories_header: str = "Categories"
     ) -> Tuple[List[str], List[List[Dict[str, Union[str, float, None]]]]]:
         """Prepare summary table data with display/order metadata for rendering.
@@ -259,7 +225,6 @@ class DataFormattingService:
         :param data: Data dictionary where outer keys are columns (months),
             inner keys are rows (categories), values are amounts
         :param currency: Currency code (e.g., "EUR", "USD")
-        :param no_currency_format: If True, disables currency formatting
         :param categories_header: Header text for the categories column
         :return: Tuple of (headers, enhanced_rows) where headers is a list of
             column header strings and enhanced_rows is a list of rows, each row
@@ -303,10 +268,7 @@ class DataFormattingService:
                 numeric_value = float(value) if pd.notna(value) else 0.0  # type: ignore[arg-type]
 
                 # Format display value
-                if no_currency_format:
-                    display_value = f"{numeric_value:.2f}"
-                else:
-                    display_value = f"{numeric_value:.2f} {currency}"
+                display_value = f"{numeric_value:.2f} {currency}"
 
                 # Add cell with display and order values
                 row.append({
@@ -325,7 +287,6 @@ class DataFormattingService:
         output_format: Optional[str] = None,
         output_file: Optional[str] = None,
         nowrap: bool = False,
-        no_currency_format: bool = False,
         categories_header: str = "Categories"
     ) -> str:
         """Format data for various output types (HTML, CSV file, or console string).
@@ -339,7 +300,6 @@ class DataFormattingService:
         :param output_format: Output format ('html' or None for default)
         :param output_file: Path to output file (triggers CSV export)
         :param nowrap: If True, disables text wrapping in pandas output
-        :param no_currency_format: If True, disables currency formatting
         :param categories_header: Header text for the categories column
         :return: Formatted string (HTML, CSV, or plain text)
 
@@ -358,7 +318,6 @@ class DataFormattingService:
                 data,
                 currency=currency,
                 nowrap=nowrap,
-                no_currency_format=no_currency_format,
                 categories_header=categories_header
             )
         elif output_file:
@@ -366,8 +325,7 @@ class DataFormattingService:
             csv = self.format_as_csv(
                 data,
                 currency=currency,
-                delimiter=';',
-                no_currency_format=no_currency_format
+                delimiter=';'
             )
             with open(output_file, 'w') as f:
                 f.write(csv)
@@ -376,8 +334,7 @@ class DataFormattingService:
             return self.format_as_string(
                 data,
                 currency=currency,
-                nowrap=nowrap,
-                no_currency_format=no_currency_format
+                nowrap=nowrap
             )
 
     def format_datatables_as_html_table(
@@ -385,7 +342,6 @@ class DataFormattingService:
         dt_responses: Dict[str, DataTablesResponse],
         account_id: Optional[str] = None,
         nowrap: bool = False,
-        no_currency_format: bool = False,
         categories_header: str = "Categories"
     ) -> str:
         """Format DataTablesResponse as HTML table.
@@ -396,7 +352,6 @@ class DataFormattingService:
         :param account_id: Account ID to format. If None and multiple accounts exist,
             raises ValueError. If None and single account exists, uses that account.
         :param nowrap: If True, disables text wrapping in pandas output
-        :param no_currency_format: If True, disables currency formatting
         :param categories_header: Header text for the categories column
         :return: HTML string with formatted table
         :raises ValueError: If multiple accounts exist but no account_id specified
@@ -414,7 +369,6 @@ class DataFormattingService:
             data=summary_data.summary,
             currency=summary_data.currency,
             nowrap=nowrap,
-            no_currency_format=no_currency_format,
             categories_header=categories_header
         )
 
@@ -423,7 +377,6 @@ class DataFormattingService:
         dt_responses: Dict[str, DataTablesResponse],
         account_id: Optional[str] = None,
         delimiter: str = ',',
-        no_currency_format: bool = False
     ) -> str:
         """Format DataTablesResponse as CSV string.
 
@@ -433,7 +386,6 @@ class DataFormattingService:
         :param account_id: Account ID to format. If None and multiple accounts exist,
             raises ValueError. If None and single account exists, uses that account.
         :param delimiter: CSV delimiter character
-        :param no_currency_format: If True, disables currency formatting
         :return: CSV formatted string
         :raises ValueError: If multiple accounts exist but no account_id specified
         """
@@ -449,8 +401,7 @@ class DataFormattingService:
         return self.format_as_csv(
             data=summary_data.summary,
             currency=summary_data.currency,
-            delimiter=delimiter,
-            no_currency_format=no_currency_format
+            delimiter=delimiter
         )
 
     def format_datatables_as_string(
@@ -458,7 +409,6 @@ class DataFormattingService:
         dt_responses: Dict[str, DataTablesResponse],
         account_id: Optional[str] = None,
         nowrap: bool = False,
-        no_currency_format: bool = False
     ) -> str:
         """Format DataTablesResponse as plain string for console output.
 
@@ -468,7 +418,6 @@ class DataFormattingService:
         :param account_id: Account ID to format. If None and multiple accounts exist,
             raises ValueError. If None and single account exists, uses that account.
         :param nowrap: If True, disables text wrapping in pandas output
-        :param no_currency_format: If True, disables currency formatting
         :return: Plain text formatted string
         :raises ValueError: If multiple accounts exist but no account_id specified
         """
@@ -485,14 +434,12 @@ class DataFormattingService:
             data=summary_data.summary,
             currency=summary_data.currency,
             nowrap=nowrap,
-            no_currency_format=no_currency_format
         )
 
     def prepare_datatables_summary_table_data(
         self,
         dt_responses: Dict[str, DataTablesResponse],
         account_id: Optional[str] = None,
-        no_currency_format: bool = False,
         categories_header: str = "Categories"
     ) -> Tuple[List[str], List[List[Dict[str, Union[str, float, None]]]]]:
         """Prepare summary table data from DataTablesResponse with display/order metadata.
@@ -502,7 +449,6 @@ class DataFormattingService:
         :param dt_responses: Dict mapping account_id to DataTablesResponse
         :param account_id: Account ID to format. If None and multiple accounts exist,
             raises ValueError. If None and single account exists, uses that account.
-        :param no_currency_format: If True, disables currency formatting
         :param categories_header: Header text for the categories column
         :return: Tuple of (headers, enhanced_rows)
         :raises ValueError: If multiple accounts exist but no account_id specified
@@ -519,7 +465,6 @@ class DataFormattingService:
         return self.prepare_summary_table_data(
             data=summary_data.summary,
             currency=summary_data.currency,
-            no_currency_format=no_currency_format,
             categories_header=categories_header
         )
 
@@ -530,7 +475,6 @@ class DataFormattingService:
         output_format: Optional[str] = None,
         output_file: Optional[str] = None,
         nowrap: bool = False,
-        no_currency_format: bool = False,
         categories_header: str = "Categories"
     ) -> str:
         """Format DataTablesResponse for various output types.
@@ -544,7 +488,6 @@ class DataFormattingService:
         :param output_format: Output format ('html' or None for default)
         :param output_file: Path to output file (triggers CSV export)
         :param nowrap: If True, disables text wrapping in pandas output
-        :param no_currency_format: If True, disables currency formatting
         :param categories_header: Header text for the categories column
         :return: Formatted string (HTML, CSV, or plain text)
         :raises ValueError: If multiple accounts exist but no account_id specified
@@ -564,7 +507,6 @@ class DataFormattingService:
             output_format=output_format,
             output_file=output_file,
             nowrap=nowrap,
-            no_currency_format=no_currency_format,
             categories_header=categories_header
         )
 
@@ -574,7 +516,6 @@ class DataFormattingService:
         output_format: Optional[str] = None,
         output_file: Optional[str] = None,
         nowrap: bool = False,
-        no_currency_format: bool = False,
         categories_header: str = "Categories"
     ) -> str:
         """Format all accounts for output using existing formatters.
@@ -586,7 +527,6 @@ class DataFormattingService:
         :param output_format: Output format ('html' or None for default)
         :param output_file: Path to output file (triggers CSV export)
         :param nowrap: If True, disables text wrapping in pandas output
-        :param no_currency_format: If True, disables currency formatting
         :param categories_header: Header text for the categories column
         :return: Formatted string with all accounts
         """
@@ -615,7 +555,6 @@ class DataFormattingService:
                 output_format=output_format,
                 output_file=None,  # Handle file writing at end
                 nowrap=nowrap,
-                no_currency_format=no_currency_format,
                 categories_header=categories_header
             )
             outputs.append(output)

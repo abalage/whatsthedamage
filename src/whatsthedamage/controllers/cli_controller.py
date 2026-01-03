@@ -17,7 +17,6 @@ class CLIController:
         parser.add_argument('--version', action='version', version=f"whatsthedamage v{get_version()}", help='Show the version of the program.')  # noqa: E501
         parser.add_argument('--config', '-c', type=str, help='Path to the configuration file.')
         parser.add_argument('--category', type=str, default='category', help='The attribute to categorize by. (default: category)')  # noqa: E501
-        parser.add_argument('--no-currency-format', action='store_true', help='Disable currency formatting. Useful for importing the data into a spreadsheet.')  # noqa: E501
         parser.add_argument('--output', '-o', type=str, help='Save the result into a CSV file with the specified filename.')  # noqa: E501
         parser.add_argument('--output-format', type=str, default='csv', help='Supported formats are: html, csv. (default: csv).')  # noqa: E501
         parser.add_argument('--nowrap', '-n', action='store_true', help='Do not wrap the output text. Useful for viewing the output without line wraps.')  # noqa: E501
@@ -35,7 +34,6 @@ class CLIController:
             'end_date': parsed_args.end_date,
             'filename': parsed_args.filename,
             'filter': parsed_args.filter,
-            'no_currency_format': parsed_args.no_currency_format,
             'nowrap': parsed_args.nowrap,
             'output_format': parsed_args.output_format,
             'output': parsed_args.output,

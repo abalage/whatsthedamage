@@ -75,7 +75,6 @@ def index() -> Response:
                     getattr(form, date_field).data = datetime.strptime(date_value, '%Y-%m-%d')
 
             form.verbose.data = form_data_obj.verbose
-            form.no_currency_format.data = form_data_obj.no_currency_format
             form.filter.data = form_data_obj.filter
     return make_response(render_template('index.html', form=form))
 

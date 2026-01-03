@@ -54,7 +54,6 @@ def format_output(dt_responses: Dict[str, DataTablesResponse], args: AppArgs) ->
         output_format=args.get('output_format'),
         output_file=args.get('output'),
         nowrap=args.get('nowrap', False),
-        no_currency_format=args.get('no_currency_format', False),
         categories_header=_("Categories")
     )
 

@@ -18,7 +18,6 @@ class FormData:
         start_date: Filter start date string (YYYY-MM-DD format)
         end_date: Filter end date string (YYYY-MM-DD format)
         verbose: Verbose output flag
-        no_currency_format: Skip currency formatting flag
         filter: Month filter value
         ml: ML enrichment flag
     """
@@ -27,7 +26,6 @@ class FormData:
     start_date: Optional[str] = None
     end_date: Optional[str] = None
     verbose: bool = False
-    no_currency_format: bool = False
     filter: Optional[str] = None
     ml: bool = False
 
@@ -45,7 +43,6 @@ class FormData:
             start_date=data.get('start_date'),
             end_date=data.get('end_date'),
             verbose=bool(data.get('verbose', False)),
-            no_currency_format=bool(data.get('no_currency_format', False)),
             filter=data.get('filter'),
             ml=bool(data.get('ml', False))
         )
@@ -62,7 +59,6 @@ class FormData:
             'start_date': self.start_date,
             'end_date': self.end_date,
             'verbose': self.verbose,
-            'no_currency_format': self.no_currency_format,
             'filter': self.filter,
             'ml': self.ml
         }
@@ -122,7 +118,7 @@ class SessionService:
 
         :param html_result: HTML string with formatted result
         :param csv_params: Dictionary with CSV generation parameters
-            (monthly_data, currency, no_currency_format)
+            (monthly_data, currency)
         """
         session[self.SESSION_KEY_RESULT] = html_result
         session[self.SESSION_KEY_TABLE_DATA] = csv_params

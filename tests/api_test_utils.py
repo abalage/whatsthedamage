@@ -13,24 +13,7 @@ class MockProcessingService:
     """Mock ProcessingService for testing with simplified result builders."""
 
     def __init__(self):
-        self.process_summary = Mock()
         self.process_with_details = Mock()
-
-    @staticmethod
-    def create_summary_result(categories: Dict[str, float], row_count: int = 0) -> Dict[str, Any]:
-        """Create a summary result structure for v1 API.
-
-        Args:
-            categories: Dictionary of category -> amount
-            row_count: Number of rows processed
-
-        Returns:
-            Result dict matching ProcessingService.process_summary output
-        """
-        return {
-            'data': categories,
-            'metadata': {'row_count': row_count}
-        }
 
     @staticmethod
     def create_detailed_result(rows: Optional[List[Dict]] = None, row_count: int = 0) -> Dict[str, Any]:

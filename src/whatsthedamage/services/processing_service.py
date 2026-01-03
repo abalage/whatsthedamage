@@ -146,7 +146,6 @@ class ProcessingService:
             output_format='json',
             verbose=verbose,
             nowrap=False,
-            no_currency_format=False,
             training_data=training_data,
             lang=language,
             ml=ml_enabled

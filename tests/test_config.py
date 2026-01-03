@@ -45,7 +45,6 @@ def test_app_args_required_fields():
         "category": "test_category",
         "config": "test_config",
         "filename": "test_file",
-        "no_currency_format": False,
         "nowrap": False,
         "output_format": "csv",
         "verbose": True,
@@ -60,7 +59,6 @@ def test_app_args_required_fields():
     assert args["category"] == "test_category"
     assert args["config"] == "test_config"
     assert args["filename"] == "test_file"
-    assert args["no_currency_format"] is False
     assert args["nowrap"] is False
     assert args["output_format"] == "csv"
     assert args["verbose"] is True
@@ -71,7 +69,6 @@ def test_app_args_optional_fields():
         "category": "test_category",
         "config": "test_config",
         "filename": "test_file",
-        "no_currency_format": False,
         "nowrap": False,
         "output_format": "csv",
         "verbose": True,

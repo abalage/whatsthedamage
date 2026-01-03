@@ -31,7 +31,6 @@ def app_context_v2():
         "category": "category",
         "config": "config.yml",
         "filename": "data.csv",
-        "no_currency_format": False,
         "nowrap": False,
         "output_format": "html",
         "start_date": None,

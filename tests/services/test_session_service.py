@@ -33,7 +33,6 @@ def sample_form_data():
         'start_date': '2023-01-01',
         'end_date': '2023-12-31',
         'verbose': True,
-        'no_currency_format': True,
         'filter': 'January',
         'ml': True
     }
@@ -69,13 +68,13 @@ class TestFormData:
             {
                 'filename': 'test.csv', 'config': 'config.yml',
                 'start_date': '2023-01-01', 'end_date': '2023-12-31',
-                'verbose': True, 'no_currency_format': True,
+                'verbose': True,
                 'filter': 'January', 'ml': True
             },
             {
                 'filename': 'test.csv', 'config': 'config.yml',
                 'start_date': '2023-01-01', 'end_date': '2023-12-31',
-                'verbose': True, 'no_currency_format': True,
+                'verbose': True,
                 'filter': 'January', 'ml': True
             }
         ),
@@ -86,8 +85,8 @@ class TestFormData:
         ),
         # Boolean conversion
         (
-            {'verbose': 'true', 'no_currency_format': '', 'ml': 1},
-            {'verbose': True, 'no_currency_format': False, 'ml': True}
+            {'verbose': 'true', 'ml': 1},
+            {'verbose': True, 'ml': True}
         ),
     ])
     def test_form_data_from_dict(self, input_data, expected_values):

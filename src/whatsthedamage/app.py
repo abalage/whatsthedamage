@@ -2,7 +2,6 @@ from flask import Flask, g
 import os
 from whatsthedamage.controllers.routes import bp as main_bp
 from whatsthedamage.api.docs import docs_bp
-from whatsthedamage.api.v1.endpoints import v1_bp
 from whatsthedamage.api.v2.endpoints import v2_bp
 from whatsthedamage.api.error_handlers import register_error_handlers
 from whatsthedamage.config.flask_config import FlaskAppConfig
@@ -106,7 +105,6 @@ def create_app(
     # Register blueprints
     app.register_blueprint(main_bp)
     app.register_blueprint(docs_bp)
-    app.register_blueprint(v1_bp)
     app.register_blueprint(v2_bp)
 
     # Register error handlers for API routes

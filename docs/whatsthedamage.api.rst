@@ -12,7 +12,6 @@ Subpackages
 .. toctree::
    :maxdepth: 4
 
-   whatsthedamage.api.v1
    whatsthedamage.api.v2
 
 Submodules

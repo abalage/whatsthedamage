@@ -57,71 +57,6 @@ class TestProcessingService:
         """Test ProcessingService initialization."""
         assert service is not None
 
-    def test_process_summary_basic(self, service, mock_dependencies):
-        """Test process_summary with basic parameters."""
-        result = service.process_summary(csv_file_path='/path/to/file.csv')
-
-        # Verify structure and data
-        assert result['data'] == {'Food': 100.0, 'Transport': 200.0}
-        assert result['metadata']['row_count'] == 2
-        assert result['metadata']['ml_enabled'] is False
-        assert 'processing_time' in result['metadata']
-        assert 'processor' in result
-
-        # Verify method calls
-        mock_dependencies['processor']._read_csv_file.assert_called_once()
-        mock_dependencies['processor'].processor.process_rows.assert_called_once()
-
-    @pytest.mark.parametrize('start_date,end_date,ml,category,lang', [
-        ('2023-01-01', '2023-12-31', True, 'Food', 'en'),
-        ('2023-01-01', None, False, None, 'hu'),
-        (None, '2023-12-31', True, 'Transport', 'en'),
-    ])
-    def test_process_summary_with_filters(self, service, mock_dependencies, 
-                                         start_date, end_date, ml, category, lang):
-        """Test process_summary with various filter combinations."""
-        result = service.process_summary(
-            csv_file_path='/path/to/file.csv',
-            start_date=start_date,
-            end_date=end_date,
-            ml_enabled=ml,
-            category_filter=category,
-            language=lang
-        )
-
-        # Verify filters in metadata
-        assert result['metadata']['ml_enabled'] == ml
-        assert result['metadata']['filters_applied']['start_date'] == start_date
-        assert result['metadata']['filters_applied']['end_date'] == end_date
-        assert result['metadata']['filters_applied']['category'] == category
-
-    def test_process_summary_multi_month_aggregation(self, service, mock_dependencies):
-        """Test that data from multiple months is correctly aggregated."""
-        mock_dependencies['processor'].processor.process_rows.return_value = {
-            'January 2023': {'Food': 100.0, 'Transport': 50.0},
-            'February 2023': {'Food': 150.0, 'Entertainment': 75.0},
-            'March 2023': {'Transport': 200.0, 'Entertainment': 100.0}
-        }
-
-        result = service.process_summary(csv_file_path='/path/to/file.csv')
-
-        # Verify aggregation
-        assert result['data'] == {
-            'Food': 250.0,           # 100 + 150
-            'Transport': 250.0,       # 50 + 200
-            'Entertainment': 175.0    # 75 + 100
-        }
-
-    def test_process_summary_empty_data(self, service, mock_dependencies):
-        """Test process_summary with empty CSV."""
-        mock_dependencies['processor']._read_csv_file.return_value = []
-        mock_dependencies['processor'].processor.process_rows.return_value = {}
-
-        result = service.process_summary(csv_file_path='/path/to/file.csv')
-
-        assert result['data'] == {}
-        assert result['metadata']['row_count'] == 0
-
     def test_process_with_details_basic(self, service, mock_dependencies):
         """Test process_with_details with basic parameters."""
         result = service.process_with_details(csv_file_path='/path/to/file.csv')
@@ -208,24 +143,6 @@ class TestProcessingService:
         assert args['filter'] == 'Food'
         assert args['lang'] == 'hu'
         assert args['verbose'] is True
-
-    @patch('whatsthedamage.services.processing_service.time.time')
-    def test_timing_measurement(self, mock_time, service, mock_dependencies):
-        """Test that processing time is correctly measured and rounded."""
-        mock_time.side_effect = [100.0, 102.567]  # 2.567 seconds
-
-        result = service.process_summary(csv_file_path='/path/to/file.csv')
-
-        # Verify rounding to 2 decimals
-        assert abs(result['metadata']['processing_time'] - 2.57) < 0.01
-
-    @patch('whatsthedamage.services.processing_service.AppContext')
-    def test_process_summary_uses_verbose_false(self, mock_context, service, mock_dependencies):
-        """Test process_summary sets verbose=False."""
-        service.process_summary(csv_file_path='/path/to/file.csv')
-
-        args = mock_context.call_args[0][1]
-        assert args['verbose'] is False
 
     @patch('whatsthedamage.services.processing_service.AppContext')
     def test_process_with_details_uses_verbose_true(self, mock_context, service, mock_dependencies):

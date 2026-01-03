@@ -84,21 +84,6 @@ class RowFilter:
         # FIXME '99' is a special key for rows that do not fall within the specified date range
         return {"99": filtered_rows},
 
-    def filter_by_month(self) -> Tuple[Dict[str, List[CsvRow]], ...]:
-        """
-        Filter rows based on the month parsed from a specified attribute.
-
-        :return: A tuple of dictionaries with month names as keys and lists of filtered CsvRow objects as values.
-        """
-        months: Dict[str, List[CsvRow]] = {}
-        for row in self._rows:
-            month_name = self.get_month_number(getattr(row, 'date'))
-            if month_name is not None:
-                if month_name not in months:
-                    months[month_name] = []
-                months[month_name].append(row)
-
-        return tuple({k: v} for k, v in months.items())
 
     def filter_by_month_v2(self) -> Tuple[Tuple[DateField, List[CsvRow]], ...]:
         """

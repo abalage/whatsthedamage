@@ -89,14 +89,6 @@ whatsthedamage.models.row\_filter module
    :show-inheritance:
    :undoc-members:
 
-whatsthedamage.models.row\_summarizer module
---------------------------------------------
-
-.. automodule:: whatsthedamage.models.row_summarizer
-   :members:
-   :show-inheritance:
-   :undoc-members:
-
 whatsthedamage.models.rows\_processor module
 --------------------------------------------
 

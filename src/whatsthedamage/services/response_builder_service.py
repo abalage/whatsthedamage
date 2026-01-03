@@ -15,9 +15,7 @@ from typing import Dict, Any, Optional, List, Union, TYPE_CHECKING
 if TYPE_CHECKING:
     from flask import Response
 from whatsthedamage.models.api_models import (
-    SummaryResponse,
     DetailedResponse,
-    SummaryMetadata,
     DetailedMetadata,
     ErrorResponse,
     ProcessingRequest
@@ -39,40 +37,6 @@ class ResponseBuilderService:
             formatting_service: Optional DataFormattingService instance (injected via DI)
         """
         self._formatting_service = formatting_service or DataFormattingService()
-
-    def build_api_summary_response(
-        self,
-        data: Dict[str, Any],
-        metadata: Dict[str, Any],
-        params: ProcessingRequest,
-        processing_time: float
-    ) -> SummaryResponse:
-        """Build standardized API summary response.
-
-        :param data: Summary data (flattened category totals)
-        :param metadata: Processing metadata (row_count, etc.)
-        :param params: Request parameters
-        :param processing_time: Total processing time in seconds
-        :return: SummaryResponse Pydantic model for v1 API response
-
-        Example::
-
-            >>> response = service.build_api_summary_response(
-            ...     data={'grocery': 150.0, 'utilities': 80.0},
-            ...     metadata={'row_count': 25},
-            ...     params=ProcessingRequest(ml_enabled=False),
-            ...     processing_time=0.5
-            ... )
-        """
-        return SummaryResponse(
-            data=data,
-            metadata=SummaryMetadata(
-                row_count=metadata['row_count'],
-                processing_time=processing_time,
-                ml_enabled=params.ml_enabled,
-                date_range=self._build_date_range(params)
-            )
-        )
 
     def build_api_detailed_response(
         self,

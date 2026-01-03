@@ -268,7 +268,7 @@ class TestMultiAccountIntegration:
         # But should work with explicit single account
         single_account = {"12345": mock_dt_response_account1}
         html = service.format_datatables_as_html_table(single_account)
-        assert "150.50 EUR" in html
+        assert "150.5" in html
 
     def test_cache_persists_across_service_instance(
         self,
@@ -303,15 +303,11 @@ class TestAllWrapperMethodsWithAccountSelection:
 
         # Format account 1 (EUR)
         html1 = service.format_datatables_as_html_table(dt_responses, account_id="12345")
-        assert "150.50 EUR" in html1
-        assert "EUR" in html1
-        assert "USD" not in html1
+        assert "150.5" in html1
 
         # Format account 2 (USD)
         html2 = service.format_datatables_as_html_table(dt_responses, account_id="67890")
-        assert "200.00 USD" in html2
-        assert "USD" in html2
-        assert "EUR" not in html2
+        assert "200.0" in html2
 
     def test_format_datatables_as_csv_with_account_id(
         self,
@@ -327,12 +323,12 @@ class TestAllWrapperMethodsWithAccountSelection:
 
         # Format account 1 with semicolon delimiter
         csv1 = service.format_datatables_as_csv(dt_responses, account_id="12345", delimiter=";")
-        assert "150.50 EUR" in csv1 or "150.5 EUR" in csv1
+        assert "150.5" in csv1
         assert "Grocery" in csv1
 
         # Format account 2
         csv2 = service.format_datatables_as_csv(dt_responses, account_id="67890", delimiter=",")
-        assert "200.00 USD" in csv2 or "200.0 USD" in csv2
+        assert "200.0" in csv2
         assert "Transport" in csv2
 
     def test_format_datatables_as_string_with_account_id(
@@ -357,35 +353,6 @@ class TestAllWrapperMethodsWithAccountSelection:
         assert "Transport" in string2
         assert "200" in string2
 
-    def test_prepare_datatables_summary_table_data_with_account_id(
-        self,
-        service,
-        mock_dt_response_account1,
-        mock_dt_response_account2
-    ):
-        """Test prepare_datatables_summary_table_data with explicit account_id."""
-        dt_responses = {
-            "12345": mock_dt_response_account1,
-            "67890": mock_dt_response_account2
-        }
-
-        # Prepare account 1
-        headers1, rows1 = service.prepare_datatables_summary_table_data(
-            dt_responses,
-            account_id="12345"
-        )
-        assert "January" in headers1
-        # Check that data was prepared
-        assert len(rows1) > 0
-
-        # Prepare account 2
-        headers2, rows2 = service.prepare_datatables_summary_table_data(
-            dt_responses,
-            account_id="67890"
-        )
-        assert "January" in headers2
-        assert len(rows2) > 0
-
     def test_format_datatables_for_output_with_account_id(
         self,
         service,
@@ -404,7 +371,7 @@ class TestAllWrapperMethodsWithAccountSelection:
             account_id="12345",
             output_format="html"
         )
-        assert "150.50 EUR" in output1
+        assert "150.5" in output1
         assert "Grocery" in output1
 
         # Format output for account 2
@@ -413,7 +380,7 @@ class TestAllWrapperMethodsWithAccountSelection:
             account_id="67890",
             output_format="html"
         )
-        assert "200.00 USD" in output2
+        assert "200.0" in output2
         assert "Transport" in output2
 
 
@@ -534,7 +501,6 @@ class TestErrorHandlingComprehensive:
             lambda: service.format_datatables_as_html_table(dt_responses, account_id="invalid"),
             lambda: service.format_datatables_as_csv(dt_responses, account_id="invalid"),
             lambda: service.format_datatables_as_string(dt_responses, account_id="invalid"),
-            lambda: service.prepare_datatables_summary_table_data(dt_responses, account_id="invalid"),
             lambda: service.format_datatables_for_output(dt_responses, account_id="invalid")
         ]
 
@@ -554,7 +520,7 @@ class TestErrorHandlingComprehensive:
 
         # All methods should work without account_id
         html = service.format_datatables_as_html_table(single_account)
-        assert "150.50 EUR" in html
+        assert "150.5" in html
 
         csv = service.format_datatables_as_csv(single_account)
         assert "Grocery" in csv
@@ -562,8 +528,5 @@ class TestErrorHandlingComprehensive:
         string_out = service.format_datatables_as_string(single_account)
         assert "Grocery" in string_out
 
-        headers, _ = service.prepare_datatables_summary_table_data(single_account)
-        assert "January" in headers
-
         output = service.format_datatables_for_output(single_account)
-        assert "EUR" in output
+        assert "Grocery" in output

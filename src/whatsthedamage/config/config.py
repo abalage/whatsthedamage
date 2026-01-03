@@ -16,7 +16,6 @@ class AppArgs(TypedDict):
     end_date: str | None
     filename: str
     filter: str | None
-    no_currency_format: bool
     nowrap: bool
     output_format: str
     output: str | None

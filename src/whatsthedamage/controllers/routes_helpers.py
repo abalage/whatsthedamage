@@ -3,7 +3,7 @@
 This module contains extracted helper functions to reduce complexity in routes.py.
 Following the Single Responsibility Principle and DRY patterns.
 """
-from flask import current_app, session, Response
+from flask import current_app, Response
 from whatsthedamage.view.forms import UploadForm
 from whatsthedamage.services.processing_service import ProcessingService
 from whatsthedamage.services.validation_service import ValidationService
@@ -12,8 +12,7 @@ from whatsthedamage.services.session_service import SessionService
 from whatsthedamage.services.data_formatting_service import DataFormattingService
 from whatsthedamage.services.file_upload_service import FileUploadService, FileUploadError
 from whatsthedamage.utils.flask_locale import get_default_language
-from typing import Dict, Optional, Callable, cast
-from gettext import gettext as _
+from typing import Dict, Callable, Optional, cast
 
 
 def _get_processing_service() -> ProcessingService:
@@ -80,82 +79,11 @@ def handle_file_uploads(form: UploadForm) -> Dict[str, str]:
         raise ValueError(str(e))
 
 
-def process_summary_and_build_response(
-    form: UploadForm,
-    csv_path: str,
-    config_path: Optional[str],
-    clear_upload_folder_fn: Callable[[], None]
-) -> Response:
-    """Process CSV for summary view and build HTML response.
-
-    .. deprecated:: 0.9.0
-       This method will be removed in v0.10.0. Download functionality will be provided by DataTables.
-
-    Args:
-        form: The upload form with processing parameters
-        csv_path: Path to CSV file
-        config_path: Path to config file or None
-        clear_upload_folder_fn: Function to clear upload folder after processing
-
-    Returns:
-        Flask response with rendered result.html
-    """
-    # Process using service layer (v2 processing pipeline with DataTablesResponse)
-    result = _get_processing_service().process_with_details(
-        csv_file_path=csv_path,
-        config_file_path=config_path,
-        start_date=form.start_date.data.strftime('%Y-%m-%d') if form.start_date.data else None,
-        end_date=form.end_date.data.strftime('%Y-%m-%d') if form.end_date.data else None,
-        ml_enabled=form.ml.data,
-        category_filter=form.filter.data,
-        language=session.get('lang', get_default_language())
-    )
-
-    # Format result using DataFormattingService
-    formatting_service = _get_data_formatting_service()
-
-    # Extract DataTablesResponse per account
-    dt_responses = result['data']
-
-    # Store DataTablesResponse for CSV download
-    session_service = _get_session_service()
-    # Serialize DataTablesResponse to dict for session storage
-    dt_responses_dict = {
-        account_id: dt_response.model_dump()
-        for account_id, dt_response in dt_responses.items()
-    }
-    csv_data = {
-        'dt_responses_dict': dt_responses_dict,
-        'no_currency_format': form.no_currency_format.data
-    }
-    # Store empty html_result for backward compatibility
-    session_service.store_result('', csv_data)
-
-    # Prepare summary table data (headers and rows) for result.html template
-    try:
-        headers, rows = formatting_service.prepare_datatables_summary_table_data(
-            dt_responses=dt_responses,
-            no_currency_format=form.no_currency_format.data,
-            categories_header=_("Categories")
-        )
-
-    except Exception as e:
-        current_app.logger.error(f"Error preparing summary table data: {e}", exc_info=True)
-        current_app.logger.warning("Upgrade whatsthedamage to the latest version to ensure multi-account compatibility.")
-        raise
-
-    clear_upload_folder_fn()
-    return _get_response_builder_service().build_html_response(
-        template='result.html',
-        headers=headers,
-        rows=rows
-    )
-
-
 def process_details_and_build_response(
     form: UploadForm,
     csv_path: str,
-    clear_upload_folder_fn: Callable[[], None]
+    clear_upload_folder_fn: Callable[[], None],
+    config_path: Optional[str]
 ) -> Response:
     """Process CSV for details view and build HTML response.
 
@@ -172,7 +100,7 @@ def process_details_and_build_response(
     language = session_service.get_language() or get_default_language()
     result = _get_processing_service().process_with_details(
         csv_file_path=csv_path,
-        config_file_path=None,  # v2 doesn't use config file
+        config_file_path=config_path,
         start_date=form.start_date.data.strftime('%Y-%m-%d') if form.start_date.data else None,
         end_date=form.end_date.data.strftime('%Y-%m-%d') if form.end_date.data else None,
         ml_enabled=form.ml.data,

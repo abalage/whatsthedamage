@@ -60,9 +60,6 @@ def mock_processing_service():
     service = MockProcessingService()
 
     # Auto-configure with successful default responses
-    service.process_summary.return_value = MockProcessingService.create_summary_result(
-        {'default': 100.0}, row_count=2
-    )
     service.process_with_details.return_value = MockProcessingService.create_detailed_result(
         [], row_count=2
     )

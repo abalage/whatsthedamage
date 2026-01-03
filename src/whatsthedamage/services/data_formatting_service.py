@@ -13,7 +13,7 @@ Architecture Patterns:
 """
 import pandas as pd
 import json
-from typing import Dict, List, Tuple, Union, Optional, Any
+from typing import Dict, Optional, Any
 from pydantic import BaseModel
 from whatsthedamage.config.dt_models import DataTablesResponse
 from gettext import gettext as _
@@ -210,76 +210,6 @@ class DataFormattingService:
         """
         return f"{value:.{decimal_places}f} {currency}"
 
-    def prepare_summary_table_data(
-        self,
-        data: Dict[str, Dict[str, float]],
-        currency: str,
-        categories_header: str = "Categories"
-    ) -> Tuple[List[str], List[List[Dict[str, Union[str, float, None]]]]]:
-        """Prepare summary table data with display/order metadata for rendering.
-
-        Converts summary data directly to structured format with display values
-        and sorting metadata, without going through HTML parsing. This is the
-        proper way to enhance data before rendering.
-
-        :param data: Data dictionary where outer keys are columns (months),
-            inner keys are rows (categories), values are amounts
-        :param currency: Currency code (e.g., "EUR", "USD")
-        :param categories_header: Header text for the categories column
-        :return: Tuple of (headers, enhanced_rows) where headers is a list of
-            column header strings and enhanced_rows is a list of rows, each row
-            is a list of dicts with 'display' and 'order' keys
-
-        Example::
-
-            >>> data = {"January": {"Grocery": 150.5, "Utilities": 80.0}}
-            >>> headers, rows = service.prepare_summary_table_data(data, "EUR")
-            >>> assert headers == ["Categories", "January"]
-            >>> assert rows[0][0]['display'] == "Grocery"
-            >>> assert rows[0][1]['display'] == "150.50 EUR"
-            >>> assert rows[0][1]['order'] == 150.5
-        """
-        # Create DataFrame from data
-        df = pd.DataFrame(data)
-        df = df.fillna(0)
-        df = df.sort_index()
-
-        # Build headers: Categories + month columns
-        headers = [categories_header] + list(df.columns)
-
-        # Build enhanced rows with display/order metadata
-        enhanced_rows: List[List[Dict[str, Union[str, float, None]]]] = []
-
-        for category in df.index:
-            row: List[Dict[str, Union[str, float, None]]] = []
-
-            # First cell: category name (no sorting order)
-            row.append({
-                'display': str(category),
-                'order': None
-            })
-
-            # Remaining cells: numeric values with display and order
-            for column in df.columns:
-                value = df.loc[category, column]
-
-                # Convert to float for consistent handling
-                # Type ignore needed for pandas Scalar type compatibility
-                numeric_value = float(value) if pd.notna(value) else 0.0  # type: ignore[arg-type]
-
-                # Format display value
-                display_value = f"{numeric_value:.2f} {currency}"
-
-                # Add cell with display and order values
-                row.append({
-                    'display': display_value,
-                    'order': numeric_value
-                })
-
-            enhanced_rows.append(row)
-
-        return headers, enhanced_rows
-
     def format_for_output(
         self,
         data: Dict[str, Dict[str, float]],
@@ -434,38 +364,6 @@ class DataFormattingService:
             data=summary_data.summary,
             currency=summary_data.currency,
             nowrap=nowrap,
-        )
-
-    def prepare_datatables_summary_table_data(
-        self,
-        dt_responses: Dict[str, DataTablesResponse],
-        account_id: Optional[str] = None,
-        categories_header: str = "Categories"
-    ) -> Tuple[List[str], List[List[Dict[str, Union[str, float, None]]]]]:
-        """Prepare summary table data from DataTablesResponse with display/order metadata.
-
-        Extracts summary data from DataTablesResponse and prepares for rendering.
-
-        :param dt_responses: Dict mapping account_id to DataTablesResponse
-        :param account_id: Account ID to format. If None and multiple accounts exist,
-            raises ValueError. If None and single account exists, uses that account.
-        :param categories_header: Header text for the categories column
-        :return: Tuple of (headers, enhanced_rows)
-        :raises ValueError: If multiple accounts exist but no account_id specified
-        """
-        # Select and validate account
-        selected_account_id = self._select_account(dt_responses, account_id)
-
-        # Extract summary for selected account
-        summary_data = self._extract_summary_from_account(
-            dt_responses[selected_account_id],
-            selected_account_id
-        )
-
-        return self.prepare_summary_table_data(
-            data=summary_data.summary,
-            currency=summary_data.currency,
-            categories_header=categories_header
         )
 
     def format_datatables_for_output(

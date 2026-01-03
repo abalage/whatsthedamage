@@ -28,8 +28,7 @@ graph TB
     subgraph "Presentation Layer"
         CLI[CLI<br/>cli_app.py<br/>CLIController]
         WEB[Web Routes<br/>routes.py<br/>routes_helpers]
-        API1[REST API v1<br/>endpoints.py]
-        API2[REST API v2<br/>endpoints.py]
+        API[REST API v2<br/>endpoints.py]
     end
 
     subgraph "Service Layer"
@@ -49,7 +48,6 @@ graph TB
         RF[RowFilter<br/>date filtering]
         RE[RowEnrichment<br/>regex categorization]
         REML[RowEnrichmentML<br/>ML categorization]
-        RS[RowSummarizer<br/>aggregation]
         DTRB[DataTablesResponseBuilder<br/>API v2 structure]
         CR[CsvRow<br/>data model]
         CALC[dt_calculators<br/>Balance & Total Spendings]
@@ -74,7 +72,7 @@ graph TB
     end
 
     %% CLI Flow
-    CLI --> |process_summary|PS
+    CLI --> |process_with_details|PS
     CLI --> DFS
 
     %% Web Flow
@@ -86,12 +84,9 @@ graph TB
     WEB --> TEMPLATES
 
     %% API Flow
-    API1 --> |process_summary|PS
-    API1 --> |validation|VS
-    API1 --> |response|RBS
-    API2 --> |process_details|PS
-    API2 --> |validation|VS
-    API2 --> |response|RBS
+    API --> |process_with_details|PS
+    API --> |validation|VS
+    API --> |response|RBS
 
     %% Service Layer Dependencies
     PS --> CS
@@ -138,7 +133,7 @@ graph TB
     classDef view fill:#fce4ec,stroke:#880e4f,stroke-width:2px
     classDef utils fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px
 
-    class CLI,WEB,API1,API2 presentation
+    class CLI,WEB,API presentation
     class PS,VS,CS,SS,FUS,RBS,DFS service
     class CSVP,RP,CFH,RF,RE,REML,RS,DTRB,CR,CALC model
     class AC,CONFIG,PATTERNS,MLMODEL config
@@ -150,10 +145,9 @@ graph TB
 
 **Layers (Top to Bottom):**
 
-1. **Presentation Layer** (Blue): Four entry points
+1. **Presentation Layer** (Blue): Three entry points
    - CLI (`cli_app.py` + `CLIController`) - command-line interface
    - Web Routes (`routes.py` + `routes_helpers.py`) - Flask web interface
-   - REST API v1 - summary endpoint for backward compatibility
    - REST API v2 - detailed transactions with DataTables support
 
 2. **Service Layer** (Purple): Business logic (v0.8.0+)
@@ -172,7 +166,6 @@ graph TB
    - `RowFilter` - filters by date range
    - `RowEnrichment` - regex-based categorization using patterns
    - `RowEnrichmentML` - ML-based categorization using trained model
-   - `RowSummarizer` - aggregates amounts by category/month
    - `DataTablesResponseBuilder` - builds API v2 responses with calculators
    - `dt_calculators` - Balance and Total Spendings calculations (calculator pattern)
 
@@ -194,7 +187,6 @@ graph TB
 **Key Data Flow:**
 - **CLI**: CLIController → ProcessingService.process_with_details() → CSVProcessor.process_v2() → RowsProcessor.process_rows_v2() → DataFormattingService → console
 - **Web**: Routes → FileUploadService + ValidationService → ProcessingService.process_with_details() → Templates
-- **API v1** (deprecated): endpoints → ValidationService → ProcessingService → ResponseBuilderService → JSON (summary)
 - **API v2**: endpoints → ValidationService → ProcessingService.process_with_details() → DataTablesResponseBuilder → JSON (detailed, multi-account)
 
 **Important Patterns:**
@@ -207,17 +199,16 @@ graph TB
 
 ### 1. Models (`src/whatsthedamage/models/`)
 - **CsvRow**: Represents a single transaction row with account metadata (multi-account support).
-- **RowsProcessor**: Orchestrates filtering, enrichment (regex/ML), categorization, and summarization. v2 pipeline (`process_rows_v2()`) is current; v1 (`process_rows()`) is deprecated.
+- **RowsProcessor**: Orchestrates filtering, enrichment (regex/ML), categorization, and summarization. Uses v2 pipeline (`process_rows_v2()`).
 - **RowEnrichment / RowEnrichmentML**: Categorization via regex or ML.
 - **RowFilter**: Filters rows by date/month.
-- **RowSummarizer**: Aggregates values by category (legacy, used by deprecated v1).
-- **CsvFileHandler / CsvProcessor**: Reads and parses CSV files, manages row objects. Caches parsed rows in `_rows` for performance. v2 pipeline (`process_v2()`) is current; v1 (`process()`) is deprecated.
+- **CsvFileHandler / CsvProcessor**: Reads and parses CSV files, manages row objects. Caches parsed rows in `_rows` for performance. Uses v2 pipeline (`process_v2()`).
 - **DataTablesResponseBuilder**: Builds structured responses for API v2 and web interface, supports calculator pattern and performance optimizations.
 
 ### 2. Controllers (`src/whatsthedamage/controllers/`)
 - **CLI Controller**: Entry point for command-line usage (`__main__.py`, `cli_app.py`).
 - **Web Controller**: Flask routes for file upload, processing, and result rendering (`app.py`, `routes.py`).
-- **API Controllers**: REST API endpoints in `api/v1/` and `api/v2/` directories.
+- **API Controllers**: REST API v2 endpoints in `api/v2/` directory.
 - **Orchestration**: Main logic (`whatsthedamage.py`) coordinates config loading, processing, and output.
 
 ### 3. Views (`src/whatsthedamage/view/`)
@@ -238,13 +229,13 @@ graph TB
 ### 6. Services (`src/whatsthedamage/services/`)
 Introduced in version 0.8.0 to extract business logic from controllers and enable dependency injection.
 
-- **ProcessingService**: Core business logic for CSV processing, shared between web routes, CLI, and REST API. Uses v2 processing pipeline (`process_with_details()`) for multi-account support. Legacy `process_summary()` is deprecated and will be removed in v0.10.0.
+- **ProcessingService**: Core business logic for CSV processing, shared between web routes, CLI, and REST API. Uses v2 processing pipeline (`process_with_details()`) for multi-account support.
 - **ValidationService**: File validation (type, size, content) without web-specific dependencies.
 - **ConfigurationService**: Manages loading and access to configuration settings.
 - **SessionService**: Handles session management for web interface.
 - **FileUploadService**: Manages file upload operations and storage.
 - **ResponseBuilderService**: Constructs responses for different output formats.
-- **DataFormattingService**: Formats processed data for various output targets (console, HTML, CSV, JSON). Supports both legacy pandas DataFrames and the new unified DataTablesResponse format.
+- **DataFormattingService**: Formats processed data for various output targets (console, HTML, CSV, JSON). Supports the unified DataTablesResponse format.
 
 **Benefits**:
 - Ensures consistent behavior across all interfaces (CLI, Web, API).
@@ -253,12 +244,12 @@ Introduced in version 0.8.0 to extract business logic from controllers and enabl
 - Enables reusability of business logic.
 
 ### 7. API Layer (`src/whatsthedamage/api/`)
-- **REST API** (`/api/v1/`, `/api/v2/`): Provides programmatic access to transaction processing.
-- Uses Flask Blueprints for versioning (`v1_bp`, `v2_bp`).
+- **REST API v2** (`/api/v2/`): Provides programmatic access to transaction processing.
+- Uses Flask Blueprints for versioning (`v2_bp`).
 - Returns JSON responses for automation, scripting, and potential mobile apps.
 - Shares the same `ProcessingService` as web routes and CLI for consistency.
 - **API Versioning Strategy**:
-  - HTTP clients choose endpoint version via URL (`/api/v1/` vs `/api/v2/`).
+  - HTTP clients use explicit version in URL (`/api/v2/`).
   - CLI users choose package version via installation.
   - Explicit HTTP API versions in the URL for any breaking wire-level change.
   - Route handlers for unchanged endpoints can call shared functions.
@@ -285,7 +276,7 @@ Introduced in version 0.8.0 to extract business logic from controllers and enabl
 
 The application uses a **hybrid server-side + progressive enhancement** architecture, combining the simplicity of server-side rendering with selective client-side interactivity.
 
-### Web Interface (`/process`, `/clear`, `/download`)
+### Web Interface (`/process/v2`, `/clear`)
 - **Server-Side Rendering**: Flask renders HTML templates with Jinja2.
 - **Form Submission**: Traditional POST requests for file uploads and processing.
 - **Full Page Reloads**: Primary navigation pattern for simplicity and reliability.
@@ -294,10 +285,10 @@ The application uses a **hybrid server-side + progressive enhancement** architec
 ### Interactive Enhancements
 - **JavaScript Fetch API**: Used for actions that don't require page reloads:
   - Form clearing (`/clear` endpoint)
-  - File downloads (`/download` endpoint)
 - **DataTables Integration**: Client-side table enhancement for transaction results:
   - Sorting, searching, pagination without server round-trips
   - Fixed headers for better UX with large datasets
+  - Export functionality (CSV/Excel) using DataTables Buttons extension
   - Operates on server-rendered HTML tables
 - **Progressive Enhancement**: Core functionality works without JavaScript; JS adds convenience.
 

@@ -20,7 +20,7 @@ _The slang phrase "what's the damage?" is often used to ask about the cost or pr
  - Reports can be saved into CSV or HTML files with interactive DataTable visualization (sorting, searching).
  - Localization support. Currently English (default) and Hungarian languages are supported.
  - Web interface for easier use.
- - REST API v2 for programmatic access and integrations (v1 is deprecated and will be removed in v0.10.0).
+ - REST API for programmatic access and integrations.
 
 Example output on console. The values in the following example are arbitrary.
 ```
@@ -74,7 +74,7 @@ Try experimenting with it by providing the `--ml` command line argument to `what
 
 1. **Command-Line Interface (CLI)** - For local, interactive use and automation scripts
 2. **Web Interface** - Browser-based UI for users who prefer forms over terminal commands
-3. **REST API v2** - Programmatic access for integrations, CI/CD pipelines, and external applications (v1 deprecated)
+3. **REST API** - Programmatic access for integrations, CI/CD pipelines, and external applications
 
 All three interfaces share the same **core business logic** through a well-defined **service layer** (including `ProcessingService`, `ValidationService`, `ConfigurationService`, and others), ensuring consistent transaction processing regardless of how you access the tool. The architecture was introduced in version 0.8.0 and further enhanced in 0.9.0 with v2 processing pipeline, multi-account support, and performance optimizations. The unified data format (`DataTablesResponse`) ensures consistency across all clients: CLI, Web, and API.
 
@@ -111,9 +111,8 @@ All three interfaces share the same **core business logic** through a well-defin
 - Automating in CI/CD pipelines
 - Processing transactions from external systems
 - Need programmatic access with JSON responses
-- **Use API v2** (v1 is deprecated and will be removed in v0.10.0)
 
-For complete REST API documentation and v1→v2 migration guide, see [API.md](API.md).
+For complete REST API documentation, see [API.md](API.md).
 
 ## Install
 
@@ -150,11 +149,11 @@ You can access the web interface on [http://localhost:5000](http://localhost:500
 
 ## Usage:
 ```
-usage: whatsthedamage [-h] [--start-date START_DATE] [--end-date END_DATE] [--verbose] [--version] [--config CONFIG] [--category CATEGORY] [--no-currency-format] [--output OUTPUT]
+usage: whatsthedamage [-h] [--start-date START_DATE] [--end-date END_DATE] [--verbose] [--version] [--config CONFIG] [--category CATEGORY] [--output OUTPUT]
                       [--output-format OUTPUT_FORMAT] [--nowrap] [--filter FILTER] [--lang LANG] [--training-data] [--ml]
                       filename
 
-A CLI tool to process KHBHU CSV files.
+A CLI tool to process bank account transaction exports in CSV files.
 
 positional arguments:
   filename              The CSV file to read.
@@ -168,7 +167,6 @@ options:
   --version             Show the version of the program.
   --config, -c CONFIG   Path to the configuration file.
   --category CATEGORY   The attribute to categorize by. (default: category)
-  --no-currency-format  Disable currency formatting. Useful for importing the data into a spreadsheet.
   --output, -o OUTPUT   Save the result into a CSV file with the specified filename.
   --output-format OUTPUT_FORMAT
                         Supported formats are: html, csv. (default: csv).

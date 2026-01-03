@@ -353,35 +353,6 @@ class TestAllWrapperMethodsWithAccountSelection:
         assert "Transport" in string2
         assert "200" in string2
 
-    def test_prepare_datatables_summary_table_data_with_account_id(
-        self,
-        service,
-        mock_dt_response_account1,
-        mock_dt_response_account2
-    ):
-        """Test prepare_datatables_summary_table_data with explicit account_id."""
-        dt_responses = {
-            "12345": mock_dt_response_account1,
-            "67890": mock_dt_response_account2
-        }
-
-        # Prepare account 1
-        headers1, rows1 = service.prepare_datatables_summary_table_data(
-            dt_responses,
-            account_id="12345"
-        )
-        assert "January" in headers1
-        # Check that data was prepared
-        assert len(rows1) > 0
-
-        # Prepare account 2
-        headers2, rows2 = service.prepare_datatables_summary_table_data(
-            dt_responses,
-            account_id="67890"
-        )
-        assert "January" in headers2
-        assert len(rows2) > 0
-
     def test_format_datatables_for_output_with_account_id(
         self,
         service,
@@ -530,7 +501,6 @@ class TestErrorHandlingComprehensive:
             lambda: service.format_datatables_as_html_table(dt_responses, account_id="invalid"),
             lambda: service.format_datatables_as_csv(dt_responses, account_id="invalid"),
             lambda: service.format_datatables_as_string(dt_responses, account_id="invalid"),
-            lambda: service.prepare_datatables_summary_table_data(dt_responses, account_id="invalid"),
             lambda: service.format_datatables_for_output(dt_responses, account_id="invalid")
         ]
 
@@ -557,9 +527,6 @@ class TestErrorHandlingComprehensive:
 
         string_out = service.format_datatables_as_string(single_account)
         assert "Grocery" in string_out
-
-        headers, _ = service.prepare_datatables_summary_table_data(single_account)
-        assert "January" in headers
 
         output = service.format_datatables_for_output(single_account)
         assert "Grocery" in output

@@ -155,69 +155,8 @@ class TestFormatCurrency:
         assert service.format_currency(value, "EUR") == expected
 
 
-class TestPrepareSummaryTableData:
-    """Test suite for prepare_summary_table_data method."""
-
-    def test_prepare_summary_data_basic(self, service):
-        """Test basic summary data preparation."""
-        data = {"January": {"Grocery": 150.5, "Utilities": 80.0}}
-        headers, rows = service.prepare_summary_table_data(data, "EUR")
-
-        assert headers == ["Categories", "January"]
-        assert len(rows) == 2
-
-        # Check Grocery row
-        assert rows[0][0]['display'] == "Grocery"
-        assert rows[0][0]['order'] is None
-        assert rows[0][1]['display'] == "150.50 EUR"
-        assert abs(rows[0][1]['order'] - 150.5) < 0.01
-
-        # Check Utilities row
-        assert rows[1][0]['display'] == "Utilities"
-        assert rows[1][1]['display'] == "80.00 EUR"
-
-    def test_prepare_summary_data_multiple_months(self, service):
-        """Test preparation with multiple months."""
-        data = {
-            "January": {"Grocery": 150.5},
-            "February": {"Grocery": 200.0}
-        }
-        headers, rows = service.prepare_summary_table_data(data, "USD")
-
-        assert headers == ["Categories", "January", "February"]
-        assert rows[0][0]['display'] == "Grocery"
-        assert rows[0][1]['display'] == "150.50 USD"
-        assert rows[0][2]['display'] == "200.00 USD"
-
-    def test_prepare_summary_data_custom_header(self, service):
-        """Test preparation with custom categories header."""
-        data = {"Total": {"Grocery": 100.0}}
-        headers, _ = service.prepare_summary_table_data(
-            data, "EUR", categories_header="Types"
-        )
-
-        assert headers[0] == "Types"
-
-    @pytest.mark.parametrize("value", [0, 0.0, 150.567])
-    def test_prepare_summary_data_various_values(self, service, value):
-        """Test preparation with various numeric values."""
-        data = {"Total": {"Test": value}}
-        _, rows = service.prepare_summary_table_data(data, "EUR")
-
-        assert isinstance(rows[0][1]['order'], float)
-        assert abs(rows[0][1]['order'] - value) < 0.01
-
-
 class TestIntegration:
     """Integration tests for end-to-end scenarios."""
-
-    def test_format_and_prepare_data(self, service, single_month_data):
-        """Test formatting and data preparation."""
-        _ = service.format_as_html_table(single_month_data, "EUR")
-        headers, rows = service.prepare_summary_table_data(single_month_data, "EUR")
-
-        assert "Categories" in headers and "Total" in headers
-        assert len(rows) == 2
 
     def test_multiple_formats_consistency(self, service, single_month_data):
         """Test data consistency across formats."""

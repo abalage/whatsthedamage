@@ -9,7 +9,7 @@ class CLIController:
         self.parser = self._setup_parser()
 
     def _setup_parser(self) -> argparse.ArgumentParser:
-        parser = argparse.ArgumentParser(description="A CLI tool to process KHBHU CSV files.")
+        parser = argparse.ArgumentParser(description="A CLI tool to process bank account transaction exports in CSV files.")
         parser.add_argument('filename', type=str, help='The CSV file to read.')
         parser.add_argument('--start-date', type=str, help='Start date (e.g. YYYY.MM.DD.)')
         parser.add_argument('--end-date', type=str, help='End date (e.g. YYYY.MM.DD.)')

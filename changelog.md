@@ -1,5 +1,34 @@
 # Changelog
 
+## [0.10.0] - 2026-01-03
+
+### BREAKING CHANGES
+- **Removed deprecated API v1** (`/api/v1/process`). All users must migrate to v2 (`/api/v2/process`).
+- **Removed `ProcessingService.process_summary()`** - Use `process_with_details()` instead.
+- **Removed `RowSummarizer` class** - Replaced with inline sum calculations in v2 pipeline.
+- **Removed `SummaryResponse` and `SummaryMetadata` models** - Use `DetailedResponse` for v2 API.
+- **Removed `ResponseBuilderService.build_api_summary_response()`** - Use `build_api_detailed_response()`.
+- **Removed `/download` web route** - CSV export now handled client-side via DataTables.
+- **Removed `no_currency_format` parameter** - Currency formatting no longer applied to DataFrame outputs.
+- **Removed `DataFormattingService.prepare_summary_table_data()`** - Unused v1 method with currency formatting.
+- **Removed `DataFormattingService.prepare_datatables_summary_table_data()`** - Unused wrapper method.
+
+### Removed
+- API v1 endpoints and all related code
+- Old summary-based data models (`SummaryResponse`, `SummaryMetadata`, `SummaryData`)
+- Deprecated processing methods (`process_summary()`, `process_rows()`, `process()`)
+- v1 web templates (`v1_results.html`) and routes (`/download`)
+- v1 test files and mocking (API v1 tests, summary processing tests)
+- Unused data formatting methods (`prepare_summary_table_data()`, `prepare_datatables_summary_table_data()`)
+- Currency formatting from DataFrame output methods (HTML, CSV, String)
+- RowSummarizer references from architecture documentation
+
+### Changed
+- **Web interface**: Now uses v2 processing exclusively with DataTables export functionality
+- **Data formatting**: Removed automatic currency formatting from all DataFrame outputs (raw numeric values only)
+- **Documentation**: Updated ARCHITECTURE.md and copilot-instructions.md to reflect v2-only architecture
+- **Test suite**: Cleaned up to remove v1-specific tests, updated formatting tests to expect raw numbers
+
 ## [0.9.0]
 
 Last version to support v1 API and old summary based methods (depending on DataFrames).

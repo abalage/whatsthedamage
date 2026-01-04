@@ -10,5 +10,4 @@ class UploadForm(FlaskForm):
     end_date = DateField(format='%Y-%m-%d', validators=[Optional()])
     filter = StringField()
     verbose = BooleanField()
-    no_currency_format = BooleanField()
     ml = BooleanField(default=True)

@@ -1,4 +1,4 @@
-from flask import Flask, g
+from flask import Flask, g, current_app
 import os
 from whatsthedamage.controllers.routes import bp as main_bp
 from whatsthedamage.api.docs import docs_bp
@@ -86,7 +86,7 @@ def create_app(
         try:
             translations = gettext.translation(
                 'messages',  # domain
-                localedir='locale',  # adjust if needed
+                localedir=os.path.join(current_app.root_path, 'locale'),  # adjust if needed
                 languages=[lang],
                 fallback=True
             )

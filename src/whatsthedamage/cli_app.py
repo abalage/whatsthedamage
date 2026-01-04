@@ -8,7 +8,6 @@ from whatsthedamage.services.processing_service import ProcessingService
 from whatsthedamage.services.data_formatting_service import DataFormattingService
 from whatsthedamage.config.config import AppArgs
 from whatsthedamage.config.dt_models import DataTablesResponse
-from gettext import gettext as _
 
 
 def set_locale(locale_str: str | None) -> None:
@@ -53,8 +52,7 @@ def format_output(dt_responses: Dict[str, DataTablesResponse], args: AppArgs) ->
         dt_responses=dt_responses,
         output_format=args.get('output_format'),
         output_file=args.get('output'),
-        nowrap=args.get('nowrap', False),
-        categories_header=_("Categories")
+        nowrap=args.get('nowrap', False)
     )
 
 

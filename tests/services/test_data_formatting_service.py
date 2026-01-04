@@ -23,28 +23,12 @@ def single_month_data():
 class TestFormatAsHtmlTable:
     """Test suite for HTML table formatting."""
 
-    @pytest.mark.parametrize("currency,expected", [
-        ("EUR", "150.5"),
-        ("USD", "150.5"),
-        ("HUF", "150.5"),
-    ])
-    def test_format_with_currencies(self, service, single_month_data, currency, expected):
-        """Test HTML formatting with different currencies."""
-        html = service.format_as_html_table(single_month_data, currency)
-        assert expected in html
+
+    def test_format_html_table(self, service, single_month_data):
+        """Test HTML formatting with default settings."""
+        html = service.format_as_html_table(single_month_data)
+        assert "150.5" in html
         assert "<table" in html and "<thead>" in html
-
-    def test_currency_formatting(self, service, single_month_data):
-        """Test that formatting is applied."""
-        html = service.format_as_html_table(single_month_data, "EUR")
-        has_formatted = "150.5" in html
-        assert has_formatted
-
-    @pytest.mark.parametrize("header_text", ["Categories", "Category", "Type"])
-    def test_custom_categories_header(self, service, single_month_data, header_text):
-        """Test custom categories headers."""
-        html = service.format_as_html_table(single_month_data, "EUR", categories_header=header_text)
-        assert f"<th>{header_text}</th>" in html
 
     @pytest.mark.parametrize("data,categories", [
         ({"Total": {}}, []),
@@ -61,35 +45,40 @@ class TestFormatAsHtmlTable:
             positions = [html.find(cat) for cat in categories]
             assert positions == sorted(positions)
 
+
     def test_nan_handling(self, service):
         """Test that NaN values are replaced with 0."""
         data = {"Month1": {"Cat1": float('nan'), "Cat2": 50.0}}
-        html = service.format_as_html_table(data, "EUR")
+        html = service.format_as_html_table(data)
         assert "0.0" in html
+
 
     def test_nowrap_option(self, service, single_month_data):
         """Test nowrap option affects pandas settings."""
-        service.format_as_html_table(single_month_data, "EUR", nowrap=True)
+        service.format_as_html_table(single_month_data, nowrap=True)
         assert pd.get_option('display.expand_frame_repr') is False
 
 
 class TestFormatAsCsv:
     """Test suite for CSV formatting."""
 
+
     @pytest.mark.parametrize("delimiter", [",", ";", "\t", "|"])
     def test_delimiters(self, service, single_month_data, delimiter):
         """Test CSV formatting with different delimiters."""
-        csv = service.format_as_csv(single_month_data, "EUR", delimiter=delimiter)
+        csv = service.format_as_csv(single_month_data, delimiter=delimiter)
         assert delimiter in csv
+
 
     def test_currency_in_csv(self, service, single_month_data):
         """Test formatting in CSV output."""
-        csv = service.format_as_csv(single_month_data, "EUR")
+        csv = service.format_as_csv(single_month_data)
         assert "150.5" in csv
+
 
     def test_csv_structure(self, service, single_month_data):
         """Test CSV contains expected headers and data."""
-        csv = service.format_as_csv(single_month_data, "EUR")
+        csv = service.format_as_csv(single_month_data)
         assert "Total" in csv
         assert "Grocery" in csv
         assert "Utilities" in csv
@@ -160,8 +149,8 @@ class TestIntegration:
 
     def test_multiple_formats_consistency(self, service, single_month_data):
         """Test data consistency across formats."""
-        html = service.format_as_html_table(single_month_data, "EUR")
-        csv = service.format_as_csv(single_month_data, "EUR")
+        html = service.format_as_html_table(single_month_data)
+        csv = service.format_as_csv(single_month_data)
 
         for cat in ["Grocery", "Utilities"]:
             assert cat in html and cat in csv
@@ -171,22 +160,22 @@ class TestIntegration:
 class TestFormatForOutput:
     """Test suite for the comprehensive format_for_output method."""
 
+
     def test_html_output_format(self, service, single_month_data):
         """Test format_for_output with HTML format."""
         result = service.format_for_output(
             single_month_data,
-            "EUR",
             output_format="html"
         )
         assert "<table" in result
         assert "150.5" in result
+
 
     def test_csv_file_output(self, service, single_month_data, tmp_path):
         """Test format_for_output with file output."""
         output_file = tmp_path / "test.csv"
         result = service.format_for_output(
             single_month_data,
-            "EUR",
             output_file=str(output_file)
         )
         assert output_file.exists()
@@ -194,8 +183,9 @@ class TestFormatForOutput:
         assert "Grocery" in content
         assert result == content
 
+
     def test_string_output_default(self, service, single_month_data):
         """Test format_for_output with default string output."""
-        result = service.format_for_output(single_month_data, "EUR")
+        result = service.format_for_output(single_month_data)
         assert "Grocery" in result
         assert "150.5" in result

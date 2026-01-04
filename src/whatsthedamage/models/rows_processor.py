@@ -5,10 +5,9 @@ from whatsthedamage.models.csv_row import CsvRow
 from whatsthedamage.models.row_enrichment import RowEnrichment
 from whatsthedamage.models.row_enrichment_ml import RowEnrichmentML
 from whatsthedamage.models.row_filter import RowFilter
-from whatsthedamage.models.row_summarizer import RowSummarizer
 from whatsthedamage.models.dt_response_builder import DataTablesResponseBuilder
 from whatsthedamage.utils.date_converter import DateConverter
-from whatsthedamage.view.row_printer import print_categorized_rows, print_training_data, print_categorized_rows_v2, print_training_data_v2
+from whatsthedamage.view.row_printer import print_categorized_rows_v2, print_training_data_v2
 
 """
 RowsProcessor processes rows of CSV data. It filters, enriches, categorizes, and summarizes the rows.
@@ -53,67 +52,6 @@ class RowsProcessor:
                 formatted_end_date, self._date_attribute_format
             )
 
-    def get_currency_from_rows(self, rows: List[CsvRow]) -> str:
-        """
-        Extracts currency from the first available row.
-
-        Args:
-            rows (List[CsvRow]): List of CsvRow objects.
-
-        Returns:
-            str: The currency code, or empty string if no rows or currency not found.
-        """
-        if rows:
-            return getattr(rows[0], 'currency', '')
-        return ''
-
-    def process_rows(self, rows: List[CsvRow]) -> Dict[str, Dict[str, float]]:
-        """
-        Processes a list of CsvRow objects and returns a summary of specified attributes grouped by a category.
-
-        .. deprecated:: 0.9.0
-            Use :func:`process_rows_v2` instead. This method will be removed in v0.10.0.
-
-        Args:
-            rows (List[CsvRow]): List of CsvRow objects to be processed.
-
-        Returns:
-            Dict[str, Dict[str, float]]: A dictionary where keys are date ranges or month names, and values are
-                                         dictionaries summarizing the specified attribute by category.
-        """
-        import warnings
-        warnings.warn(
-            "process_rows() is deprecated. Use process_rows_v2() instead. "
-            "This method will be removed in v0.10.0.",
-            DeprecationWarning,
-            stacklevel=2
-        )
-        filtered_sets = self._filter_rows(rows)
-        data_for_pandas = {}
-        all_set_rows_dict: Dict[str, List[CsvRow]] = {}
-
-        for filtered_set in filtered_sets:
-            for set_name, set_rows in filtered_set.items():
-                set_rows_dict = self._enrich_and_categorize_rows(set_rows)
-                set_rows_dict = self._apply_filter(set_rows_dict)
-                summary = self._summarize_rows(set_rows_dict)
-                formatted_set_name = self._format_set_name(set_name)
-                data_for_pandas[formatted_set_name] = summary
-
-                # Merge all categorized rows for training data/categorized print
-                for cat, row_list in set_rows_dict.items():
-                    if cat not in all_set_rows_dict:
-                        all_set_rows_dict[cat] = []
-                    all_set_rows_dict[cat].extend(row_list)
-
-        # Only print once at the end
-        if self._verbose:
-            print_categorized_rows("All", all_set_rows_dict)
-        elif self._training_data:
-            print_training_data(all_set_rows_dict)
-
-        return data_for_pandas
-
     def process_rows_v2(self, rows: List[CsvRow]) -> Dict[str, DataTablesResponse]:
         """
         Processes a list of CsvRow objects and returns per-account DataTablesResponse structures.
@@ -151,15 +89,18 @@ class RowsProcessor:
                 categorized_rows = self._enrich_and_categorize_rows(set_rows)
                 categorized_rows = self._apply_filter(categorized_rows)
 
-                # Summarize amounts by category
-                summary = self._summarize_rows(categorized_rows)
+                # Calculate category totals inline
+                category_totals = {}
+                for category, category_rows in categorized_rows.items():
+                    total = sum(float(getattr(row, 'amount', 0)) for row in category_rows)
+                    category_totals[category] = total
 
                 # Add each category to the builder with DateField
                 for category, category_rows in categorized_rows.items():
                     builder.add_category_data(
                         category=category,
                         rows=category_rows,
-                        total_amount=summary[category],
+                        total_amount=category_totals[category],
                         month_field=month_field
                     )
 
@@ -172,7 +113,7 @@ class RowsProcessor:
 
             responses_by_account[account_id] = account_response
 
-        # Store first account's response for backward compatibility with get_dt_json_data
+        # Store first account's response
         if responses_by_account:
             first_account = next(iter(responses_by_account.keys()))
             self._dt_json_data = responses_by_account[first_account]
@@ -184,30 +125,6 @@ class RowsProcessor:
             print_training_data_v2(responses_by_account)
 
         return responses_by_account
-
-    def get_dt_json_data(self) -> Optional[DataTablesResponse]:
-        """
-        Getter for the DataTables JSON structure.
-
-        Returns:
-            Optional[DataTablesResponse]: The DataTables-compatible JSON structure.
-        """
-        return self._dt_json_data
-
-    def _filter_rows(self, rows: List[CsvRow]) -> List[Dict[str, List[CsvRow]]]:
-        """
-        Filters rows by date or month.
-
-        Args:
-            rows (List[CsvRow]): List of CsvRow objects to be filtered.
-
-        Returns:
-            List[Dict[str, List[CsvRow]]]: A list of dictionaries with filtered rows.
-        """
-        row_filter = RowFilter(rows, self._date_attribute_format)
-        if self._start_date_epoch > 0 and self._end_date_epoch > 0:
-            return list(row_filter.filter_by_date(self._start_date_epoch, self._end_date_epoch))
-        return list(row_filter.filter_by_month())
 
     def _filter_rows_v2(self, rows: List[CsvRow]) -> List[Tuple[DateField, List[CsvRow]]]:
         """
@@ -274,19 +191,6 @@ class RowsProcessor:
         if self._filter:
             return {k: v for k, v in rows_dict.items() if k == self._filter}
         return rows_dict
-
-    def _summarize_rows(self, rows_dict: Dict[str, List[CsvRow]]) -> Dict[str, float]:
-        """
-        Summarizes the values of the given attribute by category.
-
-        Args:
-            rows_dict (Dict[str, List[CsvRow]]): A dictionary of categorized rows.
-
-        Returns:
-            Dict[str, float]: A dictionary summarizing the specified attribute by category.
-        """
-        summarizer = RowSummarizer(rows_dict)
-        return summarizer.summarize()
 
     def _format_set_name(self, set_name: str) -> str:
         """

@@ -14,17 +14,6 @@
                     }
                 });
         }
-        document.addEventListener('DOMContentLoaded', function() {
-            var mlCheckbox = document.getElementById('ml');
-            var form = mlCheckbox ? mlCheckbox.form : null;
-            if (mlCheckbox && form) {
-                function updateFormAction() {
-                    form.action = mlCheckbox.checked ? '/process/v2' : '/process';
-                }
-                mlCheckbox.addEventListener('change', updateFormAction);
-                updateFormAction(); // Set initial action
-            }
-        });
     </script>
 </head>
 <body>
@@ -45,7 +34,7 @@
                 </div>
             {% endif %}
         {% endwith %}
-        <form action="/process" method="post" enctype="multipart/form-data">
+        <form action="/process/v2" method="post" enctype="multipart/form-data">
             {{ form.hidden_tag() }}
             <div class="row">
                 <div class="col-md-6 mb-3">
@@ -103,11 +92,6 @@
                                 {{ form.verbose(class="form-check-input", id="verbose") }}
                                 <label for="verbose" class="form-check-label">{{ _('Enable verbose logging') }}</label>
                                 <div id="verboseHelp" class="form-text">{{ _("Enable detailed logging in the backend service's console.") }}</div>
-                            </div>
-                            <div class="mb-3 form-check">
-                                {{ form.no_currency_format(class="form-check-input", id="no_currency_format") }}
-                                <label for="no_currency_format" class="form-check-label">{{ _('No currency formatting') }}</label>
-                                <div id="currencyHelp" class="form-text">{{ _('Select this option to exclude currency symbols in the exported CSV. You can format the cells in your spreadsheet application instead.') }}</div>
                             </div>
                             <div class="mb-3 form-check">
                                 {{ form.ml(class="form-check-input", id="ml") }}

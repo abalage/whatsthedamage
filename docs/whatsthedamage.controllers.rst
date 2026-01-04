@@ -32,11 +32,3 @@ whatsthedamage.controllers.routes\_helpers module
    :members:
    :show-inheritance:
    :undoc-members:
-
-whatsthedamage.controllers.whatsthedamage module
-------------------------------------------------
-
-.. automodule:: whatsthedamage.controllers.whatsthedamage
-   :members:
-   :show-inheritance:
-   :undoc-members:

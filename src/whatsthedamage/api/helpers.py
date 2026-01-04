@@ -6,7 +6,7 @@ to avoid code duplication.
 from flask import request, current_app, Response
 from werkzeug.exceptions import BadRequest
 from werkzeug.datastructures import FileStorage
-from typing import Dict, Optional, cast
+from typing import Optional, cast
 
 from whatsthedamage.models.api_models import ProcessingRequest
 from whatsthedamage.services.validation_service import ValidationService
@@ -123,21 +123,6 @@ def cleanup_files(csv_path: str, config_path: str | None) -> None:
     """
     file_upload_service = _get_file_upload_service()
     file_upload_service.cleanup_files(csv_path, config_path)
-
-
-def build_date_range(params: ProcessingRequest) -> Optional[Dict[str, str]]:
-    """Build date range dictionary from parameters.
-
-    Note: This is kept for backward compatibility but delegates to
-    ResponseBuilderService._build_date_range() internally.
-
-    Args:
-        params: Processing request parameters
-
-    Returns:
-        Dict with start/end dates or None
-    """
-    return _get_response_builder_service()._build_date_range(params)
 
 
 def handle_error(error: Exception) -> tuple[Response, int]:

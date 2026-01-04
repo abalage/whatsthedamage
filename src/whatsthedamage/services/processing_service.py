@@ -30,100 +30,6 @@ class ProcessingService:
         """
         self._config_service = configuration_service or ConfigurationService()
 
-    def process_summary(
-        self,
-        csv_file_path: str,
-        config_file_path: str | None = None,
-        start_date: str | None = None,
-        end_date: str | None = None,
-        ml_enabled: bool = False,
-        category_filter: str | None = None,
-        language: str = 'en'
-    ) -> Dict[str, Any]:
-        """Process CSV file and return summary totals.
-
-        .. deprecated:: 0.9.0
-            Use :func:`process_with_details` instead. This method will be removed in v0.10.0.
-
-        This method processes a CSV file and returns aggregated summary data
-        grouped by category and month. Used by v1 API and CLI.
-
-        Args:
-            csv_file_path: Path to CSV file on disk
-            config_file_path: Optional path to YAML config file
-            start_date: Filter transactions from this date (YYYY-MM-DD)
-            end_date: Filter transactions to this date (YYYY-MM-DD)
-            ml_enabled: Use ML-based categorization instead of regex
-            category_filter: Filter results to specific category
-            language: Output language for month names ('en' or 'hu')
-
-        Returns:
-            dict: Contains 'data' (summary totals), 'metadata' (processing info)
-        """
-        import warnings
-        warnings.warn(
-            "process_summary() is deprecated. Use process_with_details() instead. "
-            "This method will be removed in v0.10.0.",
-            DeprecationWarning,
-            stacklevel=2
-        )
-        start_time = time.time()
-
-        # Build arguments for CSVProcessor
-        args = self._build_args(
-            filename=csv_file_path,
-            config=config_file_path,
-            start_date=start_date,
-            end_date=end_date,
-            ml_enabled=ml_enabled,
-            category_filter=category_filter,
-            language=language,
-            verbose=False
-        )
-
-        # Load config using ConfigurationService
-        config_result = self._config_service.load_config(config_file_path)
-        config = config_result.config
-        if config is None:
-            raise ValueError(f"Failed to load configuration: {config_result.validation_result.error_message}")
-
-        context = AppContext(config, args)
-
-        # Process using existing CSVProcessor
-        processor = CSVProcessor(context)
-        rows = processor._read_csv_file()
-        summary_data_by_month = processor.processor.process_rows(rows)
-
-        # Flatten summary data: aggregate across all months
-        # summary_data_by_month is Dict[str, Dict[str, float]] (month -> category -> amount)
-        # We need Dict[str, float] (category -> total_amount)
-        flattened_data: Dict[str, float] = {}
-        for month_name, categories in summary_data_by_month.items():
-            for category, amount in categories.items():
-                if category in flattened_data:
-                    flattened_data[category] += amount
-                else:
-                    flattened_data[category] = amount
-
-        # Build response with metadata
-        processing_time = time.time() - start_time
-
-        return {
-            "data": flattened_data,
-            "monthly_data": summary_data_by_month,
-            "metadata": {
-                "processing_time": round(processing_time, 2),
-                "row_count": len(rows),
-                "ml_enabled": ml_enabled,
-                "filters_applied": {
-                    "start_date": start_date,
-                    "end_date": end_date,
-                    "category": category_filter
-                }
-            },
-            "processor": processor
-        }
-
     def process_with_details(
         self,
         csv_file_path: str,
@@ -240,7 +146,6 @@ class ProcessingService:
             output_format='json',
             verbose=verbose,
             nowrap=False,
-            no_currency_format=False,
             training_data=training_data,
             lang=language,
             ml=ml_enabled

@@ -235,12 +235,18 @@ Introduced in version 0.8.0 to extract business logic from controllers and enabl
 - **FileUploadService**: Manages file upload operations and storage.
 - **ResponseBuilderService**: Constructs responses for different output formats.
 - **DataFormattingService**: Formats processed data for various output targets (console, HTML, CSV, JSON). Supports the unified DataTablesResponse format.
+- **ServiceFactory** (`service_factory.py`): Provides centralized dependency injection via `ServiceContainer` for CLI and standalone usage. The `create_service_container()` factory function creates services with proper dependency resolution, ensuring consistency across all interfaces (CLI, Web, API).
 
 **Benefits**:
 - Ensures consistent behavior across all interfaces (CLI, Web, API).
 - Decouples processing logic from presentation/delivery layer.
 - Improves testability through dependency injection.
 - Enables reusability of business logic.
+
+**Dependency Injection Patterns**:
+- **Flask App** (`app.py`): Uses `app.extensions` dictionary to store service instances, accessed via helper functions in controllers.
+- **CLI** (`cli_app.py`): Uses `ServiceContainer` from service factory with lazy-loaded singleton services.
+- **Tests**: Services can be mocked and injected for isolated unit testing.
 
 ### 7. API Layer (`src/whatsthedamage/api/`)
 - **REST API v2** (`/api/v2/`): Provides programmatic access to transaction processing.

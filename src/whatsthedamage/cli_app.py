@@ -4,8 +4,7 @@ import gettext
 import importlib.resources as resources
 from typing import Dict, Any
 from whatsthedamage.controllers.cli_controller import CLIController
-from whatsthedamage.services.processing_service import ProcessingService
-from whatsthedamage.services.data_formatting_service import DataFormattingService
+from whatsthedamage.services.service_factory import create_service_container, ServiceContainer
 from whatsthedamage.config.config import AppArgs
 from whatsthedamage.config.dt_models import DataTablesResponse
 
@@ -34,19 +33,22 @@ def set_locale(locale_str: str | None) -> None:
             gettext.translation('messages', str(localedir), fallback=True).install()
 
 
-def format_output(dt_responses: Dict[str, DataTablesResponse], args: AppArgs) -> str:
+def format_output(
+    dt_responses: Dict[str, DataTablesResponse],
+    args: AppArgs,
+    container: ServiceContainer
+) -> str:
     """Format processed data for CLI output.
 
     Args:
         dt_responses: DataTablesResponse objects per account
         args: CLI arguments with formatting options
+        container: Service container with formatting service
 
     Returns:
         str: Formatted output string
     """
-    # FIXME: Implement service factory pattern for CLI to make DI consistent across all interfaces
-    # CLI should use a factory function to create services with proper dependency injection
-    formatting_service = DataFormattingService()
+    formatting_service = container.data_formatting_service
 
     return formatting_service.format_all_accounts_for_output(
         dt_responses=dt_responses,
@@ -57,19 +59,19 @@ def format_output(dt_responses: Dict[str, DataTablesResponse], args: AppArgs) ->
 
 
 def main() -> None:
-    """Main CLI entrypoint using ProcessingService."""
+    """Main CLI entrypoint using service factory and dependency injection."""
     controller = CLIController()
     args = controller.parse_arguments()
 
     # Set the locale
     set_locale(args.get('lang'))
 
-    # Initialize service
-    service = ProcessingService()
+    # Initialize services via factory (dependency injection)
+    container = create_service_container()
 
     # Process using service layer (v2 processing pipeline with DataTablesResponse)
     try:
-        result: Dict[str, Any] = service.process_with_details(
+        result: Dict[str, Any] = container.processing_service.process_with_details(
             csv_file_path=args['filename'],
             config_file_path=args.get('config'),
             start_date=args.get('start_date'),
@@ -85,7 +87,7 @@ def main() -> None:
         dt_responses: Dict[str, DataTablesResponse] = result['data']
 
         # Format all accounts using service (handles multi-account iteration)
-        output = format_output(dt_responses, args)  # type: ignore[arg-type]
+        output = format_output(dt_responses, args, container)  # type: ignore[arg-type]
         print(output)
 
     except FileNotFoundError as e:

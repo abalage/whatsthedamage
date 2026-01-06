@@ -31,7 +31,8 @@ def print_categorized_rows_v2(responses_by_account: Dict[str, DataTablesResponse
         # Print categorized rows
         for category in sorted(category_rows.keys()):
             print(f"\nType: {category}", file=sys.stderr)
-            for detail_row in sorted(category_rows[category], key=lambda r: f"{r.date.display}_{r.merchant}_{r.amount.raw}"):
+            # Sort by timestamp to keep ordering unambiguous across years
+            for detail_row in sorted(category_rows[category], key=lambda r: f"{getattr(r.date, 'timestamp', 0)}_{r.merchant}_{r.amount.raw}"):
                 # Format similar to CsvRow repr output
                 print(f"DetailRow(date={detail_row.date.display}, amount={detail_row.amount.raw}, "
                       f"merchant={detail_row.merchant}, currency={detail_row.currency})", file=sys.stderr)

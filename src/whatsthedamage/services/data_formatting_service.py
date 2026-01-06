@@ -543,24 +543,46 @@ class DataFormattingService:
         if account_id in self._summary_cache:
             return self._summary_cache[account_id]
 
-        # Build summary dict from AggregatedRow data
-        summary: Dict[str, Dict[str, float]] = {}
+        # Aggregate by canonical timestamp first. This keeps year information
+        # unambiguous and simplifies merging category totals.
+        # month_map: timestamp -> { 'display': str, 'categories': {category: amount} }
+        month_map: Dict[int, Dict[str, Any]] = {}
+
         for agg_row in dt_response.data:
-            month_display = agg_row.month.display
-            category = agg_row.category
-            amount = agg_row.total.raw
+            month_field = agg_row.date if getattr(agg_row, 'date', None) is not None else agg_row.month
+            # Defensive: skip malformed rows lacking a month/date field
+            if month_field is None:
+                continue
 
-            if month_display not in summary:
-                summary[month_display] = {}
+            ts = month_field.timestamp
+            display = month_field.display
 
-            summary[month_display][category] = amount
+            if ts not in month_map:
+                month_map[ts] = {'display': display, 'categories': {}}
 
-        # Create and cache SummaryData
+            cats = month_map[ts]['categories']
+            cats[agg_row.category] = cats.get(agg_row.category, 0.0) + float(agg_row.total.raw)
+
+        # If multiple timestamps share the same display (e.g., 'January' across years),
+        # append the timestamp to the display to keep keys unique. Otherwise keep
+        # the human-readable display as the key.
+        display_counts: Dict[str, int] = {}
+        for v in month_map.values():
+            display_counts[v['display']] = display_counts.get(v['display'], 0) + 1
+
+        summary: Dict[str, Dict[str, float]] = {}
+        # Iterate months in descending timestamp order (most recent first)
+        for ts in sorted(month_map.keys(), reverse=True):
+            display = month_map[ts]['display']
+            key = display if display_counts.get(display, 0) == 1 else f"{display} ({ts})"
+            summary[key] = month_map[ts]['categories']
+
         summary_data = SummaryData(
             summary=summary,
             currency=dt_response.currency,
             account_id=account_id
         )
-        self._summary_cache[account_id] = summary_data
 
+        # Cache and return
+        self._summary_cache[account_id] = summary_data
         return summary_data

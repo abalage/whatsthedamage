@@ -61,17 +61,19 @@ class RowFilter:
             raise ValueError(f"Invalid date format for '{date_value}'")
 
     def filter_by_date(
-            self,
-            start_date: float,
-            end_date: float) -> tuple[dict[str, list['CsvRow']], ...]:
+        self,
+        start_date: float,
+        end_date: float,
+    ) -> List[Tuple[DateField, List[CsvRow]]]:
         """
         Filter rows based on a date range for a specified attribute.
 
         :param start_date: The start date in epoch time.
         :param end_date: The end date in epoch time.
-        :return: A tuple of list of filtered CsvRow objects.
+        :return: A list with a single tuple containing the DateField for the range
+                 and the list of matching CsvRow objects.
         """
-        filtered_rows: list['CsvRow'] = []
+        filtered_rows: list[CsvRow] = []
         for row in self._rows:
             date_value: int = DateConverter.convert_to_epoch(
                 getattr(row, 'date'),
@@ -81,11 +83,16 @@ class RowFilter:
             if start_date <= date_value <= end_date:
                 filtered_rows.append(row)
 
-        # FIXME '99' is a special key for rows that do not fall within the specified date range
-        return {"99": filtered_rows},
+        # Build a DateField for the date range. Use the provided start_date epoch
+        # as the canonical timestamp and a human-readable display for the range.
+        start_date_str = DateConverter.convert_from_epoch(start_date, self._date_format)
+        end_date_str = DateConverter.convert_from_epoch(end_date, self._date_format)
+        range_field = DateField(display=f"{start_date_str} - {end_date_str}", timestamp=int(start_date))
+
+        return [(range_field, filtered_rows)]
 
 
-    def filter_by_month_v2(self) -> Tuple[Tuple[DateField, List[CsvRow]], ...]:
+    def filter_by_month_v2(self) -> List[Tuple[DateField, List[CsvRow]]]:
         """
         Filter rows based on the month parsed from a specified attribute (v2).
 
@@ -95,19 +102,19 @@ class RowFilter:
 
         :return: A tuple of (DateField, List[CsvRow]) tuples.
         """
-        months: Dict[str, Tuple[DateField, List[CsvRow]]] = {}
+        months: Dict[int, Tuple[DateField, List[CsvRow]]] = {}
         for row in self._rows:
             date_value = getattr(row, 'date')
             month_field = self.get_month_field(date_value)
-            # Use display value as key to group rows from the same month
-            month_key = month_field.display
+            # Use timestamp as canonical grouping key (keeps year information)
+            month_key = month_field.timestamp
 
             if month_key not in months:
                 months[month_key] = (month_field, [])
             months[month_key][1].append(row)
 
-        # Return tuple of (DateField, rows) tuples
-        return tuple(months.values())
+        # Return list of (DateField, rows) tuples
+        return list(months.values())
 
     def filter_by_account(self) -> Dict[str, List[CsvRow]]:
         """

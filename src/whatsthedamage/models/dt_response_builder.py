@@ -164,6 +164,7 @@ class DataTablesResponseBuilder:
             category=category,
             total=total_field,
             month=month_field,
+            date=month_field,
             details=details
         )
 

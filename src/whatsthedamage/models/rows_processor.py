@@ -141,19 +141,8 @@ class RowsProcessor:
         """
         row_filter = RowFilter(rows, self._date_attribute_format)
         if self._start_date_epoch > 0 and self._end_date_epoch > 0:
-            # For date range filtering, create a DateField with the start date
-            filtered = row_filter.filter_by_date(self._start_date_epoch, self._end_date_epoch)
-            # Convert to v2 format with DateField
-            start_date_str = DateConverter.convert_from_epoch(
-                self._start_date_epoch, self._date_attribute_format
-            )
-            # Create DateField for the date range
-            date_field = DateField(
-                display=f"{start_date_str} - {DateConverter.convert_from_epoch(self._end_date_epoch, self._date_attribute_format)}",
-                timestamp=int(self._start_date_epoch)
-            )
-            # Return list of tuples
-            return [(date_field, list(filtered[0].values())[0])]
+            # For date range filtering, forward the tuples returned by RowFilter
+            return row_filter.filter_by_date(self._start_date_epoch, self._end_date_epoch)
         return list(row_filter.filter_by_month_v2())
 
     def _enrich_and_categorize_rows(self, rows: List[CsvRow]) -> Dict[str, List[CsvRow]]:

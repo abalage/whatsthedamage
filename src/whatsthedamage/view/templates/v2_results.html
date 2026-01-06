@@ -64,8 +64,9 @@
                                     <th>{{ _('Categories') }}</th>
                                     {% set months = [] %}
                                     {% for agg_row in dt_response.data %}
-                                        {% if (agg_row.month.display, agg_row.month.timestamp) not in months %}
-                                            {% set _ = months.append((agg_row.month.display, agg_row.month.timestamp)) %}
+                                        {% set _month_field = agg_row.date if agg_row.date is not none else agg_row.month %}
+                                        {% if (_month_field.display, _month_field.timestamp) not in months %}
+                                            {% set _ = months.append((_month_field.display, _month_field.timestamp)) %}
                                         {% endif %}
                                     {% endfor %}
                                     {% for month_display, month_ts in months | sort(attribute='1', reverse=True) %}
@@ -75,21 +76,23 @@
                             </thead>
                             <tbody>
                                 {% set cat_month_map = {} %}
-                                {% for agg_row in dt_response.data %}
+                                    {% for agg_row in dt_response.data %}
                                     {% if agg_row.category not in cat_month_map %}
                                         {% set _ = cat_month_map.update({agg_row.category: {}}) %}
                                     {% endif %}
-                                    {% set _ = cat_month_map[agg_row.category].update({agg_row.month.display: agg_row}) %}
+                                    {% set _month_field = agg_row.date if agg_row.date is not none else agg_row.month %}
+                                    {% set _month_key = _month_field.timestamp %}
+                                    {% set _ = cat_month_map[agg_row.category].update({_month_key: agg_row}) %}
                                 {% endfor %}
                                 
                                 {% for category in cat_month_map.keys() | sort %}
                                 <tr>
                                     <td>{{ category }}</td>
                                     {% for month_display, month_ts in months | sort(attribute='1', reverse=True) %}
-                                        {% set agg_row_data = cat_month_map[category].get(month_display) %}
+                                        {% set agg_row_data = cat_month_map[category].get(month_ts) %}
                                         {% if agg_row_data %}
                                             {% set details_list = [] %}
-                                            {% for detail in agg_row_data.details %}
+                                                {% for detail in agg_row_data.details %}
                                                 {% set _ = details_list.append(detail.date.display ~ ': ' ~ detail.amount.display ~ ' - ' ~ detail.merchant) %}
                                             {% endfor %}
                                             {% set details_str = details_list | join('<br>') %}

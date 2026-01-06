@@ -1,7 +1,6 @@
 from whatsthedamage.utils.date_converter import DateConverter
 from whatsthedamage.models.csv_row import CsvRow
 from whatsthedamage.config.dt_models import DateField
-from datetime import datetime
 from typing import List, Dict, Tuple
 
 
@@ -16,23 +15,7 @@ class RowFilter:
         self._rows = rows
         self._date_format = date_format
 
-    def get_month_number(self, date_value: str) -> str:
-        """
-        Extract the full month number from the date attribute.
-
-        :param date_value: Received as string argument.
-        :return: The full month number.
-        :raises ValueError: If the date_value is invalid or cannot be parsed.
-        """
-        if date_value:
-            try:
-                date_obj = datetime.strptime(date_value, self._date_format)
-                return date_obj.strftime('%m')
-            except ValueError:
-                raise ValueError(f"Invalid date format for '{date_value}'")
-        raise ValueError("Date value cannot be None")
-
-    def get_month_field(self, date_value: str) -> DateField:
+    def _get_month_field(self, date_value: str) -> DateField:
         """
         Extract month information from a date and create a DateField with proper timestamp.
 
@@ -44,21 +27,16 @@ class RowFilter:
         :return: DateField with month name and timestamp.
         :raises ValueError: If the date_value is invalid or cannot be parsed.
         """
-        if not date_value:
-            raise ValueError("Date value cannot be None")
+        # Use DateConverter primitives to keep business display logic here.
+        year = DateConverter.get_year(date_value, self._date_format)
+        month = DateConverter.get_month(date_value, self._date_format)
+        timestamp = DateConverter.start_of_month_epoch(date_value, self._date_format)
 
-        try:
-            date_obj = datetime.strptime(date_value, self._date_format)
-            # Create first day of the month for timestamp
-            first_day = datetime(date_obj.year, date_obj.month, 1)
-            # Format as YYYY-MM-DD for epoch conversion
-            first_day_str = first_day.strftime(self._date_format)
-            month_timestamp = DateConverter.convert_to_epoch(first_day_str, self._date_format)
-            # Display as localized month name
-            month_display = DateConverter.convert_month_number_to_name(date_obj.month)
-            return DateField(display=month_display, timestamp=month_timestamp)
-        except ValueError:
-            raise ValueError(f"Invalid date format for '{date_value}'")
+        # Build a business-display string: "YYYY <MonthName>"
+        month_str = DateConverter.convert_month_number_to_name(month)
+        display = f"{year} {month_str}"
+
+        return DateField(display=display, timestamp=timestamp)
 
     def filter_by_date(
         self,
@@ -105,7 +83,7 @@ class RowFilter:
         months: Dict[int, Tuple[DateField, List[CsvRow]]] = {}
         for row in self._rows:
             date_value = getattr(row, 'date')
-            month_field = self.get_month_field(date_value)
+            month_field = self._get_month_field(date_value)
             # Use timestamp as canonical grouping key (keeps year information)
             month_key = month_field.timestamp
 

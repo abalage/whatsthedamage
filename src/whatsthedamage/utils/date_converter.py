@@ -85,3 +85,53 @@ class DateConverter:
             return date_obj.strftime(date_format)
         except ValueError:
             raise ValueError(f"Date format for '{date_str}' not recognized.")
+
+    @staticmethod
+    def parse_to_datetime(date_value: str, date_format: str) -> datetime:
+        """
+        Parse a date string into a naive datetime using the provided format.
+
+        :raises ValueError: If parsing fails or date_value is empty.
+        :return: datetime object (naive)
+        """
+        if not date_value:
+            raise ValueError("Date value cannot be None")
+
+        try:
+            return datetime.strptime(date_value, date_format)
+        except ValueError:
+            raise ValueError(f"Invalid date format for '{date_value}'")
+
+    @staticmethod
+    def start_of_month_epoch(date_value: str, date_format: str) -> int:
+        """
+        Return the epoch timestamp (int) for the first day of the month
+        of the given date string.
+
+        This is a small, generic primitive: it does not apply any business
+        display formatting and only returns a canonical epoch.
+        """
+        dt = DateConverter.parse_to_datetime(date_value, date_format)
+        first_day = datetime(dt.year, dt.month, 1)
+        first_day_str = first_day.strftime(date_format)
+        return DateConverter.convert_to_epoch(first_day_str, date_format)
+
+    @staticmethod
+    def get_year(date_value: str, date_format: str) -> int:
+        """
+        Return the year (int) for the provided date string.
+
+        :raises ValueError: If parsing fails.
+        """
+        dt = DateConverter.parse_to_datetime(date_value, date_format)
+        return dt.year
+
+    @staticmethod
+    def get_month(date_value: str, date_format: str) -> int:
+        """
+        Return the month number (1-12) for the provided date string.
+
+        :raises ValueError: If parsing fails.
+        """
+        dt = DateConverter.parse_to_datetime(date_value, date_format)
+        return dt.month

@@ -1,7 +1,6 @@
 import pytest
 from datetime import datetime
 from whatsthedamage.models.row_filter import RowFilter
-from whatsthedamage.utils.date_converter import DateConverter
 
 
 class MockCsvRow:
@@ -44,3 +43,18 @@ def test_filter_by_date(row_filter):
     filtered_rows = row_filter.filter_by_date(start_date, end_date)
     assert len(filtered_rows[0][1]) == 1
     assert filtered_rows[0][1][0].date == "2023-06-10"
+
+
+def test_filter_by_month_v2_grouping_and_display(row_filter):
+    # Ensure filter_by_month_v2 groups rows by year-month and builds DateField display
+    groups = row_filter.filter_by_month_v2()
+    # We expect 12 groups for 12 distinct months
+    assert len(groups) == 12
+
+    # Check first group is January 2023 with correct display format
+    jan_field, jan_rows = groups[0]
+    assert jan_field.display.startswith("2023")
+    # Month name appears in display (localized name for January)
+    assert "January" in jan_field.display
+    assert jan_field.timestamp > 0
+    assert len(jan_rows) == 1

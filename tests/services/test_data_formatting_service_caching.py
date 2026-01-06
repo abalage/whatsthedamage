@@ -20,12 +20,14 @@ def mock_dt_response_account1():
         data=[
             AggregatedRow(
                 month=DateField(display="January", timestamp=1704067200),
+                date=DateField(display="January", timestamp=1704067200),
                 category="Grocery",
                 total=DisplayRawField(display="150.50 EUR", raw=150.5),
                 details=[]
             ),
             AggregatedRow(
                 month=DateField(display="January", timestamp=1704067200),
+                date=DateField(display="January", timestamp=1704067200),
                 category="Utilities",
                 total=DisplayRawField(display="80.00 EUR", raw=80.0),
                 details=[]
@@ -42,6 +44,7 @@ def mock_dt_response_account2():
         data=[
             AggregatedRow(
                 month=DateField(display="January", timestamp=1704067200),
+                date=DateField(display="January", timestamp=1704067200),
                 category="Transport",
                 total=DisplayRawField(display="200.00 USD", raw=200.0),
                 details=[]
@@ -393,18 +396,21 @@ class TestCacheBehaviorUnderEdgeCases:
             data=[
                 AggregatedRow(
                     month=DateField(display="January", timestamp=1704067200),
+                    date=DateField(display="January", timestamp=1704067200),
                     category="Grocery",
                     total=DisplayRawField(display="100.00 EUR", raw=100.0),
                     details=[]
                 ),
                 AggregatedRow(
                     month=DateField(display="February", timestamp=1706659200),
+                    date=DateField(display="February", timestamp=1706659200),
                     category="Grocery",
                     total=DisplayRawField(display="150.00 EUR", raw=150.0),
                     details=[]
                 ),
                 AggregatedRow(
                     month=DateField(display="February", timestamp=1706659200),
+                    date=DateField(display="February", timestamp=1706659200),
                     category="Transport",
                     total=DisplayRawField(display="50.00 EUR", raw=50.0),
                     details=[]

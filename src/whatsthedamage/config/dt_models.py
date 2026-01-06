@@ -20,6 +20,7 @@ class AggregatedRow(BaseModel):
     category: str
     total: DisplayRawField
     month: DateField
+    date: DateField
     details: List[DetailRow]
 
 class DataTablesResponse(BaseModel):

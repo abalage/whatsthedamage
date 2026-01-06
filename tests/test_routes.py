@@ -71,6 +71,9 @@ def test_process_route(client, monkeypatch, csv_rows, mapping, config_yml_defaul
 
     if response.status_code != 200:
         print_form_errors(client)
+        # Also check if it's a redirect and print the location
+        if response.status_code == 302:
+            print("Redirect location:", response.headers.get('Location'))
 
     assert response.status_code == 200
     # Check that form data is stored in session

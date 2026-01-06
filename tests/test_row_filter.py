@@ -1,6 +1,7 @@
 import pytest
 from datetime import datetime
 from whatsthedamage.models.row_filter import RowFilter
+from whatsthedamage.utils.date_converter import DateConverter
 
 
 class MockCsvRow:
@@ -31,21 +32,15 @@ def row_filter(sample_rows):
     return RowFilter(sample_rows, "%Y-%m-%d")
 
 
-def test_get_month_number(row_filter):
-    assert row_filter.get_month_number("2023-01-15") == "01"
-    assert row_filter.get_month_number("2023-12-10") == "12"
-    with pytest.raises(ValueError, match="Date value cannot be None"):
-        row_filter.get_month_number(None)
-
-
 def test_filter_by_date(row_filter):
     start_date = int(datetime(2023, 1, 1).timestamp())
     end_date = int(datetime(2023, 12, 31).timestamp())
     filtered_rows = row_filter.filter_by_date(start_date, end_date)
-    assert len(filtered_rows[0]["99"]) == 12
+    # New API: filter_by_date returns a list of (DateField, rows) tuples
+    assert len(filtered_rows[0][1]) == 12
 
     start_date = int(datetime(2023, 6, 1).timestamp())
     end_date = int(datetime(2023, 6, 30).timestamp())
     filtered_rows = row_filter.filter_by_date(start_date, end_date)
-    assert len(filtered_rows[0]["99"]) == 1
-    assert filtered_rows[0]["99"][0].date == "2023-06-10"
+    assert len(filtered_rows[0][1]) == 1
+    assert filtered_rows[0][1][0].date == "2023-06-10"

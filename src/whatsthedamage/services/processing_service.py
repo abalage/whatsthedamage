@@ -10,7 +10,7 @@ from typing import Dict, Any, Optional
 import time
 from whatsthedamage.config.config import AppArgs, AppContext
 from whatsthedamage.models.csv_processor import CSVProcessor
-from whatsthedamage.services.configuration_service import ConfigurationService
+from whatsthedamage.services.configuration_service import ConfigurationService, ConfigLoadResult
 
 
 class ProcessingService:
@@ -77,7 +77,7 @@ class ProcessingService:
         )
 
         # Load config using ConfigurationService
-        config_result = self._config_service.load_config(config_file_path)
+        config_result: ConfigLoadResult = self._config_service.load_config(config_file_path)
         config = config_result.config
         if config is None:
             raise ValueError(f"Failed to load configuration: {config_result.validation_result.error_message}")

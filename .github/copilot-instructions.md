@@ -31,7 +31,7 @@ This guide enables AI coding agents to be immediately productive in the `whatsth
 - **ML Model:** Train/test via scripts in `src/whatsthedamage/scripts/`. Uses scikit-learn, joblib for persistence. See `scripts/README.md` for feature engineering and hyperparameter tuning.
 
 ## Project-Specific Patterns
-- **Service Layer (v0.8.0+):** Business logic isolated in services. Controllers depend on services via dependency injection. Services include: ProcessingService, ValidationService, ConfigurationService, SessionService, FileUploadService, ResponseBuilderService, DataFormattingService.
+- **Service Layer (v0.8.0+):** Business logic isolated in services. Controllers depend on services via dependency injection. Services include: ProcessingService, ValidationService, ConfigurationService, SessionService, FileUploadService, ResponseBuilderService, DataFormattingService. CLI uses `ServiceContainer` from `service_factory.py` for DI; Flask app uses `app.extensions` dictionary.
 - **Config/Context:** Centralized in `AppContext` (`config/config.py`). Pattern sets for enrichment in `config/enricher_pattern_sets`.
 - **Row Processing:** `CSVProcessor` orchestrates overall flow. `RowsProcessor` handles filtering, enrichment (ML or regex), categorization, and summarization. ML and regex enrichment are interchangeable via flags/context.
 - **Calculator Pattern (v0.8.0+):** `DataTablesResponseBuilder` accepts calculator functions (e.g., `create_balance_rows`, `create_total_spendings`) for extensible transaction calculations. See `docs/calculator_pattern_example.py`.
@@ -55,15 +55,16 @@ enricher_pattern_sets:
 
 ### Example: Row Processing Flow (v0.8.0+)
 1. Controller receives request (CLI args, web upload, or API POST)
-2. `ValidationService` validates file and parameters
-3. `ConfigurationService` loads config (or uses default)
-4. `ProcessingService` orchestrates processing:
+2. CLI initializes services via `create_service_container()` (returns `ServiceContainer` with lazy-loaded services)
+3. `ValidationService` validates file and parameters
+4. `ConfigurationService` loads config (or uses default)
+5. `ProcessingService` orchestrates processing:
    - `CSVProcessor` manages workflow
    - `CsvFileHandler` parses CSV to `CsvRow` objects
    - `RowsProcessor` filters (`RowFilter`), enriches (`RowEnrichment` or `RowEnrichmentML`)
    - For API v2: `DataTablesResponseBuilder` builds detailed response with calculators
-5. `DataFormattingService` formats output (HTML, CSV, JSON, or console)
-6. `ResponseBuilderService` constructs final response (API only)
+6. `DataFormattingService` formats output (HTML, CSV, JSON, or console)
+7. `ResponseBuilderService` constructs final response (API only)
 
 ## Security Conventions
 - Never log sensitive data (e.g., account numbers, personal info).
@@ -86,7 +87,7 @@ enricher_pattern_sets:
 - **Support New CSV Format:** Adjust config `attribute_mapping` and parsing logic in `CsvFileHandler`.
 - **Run ML Categorization:** Pass `--ml` to CLI or set in context/API parameters.
 - **Custom Calculator (v0.8.0+):** Implement `RowCalculator` function, inject into `DataTablesResponseBuilder`. See `docs/calculator_pattern_example.py`.
-- **New Service:** Follow dependency injection pattern, add to service layer, inject into controllers.
+- **New Service:** Follow dependency injection pattern, add to service layer, inject into controllers. Update `ServiceContainer` in `service_factory.py` for CLI usage.
 - **API Integration:** POST to `/api/v2/process` for detailed transaction processing. See `API.md`.
 
 ## Useful Files
@@ -99,6 +100,7 @@ enricher_pattern_sets:
 - `Makefile` (workflow automation with dev, test, ruff, mypy, docs targets)
 - `config/config.py` (central config/context, AppContext, AppArgs)
 - `src/whatsthedamage/app.py` (Flask entrypoint, dependency injection setup)
+- `src/whatsthedamage/services/service_factory.py` (CLI dependency injection via ServiceContainer)
 - `docs/calculator_pattern_example.py` (calculator pattern examples)
 - `pyproject.toml` (project metadata, dependencies)
 

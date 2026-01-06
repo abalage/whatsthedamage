@@ -68,7 +68,7 @@ class RowsProcessor:
             Dict[str, DataTablesResponse]: Mapping of account_id → DataTablesResponse.
         """
         # Group rows by account first
-        row_filter = RowFilter(rows, self._date_attribute_format)
+        row_filter = RowFilter(rows, self.context)
         rows_by_account = row_filter.filter_by_account()
 
         responses_by_account: Dict[str, DataTablesResponse] = {}
@@ -139,7 +139,7 @@ class RowsProcessor:
         Returns:
             List[Tuple[DateField, List[CsvRow]]]: A list of tuples with DateField and filtered rows.
         """
-        row_filter = RowFilter(rows, self._date_attribute_format)
+        row_filter = RowFilter(rows, self.context)
         if self._start_date_epoch > 0 and self._end_date_epoch > 0:
             # For date range filtering, forward the tuples returned by RowFilter
             return row_filter.filter_by_date(self._start_date_epoch, self._end_date_epoch)
@@ -180,36 +180,3 @@ class RowsProcessor:
         if self._filter:
             return {k: v for k, v in rows_dict.items() if k == self._filter}
         return rows_dict
-
-    def _format_set_name(self, set_name: str) -> str:
-        """
-        Formats the set name by converting month numbers to names or formatting date ranges.
-
-        Args:
-            set_name (str): The set name to format.
-
-        Returns:
-            str: The formatted set name.
-        """
-        try:
-            return DateConverter.convert_month_number_to_name(int(set_name))
-        except (ValueError, TypeError):
-            start_date_str = DateConverter.convert_from_epoch(
-                self._start_date_epoch, self._date_attribute_format)
-            end_date_str = DateConverter.convert_from_epoch(
-                self._end_date_epoch, self._date_attribute_format)
-            return f"{start_date_str} - {end_date_str}"
-
-    def _format_month_name(self, month_field: DateField) -> str:
-        """
-        Returns the month name from a DateField.
-
-        The DateField.display already contains the localized month name or date range.
-
-        Args:
-            month_field (DateField): The DateField containing month information.
-
-        Returns:
-            str: The month name or date range.
-        """
-        return month_field.display

@@ -1,5 +1,19 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+- **Service Factory** (`service_factory.py`): Centralized dependency injection for CLI and standalone usage via `ServiceContainer`.
+- **CLI Dependency Injection**: CLI now uses service factory pattern with lazy-loaded singleton services, consistent with Flask app's DI approach.
+- **Test Coverage**: Added comprehensive tests for `ServiceContainer` and service factory (`test_service_factory.py`).
+
+### Changed
+- **CLI Architecture**: Refactored `cli_app.py` to use `create_service_container()` instead of direct service instantiation.
+- **Documentation**: Updated ARCHITECTURE.md and copilot-instructions.md to document service factory and DI patterns across all interfaces.
+
+### Fixed
+- **Architectural Consistency**: CLI, Web, and API now all use dependency injection consistently (CLI via `ServiceContainer`, Web/API via `app.extensions`).
+
 ## [0.10.0] - 2026-01-03
 
 ### BREAKING CHANGES

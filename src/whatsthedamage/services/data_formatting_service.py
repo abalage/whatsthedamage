@@ -550,9 +550,6 @@ class DataFormattingService:
 
         for agg_row in dt_response.data:
             month_field = agg_row.date if getattr(agg_row, 'date', None) is not None else agg_row.month
-            # Defensive: skip malformed rows lacking a month/date field
-            if month_field is None:
-                continue
 
             ts = month_field.timestamp
             display = month_field.display

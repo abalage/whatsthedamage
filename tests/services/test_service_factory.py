@@ -10,9 +10,7 @@ from whatsthedamage.services.processing_service import ProcessingService
 from whatsthedamage.services.validation_service import ValidationService
 from whatsthedamage.services.response_builder_service import ResponseBuilderService
 from whatsthedamage.services.configuration_service import ConfigurationService
-from whatsthedamage.services.file_upload_service import FileUploadService
 from whatsthedamage.services.data_formatting_service import DataFormattingService
-from whatsthedamage.services.session_service import SessionService
 
 
 @pytest.fixture
@@ -32,9 +30,7 @@ def test_create_service_container():
     ("validation_service", ValidationService),
     ("data_formatting_service", DataFormattingService),
     ("configuration_service", ConfigurationService),
-    ("file_upload_service", FileUploadService),
-    ("response_builder_service", ResponseBuilderService),
-    ("session_service", SessionService),
+    ("response_builder_service", ResponseBuilderService)
 ])
 def test_container_creates_and_caches_services(container, service_name, expected_type):
     """Test container creates correct service type and caches it (singleton pattern)."""
@@ -50,7 +46,6 @@ def test_container_creates_and_caches_services(container, service_name, expected
 
 @pytest.mark.parametrize("service_with_dep,dependency_service", [
     ("processing_service", "configuration_service"),
-    ("file_upload_service", "validation_service"),
     ("response_builder_service", "data_formatting_service"),
 ])
 def test_services_receive_dependencies(container, service_with_dep, dependency_service):

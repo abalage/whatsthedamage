@@ -185,7 +185,7 @@ def app_context():
         "filter": None,
         "output": None,
         "start_date": "2023-01-01",
-        "lang": None,
+        "lang": "en",
         "training_data": False,
         "ml": False,
     }

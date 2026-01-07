@@ -27,25 +27,34 @@ def sample_rows():
 
 
 @pytest.fixture
-def row_filter(sample_rows):
-    return RowFilter(sample_rows, "%Y-%m-%d")
-
-
-def test_get_month_number(row_filter):
-    assert row_filter.get_month_number("2023-01-15") == "01"
-    assert row_filter.get_month_number("2023-12-10") == "12"
-    with pytest.raises(ValueError, match="Date value cannot be None"):
-        row_filter.get_month_number(None)
+def row_filter(sample_rows, app_context):
+    return RowFilter(sample_rows, app_context)
 
 
 def test_filter_by_date(row_filter):
     start_date = int(datetime(2023, 1, 1).timestamp())
     end_date = int(datetime(2023, 12, 31).timestamp())
     filtered_rows = row_filter.filter_by_date(start_date, end_date)
-    assert len(filtered_rows[0]["99"]) == 12
+    # New API: filter_by_date returns a list of (DateField, rows) tuples
+    assert len(filtered_rows[0][1]) == 12
 
     start_date = int(datetime(2023, 6, 1).timestamp())
     end_date = int(datetime(2023, 6, 30).timestamp())
     filtered_rows = row_filter.filter_by_date(start_date, end_date)
-    assert len(filtered_rows[0]["99"]) == 1
-    assert filtered_rows[0]["99"][0].date == "2023-06-10"
+    assert len(filtered_rows[0][1]) == 1
+    assert filtered_rows[0][1][0].date == "2023-06-10"
+
+
+def test_filter_by_month_v2_grouping_and_display(row_filter):
+    # Ensure filter_by_month_v2 groups rows by year-month and builds DateField display
+    groups = row_filter.filter_by_month_v2()
+    # We expect 12 groups for 12 distinct months
+    assert len(groups) == 12
+
+    # Check first group is January 2023 with correct display format
+    jan_field, jan_rows = groups[0]
+    assert jan_field.display.startswith("2023")
+    # Month name appears in display (localized name for January)
+    assert "January" in jan_field.display
+    assert jan_field.timestamp > 0
+    assert len(jan_rows) == 1

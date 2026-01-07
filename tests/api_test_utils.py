@@ -27,21 +27,42 @@ class MockProcessingService:
             Result dict matching ProcessingService.process_with_details output
             Note: Now returns a dict of account_id -> DataTablesResponse
         """
+        from whatsthedamage.config.dt_models import DataTablesResponse, AggregatedRow, DisplayRawField, DateField, DetailRow
+        
         if rows is None:
             rows = []
 
-        class MockDataTablesResponse:
-            def __init__(self, data):
-                self.data = data
-                self.account = ""  # Add account attribute
-                self.currency = ""  # Add currency attribute
+        # Convert dict rows to AggregatedRow objects
+        aggregated_rows = []
+        for row_dict in rows:
+            # Convert details dicts to DetailRow objects
+            details = []
+            for detail_dict in row_dict.get('details', []):
+                details.append(DetailRow(
+                    date=DateField(**detail_dict['date']),
+                    amount=DisplayRawField(**detail_dict['amount']),
+                    merchant=detail_dict['merchant'],
+                    currency=detail_dict['currency'],
+                    account=detail_dict['account']
+                ))
+            
+            aggregated_rows.append(AggregatedRow(
+                category=row_dict['category'],
+                total=DisplayRawField(**row_dict['total']),
+                month=DateField(**row_dict['month']),
+                date=DateField(**row_dict['month']),  # Use month as date for simplicity
+                details=details
+            ))
 
-        # Create mock response with default account
-        mock_response = MockDataTablesResponse(rows)
+        # Create real DataTablesResponse
+        dt_response = DataTablesResponse(
+            data=aggregated_rows,
+            currency="USD"
+        )
         
         # Return dict of account_id -> response (multi-account structure)
         return {
-            'data': {"": mock_response},  # Empty string for default/single account
+            'data': {"": dt_response},  # Empty string for default/single account
             'metadata': {'row_count': row_count}
         }
 

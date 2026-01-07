@@ -49,6 +49,14 @@ whatsthedamage.services.response\_builder\_service module
    :show-inheritance:
    :undoc-members:
 
+whatsthedamage.services.service\_factory module
+-----------------------------------------------
+
+.. automodule:: whatsthedamage.services.service_factory
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
 whatsthedamage.services.session\_service module
 -----------------------------------------------
 

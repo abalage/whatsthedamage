@@ -5,7 +5,6 @@ from whatsthedamage.config.config import AppContext
 from typing import List, Dict, Tuple
 
 import datetime
-from babel.dates import format_date
 
 
 class RowFilter:
@@ -18,10 +17,9 @@ class RowFilter:
         """
         self._rows = rows
         self._date_format = context.config.csv.date_attribute_format
-        self._lang = context.args.get("lang", "en")
 
     def _get_month_field_id(self, date_value: str) -> DateField:
-        # FIXME remove added datetime dependency,, rework 'display' string creation
+        # FIXME remove added datetime dependency, rework 'display' string creation
         """
         Extract month ID from a date and create a DateField with proper timestamp.
 
@@ -38,7 +36,10 @@ class RowFilter:
 
         # Build a business-display string: Localized "YYYY <MonthName>"
         date_obj = datetime.datetime.fromtimestamp(timestamp)
-        display = format_date(date_obj, "yyyy MMMM", locale=self._lang)
+        month = date_obj.month
+        year = date_obj.year
+        month_name = DateConverter.convert_month_number_to_name(month)
+        display = f"{year} {month_name}"
 
         return DateField(display=display, timestamp=timestamp)
 

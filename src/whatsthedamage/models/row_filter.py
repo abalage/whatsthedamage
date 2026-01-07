@@ -1,11 +1,15 @@
 from whatsthedamage.utils.date_converter import DateConverter
 from whatsthedamage.models.csv_row import CsvRow
 from whatsthedamage.config.dt_models import DateField
+from whatsthedamage.config.config import AppContext
 from typing import List, Dict, Tuple
+
+import datetime
+from babel.dates import format_date
 
 
 class RowFilter:
-    def __init__(self, rows: List[CsvRow], date_format: str) -> None:
+    def __init__(self, rows: List[CsvRow], context: AppContext) -> None:
         """
         Initialize the RowFilter with a list of CsvRow objects and a date format.
 
@@ -13,14 +17,16 @@ class RowFilter:
         :param date_format: The date format to use for filtering.
         """
         self._rows = rows
-        self._date_format = date_format
+        self._date_format = context.config.csv.date_attribute_format
+        self._lang = context.args.get("lang", "en")
 
-    def _get_month_field(self, date_value: str) -> DateField:
+    def _get_month_field_id(self, date_value: str) -> DateField:
+        # FIXME remove added datetime dependency,, rework 'display' string creation
         """
-        Extract month information from a date and create a DateField with proper timestamp.
+        Extract month ID from a date and create a DateField with proper timestamp.
 
         Creates a DateField with:
-        - display: Localized month name (e.g., 'January', 'February')
+        - display: Localized year and month name (e.g., '2023 January', '2023 január')
         - timestamp: Epoch timestamp of the first day of that month
 
         :param date_value: Date string to extract month from.
@@ -28,13 +34,11 @@ class RowFilter:
         :raises ValueError: If the date_value is invalid or cannot be parsed.
         """
         # Use DateConverter primitives to keep business display logic here.
-        year = DateConverter.get_year(date_value, self._date_format)
-        month = DateConverter.get_month(date_value, self._date_format)
         timestamp = DateConverter.start_of_month_epoch(date_value, self._date_format)
 
-        # Build a business-display string: "YYYY <MonthName>"
-        month_str = DateConverter.convert_month_number_to_name(month)
-        display = f"{year} {month_str}"
+        # Build a business-display string: Localized "YYYY <MonthName>"
+        date_obj = datetime.datetime.fromtimestamp(timestamp)
+        display = format_date(date_obj, "yyyy MMMM", locale=self._lang)
 
         return DateField(display=display, timestamp=timestamp)
 
@@ -83,14 +87,13 @@ class RowFilter:
         months: Dict[int, Tuple[DateField, List[CsvRow]]] = {}
         for row in self._rows:
             date_value = getattr(row, 'date')
-            month_field = self._get_month_field(date_value)
+            month_field_id = self._get_month_field_id(date_value)
             # Use timestamp as canonical grouping key (keeps year information)
-            month_key = month_field.timestamp
+            month_key_timestamp = month_field_id.timestamp
 
-            if month_key not in months:
-                months[month_key] = (month_field, [])
-            months[month_key][1].append(row)
-
+            if month_key_timestamp not in months:
+                months[month_key_timestamp] = (month_field_id, [])
+            months[month_key_timestamp][1].append(row)
         # Return list of (DateField, rows) tuples
         return list(months.values())
 

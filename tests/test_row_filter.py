@@ -27,8 +27,8 @@ def sample_rows():
 
 
 @pytest.fixture
-def row_filter(sample_rows):
-    return RowFilter(sample_rows, "%Y-%m-%d")
+def row_filter(sample_rows, app_context):
+    return RowFilter(sample_rows, app_context)
 
 
 def test_filter_by_date(row_filter):

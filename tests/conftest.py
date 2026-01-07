@@ -78,6 +78,7 @@ def mock_processing_service_result():
             agg_rows.append(
                 AggregatedRow(
                     month=DateField(display="Total", timestamp=0),
+                    date=DateField(display="Total", timestamp=0),
                     category=category,
                     total=DisplayRawField(display=f"{amount:.2f} USD", raw=amount),
                     details=[]
@@ -184,7 +185,7 @@ def app_context():
         "filter": None,
         "output": None,
         "start_date": "2023-01-01",
-        "lang": None,
+        "lang": "en",
         "training_data": False,
         "ml": False,
     }

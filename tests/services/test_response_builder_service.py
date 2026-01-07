@@ -24,6 +24,7 @@ class TestApiResponseBuilding:
             AggregatedRow(
                 category="grocery",
                 month=DateField(display="2024-01", timestamp=1704067200),
+                date=DateField(display="2024-01", timestamp=1704067200),
                 total=DisplayRawField(display="150.50 HUF", raw=150.50),
                 details=[]
             )

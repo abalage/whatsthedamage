@@ -270,7 +270,7 @@ Introduced in version 0.8.0 to extract business logic from controllers and enabl
    - Enrichment uses either regex patterns or ML model (if enabled).
    - Filtering by date/month, optional category filter.
    - Returns `DataTablesResponse` objects per account (unified canonical format).
-6. **Aggregation**: `DataTablesResponseBuilder` computes totals per category/time period using calculator pattern (Balance, Total Spendings, custom). Supports performance optimization via `skip_details` flag for summary-only workflows.
+6. **Aggregation**: `DataTablesResponseBuilder` computes totals per category/time period using calculator pattern (Balance, Total Spendings, custom).
 7. **Formatting**: `DataFormattingService` prepares output from `DataTablesResponse` for console, HTML, CSV, or JSON.
 8. **Response**: `ResponseBuilderService` constructs appropriate responses for the delivery channel.
 9. **Output**: Results are displayed in CLI or rendered in the web frontend (HTML table, CSV download) or returned as JSON (API).
@@ -348,12 +348,6 @@ Version 0.9.0 introduces several performance improvements:
 - `CSVProcessor` caches parsed rows in `_rows` attribute to avoid re-reading files.
 - Eliminates redundant CSV parsing when processing same file multiple times.
 - Significantly reduces I/O overhead for large CSV files.
-
-### Detail Row Optimization
-- `DataTablesResponseBuilder` supports `skip_details=True` flag.
-- Skips building `DetailRow` objects when only summary data is needed.
-- Used by CLI, web summary route, and deprecated API v1.
-- Reduces memory usage and processing time for summary-only workflows.
 
 ### Multi-Account Support
 - `CsvRow` objects now include account metadata.

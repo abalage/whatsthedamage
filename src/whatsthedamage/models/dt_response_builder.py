@@ -19,7 +19,7 @@ class DataTablesResponseBuilder:
     structures, providing a clear API for incrementally building the response.
     """
 
-    def __init__(self, date_format: str, calculators: Optional[List[RowCalculator]] = None, skip_details: bool = False) -> None:
+    def __init__(self, date_format: str, calculators: Optional[List[RowCalculator]] = None) -> None:
         """
         Initializes the DataTablesResponseBuilder.
 
@@ -30,8 +30,6 @@ class DataTablesResponseBuilder:
                 a list of AggregatedRow objects. Calculators are invoked sequentially during build()
                 after all category data has been added. Later calculators can access rows created by
                 earlier calculators. Defaults to [create_balance_rows, create_total_spendings].
-            skip_details (bool): If True, skip building DetailRow objects to improve performance
-                for summary-only use cases. Defaults to False.
         """
         from whatsthedamage.models.dt_calculators import create_balance_rows, create_total_spendings
 
@@ -39,7 +37,6 @@ class DataTablesResponseBuilder:
         self._aggregated_rows: List[AggregatedRow] = []
         self._month_totals: Dict[int, tuple[DateField, float]] = {}
         self._calculators = calculators if calculators is not None else [create_balance_rows, create_total_spendings]
-        self._skip_details = skip_details
 
     def add_category_data(
         self,
@@ -101,10 +98,6 @@ class DataTablesResponseBuilder:
         Returns:
             List[DetailRow]: List of detail rows for DataTables.
         """
-        # Performance optimization: skip building details when not needed
-        if self._skip_details:
-            return []
-
         details = []
         for row in rows:
             date_str = getattr(row, 'date', None)

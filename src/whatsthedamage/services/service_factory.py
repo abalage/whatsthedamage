@@ -8,9 +8,7 @@ from whatsthedamage.services.processing_service import ProcessingService
 from whatsthedamage.services.validation_service import ValidationService
 from whatsthedamage.services.response_builder_service import ResponseBuilderService
 from whatsthedamage.services.configuration_service import ConfigurationService
-from whatsthedamage.services.file_upload_service import FileUploadService
 from whatsthedamage.services.data_formatting_service import DataFormattingService
-from whatsthedamage.services.session_service import SessionService
 
 
 class ServiceContainer:
@@ -26,9 +24,7 @@ class ServiceContainer:
         self._validation_service: Optional[ValidationService] = None
         self._data_formatting_service: Optional[DataFormattingService] = None
         self._processing_service: Optional[ProcessingService] = None
-        self._file_upload_service: Optional[FileUploadService] = None
         self._response_builder_service: Optional[ResponseBuilderService] = None
-        self._session_service: Optional[SessionService] = None
 
     @property
     def configuration_service(self) -> ConfigurationService:
@@ -61,15 +57,6 @@ class ServiceContainer:
         return self._processing_service
 
     @property
-    def file_upload_service(self) -> FileUploadService:
-        """Get or create FileUploadService instance with dependencies."""
-        if self._file_upload_service is None:
-            self._file_upload_service = FileUploadService(
-                validation_service=self.validation_service
-            )
-        return self._file_upload_service
-
-    @property
     def response_builder_service(self) -> ResponseBuilderService:
         """Get or create ResponseBuilderService instance with dependencies."""
         if self._response_builder_service is None:
@@ -77,13 +64,6 @@ class ServiceContainer:
                 formatting_service=self.data_formatting_service
             )
         return self._response_builder_service
-
-    @property
-    def session_service(self) -> SessionService:
-        """Get or create SessionService instance."""
-        if self._session_service is None:
-            self._session_service = SessionService()
-        return self._session_service
 
 
 def create_service_container() -> ServiceContainer:

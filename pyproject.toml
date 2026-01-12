@@ -26,7 +26,8 @@ dependencies = [
     "pydantic==2.11.9",
     "python-magic==0.4.27",
     "pyyaml==6.0.2",
-    "scikit-learn==1.7.2"
+    "scikit-learn==1.7.2",
+    "scipy==1.16.2",
 ]
 
 [project.optional-dependencies]
@@ -50,6 +51,7 @@ dev = [
 ]
 web = [
     "flask==3.1.2",
+    "Flask-Caching==2.3.1",
     "Flask-WTF==1.2.2",
     "wtforms==3.2.1",
     "werkzeug==3.1.3",

@@ -11,8 +11,10 @@ from whatsthedamage.services.response_builder_service import ResponseBuilderServ
 from whatsthedamage.services.session_service import SessionService
 from whatsthedamage.services.data_formatting_service import DataFormattingService
 from whatsthedamage.services.file_upload_service import FileUploadService, FileUploadError
+from whatsthedamage.services.cache_service import CacheService
+from whatsthedamage.config.dt_models import CachedProcessingResult, DataTablesResponse, StatisticalMetadata, AggregatedRow
 from whatsthedamage.utils.flask_locale import get_default_language
-from typing import Dict, Callable, Optional, cast
+from typing import Dict, Callable, Optional, cast, Tuple
 
 
 def _get_processing_service() -> ProcessingService:
@@ -43,6 +45,11 @@ def _get_session_service() -> SessionService:
 def _get_data_formatting_service() -> DataFormattingService:
     """Get data formatting service from app extensions (dependency injection)."""
     return cast(DataFormattingService, current_app.extensions['data_formatting_service'])
+
+
+def _get_cache_service() -> CacheService:
+    """Get cache service from app extensions (dependency injection)."""
+    return cast(CacheService, current_app.extensions['cache_service'])
 
 
 def handle_file_uploads(form: UploadForm) -> Dict[str, str]:
@@ -120,6 +127,7 @@ def process_details_and_build_response(
     return _get_response_builder_service().build_html_response(
         template='v2_results.html',
         accounts_data=accounts_data,
+        result_id=result_id,
         timing=result.get('timing')
     )
 

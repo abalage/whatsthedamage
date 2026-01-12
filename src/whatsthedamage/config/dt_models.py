@@ -27,3 +27,15 @@ class DataTablesResponse(BaseModel):
     data: List[AggregatedRow]
     account: str = ""
     currency: str = ""
+
+class CellHighlight(BaseModel):
+    row: str  # category
+    column: str  # month
+    highlight_type: str  # e.g., 'outlier', 'pareto'
+
+class StatisticalMetadata(BaseModel):
+    highlights: List[CellHighlight]
+
+class CachedProcessingResult(BaseModel):
+    responses: Dict[str, DataTablesResponse]
+    metadata: StatisticalMetadata

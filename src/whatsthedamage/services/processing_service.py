@@ -8,6 +8,7 @@ Controllers are responsible for saving uploaded files to disk and passing file p
 """
 from typing import Dict, Any, Optional
 import time
+import uuid
 from whatsthedamage.config.config import AppArgs, AppContext
 from whatsthedamage.models.csv_processor import CSVProcessor
 from whatsthedamage.services.configuration_service import ConfigurationService, ConfigLoadResult
@@ -94,6 +95,9 @@ class ProcessingService:
         # Get row count from cached rows to avoid re-reading CSV
         row_count = len(processor._rows)
 
+        # Generate result_id for caching purposes (controller will handle actual caching)
+        result_id = str(uuid.uuid4())
+
         return {
             "data": datatables_responses,
             "metadata": {
@@ -105,7 +109,9 @@ class ProcessingService:
                     "end_date": end_date,
                     "category": category_filter
                 }
-            }
+            },
+            "result_id": result_id,
+            "statistical_metadata": statistical_metadata
         }
 
     def _build_args(

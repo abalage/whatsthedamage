@@ -17,29 +17,30 @@ if TYPE_CHECKING:
 def create_balance_rows(builder: "DataTablesResponseBuilder") -> List[AggregatedRow]:
     """
     Default calculator that creates Balance category rows for each month.
-    
+
     Balance represents the sum of all category totals for a given month.
     This function serves as a reference implementation of the calculator pattern.
-    
+
     Args:
         builder: The DataTablesResponseBuilder instance with access to internal state.
-    
+
     Returns:
         List[AggregatedRow]: List of Balance aggregated rows, one per month.
     """
     balance_rows = []
     for month_timestamp in sorted(builder._month_totals.keys()):
         month_field, total_amount = builder._month_totals[month_timestamp]
-        
+
         # Use builder's public helper to create properly formatted row
         balance_row = builder.build_aggregated_row(
             category=_("Balance"),
             total_amount=total_amount,
             details=[],  # Balance has no detail rows
-            month_field=month_field
+            month_field=month_field,
+            is_calculated=True  # Mark as calculated data
         )
         balance_rows.append(balance_row)
-    
+
     return balance_rows
 
 
@@ -84,8 +85,9 @@ def create_total_spendings(builder: "DataTablesResponseBuilder") -> List[Aggrega
             category=_("Total Spendings"),
             total_amount=total,
             details=[],
-            month_field=month_field
+            month_field=month_field,
+            is_calculated=True  # Mark as calculated data
         )
         spendings_rows.append(spendings_row)
-    
+
     return spendings_rows

@@ -15,7 +15,7 @@ import pandas as pd
 import json
 from typing import Dict, Optional, Any
 from pydantic import BaseModel
-from whatsthedamage.config.dt_models import DataTablesResponse
+from whatsthedamage.config.dt_models import DataTablesResponse, StatisticalMetadata
 from gettext import gettext as _
 from whatsthedamage.services.statistical_analysis_service import StatisticalAnalysisService
 
@@ -487,6 +487,18 @@ class DataFormattingService:
 
         return result
 
+    def _convert_metadata_to_highlights_dict(self, metadata: 'StatisticalMetadata') -> Dict[str, str]:
+        """Convert StatisticalMetadata to the highlights dict format expected by templates.
+
+        :param metadata: StatisticalMetadata containing CellHighlight objects
+        :return: Dictionary of highlights keyed by 'column_category'
+        """
+        highlights_dict = {}
+        for highlight in metadata.highlights:
+            key = self.make_highlight_key(highlight.column, highlight.row)
+            highlights_dict[key] = highlight.highlight_type
+        return highlights_dict
+
     def prepare_accounts_for_template(
         self,
         dt_responses: Dict[str, DataTablesResponse]
@@ -511,9 +523,11 @@ class DataFormattingService:
                 for i in range(0, len(account_id), 8)
             )
 
-            # Build summary data for highlights
-            summary_data = self._extract_summary_from_account(dt_response, account_id)
-            highlights = self.get_highlights(summary_data.summary)
+            # Use cached statistical metadata (attached by ProcessingService)
+            statistical_metadata = dt_response.statistical_metadata
+            if statistical_metadata is None:
+                raise ValueError("Statistical metadata not found. This should be attached by ProcessingService.")
+            highlights = self._convert_metadata_to_highlights_dict(statistical_metadata)
 
             accounts.append({
                 'id': account_id,
@@ -570,7 +584,8 @@ class DataFormattingService:
     def _extract_summary_from_account(
         self,
         dt_response: DataTablesResponse,
-        account_id: str
+        account_id: str,
+        include_calculated: bool = False
     ) -> SummaryData:
         """Extract summary data from a single account's DataTablesResponse.
 
@@ -579,6 +594,7 @@ class DataFormattingService:
 
         :param dt_response: DataTablesResponse for a single account
         :param account_id: Account identifier for caching
+        :param include_calculated: Whether to include calculated rows in summary (for statistical analysis)
         :return: SummaryData with extracted summary, currency, and account_id
 
         Example::
@@ -594,6 +610,10 @@ class DataFormattingService:
         period_map: Dict[int, Dict[str, Any]] = {}
 
         for agg_row in dt_response.data:
+            # Skip calculated rows if requested (for statistical analysis)
+            if not include_calculated and getattr(agg_row, 'is_calculated', False):
+                continue
+
             period_field = agg_row.date if getattr(agg_row, 'date', None) is not None else agg_row.month
 
             ts = period_field.timestamp

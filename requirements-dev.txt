@@ -128,7 +128,9 @@ ruff==0.13.2
 scikit-learn==1.7.2
     # via whatsthedamage (pyproject.toml)
 scipy==1.16.2
-    # via scikit-learn
+    # via
+    #   scikit-learn
+    #   whatsthedamage (pyproject.toml)
 six==1.17.0
     # via python-dateutil
 snowballstemmer==3.0.1

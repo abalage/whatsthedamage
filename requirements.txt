@@ -30,7 +30,9 @@ pyyaml==6.0.2
 scikit-learn==1.7.2
     # via whatsthedamage (pyproject.toml)
 scipy==1.16.2
-    # via scikit-learn
+    # via
+    #   scikit-learn
+    #   whatsthedamage (pyproject.toml)
 six==1.17.0
     # via python-dateutil
 threadpoolctl==3.6.0

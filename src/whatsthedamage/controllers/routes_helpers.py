@@ -110,17 +110,20 @@ def get_cached_data_for_drilldown(
         >>>     flash(error, 'danger')
         >>>     return redirect(url_for(INDEX_ROUTE))
     """
-    cache_service = _get_cache_service()
-    cached = cache_service.get(result_id)
+    try:
+        cache_service = _get_cache_service()
+        cached = cache_service.get(result_id)
 
-    if not cached:
+        if not cached:
+            return None, 'Result not found or expired.'
+
+        dt_response = cached.responses.get(account)
+        if not dt_response:
+            return None, f'Account "{account}" not found.'
+
+        return dt_response, None
+    except Exception:
         return None, 'Result not found or expired.'
-
-    dt_response = cached.responses.get(account)
-    if not dt_response:
-        return None, f'Account "{account}" not found.'
-
-    return dt_response, None
 
 
 def handle_drilldown_request(
@@ -164,6 +167,11 @@ def handle_drilldown_request(
         return make_response(redirect(url_for(index_route)))
 
     filtered_data = [row for row in dt_response.data if filter_fn(row)]
+
+    # Check if filtered data is empty and redirect with error
+    if not filtered_data:
+        flash(data_not_found_error, 'danger')
+        return make_response(redirect(url_for(index_route)))
 
     # Merge account into template context
     context = {'data': filtered_data, 'account': account, **template_context}
@@ -225,4 +233,3 @@ def process_details_and_build_response(
         result_id=result_id,
         timing=result.get('timing')
     )
-

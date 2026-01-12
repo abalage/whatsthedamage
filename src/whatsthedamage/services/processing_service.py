@@ -108,6 +108,12 @@ class ProcessingService:
         # Compute statistical metadata
         statistical_metadata = self._compute_statistical_metadata(datatables_responses)
 
+        # Attach statistical metadata to each DataTablesResponse for easy access by consumers
+        # Check if datatables_responses is a dict (not a mock in tests)
+        if isinstance(datatables_responses, dict):
+            for account_id, dt_response in datatables_responses.items():
+                dt_response.statistical_metadata = statistical_metadata
+
         # Build response with metadata
         processing_time = time.time() - start_time
 
@@ -176,6 +182,25 @@ class ProcessingService:
             ml=ml_enabled
         )
 
+    def _filter_calculated_rows(self, dt_response: DataTablesResponse) -> DataTablesResponse:
+        """Filter out calculated rows from DataTablesResponse for statistical analysis.
+
+        Args:
+            dt_response: Original DataTablesResponse with all rows
+
+        Returns:
+            DataTablesResponse with only non-calculated rows
+        """
+        filtered_rows = [
+            row for row in dt_response.data
+            if not row.is_calculated
+        ]
+        return DataTablesResponse(
+            data=filtered_rows,
+            account=dt_response.account,
+            currency=dt_response.currency
+        )
+
     def _compute_statistical_metadata(self, datatables_responses: Dict[str, Any]) -> StatisticalMetadata:
         """Compute statistical metadata including highlights for the given responses.
 
@@ -190,8 +215,11 @@ class ProcessingService:
 
         highlights = []
         for table_name, dt_response in datatables_responses.items():
-            # Extract summary directly without depending on DataFormattingService
-            summary = self._extract_summary_from_response(dt_response)
+            # Filter out calculated rows before analysis
+            filtered_response = self._filter_calculated_rows(dt_response)
+
+            # Extract summary from filtered data only
+            summary = self._extract_summary_from_response(filtered_response)
             # Call StatisticalAnalysisService directly
             table_highlights = self._statistical_analysis_service.get_highlights(summary)
             for h in table_highlights:

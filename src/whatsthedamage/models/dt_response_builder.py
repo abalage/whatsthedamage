@@ -132,7 +132,8 @@ class DataTablesResponseBuilder:
         category: str,
         total_amount: float,
         details: List[DetailRow],
-        month_field: DateField
+        month_field: DateField,
+        is_calculated: bool = False
     ) -> AggregatedRow:
         """
         Creates a single AggregatedRow with proper formatting.
@@ -145,6 +146,7 @@ class DataTablesResponseBuilder:
             total_amount (float): Total amount for this category/month.
             details (List[DetailRow]): List of detail rows.
             month_field (DateField): DateField with timestamp from actual data.
+            is_calculated (bool): Whether this row represents calculated data.
 
         Returns:
             AggregatedRow: The aggregated row for DataTables.
@@ -158,9 +160,6 @@ class DataTablesResponseBuilder:
             total=total_field,
             month=month_field,
             date=month_field,
-            details=details
+            details=details,
+            is_calculated=is_calculated
         )
-
-
-
-

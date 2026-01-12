@@ -6,6 +6,8 @@ manipulation across controllers and provide type-safe access to session data.
 from typing import Optional, Dict, Any
 from dataclasses import dataclass
 from flask import session
+import time
+import os
 
 
 @dataclass
@@ -85,6 +87,7 @@ class SessionService:
     SESSION_KEY_RESULT = 'result'
     SESSION_KEY_TABLE_DATA = 'table_data'
     SESSION_KEY_LANG = 'lang'
+    SESSION_KEY_UPLOADED_FILES = 'uploaded_files'
     DEFAULT_LANGUAGE = 'en'
 
     def store_form_data(self, form_data: Dict[str, Any]) -> None:
@@ -143,3 +146,39 @@ class SessionService:
         self.clear_result()
         # Note: Language preference is preserved across clears
         # If you need to clear it too, add: session.pop(self.SESSION_KEY_LANG, None)
+
+    def store_uploaded_file(self, file_path: str, ttl: int = 600) -> None:
+        """Store uploaded file reference with TTL.
+
+        :param file_path: Path to the uploaded file
+        :param ttl: Time to live in seconds (default: 600 = 10 minutes)
+        """
+        uploaded_files = session.get(self.SESSION_KEY_UPLOADED_FILES, {})
+        uploaded_files[file_path] = time.time() + ttl
+        session[self.SESSION_KEY_UPLOADED_FILES] = uploaded_files
+
+    def get_uploaded_files(self) -> Dict[str, float]:
+        """Get uploaded files with their expiry times.
+
+        :returns: Dictionary of file_path: expiry_timestamp
+        """
+        result: Dict[str, float] = session.get(self.SESSION_KEY_UPLOADED_FILES, {})
+        return result
+
+    def cleanup_expired_files(self, upload_folder: str) -> None:
+        """Remove expired uploaded files from disk and session.
+
+        :param upload_folder: Path to the upload folder
+        """
+        current_time = time.time()
+        uploaded_files = self.get_uploaded_files()
+        expired_files = [fp for fp, exp in uploaded_files.items() if current_time > exp]
+        for fp in expired_files:
+            full_path = os.path.join(upload_folder, os.path.basename(fp))
+            if os.path.exists(full_path):
+                try:
+                    os.remove(full_path)
+                except OSError:
+                    pass  # Ignore errors
+            del uploaded_files[fp]
+        session[self.SESSION_KEY_UPLOADED_FILES] = uploaded_files

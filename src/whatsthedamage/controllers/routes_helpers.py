@@ -3,7 +3,7 @@
 This module contains extracted helper functions to reduce complexity in routes.py.
 Following the Single Responsibility Principle and DRY patterns.
 """
-from flask import current_app, Response
+from flask import current_app, Response, flash, redirect, url_for, make_response, render_template
 from whatsthedamage.view.forms import UploadForm
 from whatsthedamage.services.processing_service import ProcessingService
 from whatsthedamage.services.validation_service import ValidationService
@@ -86,6 +86,90 @@ def handle_file_uploads(form: UploadForm) -> Dict[str, str]:
         raise ValueError(str(e))
 
 
+def get_cached_data_for_drilldown(
+    result_id: str,
+    account: str
+) -> Tuple[Optional[DataTablesResponse], Optional[str]]:
+    """Retrieve cached processing result for drill-down routes.
+
+    Centralizes cache retrieval logic to eliminate duplication across
+    the three drill-down route handlers.
+
+    Args:
+        result_id: UUID of the cached processing result
+        account: Account identifier
+
+    Returns:
+        Tuple of (DataTablesResponse, error_message)
+        If successful: (dt_response, None)
+        If failed: (None, error_message)
+
+    Example:
+        >>> dt_response, error = get_cached_data_for_drilldown(result_id, account)
+        >>> if error:
+        >>>     flash(error, 'danger')
+        >>>     return redirect(url_for(INDEX_ROUTE))
+    """
+    cache_service = _get_cache_service()
+    cached = cache_service.get(result_id)
+
+    if not cached:
+        return None, 'Result not found or expired.'
+
+    dt_response = cached.responses.get(account)
+    if not dt_response:
+        return None, f'Account "{account}" not found.'
+
+    return dt_response, None
+
+
+def handle_drilldown_request(
+    result_id: str,
+    account: str,
+    template: str,
+    filter_fn: Callable[[AggregatedRow], bool],
+    template_context: Dict[str, str],
+    data_not_found_error: str = 'Data not found',
+    index_route: str = 'main.index'
+) -> Response:
+    """Generic handler for drill-down requests.
+
+    Eliminates code duplication across category, month, and cell drill-down routes
+    by providing a single implementation with customizable filtering and rendering.
+
+    Args:
+        result_id: UUID of the cached processing result
+        account: Account identifier
+        template: Template name to render (e.g., 'category_all_months.html')
+        filter_fn: Function to filter aggregated rows
+        template_context: Additional context to pass to template (e.g., {'category': 'Grocery'})
+        data_not_found_error: Error message for missing data
+        index_route: Route to redirect on error
+
+    Returns:
+        Flask Response with rendered template or redirect
+
+    Example:
+        >>> # For category drill-down:
+        >>> handle_drilldown_request(
+        >>>     result_id, account,
+        >>>     'category_all_months.html',
+        >>>     lambda row: row.category == 'Grocery',
+        >>>     {'category': 'Grocery', 'account': account}
+        >>> )
+    """
+    dt_response, error = get_cached_data_for_drilldown(result_id, account)
+    if error or not dt_response:
+        flash(error or data_not_found_error, 'danger')
+        return make_response(redirect(url_for(index_route)))
+
+    filtered_data = [row for row in dt_response.data if filter_fn(row)]
+
+    # Merge account into template context
+    context = {'data': filtered_data, 'account': account, **template_context}
+    return make_response(render_template(template, **context))
+
+
 def process_details_and_build_response(
     form: UploadForm,
     csv_path: str,
@@ -117,6 +201,17 @@ def process_details_and_build_response(
 
     # Extract Dict[str, DataTablesResponse] from result
     dt_responses_by_account = result['data']
+    result_id = result['result_id']
+    statistical_metadata = result.get('statistical_metadata') or StatisticalMetadata(highlights=[])
+
+    # Cache result at controller layer (separation of concerns)
+    # Business logic (ProcessingService) doesn't know about caching
+    cache_service = _get_cache_service()
+    cached_result = CachedProcessingResult(
+        responses=dt_responses_by_account,
+        metadata=statistical_metadata
+    )
+    cache_service.set(result_id, cached_result)
 
     # Prepare accounts data for template rendering
     formatting_service = _get_data_formatting_service()

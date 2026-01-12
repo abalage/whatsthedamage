@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import List, Any
+from typing import List, Any, Dict
 
 class DisplayRawField(BaseModel):
     display: str

@@ -18,6 +18,7 @@ from whatsthedamage.utils.flask_locale import get_locale, get_languages
 
 bp: Blueprint = Blueprint('main', __name__)
 INDEX_ROUTE = 'main.index'
+DATA_NOT_FOUND_ERROR = 'Data not found'
 
 
 def _get_session_service() -> SessionService:
@@ -147,6 +148,57 @@ def set_language(lang_code: str) -> Response:
     else:
         flash("Selected language is not supported.", "danger")
     return make_response(redirect(request.referrer or url_for(INDEX_ROUTE)))
+
+
+@bp.route('/details/<result_id>/<account>/<category>')
+def details_category_all_months(result_id: str, account: str, category: str) -> Response:
+    """Show category details across all months."""
+    from whatsthedamage.controllers.routes_helpers import handle_drilldown_request
+
+    return handle_drilldown_request(
+        result_id=result_id,
+        account=account,
+        template='category_all_months.html',
+        filter_fn=lambda row: row.category == category,
+        template_context={'category': category},
+        data_not_found_error=DATA_NOT_FOUND_ERROR,
+        index_route=INDEX_ROUTE
+    )
+
+
+@bp.route('/details/<result_id>/<account>/month/<month_ts>')
+def details_month_all_categories(result_id: str, account: str, month_ts: str) -> Response:
+    """Show month details across all categories."""
+    from whatsthedamage.controllers.routes_helpers import handle_drilldown_request
+
+    return handle_drilldown_request(
+        result_id=result_id,
+        account=account,
+        template='month_all_categories.html',
+        filter_fn=lambda row: str(row.month.timestamp) == month_ts or str(row.date.timestamp) == month_ts,
+        template_context={'month_ts': month_ts},
+        data_not_found_error=DATA_NOT_FOUND_ERROR,
+        index_route=INDEX_ROUTE
+    )
+
+
+@bp.route('/details/<result_id>/<account>/<category>/<month_ts>')
+def details_category_month(result_id: str, account: str, category: str, month_ts: str) -> Response:
+    """Show specific category and month details."""
+    from whatsthedamage.controllers.routes_helpers import handle_drilldown_request
+
+    return handle_drilldown_request(
+        result_id=result_id,
+        account=account,
+        template='category_month_detail.html',
+        filter_fn=lambda row: (
+            row.category == category and
+            (str(row.month.timestamp) == month_ts or str(row.date.timestamp) == month_ts)
+        ),
+        template_context={'category': category, 'month_ts': month_ts},
+        data_not_found_error=DATA_NOT_FOUND_ERROR,
+        index_route=INDEX_ROUTE
+    )
 
 
 @bp.route('/health')

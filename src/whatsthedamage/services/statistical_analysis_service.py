@@ -66,9 +66,11 @@ class ParetoAnalysis(StatisticalAlgorithm):
         cumulative: float = 0.0
         for key, amount in items:
             cumulative += amount
-            if cumulative <= 0.8 * total:  # 80% rule
+            if cumulative < 0.8 * total:  # 80% rule - use < instead of <=
                 highlights[key] = 'pareto'
             else:
+                # Include the item that pushes us over 80%
+                highlights[key] = 'pareto'
                 break
 
         return highlights
@@ -83,7 +85,7 @@ class StatisticalAnalysisService:
 
     def __init__(self, enabled_algorithms: List[str] | None = None):
         """Initialize statistical analysis service.
-        
+
         :param enabled_algorithms: List of algorithm names to enable (e.g., ['iqr', 'pareto'])
                                    If None, all algorithms are enabled.
         """
@@ -91,7 +93,7 @@ class StatisticalAnalysisService:
             'iqr': IQROutlierDetection(),
             'pareto': ParetoAnalysis(),
         }
-        self.enabled_algorithms = enabled_algorithms or list(self.algorithms.keys())
+        self.enabled_algorithms = enabled_algorithms if enabled_algorithms is not None else list(self.algorithms.keys())
 
     def analyze(self, data: Dict[str, float]) -> Dict[str, str]:
         """Apply enabled algorithms and return combined highlights.
@@ -103,7 +105,10 @@ class StatisticalAnalysisService:
         for algo_name in self.enabled_algorithms:
             if algo_name in self.algorithms:
                 algo_highlights = self.algorithms[algo_name].analyze(data)
-                highlights.update(algo_highlights)
+                # Only add highlights for keys that don't already exist
+                for key, value in algo_highlights.items():
+                    if key not in highlights:
+                        highlights[key] = value
         return highlights
 
     def get_highlights(self, summary: Dict[str, Dict[str, float]]) -> List[CellHighlight]:

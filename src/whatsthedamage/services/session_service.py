@@ -7,7 +7,7 @@ from typing import Optional, Dict, Any
 from dataclasses import dataclass
 from flask import session
 import time
-import os
+from pathlib import Path
 
 
 @dataclass
@@ -172,13 +172,24 @@ class SessionService:
         """
         current_time = time.time()
         uploaded_files = self.get_uploaded_files()
-        expired_files = [fp for fp, exp in uploaded_files.items() if current_time > exp]
-        for fp in expired_files:
-            full_path = os.path.join(upload_folder, os.path.basename(fp))
-            if os.path.exists(full_path):
+
+        # Remove expired files
+        for file_path, expiry_time in list(uploaded_files.items()):
+            if current_time > expiry_time:
+                path = Path(file_path)
+                if not path.is_absolute():
+                    path = Path(upload_folder) / path
+
                 try:
-                    os.remove(full_path)
-                except OSError:
-                    pass  # Ignore errors
-            del uploaded_files[fp]
+                    if path.exists():
+                        if path.is_dir():
+                            path.rmdir()
+                        else:
+                            path.unlink()
+                except Exception as e:
+                    print("Failed to remove expired file %s: %s", path, e)
+                finally:
+                    uploaded_files.pop(file_path, None)
+
+        # Update session
         session[self.SESSION_KEY_UPLOADED_FILES] = uploaded_files

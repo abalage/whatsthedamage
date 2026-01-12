@@ -17,6 +17,7 @@ from whatsthedamage.services.configuration_service import ConfigurationService
 from whatsthedamage.services.file_upload_service import FileUploadService
 from whatsthedamage.services.data_formatting_service import DataFormattingService
 from whatsthedamage.services.cache_service import CacheService
+from whatsthedamage.services.statistical_analysis_service import StatisticalAnalysisService
 from whatsthedamage.services.session_service import SessionService
 from whatsthedamage.config.dt_models import CachedProcessingResult
 
@@ -53,6 +54,7 @@ def create_app(
     configuration_service: Optional[ConfigurationService] = None,
     file_upload_service: Optional[FileUploadService] = None,
     data_formatting_service: Optional[DataFormattingService] = None,
+    statistical_analysis_service: Optional[StatisticalAnalysisService] = None,
     session_service: Optional[SessionService] = None
 ) -> Flask:
     app: Flask = Flask(__name__, template_folder='view/templates', static_folder='view/static')
@@ -84,9 +86,27 @@ def create_app(
         configuration_service = ConfigurationService()
     app.extensions['configuration_service'] = configuration_service
 
+    # Initialize statistical analysis service (dependency injection)
+    stat_svc = statistical_analysis_service
+    if stat_svc is None:
+        config = configuration_service.get_default_config()
+        # Pass only what's needed: algorithm names list, not entire config
+        stat_svc = StatisticalAnalysisService(
+            enabled_algorithms=config.enabled_statistical_algorithms
+        )
+    app.extensions['statistical_analysis_service'] = stat_svc
+
+    # Initialize data formatting service (dependency injection)
+    if data_formatting_service is None:
+        data_formatting_service = DataFormattingService(statistical_analysis_service=stat_svc)
+    app.extensions['data_formatting_service'] = data_formatting_service
+
     # Initialize processing service (dependency injection)
     if processing_service is None:
-        processing_service = ProcessingService(configuration_service=configuration_service)
+        processing_service = ProcessingService(
+            configuration_service=configuration_service,
+            statistical_analysis_service=stat_svc
+        )
     app.extensions['processing_service'] = processing_service
 
     # Initialize validation service (dependency injection)
@@ -98,11 +118,6 @@ def create_app(
     if file_upload_service is None:
         file_upload_service = FileUploadService(validation_service=validation_service)
     app.extensions['file_upload_service'] = file_upload_service
-
-    # Initialize data formatting service (dependency injection)
-    if data_formatting_service is None:
-        data_formatting_service = DataFormattingService()
-    app.extensions['data_formatting_service'] = data_formatting_service
 
     # Initialize session service (dependency injection)
     if session_service is None:

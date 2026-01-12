@@ -16,6 +16,20 @@
         border-radius: 0.5rem;
         margin-bottom: 1rem;
     }
+    .highlight-outlier {
+        background-color: #ffe6e6 !important;
+    }
+    .highlight-pareto {
+        background-color: #e6ffe6 !important;
+    }
+    .clickable {
+        cursor: pointer;
+        text-decoration: none;
+        color: inherit;
+    }
+    .clickable:hover {
+        text-decoration: underline;
+    }
     </style>
     <meta charset="UTF-8">
     <title>"What's the Damage" - {{ _('Result') }}</title>
@@ -42,7 +56,21 @@
     </header>
     <main class="container-fluid">
         <h1 class="text-center p-2 pb-1">{{ _('Processed results') }}</h1>
-        
+
+        <div class="row mb-3">
+            <div class="col-md-12">
+                <button class="btn btn-outline-info" type="button" data-bs-toggle="collapse" data-bs-target="#legend" aria-expanded="false" aria-controls="legend">
+                    {{ _('Legend') }}
+                </button>
+                <div class="collapse" id="legend">
+                    <div class="card card-body">
+                        <p><span class="badge bg-danger">Outlier</span> {{ _('Cells highlighted in red indicate outliers detected by IQR method.') }}</p>
+                        <p><span class="badge bg-success">Pareto</span> {{ _('Cells highlighted in green indicate top contributors per Pareto principle.') }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         {% for account in accounts_data.accounts %}
         {% set dt_response = account.dt_response %}
         <div class="account-section">
@@ -70,7 +98,7 @@
                                         {% endif %}
                                     {% endfor %}
                                     {% for month_display, month_ts in months | sort(attribute='1', reverse=True) %}
-                                        <th data-order="{{ month_ts }}">{{ month_display }}</th>
+                                        <th data-order="{{ month_ts }}"><a href="/details/{{ result_id }}/{{ account.id }}/month/{{ month_ts }}" class="clickable">{{ month_display }}</a></th>
                                     {% endfor %}
                                 </tr>
                             </thead>
@@ -84,10 +112,10 @@
                                     {% set _month_key = _month_field.timestamp %}
                                     {% set _ = cat_month_map[agg_row.category].update({_month_key: agg_row}) %}
                                 {% endfor %}
-                                
+
                                 {% for category in cat_month_map.keys() | sort %}
                                 <tr>
-                                    <td>{{ category }}</td>
+                                    <td><a href="/details/{{ result_id }}/{{ account.id }}/{{ category }}" class="clickable">{{ category }}</a></td>
                                     {% for month_display, month_ts in months | sort(attribute='1', reverse=True) %}
                                         {% set agg_row_data = cat_month_map[category].get(month_ts) %}
                                         {% if agg_row_data %}
@@ -96,7 +124,10 @@
                                                 {% set _ = details_list.append(detail.date.display ~ ': ' ~ detail.amount.display ~ ' - ' ~ detail.merchant) %}
                                             {% endfor %}
                                             {% set details_str = details_list | join('<br>') %}
-                                            <td data-order="{{ agg_row_data.total.raw }}"
+                                            {% set highlight_key = month_display ~ '_' ~ category %}
+                                            {% set highlight_type = account.highlights.get(highlight_key, '') %}
+                                            {% set highlight_class = 'highlight-' ~ highlight_type if highlight_type else '' %}
+                                            <td data-order="{{ agg_row_data.total.raw }}" class="{{ highlight_class }}"
                                                 {% if agg_row_data.details %}
                                                     tabindex="0"
                                                     data-bs-toggle="popover"
@@ -106,7 +137,7 @@
                                                     data-bs-placement="top"
                                                     data-bs-custom-class="popover-wide"
                                                 {% endif %}
-                                            >{{ agg_row_data.total.display }}</td>
+                                            ><a href="/details/{{ result_id }}/{{ account.id }}/{{ category }}/{{ month_ts }}" class="clickable">{{ agg_row_data.total.display }}</a></td>
                                         {% else %}
                                             <td data-order="0"></td>
                                         {% endif %}
@@ -130,7 +161,7 @@
     <footer class="bg-success text-white text-center py-3 mt-3">
         {% include 'footer.html' %}
     </footer>
-    
+
     <script>
     document.addEventListener('DOMContentLoaded', function() {
         var tables = document.querySelectorAll('table[data-datatable="true"]');
@@ -157,7 +188,7 @@
                 ]
             });
         });
-        
+
         var popoverTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="popover"]'));
         var popoverList = popoverTriggerList.map(function (popoverTriggerEl) {
             return new bootstrap.Popover(popoverTriggerEl, {

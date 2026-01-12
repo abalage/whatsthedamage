@@ -16,11 +16,13 @@ This guide enables AI coding agents to be immediately productive in the `whatsth
 
 ## Developer Workflows
 - **Build & Run:**
-  - CLI: `python -m whatsthedamage <file.csv>` or `make dev` then run from venv
+  - Use virtual environment: `python3 -m venv venv` then `source venv/bin/activate`
+  - CLI: `python3 -m whatsthedamage <file.csv>` or `make dev` then run from venv
   - Web: `make web` (Flask development server) or use gunicorn in production
   - API: Available at `/api/v2/process` endpoint, docs at `/docs`
   - Use `Makefile` for common tasks (`make help` for targets)
 - **Testing:** 
+  - Use virtual environment.
   - All tests in `tests/` (pytest compatible). Run with `pytest` or `make test`.
   - Unit tests for services, API endpoints, and core logic.
   - Always write tests for new features/bug fixes.

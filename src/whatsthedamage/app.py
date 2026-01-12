@@ -1,5 +1,8 @@
 from flask import Flask, g, current_app
 import os
+import gettext
+from flask_caching import Cache
+from typing import Optional, Any
 from whatsthedamage.controllers.routes import bp as main_bp
 from whatsthedamage.api.docs import docs_bp
 from whatsthedamage.api.v2.endpoints import v2_bp
@@ -13,9 +16,33 @@ from whatsthedamage.services.response_builder_service import ResponseBuilderServ
 from whatsthedamage.services.configuration_service import ConfigurationService
 from whatsthedamage.services.file_upload_service import FileUploadService
 from whatsthedamage.services.data_formatting_service import DataFormattingService
+from whatsthedamage.services.cache_service import CacheService
 from whatsthedamage.services.session_service import SessionService
-from typing import Optional, Any
-import gettext
+from whatsthedamage.config.dt_models import CachedProcessingResult
+
+
+class FlaskCacheAdapter:
+    """Adapter to make Flask-Caching work with CacheProtocol.
+
+    This adapter allows CacheService to work with Flask-Caching without
+    being tightly coupled to it.
+    """
+
+    def __init__(self, flask_cache: Cache):
+        self._flask_cache = flask_cache
+
+    def set(self, key: str, value: CachedProcessingResult, timeout: int) -> None:
+        """Store value in Flask cache."""
+        self._flask_cache.set(key, value, timeout=timeout)
+
+    def get(self, key: str) -> Optional[CachedProcessingResult]:
+        """Retrieve value from Flask cache."""
+        result: Optional[CachedProcessingResult] = self._flask_cache.get(key)
+        return result
+
+    def delete(self, key: str) -> None:
+        """Remove value from Flask cache."""
+        self._flask_cache.delete(key)
 
 
 def create_app(
@@ -43,6 +70,14 @@ def create_app(
 
     # Ensure the upload folder exists
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+
+    # Initialize Flask-Caching
+    cache = Cache(app, config={'CACHE_TYPE': 'SimpleCache'})
+
+    # Create adapter and cache service (decoupled from Flask-Caching)
+    cache_adapter = FlaskCacheAdapter(cache)
+    cache_service = CacheService(cache_adapter)
+    app.extensions['cache_service'] = cache_service
 
     # Initialize configuration service first (dependency injection)
     if configuration_service is None:
@@ -80,6 +115,12 @@ def create_app(
     app.extensions['response_builder_service'] = response_builder_service
 
     # --- BEGIN: Gettext integration for templates ---
+    # Note: File cleanup should be done via background job or event-driven mechanism,
+    # not on every request. Consider implementing:
+    # - APScheduler for periodic cleanup
+    # - Cleanup on upload instead of every request
+    # - TTL-based automatic cleanup in upload folder
+
     @app.before_request
     def set_gettext() -> None:
         lang = get_locale()

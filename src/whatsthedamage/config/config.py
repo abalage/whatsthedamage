@@ -77,6 +77,7 @@ class EnricherPatternSets(BaseModel):
 class AppConfig(BaseModel):
     csv: CsvConfig
     enricher_pattern_sets: EnricherPatternSets
+    cache_ttl: int = Field(default=600)  # 10 minutes in seconds
 
 
 class AppContext:

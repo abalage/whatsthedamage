@@ -4,7 +4,8 @@ This service uses the Strategy Pattern to apply various statistical algorithms
 to transaction data, providing highlight metadata for visualization.
 """
 from abc import ABC, abstractmethod
-from typing import Dict, List
+from enum import Enum
+from typing import Dict, List, Tuple
 import numpy as np
 from scipy import stats
 from whatsthedamage.config.dt_models import CellHighlight
@@ -76,9 +77,18 @@ class ParetoAnalysis(StatisticalAlgorithm):
         return highlights
 
 
+class AnalysisDirection(Enum):
+    """Direction for statistical analysis.
+
+    COLUMNS: Analyze inner keys within each outer key (e.g., categories within months)
+    ROWS: Analyze outer keys within each inner key (e.g., months within categories)
+    """
+    COLUMNS = "columns"
+    ROWS = "rows"
+
 class StatisticalAnalysisService:
     """Service for applying statistical algorithms to data.
-    
+
     Uses Strategy Pattern for extensible algorithm selection.
     Decoupled from AppConfig - only depends on algorithm names.
     """
@@ -95,14 +105,16 @@ class StatisticalAnalysisService:
         }
         self.enabled_algorithms = enabled_algorithms if enabled_algorithms is not None else list(self.algorithms.keys())
 
-    def analyze(self, data: Dict[str, float]) -> Dict[str, str]:
-        """Apply enabled algorithms and return combined highlights.
+    def analyze(self, data: Dict[str, float], algorithms: List[str] | None = None) -> Dict[str, str]:
+        """Apply specified algorithms (or enabled algorithms) and return combined highlights.
 
         :param data: The flat data to analyze (keys as identifiers, values as amounts).
+        :param algorithms: Optional list of algorithm names to use (overrides enabled_algorithms).
         :return: Dictionary of highlights keyed by identifiers.
         """
+        algorithms_to_use = algorithms if algorithms is not None else self.enabled_algorithms
         highlights = {}
-        for algo_name in self.enabled_algorithms:
+        for algo_name in algorithms_to_use:
             if algo_name in self.algorithms:
                 algo_highlights = self.algorithms[algo_name].analyze(data)
                 # Only add highlights for keys that don't already exist
@@ -111,19 +123,65 @@ class StatisticalAnalysisService:
                         highlights[key] = value
         return highlights
 
-    def get_highlights(self, summary: Dict[str, Dict[str, float]]) -> List[CellHighlight]:
-        """Get highlights for the summary data.
+    def _transform_data_for_analysis(
+        self,
+        summary: Dict[str, Dict[str, float]],
+        direction: AnalysisDirection
+    ) -> List[Tuple[str, Dict[str, float]]]:
+        """Transform summary data based on analysis direction.
 
-        :param summary: Dict[month, Dict[category, amount]]
+        :param summary: Nested dictionary structure Dict[outer_key, Dict[inner_key, amount]]
+        :param direction: Analysis direction (COLUMNS or ROWS)
+        :return: List of (key, data_dict) tuples for analysis
+        """
+        if direction == AnalysisDirection.COLUMNS:
+            # Analyze inner keys within each outer key (e.g., categories within months)
+            return [(outer_key, inner_data) for outer_key, inner_data in summary.items()]
+        else:  # ROWS
+            # Analyze outer keys within each inner key (e.g., months within categories)
+            # Transpose the data structure
+            transposed_data: Dict[str, Dict[str, float]] = {}
+            for outer_key, inner_data in summary.items():
+                for inner_key, amount in inner_data.items():
+                    if inner_key not in transposed_data:
+                        transposed_data[inner_key] = {}
+                    transposed_data[inner_key][outer_key] = amount
+            return [(inner_key, outer_data) for inner_key, outer_data in transposed_data.items()]
+
+    def get_highlights(
+        self,
+        summary: Dict[str, Dict[str, float]],
+        direction: AnalysisDirection = AnalysisDirection.COLUMNS,
+        algorithms: List[str] | None = None
+    ) -> List[CellHighlight]:
+        """Get highlights for the summary data with flexible analysis direction.
+
+        :param summary: Dict[outer_key, Dict[inner_key, amount]]
+                      For COLUMNS: Dict[month, Dict[category, amount]]
+                      For ROWS: Dict[month, Dict[category, amount]] (will be transposed)
+        :param direction: Analysis direction (COLUMNS or ROWS), default COLUMNS
+        :param algorithms: Optional list of algorithm names to use (overrides enabled_algorithms)
         :return: List of CellHighlight
         """
         highlights = []
-        for month, categories in summary.items():
-            category_highlights = self.analyze(categories)
-            for category, highlight_type in category_highlights.items():
-                highlights.append(CellHighlight(
-                    row=category,
-                    column=month,
-                    highlight_type=highlight_type
-                ))
+        transformed_data = self._transform_data_for_analysis(summary, direction)
+
+        for outer_key, inner_data in transformed_data:
+            data_highlights = self.analyze(inner_data, algorithms)
+
+            for inner_key, highlight_type in data_highlights.items():
+                if direction == AnalysisDirection.COLUMNS:
+                    # COLUMNS: row=inner_key, column=outer_key (e.g., row=category, column=month)
+                    highlights.append(CellHighlight(
+                        row=inner_key,
+                        column=outer_key,
+                        highlight_type=highlight_type
+                    ))
+                else:  # ROWS
+                    # ROWS: row=outer_key, column=inner_key (e.g., row=month, column=category)
+                    highlights.append(CellHighlight(
+                        row=inner_key,
+                        column=outer_key,
+                        highlight_type=highlight_type
+                    ))
         return highlights

@@ -64,43 +64,11 @@ class DataFormattingService:
     def make_highlight_key(column_key: str, category: str) -> str:
         """Create standardized highlight key from column header and category.
 
-        Column headers represent time periods (typically months) and may include
-        disambiguating timestamps when the same display name appears multiple times
-        (e.g., 'January' across different years becomes 'January (1704067200)').
-
-        This method extracts the plain display name (removes timestamp suffix if present)
-        and combines with category using underscore separator.
-
-        :param column_key: Column header from summary data (e.g., 'January' or 'January (1704067200)')
+        :param column_key: Column header from summary data in 'YYYY Month' format (e.g., '2025 January')
         :param category: Category name
         :return: Standardized key 'column_category' for highlight lookup
-
-        Example::
-            >>> DataFormattingService.make_highlight_key('January (1704067200)', 'Grocery')
-            'January_Grocery'
-            >>> DataFormattingService.make_highlight_key('January', 'Grocery')
-            'January_Grocery'
         """
-        plain_key = column_key.split(' (')[0] if ' (' in column_key else column_key
-        return f"{plain_key}_{category}"
-
-    def get_highlights(self, data: Dict[str, Dict[str, float]]) -> Dict[str, str]:
-        """Get statistical highlights for the data.
-
-        :param data: Nested summary data where outer keys are column headers
-                     (time periods like 'January' or 'January (1704067200)'),
-                     inner keys are categories, and values are amounts.
-        :return: Dictionary of highlights keyed by 'column_category' (e.g., 'January_Grocery').
-        """
-        if self.statistical_analysis_service is None:
-            return {}
-        # Flatten the nested data using standardized key generation
-        flat_data = {}
-        for column_key, categories in data.items():
-            for category, amount in categories.items():
-                key = self.make_highlight_key(column_key, category)
-                flat_data[key] = amount
-        return self.statistical_analysis_service.analyze(flat_data)
+        return f"{column_key}_{category}"
 
     def format_as_html_table(
         self,

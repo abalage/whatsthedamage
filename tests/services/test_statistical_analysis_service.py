@@ -4,7 +4,8 @@ from whatsthedamage.services.statistical_analysis_service import (
     StatisticalAnalysisService,
     IQROutlierDetection,
     ParetoAnalysis,
-    StatisticalAlgorithm
+    StatisticalAlgorithm,
+    AnalysisDirection
 )
 from whatsthedamage.config.dt_models import CellHighlight
 from typing import Dict
@@ -225,7 +226,7 @@ class TestStatisticalAnalysisService:
         assert result == {}  # No highlights from valid algorithms
 
     def test_get_highlights_with_summary_data(self):
-        """Test get_highlights method with summary data structure."""
+        """Test get_highlights method with summary data structure (COLUMNS direction)."""
         service = StatisticalAnalysisService(enabled_algorithms=["iqr", "pareto"])
 
         # Create test summary data with more data points for proper IQR calculation
@@ -245,7 +246,7 @@ class TestStatisticalAnalysisService:
             }
         }
 
-        highlights = service.get_highlights(summary)
+        highlights = service.get_highlights(summary, AnalysisDirection.COLUMNS)
 
         # Should have highlights for various categories
         assert len(highlights) > 0
@@ -258,6 +259,154 @@ class TestStatisticalAnalysisService:
         assert ("Rent", "2023-01") in highlight_dict
         # The type might be either "outlier" or "pareto" depending on which algorithm catches it first
         assert highlight_dict[("Rent", "2023-01")] in ["outlier", "pareto"]
+
+    def test_get_highlights_with_rows_direction(self):
+        """Test get_highlights method with ROWS direction (months within categories)."""
+        service = StatisticalAnalysisService(enabled_algorithms=["iqr", "pareto"])
+
+        # Create test summary data
+        summary = {
+            "2023-01": {
+                "Grocery": 500.0,
+                "Rent": 1000.0,
+                "Entertainment": 100.0,
+                "Utilities": 200.0,
+                "Transport": 150.0
+            },
+            "2023-02": {
+                "Grocery": 400.0,
+                "Utilities": 200.0,
+                "Entertainment": 50.0,
+                "Transport": 150.0
+            },
+            "2023-03": {
+                "Grocery": 1500.0,  # Should be outlier for Grocery category
+                "Utilities": 250.0,
+                "Entertainment": 75.0
+            }
+        }
+
+        highlights = service.get_highlights(summary, AnalysisDirection.ROWS)
+
+        # Should have highlights for various months within categories
+        assert len(highlights) > 0
+        assert all(isinstance(h, CellHighlight) for h in highlights)
+
+        # Check that we have highlights for the right months and categories
+        highlight_dict = {(h.row, h.column): h.highlight_type for h in highlights}
+
+        # Should have 2023-03 as outlier for Grocery category
+        assert ("2023-03", "Grocery") in highlight_dict
+        assert highlight_dict[("2023-03", "Grocery")] in ["outlier", "pareto"]
+
+    def test_get_highlights_backward_compatibility(self):
+        """Test that get_highlights works without direction parameter (backward compatibility)."""
+        service = StatisticalAnalysisService(enabled_algorithms=["iqr"])
+
+        summary = {
+            "2023-01": {
+                "Grocery": 500.0,
+                "Rent": 1000.0,  # Should be outlier
+                "Entertainment": 100.0,
+                "Utilities": 200.0,
+                "Transport": 150.0,
+                "Dining": 300.0
+            }
+        }
+
+        # Call without direction parameter - should default to COLUMNS
+        highlights = service.get_highlights(summary)
+
+        # Should work and return highlights
+        assert len(highlights) > 0
+        highlight_dict = {(h.row, h.column): h.highlight_type for h in highlights}
+        assert ("Rent", "2023-01") in highlight_dict
+
+    def test_get_highlights_with_runtime_algorithm_selection(self):
+        """Test get_highlights with runtime algorithm selection."""
+        service = StatisticalAnalysisService(enabled_algorithms=["iqr", "pareto"])
+
+        summary = {
+            "2023-01": {
+                "Grocery": 500.0,
+                "Rent": 1000.0,  # Should be outlier
+                "Entertainment": 100.0,
+                "Utilities": 200.0,
+                "Transport": 150.0,
+                "Dining": 300.0,
+                "Shopping": 250.0
+            }
+        }
+
+        # Test with only IQR algorithm
+        highlights_iqr = service.get_highlights(summary, AnalysisDirection.COLUMNS, algorithms=["iqr"])
+        assert len(highlights_iqr) > 0
+
+        # Test with only Pareto algorithm
+        highlights_pareto = service.get_highlights(summary, AnalysisDirection.COLUMNS, algorithms=["pareto"])
+        assert len(highlights_pareto) > 0
+
+        # Test with both algorithms
+        highlights_both = service.get_highlights(summary, AnalysisDirection.COLUMNS, algorithms=["iqr", "pareto"])
+        assert len(highlights_both) > 0
+
+    def test_analyze_with_runtime_algorithm_selection(self):
+        """Test analyze method with runtime algorithm selection."""
+        service = StatisticalAnalysisService(enabled_algorithms=["iqr"])
+
+        data = {
+            "outlier": 1000.0,
+            "item1": 10.0,
+            "item2": 20.0,
+            "item3": 30.0,
+            "item4": 40.0,
+            "item5": 50.0,
+            "item6": 60.0,
+            "item7": 70.0,
+            "item8": 80.0,
+            "item9": 90.0
+        }
+
+        # Test with default algorithms (should use enabled_algorithms)
+        result_default = service.analyze(data)
+        assert "outlier" in result_default
+
+        # Test with runtime algorithm selection (override enabled_algorithms)
+        result_pareto = service.analyze(data, algorithms=["pareto"])
+        assert len(result_pareto) > 0
+
+        # Test with empty algorithm list
+        result_empty = service.analyze(data, algorithms=[])
+        assert result_empty == {}
+
+    def test_data_transformation_for_columns_direction(self):
+        """Test data transformation for COLUMNS direction."""
+        service = StatisticalAnalysisService()
+
+        summary = {
+            "month1": {"cat1": 100.0, "cat2": 200.0},
+            "month2": {"cat1": 150.0, "cat3": 300.0}
+        }
+
+        transformed = service._transform_data_for_analysis(summary, AnalysisDirection.COLUMNS)
+        assert len(transformed) == 2
+        assert ("month1", {"cat1": 100.0, "cat2": 200.0}) in transformed
+        assert ("month2", {"cat1": 150.0, "cat3": 300.0}) in transformed
+
+    def test_data_transformation_for_rows_direction(self):
+        """Test data transformation for ROWS direction."""
+        service = StatisticalAnalysisService()
+
+        summary = {
+            "month1": {"cat1": 100.0, "cat2": 200.0},
+            "month2": {"cat1": 150.0, "cat3": 300.0}
+        }
+
+        transformed = service._transform_data_for_analysis(summary, AnalysisDirection.ROWS)
+        assert len(transformed) == 3
+        assert ("cat1", {"month1": 100.0, "month2": 150.0}) in transformed
+        assert ("cat2", {"month1": 200.0}) in transformed
+        assert ("cat3", {"month2": 300.0}) in transformed
 
     def test_get_highlights_with_empty_summary(self):
         """Test get_highlights with empty summary."""

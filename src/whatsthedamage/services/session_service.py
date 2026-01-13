@@ -147,7 +147,7 @@ class SessionService:
         # Note: Language preference is preserved across clears
         # If you need to clear it too, add: session.pop(self.SESSION_KEY_LANG, None)
 
-    def store_uploaded_file(self, file_path: str, ttl: int = 600) -> None:
+    def store_uploaded_file_reference(self, file_path: str, ttl: int = 600) -> None:
         """Store uploaded file reference with TTL.
 
         :param file_path: Path to the uploaded file
@@ -157,21 +157,21 @@ class SessionService:
         uploaded_files[file_path] = time.time() + ttl
         session[self.SESSION_KEY_UPLOADED_FILES] = uploaded_files
 
-    def get_uploaded_files(self) -> Dict[str, float]:
-        """Get uploaded files with their expiry times.
+    def get_uploaded_file_references(self) -> Dict[str, float]:
+        """Get uploaded file references with their expiry times.
 
         :returns: Dictionary of file_path: expiry_timestamp
         """
         result: Dict[str, float] = session.get(self.SESSION_KEY_UPLOADED_FILES, {})
         return result
 
-    def cleanup_expired_files(self, upload_folder: str) -> None:
-        """Remove expired uploaded files from disk and session.
+    def cleanup_expired_file_references(self, upload_folder: str) -> None:
+        """Remove expired uploaded file references from disk and session.
 
         :param upload_folder: Path to the upload folder
         """
         current_time = time.time()
-        uploaded_files = self.get_uploaded_files()
+        uploaded_files = self.get_uploaded_file_references()
 
         # Remove expired files
         for file_path, expiry_time in list(uploaded_files.items()):

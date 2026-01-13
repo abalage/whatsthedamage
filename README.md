@@ -78,6 +78,18 @@ Try experimenting with it by providing the `--ml` command line argument to `what
 
 All three interfaces share the same **core business logic** through a well-defined **service layer** (including `ProcessingService`, `ValidationService`, `ConfigurationService`, and others), ensuring consistent transaction processing regardless of how you access the tool. The architecture was introduced in version 0.8.0 and further enhanced in 0.9.0 with v2 processing pipeline, multi-account support, and performance optimizations. The unified data format (`DataTablesResponse`) ensures consistency across all clients: CLI, Web, and API.
 
+### Caching Strategy
+
+The web interface implements a **10-minute caching strategy** to improve performance and user experience:
+
+- **Cache Duration**: Processing results are cached for 10 minutes (600 seconds) using the `CacheService`
+- **Cached Data**: The cache stores `CachedProcessingResult` objects containing processed transaction data (`DataTablesResponse` objects) for each account
+- **Cache Miss Behavior**: If a cache entry expires or is not found, drilldown views display an error message and redirect users to the main page
+- **Session Management**: File references (paths) are stored in the session with the same 10-minute TTL, but actual file contents are never stored in session
+- **Automatic Cleanup**: The `SessionService` automatically cleans up expired file references and removes corresponding files from disk
+
+**Note**: The current implementation does not automatically reprocess files on cache miss. Users need to re-upload and process their files if the cache expires. The file references are stored for a later automatic reprocessing. It is not decided yet.
+
 ### Interface Comparison
 
 | Feature | CLI | Web UI | REST API |

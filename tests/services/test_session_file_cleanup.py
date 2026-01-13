@@ -37,10 +37,10 @@ class TestSessionServiceFileCleanup:
             with open(file_path, 'w') as f:
                 f.write("test content")
 
-            session_service.store_uploaded_file(file_path, ttl=300)
+            session_service.store_uploaded_file_reference(file_path, ttl=300)
 
             # Verify file is stored in session
-            uploaded_files = session_service.get_uploaded_files()
+            uploaded_files = session_service.get_uploaded_file_references()
             assert file_path in uploaded_files
             assert uploaded_files[file_path] > time.time()  # Expiry in future
 
@@ -52,10 +52,10 @@ class TestSessionServiceFileCleanup:
             with open(file_path, 'w') as f:
                 f.write("test content")
 
-            session_service.store_uploaded_file(file_path)
+            session_service.store_uploaded_file_reference(file_path)
 
             # Verify file is stored with default TTL
-            uploaded_files = session_service.get_uploaded_files()
+            uploaded_files = session_service.get_uploaded_file_references()
             assert file_path in uploaded_files
             expiry_time = uploaded_files[file_path]
             assert expiry_time > time.time()
@@ -64,7 +64,7 @@ class TestSessionServiceFileCleanup:
     def test_get_uploaded_files_empty(self, app, session_service):
         """Test getting uploaded files when none exist."""
         with app.test_request_context():
-            uploaded_files = session_service.get_uploaded_files()
+            uploaded_files = session_service.get_uploaded_file_references()
             assert uploaded_files == {}
 
     def test_get_uploaded_files_with_data(self, app, session_service, temp_upload_folder):
@@ -78,11 +78,11 @@ class TestSessionServiceFileCleanup:
             with open(file2, 'w') as f:
                 f.write("content2")
 
-            session_service.store_uploaded_file(file1, ttl=100)
-            session_service.store_uploaded_file(file2, ttl=200)
+            session_service.store_uploaded_file_reference(file1, ttl=100)
+            session_service.store_uploaded_file_reference(file2, ttl=200)
 
             # Get uploaded files
-            uploaded_files = session_service.get_uploaded_files()
+            uploaded_files = session_service.get_uploaded_file_references()
             assert len(uploaded_files) == 2
             assert file1 in uploaded_files
             assert file2 in uploaded_files
@@ -98,14 +98,14 @@ class TestSessionServiceFileCleanup:
             with open(file2, 'w') as f:
                 f.write("content2")
 
-            session_service.store_uploaded_file(file1, ttl=300)
-            session_service.store_uploaded_file(file2, ttl=300)
+            session_service.store_uploaded_file_reference(file1, ttl=300)
+            session_service.store_uploaded_file_reference(file2, ttl=300)
 
             # Cleanup should not remove any files
-            session_service.cleanup_expired_files(temp_upload_folder)
+            session_service.cleanup_expired_file_references(temp_upload_folder)
 
             # Files should still be in session
-            uploaded_files = session_service.get_uploaded_files()
+            uploaded_files = session_service.get_uploaded_file_references()
             assert len(uploaded_files) == 2
             assert file1 in uploaded_files
             assert file2 in uploaded_files
@@ -133,10 +133,10 @@ class TestSessionServiceFileCleanup:
             }
 
             # Cleanup should remove expired files
-            session_service.cleanup_expired_files(temp_upload_folder)
+            session_service.cleanup_expired_file_references(temp_upload_folder)
 
             # Files should be removed from session
-            uploaded_files = session_service.get_uploaded_files()
+            uploaded_files = session_service.get_uploaded_file_references()
             assert len(uploaded_files) == 0
 
             # Files should be removed from disk
@@ -163,10 +163,10 @@ class TestSessionServiceFileCleanup:
             }
 
             # Cleanup should only remove expired file
-            session_service.cleanup_expired_files(temp_upload_folder)
+            session_service.cleanup_expired_file_references(temp_upload_folder)
 
             # Only valid file should remain in session
-            uploaded_files = session_service.get_uploaded_files()
+            uploaded_files = session_service.get_uploaded_file_references()
             assert len(uploaded_files) == 1
             assert valid_file in uploaded_files
             assert expired_file not in uploaded_files
@@ -186,10 +186,10 @@ class TestSessionServiceFileCleanup:
             }
 
             # Cleanup should not raise exception for non-existent file
-            session_service.cleanup_expired_files(temp_upload_folder)
+            session_service.cleanup_expired_file_references(temp_upload_folder)
 
             # File should be removed from session
-            uploaded_files = session_service.get_uploaded_files()
+            uploaded_files = session_service.get_uploaded_file_references()
             assert len(uploaded_files) == 0
 
     def test_cleanup_expired_files_directory_removal(self, app, session_service, temp_upload_folder):
@@ -206,13 +206,13 @@ class TestSessionServiceFileCleanup:
             }
 
             # Cleanup should handle directory removal
-            session_service.cleanup_expired_files(temp_upload_folder)
+            session_service.cleanup_expired_file_references(temp_upload_folder)
 
             # Directory should be removed
             assert not os.path.exists(dir_path)
 
             # Entry should be removed from session
-            uploaded_files = session_service.get_uploaded_files()
+            uploaded_files = session_service.get_uploaded_file_references()
             assert len(uploaded_files) == 0
 
     def test_cleanup_expired_files_permission_error(self, app, session_service, temp_upload_folder):
@@ -234,10 +234,10 @@ class TestSessionServiceFileCleanup:
                 }
 
                 # Cleanup should handle permission error gracefully
-                session_service.cleanup_expired_files(temp_upload_folder)
+                session_service.cleanup_expired_file_references(temp_upload_folder)
 
                 # File should be removed from session even if disk deletion fails
-                uploaded_files = session_service.get_uploaded_files()
+                uploaded_files = session_service.get_uploaded_file_references()
                 assert len(uploaded_files) == 0
 
             finally:

@@ -12,11 +12,8 @@ import uuid
 from whatsthedamage.config.config import AppArgs, AppContext
 from whatsthedamage.models.csv_processor import CSVProcessor
 from whatsthedamage.services.configuration_service import ConfigurationService, ConfigLoadResult
-from whatsthedamage.config.dt_models import (
-    StatisticalMetadata,
-    CellHighlight,
-    DataTablesResponse
-)
+from whatsthedamage.services.statistical_analysis_service import StatisticalAnalysisService
+from whatsthedamage.config.dt_models import StatisticalMetadata
 
 
 class ProcessingService:
@@ -31,7 +28,7 @@ class ProcessingService:
     def __init__(
         self,
         configuration_service: Optional[ConfigurationService] = None,
-        statistical_analysis_service: Optional[Any] = None
+        statistical_analysis_service: Optional[StatisticalAnalysisService] = None
     ) -> None:
         """Initialize the processing service.
 
@@ -193,6 +190,5 @@ class ProcessingService:
         if self._statistical_analysis_service:
             # Web/API usage - delegate to StatisticalAnalysisService
             return self._statistical_analysis_service.compute_statistical_metadata(datatables_responses)
-        else:
-            # CLI usage - return empty metadata
-            return StatisticalMetadata(highlights=[])
+        # CLI usage - return empty metadata
+        return StatisticalMetadata(highlights=[])

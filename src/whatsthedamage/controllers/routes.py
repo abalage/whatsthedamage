@@ -1,7 +1,7 @@
 from datetime import datetime
 from flask import (
     Blueprint, request, make_response, render_template, redirect, url_for,
-    flash, current_app, Response, jsonify
+    flash, current_app, Response
 )
 from whatsthedamage.view.forms import UploadForm
 from whatsthedamage.controllers.routes_helpers import (
@@ -11,7 +11,7 @@ from whatsthedamage.controllers.routes_helpers import (
 from whatsthedamage.services.session_service import SessionService
 from whatsthedamage.services.configuration_service import ConfigurationService
 from whatsthedamage.services.data_formatting_service import DataFormattingService
-from typing import Optional, Union
+from typing import Optional
 import os
 import shutil
 from whatsthedamage.utils.flask_locale import get_locale, get_languages

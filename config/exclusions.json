@@ -1,0 +1,6 @@
+{
+  "default": ["Deposit", "Transfer", "Salary"],
+  "iqr": ["Deposit", "Bonus"],
+  "pareto": ["Transfer", "Salary"],
+  "description": "Default exclusions by algorithm for statistical analysis"
+}

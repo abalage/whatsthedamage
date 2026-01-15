@@ -19,6 +19,7 @@ from whatsthedamage.services.data_formatting_service import DataFormattingServic
 from whatsthedamage.services.cache_service import CacheService
 from whatsthedamage.services.statistical_analysis_service import StatisticalAnalysisService
 from whatsthedamage.services.session_service import SessionService
+from whatsthedamage.services.exclusion_service import ExclusionService
 from whatsthedamage.config.dt_models import CachedProcessingResult
 
 
@@ -86,13 +87,18 @@ def create_app(
         configuration_service = ConfigurationService()
     app.extensions['configuration_service'] = configuration_service
 
+    # Initialize exclusion service (dependency injection)
+    exclusion_service = ExclusionService()
+    app.extensions['exclusion_service'] = exclusion_service
+
     # Initialize statistical analysis service (dependency injection)
     stat_svc = statistical_analysis_service
     if stat_svc is None:
         config = configuration_service.get_default_config()
         # Pass only what's needed: algorithm names list, not entire config
         stat_svc = StatisticalAnalysisService(
-            enabled_algorithms=config.enabled_statistical_algorithms
+            enabled_algorithms=config.enabled_statistical_algorithms,
+            exclusion_service=exclusion_service
         )
     app.extensions['statistical_analysis_service'] = stat_svc
 

@@ -1,7 +1,7 @@
 from datetime import datetime
 from flask import (
     Blueprint, request, make_response, render_template, redirect, url_for,
-    flash, current_app, Response
+    flash, current_app, Response, jsonify
 )
 from whatsthedamage.view.forms import UploadForm
 from whatsthedamage.controllers.routes_helpers import (
@@ -11,7 +11,7 @@ from whatsthedamage.controllers.routes_helpers import (
 from whatsthedamage.services.session_service import SessionService
 from whatsthedamage.services.configuration_service import ConfigurationService
 from whatsthedamage.services.data_formatting_service import DataFormattingService
-from typing import Optional
+from typing import Optional, Union
 import os
 import shutil
 from whatsthedamage.utils.flask_locale import get_locale, get_languages
@@ -217,3 +217,46 @@ def health() -> Response:
             {"status": "unhealthy", "reason": f"Unexpected error: {e}"},
             503
         )
+
+## TODO inactivated until exclusion service is fully integrated into frontend
+# # Exclusion routes
+# @bp.route('/exclusions')
+# def get_exclusions() -> Union[Response, tuple[Response, int]]:
+#     """Get current exclusion configuration."""
+#     exclusion_service = current_app.extensions.get('exclusion_service')
+#     if not exclusion_service:
+#         return jsonify({'error': 'Exclusion service not available'}), 500
+
+#     return jsonify(exclusion_service.get_exclusion_config())
+
+
+# @bp.route('/exclusions', methods=['POST'])
+# def update_exclusions() -> Union[Response, tuple[Response, int]]:
+#     """Update user exclusions and recalculate statistics."""
+#     exclusion_service = current_app.extensions.get('exclusion_service')
+#     if not exclusion_service:
+#         return jsonify({'error': 'Exclusion service not available'}), 500
+
+#     try:
+#         data = request.get_json()
+#         if not data:
+#             return jsonify({'error': 'No data provided'}), 400
+
+#         algorithm = data.get('algorithm', 'default')
+#         exclusions = data.get('exclusions', [])
+
+#         if not isinstance(exclusions, list):
+#             return jsonify({'error': 'Exclusions must be a list'}), 400
+
+#         # Update user exclusions
+#         exclusion_service.set_user_exclusions(algorithm, exclusions)
+
+#         return jsonify({
+#             'status': 'success',
+#             'message': 'Exclusions updated successfully',
+#             'exclusions': exclusion_service.get_exclusion_config()
+#         })
+
+#     except Exception as e:
+#         return jsonify({'error': str(e)}), 500
+## Exclusion Service (for reference)

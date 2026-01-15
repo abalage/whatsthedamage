@@ -1,7 +1,7 @@
 """Service factory for dependency injection.
 
 This module provides a centralized factory for creating service instances
-with proper dependency injection, ensuring consistency across CLI, Web, and API interfaces.
+with proper dependency injection for CLI usage only.
 """
 from typing import Optional
 from whatsthedamage.services.processing_service import ProcessingService

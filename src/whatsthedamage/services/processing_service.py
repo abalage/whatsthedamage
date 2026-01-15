@@ -12,7 +12,6 @@ import uuid
 from whatsthedamage.config.config import AppArgs, AppContext
 from whatsthedamage.models.csv_processor import CSVProcessor
 from whatsthedamage.services.configuration_service import ConfigurationService, ConfigLoadResult
-from whatsthedamage.services.statistical_analysis_service import StatisticalAnalysisService
 from whatsthedamage.config.dt_models import (
     StatisticalMetadata,
     CellHighlight,
@@ -32,13 +31,13 @@ class ProcessingService:
     def __init__(
         self,
         configuration_service: Optional[ConfigurationService] = None,
-        statistical_analysis_service: Optional[StatisticalAnalysisService] = None
+        statistical_analysis_service: Optional[Any] = None
     ) -> None:
         """Initialize the processing service.
 
         Args:
             configuration_service: Service for loading configuration (optional, created if None)
-            statistical_analysis_service: Service for statistical analysis (optional)
+            statistical_analysis_service: Service for statistical analysis (optional, for Web/API only)
 
         Note:
             Caching is intentionally NOT a dependency here. Caching is a cross-cutting concern
@@ -182,25 +181,6 @@ class ProcessingService:
             ml=ml_enabled
         )
 
-    def _filter_calculated_rows(self, dt_response: DataTablesResponse) -> DataTablesResponse:
-        """Filter out calculated rows from DataTablesResponse for statistical analysis.
-
-        Args:
-            dt_response: Original DataTablesResponse with all rows
-
-        Returns:
-            DataTablesResponse with only non-calculated rows
-        """
-        filtered_rows = [
-            row for row in dt_response.data
-            if not row.is_calculated
-        ]
-        return DataTablesResponse(
-            data=filtered_rows,
-            account=dt_response.account,
-            currency=dt_response.currency
-        )
-
     def _compute_statistical_metadata(self, datatables_responses: Dict[str, Any]) -> StatisticalMetadata:
         """Compute statistical metadata including highlights for the given responses.
 
@@ -210,68 +190,9 @@ class ProcessingService:
         Returns:
             StatisticalMetadata with highlights
         """
-        if not self._statistical_analysis_service:
+        if self._statistical_analysis_service:
+            # Web/API usage - delegate to StatisticalAnalysisService
+            return self._statistical_analysis_service.compute_statistical_metadata(datatables_responses)
+        else:
+            # CLI usage - return empty metadata
             return StatisticalMetadata(highlights=[])
-
-        highlights = []
-        for table_name, dt_response in datatables_responses.items():
-            # Filter out calculated rows before analysis
-            filtered_response = self._filter_calculated_rows(dt_response)
-
-            # Extract summary from filtered data only
-            summary = self._extract_summary_from_response(filtered_response)
-            # Call StatisticalAnalysisService directly
-            table_highlights = self._statistical_analysis_service.get_highlights(summary)
-            for h in table_highlights:
-                plain_month = h.column.split(' (')[0] if ' (' in h.column else h.column
-                highlights.append(CellHighlight(row=h.row, column=plain_month, highlight_type=h.highlight_type))
-        return StatisticalMetadata(highlights=highlights)
-
-    def _extract_summary_from_response(
-        self,
-        dt_response: DataTablesResponse
-    ) -> Dict[str, Dict[str, float]]:
-        """Extract summary data from DataTablesResponse for statistical analysis.
-
-        Aggregates transaction data by month and category, creating a nested dictionary
-        suitable for statistical analysis.
-
-        Args:
-            dt_response: DataTablesResponse containing aggregated transaction data
-
-        Returns:
-            Dict[month_display, Dict[category, amount]] - Nested summary for analysis
-
-        Example:
-            >>> summary = service._extract_summary_from_response(dt_response)
-            >>> summary['January 2024']['Grocery']  # 1234.56
-        """
-        # Aggregate by canonical timestamp first to keep year information unambiguous
-        month_map: Dict[int, Dict[str, Any]] = {}
-
-        for agg_row in dt_response.data:
-            month_field = agg_row.date if getattr(agg_row, 'date', None) is not None else agg_row.month
-
-            ts = month_field.timestamp
-            display = month_field.display
-
-            if ts not in month_map:
-                month_map[ts] = {'display': display, 'categories': {}}
-
-            cats = month_map[ts]['categories']
-            cats[agg_row.category] = cats.get(agg_row.category, 0.0) + float(agg_row.total.raw)
-
-        # Handle duplicate month displays (e.g., 'January' across different years)
-        # by appending timestamp if needed
-        display_counts: Dict[str, int] = {}
-        for v in month_map.values():
-            display_counts[v['display']] = display_counts.get(v['display'], 0) + 1
-
-        summary: Dict[str, Dict[str, float]] = {}
-        # Iterate months in descending timestamp order (most recent first)
-        for ts in sorted(month_map.keys(), reverse=True):
-            display = month_map[ts]['display']
-            key = display if display_counts.get(display, 0) == 1 else f"{display} ({ts})"
-            summary[key] = month_map[ts]['categories']
-
-        return summary

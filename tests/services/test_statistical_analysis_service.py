@@ -296,8 +296,9 @@ class TestStatisticalAnalysisService:
         highlight_dict = {(h.row, h.column): h.highlight_type for h in highlights}
 
         # Should have 2023-03 as outlier for Grocery category
-        assert ("2023-03", "Grocery") in highlight_dict
-        assert highlight_dict[("2023-03", "Grocery")] in ["outlier", "pareto"]
+        # For ROWS direction: row=category, column=month
+        assert ("Grocery", "2023-03") in highlight_dict
+        assert highlight_dict[("Grocery", "2023-03")] in ["outlier", "pareto"]
 
     def test_get_highlights_backward_compatibility(self):
         """Test that get_highlights works without direction parameter (backward compatibility)."""

@@ -1,5 +1,6 @@
 """Tests for StatisticalAnalysisService and related algorithms."""
 
+import pytest
 from whatsthedamage.services.statistical_analysis_service import (
     StatisticalAnalysisService,
     IQROutlierDetection,
@@ -9,6 +10,57 @@ from whatsthedamage.services.statistical_analysis_service import (
 )
 from whatsthedamage.config.dt_models import CellHighlight
 from typing import Dict
+
+@pytest.fixture
+def summary_data_with_outliers():
+    """Fixture providing summary data with outliers for testing."""
+    return {
+        "2023-01": {
+            "Grocery": 500.0,
+            "Rent": 1000.0,  # Should be outlier
+            "Entertainment": 100.0,
+            "Utilities": 200.0,
+            "Transport": 150.0,
+            "Dining": 300.0,
+            "Shopping": 250.0
+        },
+        "2023-02": {
+            "Grocery": 400.0,
+            "Rent": 800.0,  # Should be outlier
+            "Entertainment": 50.0,
+            "Utilities": 200.0,
+            "Transport": 150.0,
+            "Dining": 200.0,
+            "Shopping": 200.0
+        },
+        "2023-03": {
+            "Grocery": 450.0,
+            "Rent": 600.0,
+            "Entertainment": 60.0,
+            "Utilities": 210.0,
+            "Transport": 160.0,
+            "Dining": 220.0,
+            "Shopping": 220.0
+        },
+        "2023-04": {
+            "Grocery": 480.0,
+            "Rent": 650.0,
+            "Entertainment": 70.0,
+            "Utilities": 220.0,
+            "Transport": 170.0,
+            "Dining": 230.0,
+            "Shopping": 230.0
+        },
+        "2023-05": {
+            "Grocery": 470.0,
+            "Rent": 620.0,
+            "Entertainment": 65.0,
+            "Utilities": 215.0,
+            "Transport": 165.0,
+            "Dining": 225.0,
+            "Shopping": 225.0
+        }
+    }
 
 class TestIQROutlierDetection:
     """Tests for IQROutlierDetection algorithm."""
@@ -300,55 +352,34 @@ class TestStatisticalAnalysisService:
         assert ("Grocery", "2023-03") in highlight_dict
         assert highlight_dict[("Grocery", "2023-03")] in ["outlier", "pareto"]
 
-    def test_get_highlights_backward_compatibility(self):
+    def test_get_highlights_backward_compatibility(self, summary_data_with_outliers):
         """Test that get_highlights works without direction parameter (backward compatibility)."""
         service = StatisticalAnalysisService(enabled_algorithms=["iqr"])
 
-        summary = {
-            "2023-01": {
-                "Grocery": 500.0,
-                "Rent": 1000.0,  # Should be outlier
-                "Entertainment": 100.0,
-                "Utilities": 200.0,
-                "Transport": 150.0,
-                "Dining": 300.0
-            }
-        }
-
-        # Call without direction parameter - should default to COLUMNS
-        highlights = service.get_highlights(summary)
+        # Call without direction parameter - should use IQR's default (ROWS)
+        highlights = service.get_highlights(summary_data_with_outliers)
 
         # Should work and return highlights
         assert len(highlights) > 0
         highlight_dict = {(h.row, h.column): h.highlight_type for h in highlights}
-        assert ("Rent", "2023-01") in highlight_dict
+        # With ROWS direction, IQR detects outlier months within categories
+        # The fixture has Grocery values that should produce outliers in some months
+        assert any("Grocery" in h.row for h in highlights)
 
-    def test_get_highlights_with_runtime_algorithm_selection(self):
+    def test_get_highlights_with_runtime_algorithm_selection(self, summary_data_with_outliers):
         """Test get_highlights with runtime algorithm selection."""
         service = StatisticalAnalysisService(enabled_algorithms=["iqr", "pareto"])
 
-        summary = {
-            "2023-01": {
-                "Grocery": 500.0,
-                "Rent": 1000.0,  # Should be outlier
-                "Entertainment": 100.0,
-                "Utilities": 200.0,
-                "Transport": 150.0,
-                "Dining": 300.0,
-                "Shopping": 250.0
-            }
-        }
-
-        # Test with only IQR algorithm
-        highlights_iqr = service.get_highlights(summary, AnalysisDirection.COLUMNS, algorithms=["iqr"])
+        # Test with only IQR algorithm (explicitly use COLUMNS to override IQR's default)
+        highlights_iqr = service.get_highlights(summary_data_with_outliers, AnalysisDirection.COLUMNS, algorithms=["iqr"])
         assert len(highlights_iqr) > 0
 
-        # Test with only Pareto algorithm
-        highlights_pareto = service.get_highlights(summary, AnalysisDirection.COLUMNS, algorithms=["pareto"])
+        # Test with only Pareto algorithm (explicitly use COLUMNS to match Pareto's default)
+        highlights_pareto = service.get_highlights(summary_data_with_outliers, AnalysisDirection.COLUMNS, algorithms=["pareto"])
         assert len(highlights_pareto) > 0
 
         # Test with both algorithms
-        highlights_both = service.get_highlights(summary, AnalysisDirection.COLUMNS, algorithms=["iqr", "pareto"])
+        highlights_both = service.get_highlights(summary_data_with_outliers, AnalysisDirection.COLUMNS, algorithms=["iqr", "pareto"])
         assert len(highlights_both) > 0
 
     def test_analyze_with_runtime_algorithm_selection(self):

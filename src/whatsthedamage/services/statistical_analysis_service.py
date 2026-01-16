@@ -11,8 +11,24 @@ from scipy import stats
 from whatsthedamage.config.dt_models import CellHighlight, StatisticalMetadata, DataTablesResponse
 from whatsthedamage.services.exclusion_service import ExclusionService
 
+class AnalysisDirection(Enum):
+    """Direction for statistical analysis.
+
+    COLUMNS: Analyze inner keys within each outer key (e.g., categories within months)
+    ROWS: Analyze outer keys within each inner key (e.g., months within categories)
+    """
+    COLUMNS = "columns"
+    ROWS = "rows"
+
 class StatisticalAlgorithm(ABC):
     """Abstract base class for statistical algorithms."""
+
+    def __init__(self, direction: AnalysisDirection | None = None):
+        """Initialize algorithm with optional preferred direction.
+
+        :param direction: Preferred analysis direction (None for no preference)
+        """
+        self.direction = direction
 
     @abstractmethod
     def analyze(self, data: Dict[str, float]) -> Dict[str, str]:
@@ -76,16 +92,6 @@ class ParetoAnalysis(StatisticalAlgorithm):
 
         return highlights
 
-
-class AnalysisDirection(Enum):
-    """Direction for statistical analysis.
-
-    COLUMNS: Analyze inner keys within each outer key (e.g., categories within months)
-    ROWS: Analyze outer keys within each inner key (e.g., months within categories)
-    """
-    COLUMNS = "columns"
-    ROWS = "rows"
-
 class StatisticalAnalysisService:
     """Service for applying statistical algorithms to data.
 
@@ -101,8 +107,8 @@ class StatisticalAnalysisService:
         :param exclusion_service: Service for managing category exclusions (optional)
         """
         self.algorithms: Dict[str, StatisticalAlgorithm] = {
-            'iqr': IQROutlierDetection(),
-            'pareto': ParetoAnalysis(),
+            'iqr': IQROutlierDetection(direction=AnalysisDirection.ROWS),
+            'pareto': ParetoAnalysis(direction=AnalysisDirection.COLUMNS),
         }
         self.enabled_algorithms = enabled_algorithms if enabled_algorithms is not None else list(self.algorithms.keys())
         self._exclusion_service = exclusion_service
@@ -166,26 +172,33 @@ class StatisticalAnalysisService:
         :return: List of CellHighlight
         """
         highlights = []
-        transformed_data = self._transform_data_for_analysis(summary, direction)
+        algos_to_use = algorithms if algorithms is not None else self.enabled_algorithms
 
-        for outer_key, inner_data in transformed_data:
-            data_highlights = self.analyze(inner_data, algorithms)
+        for algo_name in algos_to_use:
+            if algo_name in self.algorithms:
+                algo = self.algorithms[algo_name]
+                # Use algorithm's preferred direction if set, otherwise use the parameter
+                algo_direction = algo.direction if algo.direction is not None else direction
+                algo_transformed_data = self._transform_data_for_analysis(summary, algo_direction)
 
-            for inner_key, highlight_type in data_highlights.items():
-                if direction == AnalysisDirection.COLUMNS:
-                    # COLUMNS: row=inner_key, column=outer_key (e.g., row=category, column=month)
-                    highlights.append(CellHighlight(
-                        row=inner_key,
-                        column=outer_key,
-                        highlight_type=highlight_type
-                    ))
-                else:  # ROWS
-                    # ROWS: row=outer_key, column=inner_key (e.g., row=month, column=category)
-                    highlights.append(CellHighlight(
-                        row=outer_key,
-                        column=inner_key,
-                        highlight_type=highlight_type
-                    ))
+                for outer_key, inner_data in algo_transformed_data:
+                    algo_highlights = algo.analyze(inner_data)
+
+                    for inner_key, highlight_type in algo_highlights.items():
+                        if algo_direction == AnalysisDirection.COLUMNS:
+                            # COLUMNS: row=inner_key, column=outer_key (e.g., row=category, column=month)
+                            highlights.append(CellHighlight(
+                                row=inner_key,
+                                column=outer_key,
+                                highlight_type=highlight_type
+                            ))
+                        else:  # ROWS
+                            # ROWS: row=outer_key, column=inner_key (e.g., row=month, column=category)
+                            highlights.append(CellHighlight(
+                                row=outer_key,
+                                column=inner_key,
+                                highlight_type=highlight_type
+                            ))
         return highlights
 
     def _filter_calculated_rows(self, dt_response: DataTablesResponse) -> DataTablesResponse:

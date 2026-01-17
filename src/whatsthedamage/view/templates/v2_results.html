@@ -22,6 +22,9 @@
     .highlight-pareto {
         background-color: #e6ffe6 !important;
     }
+    .highlight-excluded {
+        background-color: #f0f0f0 !important;
+    }
     .clickable {
         cursor: pointer;
         text-decoration: none;
@@ -66,6 +69,7 @@
                     <div class="card card-body">
                         <p><span class="badge bg-danger">Outlier</span> {{ _('Cells highlighted in red indicate outliers detected by IQR method.') }}</p>
                         <p><span class="badge bg-success">Pareto</span> {{ _('Cells highlighted in green indicate top contributors per Pareto principle.') }}</p>
+                        <p><span class="badge" style="background-color: #f0f0f0; color: black;">Excluded</span> {{ _('Cells highlighted in light grey are excluded from statistical analysis (calculated rows or excluded categories).') }}</p>
                     </div>
                 </div>
             </div>

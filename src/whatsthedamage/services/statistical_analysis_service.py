@@ -107,8 +107,8 @@ class StatisticalAnalysisService:
         :param exclusion_service: Service for managing category exclusions (optional)
         """
         self.algorithms: Dict[str, StatisticalAlgorithm] = {
-            'iqr': IQROutlierDetection(direction=AnalysisDirection.ROWS),
-            'pareto': ParetoAnalysis(direction=AnalysisDirection.COLUMNS),
+            'iqr': IQROutlierDetection(direction=AnalysisDirection.COLUMNS),
+            'pareto': ParetoAnalysis(direction=AnalysisDirection.ROWS),
         }
         self.enabled_algorithms = enabled_algorithms if enabled_algorithms is not None else list(self.algorithms.keys())
         self._exclusion_service = exclusion_service
@@ -294,6 +294,52 @@ class StatisticalAnalysisService:
 
         return summary
 
+    def _get_excluded_cell_highlights(self, dt_response: DataTablesResponse) -> List[CellHighlight]:
+        """Get highlights for cells that should be excluded from statistical analysis.
+
+        Identifies cells that are either calculated rows or belong to excluded categories.
+
+        Args:
+            dt_response: Original DataTablesResponse with all rows
+
+        Returns:
+            List of CellHighlight objects with type 'excluded'
+        """
+        excluded_highlights = []
+
+        # Get excluded categories if exclusion service is available
+        excluded_categories = set()
+        if self._exclusion_service:
+            excluded_categories = set(self._exclusion_service.get_exclusions())
+
+        # Extract summary from original data (including calculated rows and excluded categories)
+        full_summary = self._extract_summary_from_response(dt_response)
+
+        for month_display, categories in full_summary.items():
+            for category, amount in categories.items():
+                # Check if this cell should be excluded
+                is_excluded = False
+
+                # Find the corresponding row in the original data
+                for agg_row in dt_response.data:
+                    month_field = agg_row.date if getattr(agg_row, 'date', None) is not None else agg_row.month
+                    if (month_field.display == month_display or f"{month_field.display} ({month_field.timestamp})" == month_display) and agg_row.category == category:
+                        # Cell is excluded if it's a calculated row or belongs to excluded category
+                        if agg_row.is_calculated or category in excluded_categories:
+                            is_excluded = True
+                        break
+
+                if is_excluded:
+                    # Use plain month display (without timestamp) for consistency
+                    plain_month = month_display.split(' (')[0] if ' (' in month_display else month_display
+                    excluded_highlights.append(CellHighlight(
+                        row=category,
+                        column=plain_month,
+                        highlight_type='excluded'
+                    ))
+
+        return excluded_highlights
+
     def compute_statistical_metadata(self, datatables_responses: Dict[str, Any]) -> StatisticalMetadata:
         """Compute statistical metadata including highlights for the given responses.
 
@@ -319,4 +365,8 @@ class StatisticalAnalysisService:
             for h in table_highlights:
                 plain_month = h.column.split(' (')[0] if ' (' in h.column else h.column
                 highlights.append(CellHighlight(row=h.row, column=plain_month, highlight_type=h.highlight_type))
+
+            # Add highlights for excluded cells (calculated rows and excluded categories)
+            excluded_highlights = self._get_excluded_cell_highlights(dt_response)
+            highlights.extend(excluded_highlights)
         return StatisticalMetadata(highlights=highlights)

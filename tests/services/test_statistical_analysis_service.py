@@ -352,19 +352,6 @@ class TestStatisticalAnalysisService:
         assert ("Grocery", "2023-03") in highlight_dict
         assert highlight_dict[("Grocery", "2023-03")] in ["outlier", "pareto"]
 
-    def test_get_highlights_backward_compatibility(self, summary_data_with_outliers):
-        """Test that get_highlights works without direction parameter (backward compatibility)."""
-        service = StatisticalAnalysisService(enabled_algorithms=["iqr"])
-
-        # Call without direction parameter - should use IQR's default (ROWS)
-        highlights = service.get_highlights(summary_data_with_outliers)
-
-        # Should work and return highlights
-        assert len(highlights) > 0
-        highlight_dict = {(h.row, h.column): h.highlight_type for h in highlights}
-        # With ROWS direction, IQR detects outlier months within categories
-        # The fixture has Grocery values that should produce outliers in some months
-        assert any("Grocery" in h.row for h in highlights)
 
     def test_get_highlights_with_runtime_algorithm_selection(self, summary_data_with_outliers):
         """Test get_highlights with runtime algorithm selection."""

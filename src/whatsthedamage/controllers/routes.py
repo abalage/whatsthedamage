@@ -1,7 +1,7 @@
 from datetime import datetime
 from flask import (
     Blueprint, request, make_response, render_template, redirect, url_for,
-    flash, current_app, Response
+    flash, current_app, Response, jsonify
 )
 from whatsthedamage.view.forms import UploadForm
 from whatsthedamage.controllers.routes_helpers import (
@@ -11,7 +11,10 @@ from whatsthedamage.controllers.routes_helpers import (
 from whatsthedamage.services.session_service import SessionService
 from whatsthedamage.services.configuration_service import ConfigurationService
 from whatsthedamage.services.data_formatting_service import DataFormattingService
-from typing import Optional
+from whatsthedamage.services.statistical_analysis_service import StatisticalAnalysisService
+from whatsthedamage.services.cache_service import CacheService
+from whatsthedamage.config.dt_models import CachedProcessingResult
+from typing import Optional, Union
 import os
 import shutil
 from whatsthedamage.utils.flask_locale import get_locale, get_languages
@@ -57,6 +60,16 @@ def clear_upload_folder() -> None:
 def get_lang_template(template_name: str) -> str:
     lang: str = get_locale()
     return f"{lang}/{template_name}"
+
+def _get_statistical_analysis_service() -> StatisticalAnalysisService:
+    """Get statistical analysis service from app extensions (dependency injection)."""
+    from typing import cast
+    return cast(StatisticalAnalysisService, current_app.extensions['statistical_analysis_service'])
+
+def _get_cache_service() -> CacheService:
+    """Get cache service from app extensions (dependency injection)."""
+    from typing import cast
+    return cast(CacheService, current_app.extensions['cache_service'])
 
 
 @bp.route('/')
@@ -200,6 +213,63 @@ def details_category_month(result_id: str, account: str, category: str, month_ts
         index_route=INDEX_ROUTE
     )
 
+
+@bp.route('/recalculate-statistics', methods=['POST'])
+def recalculate_statistics() -> Union[Response, tuple[Response, int]]:
+    """Recalculate statistical highlights with custom algorithm and direction settings."""
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'No data provided'}), 400
+
+        result_id = data.get('result_id')
+        algorithms = data.get('algorithms', [])
+        direction = data.get('direction', 'columns')
+
+        if not result_id:
+            return jsonify({'error': 'result_id is required'}), 400
+
+        if not isinstance(algorithms, list):
+            return jsonify({'error': 'algorithms must be a list'}), 400
+
+        if direction not in ['columns', 'rows']:
+            return jsonify({'error': 'direction must be either "columns" or "rows"'}), 400
+
+        # Get cached data
+        cache_service = _get_cache_service()
+        cached = cache_service.get(result_id)
+        if not cached:
+            return jsonify({'error': 'Result not found or expired'}), 404
+
+        # Recalculate highlights
+        stat_service = _get_statistical_analysis_service()
+        new_metadata = stat_service.recalculate_highlights(
+            cached.responses,
+            algorithms,
+            direction
+        )
+
+        # Update cache with new metadata
+        updated_cached = CachedProcessingResult(
+            responses=cached.responses,
+            metadata=new_metadata
+        )
+        cache_service.set(result_id, updated_cached)
+
+        # Convert highlights to dictionary format for easier frontend processing
+        highlights_dict = {}
+        for highlight in new_metadata.highlights:
+            key = f"{highlight.column}_{highlight.row}"
+            highlights_dict[key] = highlight.highlight_type
+
+        return jsonify({
+            'status': 'success',
+            'highlights': highlights_dict,
+            'message': 'Statistics recalculated successfully'
+        })
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 @bp.route('/health')
 def health() -> Response:

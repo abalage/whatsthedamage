@@ -160,7 +160,8 @@ class StatisticalAnalysisService:
         self,
         summary: Dict[str, Dict[str, float]],
         direction: AnalysisDirection = AnalysisDirection.COLUMNS,
-        algorithms: List[str] | None = None
+        algorithms: List[str] | None = None,
+        use_default_directions: bool = False
     ) -> List[CellHighlight]:
         """Get highlights for the summary data with flexible analysis direction.
 
@@ -169,6 +170,7 @@ class StatisticalAnalysisService:
                       For ROWS: Dict[month, Dict[category, amount]] (will be transposed)
         :param direction: Analysis direction (COLUMNS or ROWS), default COLUMNS
         :param algorithms: Optional list of algorithm names to use (overrides enabled_algorithms)
+        :param use_default_directions: If True, use each algorithm's default direction instead of the provided direction
         :return: List of CellHighlight
         """
         highlights = []
@@ -177,8 +179,8 @@ class StatisticalAnalysisService:
         for algo_name in algos_to_use:
             if algo_name in self.algorithms:
                 algo = self.algorithms[algo_name]
-                # Use algorithm's preferred direction if set, otherwise use the parameter
-                algo_direction = algo.direction if algo.direction is not None else direction
+                # Use algorithm's preferred direction if set and use_default_directions is True, otherwise use the parameter
+                algo_direction = algo.direction if (algo.direction is not None and use_default_directions) else direction
                 algo_transformed_data = self._transform_data_for_analysis(summary, algo_direction)
 
                 for outer_key, inner_data in algo_transformed_data:
@@ -360,8 +362,8 @@ class StatisticalAnalysisService:
 
             # Extract summary from filtered data only
             summary = self._extract_summary_from_response(filtered_response)
-            # Call get_highlights directly
-            table_highlights = self.get_highlights(summary)
+            # Call get_highlights with default parameters (all enabled algorithms, default directions)
+            table_highlights = self.get_highlights(summary, algorithms=None, use_default_directions=True)
             for h in table_highlights:
                 plain_month = h.column.split(' (')[0] if ' (' in h.column else h.column
                 highlights.append(CellHighlight(row=h.row, column=plain_month, highlight_type=h.highlight_type))
@@ -369,4 +371,46 @@ class StatisticalAnalysisService:
             # Add highlights for excluded cells (calculated rows and excluded categories)
             excluded_highlights = self._get_excluded_cell_highlights(dt_response)
             highlights.extend(excluded_highlights)
+        return StatisticalMetadata(highlights=highlights)
+
+    def recalculate_highlights(
+        self,
+        datatables_responses: Dict[str, Any],
+        algorithms: List[str],
+        direction: str
+    ) -> StatisticalMetadata:
+        """Recalculate statistical highlights with custom algorithm and direction settings.
+
+        Args:
+            datatables_responses: Dictionary of table responses
+            algorithms: List of algorithm names to use (e.g., ['iqr', 'pareto'])
+            direction: Analysis direction ('columns' or 'rows')
+
+        Returns:
+            StatisticalMetadata with recalculated highlights
+        """
+        highlights = []
+        analysis_direction = AnalysisDirection(direction)
+
+        for table_name, dt_response in datatables_responses.items():
+            # Filter out calculated rows before analysis
+            filtered_response = self._filter_calculated_rows(dt_response)
+
+            # Apply category exclusions if exclusion service is available
+            if self._exclusion_service:
+                filtered_response = self._filter_excluded_categories(filtered_response)
+
+            # Extract summary from filtered data only
+            summary = self._extract_summary_from_response(filtered_response)
+
+            # Get highlights with custom parameters
+            table_highlights = self.get_highlights(summary, algorithms=algorithms, direction=analysis_direction)
+            for h in table_highlights:
+                plain_month = h.column.split(' (')[0] if ' (' in h.column else h.column
+                highlights.append(CellHighlight(row=h.row, column=plain_month, highlight_type=h.highlight_type))
+
+            # Add highlights for excluded cells (calculated rows and excluded categories)
+            excluded_highlights = self._get_excluded_cell_highlights(dt_response)
+            highlights.extend(excluded_highlights)
+
         return StatisticalMetadata(highlights=highlights)

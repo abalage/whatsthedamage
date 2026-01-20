@@ -54,4 +54,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD /usr/bin/curl -f http://localhost:5000/health || exit 1
 
 # Entrypoint to start Flask server in production mode using Gunicorn
-CMD ["gunicorn", "--config", "gunicorn_conf.py", "whatsthedamage.app:app"]
+CMD ["gunicorn", "--config", "config/gunicorn_conf.py", "whatsthedamage.app:app"]

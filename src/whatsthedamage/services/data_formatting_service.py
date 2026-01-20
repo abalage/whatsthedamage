@@ -14,13 +14,13 @@ Architecture Patterns:
 import pandas as pd
 import json
 from typing import Dict, Optional, Any
-from pydantic import BaseModel
+from dataclasses import dataclass
 from whatsthedamage.config.dt_models import DataTablesResponse, StatisticalMetadata
 from gettext import gettext as _
 from whatsthedamage.services.statistical_analysis_service import StatisticalAnalysisService
 
-
-class SummaryData(BaseModel):
+@dataclass(frozen=True)
+class SummaryData:
     """Extracted summary data from a DataTablesResponse for a single account.
 
     This model encapsulates the summary data extracted from transaction data,
@@ -38,9 +38,6 @@ class SummaryData(BaseModel):
     summary: Dict[str, Dict[str, float]]
     currency: str
     account_id: str
-
-    class Config:
-        frozen = True  # Immutable for safe caching
 
 
 class DataFormattingService:

@@ -3,28 +3,33 @@ The configuration is coming from two directions:
 1. arguments passed to the main method (AppArgs object)
 2. read from a configuration file (AppConfig object).
 '''
-from typing import TypedDict, List, Dict
+from typing import List, Dict, Optional
+from dataclasses import dataclass
 import yaml
 import sys
 from pydantic import BaseModel, ValidationError, Field
 from gettext import gettext as _
 
+@dataclass
+class AppArgs:
+    """Application arguments dataclass.
 
-class AppArgs(TypedDict):
+    Replaces the original TypedDict with a more flexible dataclass
+    that supports methods and better IDE integration.
+    """
     category: str
     config: str
-    end_date: str | None
     filename: str
-    filter: str | None
-    nowrap: bool
     output_format: str
-    output: str | None
-    start_date: str | None
+    nowrap: bool
     verbose: bool
     training_data: bool
-    lang: str | None
     ml: bool
-
+    end_date: Optional[str] = None
+    filter: Optional[str] = None
+    output: Optional[str] = None
+    start_date: Optional[str] = None
+    lang: Optional[str] = None
 
 class CsvConfig(BaseModel):
     dialect: str = Field(default="excel-tab")

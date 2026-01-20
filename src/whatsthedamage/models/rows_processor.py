@@ -25,15 +25,15 @@ class RowsProcessor:
         self.context = context
         self._date_attribute_format: str = context.config.csv.date_attribute_format
         self._cfg_pattern_sets: EnricherPatternSets = context.config.enricher_pattern_sets
-        self._start_date: Optional[str] = context.args.get("start_date", None)
+        self._start_date: Optional[str] = context.args.start_date
         self._start_date_epoch: float = 0
-        self._end_date: Optional[str] = context.args.get("end_date", None)
+        self._end_date: Optional[str] = context.args.end_date
         self._end_date_epoch: float = 0
-        self._verbose: bool = context.args.get("verbose", False)
-        self._category: str = context.args.get("category", "")
-        self._filter: Optional[str] = context.args.get("filter", None)
-        self._training_data: bool = context.args.get("training_data", False)
-        self._ml: bool = context.args.get("ml", False)
+        self._verbose: bool = context.args.verbose
+        self._category: str = context.args.category
+        self._filter: Optional[str] = context.args.filter
+        self._training_data: bool = context.args.training_data
+        self._ml: bool = context.args.ml
         self._dt_json_data: DataTablesResponse = DataTablesResponse(data=[])
 
         # Convert start and end dates to epoch if provided

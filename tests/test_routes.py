@@ -56,10 +56,16 @@ def test_process_route(client, monkeypatch, csv_rows, mapping, config_yml_defaul
     csrf_token = get_csrf_token(client)
     sample_csv_path = create_sample_csv_from_fixture(csv_rows, mapping)
 
+    # Create a minimal config file for testing
+    import tempfile
+    with tempfile.NamedTemporaryFile(mode='w', suffix='.yml', delete=False) as config_file:
+        config_file.write("csv:\n  dialect: excel\n  delimiter: ','\n  date_attribute_format: '%Y-%m-%d'\n  attribute_mapping:\n    date: date\n    amount: amount\n    currency: currency\n    partner: partner\n")
+        config_file_path = config_file.name
+
     data = {
         'csrf_token': csrf_token,
         'filename': (BytesIO(read_file(sample_csv_path)), 'sample.csv'),
-        'config': (BytesIO(read_file(config_yml_default_path)), 'config.yml.default'),
+        'config': (BytesIO(read_file(config_file_path)), 'config.yml'),
         'start_date': '2023-01-01',
         'end_date': '2023-12-31',
     }
@@ -116,9 +122,15 @@ def test_process_route_invalid_data(client, monkeypatch, config_yml_default_path
 
     csrf_token = get_csrf_token(client)
 
+    # Create a minimal config file for testing
+    import tempfile
+    with tempfile.NamedTemporaryFile(mode='w', suffix='.yml', delete=False) as config_file:
+        config_file.write("csv:\n  dialect: excel\n  delimiter: ','\n  date_attribute_format: '%Y-%m-%d'\n  attribute_mapping:\n    date: date\n    amount: amount\n    currency: currency\n    partner: partner\n")
+        config_file_path = config_file.name
+
     data = {
         'csrf_token': csrf_token,
-        'config': (BytesIO(read_file(config_yml_default_path)), 'config.yml.default')
+        'config': (BytesIO(read_file(config_file_path)), 'config.yml')
         # Missing other required fields
     }
     response = client.post('/process/v2', data=data, content_type='multipart/form-data')
@@ -135,9 +147,15 @@ def test_process_route_missing_file(client, monkeypatch, config_yml_default_path
 
     csrf_token = get_csrf_token(client)
 
+    # Create a minimal config file for testing
+    import tempfile
+    with tempfile.NamedTemporaryFile(mode='w', suffix='.yml', delete=False) as config_file:
+        config_file.write("csv:\n  dialect: excel\n  delimiter: ','\n  date_attribute_format: '%Y-%m-%d'\n  attribute_mapping:\n    date: date\n    amount: amount\n    currency: currency\n    partner: partner\n")
+        config_file_path = config_file.name
+
     data = {
         'csrf_token': csrf_token,
-        'config': (BytesIO(read_file(config_yml_default_path)), 'config.yml.default'),
+        'config': (BytesIO(read_file(config_file_path)), 'config.yml'),
         'start_date': '2023-01-01',
         'end_date': '2023-12-31',
     }
@@ -180,10 +198,16 @@ def test_process_route_invalid_end_date(client, monkeypatch, csv_rows, mapping, 
     csrf_token = get_csrf_token(client)
     sample_csv_path = create_sample_csv_from_fixture(csv_rows, mapping)
 
+    # Create a minimal config file for testing
+    import tempfile
+    with tempfile.NamedTemporaryFile(mode='w', suffix='.yml', delete=False) as config_file:
+        config_file.write("csv:\n  dialect: excel\n  delimiter: ','\n  date_attribute_format: '%Y-%m-%d'\n  attribute_mapping:\n    date: date\n    amount: amount\n    currency: currency\n    partner: partner\n")
+        config_file_path = config_file.name
+
     data = {
         'csrf_token': csrf_token,
         'filename': (BytesIO(read_file(sample_csv_path)), 'sample.csv'),
-        'config': (BytesIO(read_file(config_yml_default_path)), 'config.yml.default'),
+        'config': (BytesIO(read_file(config_file_path)), 'config.yml'),
         'start_date': '2023-01-01',
         'end_date': 'invalid-date',
     }
@@ -205,10 +229,16 @@ def test_process_route_invalid_date(client, monkeypatch, csv_rows, mapping, conf
     csrf_token = get_csrf_token(client)
     sample_csv_path = create_sample_csv_from_fixture(csv_rows, mapping)
 
+    # Create a minimal config file for testing
+    import tempfile
+    with tempfile.NamedTemporaryFile(mode='w', suffix='.yml', delete=False) as config_file:
+        config_file.write("csv:\n  dialect: excel\n  delimiter: ','\n  date_attribute_format: '%Y-%m-%d'\n  attribute_mapping:\n    date: date\n    amount: amount\n    currency: currency\n    partner: partner\n")
+        config_file_path = config_file.name
+
     data = {
         'csrf_token': csrf_token,
         'filename': (BytesIO(read_file(sample_csv_path)), 'sample.csv'),
-        'config': (BytesIO(read_file(config_yml_default_path)), 'config.yml.default'),
+        'config': (BytesIO(read_file(config_file_path)), 'config.yml'),
         'start_date': 'invalid-date',
         'end_date': '2023-12-31',
     }

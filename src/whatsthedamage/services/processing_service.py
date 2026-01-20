@@ -8,9 +8,12 @@ Controllers are responsible for saving uploaded files to disk and passing file p
 """
 from typing import Dict, Any, Optional
 import time
+import uuid
 from whatsthedamage.config.config import AppArgs, AppContext
 from whatsthedamage.models.csv_processor import CSVProcessor
 from whatsthedamage.services.configuration_service import ConfigurationService, ConfigLoadResult
+from whatsthedamage.services.statistical_analysis_service import StatisticalAnalysisService
+from whatsthedamage.config.dt_models import StatisticalMetadata
 
 
 class ProcessingService:
@@ -22,13 +25,23 @@ class ProcessingService:
     Controllers must save uploaded files to disk and pass file paths to this service.
     """
 
-    def __init__(self, configuration_service: Optional[ConfigurationService] = None) -> None:
+    def __init__(
+        self,
+        configuration_service: Optional[ConfigurationService] = None,
+        statistical_analysis_service: Optional[StatisticalAnalysisService] = None
+    ) -> None:
         """Initialize the processing service.
 
         Args:
             configuration_service: Service for loading configuration (optional, created if None)
+            statistical_analysis_service: Service for statistical analysis (optional, for Web/API only)
+
+        Note:
+            Caching is intentionally NOT a dependency here. Caching is a cross-cutting concern
+            that should be handled at the controller/infrastructure layer, not in business logic.
         """
         self._config_service = configuration_service or ConfigurationService()
+        self._statistical_analysis_service = statistical_analysis_service
 
     def process_with_details(
         self,
@@ -88,11 +101,23 @@ class ProcessingService:
         processor = CSVProcessor(context)
         datatables_responses = processor.process_v2()
 
+        # Compute statistical metadata
+        statistical_metadata = self._compute_statistical_metadata(datatables_responses)
+
+        # Attach statistical metadata to each DataTablesResponse for easy access by consumers
+        # Check if datatables_responses is a dict (not a mock in tests)
+        if isinstance(datatables_responses, dict):
+            for account_id, dt_response in datatables_responses.items():
+                dt_response.statistical_metadata = statistical_metadata
+
         # Build response with metadata
         processing_time = time.time() - start_time
 
         # Get row count from cached rows to avoid re-reading CSV
         row_count = len(processor._rows)
+
+        # Generate result_id for caching purposes (controller will handle actual caching)
+        result_id = str(uuid.uuid4())
 
         return {
             "data": datatables_responses,
@@ -105,7 +130,9 @@ class ProcessingService:
                     "end_date": end_date,
                     "category": category_filter
                 }
-            }
+            },
+            "result_id": result_id,
+            "statistical_metadata": statistical_metadata
         }
 
     def _build_args(
@@ -150,3 +177,18 @@ class ProcessingService:
             lang=language,
             ml=ml_enabled
         )
+
+    def _compute_statistical_metadata(self, datatables_responses: Dict[str, Any]) -> StatisticalMetadata:
+        """Compute statistical metadata including highlights for the given responses.
+
+        Args:
+            datatables_responses: Dictionary of table responses
+
+        Returns:
+            StatisticalMetadata with highlights
+        """
+        if self._statistical_analysis_service:
+            # Web/API usage - delegate to StatisticalAnalysisService
+            return self._statistical_analysis_service.compute_statistical_metadata(datatables_responses)
+        # CLI usage - return empty metadata
+        return StatisticalMetadata(highlights=[])

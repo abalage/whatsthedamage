@@ -15,8 +15,9 @@ import pandas as pd
 import json
 from typing import Dict, Optional, Any
 from pydantic import BaseModel
-from whatsthedamage.config.dt_models import DataTablesResponse
+from whatsthedamage.config.dt_models import DataTablesResponse, StatisticalMetadata
 from gettext import gettext as _
+from whatsthedamage.services.statistical_analysis_service import StatisticalAnalysisService
 
 
 class SummaryData(BaseModel):
@@ -25,8 +26,9 @@ class SummaryData(BaseModel):
     This model encapsulates the summary data extracted from transaction data,
     providing a simplified format for formatting and display.
 
-    :param summary: Dict mapping month names to category amounts.
-                    Format: {month_name: {category: amount}}
+    :param summary: Dict mapping column headers to category amounts.
+                    Column headers are typically time periods (e.g., 'January', 'January (1704067200)').
+                    Format: {column_header: {category: amount}}
     :type summary: Dict[str, Dict[str, float]]
     :param currency: Currency code (e.g., 'EUR', 'USD')
     :type currency: str
@@ -53,10 +55,20 @@ class DataFormattingService:
     Account aware.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, statistical_analysis_service: Optional[StatisticalAnalysisService] = None) -> None:
         """Initialize the data formatting service."""
-        self._summary_cache: Dict[str, SummaryData] = {}  # Cache by account_id
+        self.statistical_analysis_service = statistical_analysis_service
         self._categories_header = _("Categories")
+
+    @staticmethod
+    def make_highlight_key(column_key: str, category: str) -> str:
+        """Create standardized highlight key from column header and category.
+
+        :param column_key: Column header from summary data in 'YYYY Month' format (e.g., '2025 January')
+        :param category: Category name
+        :return: Standardized key 'column_category' for highlight lookup
+        """
+        return f"{column_key}_{category}"
 
     def format_as_html_table(
         self,
@@ -65,7 +77,7 @@ class DataFormattingService:
     ) -> str:
         """Format data as HTML table with optional sorting.
 
-        :param data: Data dictionary where outer keys are columns (months),
+        :param data: Data dictionary where outer keys are column headers (time periods),
             inner keys are rows (categories), values are amounts
         :param currency: Currency code (e.g., "EUR", "USD")
         :param nowrap: If True, disables text wrapping in pandas output
@@ -108,7 +120,7 @@ class DataFormattingService:
     ) -> str:
         """Format data as CSV string.
 
-        :param data: Data dictionary where outer keys are columns (months),
+        :param data: Data dictionary where outer keys are column headers (time periods),
             inner keys are rows (categories), values are amounts
         :param currency: Currency code (e.g., "EUR", "USD")
         :param delimiter: CSV delimiter character
@@ -135,7 +147,7 @@ class DataFormattingService:
     ) -> str:
         """Format data as plain string for console output.
 
-        :param data: Data dictionary where outer keys are columns (months),
+        :param data: Data dictionary where outer keys are column headers (time periods),
             inner keys are rows (categories), values are amounts
         :param currency: Currency code (e.g., "EUR", "USD")
         :param nowrap: If True, disables text wrapping in pandas output
@@ -218,7 +230,7 @@ class DataFormattingService:
         This is a convenience method that consolidates the common formatting logic
         used across CLI and CSV processor, eliminating duplication.
 
-        :param data: Data dictionary where outer keys are columns (months),
+        :param data: Data dictionary where outer keys are column headers (time periods),
             inner keys are rows (categories), values are amounts
         :param currency: Currency code (e.g., "EUR", "USD")
         :param output_format: Output format ('html' or None for default)
@@ -443,6 +455,18 @@ class DataFormattingService:
 
         return result
 
+    def _convert_metadata_to_highlights_dict(self, metadata: 'StatisticalMetadata') -> Dict[str, str]:
+        """Convert StatisticalMetadata to the highlights dict format expected by templates.
+
+        :param metadata: StatisticalMetadata containing CellHighlight objects
+        :return: Dictionary of highlights keyed by 'column_category'
+        """
+        highlights_dict = {}
+        for highlight in metadata.highlights:
+            key = self.make_highlight_key(highlight.column, highlight.row)
+            highlights_dict[key] = highlight.highlight_type
+        return highlights_dict
+
     def prepare_accounts_for_template(
         self,
         dt_responses: Dict[str, DataTablesResponse]
@@ -467,11 +491,18 @@ class DataFormattingService:
                 for i in range(0, len(account_id), 8)
             )
 
+            # Use cached statistical metadata (attached by ProcessingService)
+            statistical_metadata = dt_response.statistical_metadata
+            if statistical_metadata is None:
+                raise ValueError("Statistical metadata not found. This should be attached by ProcessingService.")
+            highlights = self._convert_metadata_to_highlights_dict(statistical_metadata)
+
             accounts.append({
                 'id': account_id,
                 'formatted_id': formatted_id,
                 'currency': dt_response.currency,
                 'dt_response': dt_response,
+                'highlights': highlights,
             })
 
         return {
@@ -521,7 +552,8 @@ class DataFormattingService:
     def _extract_summary_from_account(
         self,
         dt_response: DataTablesResponse,
-        account_id: str
+        account_id: str,
+        include_calculated: bool = False
     ) -> SummaryData:
         """Extract summary data from a single account's DataTablesResponse.
 
@@ -530,6 +562,7 @@ class DataFormattingService:
 
         :param dt_response: DataTablesResponse for a single account
         :param account_id: Account identifier for caching
+        :param include_calculated: Whether to include calculated rows in summary (for statistical analysis)
         :return: SummaryData with extracted summary, currency, and account_id
 
         Example::
@@ -539,40 +572,40 @@ class DataFormattingService:
             >>> assert summary_data.account_id == '12345'
             >>> assert summary_data.currency == 'EUR'
         """
-        # Check cache first
-        if account_id in self._summary_cache:
-            return self._summary_cache[account_id]
-
         # Aggregate by canonical timestamp first. This keeps year information
         # unambiguous and simplifies merging category totals.
-        # month_map: timestamp -> { 'display': str, 'categories': {category: amount} }
-        month_map: Dict[int, Dict[str, Any]] = {}
+        # period_map: timestamp -> { 'display': str (column header), 'categories': {category: amount} }
+        period_map: Dict[int, Dict[str, Any]] = {}
 
         for agg_row in dt_response.data:
-            month_field = agg_row.date if getattr(agg_row, 'date', None) is not None else agg_row.month
+            # Skip calculated rows if requested (for statistical analysis)
+            if not include_calculated and getattr(agg_row, 'is_calculated', False):
+                continue
 
-            ts = month_field.timestamp
-            display = month_field.display
+            period_field = agg_row.date if getattr(agg_row, 'date', None) is not None else agg_row.month
 
-            if ts not in month_map:
-                month_map[ts] = {'display': display, 'categories': {}}
+            ts = period_field.timestamp
+            display = period_field.display
 
-            cats = month_map[ts]['categories']
+            if ts not in period_map:
+                period_map[ts] = {'display': display, 'categories': {}}
+
+            cats = period_map[ts]['categories']
             cats[agg_row.category] = cats.get(agg_row.category, 0.0) + float(agg_row.total.raw)
 
-        # If multiple timestamps share the same display (e.g., 'January' across years),
-        # append the timestamp to the display to keep keys unique. Otherwise keep
-        # the human-readable display as the key.
+        # If multiple timestamps share the same display (e.g., 'January' across different years),
+        # append the timestamp to disambiguate. This creates unique column headers like
+        # 'January (1704067200)'. Otherwise use the human-readable display as the column header.
         display_counts: Dict[str, int] = {}
-        for v in month_map.values():
+        for v in period_map.values():
             display_counts[v['display']] = display_counts.get(v['display'], 0) + 1
 
         summary: Dict[str, Dict[str, float]] = {}
-        # Iterate months in descending timestamp order (most recent first)
-        for ts in sorted(month_map.keys(), reverse=True):
-            display = month_map[ts]['display']
-            key = display if display_counts.get(display, 0) == 1 else f"{display} ({ts})"
-            summary[key] = month_map[ts]['categories']
+        # Iterate periods in descending timestamp order (most recent first)
+        for ts in sorted(period_map.keys(), reverse=True):
+            display = period_map[ts]['display']
+            column_header = display if display_counts.get(display, 0) == 1 else f"{display} ({ts})"
+            summary[column_header] = period_map[ts]['categories']
 
         summary_data = SummaryData(
             summary=summary,
@@ -580,6 +613,4 @@ class DataFormattingService:
             account_id=account_id
         )
 
-        # Cache and return
-        self._summary_cache[account_id] = summary_data
         return summary_data

@@ -3,7 +3,7 @@
 This module contains extracted helper functions to reduce complexity in routes.py.
 Following the Single Responsibility Principle and DRY patterns.
 """
-from flask import current_app, Response
+from flask import current_app, Response, flash, redirect, url_for, make_response, render_template
 from whatsthedamage.view.forms import UploadForm
 from whatsthedamage.services.processing_service import ProcessingService
 from whatsthedamage.services.validation_service import ValidationService
@@ -11,8 +11,11 @@ from whatsthedamage.services.response_builder_service import ResponseBuilderServ
 from whatsthedamage.services.session_service import SessionService
 from whatsthedamage.services.data_formatting_service import DataFormattingService
 from whatsthedamage.services.file_upload_service import FileUploadService, FileUploadError
+from whatsthedamage.services.cache_service import CacheService
+from whatsthedamage.services.statistical_analysis_service import StatisticalAnalysisService
+from whatsthedamage.config.dt_models import CachedProcessingResult, DataTablesResponse, StatisticalMetadata, AggregatedRow
 from whatsthedamage.utils.flask_locale import get_default_language
-from typing import Dict, Callable, Optional, cast
+from typing import Dict, Callable, Optional, cast, Tuple, List, Any
 
 
 def _get_processing_service() -> ProcessingService:
@@ -43,6 +46,15 @@ def _get_session_service() -> SessionService:
 def _get_data_formatting_service() -> DataFormattingService:
     """Get data formatting service from app extensions (dependency injection)."""
     return cast(DataFormattingService, current_app.extensions['data_formatting_service'])
+
+
+def _get_cache_service() -> CacheService:
+    """Get cache service from app extensions (dependency injection)."""
+    return cast(CacheService, current_app.extensions['cache_service'])
+
+def _get_statistical_analysis_service() -> StatisticalAnalysisService:
+    """Get statistical analysis service from app extensions (dependency injection)."""
+    return cast(StatisticalAnalysisService, current_app.extensions['statistical_analysis_service'])
 
 
 def handle_file_uploads(form: UploadForm) -> Dict[str, str]:
@@ -79,6 +91,98 @@ def handle_file_uploads(form: UploadForm) -> Dict[str, str]:
         raise ValueError(str(e))
 
 
+def get_cached_data_for_drilldown(
+    result_id: str,
+    account: str
+) -> Tuple[Optional[DataTablesResponse], Optional[str]]:
+    """Retrieve cached processing result for drill-down routes.
+
+    Centralizes cache retrieval logic to eliminate duplication across
+    the three drill-down route handlers.
+
+    Args:
+        result_id: UUID of the cached processing result
+        account: Account identifier
+
+    Returns:
+        Tuple of (DataTablesResponse, error_message)
+        If successful: (dt_response, None)
+        If failed: (None, error_message)
+
+    Example:
+        >>> dt_response, error = get_cached_data_for_drilldown(result_id, account)
+        >>> if error:
+        >>>     flash(error, 'danger')
+        >>>     return redirect(url_for(INDEX_ROUTE))
+    """
+    try:
+        cache_service = _get_cache_service()
+        cached = cache_service.get(result_id)
+
+        if not cached:
+            return None, 'Result not found or expired.'
+
+        dt_response = cached.responses.get(account)
+        if not dt_response:
+            return None, f'Account "{account}" not found.'
+
+        return dt_response, None
+    except Exception:
+        return None, 'Result not found or expired.'
+
+
+def handle_drilldown_request(
+    result_id: str,
+    account: str,
+    template: str,
+    filter_fn: Callable[[AggregatedRow], bool],
+    template_context: Dict[str, str],
+    data_not_found_error: str = 'Data not found',
+    index_route: str = 'main.index'
+) -> Response:
+    """Generic handler for drill-down requests.
+
+    Eliminates code duplication across category, month, and cell drill-down routes
+    by providing a single implementation with customizable filtering and rendering.
+
+    Args:
+        result_id: UUID of the cached processing result
+        account: Account identifier
+        template: Template name to render (e.g., 'category_all_months.html')
+        filter_fn: Function to filter aggregated rows
+        template_context: Additional context to pass to template (e.g., {'category': 'Grocery'})
+        data_not_found_error: Error message for missing data
+        index_route: Route to redirect on error
+
+    Returns:
+        Flask Response with rendered template or redirect
+
+    Example:
+        >>> # For category drill-down:
+        >>> handle_drilldown_request(
+        >>>     result_id, account,
+        >>>     'category_all_months.html',
+        >>>     lambda row: row.category == 'Grocery',
+        >>>     {'category': 'Grocery', 'account': account}
+        >>> )
+    """
+    dt_response, error = get_cached_data_for_drilldown(result_id, account)
+    if error or not dt_response:
+        flash(error or data_not_found_error, 'danger')
+        return make_response(redirect(url_for(index_route)))
+
+    filtered_data = [row for row in dt_response.data if filter_fn(row)]
+
+    # Check if filtered data is empty and redirect with error
+    if not filtered_data:
+        flash(data_not_found_error, 'danger')
+        return make_response(redirect(url_for(index_route)))
+
+    # Merge account into template context
+    context = {'data': filtered_data, 'account': account, **template_context}
+    return make_response(render_template(template, **context))
+
+
 def process_details_and_build_response(
     form: UploadForm,
     csv_path: str,
@@ -110,6 +214,17 @@ def process_details_and_build_response(
 
     # Extract Dict[str, DataTablesResponse] from result
     dt_responses_by_account = result['data']
+    result_id = result['result_id']
+    statistical_metadata = result.get('statistical_metadata') or StatisticalMetadata(highlights=[])
+
+    # Cache result at controller layer (separation of concerns)
+    # Business logic (ProcessingService) doesn't know about caching
+    cache_service = _get_cache_service()
+    cached_result = CachedProcessingResult(
+        responses=dt_responses_by_account,
+        metadata=statistical_metadata
+    )
+    cache_service.set(result_id, cached_result)
 
     # Prepare accounts data for template rendering
     formatting_service = _get_data_formatting_service()
@@ -120,6 +235,70 @@ def process_details_and_build_response(
     return _get_response_builder_service().build_html_response(
         template='v2_results.html',
         accounts_data=accounts_data,
+        result_id=result_id,
         timing=result.get('timing')
     )
 
+def handle_recalculate_statistics_request(
+    result_id: str,
+    algorithms: List[str],
+    direction: str
+) -> Tuple[Dict[str, Any], int]:
+    """Handle recalculate statistics request with business logic.
+
+    This helper function contains the business logic for recalculating statistical
+    highlights, following the pattern of other helper functions in this module.
+
+    Args:
+        result_id: UUID of the cached processing result
+        algorithms: List of algorithm names to use (e.g., ['iqr', 'pareto'])
+        direction: Analysis direction ('columns' or 'rows')
+
+    Returns:
+        Tuple of (response_data, status_code)
+        On success: (dict with highlights and metadata, 200)
+        On error: (dict with error message, appropriate status code)
+
+    Example:
+        >>> response_data, status_code = handle_recalculate_statistics_request(
+        >>>     result_id='abc123',
+        >>>     algorithms=['iqr', 'pareto'],
+        >>>     direction='columns'
+        >>> )
+    """
+    try:
+        # Get cached data
+        cache_service = _get_cache_service()
+        cached = cache_service.get(result_id)
+        if not cached:
+            return {'error': 'Result not found or expired'}, 404
+
+        # Recalculate highlights using statistical analysis service
+        stat_service = _get_statistical_analysis_service()
+        new_metadata = stat_service.recalculate_highlights(
+            cached.responses,
+            algorithms,
+            direction
+        )
+
+        # Update cache with new metadata
+        updated_cached = CachedProcessingResult(
+            responses=cached.responses,
+            metadata=new_metadata
+        )
+        cache_service.set(result_id, updated_cached)
+
+        # Convert highlights to dictionary format for easier frontend processing
+        highlights_dict = {}
+        for highlight in new_metadata.highlights:
+            key = f"{highlight.column}_{highlight.row}"
+            highlights_dict[key] = highlight.highlight_type
+
+        return {
+            'status': 'success',
+            'highlights': highlights_dict,
+            'message': 'Statistics recalculated successfully'
+        }, 200
+
+    except Exception as e:
+        return {'error': str(e)}, 500

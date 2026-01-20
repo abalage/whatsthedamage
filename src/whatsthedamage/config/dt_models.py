@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 from typing import List, Any, Dict, Optional
+from dataclasses import dataclass
 
 class DisplayRawField(BaseModel):
     display: str
@@ -38,6 +39,8 @@ class CellHighlight(BaseModel):
 class StatisticalMetadata(BaseModel):
     highlights: List[CellHighlight]
 
-class CachedProcessingResult(BaseModel):
+@dataclass
+class CachedProcessingResult:
+    """Cached processing result dataclass."""
     responses: Dict[str, DataTablesResponse]
     metadata: StatisticalMetadata

@@ -52,9 +52,9 @@ def format_output(
 
     return formatting_service.format_all_accounts_for_output(
         dt_responses=dt_responses,
-        output_format=args.get('output_format'),
-        output_file=args.get('output'),
-        nowrap=args.get('nowrap', False)
+        output_format=args.output_format,
+        output_file=args.output,
+        nowrap=args.nowrap
     )
 
 
@@ -64,7 +64,7 @@ def main() -> None:
     args = controller.parse_arguments()
 
     # Set the locale
-    set_locale(args.get('lang'))
+    set_locale(args.lang)
 
     # Initialize services via factory (dependency injection)
     container = create_service_container()
@@ -72,15 +72,15 @@ def main() -> None:
     # Process using service layer (v2 processing pipeline with DataTablesResponse)
     try:
         result: Dict[str, Any] = container.processing_service.process_with_details(
-            csv_file_path=args['filename'],
-            config_file_path=args.get('config'),
-            start_date=args.get('start_date'),
-            end_date=args.get('end_date'),
-            ml_enabled=args.get('ml', False),
-            category_filter=args.get('filter'),
-            language=args.get('lang') or 'en',
-            verbose=args.get('verbose', False),
-            training_data=args.get('training_data', False)
+            csv_file_path=args.filename,
+            config_file_path=args.config,
+            start_date=args.start_date,
+            end_date=args.end_date,
+            ml_enabled=args.ml,
+            category_filter=args.filter,
+            language=args.lang or 'en',
+            verbose=args.verbose,
+            training_data=args.training_data
         )
 
         # Extract DataTablesResponse per account

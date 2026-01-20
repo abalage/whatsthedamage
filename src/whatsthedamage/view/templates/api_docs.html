@@ -42,28 +42,9 @@
     <div id="swagger-ui"></div>
     <script src="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5.10.0/swagger-ui-bundle.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5.10.0/swagger-ui-standalone-preset.js"></script>
+    <script src="{{ url_for('static', filename='js/api-docs.js') }}"></script>
     <script>
-        function changeVersion() {
-            const version = document.getElementById('version-select').value;
-            window.location.href = '/api/docs?version=' + version;
-        }
-
-        window.onload = function() {
-            const ui = SwaggerUIBundle({
-                url: "/api/{{ version }}/openapi.json",
-                dom_id: '#swagger-ui',
-                deepLinking: true,
-                presets: [
-                    SwaggerUIBundle.presets.apis,
-                    SwaggerUIStandalonePreset
-                ],
-                plugins: [
-                    SwaggerUIBundle.plugins.DownloadUrl
-                ],
-                layout: "StandaloneLayout"
-            });
-            window.ui = ui;
-        }
+        window.apiVersion = '{{ version }}';
     </script>
 </body>
 </html>

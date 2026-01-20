@@ -2,6 +2,8 @@
 
 This document enables AI coding agents to be immediately productive in the `whatsthedamage` codebase. It consolidates architecture patterns, coding conventions, and project-specific guidance.
 
+**Note:** This guide consolidates information from `.github/copilot-instructions.md`, `.github/python.instructions.md`, and `.github/javascript.instructions.md` for comprehensive reference.
+
 ## Table of Contents
 
 - [Architecture Overview](#architecture-overview)
@@ -359,6 +361,53 @@ def aggregate_transactions(
 ### Virtual Environment
 
 **Always use existing virtual environment** to run Python code unless it does not exist.
+
+### JavaScript-Specific Guidelines
+
+**Note:** JavaScript is primarily used for web interface enhancements and utilities in this project.
+
+#### Code Style
+
+- **ES2022 Features**: Use modern JavaScript with ES2022 features
+- **Node.js Version**: Node.js 24+ with ESM modules
+- **Built-in Modules**: Prefer Node.js built-in modules over external dependencies
+- **Dependencies**: Ask user before adding new dependencies
+- **Async/Await**: Always use async/await for asynchronous code
+- **Promisify**: Use `node:util` promisify function to avoid callbacks
+- **No null**: Never use `null`, always use `undefined` for optional values
+- **Functions Over Classes**: Prefer functions over classes
+- **Self-Documenting**: Use descriptive variable and function names
+- **Minimal Comments**: Code should be self-explanatory; only add comments when absolutely necessary
+
+#### Testing
+- Use Vitest for testing
+- Write tests for all new features and bug fixes
+- Ensure tests cover edge cases and error handling
+- NEVER change the original code to make it easier to test, instead, write tests that cover the original code as it is
+
+#### Example
+
+```javascript
+import { readFile } from 'node:fs/promises';
+import { promisify } from 'node:util';
+
+async function processTransactionFile(filePath) {
+    const content = await readFile(filePath, 'utf-8');
+    // Process content
+    return content.split('\n').filter(line => line.trim());
+}
+```
+
+#### Documentation
+
+- Update README.md when adding new features or making significant changes
+- Keep documentation in English even if questions are in another language
+
+#### User Interactions
+
+- Ask questions if unsure about implementation details or design choices
+- Answer in the same language as the question
+- Use English for generated content (code, comments, documentation)
 
 ---
 

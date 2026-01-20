@@ -82,7 +82,7 @@ enricher_pattern_sets:
 - REST API does not include authentication by default
 
 ## Python Conventions
-- See `.github/instructions/python.instructions.md` for code style, documentation, and testing guidelines
+- See `.github/python.instructions.md` for code style, documentation, and testing guidelines
 
 ## Extending & Integrating
 - **Add Transaction Category:** Update config pattern sets and enrichment logic in `RowEnrichment`.

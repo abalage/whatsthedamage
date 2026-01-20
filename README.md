@@ -142,7 +142,7 @@ The web interface requires you to start WSGI server (ie. gunicorn) manually.
 
 Gunicorn requires either a configuration file or proper command line arguments passed when invoked from command line.
 
-The repository contains an example [gunicorn_conf.py](gunicorn_conf.py) you can use out of the box.
+The repository contains an example [gunicorn_conf.py](config/gunicorn_conf.py) you can use out of the box.
 
 ```shell
 $ cd
@@ -193,7 +193,7 @@ options:
 
 The config file format and syntax has considerably changed in v0.6.0 (JSON to YAML). Please refer to the default config file for details.
 
-A default configuration file is provided as [config.yml.default](docs/config.yml.default).
+A default configuration file is provided as [config.yml.default](config/config.yml.default).
 
 If you do not want to create a configuration file then you can try the experimental [Machine Learning](#machine-learning-categorization-experimental) mode to categorize transactions.
 

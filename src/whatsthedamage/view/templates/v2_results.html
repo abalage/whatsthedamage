@@ -16,6 +16,23 @@
         border-radius: 0.5rem;
         margin-bottom: 1rem;
     }
+    .highlight-outlier {
+        background-color: #ffe6e6 !important;
+    }
+    .highlight-pareto {
+        background-color: #e6ffe6 !important;
+    }
+    .highlight-excluded {
+        background-color: #f0f0f0 !important;
+    }
+    .clickable {
+        cursor: pointer;
+        text-decoration: none;
+        color: inherit;
+    }
+    .clickable:hover {
+        text-decoration: underline;
+    }
     </style>
     <meta charset="UTF-8">
     <title>"What's the Damage" - {{ _('Result') }}</title>
@@ -35,6 +52,16 @@
     <script src="https://cdn.datatables.net/buttons/3.2.0/js/buttons.html5.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 
+    <!-- Custom JavaScript files -->
+    <script src="{{ url_for('static', filename='js/utils.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/statistical-analysis.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <!-- Translated strings for JavaScript -->
+    <script>
+        window.resultId = '{{ result_id }}';
+        window.exportCsvText = '{{ _("Export CSV") }}';
+        window.exportExcelText = '{{ _("Export Excel") }}';
+    </script>
 </head>
 <body>
     <header>
@@ -42,7 +69,73 @@
     </header>
     <main class="container-fluid">
         <h1 class="text-center p-2 pb-1">{{ _('Processed results') }}</h1>
-        
+
+        <div class="row mb-3">
+            <div class="col-md-12">
+                <button class="btn btn-outline-info" type="button" data-bs-toggle="collapse" data-bs-target="#legend" aria-expanded="false" aria-controls="legend">
+                    {{ _('Legend') }}
+                </button>
+                <div class="collapse" id="legend">
+                    <div class="card card-body">
+                        <p><span class="badge bg-danger">Outlier</span> {{ _('Cells highlighted in red indicate outliers detected by IQR method.') }}</p>
+                        <p><span class="badge bg-success">Pareto</span> {{ _('Cells highlighted in green indicate top contributors per Pareto principle.') }}</p>
+                        <p><span class="badge" style="background-color: #f0f0f0; color: black;">Excluded</span> {{ _('Cells highlighted in light grey are excluded from statistical analysis (calculated rows or excluded categories).') }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mb-3">
+            <div class="col-md-12">
+                <button class="btn btn-outline-primary" type="button" data-bs-toggle="collapse" data-bs-target="#stats-controls" aria-expanded="false" aria-controls="stats-controls">
+                    {{ _('Statistical Analysis Controls') }}
+                </button>
+                <div class="collapse" id="stats-controls">
+                    <div class="card card-body">
+                        <div class="mb-3">
+                            <h6>{{ _('Algorithms') }}</h6>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" value="iqr" id="algorithm-iqr" checked>
+                                <label class="form-check-label" for="algorithm-iqr">
+                                    {{ _('IQR Outlier Detection') }}
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" value="pareto" id="algorithm-pareto" checked>
+                                <label class="form-check-label" for="algorithm-pareto">
+                                    {{ _('Pareto Analysis') }}
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <h6>{{ _('Analysis Direction') }}</h6>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="direction" id="direction-rows" value="rows">
+                                <label class="form-check-label" for="direction-rows">
+                                    {{ _('Rows') }}
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="direction" id="direction-columns" value="columns" checked>
+                                <label class="form-check-label" for="direction-columns">
+                                    {{ _('Columns') }}
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="d-flex gap-2">
+                            <button id="recalculate-btn" class="btn btn-primary btn-sm">
+                                <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+                                <span>{{ _('Recalculate') }}</span>
+                            </button>
+                            <button id="reset-btn" class="btn btn-secondary btn-sm">{{ _('Reset to Defaults') }}</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         {% for account in accounts_data.accounts %}
         {% set dt_response = account.dt_response %}
         <div class="account-section">
@@ -58,7 +151,7 @@
             <div class="row">
                 <div class="col-md-12 mb-3">
                     <div class="table-responsive">
-                        <table id="datatable-{{ account.id | replace(':', '-') | replace(' ', '-') }}" class="table table-bordered table-striped" data-datatable="true">
+                        <table id="datatable-{{ account.id | replace(':', '-') | replace(' ', '-') }}" class="table table-bordered" data-datatable="true">
                             <thead>
                                 <tr>
                                     <th>{{ _('Categories') }}</th>
@@ -70,7 +163,7 @@
                                         {% endif %}
                                     {% endfor %}
                                     {% for month_display, month_ts in months | sort(attribute='1', reverse=True) %}
-                                        <th data-order="{{ month_ts }}">{{ month_display }}</th>
+                                        <th data-order="{{ month_ts }}"><a href="/details/{{ result_id }}/{{ account.id }}/month/{{ month_ts }}" class="clickable">{{ month_display }}</a></th>
                                     {% endfor %}
                                 </tr>
                             </thead>
@@ -84,10 +177,10 @@
                                     {% set _month_key = _month_field.timestamp %}
                                     {% set _ = cat_month_map[agg_row.category].update({_month_key: agg_row}) %}
                                 {% endfor %}
-                                
+
                                 {% for category in cat_month_map.keys() | sort %}
                                 <tr>
-                                    <td>{{ category }}</td>
+                                    <td><a href="/details/{{ result_id }}/{{ account.id }}/{{ category }}" class="clickable">{{ category }}</a></td>
                                     {% for month_display, month_ts in months | sort(attribute='1', reverse=True) %}
                                         {% set agg_row_data = cat_month_map[category].get(month_ts) %}
                                         {% if agg_row_data %}
@@ -96,7 +189,10 @@
                                                 {% set _ = details_list.append(detail.date.display ~ ': ' ~ detail.amount.display ~ ' - ' ~ detail.merchant) %}
                                             {% endfor %}
                                             {% set details_str = details_list | join('<br>') %}
-                                            <td data-order="{{ agg_row_data.total.raw }}"
+                                            {% set highlight_key = month_display ~ '_' ~ category %}
+                                            {% set highlight_type = account.highlights.get(highlight_key, '') %}
+                                            {% set highlight_class = 'highlight-' ~ highlight_type if highlight_type else '' %}
+                                            <td data-order="{{ agg_row_data.total.raw }}" class="{{ highlight_class }}"
                                                 {% if agg_row_data.details %}
                                                     tabindex="0"
                                                     data-bs-toggle="popover"
@@ -106,7 +202,7 @@
                                                     data-bs-placement="top"
                                                     data-bs-custom-class="popover-wide"
                                                 {% endif %}
-                                            >{{ agg_row_data.total.display }}</td>
+                                            ><a href="/details/{{ result_id }}/{{ account.id }}/{{ category }}/{{ month_ts }}" class="clickable">{{ agg_row_data.total.display }}</a></td>
                                         {% else %}
                                             <td data-order="0"></td>
                                         {% endif %}
@@ -130,42 +226,5 @@
     <footer class="bg-success text-white text-center py-3 mt-3">
         {% include 'footer.html' %}
     </footer>
-    
-    <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        var tables = document.querySelectorAll('table[data-datatable="true"]');
-        tables.forEach(function(table) {
-            $(table).DataTable({
-                responsive: false,
-                fixedHeader: true,
-                order: [],
-                pageLength: 25,
-                scrollX: true,
-                autoWidth: false,
-                dom: 'Bfrtip',
-                buttons: [
-                    {
-                        extend: 'csv',
-                        text: '{{ _("Export CSV") }}',
-                        title: 'whatsthedamage_export'
-                    },
-                    {
-                        extend: 'excel',
-                        text: '{{ _("Export Excel") }}',
-                        title: 'whatsthedamage_export'
-                    }
-                ]
-            });
-        });
-        
-        var popoverTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="popover"]'));
-        var popoverList = popoverTriggerList.map(function (popoverTriggerEl) {
-            return new bootstrap.Popover(popoverTriggerEl, {
-                html: true,
-                sanitize: false
-            });
-        });
-    });
-    </script>
 </body>
 </html>

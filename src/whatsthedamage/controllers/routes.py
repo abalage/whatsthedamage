@@ -1,7 +1,7 @@
 from datetime import datetime
 from flask import (
     Blueprint, request, make_response, render_template, redirect, url_for,
-    flash, current_app, Response
+    flash, current_app, Response, jsonify
 )
 from whatsthedamage.view.forms import UploadForm
 from whatsthedamage.controllers.routes_helpers import (
@@ -11,13 +11,14 @@ from whatsthedamage.controllers.routes_helpers import (
 from whatsthedamage.services.session_service import SessionService
 from whatsthedamage.services.configuration_service import ConfigurationService
 from whatsthedamage.services.data_formatting_service import DataFormattingService
-from typing import Optional
+from typing import Optional, Union
 import os
 import shutil
 from whatsthedamage.utils.flask_locale import get_locale, get_languages
 
 bp: Blueprint = Blueprint('main', __name__)
 INDEX_ROUTE = 'main.index'
+DATA_NOT_FOUND_ERROR = 'Data not found'
 
 
 def _get_session_service() -> SessionService:
@@ -56,6 +57,7 @@ def clear_upload_folder() -> None:
 def get_lang_template(template_name: str) -> str:
     lang: str = get_locale()
     return f"{lang}/{template_name}"
+
 
 
 @bp.route('/')
@@ -149,6 +151,91 @@ def set_language(lang_code: str) -> Response:
     return make_response(redirect(request.referrer or url_for(INDEX_ROUTE)))
 
 
+@bp.route('/details/<result_id>/<account>/<category>')
+def details_category_all_months(result_id: str, account: str, category: str) -> Response:
+    """Show category details across all months."""
+    from whatsthedamage.controllers.routes_helpers import handle_drilldown_request
+
+    return handle_drilldown_request(
+        result_id=result_id,
+        account=account,
+        template='category_all_months.html',
+        filter_fn=lambda row: row.category == category,
+        template_context={'category': category},
+        data_not_found_error=DATA_NOT_FOUND_ERROR,
+        index_route=INDEX_ROUTE
+    )
+
+
+@bp.route('/details/<result_id>/<account>/month/<month_ts>')
+def details_month_all_categories(result_id: str, account: str, month_ts: str) -> Response:
+    """Show month details across all categories."""
+    from whatsthedamage.controllers.routes_helpers import handle_drilldown_request
+
+    return handle_drilldown_request(
+        result_id=result_id,
+        account=account,
+        template='month_all_categories.html',
+        filter_fn=lambda row: str(row.month.timestamp) == month_ts or str(row.date.timestamp) == month_ts,
+        template_context={'month_ts': month_ts},
+        data_not_found_error=DATA_NOT_FOUND_ERROR,
+        index_route=INDEX_ROUTE
+    )
+
+
+@bp.route('/details/<result_id>/<account>/<category>/<month_ts>')
+def details_category_month(result_id: str, account: str, category: str, month_ts: str) -> Response:
+    """Show specific category and month details."""
+    from whatsthedamage.controllers.routes_helpers import handle_drilldown_request
+
+    return handle_drilldown_request(
+        result_id=result_id,
+        account=account,
+        template='category_month_detail.html',
+        filter_fn=lambda row: (
+            row.category == category and
+            (str(row.month.timestamp) == month_ts or str(row.date.timestamp) == month_ts)
+        ),
+        template_context={'category': category, 'month_ts': month_ts},
+        data_not_found_error=DATA_NOT_FOUND_ERROR,
+        index_route=INDEX_ROUTE
+    )
+
+
+@bp.route('/recalculate-statistics', methods=['POST'])
+def recalculate_statistics() -> Union[Response, tuple[Response, int]]:
+    """Recalculate statistical highlights with custom algorithm and direction settings."""
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'No data provided'}), 400
+
+        result_id = data.get('result_id')
+        algorithms = data.get('algorithms', [])
+        direction = data.get('direction', 'columns')
+
+        if not result_id:
+            return jsonify({'error': 'result_id is required'}), 400
+
+        if not isinstance(algorithms, list):
+            return jsonify({'error': 'algorithms must be a list'}), 400
+
+        if direction not in ['columns', 'rows']:
+            return jsonify({'error': 'direction must be either "columns" or "rows"'}), 400
+
+        # Use helper function to handle the business logic
+        from whatsthedamage.controllers.routes_helpers import handle_recalculate_statistics_request
+        response_data, status_code = handle_recalculate_statistics_request(
+            result_id=result_id,
+            algorithms=algorithms,
+            direction=direction
+        )
+
+        return jsonify(response_data), status_code
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 @bp.route('/health')
 def health() -> Response:
     try:
@@ -165,3 +252,46 @@ def health() -> Response:
             {"status": "unhealthy", "reason": f"Unexpected error: {e}"},
             503
         )
+
+## TODO inactivated until exclusion service is fully integrated into frontend
+# # Exclusion routes
+# @bp.route('/exclusions')
+# def get_exclusions() -> Union[Response, tuple[Response, int]]:
+#     """Get current exclusion configuration."""
+#     exclusion_service = current_app.extensions.get('exclusion_service')
+#     if not exclusion_service:
+#         return jsonify({'error': 'Exclusion service not available'}), 500
+
+#     return jsonify(exclusion_service.get_exclusion_config())
+
+
+# @bp.route('/exclusions', methods=['POST'])
+# def update_exclusions() -> Union[Response, tuple[Response, int]]:
+#     """Update user exclusions and recalculate statistics."""
+#     exclusion_service = current_app.extensions.get('exclusion_service')
+#     if not exclusion_service:
+#         return jsonify({'error': 'Exclusion service not available'}), 500
+
+#     try:
+#         data = request.get_json()
+#         if not data:
+#             return jsonify({'error': 'No data provided'}), 400
+
+#         algorithm = data.get('algorithm', 'default')
+#         exclusions = data.get('exclusions', [])
+
+#         if not isinstance(exclusions, list):
+#             return jsonify({'error': 'Exclusions must be a list'}), 400
+
+#         # Update user exclusions
+#         exclusion_service.set_user_exclusions(algorithm, exclusions)
+
+#         return jsonify({
+#             'status': 'success',
+#             'message': 'Exclusions updated successfully',
+#             'exclusions': exclusion_service.get_exclusion_config()
+#         })
+
+#     except Exception as e:
+#         return jsonify({'error': str(e)}), 500
+## Exclusion Service (for reference)

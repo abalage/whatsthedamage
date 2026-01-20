@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import List, Any
+from typing import List, Any, Dict, Optional
 
 class DisplayRawField(BaseModel):
     display: str
@@ -22,8 +22,22 @@ class AggregatedRow(BaseModel):
     month: DateField
     date: DateField
     details: List[DetailRow]
+    is_calculated: bool = False
 
 class DataTablesResponse(BaseModel):
     data: List[AggregatedRow]
     account: str = ""
     currency: str = ""
+    statistical_metadata: Optional['StatisticalMetadata'] = None
+
+class CellHighlight(BaseModel):
+    row: str  # category
+    column: str  # month
+    highlight_type: str  # e.g., 'outlier', 'pareto'
+
+class StatisticalMetadata(BaseModel):
+    highlights: List[CellHighlight]
+
+class CachedProcessingResult(BaseModel):
+    responses: Dict[str, DataTablesResponse]
+    metadata: StatisticalMetadata

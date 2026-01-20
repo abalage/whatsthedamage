@@ -66,12 +66,13 @@ class MockCSVProcessor:
 @pytest.fixture
 def mock_processing_service_result():
     """Factory fixture for creating mock ProcessingService results with DataTablesResponse."""
-    from whatsthedamage.config.dt_models import DataTablesResponse, AggregatedRow, DisplayRawField, DateField
-    
+    from whatsthedamage.config.dt_models import DataTablesResponse, AggregatedRow, DisplayRawField, DateField, StatisticalMetadata
+    import uuid
+
     def _create_result(data=None):
         if data is None:
             data = {}
-        
+
         # Create mock DataTablesResponse
         agg_rows = []
         for category, amount in data.items():
@@ -84,15 +85,20 @@ def mock_processing_service_result():
                     details=[]
                 )
             )
-        
+
+        # Create statistical metadata with empty highlights
+        statistical_metadata = StatisticalMetadata(highlights=[])
+
         dt_response = DataTablesResponse(
             data=agg_rows,
-            currency="USD"
+            currency="USD",
+            statistical_metadata=statistical_metadata
         )
-        
+
         return {
             'data': {'default_account': dt_response},
             'metadata': {},
+            'result_id': str(uuid.uuid4()),
         }
     return _create_result
 

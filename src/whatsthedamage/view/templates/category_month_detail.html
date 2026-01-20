@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ _('Transaction Details') }}: {{ category }} - {{ month_ts }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <header>
+        {% include 'header.html' %}
+    </header>
+    <main class="container-fluid">
+        <h1>{{ _('Transaction Details for') }} {{ category }} {{ _('in') }} {{ month_ts }}, {{ _('Account') }} {{ account }}</h1>
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th>{{ _('Date') }}</th>
+                    <th>{{ _('Amount') }}</th>
+                    <th>{{ _('Merchant') }}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in data %}
+                {% for detail in row.details %}
+                <tr>
+                    <td>{{ detail.date.display }}</td>
+                    <td>{{ detail.amount.display }}</td>
+                    <td>{{ detail.merchant }}</td>
+                </tr>
+                {% endfor %}
+                {% endfor %}
+            </tbody>
+        </table>
+        <a href="/" class="btn btn-secondary">{{ _('Back') }}</a>
+    </main>
+    <footer class="bg-success text-white text-center py-3 mt-3">
+        {% include 'footer.html' %}
+    </footer>
+</body>
+</html>

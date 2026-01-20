@@ -11,9 +11,6 @@ from whatsthedamage.controllers.routes_helpers import (
 from whatsthedamage.services.session_service import SessionService
 from whatsthedamage.services.configuration_service import ConfigurationService
 from whatsthedamage.services.data_formatting_service import DataFormattingService
-from whatsthedamage.services.statistical_analysis_service import StatisticalAnalysisService
-from whatsthedamage.services.cache_service import CacheService
-from whatsthedamage.config.dt_models import CachedProcessingResult
 from typing import Optional, Union
 import os
 import shutil
@@ -61,15 +58,6 @@ def get_lang_template(template_name: str) -> str:
     lang: str = get_locale()
     return f"{lang}/{template_name}"
 
-def _get_statistical_analysis_service() -> StatisticalAnalysisService:
-    """Get statistical analysis service from app extensions (dependency injection)."""
-    from typing import cast
-    return cast(StatisticalAnalysisService, current_app.extensions['statistical_analysis_service'])
-
-def _get_cache_service() -> CacheService:
-    """Get cache service from app extensions (dependency injection)."""
-    from typing import cast
-    return cast(CacheService, current_app.extensions['cache_service'])
 
 
 @bp.route('/')
@@ -235,38 +223,15 @@ def recalculate_statistics() -> Union[Response, tuple[Response, int]]:
         if direction not in ['columns', 'rows']:
             return jsonify({'error': 'direction must be either "columns" or "rows"'}), 400
 
-        # Get cached data
-        cache_service = _get_cache_service()
-        cached = cache_service.get(result_id)
-        if not cached:
-            return jsonify({'error': 'Result not found or expired'}), 404
-
-        # Recalculate highlights
-        stat_service = _get_statistical_analysis_service()
-        new_metadata = stat_service.recalculate_highlights(
-            cached.responses,
-            algorithms,
-            direction
+        # Use helper function to handle the business logic
+        from whatsthedamage.controllers.routes_helpers import handle_recalculate_statistics_request
+        response_data, status_code = handle_recalculate_statistics_request(
+            result_id=result_id,
+            algorithms=algorithms,
+            direction=direction
         )
 
-        # Update cache with new metadata
-        updated_cached = CachedProcessingResult(
-            responses=cached.responses,
-            metadata=new_metadata
-        )
-        cache_service.set(result_id, updated_cached)
-
-        # Convert highlights to dictionary format for easier frontend processing
-        highlights_dict = {}
-        for highlight in new_metadata.highlights:
-            key = f"{highlight.column}_{highlight.row}"
-            highlights_dict[key] = highlight.highlight_type
-
-        return jsonify({
-            'status': 'success',
-            'highlights': highlights_dict,
-            'message': 'Statistics recalculated successfully'
-        })
+        return jsonify(response_data), status_code
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500

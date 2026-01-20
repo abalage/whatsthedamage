@@ -12,9 +12,10 @@ from whatsthedamage.services.session_service import SessionService
 from whatsthedamage.services.data_formatting_service import DataFormattingService
 from whatsthedamage.services.file_upload_service import FileUploadService, FileUploadError
 from whatsthedamage.services.cache_service import CacheService
+from whatsthedamage.services.statistical_analysis_service import StatisticalAnalysisService
 from whatsthedamage.config.dt_models import CachedProcessingResult, DataTablesResponse, StatisticalMetadata, AggregatedRow
 from whatsthedamage.utils.flask_locale import get_default_language
-from typing import Dict, Callable, Optional, cast, Tuple
+from typing import Dict, Callable, Optional, cast, Tuple, List, Any
 
 
 def _get_processing_service() -> ProcessingService:
@@ -50,6 +51,10 @@ def _get_data_formatting_service() -> DataFormattingService:
 def _get_cache_service() -> CacheService:
     """Get cache service from app extensions (dependency injection)."""
     return cast(CacheService, current_app.extensions['cache_service'])
+
+def _get_statistical_analysis_service() -> StatisticalAnalysisService:
+    """Get statistical analysis service from app extensions (dependency injection)."""
+    return cast(StatisticalAnalysisService, current_app.extensions['statistical_analysis_service'])
 
 
 def handle_file_uploads(form: UploadForm) -> Dict[str, str]:
@@ -233,3 +238,67 @@ def process_details_and_build_response(
         result_id=result_id,
         timing=result.get('timing')
     )
+
+def handle_recalculate_statistics_request(
+    result_id: str,
+    algorithms: List[str],
+    direction: str
+) -> Tuple[Dict[str, Any], int]:
+    """Handle recalculate statistics request with business logic.
+
+    This helper function contains the business logic for recalculating statistical
+    highlights, following the pattern of other helper functions in this module.
+
+    Args:
+        result_id: UUID of the cached processing result
+        algorithms: List of algorithm names to use (e.g., ['iqr', 'pareto'])
+        direction: Analysis direction ('columns' or 'rows')
+
+    Returns:
+        Tuple of (response_data, status_code)
+        On success: (dict with highlights and metadata, 200)
+        On error: (dict with error message, appropriate status code)
+
+    Example:
+        >>> response_data, status_code = handle_recalculate_statistics_request(
+        >>>     result_id='abc123',
+        >>>     algorithms=['iqr', 'pareto'],
+        >>>     direction='columns'
+        >>> )
+    """
+    try:
+        # Get cached data
+        cache_service = _get_cache_service()
+        cached = cache_service.get(result_id)
+        if not cached:
+            return {'error': 'Result not found or expired'}, 404
+
+        # Recalculate highlights using statistical analysis service
+        stat_service = _get_statistical_analysis_service()
+        new_metadata = stat_service.recalculate_highlights(
+            cached.responses,
+            algorithms,
+            direction
+        )
+
+        # Update cache with new metadata
+        updated_cached = CachedProcessingResult(
+            responses=cached.responses,
+            metadata=new_metadata
+        )
+        cache_service.set(result_id, updated_cached)
+
+        # Convert highlights to dictionary format for easier frontend processing
+        highlights_dict = {}
+        for highlight in new_metadata.highlights:
+            key = f"{highlight.column}_{highlight.row}"
+            highlights_dict[key] = highlight.highlight_type
+
+        return {
+            'status': 'success',
+            'highlights': highlights_dict,
+            'message': 'Statistics recalculated successfully'
+        }, 200
+
+    except Exception as e:
+        return {'error': str(e)}, 500

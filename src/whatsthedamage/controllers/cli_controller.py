@@ -28,18 +28,18 @@ class CLIController:
 
     def parse_arguments(self) -> AppArgs:
         parsed_args = self.parser.parse_args()
-        return {
-            'category': parsed_args.category,
-            'config': parsed_args.config,
-            'end_date': parsed_args.end_date,
-            'filename': parsed_args.filename,
-            'filter': parsed_args.filter,
-            'nowrap': parsed_args.nowrap,
-            'output_format': parsed_args.output_format,
-            'output': parsed_args.output,
-            'start_date': parsed_args.start_date,
-            'verbose': parsed_args.verbose,
-            'lang': parsed_args.lang,
-            'training_data': parsed_args.training_data,
-            'ml': parsed_args.ml
-        }
+        return AppArgs(
+            category=parsed_args.category,
+            config=parsed_args.config,
+            end_date=parsed_args.end_date,
+            filename=parsed_args.filename,
+            filter=parsed_args.filter,
+            nowrap=parsed_args.nowrap,
+            output_format=parsed_args.output_format,
+            output=parsed_args.output,
+            start_date=parsed_args.start_date,
+            verbose=parsed_args.verbose,
+            lang=parsed_args.lang,
+            training_data=parsed_args.training_data,
+            ml=parsed_args.ml
+        )

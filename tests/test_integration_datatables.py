@@ -27,21 +27,21 @@ def app_context_v2():
         enricher_pattern_sets=enricher_pattern_sets
     )
     
-    app_args: AppArgs = {
-        "category": "category",
-        "config": "config.yml",
-        "filename": "data.csv",
-        "nowrap": False,
-        "output_format": "html",
-        "start_date": None,
-        "end_date": None,
-        "verbose": False,
-        "filter": None,
-        "lang": "en",
-        "training_data": False,
-        "ml": False,
-        "output": "html"
-    }
+    app_args = AppArgs(
+        category="category",
+        config="config.yml",
+        filename="data.csv",
+        nowrap=False,
+        output_format="html",
+        start_date=None,
+        end_date=None,
+        verbose=False,
+        filter=None,
+        lang="en",
+        training_data=False,
+        ml=False,
+        output="html"
+    )
     
     return AppContext(app_config, app_args)
 

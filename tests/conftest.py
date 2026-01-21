@@ -179,22 +179,22 @@ def app_context():
         enricher_pattern_sets=enricher_pattern_sets
     )
 
-    # Create the AppArgs dictionary
-    app_args: AppArgs = {
-        "category": "category1",
-        "config": "config.yml",
-        "filename": "data.csv",
-        "nowrap": False,
-        "output_format": "html",
-        "verbose": True,
-        "end_date": "2023-12-31",
-        "filter": None,
-        "output": None,
-        "start_date": "2023-01-01",
-        "lang": "en",
-        "training_data": False,
-        "ml": False,
-    }
+    # Create the AppArgs object
+    app_args = AppArgs(
+        category="category1",
+        config="config.yml",
+        filename="data.csv",
+        nowrap=False,
+        output_format="html",
+        verbose=True,
+        end_date="2023-12-31",
+        filter=None,
+        output=None,
+        start_date="2023-01-01",
+        lang="en",
+        training_data=False,
+        ml=False,
+    )
 
     # Return the AppContext object
     return AppContext(config=app_config, args=app_args)

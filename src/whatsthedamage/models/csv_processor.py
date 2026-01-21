@@ -50,7 +50,7 @@ class CSVProcessor:
             List[CsvRow]: The list of CsvRow objects.
         """
         csv_reader = CsvFileHandler(
-            str(self.args['filename']),
+            str(self.args.filename),
             str(self.config.csv.dialect),
             str(self.config.csv.delimiter),
             dict(self.config.csv.attribute_mapping)

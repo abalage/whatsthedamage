@@ -108,21 +108,21 @@ class TestProcessingService:
     def test_build_args_config_handling(self, service, config_input, expected):
         """Test _build_args config parameter handling."""
         args = service._build_args(filename='/path/to/file.csv', config=config_input)
-        assert args['config'] == expected
+        assert args.config == expected
 
     def test_build_args_defaults(self, service):
         """Test _build_args with default parameters."""
         args = service._build_args(filename='/path/to/file.csv', config=None)
 
-        assert args['filename'] == '/path/to/file.csv'
-        assert args['start_date'] is None
-        assert args['end_date'] is None
-        assert args['category'] == 'category'
-        assert args['filter'] is None
-        assert args['output_format'] == 'json'
-        assert args['verbose'] is False
-        assert args['lang'] == 'en'
-        assert args['ml'] is False
+        assert args.filename == '/path/to/file.csv'
+        assert args.start_date is None
+        assert args.end_date is None
+        assert args.category == 'category'
+        assert args.filter is None
+        assert args.output_format == 'json'
+        assert args.verbose is False
+        assert args.lang == 'en'
+        assert args.ml is False
 
     def test_build_args_all_parameters(self, service):
         """Test _build_args with all parameters."""
@@ -137,12 +137,12 @@ class TestProcessingService:
             verbose=True
         )
 
-        assert args['start_date'] == '2023-01-01'
-        assert args['end_date'] == '2023-12-31'
-        assert args['ml'] is True
-        assert args['filter'] == 'Food'
-        assert args['lang'] == 'hu'
-        assert args['verbose'] is True
+        assert args.start_date == '2023-01-01'
+        assert args.end_date == '2023-12-31'
+        assert args.ml is True
+        assert args.filter == 'Food'
+        assert args.lang == 'hu'
+        assert args.verbose is True
 
     @patch('whatsthedamage.services.processing_service.AppContext')
     def test_process_with_details_uses_verbose_true(self, mock_context, service, mock_dependencies):
@@ -150,4 +150,4 @@ class TestProcessingService:
         service.process_with_details(csv_file_path='/path/to/file.csv', verbose=True)
 
         args = mock_context.call_args[0][1]
-        assert args['verbose'] is True
+        assert args.verbose is True

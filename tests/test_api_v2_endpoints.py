@@ -35,8 +35,14 @@ class TestAPIv2Process:
 
     def test_process_with_config_file(self, api_test_helper, mock_processing_service, sample_csv_file, config_yml_default_path):
         """Test processing with both CSV and config file."""
-        with open(config_yml_default_path, 'rb') as f:
-            from io import BytesIO
+        # Create a minimal config file for testing
+        import tempfile
+        from io import BytesIO
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.yml', delete=False) as config_file:
+            config_file.write("csv:\n  dialect: excel\n  delimiter: ','\n  date_attribute_format: '%Y-%m-%d'\n  attribute_mapping:\n    date: date\n    amount: amount\n    currency: currency\n    partner: partner\n")
+            config_file_path = config_file.name
+
+        with open(config_file_path, 'rb') as f:
             config_file = (BytesIO(f.read()), 'config.yml')
 
         response = api_test_helper.post_csv('/api/v2/process', sample_csv_file, config_file=config_file)

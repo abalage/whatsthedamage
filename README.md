@@ -241,6 +241,13 @@ Note: the Machine Learning model was trained on the categories listed here.
 
 ## Development
 
+The git project contains static files tracked with git-lfs. To checkout the contents follow these steps:
+
+1. Use your package manager to install `git-lfs`
+2. Install git lfs extension: `git lfs install`
+3. Clone the project repository
+4. Change directory to checked out directory: `git lfs fetch`
+
 The repository comes with a Makefile using 'GNU make' to automatize recurring actions. Here is the usage of the Makefile.
 
 ```shell

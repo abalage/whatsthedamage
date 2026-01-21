@@ -4,17 +4,17 @@
  */
 
 document.addEventListener('DOMContentLoaded', function() {
-    var recalculateBtn = document.getElementById('recalculate-btn');
-    var resetBtn = document.getElementById('reset-btn');
+    const recalculateBtn = document.getElementById('recalculate-btn');
+    const resetBtn = document.getElementById('reset-btn');
 
     if (recalculateBtn && resetBtn) {
-        var spinner = recalculateBtn.querySelector('.spinner-border');
+        const spinner = recalculateBtn.querySelector('.spinner-border');
 
         // Recalculate button click handler
         recalculateBtn.addEventListener('click', function() {
-            var algorithms = Array.prototype.slice.call(document.querySelectorAll('input[type="checkbox"][value]:checked'))
+            const algorithms = Array.prototype.slice.call(document.querySelectorAll('input[type="checkbox"][value]:checked'))
                 .map(function(el) { return el.value; });
-            var direction = document.querySelector('input[name="direction"]:checked').value;
+            const direction = document.querySelector('input[name="direction"]:checked').value;
 
             // Show loading spinner
             spinner.classList.remove('d-none');
@@ -28,7 +28,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    result_id: window.resultId,
+                    result_id: globalThis.resultId,
                     algorithms: algorithms,
                     direction: direction
                 })
@@ -82,40 +82,37 @@ document.addEventListener('DOMContentLoaded', function() {
  */
 function updateCellHighlights(highlights) {
     // Remove all current highlights from all tables
-    var highlightElements = document.querySelectorAll('[class*="highlight-"]');
-    for (var i = 0; i < highlightElements.length; i++) {
-        var el = highlightElements[i];
+    const highlightElements = document.querySelectorAll('[class*="highlight-"]');
+    for (const el of highlightElements) {
         el.classList.remove('highlight-outlier', 'highlight-pareto', 'highlight-excluded');
     }
 
     // Apply new highlights - process each table separately
-    var tables = document.querySelectorAll('table[data-datatable="true"]');
-    for (var t = 0; t < tables.length; t++) {
-        var table = tables[t];
-        var thead = table.querySelector('thead');
-        var tbody = table.querySelector('tbody');
+    const tables = document.querySelectorAll('table[data-datatable="true"]');
+    for (const table of tables) {
+        const thead = table.querySelector('thead');
+        const tbody = table.querySelector('tbody');
 
         if (thead && tbody) {
-            var headers = thead.querySelectorAll('th');
-            var rows = tbody.querySelectorAll('tr');
+            const headers = thead.querySelectorAll('th');
+            const rows = tbody.querySelectorAll('tr');
 
             // Apply highlights for this specific table
-            for (var key in highlights) {
-                if (highlights.hasOwnProperty(key)) {
-                    var highlightType = highlights[key];
-                    var parts = key.split('_');
-                    var column = parts[0];
-                    var row = parts[1];
+            for (const key in highlights) {
+                if (Object.prototype.hasOwnProperty.call(highlights, key)) {
+                    const highlightType = highlights[key];
+                    const parts = key.split('_');
+                    const column = parts[0];
+                    const row = parts[1];
 
                     // Find the row by category in this table
-                    for (var r = 0; r < rows.length; r++) {
-                        var tr = rows[r];
-                        var categoryCell = tr.querySelector('td:first-child');
+                    for (const tr of rows) {
+                        const categoryCell = tr.querySelector('td:first-child');
                         if (categoryCell && categoryCell.textContent.trim() === row) {
                             // Find the column by month in this table
-                            for (var c = 1; c < headers.length; c++) { // Skip first column (categories)
+                            for (let c = 1; c < headers.length; c++) { // Skip first column (categories)
                                 if (headers[c].textContent.trim() === column) {
-                                    var cell = tr.querySelector('td:nth-child(' + (c + 1) + ')');
+                                    const cell = tr.querySelector('td:nth-child(' + (c + 1) + ')');
                                     if (cell) {
                                         cell.classList.add('highlight-' + highlightType);
                                     }

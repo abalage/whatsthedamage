@@ -4,7 +4,7 @@
 
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize DataTables for all tables with data-datatable attribute
-    var tables = document.querySelectorAll('table[data-datatable="true"]');
+    const tables = document.querySelectorAll('table[data-datatable="true"]');
     tables.forEach(function(table) {
         $(table).DataTable({
             responsive: false,
@@ -17,12 +17,12 @@ document.addEventListener('DOMContentLoaded', function() {
             buttons: [
                 {
                     extend: 'csv',
-                    text: window.exportCsvText,
+                    text: globalThis.exportCsvText,
                     title: 'whatsthedamage_export'
                 },
                 {
                     extend: 'excel',
-                    text: window.exportExcelText,
+                    text: globalThis.exportExcelText,
                     title: 'whatsthedamage_export'
                 }
             ]
@@ -30,8 +30,8 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // Initialize Bootstrap popovers
-    var popoverTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="popover"]'));
-    var popoverList = popoverTriggerList.map(function (popoverTriggerEl) {
+    const popoverTriggerList = Array.prototype.slice.call(document.querySelectorAll('[data-bs-toggle="popover"]'));
+    popoverTriggerList.map(function (popoverTriggerEl) {
         return new bootstrap.Popover(popoverTriggerEl, {
             html: true,
             sanitize: false

@@ -8,19 +8,18 @@ function changeVersion() {
     window.location.href = '/api/docs?version=' + version;
 }
 
-window.onload = function() {
+globalThis.onload = function() {
     const ui = SwaggerUIBundle({
-        url: "/api/" + window.apiVersion + "/openapi.json",
+        url: "/api/" + globalThis.apiVersion + "/openapi.json",
         dom_id: '#swagger-ui',
         deepLinking: true,
         presets: [
             SwaggerUIBundle.presets.apis,
-            SwaggerUIBundle.plugins.DownloadUrl
+            SwaggerUIStandalonePreset
         ],
         plugins: [
             SwaggerUIBundle.plugins.DownloadUrl
-        ],
-        layout: "StandaloneLayout"
+        ]
     });
-    window.ui = ui;
+    globalThis.ui = ui;
 };

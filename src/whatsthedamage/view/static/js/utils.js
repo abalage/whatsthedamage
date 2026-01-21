@@ -9,13 +9,13 @@
  */
 function showNotification(message, type) {
     // Create notification element
-    var notification = document.createElement('div');
+    const notification = document.createElement('div');
     notification.className = 'alert alert-' + type + ' alert-dismissible fade show';
     notification.role = 'alert';
     notification.innerHTML = message + '<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>';
 
     // Add to page
-    var main = document.querySelector('main');
+    const main = document.querySelector('main');
     if (main) {
         main.insertBefore(notification, main.firstChild);
 

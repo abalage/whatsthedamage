@@ -35,7 +35,6 @@
     <div class="version-selector">
         <label for="version-select">API Version:</label>
         <select id="version-select" onchange="changeVersion()">
-            <option value="v1" {% if version == 'v1' %}selected{% endif %}>v1 (Summary)</option>
             <option value="v2" {% if version == 'v2' %}selected{% endif %}>v2 (Detailed)</option>
         </select>
     </div>

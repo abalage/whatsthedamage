@@ -261,16 +261,68 @@ Development workflow:
   image          - Build Podman image with version tag
   lang           - Extract translatable strings to English .pot file
   docs           - Build Sphinx documentation
+  npm-install    - Install npm dependencies
+  vite-dev       - Run Vite development server
+  vite-build     - Build frontend assets
+  build          - Full stack build (Python + JS)
 
 Dependency management:
   compile-deps   - Compile requirements files from pyproject.toml
-  update-deps    - Update requirements to latest versions
+  update-deps   - Update requirements to latest versions
   compile-deps-secure - Generate requirements with hashes
 
 Cleanup:
   clean          - Clean up build files
   mrproper       - Clean + remove virtual environment
 ```
+
+### Frontend Development
+
+The project now uses a modern frontend build system with npm and Vite, replacing the previous CDN-based approach. The frontend source code is located in `src/whatsthedamage/view/frontend/`.
+
+**Frontend Dependencies**:
+- All frontend dependencies are managed via npm in `package.json`
+- Run `make npm-install` to install dependencies
+- Run `make vite-dev` for development with hot module replacement
+- Run `make vite-build` to build production assets
+
+**Frontend Build Output**:
+- Build assets are output to `src/whatsthedamage/view/static/dist/`
+- Backend static assets (ML models, favicon) remain in `src/whatsthedamage/static/` (committed to Git)
+- The Dockerfile automatically installs npm dependencies and builds assets
+
+**Static Assets Management**:
+- **Backend static assets**: `src/whatsthedamage/static/` - ML models, configuration files (committed to Git)
+- **Frontend build artifacts**: `src/whatsthedamage/view/static/dist/` - Vite build output (NOT committed to Git, excluded via .gitignore)
+- **Flask static files**: `src/whatsthedamage/view/static/` - favicon.ico and other web assets (committed to Git)
+
+**Development Workflow**:
+```bash
+# Terminal 1: Flask backend
+make web
+
+# Terminal 2: Vite frontend (development mode)
+make vite-dev
+```
+
+**Production Build**:
+```bash
+# Install npm dependencies
+make npm-install
+
+# Build frontend assets
+make vite-build
+
+# Or use combined build
+make build
+```
+
+**Benefits of Modern Frontend Build System**:
+- **Dependency Management**: Declarative dependency management via npm with version pinning
+- **Performance Optimizations**: Tree-shaking, code splitting, minification, and compression (139-496 kB after gzip)
+- **Development Experience**: Hot module replacement, modern ES module syntax, better error handling
+- **Offline Support**: All dependencies bundled locally, no CDN dependency
+- **Clear Separation**: Backend assets (committed) vs frontend build artifacts (not committed)
 
 ### Localization
 
@@ -302,6 +354,6 @@ To contribute:
 3. **Test your changes** to ensure nothing is broken.
 4. **Open a pull request** describing your changes and the motivation behind them.
 
-If you have questions or need help getting started, open an issue and we’ll be happy to assist.
+If you have questions or need help getting started, open an issue and we'll be happy to assist.
 
 Thank you for helping make this project better!

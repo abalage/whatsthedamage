@@ -166,3 +166,12 @@ config.yml
 config.yaml
 .vscode
 .github/prompts/
+
+# Vite build output
+src/whatsthedamage/view/static/dist/
+
+# npm dependencies
+src/whatsthedamage/view/frontend/node_modules/
+
+# Vite cache
+src/whatsthedamage/view/frontend/.vite/

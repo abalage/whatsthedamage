@@ -277,9 +277,77 @@ Introduced in version 0.8.0 to extract business logic from controllers and enabl
 
 **Dependency Injection**: Services are injected into controllers, making the architecture testable and maintainable.
 
-## Frontend Architecture: Hybrid Approach
+## Frontend Architecture: Modern npm + Vite Bundling
 
-The application uses a **hybrid server-side + progressive enhancement** architecture, combining the simplicity of server-side rendering with selective client-side interactivity.
+The application uses frontend build system with npm and Vite.
+
+### Frontend Build System
+
+**Location**: `src/whatsthedamage/view/frontend/`
+
+**Build Output**: `src/whatsthedamage/static/assets/` (excluded from Git)
+
+**Key Components**:
+- **npm**: Dependency management
+- **Vite**: Modern build tool with fast HMR and optimized production builds
+- **ES Modules**: Modern JavaScript module system
+
+**Build Process**:
+1. Dependencies are managed via `package.json`
+2. Source files are in `src/` directory
+3. Vite bundles and optimizes for production
+4. Output goes to `src/whatsthedamage/static/assets/`
+
+**Makefile Integration**:
+- `make npm-install`: Install npm dependencies
+- `make vite-dev`: Run Vite development server with HMR
+- `make vite-build`: Build production assets
+- `make build`: Full stack build (Python + JS)
+
+### Frontend Structure
+
+```
+src/whatsthedamage/
+├── static/                  # Backend static assets (committed to Git)
+│   ├── model-rf-v5alpha_en.joblib
+│   └── model-rf-v5alpha_en.manifest.json
+└── view/
+    ├── frontend/            # Frontend source (in Git)
+    │   ├── src/
+    │   │   ├── main.js      # Main entry point with dependency imports
+    │   │   ├── js/          # ES module source files
+    │   │   │   ├── index.js # Index page functionality
+    │   │   │   ├── main.js  # DataTables initialization
+    │   │   │   ├── statistical-analysis.js # Statistical controls
+    │   │   │   ├── utils.js # Utility functions
+    │   │   │   └── api-docs.js # API documentation
+    │   │   └── css/         # CSS source files (future)
+    │   ├── package.json     # npm dependencies
+    │   ├── vite.config.js   # Vite configuration
+    │   └── public/          # Public assets
+    └── static/              # Flask static files (committed to Git)
+        ├── favicon.ico      # Web favicon
+        └── dist/            # Frontend build output (NOT committed to Git)
+            ├── js/          # Optimized JS bundles
+            ├── css/         # Optimized CSS bundles
+            └── fonts/       # Required fonts
+```
+
+### Static Assets Management
+
+**Clear Separation of Concerns**:
+- **Backend Static Assets**: `src/whatsthedamage/static/` contains ML models and other backend-specific static files (committed to Git with Git LFS)
+- **Frontend Build Artifacts**: `src/whatsthedamage/view/static/dist/` contains Vite build output (NOT committed to Git, excluded via .gitignore)
+- **Flask Static Files**: `src/whatsthedamage/view/static/` contains web assets like favicon.ico (committed to Git)
+
+**Git Management**:
+- Backend assets and Flask static files are committed to Git
+- Frontend build artifacts in `dist/` are excluded from Git
+- This ensures clean separation between source and build artifacts
+
+**Flask Serving**:
+- Flask automatically serves files from `src/whatsthedamage/view/static/` at URL path `/static/`
+- Frontend assets are served from `/static/dist/` (e.g., `/static/dist/js/main.js`)
 
 ### Web Interface (`/process/v2`, `/clear`)
 - **Server-Side Rendering**: Flask renders HTML templates with Jinja2.

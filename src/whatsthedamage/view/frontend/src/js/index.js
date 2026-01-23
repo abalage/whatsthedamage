@@ -10,17 +10,13 @@ export function clearForm() {
     fetch('/clear', { method: 'POST' })
         .then(response => {
             if (response.ok) {
-                globalThis.location.reload();
+                window.location.reload();
             }
+        })
+        .catch(error => {
+            console.error('Error clearing form:', error);
+            // Could add user notification here
         });
 }
 
-// Auto-initialize if DOM is loaded
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => {
-        // Make function available globally for template usage
-        globalThis.clearForm = clearForm;
-    });
-} else {
-    globalThis.clearForm = clearForm;
-}
+// Remove global pollution - functions are exported and imported where needed

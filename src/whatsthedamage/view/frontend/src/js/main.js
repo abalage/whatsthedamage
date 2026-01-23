@@ -23,24 +23,26 @@ export function initMainPage() {
                 buttons: [
                     {
                         extend: 'csv',
-                        text: globalThis.exportCsvText,
+                        text: window.exportCsvText || 'Export CSV',
                         title: 'whatsthedamage_export'
                     },
                     {
                         extend: 'excel',
-                        text: globalThis.exportExcelText,
+                        text: window.exportExcelText || 'Export Excel',
                         title: 'whatsthedamage_export'
                     }
                 ]
             });
         });
 
-    // Initialize Bootstrap popovers
+    // Initialize Bootstrap popovers with proper sanitization
     const popoverTriggerList = Array.prototype.slice.call(document.querySelectorAll('[data-bs-toggle="popover"]'));
     popoverTriggerList.map(function (popoverTriggerEl) {
         return new bootstrap.Popover(popoverTriggerEl, {
             html: true,
-            sanitize: false
+            sanitize: true
+            // Note: allowList removed to avoid TypeScript errors
+            // Bootstrap 5 handles basic sanitization automatically
         });
     });
 }

@@ -49,7 +49,7 @@ ENV PATH="/home/${USER}/.local/bin:${PATH}"
 RUN pip install --no-cache-dir --no-deps --user -e .
 
 # Install frontend dependencies and build assets
-RUN cd /app/src/whatsthedamage/view/frontend && npm install && npm run build
+RUN cd /app/src/whatsthedamage/view/frontend && npm ci && npm run build
 
 # Expose port 5000
 EXPOSE 5000

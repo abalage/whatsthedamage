@@ -19,19 +19,10 @@ import 'datatables.net-buttons';
 import 'datatables.net-buttons/js/buttons.html5.min';
 import 'datatables.net-buttons/js/buttons.print.min';
 
-// IMMEDIATELY set globals before anything else
-globalThis.$ = $;
-globalThis.jQuery = $;
-globalThis.bootstrap = bootstrap;
-
 // Import application modules and their init functions
 import { initMainPage } from './js/main';
 import { initStatisticalAnalysis } from './js/statistical-analysis';
 import { clearForm } from './js/index';
-import './js/utils';
-
-// Make functions available globally for template usage
-globalThis.clearForm = clearForm;
 
 // Initialize all modules when DOM is ready
 if (document.readyState === 'loading') {
@@ -47,3 +38,6 @@ if (document.readyState === 'loading') {
 
 // Export for use in other modules
 export { default as $ } from 'jquery';
+export { clearForm } from './js/index';
+export { initMainPage } from './js/main';
+export { initStatisticalAnalysis } from './js/statistical-analysis';

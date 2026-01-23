@@ -19,6 +19,19 @@ VERSION ?= $(shell set -o pipefail; python3 -m setuptools_scm 2>/dev/null || ech
 # DEVELOPMENT TARGETS
 # =============================================================================
 
+# Frontend development
+npm-install:
+	cd src/whatsthedamage/view/frontend && npm install
+
+vite-dev:
+	cd src/whatsthedamage/view/frontend && npm run dev
+
+vite-build:
+	cd src/whatsthedamage/view/frontend && npm run build
+
+# Combined build
+build: dev npm-install vite-build
+
 # Create venv and install pip-tools
 $(VENV)/pyvenv.cfg:
 	python3 -m venv $(VENV)
@@ -35,7 +48,7 @@ $(VENV)/.deps-synced: requirements.txt requirements-dev.txt requirements-web.txt
 dev: $(VENV)/.deps-synced
 
 # Run Flask development server
-web: dev
+web: dev vite-build
 	export FLASK_APP=src.whatsthedamage.app && $(PYTHON) -m flask run
 
 # Run tests using tox
@@ -128,6 +141,10 @@ help:
 	@echo "  image          - Build Podman image with version tag"
 	@echo "  lang           - Extract translatable strings to English .pot file"
 	@echo "  docs           - Build Sphinx documentation"
+	@echo "  npm-install    - Install npm dependencies"
+	@echo "  vite-dev       - Run Vite development server"
+	@echo "  vite-build     - Build frontend assets"
+	@echo "  build          - Full stack build (Python + JS)"
 	@echo ""
 	@echo "Dependency management:"
 	@echo "  compile-deps   - Compile requirements files from pyproject.toml"

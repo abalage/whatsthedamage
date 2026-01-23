@@ -9,11 +9,13 @@ ENV USER=appuser
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
-# Install system dependencies (including curl for health checks)
+# Install system dependencies (including curl for health checks and nodejs for frontend)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     file \
     git \
     curl \
+    nodejs \
+    npm \
     && rm -rf /var/lib/apt/lists/*
 
 # Create a non-root user with home directory
@@ -45,6 +47,9 @@ ENV PATH="/home/${USER}/.local/bin:${PATH}"
 
 # Install the package in editable mode
 RUN pip install --no-cache-dir --no-deps --user -e .
+
+# Install frontend dependencies and build assets
+RUN cd /app/src/whatsthedamage/view/frontend && npm install && npm run build
 
 # Expose port 5000
 EXPOSE 5000

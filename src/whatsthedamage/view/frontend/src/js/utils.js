@@ -7,7 +7,7 @@
  * @param {string} message - The message to display
  * @param {string} type - The type of notification (success, danger, etc.)
  */
-function showNotification(message, type) {
+export function showNotification(message, type) {
     // Create notification element
     const notification = document.createElement('div');
     notification.className = 'alert alert-' + type + ' alert-dismissible fade show';

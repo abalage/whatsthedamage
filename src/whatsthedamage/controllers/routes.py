@@ -236,6 +236,11 @@ def recalculate_statistics() -> Union[Response, tuple[Response, int]]:
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+@bp.route('/favicon.ico')
+def favicon() -> Response:
+    """Serve favicon.ico to prevent 404 errors in browser console."""
+    return current_app.send_static_file('favicon.ico')
+
 @bp.route('/health')
 def health() -> Response:
     try:

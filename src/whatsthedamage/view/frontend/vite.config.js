@@ -13,10 +13,10 @@ export default defineConfig({
     chunkSizeWarningLimit: 1000,
     rollupOptions: {
       input: {
-        main: path.resolve(__dirname, 'src/main.js'),
-        index: path.resolve(__dirname, 'src/js/index.js'),
-        apiDocs: path.resolve(__dirname, 'src/js/api-docs.js'),
-        statisticalAnalysis: path.resolve(__dirname, 'src/js/statistical-analysis.js'),
+        main: path.resolve(__dirname, 'src/main.ts'),
+        index: path.resolve(__dirname, 'src/js/index.ts'),
+        apiDocs: path.resolve(__dirname, 'src/js/api-docs.ts'),
+        statisticalAnalysis: path.resolve(__dirname, 'src/js/statistical-analysis.ts'),
         utils: path.resolve(__dirname, 'src/js/utils.ts')
       },
       output: {

@@ -242,7 +242,8 @@ def process_details_and_build_response(
 def handle_recalculate_statistics_request(
     result_id: str,
     algorithms: List[str],
-    direction: str
+    direction: str,
+    use_default_directions: bool = False
 ) -> Tuple[Dict[str, Any], int]:
     """Handle recalculate statistics request with business logic.
 
@@ -253,6 +254,7 @@ def handle_recalculate_statistics_request(
         result_id: UUID of the cached processing result
         algorithms: List of algorithm names to use (e.g., ['iqr', 'pareto'])
         direction: Analysis direction ('columns' or 'rows')
+        use_default_directions: If True, use each algorithm's default direction instead of the provided direction
 
     Returns:
         Tuple of (response_data, status_code)
@@ -278,7 +280,8 @@ def handle_recalculate_statistics_request(
         new_metadata = stat_service.recalculate_highlights(
             cached.responses,
             algorithms,
-            direction
+            direction,
+            use_default_directions
         )
 
         # Update cache with new metadata

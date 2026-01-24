@@ -213,6 +213,7 @@ def recalculate_statistics() -> Union[Response, tuple[Response, int]]:
         result_id = data.get('result_id')
         algorithms = data.get('algorithms', [])
         direction = data.get('direction', 'columns')
+        use_default_directions = data.get('use_default_directions', False)
 
         if not result_id:
             return jsonify({'error': 'result_id is required'}), 400
@@ -228,7 +229,8 @@ def recalculate_statistics() -> Union[Response, tuple[Response, int]]:
         response_data, status_code = handle_recalculate_statistics_request(
             result_id=result_id,
             algorithms=algorithms,
-            direction=direction
+            direction=direction,
+            use_default_directions=use_default_directions
         )
 
         return jsonify(response_data), status_code

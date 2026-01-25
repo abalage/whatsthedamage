@@ -10,12 +10,11 @@ export default defineConfig({
     cssCodeSplit: true,
     minify: 'terser',
     sourcemap: true,
-    chunkSizeWarningLimit: 1000,
+    chunkSizeWarningLimit: 500,
     rollupOptions: {
       input: {
         main: path.resolve(__dirname, 'src/main.ts'),
         index: path.resolve(__dirname, 'src/js/index.ts'),
-        apiDocs: path.resolve(__dirname, 'src/js/api-docs.ts'),
         statisticalAnalysis: path.resolve(__dirname, 'src/js/statistical-analysis.ts'),
         utils: path.resolve(__dirname, 'src/js/utils.ts')
       },
@@ -24,8 +23,7 @@ export default defineConfig({
         chunkFileNames: 'js/[name].js',
         assetFileNames: 'css/[name].[ext]',
         manualChunks: {
-          vendor: ['jquery', 'bootstrap', 'datatables.net'],
-          swagger: ['swagger-ui-dist']
+          vendor: ['jquery', 'bootstrap', 'datatables.net']
         }
       }
     }

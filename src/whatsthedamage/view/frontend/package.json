@@ -18,8 +18,7 @@
     "datatables.net-fixedheader": "^4.0.5",
     "datatables.net-fixedheader-bs5": "^4.0.5",
     "jquery": "^4.0.0",
-    "jszip": "^3.10.1",
-    "swagger-ui-dist": "^5.10.0"
+    "jszip": "^3.10.1"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.3",
@@ -27,7 +26,6 @@
     "@types/datatables.net": "^1.10.28",
     "@types/jquery": "^3.5.33",
     "@types/jsdom": "^27.0.0",
-    "@types/swagger-ui-dist": "^3.30.6",
     "@vitest/ui": "^4.0.18",
     "@vue/eslint-config-prettier": "^10.2.0",
     "eslint": "^9.39.2",

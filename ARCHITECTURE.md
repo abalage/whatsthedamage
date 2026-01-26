@@ -277,25 +277,90 @@ Introduced in version 0.8.0 to extract business logic from controllers and enabl
 
 **Dependency Injection**: Services are injected into controllers, making the architecture testable and maintainable.
 
-## Frontend Architecture: Hybrid Approach
+## Frontend Architecture: npm + Vite Bundling
 
-The application uses a **hybrid server-side + progressive enhancement** architecture, combining the simplicity of server-side rendering with selective client-side interactivity.
+The application uses frontend build system with npm and Vite.
+
+### Frontend Build System
+
+**Location**: `src/whatsthedamage/view/frontend/`
+
+**Build Output**: `src/whatsthedamage/view/static/dist/` (excluded from Git)
+
+**Key Components**:
+- **npm**: Dependency management
+- **Vite**: Modern build tool with fast HMR and optimized production builds
+- **TypeScript**: Type-safe JavaScript development with modern ES module syntax
+- **ES Modules**: Native ES module system for better code organization and tree-shaking
+
+**Build Process**:
+1. Dependencies are managed via `package.json`
+2. Source files are in `src/` directory
+3. Vite bundles and optimizes for production
+4. Output goes to `src/whatsthedamage/view/static/dist/`
+
+**Makefile Integration**:
+- `make npm-install`: Install npm dependencies
+- `make vite-dev`: Run Vite development server with HMR
+- `make vite-build`: Build production assets
+- `make build`: Full stack build (Python + JS)
+
+### Frontend Structure
+
+```
+src/whatsthedamage/
+├── static/                  # Backend static assets (committed to Git)
+│   ├── model-rf-v5alpha_en.joblib
+│   └── model-rf-v5alpha_en.manifest.json
+└── view/
+    ├── frontend/            # Frontend source (in Git)
+    │   ├── src/
+    │   │   ├── main.ts      # Main entry point with dependency imports
+    │   │   ├── js/          # TypeScript module source files
+    │   │   │   ├── index.ts # Index page functionality (form clearing)
+    │   │   │   ├── main.ts  # DataTables initialization and Bootstrap components
+    │   │   │   ├── statistical-analysis.ts # Statistical controls
+    │   │   │   ├── utils.ts # Utility functions
+    │   │   │   └── api-docs.ts # API documentation page
+    │   │   └── css/         # CSS source files (future)
+    │   ├── package.json     # npm dependencies
+    │   ├── vite.config.js   # Vite configuration
+    │   └── public/          # Public assets
+    └── static/              # Flask static files (committed to Git)
+        ├── favicon.ico      # Web favicon
+        └── dist/            # Frontend build output (NOT committed to Git)
+            ├── js/          # Optimized JS bundles
+            ├── css/         # Optimized CSS bundles
+            └── fonts/       # Required fonts
+```
+
+**Key Features**:
+- **Modular Architecture**: Each page/component has its own TypeScript module
+- **Dependency Injection**: Modules export functions that are imported and called by main.ts
+- **Progressive Enhancement**: Core functionality works without JavaScript; JS adds convenience features
+- **No Global Pollution**: Functions are exported and imported where needed, avoiding global namespace pollution
+
+### Static Assets Management
+
+**Clear Separation of Concerns**:
+- **Backend Static Assets**: `src/whatsthedamage/static/` contains ML models and other backend-specific static files (committed to Git with Git LFS)
+- **Frontend Build Artifacts**: `src/whatsthedamage/view/static/dist/` contains Vite build output (NOT committed to Git, excluded via .gitignore)
+- **Flask Static Files**: `src/whatsthedamage/view/static/` contains web assets like favicon.ico (committed to Git)
+
+**Git Management**:
+- Backend assets and Flask static files are committed to Git
+- Frontend build artifacts in `dist/` are excluded from Git
+- This ensures clean separation between source and build artifacts
+
+**Flask Serving**:
+- Flask automatically serves files from `src/whatsthedamage/view/static/` at URL path `/static/`
+- Frontend assets are served from `/static/dist/` (e.g., `/static/dist/js/main.js`)
 
 ### Web Interface (`/process/v2`, `/clear`)
 - **Server-Side Rendering**: Flask renders HTML templates with Jinja2.
 - **Form Submission**: Traditional POST requests for file uploads and processing.
 - **Full Page Reloads**: Primary navigation pattern for simplicity and reliability.
 - **Session Management**: Flask sessions handle user state between requests.
-
-### Interactive Enhancements
-- **JavaScript Fetch API**: Used for actions that don't require page reloads:
-  - Form clearing (`/clear` endpoint)
-- **DataTables Integration**: Client-side table enhancement for transaction results:
-  - Sorting, searching, pagination without server round-trips
-  - Fixed headers for better UX with large datasets
-  - Export functionality (CSV/Excel) using DataTables Buttons extension
-  - Operates on server-rendered HTML tables
-- **Progressive Enhancement**: Core functionality works without JavaScript; JS adds convenience.
 
 ### REST API (`/api/v1/`, `/api/v2/`)
 - **Purpose**: Programmatic access for automation, scripting, and potential mobile apps.
@@ -339,21 +404,6 @@ The application uses a **hybrid server-side + progressive enhancement** architec
 ## Configuration
 - YAML config file defines CSV format, attribute mapping, enrichment patterns, and categories.
 - Centralized in `config/config.py` and loaded at startup.
-
-## Performance Optimizations
-
-Version 0.9.0 introduces several performance improvements:
-
-### CSV Processing Caching
-- `CSVProcessor` caches parsed rows in `_rows` attribute to avoid re-reading files.
-- Eliminates redundant CSV parsing when processing same file multiple times.
-- Significantly reduces I/O overhead for large CSV files.
-
-### Multi-Account Support
-- `CsvRow` objects now include account metadata.
-- Enables processing of multi-account CSV exports.
-- Each account processed as separate entity with own currency metadata.
-- `DataTablesResponse` structures organized per account.
 
 ## Extensibility
 

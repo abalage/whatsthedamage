@@ -377,7 +377,8 @@ class StatisticalAnalysisService:
         self,
         datatables_responses: Dict[str, Any],
         algorithms: List[str],
-        direction: str
+        direction: str,
+        use_default_directions: bool = False
     ) -> StatisticalMetadata:
         """Recalculate statistical highlights with custom algorithm and direction settings.
 
@@ -385,6 +386,7 @@ class StatisticalAnalysisService:
             datatables_responses: Dictionary of table responses
             algorithms: List of algorithm names to use (e.g., ['iqr', 'pareto'])
             direction: Analysis direction ('columns' or 'rows')
+            use_default_directions: If True, use each algorithm's default direction instead of the provided direction
 
         Returns:
             StatisticalMetadata with recalculated highlights
@@ -404,7 +406,7 @@ class StatisticalAnalysisService:
             summary = self._extract_summary_from_response(filtered_response)
 
             # Get highlights with custom parameters
-            table_highlights = self.get_highlights(summary, algorithms=algorithms, direction=analysis_direction)
+            table_highlights = self.get_highlights(summary, algorithms=algorithms, direction=analysis_direction, use_default_directions=use_default_directions)
             for h in table_highlights:
                 plain_month = h.column.split(' (')[0] if ' (' in h.column else h.column
                 highlights.append(CellHighlight(row=h.row, column=plain_month, highlight_type=h.highlight_type))

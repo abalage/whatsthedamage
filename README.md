@@ -82,12 +82,6 @@ All three interfaces share the same **core business logic** through a well-defin
 
 The web interface implements a **10-minute caching strategy** to improve performance and user experience:
 
-- **Cache Duration**: Processing results are cached for 10 minutes (600 seconds) using the `CacheService`
-- **Cached Data**: The cache stores `CachedProcessingResult` objects containing processed transaction data (`DataTablesResponse` objects) for each account
-- **Cache Miss Behavior**: If a cache entry expires or is not found, drilldown views display an error message and redirect users to the main page
-- **Session Management**: File references (paths) are stored in the session with the same 10-minute TTL, but actual file contents are never stored in session
-- **Automatic Cleanup**: The `SessionService` automatically cleans up expired file references and removes corresponding files from disk
-
 **Note**: The current implementation does not automatically reprocess files on cache miss. Users need to re-upload and process their files if the cache expires. The file references are stored for a later automatic reprocessing. It is not decided yet.
 
 ### Interface Comparison
@@ -95,7 +89,7 @@ The web interface implements a **10-minute caching strategy** to improve perform
 | Feature | CLI | Web UI | REST API |
 |---------|-----|--------|----------|
 | **Access Method** | Terminal commands | Browser forms | HTTP requests |
-| **Authentication** | None | Session-based | None (add if needed) |
+| **Authentication** | None | None | None |
 | **Input** | File paths | File upload | Multipart form data |
 | **Output** | Console/CSV/HTML | HTML page | JSON |
 | **Use Case** | Local analysis, scripts | Ad-hoc exploration | Automation, integrations |
@@ -161,8 +155,8 @@ You can access the web interface on [http://localhost:5000](http://localhost:500
 
 ## Usage:
 ```
-usage: whatsthedamage [-h] [--start-date START_DATE] [--end-date END_DATE] [--verbose] [--version] [--config CONFIG] [--category CATEGORY] [--output OUTPUT]
-                      [--output-format OUTPUT_FORMAT] [--nowrap] [--filter FILTER] [--lang LANG] [--training-data] [--ml]
+usage: whatsthedamage [-h] [--start-date START_DATE] [--end-date END_DATE] [--verbose] [--version] [--config CONFIG] [--category CATEGORY] [--output OUTPUT] [--output-format OUTPUT_FORMAT] [--nowrap]
+                      [--filter FILTER] [--lang LANG] [--training-data] [--ml]
                       filename
 
 A CLI tool to process bank account transaction exports in CSV files.
@@ -235,9 +229,9 @@ Note: the Machine Learning model was trained on the categories listed here.
 ## Limitations
 
 - The categorization process may fail to categorize transactions because of the quality of the regular expressions / ML model. The transaction might be categorized as 'other'.
-- The tool assumes that account exports only use a single currency.
+- The tool assumes that an account only use a single currency.
 - The Machine Learning model is currently English-centric; language-agnostic models are planned for future releases.
-- REST API currently does not include authentication.
+- No authentication.
 
 ## Development
 
@@ -253,7 +247,7 @@ The repository comes with a Makefile using 'GNU make' to automatize recurring ac
 ```shell
 $ make help
 Development workflow:
-  dev            - Create venv, install pip-tools, sync all requirements
+  dev            - Create venv, install pip-tools, sync all requirementsm, install frontend dependencies
   web            - Run Flask development server
   test           - Run tests using tox
   ruff           - Run ruff linter/formatter
@@ -261,30 +255,50 @@ Development workflow:
   image          - Build Podman image with version tag
   lang           - Extract translatable strings to English .pot file
   docs           - Build Sphinx documentation
-  npm-install    - Install npm dependencies
-  vite-dev       - Run Vite development server
-  vite-build     - Build frontend assets
+  frontend ARG=script - Run any npm script (e.g., 'frontend ARG=dev', 'frontend ARG=build')
   build          - Full stack build (Python + JS)
 
-Dependency management:
+Dependency management for Python:
   compile-deps   - Compile requirements files from pyproject.toml
-  update-deps   - Update requirements to latest versions
-  compile-deps-secure - Generate requirements with hashes
+  update-deps    - Update requirements to latest versions
 
-Cleanup:
+Cleanup for Python and JavaScript:
   clean          - Clean up build files
-  mrproper       - Clean + remove virtual environment
+  mrproper       - Clean + remove virtual environment, node_modules
 ```
 
 ### Frontend Development
 
-The project now uses a modern frontend build system with npm and Vite, replacing the previous CDN-based approach. The frontend source code is located in `src/whatsthedamage/view/frontend/`.
+The project uses a modern frontend build system with npm and Vite, replacing the previous CDN-based approach. The frontend source code is located in `src/whatsthedamage/view/frontend/`.
+
+#### JavaScript Architecture
+
+**Build System**:
+- **npm + Vite**: Modern build toolchain with fast Hot Module Replacement (HMR) and optimized production builds
+- **TypeScript**: Type-safe JavaScript development with modern ES module syntax
+- **ES Modules**: Native ES module system for better code organization and tree-shaking
+
+**Frontend Structure**:
+```
+src/whatsthedamage/view/frontend/
+├── src/
+│   ├── main.ts              # Main entry point, imports and initializes all modules
+│   ├── js/
+│   │   ├── index.ts         # Index page functionality (form clearing)
+│   │   ├── main.ts          # DataTables initialization and Bootstrap components
+│   │   ├── statistical-analysis.ts  # Statistical controls
+│   │   ├── utils.ts         # Utility functions
+│   │   └── api-docs.ts      # API documentation page
+│   └── css/                 # CSS source files (future)
+├── package.json             # npm dependencies and scripts
+├── vite.config.js           # Vite configuration
+└── public/                  # Public assets
+```
 
 **Frontend Dependencies**:
 - All frontend dependencies are managed via npm in `package.json`
-- Run `make npm-install` to install dependencies
-- Run `make vite-dev` for development with hot module replacement
-- Run `make vite-build` to build production assets
+- Run `make dev` to install dependencies (includes both Python and JavaScript dependencies)
+- Run `make frontend ARG=build` to build production assets
 
 **Frontend Build Output**:
 - Build assets are output to `src/whatsthedamage/view/static/dist/`
@@ -295,34 +309,6 @@ The project now uses a modern frontend build system with npm and Vite, replacing
 - **Backend static assets**: `src/whatsthedamage/static/` - ML models, configuration files (committed to Git)
 - **Frontend build artifacts**: `src/whatsthedamage/view/static/dist/` - Vite build output (NOT committed to Git, excluded via .gitignore)
 - **Flask static files**: `src/whatsthedamage/view/static/` - favicon.ico and other web assets (committed to Git)
-
-**Development Workflow**:
-```bash
-# Terminal 1: Flask backend
-make web
-
-# Terminal 2: Vite frontend (development mode)
-make vite-dev
-```
-
-**Production Build**:
-```bash
-# Install npm dependencies
-make npm-install
-
-# Build frontend assets
-make vite-build
-
-# Or use combined build
-make build
-```
-
-**Benefits of Modern Frontend Build System**:
-- **Dependency Management**: Declarative dependency management via npm with version pinning
-- **Performance Optimizations**: Tree-shaking, code splitting, minification, and compression (139-496 kB after gzip)
-- **Development Experience**: Hot module replacement, modern ES module syntax, better error handling
-- **Offline Support**: All dependencies bundled locally, no CDN dependency
-- **Clear Separation**: Backend assets (committed) vs frontend build artifacts (not committed)
 
 ### Localization
 

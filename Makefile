@@ -50,8 +50,17 @@ $(VENV)/.deps-synced: requirements.txt requirements-dev.txt requirements-web.txt
 	$(PIP) install -e .
 	touch $(VENV)/.deps-synced
 
+# Track when frontend dependencies were last installed
+$(FRONTEND_DIR)/node_modules/.installed: $(FRONTEND_DIR)/package.json $(FRONTEND_DIR)/package-lock.json
+	@if ! command -v $(NPM) >/dev/null 2>&1; then \
+		echo "npm is not installed. Please install Node.js and npm first."; \
+		exit 1; \
+	fi
+	cd $(FRONTEND_DIR) && $(NPM) install
+	touch $@
+
 # Set up development environment
-dev: $(VENV)/.deps-synced
+dev: $(VENV)/.deps-synced $(FRONTEND_DIR)/node_modules/.installed
 
 # Run Flask development server
 web: dev
@@ -129,10 +138,12 @@ clean:
 	rm -rf .coverage*
 	find . -type f -name "*.pyc" -delete
 	find . -type d -name __pycache__ -delete
+	rm -rf $(FRONTEND_DIR)/../static/dist/
 
 # Deep clean including virtual environment
 mrproper: clean
 	rm -rf $(VENV)
+	rm -rf $(FRONTEND_DIR)/node_modules/
 
 # =============================================================================
 # HELP
@@ -141,7 +152,7 @@ mrproper: clean
 # Help target
 help:
 	@echo "Development workflow:"
-	@echo "  dev            - Create venv, install pip-tools, sync all requirements"
+	@echo "  dev            - Create venv, install pip-tools, sync all requirementsm, install frontend dependencies"
 	@echo "  web            - Run Flask development server"
 	@echo "  test           - Run tests using tox"
 	@echo "  ruff           - Run ruff linter/formatter"
@@ -152,10 +163,10 @@ help:
 	@echo "  frontend ARG=script - Run any npm script (e.g., 'frontend ARG=dev', 'frontend ARG=build')"
 	@echo "  build          - Full stack build (Python + JS)"
 	@echo ""
-	@echo "Dependency management:"
+	@echo "Dependency management for Python:"
 	@echo "  compile-deps   - Compile requirements files from pyproject.toml"
 	@echo "  update-deps    - Update requirements to latest versions"
 	@echo ""
-	@echo "Cleanup:"
+	@echo "Cleanup for Python and JavaScript:"
 	@echo "  clean          - Clean up build files"
-	@echo "  mrproper       - Clean + remove virtual environment"
+	@echo "  mrproper       - Clean + remove virtual environment, node_modules"

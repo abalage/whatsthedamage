@@ -277,7 +277,7 @@ Introduced in version 0.8.0 to extract business logic from controllers and enabl
 
 **Dependency Injection**: Services are injected into controllers, making the architecture testable and maintainable.
 
-## Frontend Architecture: Modern npm + Vite Bundling
+## Frontend Architecture: npm + Vite Bundling
 
 The application uses frontend build system with npm and Vite.
 
@@ -285,18 +285,19 @@ The application uses frontend build system with npm and Vite.
 
 **Location**: `src/whatsthedamage/view/frontend/`
 
-**Build Output**: `src/whatsthedamage/static/assets/` (excluded from Git)
+**Build Output**: `src/whatsthedamage/view/static/dist/` (excluded from Git)
 
 **Key Components**:
 - **npm**: Dependency management
 - **Vite**: Modern build tool with fast HMR and optimized production builds
-- **ES Modules**: Modern JavaScript module system
+- **TypeScript**: Type-safe JavaScript development with modern ES module syntax
+- **ES Modules**: Native ES module system for better code organization and tree-shaking
 
 **Build Process**:
 1. Dependencies are managed via `package.json`
 2. Source files are in `src/` directory
 3. Vite bundles and optimizes for production
-4. Output goes to `src/whatsthedamage/static/assets/`
+4. Output goes to `src/whatsthedamage/view/static/dist/`
 
 **Makefile Integration**:
 - `make npm-install`: Install npm dependencies
@@ -314,13 +315,13 @@ src/whatsthedamage/
 └── view/
     ├── frontend/            # Frontend source (in Git)
     │   ├── src/
-    │   │   ├── main.js      # Main entry point with dependency imports
-    │   │   ├── js/          # ES module source files
-    │   │   │   ├── index.js # Index page functionality
-    │   │   │   ├── main.js  # DataTables initialization
-    │   │   │   ├── statistical-analysis.js # Statistical controls
-    │   │   │   ├── utils.js # Utility functions
-    │   │   │   └── api-docs.js # API documentation
+    │   │   ├── main.ts      # Main entry point with dependency imports
+    │   │   ├── js/          # TypeScript module source files
+    │   │   │   ├── index.ts # Index page functionality (form clearing)
+    │   │   │   ├── main.ts  # DataTables initialization and Bootstrap components
+    │   │   │   ├── statistical-analysis.ts # Statistical controls
+    │   │   │   ├── utils.ts # Utility functions
+    │   │   │   └── api-docs.ts # API documentation page
     │   │   └── css/         # CSS source files (future)
     │   ├── package.json     # npm dependencies
     │   ├── vite.config.js   # Vite configuration
@@ -332,6 +333,12 @@ src/whatsthedamage/
             ├── css/         # Optimized CSS bundles
             └── fonts/       # Required fonts
 ```
+
+**Key Features**:
+- **Modular Architecture**: Each page/component has its own TypeScript module
+- **Dependency Injection**: Modules export functions that are imported and called by main.ts
+- **Progressive Enhancement**: Core functionality works without JavaScript; JS adds convenience features
+- **No Global Pollution**: Functions are exported and imported where needed, avoiding global namespace pollution
 
 ### Static Assets Management
 
@@ -354,16 +361,6 @@ src/whatsthedamage/
 - **Form Submission**: Traditional POST requests for file uploads and processing.
 - **Full Page Reloads**: Primary navigation pattern for simplicity and reliability.
 - **Session Management**: Flask sessions handle user state between requests.
-
-### Interactive Enhancements
-- **JavaScript Fetch API**: Used for actions that don't require page reloads:
-  - Form clearing (`/clear` endpoint)
-- **DataTables Integration**: Client-side table enhancement for transaction results:
-  - Sorting, searching, pagination without server round-trips
-  - Fixed headers for better UX with large datasets
-  - Export functionality (CSV/Excel) using DataTables Buttons extension
-  - Operates on server-rendered HTML tables
-- **Progressive Enhancement**: Core functionality works without JavaScript; JS adds convenience.
 
 ### REST API (`/api/v1/`, `/api/v2/`)
 - **Purpose**: Programmatic access for automation, scripting, and potential mobile apps.
@@ -407,21 +404,6 @@ src/whatsthedamage/
 ## Configuration
 - YAML config file defines CSV format, attribute mapping, enrichment patterns, and categories.
 - Centralized in `config/config.py` and loaded at startup.
-
-## Performance Optimizations
-
-Version 0.9.0 introduces several performance improvements:
-
-### CSV Processing Caching
-- `CSVProcessor` caches parsed rows in `_rows` attribute to avoid re-reading files.
-- Eliminates redundant CSV parsing when processing same file multiple times.
-- Significantly reduces I/O overhead for large CSV files.
-
-### Multi-Account Support
-- `CsvRow` objects now include account metadata.
-- Enables processing of multi-account CSV exports.
-- Each account processed as separate entity with own currency metadata.
-- `DataTablesResponse` structures organized per account.
 
 ## Extensibility
 

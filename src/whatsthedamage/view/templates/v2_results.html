@@ -1,39 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <style>
-    .popover-wide {
-        max-width: 400px;
-        min-width: 300px;
-        word-break: break-word;
-    }
-    .account-section {
-        margin-bottom: 3rem;
-    }
-    .account-header {
-        background-color: #f8f9fa;
-        padding: 1rem;
-        border-radius: 0.5rem;
-        margin-bottom: 1rem;
-    }
-    .highlight-outlier {
-        background-color: #ffe6e6 !important;
-    }
-    .highlight-pareto {
-        background-color: #e6ffe6 !important;
-    }
-    .highlight-excluded {
-        background-color: #f0f0f0 !important;
-    }
-    .clickable {
-        cursor: pointer;
-        text-decoration: none;
-        color: inherit;
-    }
-    .clickable:hover {
-        text-decoration: underline;
-    }
-    </style>
     <meta charset="UTF-8">
     <title>"What's the Damage" - {{ _('Result') }}</title>
     <link href="{{ url_for('static', filename='dist/css/main.css') }}" rel="stylesheet">
@@ -52,23 +19,20 @@
     <main class="container-fluid">
         <h1 class="text-center p-2 pb-1">{{ _('Processed results') }}</h1>
 
-        <div class="row mb-3">
-            <div class="col-md-12">
+        <div class="row row-cols-auto">
+            <div class="col">
                 <button class="btn btn-outline-info" type="button" data-bs-toggle="collapse" data-bs-target="#legend" aria-expanded="false" aria-controls="legend">
                     {{ _('Legend') }}
                 </button>
                 <div class="collapse" id="legend">
                     <div class="card card-body">
-                        <p><span class="badge bg-danger">Outlier</span> {{ _('Cells highlighted in red indicate outliers detected by IQR method.') }}</p>
-                        <p><span class="badge bg-success">Pareto</span> {{ _('Cells highlighted in green indicate top contributors per Pareto principle.') }}</p>
-                        <p><span class="badge" style="background-color: #f0f0f0; color: black;">Excluded</span> {{ _('Cells highlighted in light grey are excluded from statistical analysis (calculated rows or excluded categories).') }}</p>
+                        <p><span class="badge highlight-outlier">Outlier</span> {{ _('Cells highlighted in red indicate outliers detected by IQR method.') }}</p>
+                        <p><span class="badge highlight-pareto">Pareto</span> {{ _('Cells highlighted in green indicate top contributors per Pareto principle.') }}</p>
+                        <p><span class="badge highlight-excluded">Excluded</span> {{ _('Cells highlighted in light grey are excluded from statistical analysis (calculated rows or excluded categories).') }}</p>
                     </div>
                 </div>
             </div>
-        </div>
-
-        <div class="row mb-3">
-            <div class="col-md-12">
+            <div class="col">
                 <button class="btn btn-outline-primary" type="button" data-bs-toggle="collapse" data-bs-target="#stats-controls" aria-expanded="false" aria-controls="stats-controls">
                     {{ _('Statistical Analysis Controls') }}
                 </button>

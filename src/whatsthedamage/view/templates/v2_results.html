@@ -36,31 +36,13 @@
     </style>
     <meta charset="UTF-8">
     <title>"What's the Damage" - {{ _('Result') }}</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
-    <!-- DataTables CSS -->
-    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/2.3.4/css/dataTables.dataTables.min.css">
-    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/fixedheader/4.0.4/css/fixedHeader.bootstrap5.min.css">
-    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/buttons/3.2.0/css/buttons.dataTables.min.css">
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous" defer></script>
-    <!-- jQuery and DataTables JS -->
-    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-    <script src="https://cdn.datatables.net/2.3.4/js/dataTables.min.js"></script>
-    <script src="https://cdn.datatables.net/2.3.4/js/dataTables.bootstrap5.min.js"></script>
-    <script src="https://cdn.datatables.net/fixedheader/4.0.4/js/dataTables.fixedHeader.min.js"></script>
-    <script src="https://cdn.datatables.net/buttons/3.2.0/js/dataTables.buttons.min.js"></script>
-    <script src="https://cdn.datatables.net/buttons/3.2.0/js/buttons.html5.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-
-    <!-- Custom JavaScript files -->
-    <script src="{{ url_for('static', filename='js/utils.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/statistical-analysis.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <link href="{{ url_for('static', filename='dist/css/main.css') }}" rel="stylesheet">
+    <script type="module" src="{{ url_for('static', filename='dist/js/main.js') }}"></script>
     <!-- Translated strings for JavaScript -->
     <script>
-        window.resultId = '{{ result_id }}';
-        window.exportCsvText = '{{ _("Export CSV") }}';
-        window.exportExcelText = '{{ _("Export Excel") }}';
+        globalThis.resultId = '{{ result_id }}';
+        globalThis.exportCsvText = '{{ _("Export CSV") }}';
+        globalThis.exportExcelText = '{{ _("Export Excel") }}';
     </script>
 </head>
 <body>
@@ -126,7 +108,7 @@
 
                         <div class="d-flex gap-2">
                             <button id="recalculate-btn" class="btn btn-primary btn-sm">
-                                <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+                                <output class="spinner-border spinner-border-sm d-none" aria-hidden="true"></output>
                                 <span>{{ _('Recalculate') }}</span>
                             </button>
                             <button id="reset-btn" class="btn btn-secondary btn-sm">{{ _('Reset to Defaults') }}</button>

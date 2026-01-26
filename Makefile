@@ -9,6 +9,11 @@ RUFF := $(VENV)/bin/ruff
 MYPY := $(VENV)/bin/mypy
 PODMAN := /usr/bin/podman
 
+# Frontend paths and commands
+FRONTEND_DIR := src/whatsthedamage/view/frontend
+NPM := npm
+NPM_RUN := $(NPM) run
+
 DOCKER_IMAGE := whatsthedamage
 DOCKER_TAG ?= $(shell set -o pipefail; python3 -m setuptools_scm 2>/dev/null | sed 's/\+/_/' || echo "latest")
 VERSION ?= $(shell set -o pipefail; python3 -m setuptools_scm 2>/dev/null || echo "v0.0.0")
@@ -20,17 +25,18 @@ VERSION ?= $(shell set -o pipefail; python3 -m setuptools_scm 2>/dev/null || ech
 # =============================================================================
 
 # Frontend development
-npm-install:
-	cd src/whatsthedamage/view/frontend && npm install
-
-vite-dev:
-	cd src/whatsthedamage/view/frontend && npm run dev
-
-vite-build:
-	cd src/whatsthedamage/view/frontend && npm run build
+# Unified frontend interface - runs any npm script
+# Usage: make frontend ARG=script-name
+frontend:
+	@if ! command -v $(NPM) >/dev/null 2>&1; then \
+		echo "npm is not installed. Please install Node.js and npm first."; \
+		exit 1; \
+	fi
+	cd $(FRONTEND_DIR) && $(NPM_RUN) $(ARG)
 
 # Combined build
-build: dev npm-install vite-build
+build: dev
+	$(MAKE) frontend ARG=build
 
 # Create venv and install pip-tools
 $(VENV)/pyvenv.cfg:
@@ -48,12 +54,14 @@ $(VENV)/.deps-synced: requirements.txt requirements-dev.txt requirements-web.txt
 dev: $(VENV)/.deps-synced
 
 # Run Flask development server
-web: dev vite-build
+web: dev
+	$(MAKE) frontend ARG=build
 	export FLASK_APP=src.whatsthedamage.app && $(PYTHON) -m flask run
 
 # Run tests using tox
 test: dev
 	$(TOX)
+	$(MAKE) frontend ARG=test
 
 # Run ruff linter/formatter
 ruff: dev
@@ -141,15 +149,12 @@ help:
 	@echo "  image          - Build Podman image with version tag"
 	@echo "  lang           - Extract translatable strings to English .pot file"
 	@echo "  docs           - Build Sphinx documentation"
-	@echo "  npm-install    - Install npm dependencies"
-	@echo "  vite-dev       - Run Vite development server"
-	@echo "  vite-build     - Build frontend assets"
+	@echo "  frontend ARG=script - Run any npm script (e.g., 'frontend ARG=dev', 'frontend ARG=build')"
 	@echo "  build          - Full stack build (Python + JS)"
 	@echo ""
 	@echo "Dependency management:"
 	@echo "  compile-deps   - Compile requirements files from pyproject.toml"
 	@echo "  update-deps    - Update requirements to latest versions"
-	@echo "  compile-deps-secure - Generate requirements with hashes"
 	@echo ""
 	@echo "Cleanup:"
 	@echo "  clean          - Clean up build files"

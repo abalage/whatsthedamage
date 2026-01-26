@@ -4,6 +4,8 @@
  */
 
 import { showNotification } from './utils';
+import { postData } from '../utils/api';
+import { AppError, StatisticalAnalysisRequest, StatisticalAnalysisResponse } from '../types';
 
 /**
  * Initialize statistical analysis controls
@@ -14,8 +16,8 @@ export function initStatisticalAnalysis(): void {
 
     if (recalculateBtn && resetBtn) {
         // Mark as initialized for testing purposes
-        recalculateBtn.setAttribute('data-initialized', 'true');
-        resetBtn.setAttribute('data-initialized', 'true');
+        recalculateBtn.dataset.initialized = 'true';
+        resetBtn.dataset.initialized = 'true';
 
         const spinner = recalculateBtn.querySelector('.spinner-border');
 
@@ -24,7 +26,13 @@ export function initStatisticalAnalysis(): void {
             const algorithms = Array.prototype.slice.call(document.querySelectorAll('input[type="checkbox"][value]:checked'))
                 .map(function(el: HTMLInputElement) { return el.value; });
             const directionInput = document.querySelector('input[name="direction"]:checked') as HTMLInputElement | null;
-            const direction = directionInput ? directionInput.value : 'columns';
+            const direction = (directionInput?.value ?? 'columns') as 'columns' | 'rows';
+
+            const request: StatisticalAnalysisRequest = {
+                result_id: (globalThis as any).resultId,
+                algorithms: algorithms,
+                direction: direction
+            };
 
             // Show loading spinner
             if (spinner) spinner.classList.remove('d-none');
@@ -33,44 +41,36 @@ export function initStatisticalAnalysis(): void {
             (recalculateBtn as HTMLButtonElement).disabled = true;
             (resetBtn as HTMLButtonElement).disabled = true;
 
-            fetch('/recalculate-statistics', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    result_id: (globalThis as any).resultId,
-                    algorithms: algorithms,
-                    direction: direction
+            postData<StatisticalAnalysisResponse>('/recalculate-statistics', request)
+                .then(function(data) {
+                    if (data.status === 'success') {
+                        // Update all cell highlights
+                        updateCellHighlights(data.highlights);
+                        showNotification('Statistics recalculated successfully!', 'success');
+                    } else {
+                        throw new AppError(data.error || 'Unknown error');
+                    }
                 })
-            })
-            .then(function(response: Response) {
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
-                }
-                return response.json();
-            })
-            .then(function(data: any) {
-                if (data.status === 'success') {
-                    // Update all cell highlights
-                    updateCellHighlights(data.highlights);
-                    showNotification('Statistics recalculated successfully!', 'success');
-                } else {
-                    throw new Error(data.error || 'Unknown error');
-                }
-            })
-            .catch(function(error: Error) {
-                console.error('Error:', error);
-                showNotification('Error recalculating statistics: ' + error.message, 'danger');
-            })
-            .finally(function() {
-                // Hide loading spinner
-                if (spinner) spinner.classList.add('d-none');
-                const lastSpan = recalculateBtn.querySelector('span:last-child');
-                if (lastSpan) lastSpan.textContent = 'Recalculate';
-                (recalculateBtn as HTMLButtonElement).disabled = false;
-                (resetBtn as HTMLButtonElement).disabled = false;
-            });
+                .catch(function(error: unknown) {
+                    let appError: AppError;
+                    if (error instanceof AppError) {
+                        appError = error;
+                    } else if (error instanceof Error) {
+                        appError = new AppError(error.message);
+                    } else {
+                        appError = new AppError(String(error));
+                    }
+                    console.error('Error:', appError);
+                    showNotification('Error recalculating statistics: ' + appError.message, 'danger');
+                })
+                .finally(function() {
+                    // Hide loading spinner
+                    if (spinner) spinner.classList.add('d-none');
+                    const lastSpan = recalculateBtn.querySelector('span:last-child');
+                    if (lastSpan) lastSpan.textContent = 'Recalculate';
+                    (recalculateBtn as HTMLButtonElement).disabled = false;
+                    (resetBtn as HTMLButtonElement).disabled = false;
+                });
         });
 
         // Reset button click handler
@@ -93,37 +93,34 @@ export function initStatisticalAnalysis(): void {
             (resetBtn as HTMLButtonElement).disabled = true;
 
             // Trigger recalculation with default settings using default directions
-            fetch('/recalculate-statistics', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    result_id: (globalThis as any).resultId,
-                    algorithms: ['iqr', 'pareto'],
-                    direction: 'columns',
-                    use_default_directions: true
+            const resetRequest: StatisticalAnalysisRequest = {
+                result_id: (globalThis as any).resultId,
+                algorithms: ['iqr', 'pareto'],
+                direction: 'columns',
+                use_default_directions: true
+            };
+
+            postData<StatisticalAnalysisResponse>('/recalculate-statistics', resetRequest)
+                .then(function(data) {
+                    if (data.status === 'success') {
+                        // Update all cell highlights
+                        updateCellHighlights(data.highlights);
+                        showNotification('Defaults restored successfully!', 'success');
+                    } else {
+                        throw new AppError(data.error || 'Unknown error');
+                    }
                 })
-            })
-            .then(function(response: Response) {
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
-                }
-                return response.json();
-            })
-            .then(function(data: any) {
-                if (data.status === 'success') {
-                    // Update all cell highlights
-                    updateCellHighlights(data.highlights);
-                    showNotification('Defaults restored successfully!', 'success');
-                } else {
-                    throw new Error(data.error || 'Unknown error');
-                }
-            })
-            .catch(function(error: Error) {
-                console.error('Error:', error);
-                showNotification('Error restoring defaults: ' + error.message, 'danger');
-            })
+                .catch(function(error: unknown) {
+                    let appError: AppError;
+                    if (error instanceof AppError) {
+                        appError = error;
+                    } else {
+                        const message = error instanceof Error ? error.message : String(error);
+                        appError = new AppError(message);
+                    }
+                    console.error('Error:', appError);
+                    showNotification('Error restoring defaults: ' + appError.message, 'danger');
+                })
             .finally(function() {
                 // Hide loading spinner
                 if (spinner) spinner.classList.add('d-none');

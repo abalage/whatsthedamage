@@ -1,21 +1,30 @@
-import { expect } from 'vitest';
+import { expect, vi } from 'vitest';
 
 // Add global DOM elements for testing
 const { JSDOM } = require('jsdom');
 
 const dom = new JSDOM('<!DOCTYPE html><html><body></body></html>');
-global.window = dom.window;
-global.document = dom.window.document;
-global.HTMLElement = dom.window.HTMLElement;
+// @ts-ignore - DOMWindow from JSDOM is not fully compatible with Window & globalThis
+globalThis.window = dom.window;
+// @ts-ignore - DOMWindow.document is compatible
+globalThis.document = dom.window.document;
+// @ts-ignore - DOMWindow.HTMLElement is compatible
+globalThis.HTMLElement = dom.window.HTMLElement;
 
 // Mock global functions that might be used in tests
-global.exportCsvText = 'Export CSV';
-global.exportExcelText = 'Export Excel';
+globalThis.exportCsvText = 'Export CSV';
+globalThis.exportExcelText = 'Export Excel';
+
+// Note: window.location.reload cannot be mocked in setup due to JSDOM restrictions.
+// Tests will mock it individually as needed.
 
 // Add Vitest matchers
 expect.extend({
+  /**
+   * @param {Element | Document | null | undefined} container
+   */
   toBeInDOM(container) {
-    if (!container || !container.contains) {
+    if (!container?.contains) {
       return {
         pass: false,
         message: () => 'Container is not a valid DOM element',
@@ -29,9 +38,21 @@ expect.extend({
 });
 
 // Mock fetch for testing
-global.fetch = vi.fn(() =>
+// @ts-ignore - Mocking fetch with simplified response object
+globalThis.fetch = vi.fn(() =>
   Promise.resolve({
     ok: true,
     json: () => Promise.resolve({}),
+    headers: new Headers(),
+    status: 200,
+    statusText: 'OK',
+    redirected: false,
+    type: 'basic',
+    url: '',
+    clone: () => this,
+    arrayBuffer: () => Promise.resolve(new ArrayBuffer(0)),
+    blob: () => Promise.resolve(new Blob()),
+    formData: () => Promise.resolve(new FormData()),
+    text: () => Promise.resolve(''),
   }),
 );

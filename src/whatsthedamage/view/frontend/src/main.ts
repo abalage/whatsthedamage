@@ -17,6 +17,7 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 import 'datatables.net-bs5/css/dataTables.bootstrap5.min.css';
 import 'datatables.net-fixedheader-bs5/css/fixedHeader.bootstrap5.min.css';
 import 'datatables.net-buttons-bs5/css/buttons.bootstrap5.min.css';
+import './css/results.css';
 
 // Import JS dependencies
 import $ from 'jquery';

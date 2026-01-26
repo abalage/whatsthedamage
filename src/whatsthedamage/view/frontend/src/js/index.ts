@@ -10,7 +10,7 @@ export function clearForm(): void {
     fetch('/clear', { method: 'POST' })
         .then((response: Response) => {
             if (response.ok) {
-                window.location.reload();
+                globalThis.location.reload();
             }
         })
         .catch((error: Error) => {

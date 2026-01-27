@@ -45,9 +45,9 @@ def test_filter_by_date(row_filter):
     assert filtered_rows[0][1][0].date == "2023-06-10"
 
 
-def test_filter_by_month_v2_grouping_and_display(row_filter):
-    # Ensure filter_by_month_v2 groups rows by year-month and builds DateField display
-    groups = row_filter.filter_by_month_v2()
+def test_filter_by_month_grouping_and_display(row_filter):
+    # Ensure filter_by_month groups rows by year-month and builds DateField display
+    groups = row_filter.filter_by_month()
     # We expect 12 groups for 12 distinct months
     assert len(groups) == 12
 

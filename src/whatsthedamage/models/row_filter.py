@@ -75,9 +75,9 @@ class RowFilter:
         return [(range_field, filtered_rows)]
 
 
-    def filter_by_month_v2(self) -> List[Tuple[DateField, List[CsvRow]]]:
+    def filter_by_month(self) -> List[Tuple[DateField, List[CsvRow]]]:
         """
-        Filter rows based on the month parsed from a specified attribute (v2).
+        Filter rows based on the month parsed from a specified attribute.
 
         Returns tuples of (DateField, List[CsvRow]) instead of Dict[str, List[CsvRow]].
         The DateField contains both display value and proper timestamp based on the

@@ -242,7 +242,7 @@ def process_details_and_build_response(
     # Pass the prepared data to template for multi-account rendering
     clear_upload_folder_fn()
     return _get_response_builder_service().build_html_response(
-        template='v2_results.html',
+        template='results.html',
         accounts_data=accounts_data,
         result_id=result_id,
         timing=result.get('timing')

@@ -87,7 +87,7 @@
         <div class="account-section">
             <div class="account-header">
                 <h2>
-                    {{ account.formatted_id }}
+                    {{ _('Account:') }} {{ account.formatted_id }}
                     {% if account.currency %}
                         ({{ account.currency }})
                     {% endif %}

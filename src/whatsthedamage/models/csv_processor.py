@@ -31,7 +31,7 @@ class CSVProcessor:
         self.processor = RowsProcessor(self.context)
         self._rows: List[CsvRow] = []  # Cache for rows to avoid re-reading
 
-    def process_v2(self) -> Dict[str, DataTablesResponse]:
+    def process(self) -> Dict[str, DataTablesResponse]:
         """
         Processes the CSV file and returns the DataTablesResponse structure for DataTables frontend (API v2).
         Only used for ML categorization.
@@ -40,7 +40,7 @@ class CSVProcessor:
             Dict[str, DataTablesResponse]: The DataTables-compatible structure for frontend.
         """
         self._rows = self._read_csv_file()
-        return self.processor.process_rows_v2(self._rows)
+        return self.processor.process_rows(self._rows)
 
     def _read_csv_file(self) -> List[CsvRow]:
         """

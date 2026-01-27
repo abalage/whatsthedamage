@@ -73,7 +73,7 @@ def test_process_route(client, monkeypatch, csv_rows, mapping, config_yml_defaul
     upload_folder = current_app.config['UPLOAD_FOLDER']
     os.makedirs(upload_folder, exist_ok=True)
 
-    response = client.post('/process/v2', data=data, content_type='multipart/form-data')
+    response = client.post('/process', data=data, content_type='multipart/form-data')
 
     if response.status_code != 200:
         print_form_errors(client)
@@ -133,7 +133,7 @@ def test_process_route_invalid_data(client, monkeypatch, config_yml_default_path
         'config': (BytesIO(read_file(config_file_path)), 'config.yml')
         # Missing other required fields
     }
-    response = client.post('/process/v2', data=data, content_type='multipart/form-data')
+    response = client.post('/process', data=data, content_type='multipart/form-data')
     if response.status_code != 302:
         print_form_errors(client)
     assert response.status_code == 302  # Expecting a redirect due to validation failure
@@ -159,7 +159,7 @@ def test_process_route_missing_file(client, monkeypatch, config_yml_default_path
         'start_date': '2023-01-01',
         'end_date': '2023-12-31',
     }
-    response = client.post('/process/v2', data=data, content_type='multipart/form-data')
+    response = client.post('/process', data=data, content_type='multipart/form-data')
     if response.status_code != 302:
         print_form_errors(client)
     assert response.status_code == 302  # Expecting a redirect due to missing file
@@ -181,7 +181,7 @@ def test_process_route_missing_config(client, monkeypatch, csv_rows, mapping, mo
         'end_date': '2023-12-31',
         'ml': True,  # <-- ML mode enabled, config can be missing
     }
-    response = client.post('/process/v2', data=data, content_type='multipart/form-data')
+    response = client.post('/process', data=data, content_type='multipart/form-data')
     if response.status_code != 200:
         print_form_errors(client)
     assert response.status_code == 200
@@ -211,7 +211,7 @@ def test_process_route_invalid_end_date(client, monkeypatch, csv_rows, mapping, 
         'start_date': '2023-01-01',
         'end_date': 'invalid-date',
     }
-    response = client.post('/process/v2', data=data, content_type='multipart/form-data')
+    response = client.post('/process', data=data, content_type='multipart/form-data')
     if response.status_code != 302:
         print_form_errors(client)
     assert response.status_code == 302  # Expecting a redirect due to invalid end date format
@@ -242,7 +242,7 @@ def test_process_route_invalid_date(client, monkeypatch, csv_rows, mapping, conf
         'start_date': 'invalid-date',
         'end_date': '2023-12-31',
     }
-    response = client.post('/process/v2', data=data, content_type='multipart/form-data')
+    response = client.post('/process', data=data, content_type='multipart/form-data')
     if response.status_code != 302:
         print_form_errors(client)
     assert response.status_code == 302  # Expecting a redirect due to invalid start date format

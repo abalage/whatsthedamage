@@ -2,15 +2,17 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>{{ _('Transaction Details') }}: {{ category }} - {{ month_ts }}</title>
+    <title>{{ _('Transaction Details') }}: {{ _(category) }} / {{ _(data[0].month.display if data) }}</title>
     <link href="{{ url_for('static', filename='dist/css/main.css') }}" rel="stylesheet">
+    <script type="module" src="{{ url_for('static', filename='dist/js/main.js') }}"></script>
 </head>
 <body>
     <header>
         {% include 'header.html' %}
     </header>
     <main class="container-fluid">
-        <h1>{{ _('Transaction Details for') }} {{ category }} {{ _('in') }} {{ month_ts }}, {{ _('Account') }} {{ account }}</h1>
+        <h1>{{ _('Transaction Details') }}: {{ _(category) }} / {{ _(data[0].month.display if data) }}</h1>
+        <h2>{{ _('Account') }}: {{ formatted_account }}</h2>
         <table class="table table-bordered">
             <thead>
                 <tr>

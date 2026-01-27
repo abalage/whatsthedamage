@@ -67,6 +67,22 @@ class DataFormattingService:
         """
         return f"{column_key}_{category}"
 
+    @staticmethod
+    def format_account_id(account_id: str) -> str:
+        """Format account ID by adding dashes every 8 digits.
+
+        This utility method provides consistent account ID formatting across
+        all interfaces (CLI, Web, API).
+
+        :param account_id: Raw account ID string
+        :return: Formatted account ID with dashes every 8 digits
+        """
+        formatted_id = '-'.join(
+                    account_id[i:i+8]
+                    for i in range(0, len(account_id), 8)
+                )
+        return formatted_id
+
     def format_as_html_table(
         self,
         data: Dict[str, Dict[str, float]],
@@ -424,10 +440,7 @@ class DataFormattingService:
             # Add account header for multi-account scenarios
             if has_multiple_accounts:
                 # Format account number (add dash every 8 digits)
-                formatted_id = '-'.join(
-                    account_id[i:i+8]
-                    for i in range(0, len(account_id), 8)
-                )
+                formatted_id = self.format_account_id(account_id)
                 separator = "=" * 60
                 header = f"\n{separator}\n{_('Account')}: {formatted_id}\n{separator}\n"
                 outputs.append(header)

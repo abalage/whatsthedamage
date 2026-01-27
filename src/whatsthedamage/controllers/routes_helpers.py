@@ -178,8 +178,17 @@ def handle_drilldown_request(
         flash(data_not_found_error, 'danger')
         return make_response(redirect(url_for(index_route)))
 
-    # Merge account into template context
-    context = {'data': filtered_data, 'account': account, **template_context}
+    # Format account ID using backend service for consistency
+    formatting_service = _get_data_formatting_service()
+    formatted_account = formatting_service.format_account_id(account)
+
+    # Merge account into template context, including formatted version
+    context = {
+        'data': filtered_data,
+        'account': account,
+        'formatted_account': formatted_account,
+        **template_context
+    }
     return make_response(render_template(template, **context))
 
 

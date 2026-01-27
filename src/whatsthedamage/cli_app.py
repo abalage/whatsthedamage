@@ -69,7 +69,7 @@ def main() -> None:
     # Initialize services via factory (dependency injection)
     container = create_service_container()
 
-    # Process using service layer (v2 processing pipeline with DataTablesResponse)
+    # Process using service layer
     try:
         result: Dict[str, Any] = container.processing_service.process_with_details(
             csv_file_path=args.filename,

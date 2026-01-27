@@ -16,7 +16,7 @@ def service():
 
 
 class TestApiResponseBuilding:
-    """Test API response building (v1 summary and v2 detailed)."""
+    """Test API response building."""
 
     def test_builds_detailed_response_with_transactions(self, service):
         """Test building detailed response with transaction data."""

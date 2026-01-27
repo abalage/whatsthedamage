@@ -91,7 +91,7 @@ class ResponseBuilderService:
         """Build HTML response with proper headers.
 
         Args:
-            template: Template name (e.g., 'result.html', 'v2_results.html')
+            template: Template name (e.g., 'result.html')
             headers: Table headers (for v1 templates)
             rows: Table rows with display/order/details metadata (for v1 templates)
             \\**kwargs: Additional template context variables (e.g., dt_responses for v2)
@@ -100,15 +100,8 @@ class ResponseBuilderService:
             Flask Response object with rendered HTML
 
         Example:
-            >>> # For v1 template
             >>> response = service.build_html_response(
-            ...     template='result.html',
-            ...     headers=['Categories', 'January', 'February'],
-            ...     rows=[[{'display': 'Grocery', 'order': None}]]
-            ... )
-            >>> # For v2 template with multi-account
-            >>> response = service.build_html_response(
-            ...     template='v2_results.html',
+            ...     template='results.html',
             ...     dt_responses=dt_responses_dict
             ... )
         """

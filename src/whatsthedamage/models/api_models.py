@@ -18,7 +18,7 @@ from whatsthedamage.services.validation_service import ValidationService
 class ProcessingRequest(BaseModel):
     """Request model for CSV processing endpoints.
 
-    Used by both v1 (summary) and v2 (detailed) APIs. File uploads are handled
+    Used by v2 API. File uploads are handled
     separately via Flask's request.files multipart form data.
 
     Date format is validated against the date_attribute_format from CsvConfig
@@ -139,7 +139,7 @@ class DetailedResponse(BaseModel):
 class ErrorResponse(BaseModel):
     """Standardized error response for all API endpoints.
 
-    Provides consistent error format across v1 and v2 APIs with
+    Provides consistent error format for v2 API with
     HTTP status code, message, and optional debugging details.
     """
     code: int = Field(

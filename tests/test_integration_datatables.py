@@ -8,7 +8,7 @@ from whatsthedamage.models.rows_processor import RowsProcessor
 
 
 @pytest.fixture
-def app_context_v2():
+def app_context():
     """Create an AppContext for integration testing."""
     csv_config = CsvConfig(
         dialect="excel",
@@ -69,10 +69,10 @@ def csv_rows_with_months(mapping):
     ]
 
 
-def test_process_rows_v2_timestamps(app_context_v2, csv_rows_with_months):
-    """Test that process_rows_v2 generates proper timestamps for months."""
-    processor = RowsProcessor(app_context_v2)
-    responses_dict = processor.process_rows_v2(csv_rows_with_months)
+def test_process_rows_timestamps(app_context, csv_rows_with_months):
+    """Test that process_rows generates proper timestamps for months."""
+    processor = RowsProcessor(app_context)
+    responses_dict = processor.process_rows(csv_rows_with_months)
     
     # Extract first account's response
     assert len(responses_dict) > 0, "Should have at least one account"
@@ -102,12 +102,12 @@ def test_process_rows_v2_timestamps(app_context_v2, csv_rows_with_months):
     assert len(sorted_months) == 3
 
 
-def test_month_timestamp_values(app_context_v2, csv_rows_with_months):
+def test_month_timestamp_values(app_context, csv_rows_with_months):
     """Test that month timestamps correspond to the first day of each month."""
     from whatsthedamage.utils.date_converter import DateConverter
     
-    processor = RowsProcessor(app_context_v2)
-    responses_dict = processor.process_rows_v2(csv_rows_with_months)
+    processor = RowsProcessor(app_context)
+    responses_dict = processor.process_rows(csv_rows_with_months)
     
     # Extract first account's response
     assert len(responses_dict) > 0, "Should have at least one account"

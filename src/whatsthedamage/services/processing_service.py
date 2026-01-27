@@ -99,7 +99,7 @@ class ProcessingService:
 
         # Process using existing CSVProcessor
         processor = CSVProcessor(context)
-        datatables_responses = processor.process_v2()
+        datatables_responses = processor.process()
 
         # Compute statistical metadata
         statistical_metadata = self._compute_statistical_metadata(datatables_responses)

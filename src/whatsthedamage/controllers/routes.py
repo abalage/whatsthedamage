@@ -80,8 +80,8 @@ def index() -> Response:
     return make_response(render_template('index.html', form=form))
 
 
-@bp.route('/process/v2', methods=['POST'])
-def process_v2() -> Response:
+@bp.route('/process', methods=['POST'])
+def process() -> Response:
     """Process CSV and return detailed DataTables HTML page for web UI."""
     form: UploadForm = UploadForm()
     if not form.validate_on_submit():

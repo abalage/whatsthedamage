@@ -4,9 +4,9 @@ import json
 import sys
 
 
-def print_categorized_rows_v2(responses_by_account: Dict[str, DataTablesResponse]) -> None:
+def print_categorized_rows(responses_by_account: Dict[str, DataTablesResponse]) -> None:
     """
-    Prints categorized rows from DataTablesResponse structures (v2).
+    Prints categorized rows from DataTablesResponse structures.
 
     Loops over accounts and prints separate sections with account headers.
     Extracts transaction data from AggregatedRow.details.
@@ -38,9 +38,9 @@ def print_categorized_rows_v2(responses_by_account: Dict[str, DataTablesResponse
                       f"merchant={detail_row.merchant}, currency={detail_row.currency})", file=sys.stderr)
 
 
-def print_training_data_v2(responses_by_account: Dict[str, DataTablesResponse]) -> None:
+def print_training_data(responses_by_account: Dict[str, DataTablesResponse]) -> None:
     """
-    Prints training data from DataTablesResponse structures as JSON array to STDERR (v2).
+    Prints training data from DataTablesResponse structures as JSON array to STDERR.
 
     Extracts transaction data from AggregatedRow.details and formats as JSON.
     Strips account field for ML model compatibility.

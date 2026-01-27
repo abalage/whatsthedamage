@@ -26,7 +26,7 @@ def mock_processor():
     mock.processor.process_rows.return_value = {
         'January 2023': {'Food': 100.0, 'Transport': 200.0}
     }
-    mock.process_v2.return_value = Mock(data=[{'category': 'Food', 'total': 100.0}])
+    mock.process.return_value = Mock(data=[{'category': 'Food', 'total': 100.0}])
     mock._rows = [Mock(), Mock()]  # Mock cached rows for row_count
     return mock
 
@@ -69,7 +69,7 @@ class TestProcessingService:
         assert 'processing_time' in result['metadata']
 
         # Verify method calls
-        mock_dependencies['processor'].process_v2.assert_called_once()
+        mock_dependencies['processor'].process.assert_called_once()
 
     @pytest.mark.parametrize('start_date,end_date,ml,category', [
         ('2023-01-01', '2023-12-31', True, 'Food'),

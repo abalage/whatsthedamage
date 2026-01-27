@@ -46,7 +46,7 @@ def _create_test_client(processing_service=None):
 def api_client():
     """Flask test client fixture for testing API endpoints.
 
-    Includes both v1 and v2 API blueprints with proper configuration.
+    Includes v2 API blueprints with proper configuration.
     Uses default ProcessingService (tests should mock it as needed).
     """
     with _create_test_client() as client:

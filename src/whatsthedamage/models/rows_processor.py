@@ -7,7 +7,7 @@ from whatsthedamage.models.row_enrichment_ml import RowEnrichmentML
 from whatsthedamage.models.row_filter import RowFilter
 from whatsthedamage.models.dt_response_builder import DataTablesResponseBuilder
 from whatsthedamage.utils.date_converter import DateConverter
-from whatsthedamage.view.row_printer import print_categorized_rows_v2, print_training_data_v2
+from whatsthedamage.view.row_printer import print_categorized_rows, print_training_data
 
 """
 RowsProcessor processes rows of CSV data. It filters, enriches, categorizes, and summarizes the rows.
@@ -52,14 +52,14 @@ class RowsProcessor:
                 formatted_end_date, self._date_attribute_format
             )
 
-    def process_rows_v2(self, rows: List[CsvRow]) -> Dict[str, DataTablesResponse]:
+    def process_rows(self, rows: List[CsvRow]) -> Dict[str, DataTablesResponse]:
         """
         Processes a list of CsvRow objects and returns per-account DataTablesResponse structures.
 
         Groups rows by account first, then processes each account independently.
         Each account gets its own Balance and Total Spendings calculations.
         Uses a builder pattern for transparent, step-by-step construction of the response.
-        Uses v2 filtering that provides DateField objects with accurate timestamps.
+        Uses filtering that provides DateField objects with accurate timestamps.
 
         Args:
             rows (List[CsvRow]): List of CsvRow objects (potentially from multiple accounts).
@@ -76,7 +76,7 @@ class RowsProcessor:
         # Process each account independently
         for account_id, account_rows in rows_by_account.items():
             # Filter rows by date or month for this account
-            filtered_sets = self._filter_rows_v2(account_rows)
+            filtered_sets = self._filter_rows(account_rows)
 
             # Initialize the builder with date format
             builder = DataTablesResponseBuilder(self._date_attribute_format)
@@ -118,15 +118,15 @@ class RowsProcessor:
 
         # Print verbose/training_data output if flags are set
         if self._verbose:
-            print_categorized_rows_v2(responses_by_account)
+            print_categorized_rows(responses_by_account)
         elif self._training_data:
-            print_training_data_v2(responses_by_account)
+            print_training_data(responses_by_account)
 
         return responses_by_account
 
-    def _filter_rows_v2(self, rows: List[CsvRow]) -> List[Tuple[DateField, List[CsvRow]]]:
+    def _filter_rows(self, rows: List[CsvRow]) -> List[Tuple[DateField, List[CsvRow]]]:
         """
-        Filters rows by date or month (v2).
+        Filters rows by date or month.
 
         Returns DateField objects with proper timestamps instead of string keys.
         For date ranges, creates a DateField with the start date.
@@ -141,7 +141,7 @@ class RowsProcessor:
         if self._start_date_epoch > 0 and self._end_date_epoch > 0:
             # For date range filtering, forward the tuples returned by RowFilter
             return row_filter.filter_by_date(self._start_date_epoch, self._end_date_epoch)
-        return list(row_filter.filter_by_month_v2())
+        return list(row_filter.filter_by_month())
 
     def _enrich_and_categorize_rows(self, rows: List[CsvRow]) -> Dict[str, List[CsvRow]]:
         """

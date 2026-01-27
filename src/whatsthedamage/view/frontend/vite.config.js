@@ -16,7 +16,8 @@ export default defineConfig({
         main: path.resolve(__dirname, 'src/main.ts'),
         index: path.resolve(__dirname, 'src/js/index.ts'),
         statisticalAnalysis: path.resolve(__dirname, 'src/js/statistical-analysis.ts'),
-        utils: path.resolve(__dirname, 'src/js/utils.ts')
+        utils: path.resolve(__dirname, 'src/js/utils.ts'),
+        api: path.resolve(__dirname, 'src/js/api.ts')
       },
       output: {
         entryFileNames: 'js/[name].js',

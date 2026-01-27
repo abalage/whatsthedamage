@@ -4,7 +4,7 @@
  */
 
 import { showNotification } from './utils';
-import { postData } from '../utils/api';
+import { postData } from './api';
 import { AppError, StatisticalAnalysisRequest, StatisticalAnalysisResponse } from '../types';
 
 /**

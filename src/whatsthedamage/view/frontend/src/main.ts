@@ -42,6 +42,7 @@ import 'datatables.net-buttons/js/buttons.print.min';
 // Import application modules and their init functions
 import { initMainPage } from './js/main';
 import { initStatisticalAnalysis } from './js/statistical-analysis';
+import './js/api';
 
 // Initialize all modules when DOM is ready
 if (document.readyState === 'loading') {

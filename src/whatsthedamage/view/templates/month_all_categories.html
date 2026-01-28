@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>{{ _('Month Details') }}: {{ _(data[0].month.display if data) }}</title>
+    <title>{{ _('Month Details') }}: {{ _(data[0].date.display if data) }}</title>
     <link href="{{ url_for('static', filename='dist/css/main.css') }}" rel="stylesheet">
     <script type="module" src="{{ url_for('static', filename='dist/js/main.js') }}"></script>
 </head>
@@ -11,7 +11,7 @@
         {% include 'header.html' %}
     </header>
     <main class="container-fluid">
-        <h1>{{ _('Details for Month') }}: {{ _(data[0].month.display if data) }}</h1>
+        <h1>{{ _('Details for Month') }}: {{ _(data[0].date.display if data) }}</h1>
         <h2>{{ _('Account') }}: {{ formatted_account }}</h2>
         <table class="table table-bordered">
             <thead>

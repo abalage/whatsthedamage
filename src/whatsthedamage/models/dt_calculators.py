@@ -36,7 +36,7 @@ def create_balance_rows(builder: "DataTablesResponseBuilder") -> List[Aggregated
             category=_("Balance"),
             total_amount=total_amount,
             details=[],  # Balance has no detail rows
-            month_field=month_field,
+            date_field=month_field,
             is_calculated=True  # Mark as calculated data
         )
         balance_rows.append(balance_row)
@@ -68,9 +68,9 @@ def create_total_spendings(builder: "DataTablesResponseBuilder") -> List[Aggrega
         if row.category in [_("Balance"), _("Total Spendings")]:
             continue
             
-        month_timestamp = row.month.timestamp
+        month_timestamp = row.date.timestamp
         if month_timestamp not in month_totals:
-            month_totals[month_timestamp] = (row.month, 0.0)
+            month_totals[month_timestamp] = (row.date, 0.0)
         
         # Sum negative amounts (expenses) as positive values
         if row.total.raw < 0:
@@ -85,7 +85,7 @@ def create_total_spendings(builder: "DataTablesResponseBuilder") -> List[Aggrega
             category=_("Total Spendings"),
             total_amount=total,
             details=[],
-            month_field=month_field,
+            date_field=month_field,
             is_calculated=True  # Mark as calculated data
         )
         spendings_rows.append(spendings_row)

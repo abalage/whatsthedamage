@@ -20,7 +20,6 @@ class DetailRow(BaseModel):
 class AggregatedRow(BaseModel):
     category: str
     total: DisplayRawField
-    month: DateField
     date: DateField
     details: List[DetailRow]
     is_calculated: bool = False

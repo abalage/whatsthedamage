@@ -27,7 +27,7 @@ TEST_FILTER_SCENARIOS = [
     },
     {
         "name": "month_filter",
-        "filter_fn": lambda row: str(row.month.timestamp) == "1672531200",
+        "filter_fn": lambda row: str(row.date.timestamp) == "1672531200",
         "template": "month_all_categories.html",
         "template_context": {'month_ts': '1672531200'},
         "expected_data_count": 2,
@@ -37,7 +37,7 @@ TEST_FILTER_SCENARIOS = [
         "name": "category_and_month_filter",
         "filter_fn": lambda row: (
             row.category == "Utilities" and
-            str(row.month.timestamp) == "1672531200"
+            str(row.date.timestamp) == "1672531200"
         ),
         "template": "category_month_detail.html",
         "template_context": {'category': 'Utilities', 'month_ts': '1672531200'},
@@ -115,7 +115,6 @@ def sample_cached_result():
                     AggregatedRow(
                         category="Grocery",
                         total=DisplayRawField(display="100.00", raw=100.0),
-                        month=DateField(display="Jan 2023", timestamp=1672531200),
                         date=DateField(display="Jan 2023", timestamp=1672531200),
                         details=[],
                         is_calculated=False
@@ -123,7 +122,6 @@ def sample_cached_result():
                     AggregatedRow(
                         category="Utilities",
                         total=DisplayRawField(display="150.00", raw=150.0),
-                        month=DateField(display="Jan 2023", timestamp=1672531200),
                         date=DateField(display="Jan 2023", timestamp=1672531200),
                         details=[],
                         is_calculated=False
@@ -131,7 +129,6 @@ def sample_cached_result():
                     AggregatedRow(
                         category="Rent",
                         total=DisplayRawField(display="1000.00", raw=1000.0),
-                        month=DateField(display="Feb 2023", timestamp=1675209600),
                         date=DateField(display="Feb 2023", timestamp=1675209600),
                         details=[],
                         is_calculated=False

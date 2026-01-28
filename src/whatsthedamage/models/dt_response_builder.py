@@ -43,7 +43,7 @@ class DataTablesResponseBuilder:
         category: str,
         rows: List[CsvRow],
         total_amount: float,
-        month_field: DateField
+        date_field: DateField
     ) -> None:
         """
         Adds data for a single category/month combination.
@@ -52,23 +52,23 @@ class DataTablesResponseBuilder:
             category (str): Category name (e.g., 'Groceries', 'Entertainment').
             rows (List[CsvRow]): Raw CSV rows for this category/month.
             total_amount (float): Aggregated total amount for this category/month.
-            month_field (DateField): DateField with proper timestamp from actual data.
+            date_field (DateField): DateField with proper timestamp from actual data.
         """
         details = self._build_detail_rows(rows)
         aggregated_row = self.build_aggregated_row(
-            category, total_amount, details, month_field
+            category, total_amount, details, date_field
         )
         self._aggregated_rows.append(aggregated_row)
 
         # Track month totals for Balance calculation
-        month_timestamp = month_field.timestamp
+        month_timestamp = date_field.timestamp
         if month_timestamp in self._month_totals:
             # Add to existing month total
             existing_field, existing_total = self._month_totals[month_timestamp]
             self._month_totals[month_timestamp] = (existing_field, existing_total + total_amount)
         else:
             # Initialize new month total
-            self._month_totals[month_timestamp] = (month_field, total_amount)
+            self._month_totals[month_timestamp] = (date_field, total_amount)
 
     def build(self) -> DataTablesResponse:
         """
@@ -132,7 +132,7 @@ class DataTablesResponseBuilder:
         category: str,
         total_amount: float,
         details: List[DetailRow],
-        month_field: DateField,
+        date_field: DateField,
         is_calculated: bool = False
     ) -> AggregatedRow:
         """
@@ -145,7 +145,7 @@ class DataTablesResponseBuilder:
             category (str): Category name.
             total_amount (float): Total amount for this category/month.
             details (List[DetailRow]): List of detail rows.
-            month_field (DateField): DateField with timestamp from actual data.
+            date_field (DateField): DateField with timestamp from actual data.
             is_calculated (bool): Whether this row represents calculated data.
 
         Returns:
@@ -158,8 +158,7 @@ class DataTablesResponseBuilder:
         return AggregatedRow(
             category=category,
             total=total_field,
-            month=month_field,
-            date=month_field,
+            date=date_field,
             details=details,
             is_calculated=is_calculated
         )

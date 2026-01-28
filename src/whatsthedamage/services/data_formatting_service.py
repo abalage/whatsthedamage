@@ -592,7 +592,7 @@ class DataFormattingService:
             if not include_calculated and getattr(agg_row, 'is_calculated', False):
                 continue
 
-            period_field = agg_row.date if getattr(agg_row, 'date', None) is not None else agg_row.month
+            period_field = agg_row.date
 
             ts = period_field.timestamp
             display = period_field.display

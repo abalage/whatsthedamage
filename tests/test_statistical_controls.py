@@ -12,7 +12,6 @@ def test_recalculate_highlights_method():
                 AggregatedRow(
                     category='Grocery',
                     total=DisplayRawField(display='100.00', raw=100.0),
-                    month=DateField(display='January 2024', timestamp=1704067200),
                     date=DateField(display='January 2024', timestamp=1704067200),
                     details=[],
                     is_calculated=False
@@ -20,7 +19,6 @@ def test_recalculate_highlights_method():
                 AggregatedRow(
                     category='Utilities',
                     total=DisplayRawField(display='50.00', raw=50.0),
-                    month=DateField(display='January 2024', timestamp=1704067200),
                     date=DateField(display='January 2024', timestamp=1704067200),
                     details=[],
                     is_calculated=False
@@ -64,7 +62,6 @@ def test_recalculate_highlights_with_both_algorithms():
                 AggregatedRow(
                     category='Grocery',
                     total=DisplayRawField(display='1000.00', raw=1000.0),  # Large value - potential outlier
-                    month=DateField(display='January 2024', timestamp=1704067200),
                     date=DateField(display='January 2024', timestamp=1704067200),
                     details=[],
                     is_calculated=False
@@ -72,7 +69,6 @@ def test_recalculate_highlights_with_both_algorithms():
                 AggregatedRow(
                     category='Utilities',
                     total=DisplayRawField(display='50.00', raw=50.0),
-                    month=DateField(display='January 2024', timestamp=1704067200),
                     date=DateField(display='January 2024', timestamp=1704067200),
                     details=[],
                     is_calculated=False
@@ -80,7 +76,6 @@ def test_recalculate_highlights_with_both_algorithms():
                 AggregatedRow(
                     category='Entertainment',
                     total=DisplayRawField(display='200.00', raw=200.0),
-                    month=DateField(display='January 2024', timestamp=1704067200),
                     date=DateField(display='January 2024', timestamp=1704067200),
                     details=[],
                     is_calculated=False
@@ -104,7 +99,9 @@ def test_recalculate_highlights_with_both_algorithms():
     assert isinstance(result.highlights, list)
 
     # Should have some highlights for the large grocery value
+    print(f"DEBUG result.highlights: {result.highlights}")
     highlight_types = [h.highlight_type for h in result.highlights]
+    print(f"DEBUG highlight_types: {highlight_types}")
     assert any(ht in ['outlier', 'pareto'] for ht in highlight_types)
 
 def test_recalculate_statistics_route():
@@ -123,7 +120,6 @@ def test_highlight_key_format():
                 AggregatedRow(
                     category='TestCategory',
                     total=DisplayRawField(display='100.00', raw=100.0),
-                    month=DateField(display='January 2024', timestamp=1704067200),
                     date=DateField(display='January 2024', timestamp=1704067200),
                     details=[],
                     is_calculated=False

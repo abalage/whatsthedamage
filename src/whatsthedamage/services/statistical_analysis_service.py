@@ -99,12 +99,14 @@ class StatisticalAnalysisService:
     Decoupled from AppConfig - only depends on algorithm names.
     """
 
-    def __init__(self, enabled_algorithms: List[str] | None = None, exclusion_service: Optional[ExclusionService] = None):
+    def __init__(self, enabled_algorithms: List[str] | None = None, exclusion_service: Optional[ExclusionService] = None, filter_expenses_only: bool = True):
         """Initialize statistical analysis service.
 
         :param enabled_algorithms: List of algorithm names to enable (e.g., ['iqr', 'pareto'])
                                    If None, all algorithms are enabled.
         :param exclusion_service: Service for managing category exclusions (optional)
+        :param filter_expenses_only: If True (default), only negative values (expenses) are passed to algorithms.
+                                     If False, all values are passed (original behavior).
         """
         self.algorithms: Dict[str, StatisticalAlgorithm] = {
             'iqr': IQROutlierDetection(direction=AnalysisDirection.COLUMNS),
@@ -112,6 +114,7 @@ class StatisticalAnalysisService:
         }
         self.enabled_algorithms = enabled_algorithms if enabled_algorithms is not None else list(self.algorithms.keys())
         self._exclusion_service = exclusion_service
+        self.filter_expenses_only = filter_expenses_only
 
     def analyze(self, data: Dict[str, float], algorithms: List[str] | None = None) -> Dict[str, str]:
         """Apply specified algorithms (or enabled algorithms) and return combined highlights.
@@ -247,6 +250,28 @@ class StatisticalAnalysisService:
             currency=dt_response.currency
         )
 
+    def _filter_expenses_only(self, dt_response: DataTablesResponse) -> DataTablesResponse:
+        """Filter DataTablesResponse to only include expense transactions (negative amounts).
+
+        Args:
+            dt_response: Original DataTablesResponse with all rows
+
+        Returns:
+            DataTablesResponse with only expense rows (where total.raw < 0)
+        """
+        if not self.filter_expenses_only:
+            return dt_response
+
+        filtered_rows = [
+            row for row in dt_response.data
+            if float(row.total.raw) < 0
+        ]
+        return DataTablesResponse(
+            data=filtered_rows,
+            account=dt_response.account,
+            currency=dt_response.currency
+        )
+
     def _extract_summary_from_response(
         self,
         dt_response: DataTablesResponse
@@ -360,6 +385,9 @@ class StatisticalAnalysisService:
             if self._exclusion_service:
                 filtered_response = self._filter_excluded_categories(filtered_response)
 
+            # Apply expense filtering if enabled
+            filtered_response = self._filter_expenses_only(filtered_response)
+
             # Extract summary from filtered data only
             summary = self._extract_summary_from_response(filtered_response)
             # Call get_highlights with default parameters (all enabled algorithms, default directions)
@@ -401,6 +429,9 @@ class StatisticalAnalysisService:
             # Apply category exclusions if exclusion service is available
             if self._exclusion_service:
                 filtered_response = self._filter_excluded_categories(filtered_response)
+
+            # Apply expense filtering if enabled
+            filtered_response = self._filter_expenses_only(filtered_response)
 
             # Extract summary from filtered data only
             summary = self._extract_summary_from_response(filtered_response)

@@ -79,10 +79,18 @@ def test_recalculate_highlights_with_both_algorithms():
                     date=DateField(display='January 2024', timestamp=1704067200),
                     details=[],
                     is_calculated=False
+                ),
+                AggregatedRow(
+                    category='Entertainment',
+                    total=DisplayRawField(display='-500.00', raw=-500.0),
+                    date=DateField(display='January 2024', timestamp=1704067200),
+                    details=[],
+                    is_calculated=False
                 )
             ],
             account='account1',
-            currency='USD'
+            currency='USD',
+            statistical_metadata=None
         )
     }
 
@@ -99,9 +107,7 @@ def test_recalculate_highlights_with_both_algorithms():
     assert isinstance(result.highlights, list)
 
     # Should have some highlights for the large grocery value
-    print(f"DEBUG result.highlights: {result.highlights}")
     highlight_types = [h.highlight_type for h in result.highlights]
-    print(f"DEBUG highlight_types: {highlight_types}")
     assert any(ht in ['outlier', 'pareto'] for ht in highlight_types)
 
 def test_recalculate_statistics_route():

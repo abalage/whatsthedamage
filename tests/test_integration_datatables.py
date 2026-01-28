@@ -83,12 +83,12 @@ def test_process_rows_timestamps(app_context, csv_rows_with_months):
     
     # Verify all month timestamps are non-zero
     for row in response.data:
-        assert row.month.timestamp > 0, f"Month '{row.month.display}' has timestamp 0"
+        assert row.date.timestamp > 0, f"Month '{row.date.display}' has timestamp 0"
     
     # Collect unique months with timestamps
     month_tuples = set()
     for row in response.data:
-        month_tuples.add((row.month.display, row.month.timestamp))
+        month_tuples.add((row.date.display, row.date.timestamp))
     
     # Sort by timestamp (as done in routes.py)
     sorted_months = [m[0] for m in sorted(month_tuples, key=lambda x: x[1])]
@@ -123,7 +123,7 @@ def test_month_timestamp_values(app_context, csv_rows_with_months):
     # Collect actual timestamps
     actual_timestamps = set()
     for row in response.data:
-        actual_timestamps.add(row.month.timestamp)
+        actual_timestamps.add(row.date.timestamp)
     
     # Verify the timestamps match expected values
     for timestamp in actual_timestamps:

@@ -28,7 +28,7 @@ class TestAPIv2Process:
         first_row = data['data'][0]
         assert 'category' in first_row
         assert 'total' in first_row
-        assert 'month' in first_row
+        assert 'date' in first_row
         assert 'details' in first_row
         assert 'display' in first_row['total']
         assert 'raw' in first_row['total']
@@ -177,7 +177,6 @@ class TestAPIv2DetailedResponseStructure:
         detail_row = {
             'category': 'grocery',
             'total': {'display': '-45,000.00 HUF', 'raw': -45000.0},
-            'month': {'display': 'January 2024', 'timestamp': 1704067200},
             'details': [
                 {
                     'date': {'display': '2024-01-15', 'timestamp': 1705276800},
@@ -209,8 +208,8 @@ class TestAPIv2DetailedResponseStructure:
 
         assert row['category'] == 'grocery'
         assert row['total']['display'] == '-45,000.00 HUF'
-        assert 'display' in row['month']
-        assert 'timestamp' in row['month']
+        assert 'display' in row['details'][0]['date']
+        assert 'timestamp' in row['details'][0]['date']
         assert len(row['details']) == 2
         assert row['details'][0]['merchant'] == 'TESCO'
         assert 'display' in row['details'][0]['amount']

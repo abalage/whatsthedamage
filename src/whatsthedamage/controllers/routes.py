@@ -176,7 +176,7 @@ def details_month_all_categories(result_id: str, account: str, month_ts: str) ->
         result_id=result_id,
         account=account,
         template='month_all_categories.html',
-        filter_fn=lambda row: str(row.month.timestamp) == month_ts or str(row.date.timestamp) == month_ts,
+        filter_fn=lambda row: str(row.date.timestamp) == month_ts or str(row.date.timestamp) == month_ts,
         template_context={'month_ts': month_ts},
         data_not_found_error=DATA_NOT_FOUND_ERROR,
         index_route=INDEX_ROUTE
@@ -194,7 +194,7 @@ def details_category_month(result_id: str, account: str, category: str, month_ts
         template='category_month_detail.html',
         filter_fn=lambda row: (
             row.category == category and
-            (str(row.month.timestamp) == month_ts or str(row.date.timestamp) == month_ts)
+            (str(row.date.timestamp) == month_ts or str(row.date.timestamp) == month_ts)
         ),
         template_context={'category': category, 'month_ts': month_ts},
         data_not_found_error=DATA_NOT_FOUND_ERROR,

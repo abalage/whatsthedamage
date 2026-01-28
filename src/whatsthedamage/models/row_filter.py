@@ -18,7 +18,7 @@ class RowFilter:
         self._rows = rows
         self._date_format = context.config.csv.date_attribute_format
 
-    def _get_month_field_id(self, date_value: str) -> DateField:
+    def _get_date_field_id(self, date_value: str) -> DateField:
         # FIXME remove added datetime dependency, rework 'display' string creation
         """
         Extract month ID from a date and create a DateField with proper timestamp.
@@ -88,12 +88,12 @@ class RowFilter:
         months: Dict[int, Tuple[DateField, List[CsvRow]]] = {}
         for row in self._rows:
             date_value = getattr(row, 'date')
-            month_field_id = self._get_month_field_id(date_value)
+            date_field_id = self._get_date_field_id(date_value)
             # Use timestamp as canonical grouping key (keeps year information)
-            month_key_timestamp = month_field_id.timestamp
+            month_key_timestamp = date_field_id.timestamp
 
             if month_key_timestamp not in months:
-                months[month_key_timestamp] = (month_field_id, [])
+                months[month_key_timestamp] = (date_field_id, [])
             months[month_key_timestamp][1].append(row)
         # Return list of (DateField, rows) tuples
         return list(months.values())

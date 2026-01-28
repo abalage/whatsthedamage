@@ -270,10 +270,10 @@ class StatisticalAnalysisService:
         month_map: Dict[int, Dict[str, Any]] = {}
 
         for agg_row in dt_response.data:
-            month_field = agg_row.date if getattr(agg_row, 'date', None) is not None else agg_row.month
+            date_field = agg_row.date
 
-            ts = month_field.timestamp
-            display = month_field.display
+            ts = date_field.timestamp
+            display = date_field.display
 
             if ts not in month_map:
                 month_map[ts] = {'display': display, 'categories': {}}
@@ -324,8 +324,8 @@ class StatisticalAnalysisService:
 
                 # Find the corresponding row in the original data
                 for agg_row in dt_response.data:
-                    month_field = agg_row.date if getattr(agg_row, 'date', None) is not None else agg_row.month
-                    if (month_field.display == month_display or f"{month_field.display} ({month_field.timestamp})" == month_display) and agg_row.category == category:
+                    date_field = agg_row.date
+                    if (date_field.display == month_display or f"{date_field.display} ({date_field.timestamp})" == month_display) and agg_row.category == category:
                         # Cell is excluded if it's a calculated row or belongs to excluded category
                         if agg_row.is_calculated or category in excluded_categories:
                             is_excluded = True

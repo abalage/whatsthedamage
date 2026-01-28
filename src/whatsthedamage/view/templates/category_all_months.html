@@ -23,7 +23,7 @@
             <tbody>
                 {% for row in data %}
                 <tr>
-                    <td>{{ row.month.display if row.month else row.date.display }}</td>
+                    <td>{{ row.date.display }}</td>
                     <td>{{ row.total.display }}</td>
                 </tr>
                 {% endfor %}

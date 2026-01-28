@@ -50,12 +50,12 @@ def test_builder_initialization(builder):
 
 def test_add_category_data(builder, sample_csv_rows):
     """Test adding category data to the builder."""
-    month_field = DateField(display="January", timestamp=1735689600)  # 2025-01-01
+    date_field = DateField(display="January", timestamp=1735689600)  # 2025-01-01
     builder.add_category_data(
         category="Groceries",
         rows=sample_csv_rows[:1],
         total_amount=-50.0,
-        month_field=month_field
+        date_field=date_field
     )
     
     assert len(builder._aggregated_rows) == 1
@@ -64,25 +64,25 @@ def test_add_category_data(builder, sample_csv_rows):
     assert row.total.raw == pytest.approx(-50.0)
     # Currency comes from row data (USD in sample_csv_rows)
     assert "50.00" in row.total.display
-    assert row.month.display == "January"
-    assert row.month.timestamp == 1735689600
+    assert row.date.display == "January"
+    assert row.date.timestamp == 1735689600
     assert len(row.details) == 1
 
 
 def test_add_multiple_categories(builder, sample_csv_rows):
     """Test adding multiple category data entries."""
-    month_field = DateField(display="January", timestamp=1735689600)
+    date_field = DateField(display="January", timestamp=1735689600)
     builder.add_category_data(
         category="Groceries",
         rows=sample_csv_rows[:1],
         total_amount=-50.0,
-        month_field=month_field
+        date_field=date_field
     )
     builder.add_category_data(
         category="Transportation",
         rows=sample_csv_rows[1:2],
         total_amount=-30.0,
-        month_field=month_field
+        date_field=date_field
     )
     
     assert len(builder._aggregated_rows) == 2
@@ -92,12 +92,12 @@ def test_add_multiple_categories(builder, sample_csv_rows):
 
 def test_build_returns_datatables_response(builder, sample_csv_rows):
     """Test that build() returns a proper DataTablesResponse."""
-    month_field = DateField(display="January", timestamp=1735689600)
+    date_field = DateField(display="January", timestamp=1735689600)
     builder.add_category_data(
         category="Groceries",
         rows=sample_csv_rows,
         total_amount=-105.0,
-        month_field=month_field
+        date_field=date_field
     )
     
     response = builder.build()
@@ -139,52 +139,52 @@ def test_builder_with_no_currency():
     builder = DataTablesResponseBuilder(date_format="%Y-%m-%d")
     mapping = {'date': 'date', 'amount': 'amount', 'currency': 'currency', 'partner': 'partner'}
     rows = [CsvRow({"date": "2025-01-15", "amount": "50.0", "currency": "", "partner": "Test"}, mapping)]
-    month_field = DateField(display="January", timestamp=1735689600)
+    date_field = DateField(display="January", timestamp=1735689600)
     
     builder.add_category_data(
         category="Test",
         rows=rows,
         total_amount=50.0,
-        month_field=month_field
+        date_field=date_field
     )
     
     response = builder.build()
     assert response.data[0].total.display == "50.00"  # No currency prefix
 
 
-def test_month_field_is_preserved(builder, sample_csv_rows):
-    """Test that the month_field timestamp is preserved correctly."""
+def test_date_field_is_preserved(builder, sample_csv_rows):
+    """Test that the date_field timestamp is preserved correctly."""
     # Use a specific timestamp for February 2024
-    month_field = DateField(display="February", timestamp=1706745600)  # 2024-02-01
+    date_field = DateField(display="February", timestamp=1706745600)  # 2024-02-01
     
     builder.add_category_data(
         category="Test",
         rows=sample_csv_rows[:1],
         total_amount=-100.0,
-        month_field=month_field
+        date_field=date_field
     )
     
     response = builder.build()
-    assert response.data[0].month.timestamp == 1706745600
-    assert response.data[0].month.display == "February"
+    assert response.data[0].date.timestamp == 1706745600
+    assert response.data[0].date.display == "February"
 
 
 def test_balance_category_is_added(builder, sample_csv_rows):
     """Test that Balance category is automatically added with month totals."""
-    month_field = DateField(display="January", timestamp=1735689600)  # 2025-01-01
+    date_field = DateField(display="January", timestamp=1735689600)  # 2025-01-01
     
     # Add two categories for the same month (negative amounts = expenses)
     builder.add_category_data(
         category="Groceries",
         rows=sample_csv_rows[:1],
         total_amount=-50.0,
-        month_field=month_field
+        date_field=date_field
     )
     builder.add_category_data(
         category="Transportation",
         rows=sample_csv_rows[1:2],
         total_amount=-30.0,
-        month_field=month_field
+        date_field=date_field
     )
     
     response = builder.build()
@@ -200,8 +200,8 @@ def test_balance_category_is_added(builder, sample_csv_rows):
     assert balance_row.total.raw == pytest.approx(-80.0)
     # Currency comes from row data (USD in sample_csv_rows)
     assert "80.00" in balance_row.total.display
-    assert balance_row.month.display == "January"
-    assert balance_row.month.timestamp == 1735689600
+    assert balance_row.date.display == "January"
+    assert balance_row.date.timestamp == 1735689600
     assert balance_row.details == []  # Balance has no detail rows
     
     # Find the Total Spendings row
@@ -221,13 +221,13 @@ def test_balance_multiple_months(builder, sample_csv_rows, mapping):
         category="Groceries",
         rows=sample_csv_rows[:1],
         total_amount=-50.0,
-        month_field=january_field
+        date_field=january_field
     )
     builder.add_category_data(
         category="Transportation",
         rows=sample_csv_rows[1:2],
         total_amount=-30.0,
-        month_field=january_field
+        date_field=january_field
     )
     
     # February categories
@@ -241,7 +241,7 @@ def test_balance_multiple_months(builder, sample_csv_rows, mapping):
         category="Groceries",
         rows=february_rows,
         total_amount=-40.0,
-        month_field=february_field
+        date_field=february_field
     )
     
     response = builder.build()
@@ -254,28 +254,27 @@ def test_balance_multiple_months(builder, sample_csv_rows, mapping):
     assert len(balance_rows) == 2, "Should have Balance for each month"
     
     # Sort by timestamp
-    balance_rows.sort(key=lambda x: x.month.timestamp)
+    balance_rows.sort(key=lambda x: x.date.timestamp)
     
     # January balance: -50.0 + -30.0 = -80.0
     assert balance_rows[0].total.raw == pytest.approx(-80.0)
-    assert balance_rows[0].month.display == "January"
+    assert balance_rows[0].date.display == "January"
     
     # February balance: -40.0
     assert balance_rows[1].total.raw == pytest.approx(-40.0)
-    assert balance_rows[1].month.display == "February"
-
+    assert balance_rows[1].date.display == "February"
 
 def test_balance_with_no_currency(mapping):
     """Test Balance formatting when no currency is provided."""
     builder = DataTablesResponseBuilder(date_format="%Y-%m-%d")
     rows = [CsvRow({"date": "2025-01-15", "amount": "50.0", "currency": "", "partner": "Test"}, mapping)]
-    month_field = DateField(display="January", timestamp=1735689600)
+    date_field = DateField(display="January", timestamp=1735689600)
     
     builder.add_category_data(
         category="Test",
         rows=rows,
         total_amount=50.0,
-        month_field=month_field
+        date_field=date_field
     )
     
     response = builder.build()
@@ -293,10 +292,10 @@ def test_calculator_pattern_disable_balance(builder, sample_csv_rows):
         calculators=[]  # Explicitly disable all calculators
     )
 
-    month_field = DateField(display="January", timestamp=1735689600)
+    date_field = DateField(display="January", timestamp=1735689600)
     builder_no_balance.add_category_data(
         category="Groceries",
         rows=sample_csv_rows[:1],
         total_amount=-50.0,
-        month_field=month_field
+        date_field=date_field
     )

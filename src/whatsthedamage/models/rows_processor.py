@@ -99,7 +99,7 @@ class RowsProcessor:
                         category=category,
                         rows=category_rows,
                         total_amount=category_totals[category],
-                        month_field=month_field
+                        date_field=month_field
                     )
 
             # Build and store the final response for this account

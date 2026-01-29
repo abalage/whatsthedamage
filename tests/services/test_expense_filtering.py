@@ -1,7 +1,7 @@
 """Tests for expense filtering in StatisticalAnalysisService."""
 
 import pytest
-from whatsthedamage.services.statistical_analysis_service import StatisticalAnalysisService
+from whatsthedamage.services.statistical_analysis_service import StatisticalAnalysisService, AnalysisDirection
 from whatsthedamage.config.dt_models import DataTablesResponse, AggregatedRow, DateField, DisplayRawField
 
 @pytest.fixture
@@ -254,13 +254,13 @@ class TestExpenseFiltering:
         # With all values included, the absolute values are:
         # Grocery (264100), Maintenance (140588), Vehicle (58542), Health (25795), Interest (9), Refund (2416)
         # Total = 489,025 + 2425 = 491,450, 80% = 393,160
-        # Pareto should include: Grocery, Maintenance, Vehicle (264100 + 140588 + 58542 = 463,230 > 393,160)
+        # Pareto should include: Grocery, Maintenance (264100 + 140588 = 404,688 > 393,160)
         assert "Grocery" in highlight_categories
         assert "Maintenance" in highlight_categories
-        assert "Vehicle" in highlight_categories
+        # Vehicle is not included because Grocery + Maintenance already exceed 80%
 
-    def test_recalculate_highlights_with_expense_filtering(self, sample_data_with_mixed_values):
-        """Test that recalculate_highlights applies expense filtering by default."""
+    def test_compute_statistical_metadata_with_expense_filtering_custom_params(self, sample_data_with_mixed_values):
+        """Test that compute_statistical_metadata works with custom parameters."""
         dt_response = DataTablesResponse(
             data=sample_data_with_mixed_values,
             account="Test Account",
@@ -269,10 +269,10 @@ class TestExpenseFiltering:
         datatables_responses = {"test_table": dt_response}
 
         service = StatisticalAnalysisService(enabled_algorithms=["pareto"], filter_expenses_only=True)
-        metadata = service.recalculate_highlights(
+        metadata = service.compute_statistical_metadata(
             datatables_responses=datatables_responses,
             algorithms=["pareto"],
-            direction="columns"
+            direction=AnalysisDirection.COLUMNS
         )
 
         # Should only analyze expense categories
@@ -282,8 +282,8 @@ class TestExpenseFiltering:
         # Income categories should not be in highlights
         assert not any(h.row in ["Interest", "Refund"] for h in metadata.highlights if h.highlight_type == "pareto")
 
-    def test_recalculate_highlights_without_expense_filtering(self, sample_data_with_mixed_values):
-        """Test that recalculate_highlights can skip expense filtering."""
+    def test_compute_statistical_metadata_without_expense_filtering_custom_params(self, sample_data_with_mixed_values):
+        """Test that compute_statistical_metadata works with custom parameters and no filtering."""
         dt_response = DataTablesResponse(
             data=sample_data_with_mixed_values,
             account="Test Account",
@@ -292,10 +292,10 @@ class TestExpenseFiltering:
         datatables_responses = {"test_table": dt_response}
 
         service = StatisticalAnalysisService(enabled_algorithms=["pareto"], filter_expenses_only=False)
-        metadata = service.recalculate_highlights(
+        metadata = service.compute_statistical_metadata(
             datatables_responses=datatables_responses,
             algorithms=["pareto"],
-            direction="columns"
+            direction=AnalysisDirection.COLUMNS
         )
 
         # Should analyze all categories (both expenses and income)

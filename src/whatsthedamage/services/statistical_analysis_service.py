@@ -8,7 +8,7 @@ from enum import Enum
 from typing import Dict, List, Tuple, Optional, Any
 import numpy as np
 from scipy import stats
-from whatsthedamage.config.dt_models import CellHighlight, StatisticalMetadata, DataTablesResponse
+from whatsthedamage.config.dt_models import CellHighlight, StatisticalMetadata, DataTablesResponse, AggregatedRow
 from whatsthedamage.services.exclusion_service import ExclusionService
 
 class AnalysisDirection(Enum):
@@ -39,7 +39,6 @@ class StatisticalAlgorithm(ABC):
         """
         pass
 
-
 class IQROutlierDetection(StatisticalAlgorithm):
     """IQR-based outlier detection algorithm."""
 
@@ -63,7 +62,6 @@ class IQROutlierDetection(StatisticalAlgorithm):
                 highlights[key] = 'outlier'
 
         return highlights
-
 
 class ParetoAnalysis(StatisticalAlgorithm):
     """Pareto analysis for identifying top contributors."""
@@ -116,6 +114,63 @@ class StatisticalAnalysisService:
         self._exclusion_service = exclusion_service
         self.filter_expenses_only = filter_expenses_only
 
+    def _build_month_to_rows_map(self, dt_response: DataTablesResponse) -> Dict[str, List[AggregatedRow]]:
+        """Build a mapping of month displays to their corresponding rows.
+
+        Args:
+            dt_response: DataTablesResponse containing aggregated rows
+
+        Returns:
+            Dictionary mapping month_display to list of AggregatedRow objects
+        """
+        month_map: Dict[str, List[AggregatedRow]] = {}
+
+        for agg_row in dt_response.data:
+            date_field = agg_row.date
+            display = date_field.display
+
+            if display not in month_map:
+                month_map[display] = []
+
+            month_map[display].append(agg_row)
+
+        return month_map
+
+    def _is_cell_excluded(self, month_display: str, category: str, dt_response: DataTablesResponse) -> bool:
+        """Check if a specific cell (month, category) should be excluded.
+
+        A cell is excluded if:
+        - The row is a calculated row (e.g., Balance, Total)
+        - The category is in the exclusion list
+
+        Args:
+            month_display: The month display string
+            category: The category name
+            dt_response: DataTablesResponse containing all rows
+
+        Returns:
+            True if the cell should be excluded, False otherwise
+        """
+        # Get excluded categories if exclusion service is available
+        excluded_categories = set()
+        if self._exclusion_service:
+            excluded_categories = set(self._exclusion_service.get_exclusions())
+
+        # Build month to rows mapping for quick lookup
+        month_map = self._build_month_to_rows_map(dt_response)
+
+        # Check if this month exists in the map
+        if month_display not in month_map:
+            return False
+
+        # Find the row with matching category
+        for agg_row in month_map[month_display]:
+            if agg_row.category == category:
+                # Cell is excluded if it's a calculated row or belongs to excluded category
+                return agg_row.is_calculated or category in excluded_categories
+
+        return False
+
     def _transform_data_for_analysis(
         self,
         summary: Dict[str, Dict[str, float]],
@@ -141,6 +196,76 @@ class StatisticalAnalysisService:
                     transposed_data[inner_key][outer_key] = amount
             return [(inner_key, outer_data) for inner_key, outer_data in transposed_data.items()]
 
+    def _get_algorithm_direction(self, algo: StatisticalAlgorithm, direction: AnalysisDirection, use_default_directions: bool) -> AnalysisDirection:
+        """Determine which direction to use for an algorithm.
+
+        Args:
+            algo: The algorithm to check
+            direction: The default direction parameter
+            use_default_directions: Whether to use algorithm's preferred direction
+
+        Returns:
+            The direction to use for this algorithm
+        """
+        if algo.direction is not None and use_default_directions:
+            return algo.direction
+        return direction
+
+    def _build_highlight(self, algo_direction: AnalysisDirection, outer_key: str, inner_key: str, highlight_type: str) -> CellHighlight:
+        """Build a CellHighlight object based on analysis direction.
+
+        Args:
+            algo_direction: The analysis direction
+            outer_key: The outer key from transformed data
+            inner_key: The inner key from transformed data
+            highlight_type: The type of highlight (e.g., 'outlier', 'pareto')
+
+        Returns:
+            CellHighlight object with appropriate row and column assignment
+        """
+        if algo_direction == AnalysisDirection.COLUMNS:
+            # COLUMNS: row=inner_key, column=outer_key (e.g., row=category, column=month)
+            return CellHighlight(
+                row=inner_key,
+                column=outer_key,
+                highlight_type=highlight_type
+            )
+        else:  # ROWS
+            # ROWS: row=outer_key, column=inner_key (e.g., row=month, column=category)
+            return CellHighlight(
+                row=outer_key,
+                column=inner_key,
+                highlight_type=highlight_type
+            )
+
+    def _create_highlight_for_algorithm(
+        self,
+        algo: StatisticalAlgorithm,
+        algo_direction: AnalysisDirection,
+        algo_transformed_data: List[Tuple[str, Dict[str, float]]]
+    ) -> List[CellHighlight]:
+        """Create highlights for a single algorithm.
+
+        Args:
+            algo_name: Name of the algorithm
+            algo: The algorithm instance
+            algo_direction: The direction to use for analysis
+            algo_transformed_data: Transformed data for analysis
+
+        Returns:
+            List of CellHighlight objects
+        """
+        highlights: List[CellHighlight] = []
+
+        for outer_key, inner_data in algo_transformed_data:
+            algo_highlights = algo.analyze(inner_data)
+
+            for inner_key, highlight_type in algo_highlights.items():
+                highlight = self._build_highlight(algo_direction, outer_key, inner_key, highlight_type)
+                highlights.append(highlight)
+
+        return highlights
+
     def get_highlights(
         self,
         summary: Dict[str, Dict[str, float]],
@@ -158,35 +283,49 @@ class StatisticalAnalysisService:
         :param use_default_directions: If True, use each algorithm's default direction instead of the provided direction
         :return: List of CellHighlight
         """
-        highlights = []
+        highlights: List[CellHighlight] = []
         algos_to_use = algorithms if algorithms is not None else self.enabled_algorithms
 
         for algo_name in algos_to_use:
             if algo_name in self.algorithms:
                 algo = self.algorithms[algo_name]
-                # Use algorithm's preferred direction if set and use_default_directions is True, otherwise use the parameter
-                algo_direction = algo.direction if (algo.direction is not None and use_default_directions) else direction
+                # Determine direction to use for this algorithm
+                algo_direction = self._get_algorithm_direction(algo, direction, use_default_directions)
+                # Transform data for this algorithm
                 algo_transformed_data = self._transform_data_for_analysis(summary, algo_direction)
+                # Create highlights for this algorithm
+                algo_highlights = self._create_highlight_for_algorithm(algo, algo_direction, algo_transformed_data)
+                highlights.extend(algo_highlights)
 
-                for outer_key, inner_data in algo_transformed_data:
-                    algo_highlights = algo.analyze(inner_data)
-
-                    for inner_key, highlight_type in algo_highlights.items():
-                        if algo_direction == AnalysisDirection.COLUMNS:
-                            # COLUMNS: row=inner_key, column=outer_key (e.g., row=category, column=month)
-                            highlights.append(CellHighlight(
-                                row=inner_key,
-                                column=outer_key,
-                                highlight_type=highlight_type
-                            ))
-                        else:  # ROWS
-                            # ROWS: row=outer_key, column=inner_key (e.g., row=month, column=category)
-                            highlights.append(CellHighlight(
-                                row=outer_key,
-                                column=inner_key,
-                                highlight_type=highlight_type
-                            ))
         return highlights
+
+    def _get_excluded_cell_highlights(self, dt_response: DataTablesResponse) -> List[CellHighlight]:
+        """Get highlights for cells that should be excluded from statistical analysis.
+
+        Identifies cells that are either calculated rows or belong to excluded categories.
+
+        Args:
+            dt_response: Original DataTablesResponse with all rows
+
+        Returns:
+            List of CellHighlight objects with type 'excluded'
+        """
+        excluded_highlights: List[CellHighlight] = []
+
+        # Extract summary from original data (including calculated rows and excluded categories)
+        full_summary = self._extract_summary_from_response(dt_response)
+
+        for month_display, categories in full_summary.items():
+            for category, amount in categories.items():
+                # Check if this cell should be excluded
+                if self._is_cell_excluded(month_display, category, dt_response):
+                    excluded_highlights.append(CellHighlight(
+                        row=category,
+                        column=month_display,
+                        highlight_type='excluded'
+                    ))
+
+        return excluded_highlights
 
     def _filter_calculated_rows(self, dt_response: DataTablesResponse) -> DataTablesResponse:
         """Filter out calculated rows from DataTablesResponse for statistical analysis.
@@ -303,52 +442,6 @@ class StatisticalAnalysisService:
 
         return summary
 
-    def _get_excluded_cell_highlights(self, dt_response: DataTablesResponse) -> List[CellHighlight]:
-        """Get highlights for cells that should be excluded from statistical analysis.
-
-        Identifies cells that are either calculated rows or belong to excluded categories.
-
-        Args:
-            dt_response: Original DataTablesResponse with all rows
-
-        Returns:
-            List of CellHighlight objects with type 'excluded'
-        """
-        excluded_highlights = []
-
-        # Get excluded categories if exclusion service is available
-        excluded_categories = set()
-        if self._exclusion_service:
-            excluded_categories = set(self._exclusion_service.get_exclusions())
-
-        # Extract summary from original data (including calculated rows and excluded categories)
-        full_summary = self._extract_summary_from_response(dt_response)
-
-        for month_display, categories in full_summary.items():
-            for category, amount in categories.items():
-                # Check if this cell should be excluded
-                is_excluded = False
-
-                # Find the corresponding row in the original data
-                for agg_row in dt_response.data:
-                    date_field = agg_row.date
-                    if (date_field.display == month_display or f"{date_field.display} ({date_field.timestamp})" == month_display) and agg_row.category == category:
-                        # Cell is excluded if it's a calculated row or belongs to excluded category
-                        if agg_row.is_calculated or category in excluded_categories:
-                            is_excluded = True
-                        break
-
-                if is_excluded:
-                    # Use plain month display (without timestamp) for consistency
-                    plain_month = month_display.split(' (')[0] if ' (' in month_display else month_display
-                    excluded_highlights.append(CellHighlight(
-                        row=category,
-                        column=plain_month,
-                        highlight_type='excluded'
-                    ))
-
-        return excluded_highlights
-
     def compute_statistical_metadata(
         self,
         datatables_responses: Dict[str, Any],
@@ -367,7 +460,7 @@ class StatisticalAnalysisService:
         Returns:
             StatisticalMetadata with highlights
         """
-        highlights = []
+        highlights: List[CellHighlight] = []
 
         # Determine direction to use
         analysis_direction = direction if direction is not None else AnalysisDirection.COLUMNS
@@ -394,8 +487,7 @@ class StatisticalAnalysisService:
                 use_default_directions=use_default_directions
             )
             for h in table_highlights:
-                plain_month = h.column.split(' (')[0] if ' (' in h.column else h.column
-                highlights.append(CellHighlight(row=h.row, column=plain_month, highlight_type=h.highlight_type))
+                highlights.append(CellHighlight(row=h.row, column=h.column, highlight_type=h.highlight_type))
 
             # Add highlights for excluded cells (calculated rows and excluded categories)
             excluded_highlights = self._get_excluded_cell_highlights(dt_response)

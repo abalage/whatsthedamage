@@ -12,7 +12,7 @@ from whatsthedamage.services.session_service import SessionService
 from whatsthedamage.services.data_formatting_service import DataFormattingService
 from whatsthedamage.services.file_upload_service import FileUploadService, FileUploadError
 from whatsthedamage.services.cache_service import CacheService
-from whatsthedamage.services.statistical_analysis_service import StatisticalAnalysisService
+from whatsthedamage.services.statistical_analysis_service import StatisticalAnalysisService, AnalysisDirection
 from whatsthedamage.config.dt_models import CachedProcessingResult, DataTablesResponse, StatisticalMetadata, AggregatedRow
 from whatsthedamage.utils.flask_locale import get_default_language
 from typing import Dict, Callable, Optional, cast, Tuple, List, Any
@@ -286,11 +286,11 @@ def handle_recalculate_statistics_request(
 
         # Recalculate highlights using statistical analysis service
         stat_service = _get_statistical_analysis_service()
-        new_metadata = stat_service.recalculate_highlights(
+        new_metadata = stat_service.compute_statistical_metadata(
             cached.responses,
-            algorithms,
-            direction,
-            use_default_directions
+            algorithms=algorithms,
+            direction=AnalysisDirection(direction),
+            use_default_directions=use_default_directions
         )
 
         # Update cache with new metadata

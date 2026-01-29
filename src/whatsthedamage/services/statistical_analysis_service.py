@@ -116,24 +116,6 @@ class StatisticalAnalysisService:
         self._exclusion_service = exclusion_service
         self.filter_expenses_only = filter_expenses_only
 
-    def analyze(self, data: Dict[str, float], algorithms: List[str] | None = None) -> Dict[str, str]:
-        """Apply specified algorithms (or enabled algorithms) and return combined highlights.
-
-        :param data: The flat data to analyze (keys as identifiers, values as amounts).
-        :param algorithms: Optional list of algorithm names to use (overrides enabled_algorithms).
-        :return: Dictionary of highlights keyed by identifiers.
-        """
-        algorithms_to_use = algorithms if algorithms is not None else self.enabled_algorithms
-        highlights = {}
-        for algo_name in algorithms_to_use:
-            if algo_name in self.algorithms:
-                algo_highlights = self.algorithms[algo_name].analyze(data)
-                # Only add highlights for keys that don't already exist
-                for key, value in algo_highlights.items():
-                    if key not in highlights:
-                        highlights[key] = value
-        return highlights
-
     def _transform_data_for_analysis(
         self,
         summary: Dict[str, Dict[str, float]],
@@ -367,60 +349,28 @@ class StatisticalAnalysisService:
 
         return excluded_highlights
 
-    def compute_statistical_metadata(self, datatables_responses: Dict[str, Any]) -> StatisticalMetadata:
+    def compute_statistical_metadata(
+        self,
+        datatables_responses: Dict[str, Any],
+        algorithms: List[str] | None = None,
+        direction: AnalysisDirection | None = None,
+        use_default_directions: bool = False
+    ) -> StatisticalMetadata:
         """Compute statistical metadata including highlights for the given responses.
 
         Args:
             datatables_responses: Dictionary of table responses
+            algorithms: Optional list of algorithm names to use (if None, use enabled_algorithms)
+            direction: Optional analysis direction (if None, use default behavior)
+            use_default_directions: If True, use each algorithm's default direction
 
         Returns:
             StatisticalMetadata with highlights
         """
         highlights = []
-        for table_name, dt_response in datatables_responses.items():
-            # Filter out calculated rows before analysis
-            filtered_response = self._filter_calculated_rows(dt_response)
 
-            # Apply category exclusions if exclusion service is available
-            if self._exclusion_service:
-                filtered_response = self._filter_excluded_categories(filtered_response)
-
-            # Apply expense filtering if enabled
-            filtered_response = self._filter_expenses_only(filtered_response)
-
-            # Extract summary from filtered data only
-            summary = self._extract_summary_from_response(filtered_response)
-            # Call get_highlights with default parameters (all enabled algorithms, default directions)
-            table_highlights = self.get_highlights(summary, algorithms=None, use_default_directions=True)
-            for h in table_highlights:
-                plain_month = h.column.split(' (')[0] if ' (' in h.column else h.column
-                highlights.append(CellHighlight(row=h.row, column=plain_month, highlight_type=h.highlight_type))
-
-            # Add highlights for excluded cells (calculated rows and excluded categories)
-            excluded_highlights = self._get_excluded_cell_highlights(dt_response)
-            highlights.extend(excluded_highlights)
-        return StatisticalMetadata(highlights=highlights)
-
-    def recalculate_highlights(
-        self,
-        datatables_responses: Dict[str, Any],
-        algorithms: List[str],
-        direction: str,
-        use_default_directions: bool = False
-    ) -> StatisticalMetadata:
-        """Recalculate statistical highlights with custom algorithm and direction settings.
-
-        Args:
-            datatables_responses: Dictionary of table responses
-            algorithms: List of algorithm names to use (e.g., ['iqr', 'pareto'])
-            direction: Analysis direction ('columns' or 'rows')
-            use_default_directions: If True, use each algorithm's default direction instead of the provided direction
-
-        Returns:
-            StatisticalMetadata with recalculated highlights
-        """
-        highlights = []
-        analysis_direction = AnalysisDirection(direction)
+        # Determine direction to use
+        analysis_direction = direction if direction is not None else AnalysisDirection.COLUMNS
 
         for table_name, dt_response in datatables_responses.items():
             # Filter out calculated rows before analysis
@@ -437,7 +387,12 @@ class StatisticalAnalysisService:
             summary = self._extract_summary_from_response(filtered_response)
 
             # Get highlights with custom parameters
-            table_highlights = self.get_highlights(summary, algorithms=algorithms, direction=analysis_direction, use_default_directions=use_default_directions)
+            table_highlights = self.get_highlights(
+                summary,
+                algorithms=algorithms,
+                direction=analysis_direction,
+                use_default_directions=use_default_directions
+            )
             for h in table_highlights:
                 plain_month = h.column.split(' (')[0] if ' (' in h.column else h.column
                 highlights.append(CellHighlight(row=h.row, column=plain_month, highlight_type=h.highlight_type))

@@ -208,74 +208,6 @@ class TestStatisticalAnalysisService:
         service = StatisticalAnalysisService(enabled_algorithms=[])
         # When empty list is provided, it should result in empty algorithms
         assert len(service.enabled_algorithms) == 0
-        assert service.analyze({}) == {}
-
-    def test_analyze_with_both_algorithms(self):
-        """Test analyze with both algorithms enabled."""
-        service = StatisticalAnalysisService(enabled_algorithms=["iqr", "pareto"])
-        # Data with both outlier and pareto characteristics
-        # Need more data points for IQR to work properly
-        data = {
-            "outlier": 1000.0,  # Should be outlier
-            "item1": 10.0,
-            "item2": 20.0,
-            "item3": 30.0,
-            "item4": 40.0,
-            "item5": 50.0,
-            "item6": 60.0,
-            "item7": 70.0,
-            "item8": 80.0,
-            "item9": 90.0
-        }
-        result = service.analyze(data)
-        assert "outlier" in result
-        assert result["outlier"] == "outlier"
-        # Pareto should also work
-        assert len(result) >= 1  # At least the outlier
-
-    def test_analyze_with_only_iqr(self):
-        """Test analyze with only IQR algorithm."""
-        service = StatisticalAnalysisService(enabled_algorithms=["iqr"])
-        # Need more data points for IQR to work properly
-        data = {
-            "outlier": 1000.0,
-            "item1": 10.0,
-            "item2": 20.0,
-            "item3": 30.0,
-            "item4": 40.0,
-            "item5": 50.0,
-            "item6": 60.0,
-            "item7": 70.0,
-            "item8": 80.0,
-            "item9": 90.0
-        }
-        result = service.analyze(data)
-        assert "outlier" in result
-        assert result["outlier"] == "outlier"
-        assert len(result) == 1  # Only the outlier
-
-    def test_analyze_with_only_pareto(self):
-        """Test analyze with only Pareto algorithm."""
-        service = StatisticalAnalysisService(enabled_algorithms=["pareto"])
-        # Use data where pareto1 will be included in Pareto analysis
-        data = {
-            "item1": 60.0,    # Should be pareto
-            "item2": 40.0,    # Should be pareto
-            "item3": 10.0     # Should not be pareto
-        }
-        result = service.analyze(data)
-        assert "item1" in result
-        assert "item2" in result
-        assert result["item1"] == "pareto"
-        assert result["item2"] == "pareto"
-        assert "item3" not in result
-
-    def test_analyze_with_invalid_algorithm_name(self):
-        """Test analyze with invalid algorithm name (should be ignored)."""
-        service = StatisticalAnalysisService(enabled_algorithms=["iqr", "invalid_algo"])
-        data = {"item1": 10.0, "item2": 20.0}
-        result = service.analyze(data)
-        assert result == {}  # No highlights from valid algorithms
 
     def test_get_highlights_with_summary_data(self):
         """Test get_highlights method with summary data structure (COLUMNS direction)."""
@@ -352,7 +284,6 @@ class TestStatisticalAnalysisService:
         assert ("Grocery", "2023-03") in highlight_dict
         assert highlight_dict[("Grocery", "2023-03")] in ["outlier", "pareto"]
 
-
     def test_get_highlights_with_runtime_algorithm_selection(self, summary_data_with_outliers):
         """Test get_highlights with runtime algorithm selection."""
         service = StatisticalAnalysisService(enabled_algorithms=["iqr", "pareto"])
@@ -368,35 +299,6 @@ class TestStatisticalAnalysisService:
         # Test with both algorithms
         highlights_both = service.get_highlights(summary_data_with_outliers, AnalysisDirection.COLUMNS, algorithms=["iqr", "pareto"])
         assert len(highlights_both) > 0
-
-    def test_analyze_with_runtime_algorithm_selection(self):
-        """Test analyze method with runtime algorithm selection."""
-        service = StatisticalAnalysisService(enabled_algorithms=["iqr"])
-
-        data = {
-            "outlier": 1000.0,
-            "item1": 10.0,
-            "item2": 20.0,
-            "item3": 30.0,
-            "item4": 40.0,
-            "item5": 50.0,
-            "item6": 60.0,
-            "item7": 70.0,
-            "item8": 80.0,
-            "item9": 90.0
-        }
-
-        # Test with default algorithms (should use enabled_algorithms)
-        result_default = service.analyze(data)
-        assert "outlier" in result_default
-
-        # Test with runtime algorithm selection (override enabled_algorithms)
-        result_pareto = service.analyze(data, algorithms=["pareto"])
-        assert len(result_pareto) > 0
-
-        # Test with empty algorithm list
-        result_empty = service.analyze(data, algorithms=[])
-        assert result_empty == {}
 
     def test_data_transformation_for_columns_direction(self):
         """Test data transformation for COLUMNS direction."""
@@ -463,7 +365,10 @@ class TestStatisticalAlgorithmIntegration:
         # Enable the mock algorithm
         service.enabled_algorithms = ["mock"]
         data = {"mock_item": 100.0, "other": 50.0}
-        result = service.analyze(data)
+        # Use get_highlights with a simple summary structure
+        summary = {"month1": data}
+        highlights = service.get_highlights(summary)
 
-        assert "mock_item" in result
-        assert result["mock_item"] == "mock_highlight"
+        assert len(highlights) == 1
+        assert highlights[0].row == "mock_item"
+        assert highlights[0].highlight_type == "mock_highlight"

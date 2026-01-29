@@ -1,10 +1,10 @@
 """Test cases for the new statistical analysis controls feature."""
 
-from whatsthedamage.services.statistical_analysis_service import StatisticalAnalysisService
+from whatsthedamage.services.statistical_analysis_service import StatisticalAnalysisService, AnalysisDirection
 from whatsthedamage.config.dt_models import DataTablesResponse, AggregatedRow, DisplayRawField, DateField, StatisticalMetadata
 
 def test_recalculate_highlights_method():
-    """Test the recalculate_highlights method in StatisticalAnalysisService."""
+    """Test the compute_statistical_metadata method in StatisticalAnalysisService."""
     # Create test data
     test_responses = {
         'account1': DataTablesResponse(
@@ -33,10 +33,10 @@ def test_recalculate_highlights_method():
     service = StatisticalAnalysisService()
 
     # Test with IQR algorithm and columns direction
-    result = service.recalculate_highlights(
+    result = service.compute_statistical_metadata(
         datatables_responses=test_responses,
         algorithms=['iqr'],
-        direction='columns'
+        direction=AnalysisDirection.COLUMNS
     )
 
     # Verify result is StatisticalMetadata
@@ -44,17 +44,17 @@ def test_recalculate_highlights_method():
     assert isinstance(result.highlights, list)
 
     # Test with Pareto algorithm and rows direction
-    result2 = service.recalculate_highlights(
+    result2 = service.compute_statistical_metadata(
         datatables_responses=test_responses,
         algorithms=['pareto'],
-        direction='rows'
+        direction=AnalysisDirection.ROWS
     )
 
     assert isinstance(result2, StatisticalMetadata)
     assert isinstance(result2.highlights, list)
 
 def test_recalculate_highlights_with_both_algorithms():
-    """Test recalculate_highlights with both algorithms."""
+    """Test compute_statistical_metadata with both algorithms."""
     # Create test data with more varied values to trigger highlights
     test_responses = {
         'account1': DataTablesResponse(
@@ -97,10 +97,10 @@ def test_recalculate_highlights_with_both_algorithms():
     service = StatisticalAnalysisService()
 
     # Test with both algorithms
-    result = service.recalculate_highlights(
+    result = service.compute_statistical_metadata(
         datatables_responses=test_responses,
         algorithms=['iqr', 'pareto'],
-        direction='columns'
+        direction=AnalysisDirection.COLUMNS
     )
 
     assert isinstance(result, StatisticalMetadata)
@@ -136,10 +136,10 @@ def test_highlight_key_format():
         )
     }
 
-    result = service.recalculate_highlights(
+    result = service.compute_statistical_metadata(
         datatables_responses=test_responses,
         algorithms=['iqr'],
-        direction='columns'
+        direction=AnalysisDirection.COLUMNS
     )
 
     # Check that highlights have the correct format

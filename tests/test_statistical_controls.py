@@ -1,10 +1,10 @@
 """Test cases for the new statistical analysis controls feature."""
 
-from whatsthedamage.services.statistical_analysis_service import StatisticalAnalysisService
+from whatsthedamage.services.statistical_analysis_service import StatisticalAnalysisService, AnalysisDirection
 from whatsthedamage.config.dt_models import DataTablesResponse, AggregatedRow, DisplayRawField, DateField, StatisticalMetadata
 
 def test_recalculate_highlights_method():
-    """Test the recalculate_highlights method in StatisticalAnalysisService."""
+    """Test the compute_statistical_metadata method in StatisticalAnalysisService."""
     # Create test data
     test_responses = {
         'account1': DataTablesResponse(
@@ -12,7 +12,6 @@ def test_recalculate_highlights_method():
                 AggregatedRow(
                     category='Grocery',
                     total=DisplayRawField(display='100.00', raw=100.0),
-                    month=DateField(display='January 2024', timestamp=1704067200),
                     date=DateField(display='January 2024', timestamp=1704067200),
                     details=[],
                     is_calculated=False
@@ -20,7 +19,6 @@ def test_recalculate_highlights_method():
                 AggregatedRow(
                     category='Utilities',
                     total=DisplayRawField(display='50.00', raw=50.0),
-                    month=DateField(display='January 2024', timestamp=1704067200),
                     date=DateField(display='January 2024', timestamp=1704067200),
                     details=[],
                     is_calculated=False
@@ -35,10 +33,10 @@ def test_recalculate_highlights_method():
     service = StatisticalAnalysisService()
 
     # Test with IQR algorithm and columns direction
-    result = service.recalculate_highlights(
+    result = service.compute_statistical_metadata(
         datatables_responses=test_responses,
         algorithms=['iqr'],
-        direction='columns'
+        direction=AnalysisDirection.COLUMNS
     )
 
     # Verify result is StatisticalMetadata
@@ -46,17 +44,17 @@ def test_recalculate_highlights_method():
     assert isinstance(result.highlights, list)
 
     # Test with Pareto algorithm and rows direction
-    result2 = service.recalculate_highlights(
+    result2 = service.compute_statistical_metadata(
         datatables_responses=test_responses,
         algorithms=['pareto'],
-        direction='rows'
+        direction=AnalysisDirection.ROWS
     )
 
     assert isinstance(result2, StatisticalMetadata)
     assert isinstance(result2.highlights, list)
 
 def test_recalculate_highlights_with_both_algorithms():
-    """Test recalculate_highlights with both algorithms."""
+    """Test compute_statistical_metadata with both algorithms."""
     # Create test data with more varied values to trigger highlights
     test_responses = {
         'account1': DataTablesResponse(
@@ -64,7 +62,6 @@ def test_recalculate_highlights_with_both_algorithms():
                 AggregatedRow(
                     category='Grocery',
                     total=DisplayRawField(display='1000.00', raw=1000.0),  # Large value - potential outlier
-                    month=DateField(display='January 2024', timestamp=1704067200),
                     date=DateField(display='January 2024', timestamp=1704067200),
                     details=[],
                     is_calculated=False
@@ -72,7 +69,6 @@ def test_recalculate_highlights_with_both_algorithms():
                 AggregatedRow(
                     category='Utilities',
                     total=DisplayRawField(display='50.00', raw=50.0),
-                    month=DateField(display='January 2024', timestamp=1704067200),
                     date=DateField(display='January 2024', timestamp=1704067200),
                     details=[],
                     is_calculated=False
@@ -80,24 +76,31 @@ def test_recalculate_highlights_with_both_algorithms():
                 AggregatedRow(
                     category='Entertainment',
                     total=DisplayRawField(display='200.00', raw=200.0),
-                    month=DateField(display='January 2024', timestamp=1704067200),
+                    date=DateField(display='January 2024', timestamp=1704067200),
+                    details=[],
+                    is_calculated=False
+                ),
+                AggregatedRow(
+                    category='Entertainment',
+                    total=DisplayRawField(display='-500.00', raw=-500.0),
                     date=DateField(display='January 2024', timestamp=1704067200),
                     details=[],
                     is_calculated=False
                 )
             ],
             account='account1',
-            currency='USD'
+            currency='USD',
+            statistical_metadata=None
         )
     }
 
     service = StatisticalAnalysisService()
 
     # Test with both algorithms
-    result = service.recalculate_highlights(
+    result = service.compute_statistical_metadata(
         datatables_responses=test_responses,
         algorithms=['iqr', 'pareto'],
-        direction='columns'
+        direction=AnalysisDirection.COLUMNS
     )
 
     assert isinstance(result, StatisticalMetadata)
@@ -123,7 +126,6 @@ def test_highlight_key_format():
                 AggregatedRow(
                     category='TestCategory',
                     total=DisplayRawField(display='100.00', raw=100.0),
-                    month=DateField(display='January 2024', timestamp=1704067200),
                     date=DateField(display='January 2024', timestamp=1704067200),
                     details=[],
                     is_calculated=False
@@ -134,10 +136,10 @@ def test_highlight_key_format():
         )
     }
 
-    result = service.recalculate_highlights(
+    result = service.compute_statistical_metadata(
         datatables_responses=test_responses,
         algorithms=['iqr'],
-        direction='columns'
+        direction=AnalysisDirection.COLUMNS
     )
 
     # Check that highlights have the correct format

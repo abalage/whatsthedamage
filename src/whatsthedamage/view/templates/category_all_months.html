@@ -13,22 +13,24 @@
     <main class="container-fluid">
         <h1>{{ _('Details for Category') }}: {{ _(category) }}</h1>
         <h2>{{ _('Account') }}: {{ formatted_account }}</h2>
-        <table class="table table-bordered">
-            <thead>
-                <tr>
-                    <th>{{ _('Month') }}</th>
-                    <th>{{ _('Total') }}</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for row in data %}
-                <tr>
-                    <td>{{ row.date.display }}</td>
-                    <td>{{ row.total.display }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+        <div class="table-responsive">
+            <table id="category-details-table" class="table table-bordered" data-datatable="true">
+                <thead>
+                    <tr>
+                        <th>{{ _('Month') }}</th>
+                        <th>{{ _('Total') }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in data %}
+                    <tr>
+                        <td>{{ row.date.display }}</td>
+                        <td>{{ row.total.display }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
         <a href="/" class="btn btn-secondary">{{ _('Back') }}</a>
     </main>
     <footer class="bg-success text-white text-center py-3 mt-3">

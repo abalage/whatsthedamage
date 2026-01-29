@@ -13,26 +13,28 @@
     <main class="container-fluid">
         <h1>{{ _('Transaction Details') }}: {{ _(category) }} / {{ _(data[0].date.display if data) }}</h1>
         <h2>{{ _('Account') }}: {{ formatted_account }}</h2>
-        <table class="table table-bordered">
-            <thead>
-                <tr>
-                    <th>{{ _('Date') }}</th>
-                    <th>{{ _('Amount') }}</th>
-                    <th>{{ _('Merchant') }}</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for row in data %}
-                {% for detail in row.details %}
-                <tr>
-                    <td>{{ detail.date.display }}</td>
-                    <td>{{ detail.amount.display }}</td>
-                    <td>{{ detail.merchant }}</td>
-                </tr>
-                {% endfor %}
-                {% endfor %}
-            </tbody>
-        </table>
+        <div class="table-responsive">
+            <table id="transaction-details-table" class="table table-bordered" data-datatable="true">
+                <thead>
+                    <tr>
+                        <th>{{ _('Date') }}</th>
+                        <th>{{ _('Amount') }}</th>
+                        <th>{{ _('Merchant') }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in data %}
+                    {% for detail in row.details %}
+                    <tr>
+                        <td>{{ detail.date.display }}</td>
+                        <td>{{ detail.amount.display }}</td>
+                        <td>{{ detail.merchant }}</td>
+                    </tr>
+                    {% endfor %}
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
         <a href="/" class="btn btn-secondary">{{ _('Back') }}</a>
     </main>
     <footer class="bg-success text-white text-center py-3 mt-3">

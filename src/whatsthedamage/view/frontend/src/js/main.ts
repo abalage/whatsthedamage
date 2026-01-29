@@ -23,10 +23,10 @@ export function initMainPage(): void {
         $(table).DataTable({
             responsive: true,
             fixedHeader: true,
-            ordering: false,
+            ordering: true,
             pageLength: 25,
-            scrollX: true,
-            autoWidth: false,
+            scrollX: false,
+            autoWidth: true,
             dom: 'Bfrtip',
             buttons: [
                 {

@@ -1,8 +1,8 @@
 """Tests for StatisticalAnalysisService and related algorithms."""
 
 import pytest
-from whatsthedamage.services.statistical_analysis_service import (
-    StatisticalAnalysisService,
+from whatsthedamage.services.statistical_analysis_service import StatisticalAnalysisService
+from whatsthedamage.models.statistical_algorithms import (
     IQROutlierDetection,
     ParetoAnalysis,
     StatisticalAlgorithm,

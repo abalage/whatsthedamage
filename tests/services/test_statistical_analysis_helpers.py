@@ -3,6 +3,10 @@
 import pytest
 from whatsthedamage.services.statistical_analysis_service import StatisticalAnalysisService
 from whatsthedamage.services.exclusion_service import ExclusionService
+from whatsthedamage.models.statistical_algorithms import (
+    AnalysisDirection,
+    IQROutlierDetection
+)
 from whatsthedamage.config.dt_models import DataTablesResponse, AggregatedRow, DisplayRawField, DateField
 
 @pytest.fixture
@@ -116,9 +120,6 @@ class TestHelperMethods:
 
     def test_get_algorithm_direction_with_default(self):
         """Test _get_algorithm_direction uses algorithm's default when requested."""
-        from whatsthedamage.services.statistical_analysis_service import AnalysisDirection
-        from whatsthedamage.services.statistical_analysis_service import IQROutlierDetection
-
         service = StatisticalAnalysisService()
         algo = IQROutlierDetection(direction=AnalysisDirection.ROWS)
 
@@ -128,9 +129,6 @@ class TestHelperMethods:
 
     def test_get_algorithm_direction_without_default(self):
         """Test _get_algorithm_direction uses parameter when default not requested."""
-        from whatsthedamage.services.statistical_analysis_service import AnalysisDirection
-        from whatsthedamage.services.statistical_analysis_service import IQROutlierDetection
-
         service = StatisticalAnalysisService()
         algo = IQROutlierDetection(direction=AnalysisDirection.ROWS)
 
@@ -140,8 +138,6 @@ class TestHelperMethods:
 
     def test_build_highlight_columns_direction(self):
         """Test _build_highlight for COLUMNS direction."""
-        from whatsthedamage.services.statistical_analysis_service import AnalysisDirection
-
         service = StatisticalAnalysisService()
         highlight = service._build_highlight(
             AnalysisDirection.COLUMNS,
@@ -156,8 +152,6 @@ class TestHelperMethods:
 
     def test_build_highlight_rows_direction(self):
         """Test _build_highlight for ROWS direction."""
-        from whatsthedamage.services.statistical_analysis_service import AnalysisDirection
-
         service = StatisticalAnalysisService()
         highlight = service._build_highlight(
             AnalysisDirection.ROWS,
@@ -172,8 +166,6 @@ class TestHelperMethods:
 
     def test_create_highlight_for_algorithm(self):
         """Test _create_highlight_for_algorithm processes algorithm results correctly."""
-        from whatsthedamage.services.statistical_analysis_service import AnalysisDirection, IQROutlierDetection
-
         service = StatisticalAnalysisService()
         algo = IQROutlierDetection()
 

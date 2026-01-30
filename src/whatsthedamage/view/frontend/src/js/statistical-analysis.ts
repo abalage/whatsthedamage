@@ -14,8 +14,9 @@ export function initStatisticalAnalysis(): void {
     const recalculateBtn = document.getElementById('recalculate-btn');
     const resetBtn = document.getElementById('reset-btn');
 
-    if (recalculateBtn && resetBtn) {
-        // Mark as initialized for testing purposes
+    // Only initialize if controls exist and haven't been initialized yet
+    if (recalculateBtn && resetBtn && !recalculateBtn.dataset.initialized) {
+        // Mark as initialized to prevent duplicate event listeners
         recalculateBtn.dataset.initialized = 'true';
         resetBtn.dataset.initialized = 'true';
 
@@ -151,30 +152,47 @@ export function updateCellHighlights(highlights: Record<string, string>): void {
 
         // Find and update matching cells in all tables
         document.querySelectorAll('table[data-datatable="true"]').forEach(table => {
-            const thead = table.querySelector('thead');
             const tbody = table.querySelector('tbody');
-            if (!thead || !tbody) return;
+            if (!tbody) return;
 
-            const headers = Array.from(thead.querySelectorAll('th'));
             const rows = Array.from(tbody.querySelectorAll('tr'));
 
-            // Find matching row
-            const matchingRow = rows.find(tr => {
-                const categoryCell = tr.querySelector('td:first-child');
-                return categoryCell && categoryCell.textContent.trim() === row;
-            });
+            rows.forEach(tr => {
+                const cells = Array.from(tr.querySelectorAll('td'));
+                if (cells.length === 0) return;
 
-            if (matchingRow) {
-                // Find matching column
-                headers.slice(1).forEach((header, index) => {
-                    if (header.textContent.trim() === column) {
-                        const cell = matchingRow.querySelector(`td:nth-child(${index + 2})`);
-                        if (cell) {
-                            cell.classList.add(`highlight-${highlightType}`);
+                // For tables with multiple columns (like results.html):
+                // - First column is category/label
+                // - Other columns are months/dates
+                // Match when first cell equals row and any other cell equals column
+                if (cells.length > 1) {
+                    const firstCell = cells[0];
+                    const firstCellText = firstCell?.textContent?.trim() || '';
+                    const otherCells = cells.slice(1);
+
+                    if (firstCellText === row) {
+                        otherCells.forEach(cell => {
+                            const cellText = cell?.textContent?.trim() || '';
+                            if (cellText === column) {
+                                cell.classList.add(`highlight-${highlightType}`);
+                            }
+                        });
+                    }
+                }
+                // For tables with 2 columns (like drilldown views):
+                // - First column is label
+                // - Second column is value
+                // Match when second cell equals row
+                else if (cells.length === 2) {
+                    const valueCell = cells[1];
+                    if (valueCell) {
+                        const valueCellText = valueCell.textContent?.trim() || '';
+                        if (valueCellText === row) {
+                            valueCell.classList.add(`highlight-${highlightType}`);
                         }
                     }
-                });
-            }
+                }
+            });
         });
     });
 }

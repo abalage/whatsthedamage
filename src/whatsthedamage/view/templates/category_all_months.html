@@ -13,6 +13,10 @@
     <main class="container-fluid">
         <h1>{{ _('Details for Category') }}: {{ _(category) }}</h1>
         <h2>{{ _('Account') }}: {{ formatted_account }}</h2>
+
+        {% from '_statistical_controls.html' import render_statistical_controls %}
+        {{ render_statistical_controls(result_id) }}
+
         <div class="table-responsive">
             <table id="category-details-table" class="table table-bordered" data-datatable="true">
                 <thead>
@@ -25,7 +29,10 @@
                     {% for row in data %}
                     <tr>
                         <td>{{ row.date.display }}</td>
-                        <td>{{ row.total.display }}</td>
+                        {% set highlight_key = row.date.display ~ '_' ~ category %}
+                        {% set highlight_type = highlights.get(highlight_key, '') %}
+                        {% set highlight_class = 'highlight-' ~ highlight_type if highlight_type else '' %}
+                        <td class="{{ highlight_class }}">{{ row.total.display }}</td>
                     </tr>
                     {% endfor %}
                 </tbody>

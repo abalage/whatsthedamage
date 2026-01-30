@@ -4,6 +4,7 @@
 
 import $ from 'jquery';
 import 'bootstrap';
+import { initStatisticalAnalysis } from './statistical-analysis';
 
 declare global {
     interface Window {
@@ -53,4 +54,7 @@ export function initMainPage(): void {
             // Bootstrap 5 handles basic sanitization automatically
         });
     });
+
+    // Initialize statistical analysis if controls are present
+    initStatisticalAnalysis();
 }

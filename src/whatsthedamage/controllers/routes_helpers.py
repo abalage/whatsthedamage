@@ -167,6 +167,7 @@ def handle_drilldown_request(
         >>>     {'category': 'Grocery', 'account': account}
         >>> )
     """
+    # Use the existing get_cached_data_for_drilldown helper to maintain consistency
     dt_response, error = get_cached_data_for_drilldown(result_id, account)
     if error or not dt_response:
         flash(error or data_not_found_error, 'danger')
@@ -183,11 +184,29 @@ def handle_drilldown_request(
     formatting_service = _get_data_formatting_service()
     formatted_account = formatting_service.format_account_id(account)
 
-    # Merge account into template context, including formatted version
+    # Get statistical metadata from cache
+    try:
+        cache_service = _get_cache_service()
+        cached = cache_service.get(result_id)
+
+        if cached and cached.metadata:
+            # Convert highlights to dictionary format for easier frontend processing
+            highlights_dict = {}
+            for highlight in cached.metadata.highlights:
+                key = f"{highlight.column}_{highlight.row}"
+                highlights_dict[key] = highlight.highlight_type
+        else:
+            highlights_dict = {}
+    except Exception:
+        highlights_dict = {}
+
+    # Merge account into template context, including formatted version and statistical data
     context = {
         'data': filtered_data,
         'account': account,
         'formatted_account': formatted_account,
+        'result_id': result_id,
+        'highlights': highlights_dict,
         **template_context
     }
     return make_response(render_template(template, **context))

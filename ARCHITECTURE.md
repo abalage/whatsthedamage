@@ -1,445 +1,306 @@
 # whatsthedamage Architecture Overview
+This document serves as a critical, living template designed to equip agents with a rapid and comprehensive understanding of the codebase's architecture, enabling efficient navigation and effective contribution from day one. Update this document as the codebase evolves.
 
-## Purpose
-`whatsthedamage` is an open-source Python tool for processing bank transaction CSV exports. It provides both a command-line interface (CLI) and a Flask-based web interface for categorizing, filtering, and summarizing transactions. The project supports customizable CSV formats, localization, and experimental machine learning-based categorization.
-
-## High-Level Structure
-The project follows a Model-View-Controller (MVC) and Service Layer patterns for clear separation of concerns:
-
-- **Models**: Data representation, row processing, enrichment, filtering, summarization, and ML logic.
-- **Views**: Output formatting for console, HTML, and CSV.
-- **Controllers**: CLI and web routing, orchestration of processing.
-- **Config**: Centralized configuration, context, and pattern sets.
-- **Scripts**: ML model training, feature engineering, documentation.
-- **Services**: Place for business logic.
-
-### Architecture decisions
-- Dependencies point inward (Controller → Service → Model), never outward.
-- Single Responsibility Principle: Each service has a clear, focused purpose.
-- Dependency Injection: Services are injected into controllers for testability.
-- Service Layer Pattern: Business logic isolated from delivery mechanisms (CLI/Web/API).
-- Calculator Pattern: Extensibility for custom transaction calculations.
-- API Versioning: Explicit versioning in URLs for backward compatibility.
-
-## Visual Architecture Diagram
-
-```mermaid
-graph TB
-    subgraph "Presentation Layer"
-        CLI[CLI<br/>cli_app.py<br/>CLIController]
-        WEB[Web Routes<br/>routes.py<br/>routes_helpers]
-        API[REST API v2<br/>endpoints.py]
-    end
-
-    subgraph "Service Layer"
-        PS[ProcessingService<br/>orchestrates CSV processing]
-        VS[ValidationService<br/>file validation]
-        CS[ConfigurationService<br/>config loading]
-        SS[SessionService<br/>web sessions]
-        FUS[FileUploadService<br/>file handling]
-        RBS[ResponseBuilderService<br/>response construction]
-        DFS[DataFormattingService<br/>output formatting]
-    end
-
-    subgraph "Model Layer"
-        CSVP[CSVProcessor<br/>orchestration]
-        RP[RowsProcessor<br/>main processing]
-        CFH[CsvFileHandler<br/>CSV parsing]
-        RF[RowFilter<br/>date filtering]
-        RE[RowEnrichment<br/>regex categorization]
-        REML[RowEnrichmentML<br/>ML categorization]
-        DTRB[DataTablesResponseBuilder<br/>API v2 structure]
-        CR[CsvRow<br/>data model]
-        CALC[dt_calculators<br/>Balance & Total Spendings]
-    end
-
-    subgraph "Configuration"
-        AC[AppContext<br/>config + args]
-        CONFIG[config.yml<br/>CSV format, patterns]
-        PATTERNS[EnricherPatternSets<br/>regex patterns]
-        MLMODEL[machine_learning.py<br/>joblib model]
-    end
-
-    subgraph "View/Output"
-        RP_VIEW[row_printer.py<br/>console output]
-        FORMS[forms.py<br/>Flask forms]
-        TEMPLATES[Jinja2 Templates<br/>HTML rendering]
-    end
-
-    subgraph "Utilities"
-        LOCALE[gettext/i18n<br/>localization]
-        DATECONV[DateConverter<br/>date handling]
-    end
-
-    %% CLI Flow
-    CLI --> |process_with_details|PS
-    CLI --> DFS
-
-    %% Web Flow
-    WEB --> |file upload|FUS
-    WEB --> |validation|VS
-    WEB --> |process|PS
-    WEB --> |session|SS
-    WEB --> FORMS
-    WEB --> TEMPLATES
-
-    %% API Flow
-    API --> |process_with_details|PS
-    API --> |validation|VS
-    API --> |response|RBS
-
-    %% Service Layer Dependencies
-    PS --> CS
-    PS --> CSVP
-    CS --> CONFIG
-    RBS --> DFS
-
-    %% CSVProcessor Flow
-    CSVP --> RP
-    CSVP --> CFH
-    CSVP --> DFS
-    CSVP --> AC
-
-    %% RowsProcessor Flow
-    RP --> AC
-    RP --> RF
-    RP --> RE
-    RP --> REML
-    RP --> DTRB
-    RP --> RP_VIEW
-
-    %% Model Dependencies
-    CFH --> CR
-    RE --> PATTERNS
-    REML --> MLMODEL
-    DTRB --> CALC
-    DTRB --> CR
-
-    %% Configuration Flow
-    AC --> CONFIG
-    AC --> PATTERNS
-
-    %% Utilities
-    DFS --> LOCALE
-    RP --> DATECONV
-    DTRB --> DATECONV
-
-    %% Styling
-    classDef presentation fill:#e1f5ff,stroke:#01579b,stroke-width:2px
-    classDef service fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
-    classDef model fill:#fff3e0,stroke:#e65100,stroke-width:2px
-    classDef config fill:#f1f8e9,stroke:#33691e,stroke-width:2px
-    classDef view fill:#fce4ec,stroke:#880e4f,stroke-width:2px
-    classDef utils fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px
-
-    class CLI,WEB,API presentation
-    class PS,VS,CS,SS,FUS,RBS,DFS service
-    class CSVP,RP,CFH,RF,RE,REML,RS,DTRB,CR,CALC model
-    class AC,CONFIG,PATTERNS,MLMODEL config
-    class RP_VIEW,FORMS,TEMPLATES view
-    class LOCALE,DATECONV utils
-```
-
-### Architecture Flow Explanation
-
-**Layers (Top to Bottom):**
-
-1. **Presentation Layer** (Blue): Three entry points
-   - CLI (`cli_app.py` + `CLIController`) - command-line interface
-   - Web Routes (`routes.py` + `routes_helpers.py`) - Flask web interface
-   - REST API v2 - detailed transactions with DataTables support
-
-2. **Service Layer** (Purple): Business logic (v0.8.0+)
-   - `ProcessingService` - orchestrates CSV processing, used by all interfaces
-   - `ValidationService` - validates uploaded files
-   - `ConfigurationService` - loads and manages configuration
-   - `SessionService` - manages web session state
-   - `FileUploadService` - handles file uploads for web/API
-   - `ResponseBuilderService` - constructs appropriate API responses
-   - `DataFormattingService` - formats data for output (HTML, CSV, JSON, console)
-
-3. **Model Layer** (Orange): Core data processing
-   - `CSVProcessor` - main orchestrator, used by ProcessingService
-   - `RowsProcessor` - coordinates filtering, enrichment, summarization
-   - `CsvFileHandler` - parses CSV into `CsvRow` objects
-   - `RowFilter` - filters by date range
-   - `RowEnrichment` - regex-based categorization using patterns
-   - `RowEnrichmentML` - ML-based categorization using trained model
-   - `DataTablesResponseBuilder` - builds API v2 responses with calculators
-   - `dt_calculators` - Balance and Total Spendings calculations (calculator pattern)
-
-4. **Configuration** (Green): Settings and patterns
-   - `AppContext` - wraps config + args
-   - `config.yml` - CSV format, attribute mappings, patterns
-   - `EnricherPatternSets` - type/partner regex patterns
-   - `machine_learning.py` - ML model loading/prediction
-
-5. **View/Output** (Pink): Presentation formatting
-   - `row_printer.py` - console output formatting
-   - `forms.py` - Flask WTForms
-   - Jinja2 templates - HTML rendering
-
-6. **Utilities** (Light Green): Cross-cutting concerns
-   - gettext/i18n - localization (English, Hungarian)
-   - `DateConverter` - date parsing and formatting
-
-**Key Data Flow:**
-- **CLI**: CLIController → ProcessingService.process_with_details() → CSVProcessor.process_v2() → RowsProcessor.process_rows_v2() → DataFormattingService → console
-- **Web**: Routes → FileUploadService + ValidationService → ProcessingService.process_with_details() → Templates
-- **API v2**: endpoints → ValidationService → ProcessingService.process_with_details() → DataTablesResponseBuilder → JSON (detailed, multi-account)
-
-**Important Patterns:**
-- **Dependency Injection**: Services injected into controllers (Flask extensions)
-- **Strategy Pattern**: Different enrichment strategies (regex vs ML)
-- **Builder Pattern**: DataTablesResponseBuilder with calculator pattern
-- **Calculator Pattern**: Extensible calculations (Balance, Total Spendings, custom)
-
-## Major Components
-
-### 1. Models (`src/whatsthedamage/models/`)
-- **CsvRow**: Represents a single transaction row with account metadata (multi-account support).
-- **RowsProcessor**: Orchestrates filtering, enrichment (regex/ML), categorization, and summarization. Uses v2 pipeline (`process_rows_v2()`).
-- **RowEnrichment / RowEnrichmentML**: Categorization via regex or ML.
-- **RowFilter**: Filters rows by date/month.
-- **CsvFileHandler / CsvProcessor**: Reads and parses CSV files, manages row objects. Caches parsed rows in `_rows` for performance. Uses v2 pipeline (`process_v2()`).
-- **DataTablesResponseBuilder**: Builds structured responses for API v2 and web interface, supports calculator pattern and performance optimizations.
-
-### 2. Controllers (`src/whatsthedamage/controllers/`)
-- **CLI Controller**: Entry point for command-line usage (`__main__.py`, `cli_app.py`).
-- **Web Controller**: Flask routes for file upload, processing, and result rendering (`app.py`, `routes.py`).
-- **API Controllers**: REST API v2 endpoints in `api/v2/` directory.
-- **Orchestration**: Main logic (`whatsthedamage.py`) coordinates config loading, processing, and output.
-
-### 3. Views (`src/whatsthedamage/view/`)
-- **row_printer.py**: Console output formatting.
-- **templates/**: Jinja2 templates for HTML output (server-side rendered web interface).
-- **data_frame_formatter.py**: CSV/HTML table formatting.
-- **Interactive elements**: JavaScript enhancements (fetch API, DataTables) for improved UX without full page reloads.
-
-### 4. Config (`src/whatsthedamage/config/`)
-- **config.py**: Central config, context, and pattern sets.
-- **flask_config.py**: Web-specific config.
-- **enricher_pattern_sets/**: Regex patterns for enrichment.
-
-### 5. Scripts (`src/whatsthedamage/scripts/`)
-- **ML Training**: Scripts for training, evaluating, and tuning ML models.
-- **Documentation**: Sphinx docs and ML model details.
-
-### 6. Services (`src/whatsthedamage/services/`)
-Introduced in version 0.8.0 to extract business logic from controllers and enable dependency injection.
-
-- **ProcessingService**: Core business logic for CSV processing, shared between web routes, CLI, and REST API. Uses v2 processing pipeline (`process_with_details()`) for multi-account support.
-- **ValidationService**: File validation (type, size, content) without web-specific dependencies.
-- **ConfigurationService**: Manages loading and access to configuration settings.
-- **SessionService**: Handles session management for web interface.
-- **FileUploadService**: Manages file upload operations and storage.
-- **ResponseBuilderService**: Constructs responses for different output formats.
-- **DataFormattingService**: Formats processed data for various output targets (console, HTML, CSV, JSON). Supports the unified DataTablesResponse format.
-- **ServiceFactory** (`service_factory.py`): Provides centralized dependency injection via `ServiceContainer` for CLI and standalone usage. The `create_service_container()` factory function creates services with proper dependency resolution, ensuring consistency across all interfaces (CLI, Web, API).
-
-**Benefits**:
-- Ensures consistent behavior across all interfaces (CLI, Web, API).
-- Decouples processing logic from presentation/delivery layer.
-- Improves testability through dependency injection.
-- Enables reusability of business logic.
-
-**Dependency Injection Patterns**:
-- **Flask App** (`app.py`): Uses `app.extensions` dictionary to store service instances, accessed via helper functions in controllers.
-- **CLI** (`cli_app.py`): Uses `ServiceContainer` from service factory with lazy-loaded singleton services.
-- **Tests**: Services can be mocked and injected for isolated unit testing.
-
-### 7. API Layer (`src/whatsthedamage/api/`)
-- **REST API v2** (`/api/v2/`): Provides programmatic access to transaction processing.
-- Uses Flask Blueprints for versioning (`v2_bp`).
-- Returns JSON responses for automation, scripting, and potential mobile apps.
-- Shares the same `ProcessingService` as web routes and CLI for consistency.
-- **API Versioning Strategy**:
-  - HTTP clients use explicit version in URL (`/api/v2/`).
-  - CLI users choose package version via installation.
-  - Explicit HTTP API versions in the URL for any breaking wire-level change.
-  - Route handlers for unchanged endpoints can call shared functions.
-- **Documentation**: API documentation available via `/docs` endpoint.
-
-## Data Flow
-1. **Input**: User uploads or specifies a CSV file (and optional config).
-2. **Validation**: `ValidationService` verifies file type, size, and basic content integrity.
-3. **Configuration**: `ConfigurationService` loads and provides config settings (CSV format, patterns, categories).
-4. **Parsing**: `CsvFileHandler` reads and parses the CSV into `CsvRow` objects (with account metadata for multi-account support). Parsed rows are cached in `CSVProcessor._rows` to avoid re-reading.
-5. **Processing**: `ProcessingService` orchestrates the core business logic via v2 pipeline:
-   - `RowsProcessor.process_rows_v2()` filters, enriches, categorizes, and builds detailed transaction data.
-   - Enrichment uses either regex patterns or ML model (if enabled).
-   - Filtering by date/month, optional category filter.
-   - Returns `DataTablesResponse` objects per account (unified canonical format).
-6. **Aggregation**: `DataTablesResponseBuilder` computes totals per category/time period using calculator pattern (Balance, Total Spendings, custom).
-7. **Formatting**: `DataFormattingService` prepares output from `DataTablesResponse` for console, HTML, CSV, or JSON.
-8. **Response**: `ResponseBuilderService` constructs appropriate responses for the delivery channel.
-9. **Output**: Results are displayed in CLI or rendered in the web frontend (HTML table, CSV download) or returned as JSON (API).
-
-**Dependency Injection**: Services are injected into controllers, making the architecture testable and maintainable.
-
-## Frontend Architecture: npm + Vite Bundling
-
-The application uses frontend build system with npm and Vite.
-
-### Frontend Build System
-
-**Location**: `src/whatsthedamage/view/frontend/`
-
-**Build Output**: `src/whatsthedamage/view/static/dist/` (excluded from Git)
-
-**Key Components**:
-- **npm**: Dependency management
-- **Vite**: Modern build tool with fast HMR and optimized production builds
-- **TypeScript**: Type-safe JavaScript development with modern ES module syntax
-- **ES Modules**: Native ES module system for better code organization and tree-shaking
-
-**Build Process**:
-1. Dependencies are managed via `package.json`
-2. Source files are in `src/` directory
-3. Vite bundles and optimizes for production
-4. Output goes to `src/whatsthedamage/view/static/dist/`
-
-**Makefile Integration**:
-- `make npm-install`: Install npm dependencies
-- `make vite-dev`: Run Vite development server with HMR
-- `make vite-build`: Build production assets
-- `make build`: Full stack build (Python + JS)
-
-### Frontend Structure
+## 1. Project Structure
+This section provides a high-level overview of the project's directory and file structure, categorised by architectural layer or major functional area. It is essential for quickly navigating the codebase, locating relevant files, and understanding the overall organization and separation of concerns.
 
 ```
-src/whatsthedamage/
-├── static/                  # Backend static assets (committed to Git)
-│   ├── model-rf-v5alpha_en.joblib
-│   └── model-rf-v5alpha_en.manifest.json
-└── view/
-    ├── frontend/            # Frontend source (in Git)
-    │   ├── src/
-    │   │   ├── main.ts      # Main entry point with dependency imports
-    │   │   ├── js/          # TypeScript module source files
-    │   │   │   ├── index.ts # Index page functionality (form clearing)
-    │   │   │   ├── main.ts  # DataTables initialization and Bootstrap components
-    │   │   │   ├── statistical-analysis.ts # Statistical controls
-    │   │   │   ├── utils.ts # Utility functions
-    │   │   │   └── api-docs.ts # API documentation page
-    │   │   └── css/         # CSS source files (future)
-    │   ├── package.json     # npm dependencies
-    │   ├── vite.config.js   # Vite configuration
-    │   └── public/          # Public assets
-    └── static/              # Flask static files (committed to Git)
-        ├── favicon.ico      # Web favicon
-        └── dist/            # Frontend build output (NOT committed to Git)
-            ├── js/          # Optimized JS bundles
-            ├── css/         # Optimized CSS bundles
-            └── fonts/       # Required fonts
+whatsthedamage/
+├── config/                  # Configuration files
+│   ├── config.yml.default   # Default configuration template
+│   └── gunicorn_conf.py     # Gunicorn production configuration
+├── docs/                    # Project documentation
+│   ├── calculator_pattern_example.py
+│   └── scripts/README.md    # ML documentation
+├── src/whatsthedamage/      # Main source code
+│   ├── api/                 # REST API endpoints
+│   │   ├── v2/              # API v2 endpoints and schemas
+│   │   │   ├── endpoints.py # API v2 processing endpoints
+│   │   │   └── schema.py    # API response schemas
+│   │   ├── docs.py          # API documentation
+│   │   └── helpers.py       # API helper functions
+│   ├── config/              # Configuration classes
+│   │   ├── config.py        # Central configuration
+│   │   ├── dt_models.py     # Data models for API responses
+│   │   └── flask_config.py  # Flask-specific configuration
+│   ├── controllers/         # Request handling
+│   │   ├── cli_controller.py # CLI argument parsing
+│   │   ├── routes.py        # Web routes
+│   │   └── routes_helpers.py # Web route helpers
+│   ├── models/              # Data models and processing
+│   │   ├── csv_file_handler.py # CSV file parsing
+│   │   ├── csv_processor.py    # CSV processing orchestrator
+│   │   ├── csv_row.py          # Transaction row model
+│   │   ├── dt_calculators.py   # Calculator pattern implementations
+│   │   ├── dt_response_builder.py # DataTables response builder
+│   │   ├── machine_learning.py  # ML model loading
+│   │   ├── row_enrichment.py    # Regex-based categorization
+│   │   ├── row_enrichment_ml.py # ML-based categorization
+│   │   ├── row_filter.py        # Date filtering
+│   │   ├── rows_processor.py    # Main processing pipeline
+│   │   └── statistical_algorithms.py # Statistical analysis
+│   ├── scripts/              # ML training and utilities
+│   │   ├── ml_util.py         # ML utility functions
+│   │   └── README.md          # ML documentation
+│   ├── services/             # Business logic services
+│   │   ├── cache_service.py      # Caching service
+│   │   ├── configuration_service.py # Configuration loading
+│   │   ├── data_formatting_service.py # Output formatting
+│   │   ├── exclusion_service.py     # Exclusion handling
+│   │   ├── file_upload_service.py   # File upload handling
+│   │   ├── processing_service.py    # Core processing service
+│   │   ├── response_builder_service.py # Response construction
+│   │   ├── service_factory.py      # Service container factory
+│   │   ├── session_service.py      # Web session management
+│   │   ├── statistical_analysis_service.py # Statistical analysis
+│   │   └── validation_service.py   # File validation
+│   ├── static/               # Backend static assets
+│   │   ├── model-rf-v5alpha_en.joblib # ML model
+│   │   └── model-rf-v5alpha_en.manifest.json # Model metadata
+│   ├── utils/                # Utility functions
+│   │   ├── date_converter.py  # Date parsing/formatting
+│   │   ├── flask_locale.py    # Flask localization
+│   │   ├── validation.py      # Validation utilities
+│   │   └── version.py         # Version management
+│   ├── view/                 # Presentation layer
+│   │   ├── frontend/         # TypeScript frontend
+│   │   │   ├── src/          # Frontend sources
+│   │   │   │   ├── main.ts   # Main entry point
+│   │   │   │   ├── js/       # TypeScript modules
+│   │   │   │   ├── css/      # CSS files
+│   │   │   │   └── types/    # Type definitions
+│   │   │   ├── package.json  # npm dependencies
+│   │   │   ├── vite.config.js # Vite configuration
+│   │   │   └── public/       # Public assets
+│   │   ├── static/           # Flask static files
+│   │   │   └── dist/         # Frontend build output
+│   │   ├── templates/        # Jinja2 templates
+│   │   ├── forms.py          # Flask forms
+│   │   └── row_printer.py    # Console output formatting
+│   └── uploads/              # File uploads
+├── tests/                    # Backend tests
+│   ├── services/             # Service layer tests
+│   └── ...                   # Other test files
+├── .github/                  # GitHub configurations
+├── .gitignore                # Git ignore patterns
+├── API.md                    # REST API documentation
+├── ARCHITECTURE.md           # This document
+├── CONTRIBUTING.md           # Contribution guidelines
+├── LICENSE                   # License information
+├── Makefile                  # Build automation
+├── PRODUCT.md                # Product information
+├── README.md                 # Project overview
+├── pyproject.toml            # Python project metadata
+├── requirements.txt          # Python dependencies
+├── requirements-dev.txt      # Development dependencies
+└── requirements-web.txt      # Web-specific dependencies
 ```
 
-**Key Features**:
-- **Modular Architecture**: Each page/component has its own TypeScript module
-- **Dependency Injection**: Modules export functions that are imported and called by main.ts
-- **Progressive Enhancement**: Core functionality works without JavaScript; JS adds convenience features
-- **No Global Pollution**: Functions are exported and imported where needed, avoiding global namespace pollution
+## 2. High-Level System Diagram
+Provide a simple block diagram (e.g., a C4 Model Level 1: System Context diagram, or a basic component diagram) or a clear text-based description of the major components and their interactions. Focus on how data flows, services communicate, and key architectural boundaries.
 
-### Static Assets Management
+```
+[User] <--> [CLI Interface] <--> [ProcessingService] <--> [CSVProcessor] <--> [CsvFileHandler]
+                                    |
+                                    +--> [Web Interface] <--> [Flask App] <--> [ProcessingService]
+                                    |
+                                    +--> [REST API v2] <--> [ProcessingService]
+```
 
-**Clear Separation of Concerns**:
-- **Backend Static Assets**: `src/whatsthedamage/static/` contains ML models and other backend-specific static files (committed to Git with Git LFS)
-- **Frontend Build Artifacts**: `src/whatsthedamage/view/static/dist/` contains Vite build output (NOT committed to Git, excluded via .gitignore)
-- **Flask Static Files**: `src/whatsthedamage/view/static/` contains web assets like favicon.ico (committed to Git)
+The system follows a layered architecture with clear separation of concerns:
+- **Presentation Layer**: CLI, Web, and REST API interfaces
+- **Service Layer**: Business logic services (ProcessingService, ValidationService, etc.)
+- **Model Layer**: Data processing and domain logic (CSVProcessor, RowsProcessor, etc.)
+- **Configuration Layer**: Centralized configuration management
+- **Utility Layer**: Cross-cutting concerns (localization, date handling)
 
-**Git Management**:
-- Backend assets and Flask static files are committed to Git
-- Frontend build artifacts in `dist/` are excluded from Git
-- This ensures clean separation between source and build artifacts
+## 3. Core Components
 
-**Flask Serving**:
-- Flask automatically serves files from `src/whatsthedamage/view/static/` at URL path `/static/`
-- Frontend assets are served from `/static/dist/` (e.g., `/static/dist/js/main.js`)
+### 3.1. Frontend
 
-### Web Interface (`/process/v2`, `/clear`)
-- **Server-Side Rendering**: Flask renders HTML templates with Jinja2.
-- **Form Submission**: Traditional POST requests for file uploads and processing.
-- **Full Page Reloads**: Primary navigation pattern for simplicity and reliability.
-- **Session Management**: Flask sessions handle user state between requests.
+**Name**: Web Application
 
-### REST API (`/api/v1/`, `/api/v2/`)
-- **Purpose**: Programmatic access for automation, scripting, and potential mobile apps.
-- **Separation**: API routes are separate from web routes but share the same service layer.
-- **JSON Responses**: All API endpoints return structured JSON.
-- **Use Cases**:
-  - CI/CD pipelines for automated transaction analysis
-  - Third-party integrations
-  - Future mobile applications
-  - Batch processing scripts
+**Description**: The main user interface for interacting with whatsthedamage, allowing users to upload CSV files, configure processing options, and view transaction analysis results. The web interface uses server-side rendering with Flask templates and progressive enhancement with TypeScript.
 
-## Machine Learning Integration
-- ML model (Random Forest) is trained on historical transaction data.
-- Feature engineering uses TF-IDF for text, one-hot encoding for currency, and scaling for amounts.
-- Model is loaded via joblib (security warning: only use trusted models).
-- ML categorization is enabled via CLI/web flag (`--ml`).
+**Technologies**: Flask (Jinja2 templates), TypeScript, Vite, Bootstrap, DataTables
 
-## Development Tools & Workflow
+**Deployment**: Flask development server (make web), Gunicorn for production
 
-### Makefile Commands (v0.8.0)
-- `make dev`: Set up development environment with venv and dependencies.
-- `make test`: Run tests using tox.
-- `make ruff`: Run ruff linter/formatter (added in 0.8.0).
-- `make mypy`: Run mypy type checker (added in 0.8.0).
-- `make web`: Run Flask development server.
-- `make docs`: Build Sphinx documentation.
-- `make lang`: Extract translatable strings.
-- `make compile-deps` / `update-deps`: Manage Python dependencies.
+### 3.2. Backend Services
 
-### Testing Strategy
-- Unit tests for services (ProcessingService, ValidationService, etc.).
-- API endpoint tests for v1 and v2.
-- Type checking with mypy.
-- Code quality with ruff.
+#### 3.2.1. ProcessingService
 
-## Localization
-- Uses Python `gettext` for translation.
-- Locale folders: `src/whatsthedamage/locale/en/`, `src/whatsthedamage/locale/hu/`.
-- Translatable strings extracted via `make lang`.
+**Name**: Processing Service
 
-## Configuration
-- YAML config file defines CSV format, attribute mapping, enrichment patterns, and categories.
-- Centralized in `config/config.py` and loaded at startup.
+**Description**: Core business logic service that orchestrates CSV transaction processing. This service handles file parsing, transaction categorization (regex or ML), filtering, and aggregation. It provides a unified interface used by all delivery mechanisms (CLI, Web, API).
 
-## Extensibility
+**Technologies**: Python, Flask extensions for dependency injection
 
-### Calculator Pattern
-Introduced in version 0.8.0, the calculator pattern allows custom transaction calculations beyond built-in categorization:
-- Define custom business logic for specific reporting needs.
-- Implement custom calculators that process transaction data.
-- Example implementations available in `docs/calculator_pattern_example.py`.
-- Enables domain-specific extensions without modifying core code.
+**Deployment**: Part of the Flask application
 
-### Other Extension Points
-- **Add Category**: Update config pattern sets and enrichment logic.
-- **Support New CSV Format**: Adjust config and parsing logic in models.
-- **ML Model**: Train/test via scripts; see `src/whatsthedamage/scripts/README.md`.
-- **Custom Service**: Implement new services following dependency injection pattern.
+#### 3.2.2. ValidationService
 
-## Security & Conventions
-- Never log sensitive data (account numbers, personal info).
-- Always validate user and file input.
-- Close file handles promptly.
-- Do not expose internal errors to end users.
-- Known issue: joblib model loading can execute arbitrary code.
+**Name**: Validation Service
 
-## Key Files & Directories
-- `README.md`: Project overview, CLI usage, API documentation, config, categories.
-- `ARCHITECTURE.md`: This file - detailed architecture documentation.
-- `API.md`: Complete REST API documentation.
-- `src/whatsthedamage/scripts/README.md`: ML details.
-- `Makefile`: Workflow automation.
-- `config/config.py`: Central config/context.
-- `src/whatsthedamage/app.py`: Flask entrypoint.
-- `src/whatsthedamage/view/templates/`: Web frontend templates.
-- `src/whatsthedamage/api/`: REST API endpoints (v1, v2) and OpenAPI documentation.
-- `src/whatsthedamage/services/`: Shared business logic layer (introduced in 0.8.0).
-- `docs/calculator_pattern_example.py`: Calculator pattern implementation examples.
-- `pyproject.toml`: Project metadata and dependencies.
+**Description**: Handles file validation including type checking, size limits, and content integrity verification. Ensures uploaded files meet requirements before processing.
 
----
-For further details, see `README.md` (includes comprehensive feature list), `API.md` (REST API reference), and `src/whatsthedamage/scripts/README.md` (ML documentation).
+**Technologies**: Python
+
+**Deployment**: Part of the Flask application
+
+#### 3.2.3. ConfigurationService
+
+**Name**: Configuration Service
+
+**Description**: Manages loading and access to configuration settings including CSV format definitions, attribute mappings, enrichment patterns, and categories.
+
+**Technologies**: Python, YAML parsing
+
+**Deployment**: Part of the Flask application
+
+#### 3.2.4. DataFormattingService
+
+**Name**: Data Formatting Service
+
+**Description**: Formats processed transaction data for various output targets including console, HTML, CSV, and JSON. Supports the unified DataTablesResponse format for web and API interfaces.
+
+**Technologies**: Python
+
+**Deployment**: Part of the Flask application
+
+## 4. Data Stores
+
+### 4.1. File-based Storage
+
+**Name**: File Uploads and Processing Results
+
+**Type**: File system storage
+
+**Purpose**: Stores uploaded CSV files, configuration files, and processing results. The system uses temporary file storage for uploaded files and caching for processed results.
+
+**Key Files/Directories**:
+- `src/whatsthedamage/uploads/`: Temporary file uploads
+- `src/whatsthedamage/static/`: ML models and metadata
+- Session-based caching for processed results
+
+### 4.2. Session Storage
+
+**Name**: Web Session Management
+
+**Type**: Flask session storage
+
+**Purpose**: Manages user session state between requests for the web interface, including file uploads and processing results.
+
+## 5. External Integrations / APIs
+
+### 5.1. Machine Learning Model
+
+**Service Name**: Random Forest Model
+
+**Purpose**: Provides ML-based transaction categorization as an alternative to regex-based categorization. The model is trained on historical transaction data.
+
+**Integration Method**: joblib model loading (security warning: only use trusted models)
+
+### 5.2. Localization
+
+**Service Name**: gettext/i18n
+
+**Purpose**: Provides localization support for English and Hungarian languages.
+
+**Integration Method**: Python gettext module with locale files
+
+## 6. Deployment & Infrastructure
+
+**Cloud Provider**: Self-hosted or any cloud provider
+
+**Key Services Used**:
+- Flask development server for local development
+- Gunicorn for production deployment
+- Vite for frontend bundling and optimization
+
+**CI/CD Pipeline**: Makefile-based automation with commands like:
+- `make dev`: Set up development environment
+- `make test`: Run tests
+- `make web`: Run Flask development server
+- `make vite-build`: Build production frontend assets
+
+**Monitoring & Logging**: No logging yet, just regular print methods.
+
+## 7. Security Considerations
+
+**Authentication**: Not applicable (local tool, no user accounts)
+
+**Authorization**: Not applicable (local tool)
+
+**Data Encryption**: Not applicable (local file processing)
+
+**Key Security Tools/Practices**:
+- Input validation for all user and file inputs
+- File type and content verification
+- Secure file handling with proper cleanup
+- Never logging sensitive data (account numbers, personal info)
+- Resource management with prompt file handle closing
+- Error handling without exposing internal errors
+
+**Known Security Issues**:
+- joblib model loading can execute arbitrary code (only use trusted models)
+- File uploads require validation of MIME types and extensions
+
+## 8. Development & Testing Environment
+
+**Local Setup Instructions**: See CONTRIBUTING.md or README.md
+
+**Testing Frameworks**:
+- pytest for backend unit and integration tests
+- Vitest for frontend tests
+
+**Code Quality Tools**:
+- ruff for Python linting and formatting
+- mypy for Python type checking
+- ESLint for JavaScript/TypeScript linting
+
+**Build Tools**:
+- Makefile for workflow automation
+- Vite for frontend bundling
+- npm for frontend dependency management
+
+## 9. Future Considerations / Roadmap
+
+**Known Architectural Debts**:
+- Migrate from monolith to separate backend and fronend repositories.
+
+**Planned Major Changes**:
+- Migrate from memory-based caching to more robust solution
+- Enhance ML model management and security
+- Improve error handling and user feedback
+- Add more statistical analysis features
+- Support additional CSV formats and banks
+
+**Significant Future Features**:
+- Event-driven architecture for real-time updates
+- Enhanced API capabilities for third-party integrations
+- Mobile application support
+- Additional localization languages
+- Improved ML model training and evaluation
+
+## 10. Project Identification
+
+**Project Name**: whatsthedamage
+
+**Repository URL**: https://github.com/abalage/whatsthedamage
+
+**Primary Contact/Team**: Balage Abalage
+
+**Date of Last Update**: 2026-01-30
+
+## 11. Glossary / Acronyms
+
+**CLI**: Command Line Interface - The command-line tool for processing transactions
+
+**CSV**: Comma-Separated Values - The file format used for bank transaction exports
+
+**ML**: Machine Learning - Experimental feature for transaction categorization
+
+**DataTablesResponse**: Unified response format containing processed transaction data with aggregation by category and time period
+
+**Calculator Pattern**: Extensibility pattern allowing custom transaction calculations beyond built-in categorization

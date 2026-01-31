@@ -35,7 +35,6 @@ whatsthedamage/
 │   │   ├── frontend/        # TypeScript frontend
 │   │   │   ├── src/         # Frontend sources
 │   │   │   ├── test/        # Frontend tests
-│   │   │   └── public/      # Static assets
 │   │   ├── static/          # Frontend static assets
 │   │   └── templates/       # HTML templates
 │   └── uploads/             # File uploads

@@ -224,7 +224,7 @@ The system follows a layered architecture with clear separation of concerns:
 - `make web`: Run Flask development server
 - `make vite-build`: Build production frontend assets
 
-**Monitoring & Logging**: Basic Flask logging with configurable log levels
+**Monitoring & Logging**: No logging yet, just regular print methods.
 
 ## 7. Security Considerations
 
@@ -267,12 +267,10 @@ The system follows a layered architecture with clear separation of concerns:
 ## 9. Future Considerations / Roadmap
 
 **Known Architectural Debts**:
-- File cleanup mechanism needs improvement (currently manual or request-based)
-- Consider implementing APScheduler for periodic cleanup
-- TTL-based automatic cleanup in upload folder
+- Migrate from monolith to separate backend and fronend repositories.
 
 **Planned Major Changes**:
-- Migrate from file-based caching to more robust solution
+- Migrate from memory-based caching to more robust solution
 - Enhance ML model management and security
 - Improve error handling and user feedback
 - Add more statistical analysis features
@@ -306,11 +304,3 @@ The system follows a layered architecture with clear separation of concerns:
 **DataTablesResponse**: Unified response format containing processed transaction data with aggregation by category and time period
 
 **Calculator Pattern**: Extensibility pattern allowing custom transaction calculations beyond built-in categorization
-
-**Dependency Injection**: Design pattern used to inject service dependencies into controllers for testability and maintainability
-
-**Service Layer**: Architectural layer containing business logic services that are shared across all interfaces (CLI, Web, API)
-
-**MVC**: Model-View-Controller - Architectural pattern used for separation of concerns
-
-**SOLID**: Object-oriented design principles (Single Responsibility, Open/Closed, Liskov Substitution, Interface Segregation, Dependency Inversion)

@@ -72,9 +72,9 @@ make web  # Flask development server
 ### Common Commands
 ```bash
 source .venv/bin/activate         # Activate virtual env
-make ruff                         # Python linting
-make mypy                         # Type checking
-make test                         # Run backend tests
+ruff check --fix src tests        # Python linting from virtual env
+mypy src                          # Type checking from virtual env
+pytest                            # Run backend tests from virtual env
 make frontend ARG=test            # Run frontend tests
 make docs                         # Generate documentation
 make lang                         # Extract translatable texts

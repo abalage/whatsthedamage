@@ -14,7 +14,7 @@ Architecture Patterns:
 import pandas as pd
 import json
 from typing import Dict, Optional, Any
-from whatsthedamage.config.dt_models import DataTablesResponse, StatisticalMetadata, SummaryData
+from whatsthedamage.models.dt_models import DataTablesResponse, StatisticalMetadata, SummaryData
 from gettext import gettext as _
 from whatsthedamage.services.statistical_analysis_service import StatisticalAnalysisService
 

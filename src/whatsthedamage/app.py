@@ -20,7 +20,7 @@ from whatsthedamage.services.cache_service import CacheService
 from whatsthedamage.services.statistical_analysis_service import StatisticalAnalysisService
 from whatsthedamage.services.session_service import SessionService
 from whatsthedamage.services.exclusion_service import ExclusionService
-from whatsthedamage.config.dt_models import CachedProcessingResult
+from whatsthedamage.models.dt_models import CachedProcessingResult
 
 
 class FlaskCacheAdapter:

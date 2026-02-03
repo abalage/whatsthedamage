@@ -13,7 +13,7 @@ from whatsthedamage.config.config import AppArgs, AppContext
 from whatsthedamage.models.csv_processor import CSVProcessor
 from whatsthedamage.services.configuration_service import ConfigurationService, ConfigLoadResult
 from whatsthedamage.services.statistical_analysis_service import StatisticalAnalysisService
-from whatsthedamage.config.dt_models import StatisticalMetadata
+from whatsthedamage.models.dt_models import StatisticalMetadata, DataTablesResponse
 
 
 class ProcessingService:

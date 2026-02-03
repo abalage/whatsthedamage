@@ -1,6 +1,6 @@
 from typing import List, Dict, Callable, Optional
 from whatsthedamage.models.csv_row import CsvRow
-from whatsthedamage.config.dt_models import DisplayRawField, DateField, DetailRow, AggregatedRow, DataTablesResponse
+from whatsthedamage.models.dt_models import DisplayRawField, DateField, DetailRow, AggregatedRow, DataTablesResponse
 from whatsthedamage.utils.date_converter import DateConverter
 import uuid
 

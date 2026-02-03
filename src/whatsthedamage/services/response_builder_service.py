@@ -20,7 +20,7 @@ from whatsthedamage.models.api_models import (
     ErrorResponse,
     ProcessingRequest
 )
-from whatsthedamage.config.dt_models import DataTablesResponse
+from whatsthedamage.models.dt_models import DataTablesResponse
 from whatsthedamage.services.data_formatting_service import DataFormattingService
 
 

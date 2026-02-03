@@ -9,7 +9,7 @@ from whatsthedamage.controllers.routes_helpers import (
     get_cached_data_for_drilldown,
     handle_drilldown_request
 )
-from whatsthedamage.config.dt_models import (
+from whatsthedamage.models.dt_models import (
     CachedProcessingResult, DataTablesResponse, AggregatedRow,
     DisplayRawField, DateField, StatisticalMetadata
 )

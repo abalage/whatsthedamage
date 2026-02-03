@@ -20,7 +20,7 @@ whatsthedamage.config.config module
 whatsthedamage.config.dt\_models module
 ---------------------------------------
 
-.. automodule:: whatsthedamage.config.dt_models
+.. automodule:: whatsthedamage.models.dt_models
    :members:
    :show-inheritance:
    :undoc-members:

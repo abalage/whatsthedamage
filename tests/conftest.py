@@ -66,7 +66,7 @@ class MockCSVProcessor:
 @pytest.fixture
 def mock_processing_service_result():
     """Factory fixture for creating mock ProcessingService results with DataTablesResponse."""
-    from whatsthedamage.config.dt_models import DataTablesResponse, AggregatedRow, DisplayRawField, DateField, StatisticalMetadata
+    from whatsthedamage.models.dt_models import DataTablesResponse, AggregatedRow, DisplayRawField, DateField, StatisticalMetadata
     import uuid
 
     def _create_result(data=None):

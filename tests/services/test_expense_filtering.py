@@ -2,7 +2,7 @@
 
 import pytest
 from whatsthedamage.services.statistical_analysis_service import StatisticalAnalysisService, AnalysisDirection
-from whatsthedamage.config.dt_models import DataTablesResponse, AggregatedRow, DateField, DisplayRawField
+from whatsthedamage.models.dt_models import DataTablesResponse, AggregatedRow, DateField, DisplayRawField
 import uuid
 
 @pytest.fixture

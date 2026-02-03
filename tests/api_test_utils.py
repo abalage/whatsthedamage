@@ -27,7 +27,7 @@ class MockProcessingService:
             Result dict matching ProcessingService.process_with_details output
             Note: Now returns a dict of account_id -> DataTablesResponse
         """
-        from whatsthedamage.config.dt_models import DataTablesResponse, AggregatedRow, DisplayRawField, DateField, DetailRow
+        from whatsthedamage.models.dt_models import DataTablesResponse, AggregatedRow, DisplayRawField, DateField, DetailRow
         
         if rows is None:
             rows = []

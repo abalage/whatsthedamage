@@ -1,6 +1,7 @@
 from pydantic import BaseModel
 from typing import List, Any, Dict, Optional
 from dataclasses import dataclass
+from whatsthedamage.models.api_models import DetailedMetadata
 
 class DisplayRawField(BaseModel):
     display: str
@@ -26,18 +27,20 @@ class AggregatedRow(BaseModel):
     details: List[DetailRow]
     is_calculated: bool = False
 
-class DataTablesResponse(BaseModel):
-    data: List[AggregatedRow]
-    account: str = ""
-    currency: str = ""
-    statistical_metadata: Optional['StatisticalMetadata'] = None
-
 class CellHighlight(BaseModel):
     row_id: str  # Unique identifier referencing AggregatedRow or DetailRow
     highlight_type: str  # e.g., 'outlier', 'pareto', 'excluded'
 
 class StatisticalMetadata(BaseModel):
     highlights: List[CellHighlight]
+
+class DataTablesResponse(BaseModel):
+    data: List[AggregatedRow]
+    account: str = ""
+    currency: str = ""
+    result_id: str = ""
+    metadata: Optional[DetailedMetadata] = None
+    statistical_metadata: Optional[StatisticalMetadata] = None
 
 @dataclass(frozen=True)
 class SummaryData:

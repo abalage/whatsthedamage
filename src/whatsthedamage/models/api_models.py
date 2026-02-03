@@ -9,7 +9,7 @@ the REST API endpoints.
 from pydantic import BaseModel, Field, model_validator
 from typing import Optional, Dict, List, Union
 from whatsthedamage.config.config import CsvConfig
-from whatsthedamage.config.dt_models import (
+from whatsthedamage.models.dt_models import (
     AggregatedRow
 )
 from whatsthedamage.services.validation_service import ValidationService
@@ -84,6 +84,7 @@ class ProcessingRequest(BaseModel):
         return self
 
 
+# FIXME rename this to ProcessMetadata
 class DetailedMetadata(BaseModel):
     """Metadata for detailed response."""
     row_count: int = Field(description="Number of rows processed")

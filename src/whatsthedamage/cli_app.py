@@ -6,7 +6,7 @@ from typing import Dict, Any
 from whatsthedamage.controllers.cli_controller import CLIController
 from whatsthedamage.services.service_factory import create_service_container, ServiceContainer
 from whatsthedamage.config.config import AppArgs
-from whatsthedamage.config.dt_models import DataTablesResponse
+from whatsthedamage.models.dt_models import DataTablesResponse
 
 
 def set_locale(locale_str: str | None) -> None:

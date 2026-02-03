@@ -8,7 +8,7 @@ from whatsthedamage.models.statistical_algorithms import (
     IQROutlierDetection,
     ParetoAnalysis
 )
-from whatsthedamage.config.dt_models import DataTablesResponse, AggregatedRow, DisplayRawField, DateField
+from whatsthedamage.models.dt_models import DataTablesResponse, AggregatedRow, DisplayRawField, DateField
 import uuid
 
 @pytest.fixture

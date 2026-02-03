@@ -1,6 +1,6 @@
 import pytest
 from whatsthedamage.models.dt_response_builder import DataTablesResponseBuilder
-from whatsthedamage.config.dt_models import DataTablesResponse, AggregatedRow, DateField
+from whatsthedamage.models.dt_models import DataTablesResponse, AggregatedRow, DateField
 from whatsthedamage.models.csv_row import CsvRow
 
 

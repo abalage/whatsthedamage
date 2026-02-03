@@ -6,7 +6,7 @@ for better maintainability and overview.
 import pytest
 from whatsthedamage.services.response_builder_service import ResponseBuilderService
 from whatsthedamage.models.api_models import ProcessingRequest, DetailedResponse
-from whatsthedamage.config.dt_models import AggregatedRow, DisplayRawField, DateField, DataTablesResponse
+from whatsthedamage.models.dt_models import AggregatedRow, DisplayRawField, DateField, DataTablesResponse
 import uuid
 
 @pytest.fixture

@@ -13,7 +13,7 @@ from whatsthedamage.services.data_formatting_service import DataFormattingServic
 from whatsthedamage.services.file_upload_service import FileUploadService, FileUploadError
 from whatsthedamage.services.cache_service import CacheService
 from whatsthedamage.services.statistical_analysis_service import StatisticalAnalysisService
-from whatsthedamage.config.dt_models import CachedProcessingResult, DataTablesResponse, StatisticalMetadata, AggregatedRow
+from whatsthedamage.models.dt_models import CachedProcessingResult, DataTablesResponse, StatisticalMetadata, AggregatedRow
 from whatsthedamage.utils.flask_locale import get_default_language
 from whatsthedamage.models.statistical_algorithms import AnalysisDirection
 from typing import Dict, Callable, Optional, cast, Tuple, List, Any

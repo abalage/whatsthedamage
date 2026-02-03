@@ -4,7 +4,7 @@ This service uses the Strategy Pattern to apply various statistical algorithms
 to transaction data, providing highlight metadata for visualization.
 """
 from typing import Dict, List, Tuple, Optional, Any
-from whatsthedamage.config.dt_models import CellHighlight, StatisticalMetadata, DataTablesResponse, AggregatedRow, SummaryData
+from whatsthedamage.models.dt_models import CellHighlight, StatisticalMetadata, DataTablesResponse, AggregatedRow, SummaryData
 from whatsthedamage.services.exclusion_service import ExclusionService
 from whatsthedamage.models.statistical_algorithms import (
     AnalysisDirection,

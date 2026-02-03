@@ -116,9 +116,7 @@ make lang                         # Extract translatable texts
 - **Coverage**: Write tests for all new features/bug fixes
 - **Quality**: Ensure tests cover edge cases and error handling
 - **Documentation**: Include docstrings explaining test cases
-
-## Boundaries
-- NEVER change the original code to make it easier to test, instead, write tests that cover the original code as it is
+- The tests should cover what is implemented without being backward compatible with cases the tests currently cover.
 
 ## Documentation
 

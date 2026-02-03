@@ -57,15 +57,6 @@ class DataFormattingService:
         self.statistical_analysis_service = statistical_analysis_service
         self._categories_header = _("Categories")
 
-    @staticmethod
-    def make_highlight_key(column_key: str, category: str) -> str:
-        """Create standardized highlight key from column header and category.
-
-        :param column_key: Column header from summary data in 'YYYY Month' format (e.g., '2025 January')
-        :param category: Category name
-        :return: Standardized key 'column_category' for highlight lookup
-        """
-        return f"{column_key}_{category}"
 
     @staticmethod
     def format_account_id(account_id: str) -> str:
@@ -469,12 +460,11 @@ class DataFormattingService:
         """Convert StatisticalMetadata to the highlights dict format expected by templates.
 
         :param metadata: StatisticalMetadata containing CellHighlight objects
-        :return: Dictionary of highlights keyed by 'column_category'
+        :return: Dictionary of highlights keyed by row_id
         """
         highlights_dict = {}
         for highlight in metadata.highlights:
-            key = self.make_highlight_key(highlight.column, highlight.row)
-            highlights_dict[key] = highlight.highlight_type
+            highlights_dict[highlight.row_id] = highlight.highlight_type
         return highlights_dict
 
     def prepare_accounts_for_template(

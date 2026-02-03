@@ -14,8 +14,9 @@ export function initStatisticalAnalysis(): void {
     const recalculateBtn = document.getElementById('recalculate-btn');
     const resetBtn = document.getElementById('reset-btn');
 
-    if (recalculateBtn && resetBtn) {
-        // Mark as initialized for testing purposes
+    // Only initialize if controls exist and haven't been initialized yet
+    if (recalculateBtn && resetBtn && !recalculateBtn.dataset.initialized) {
+        // Mark as initialized to prevent duplicate event listeners
         recalculateBtn.dataset.initialized = 'true';
         resetBtn.dataset.initialized = 'true';
 
@@ -135,7 +136,7 @@ export function initStatisticalAnalysis(): void {
 
 /**
  * Update cell highlights based on statistical analysis results
- * @param {Object} highlights - Object containing highlight information
+ * @param {Object} highlights - Object containing highlight information with row_id as key
  */
 export function updateCellHighlights(highlights: Record<string, string>): void {
     // Remove all current highlights from all tables
@@ -144,37 +145,12 @@ export function updateCellHighlights(highlights: Record<string, string>): void {
         el.classList.remove('highlight-outlier', 'highlight-pareto', 'highlight-excluded');
     });
 
-    // Process each highlight entry
-    Object.entries(highlights).forEach(([key, highlightType]) => {
-        const [column, row] = key.split('_');
-        if (!column || !row) return;
-
-        // Find and update matching cells in all tables
-        document.querySelectorAll('table[data-datatable="true"]').forEach(table => {
-            const thead = table.querySelector('thead');
-            const tbody = table.querySelector('tbody');
-            if (!thead || !tbody) return;
-
-            const headers = Array.from(thead.querySelectorAll('th'));
-            const rows = Array.from(tbody.querySelectorAll('tr'));
-
-            // Find matching row
-            const matchingRow = rows.find(tr => {
-                const categoryCell = tr.querySelector('td:first-child');
-                return categoryCell && categoryCell.textContent.trim() === row;
-            });
-
-            if (matchingRow) {
-                // Find matching column
-                headers.slice(1).forEach((header, index) => {
-                    if (header.textContent.trim() === column) {
-                        const cell = matchingRow.querySelector(`td:nth-child(${index + 2})`);
-                        if (cell) {
-                            cell.classList.add(`highlight-${highlightType}`);
-                        }
-                    }
-                });
-            }
+    // Process each highlight entry using UUID-based addressing
+    Object.entries(highlights).forEach(([rowId, highlightType]) => {
+        // Find all cells with matching data-row-id attribute
+        const cells = document.querySelectorAll(`[data-row-id="${rowId}"]`);
+        cells.forEach(cell => {
+            cell.classList.add(`highlight-${highlightType}`);
         });
     });
 }

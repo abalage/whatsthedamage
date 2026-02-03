@@ -13,22 +13,28 @@
     <main class="container-fluid">
         <h1>{{ _('Details for Month') }}: {{ _(data[0].date.display if data) }}</h1>
         <h2>{{ _('Account') }}: {{ formatted_account }}</h2>
-        <table class="table table-bordered">
-            <thead>
-                <tr>
-                    <th>{{ _('Category') }}</th>
-                    <th>{{ _('Total') }}</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for row in data %}
-                <tr>
-                    <td>{{ row.category }}</td>
-                    <td>{{ row.total.display }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+
+        {% from '_statistical_controls.html' import render_statistical_controls %}
+        {{ render_statistical_controls(result_id) }}
+
+        <div class="table-responsive">
+            <table id="month-details-table" class="table table-bordered" data-datatable="true">
+                <thead>
+                    <tr>
+                        <th>{{ _('Category') }}</th>
+                        <th>{{ _('Total') }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in data %}
+                    <tr>
+                        <td>{{ row.category }}</td>
+                        <td data-row-id="{{ row.row_id }}" class="highlight-{{ highlights.get(row.row_id, '') }}">{{ row.total.display }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
         <a href="/" class="btn btn-secondary">{{ _('Back') }}</a>
     </main>
     <footer class="bg-success text-white text-center py-3 mt-3">

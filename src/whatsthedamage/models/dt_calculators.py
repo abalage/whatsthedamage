@@ -8,7 +8,7 @@ after all category data has been added to the builder.
 
 from typing import List, TYPE_CHECKING
 from gettext import gettext as _
-from whatsthedamage.config.dt_models import AggregatedRow
+from whatsthedamage.models.dt_models import AggregatedRow
 
 if TYPE_CHECKING:
     from whatsthedamage.models.dt_response_builder import DataTablesResponseBuilder

@@ -2,7 +2,7 @@
 
 import pytest
 from whatsthedamage.services.cache_service import CacheService, CacheProtocol
-from whatsthedamage.config.dt_models import CachedProcessingResult, DataTablesResponse, StatisticalMetadata, AggregatedRow, CellHighlight, DisplayRawField, DateField, DetailRow
+from whatsthedamage.models.dt_models import CachedProcessingResult, DataTablesResponse, StatisticalMetadata, AggregatedRow, CellHighlight, DisplayRawField, DateField, DetailRow
 from typing import Dict, Optional
 import time
 import uuid

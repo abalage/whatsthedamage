@@ -1,6 +1,6 @@
 from typing import Optional, Dict, List, Union, Tuple
 from whatsthedamage.config.config import AppContext, EnricherPatternSets
-from whatsthedamage.config.dt_models import DataTablesResponse, DateField
+from whatsthedamage.models.dt_models import DataTablesResponse, DateField
 from whatsthedamage.models.csv_row import CsvRow
 from whatsthedamage.models.row_enrichment import RowEnrichment
 from whatsthedamage.models.row_enrichment_ml import RowEnrichmentML

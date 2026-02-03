@@ -8,7 +8,7 @@ import pytest
 from whatsthedamage.services.statistical_analysis_service import StatisticalAnalysisService
 from whatsthedamage.services.exclusion_service import ExclusionService
 from whatsthedamage.services.data_formatting_service import DataFormattingService
-from whatsthedamage.config.dt_models import DataTablesResponse, AggregatedRow, DisplayRawField, DateField, DetailRow
+from whatsthedamage.models.dt_models import DataTablesResponse, AggregatedRow, DisplayRawField, DateField, DetailRow
 import uuid
 
 @pytest.fixture

@@ -4,7 +4,7 @@ This service wraps Flask-Caching with SimpleCache backend for in-memory caching.
 Provides abstract protocol for cache implementations.
 """
 from typing import Optional, Protocol, runtime_checkable
-from whatsthedamage.config.dt_models import CachedProcessingResult
+from whatsthedamage.models.dt_models import CachedProcessingResult
 
 
 @runtime_checkable

@@ -14,30 +14,9 @@ Architecture Patterns:
 import pandas as pd
 import json
 from typing import Dict, Optional, Any
-from dataclasses import dataclass
-from whatsthedamage.config.dt_models import DataTablesResponse, StatisticalMetadata
+from whatsthedamage.config.dt_models import DataTablesResponse, StatisticalMetadata, SummaryData
 from gettext import gettext as _
 from whatsthedamage.services.statistical_analysis_service import StatisticalAnalysisService
-
-@dataclass(frozen=True)
-class SummaryData:
-    """Extracted summary data from a DataTablesResponse for a single account.
-
-    This model encapsulates the summary data extracted from transaction data,
-    providing a simplified format for formatting and display.
-
-    :param summary: Dict mapping column headers to category amounts.
-                    Column headers are typically time periods (e.g., 'January', 'January (1704067200)').
-                    Format: {column_header: {category: amount}}
-    :type summary: Dict[str, Dict[str, float]]
-    :param currency: Currency code (e.g., 'EUR', 'USD')
-    :type currency: str
-    :param account_id: Account identifier this summary belongs to
-    :type account_id: str
-    """
-    summary: Dict[str, Dict[str, float]]
-    currency: str
-    account_id: str
 
 
 class DataFormattingService:
@@ -293,7 +272,7 @@ class DataFormattingService:
         selected_account_id = self._select_account(dt_responses, account_id)
 
         # Extract summary for selected account
-        summary_data = self._extract_summary_from_account(
+        summary_data: SummaryData = self._extract_summary_from_account(
             dt_responses[selected_account_id],
             selected_account_id
         )
@@ -324,7 +303,7 @@ class DataFormattingService:
         selected_account_id = self._select_account(dt_responses, account_id)
 
         # Extract summary for selected account
-        summary_data = self._extract_summary_from_account(
+        summary_data: SummaryData = self._extract_summary_from_account(
             dt_responses[selected_account_id],
             selected_account_id
         )
@@ -355,7 +334,7 @@ class DataFormattingService:
         selected_account_id = self._select_account(dt_responses, account_id)
 
         # Extract summary for selected account
-        summary_data = self._extract_summary_from_account(
+        summary_data: SummaryData = self._extract_summary_from_account(
             dt_responses[selected_account_id],
             selected_account_id
         )
@@ -391,7 +370,7 @@ class DataFormattingService:
         selected_account_id = self._select_account(dt_responses, account_id)
 
         # Extract summary for selected account
-        summary_data = self._extract_summary_from_account(
+        summary_data: SummaryData = self._extract_summary_from_account(
             dt_responses[selected_account_id],
             selected_account_id
         )
@@ -600,7 +579,7 @@ class DataFormattingService:
         for v in period_map.values():
             display_counts[v['display']] = display_counts.get(v['display'], 0) + 1
 
-        summary: Dict[str, Dict[str, float]] = {}
+        summary = {}
         # Iterate periods in descending timestamp order (most recent first)
         for ts in sorted(period_map.keys(), reverse=True):
             display = period_map[ts]['display']

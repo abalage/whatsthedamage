@@ -4,7 +4,7 @@ This service uses the Strategy Pattern to apply various statistical algorithms
 to transaction data, providing highlight metadata for visualization.
 """
 from typing import Dict, List, Tuple, Optional, Any
-from whatsthedamage.config.dt_models import CellHighlight, StatisticalMetadata, DataTablesResponse, AggregatedRow
+from whatsthedamage.config.dt_models import CellHighlight, StatisticalMetadata, DataTablesResponse, AggregatedRow, SummaryData
 from whatsthedamage.services.exclusion_service import ExclusionService
 from whatsthedamage.models.statistical_algorithms import (
     AnalysisDirection,
@@ -96,23 +96,23 @@ class StatisticalAnalysisService:
 
     def _transform_data_for_analysis(
         self,
-        summary: Dict[str, Dict[str, float]],
+        summary: SummaryData,
         direction: AnalysisDirection
     ) -> List[Tuple[str, Dict[str, float]]]:
         """Transform summary data based on analysis direction.
 
-        :param summary: Nested dictionary structure Dict[outer_key, Dict[inner_key, amount]]
+        :param summary: SummaryData object containing nested dictionary structure Dict[outer_key, Dict[inner_key, amount]]
         :param direction: Analysis direction (COLUMNS or ROWS)
         :return: List of (key, data_dict) tuples for analysis
         """
         if direction == AnalysisDirection.COLUMNS:
             # Analyze inner keys within each outer key (e.g., categories within months)
-            return [(outer_key, inner_data) for outer_key, inner_data in summary.items()]
+            return [(outer_key, inner_data) for outer_key, inner_data in summary.summary.items()]
         else:  # ROWS
             # Analyze outer keys within each inner key (e.g., months within categories)
             # Transpose the data structure
             transposed_data: Dict[str, Dict[str, float]] = {}
-            for outer_key, inner_data in summary.items():
+            for outer_key, inner_data in summary.summary.items():
                 for inner_key, amount in inner_data.items():
                     if inner_key not in transposed_data:
                         transposed_data[inner_key] = {}
@@ -194,7 +194,7 @@ class StatisticalAnalysisService:
 
     def get_highlights(
         self,
-        summary: Dict[str, Dict[str, float]],
+        summary: SummaryData,
         direction: AnalysisDirection = AnalysisDirection.COLUMNS,
         algorithms: List[str] | None = None,
         use_default_directions: bool = False,
@@ -202,7 +202,7 @@ class StatisticalAnalysisService:
     ) -> List[CellHighlight]:
         """Get highlights for the summary data with flexible analysis direction.
 
-        :param summary: Dict[outer_key, Dict[inner_key, amount]]
+        :param summary: SummaryData object containing nested dictionary structure
                       For COLUMNS: Dict[month, Dict[category, amount]]
                       For ROWS: Dict[month, Dict[category, amount]] (will be transposed)
         :param direction: Analysis direction (COLUMNS or ROWS), default COLUMNS
@@ -244,7 +244,7 @@ class StatisticalAnalysisService:
         # Extract summary from original data (including calculated rows and excluded categories)
         full_summary = self._extract_summary_from_response(dt_response)
 
-        for month_display, categories in full_summary.items():
+        for month_display, categories in full_summary.summary.items():
             for category, amount in categories.items():
                 # Check if this cell should be excluded
                 if self._is_cell_excluded(month_display, category, dt_response):
@@ -328,7 +328,7 @@ class StatisticalAnalysisService:
     def _extract_summary_from_response(
         self,
         dt_response: DataTablesResponse
-    ) -> Dict[str, Dict[str, float]]:
+    ) -> SummaryData:
         """Extract summary data from DataTablesResponse for statistical analysis.
 
         Aggregates transaction data by month and category, creating a nested dictionary
@@ -338,11 +338,11 @@ class StatisticalAnalysisService:
             dt_response: DataTablesResponse containing aggregated transaction data
 
         Returns:
-            Dict[month_display, Dict[category, amount]] - Nested summary for analysis
+            SummaryData object containing the nested summary for analysis
 
         Example:
             >>> summary = service._extract_summary_from_response(dt_response)
-            >>> summary['January 2024']['Grocery']  # 1234.56
+            >>> summary.summary['January 2024']['Grocery']  # 1234.56
         """
         # Aggregate by canonical timestamp first to keep year information unambiguous
         month_map: Dict[int, Dict[str, Any]] = {}
@@ -365,18 +365,22 @@ class StatisticalAnalysisService:
         for v in month_map.values():
             display_counts[v['display']] = display_counts.get(v['display'], 0) + 1
 
-        summary: Dict[str, Dict[str, float]] = {}
+        summary = {}
         # Iterate months in descending timestamp order (most recent first)
         for ts in sorted(month_map.keys(), reverse=True):
             display = month_map[ts]['display']
             key = display if display_counts.get(display, 0) == 1 else f"{display} ({ts})"
             summary[key] = month_map[ts]['categories']
 
-        return summary
+        return SummaryData(
+            summary=summary,
+            currency=dt_response.currency,
+            account_id=dt_response.account
+        )
 
     def compute_statistical_metadata(
         self,
-        datatables_responses: Dict[str, Any],
+        datatables_responses: Dict[str, DataTablesResponse],
         algorithms: List[str] | None = None,
         direction: AnalysisDirection | None = None,
         use_default_directions: bool = False
@@ -409,7 +413,7 @@ class StatisticalAnalysisService:
             filtered_response = self._filter_expenses_only(filtered_response)
 
             # Extract summary from filtered data only
-            summary = self._extract_summary_from_response(filtered_response)
+            summary: SummaryData = self._extract_summary_from_response(filtered_response)
 
             # Get highlights with custom parameters
             table_highlights = self.get_highlights(

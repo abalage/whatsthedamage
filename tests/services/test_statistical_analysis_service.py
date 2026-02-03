@@ -214,21 +214,27 @@ class TestStatisticalAnalysisService:
         service = StatisticalAnalysisService(enabled_algorithms=["iqr", "pareto"])
 
         # Create test summary data with more data points for proper IQR calculation
-        summary = {
-            "2023-01": {
-                "Grocery": 500.0,
-                "Rent": 1000.0,  # Should be outlier
-                "Entertainment": 100.0,
-                "Utilities": 200.0,
-                "Transport": 150.0
+        from whatsthedamage.config.dt_models import SummaryData
+
+        summary = SummaryData(
+            summary={
+                "2023-01": {
+                    "Grocery": 500.0,
+                    "Rent": 1000.0,  # Should be outlier
+                    "Entertainment": 100.0,
+                    "Utilities": 200.0,
+                    "Transport": 150.0
+                },
+                "2023-02": {
+                    "Grocery": 400.0,
+                    "Utilities": 200.0,
+                    "Entertainment": 50.0,
+                    "Transport": 150.0
+                }
             },
-            "2023-02": {
-                "Grocery": 400.0,
-                "Utilities": 200.0,
-                "Entertainment": 50.0,
-                "Transport": 150.0
-            }
-        }
+            currency="USD",
+            account_id="test"
+        )
 
         # Create mock DataTablesResponse with UUIDs for testing
         from whatsthedamage.config.dt_models import AggregatedRow, DataTablesResponse, DateField, DisplayRawField
@@ -236,7 +242,7 @@ class TestStatisticalAnalysisService:
 
         # Create mock rows with UUIDs
         rows = []
-        for month, categories in summary.items():
+        for month, categories in summary.summary.items():
             for category, amount in categories.items():
                 row = AggregatedRow(
                     row_id=str(uuid.uuid4()),
@@ -269,26 +275,32 @@ class TestStatisticalAnalysisService:
         service = StatisticalAnalysisService(enabled_algorithms=["iqr", "pareto"])
 
         # Create test summary data
-        summary = {
-            "2023-01": {
-                "Grocery": 500.0,
-                "Rent": 1000.0,
-                "Entertainment": 100.0,
-                "Utilities": 200.0,
-                "Transport": 150.0
+        from whatsthedamage.config.dt_models import SummaryData
+
+        summary = SummaryData(
+            summary={
+                "2023-01": {
+                    "Grocery": 500.0,
+                    "Rent": 1000.0,
+                    "Entertainment": 100.0,
+                    "Utilities": 200.0,
+                    "Transport": 150.0
+                },
+                "2023-02": {
+                    "Grocery": 400.0,
+                    "Utilities": 200.0,
+                    "Entertainment": 50.0,
+                    "Transport": 150.0
+                },
+                "2023-03": {
+                    "Grocery": 1500.0,  # Should be outlier for Grocery category
+                    "Utilities": 250.0,
+                    "Entertainment": 75.0
+                }
             },
-            "2023-02": {
-                "Grocery": 400.0,
-                "Utilities": 200.0,
-                "Entertainment": 50.0,
-                "Transport": 150.0
-            },
-            "2023-03": {
-                "Grocery": 1500.0,  # Should be outlier for Grocery category
-                "Utilities": 250.0,
-                "Entertainment": 75.0
-            }
-        }
+            currency="USD",
+            account_id="test"
+        )
 
         # Create mock DataTablesResponse with UUIDs for testing
         from whatsthedamage.config.dt_models import AggregatedRow, DataTablesResponse, DateField, DisplayRawField
@@ -296,7 +308,7 @@ class TestStatisticalAnalysisService:
 
         # Create mock rows with UUIDs
         rows = []
-        for month, categories in summary.items():
+        for month, categories in summary.summary.items():
             for category, amount in categories.items():
                 row = AggregatedRow(
                     row_id=str(uuid.uuid4()),
@@ -328,13 +340,22 @@ class TestStatisticalAnalysisService:
         """Test get_highlights with runtime algorithm selection."""
         service = StatisticalAnalysisService(enabled_algorithms=["iqr", "pareto"])
 
+        # Wrap summary data in SummaryData object
+        from whatsthedamage.config.dt_models import SummaryData
+
+        summary = SummaryData(
+            summary=summary_data_with_outliers,
+            currency="USD",
+            account_id="test"
+        )
+
         # Create mock DataTablesResponse with UUIDs for testing
         from whatsthedamage.config.dt_models import AggregatedRow, DataTablesResponse, DateField, DisplayRawField
         import uuid
 
         # Create mock rows with UUIDs
         rows = []
-        for month, categories in summary_data_with_outliers.items():
+        for month, categories in summary.summary.items():
             for category, amount in categories.items():
                 row = AggregatedRow(
                     row_id=str(uuid.uuid4()),
@@ -348,25 +369,31 @@ class TestStatisticalAnalysisService:
         dt_response = DataTablesResponse(data=rows, account="test", currency="USD")
 
         # Test with only IQR algorithm (explicitly use COLUMNS to override IQR's default)
-        highlights_iqr = service.get_highlights(summary_data_with_outliers, AnalysisDirection.COLUMNS, algorithms=["iqr"], dt_response=dt_response)
+        highlights_iqr = service.get_highlights(summary, AnalysisDirection.COLUMNS, algorithms=["iqr"], dt_response=dt_response)
         assert len(highlights_iqr) > 0
 
         # Test with only Pareto algorithm (explicitly use COLUMNS to match Pareto's default)
-        highlights_pareto = service.get_highlights(summary_data_with_outliers, AnalysisDirection.COLUMNS, algorithms=["pareto"], dt_response=dt_response)
+        highlights_pareto = service.get_highlights(summary, AnalysisDirection.COLUMNS, algorithms=["pareto"], dt_response=dt_response)
         assert len(highlights_pareto) > 0
 
         # Test with both algorithms
-        highlights_both = service.get_highlights(summary_data_with_outliers, AnalysisDirection.COLUMNS, algorithms=["iqr", "pareto"], dt_response=dt_response)
+        highlights_both = service.get_highlights(summary, AnalysisDirection.COLUMNS, algorithms=["iqr", "pareto"], dt_response=dt_response)
         assert len(highlights_both) > 0
 
     def test_data_transformation_for_columns_direction(self):
         """Test data transformation for COLUMNS direction."""
         service = StatisticalAnalysisService()
 
-        summary = {
-            "month1": {"cat1": 100.0, "cat2": 200.0},
-            "month2": {"cat1": 150.0, "cat3": 300.0}
-        }
+        from whatsthedamage.config.dt_models import SummaryData
+
+        summary = SummaryData(
+            summary={
+                "month1": {"cat1": 100.0, "cat2": 200.0},
+                "month2": {"cat1": 150.0, "cat3": 300.0}
+            },
+            currency="USD",
+            account_id="test"
+        )
 
         transformed = service._transform_data_for_analysis(summary, AnalysisDirection.COLUMNS)
         assert len(transformed) == 2
@@ -377,10 +404,16 @@ class TestStatisticalAnalysisService:
         """Test data transformation for ROWS direction."""
         service = StatisticalAnalysisService()
 
-        summary = {
-            "month1": {"cat1": 100.0, "cat2": 200.0},
-            "month2": {"cat1": 150.0, "cat3": 300.0}
-        }
+        from whatsthedamage.config.dt_models import SummaryData
+
+        summary = SummaryData(
+            summary={
+                "month1": {"cat1": 100.0, "cat2": 200.0},
+                "month2": {"cat1": 150.0, "cat3": 300.0}
+            },
+            currency="USD",
+            account_id="test"
+        )
 
         transformed = service._transform_data_for_analysis(summary, AnalysisDirection.ROWS)
         assert len(transformed) == 3
@@ -391,19 +424,26 @@ class TestStatisticalAnalysisService:
     def test_get_highlights_with_empty_summary(self):
         """Test get_highlights with empty summary."""
         service = StatisticalAnalysisService()
-        highlights = service.get_highlights({})
+        from whatsthedamage.config.dt_models import SummaryData
+        summary = SummaryData(summary={}, currency="USD", account_id="test")
+        highlights = service.get_highlights(summary)
         assert highlights == []
 
     def test_get_highlights_with_no_highlights(self):
         """Test get_highlights when no highlights are detected."""
         service = StatisticalAnalysisService(enabled_algorithms=["iqr"])
-        summary = {
-            "2023-01": {
-                "Grocery": 100.0,
-                "Entertainment": 100.0,
-                "Utilities": 100.0
-            }
-        }
+        from whatsthedamage.config.dt_models import SummaryData
+        summary = SummaryData(
+            summary={
+                "2023-01": {
+                    "Grocery": 100.0,
+                    "Entertainment": 100.0,
+                    "Utilities": 100.0
+                }
+            },
+            currency="USD",
+            account_id="test"
+        )
         highlights = service.get_highlights(summary)
         assert highlights == []
 
@@ -425,7 +465,12 @@ class TestStatisticalAlgorithmIntegration:
         service.enabled_algorithms = ["mock"]
         data = {"mock_item": 100.0, "other": 50.0}
         # Use get_highlights with a simple summary structure
-        summary = {"month1": data}
+        from whatsthedamage.config.dt_models import SummaryData
+        summary = SummaryData(
+            summary={"month1": data},
+            currency="USD",
+            account_id="test"
+        )
 
         # Create mock DataTablesResponse with UUIDs for testing
         from whatsthedamage.config.dt_models import AggregatedRow, DataTablesResponse, DateField, DisplayRawField
@@ -433,7 +478,7 @@ class TestStatisticalAlgorithmIntegration:
 
         # Create mock rows with UUIDs
         rows = []
-        for month, categories in summary.items():
+        for month, categories in summary.summary.items():
             for category, amount in categories.items():
                 row = AggregatedRow(
                     row_id=str(uuid.uuid4()),

@@ -7,7 +7,7 @@ import { expect, test, beforeEach, afterEach } from 'vitest';
 import { updateCellHighlights, initStatisticalAnalysis } from '../src/js/statistical-analysis';
 
 /**
- * Create a test DOM structure with tables
+ * Create a test DOM structure with tables using data-row-id attributes
  */
 function createTestDom() {
   document.body.innerHTML = `
@@ -28,13 +28,13 @@ function createTestDom() {
         <tbody>
           <tr>
             <td>Food</td>
-            <td>100</td>
-            <td>150</td>
+            <td data-row-id="row-1">100</td>
+            <td data-row-id="row-2">150</td>
           </tr>
           <tr>
             <td>Transport</td>
-            <td>50</td>
-            <td>60</td>
+            <td data-row-id="row-3">50</td>
+            <td data-row-id="row-4">60</td>
           </tr>
         </tbody>
       </table>
@@ -58,7 +58,7 @@ afterEach(() => {
 });
 
 test('updateCellHighlights applies correct highlight class', () => {
-  updateCellHighlights({ 'Jan_Food': 'outlier' });
+  updateCellHighlights({ 'row-1': 'outlier' });
 
   const cell = document.querySelector('tbody tr:first-child td:nth-child(2)');
   expect(cell?.classList.contains('highlight-outlier')).toBe(true);
@@ -68,7 +68,7 @@ test('updateCellHighlights removes existing highlights', () => {
   const cell = document.querySelector('tbody tr:first-child td:nth-child(2)');
   if (cell) cell.classList.add('highlight-pareto');
 
-  updateCellHighlights({ 'Jan_Food': 'outlier' });
+  updateCellHighlights({ 'row-1': 'outlier' });
 
   expect(cell?.classList.contains('highlight-pareto')).toBe(false);
   expect(cell?.classList.contains('highlight-outlier')).toBe(true);
@@ -76,8 +76,8 @@ test('updateCellHighlights removes existing highlights', () => {
 
 test('updateCellHighlights handles multiple highlights', () => {
   updateCellHighlights({
-    'Jan_Food': 'outlier',
-    'Feb_Transport': 'pareto'
+    'row-1': 'outlier',
+    'row-4': 'pareto'
   });
 
   const foodJanCell = document.querySelector('tbody tr:first-child td:nth-child(2)');
@@ -87,8 +87,8 @@ test('updateCellHighlights handles multiple highlights', () => {
   expect(transportFebCell?.classList.contains('highlight-pareto')).toBe(true);
 });
 
-test('updateCellHighlights handles invalid key format', () => {
-  updateCellHighlights({ 'invalid_key': 'outlier' });
+test('updateCellHighlights handles invalid row ID', () => {
+  updateCellHighlights({ 'invalid-row-id': 'outlier' });
 
   const cells = document.querySelectorAll('[class*="highlight-"]');
   expect(cells.length).toBe(0);
@@ -107,7 +107,7 @@ test('initStatisticalAnalysis marks buttons as initialized', () => {
 test('updateCellHighlights handles missing table elements', () => {
   document.body.innerHTML = '<table data-datatable="true"></table>';
 
-  expect(() => updateCellHighlights({ 'Jan_Food': 'outlier' })).not.toThrow();
+  expect(() => updateCellHighlights({ 'row-1': 'outlier' })).not.toThrow();
 });
 
 test('updateCellHighlights handles empty highlights object', () => {
@@ -118,18 +118,58 @@ test('updateCellHighlights works with multiple tables', () => {
   document.body.innerHTML = `
     <table data-datatable="true">
       <thead><tr><th>Category</th><th>Jan</th></tr></thead>
-      <tbody><tr><td>Food</td><td>100</td></tr></tbody>
+      <tbody><tr><td>Food</td><td data-row-id="row-1">100</td></tr></tbody>
     </table>
     <table data-datatable="true">
       <thead><tr><th>Category</th><th>Jan</th></tr></thead>
-      <tbody><tr><td>Food</td><td>200</td></tr></tbody>
+      <tbody><tr><td>Food</td><td data-row-id="row-1">200</td></tr></tbody>
     </table>
   `;
 
-  updateCellHighlights({ 'Jan_Food': 'excluded' });
+  updateCellHighlights({ 'row-1': 'excluded' });
 
-  const cells = document.querySelectorAll('td:nth-child(2)');
+  const cells = document.querySelectorAll('[data-row-id="row-1"]');
   cells.forEach(cell => {
     expect(cell.classList.contains('highlight-excluded')).toBe(true);
   });
+});
+
+test('updateCellHighlights handles all highlight types', () => {
+  document.body.innerHTML = `
+    <table data-datatable="true">
+      <thead><tr><th>Category</th><th>Jan</th><th>Feb</th></tr></thead>
+      <tbody>
+        <tr><td>Food</td><td data-row-id="row-outlier">100</td><td data-row-id="row-pareto">150</td></tr>
+        <tr><td>Transport</td><td data-row-id="row-excluded">50</td><td>60</td></tr>
+      </tbody>
+    </table>
+  `;
+
+  updateCellHighlights({
+    'row-outlier': 'outlier',
+    'row-pareto': 'pareto',
+    'row-excluded': 'excluded'
+  });
+
+  const outlierCell = document.querySelector('[data-row-id="row-outlier"]');
+  const paretoCell = document.querySelector('[data-row-id="row-pareto"]');
+  const excludedCell = document.querySelector('[data-row-id="row-excluded"]');
+
+  expect(outlierCell?.classList.contains('highlight-outlier')).toBe(true);
+  expect(paretoCell?.classList.contains('highlight-pareto')).toBe(true);
+  expect(excludedCell?.classList.contains('highlight-excluded')).toBe(true);
+});
+
+test('updateCellHighlights removes all highlight classes before applying new ones', () => {
+  const cell = document.querySelector('tbody tr:first-child td:nth-child(2)');
+  if (cell) {
+    cell.classList.add('highlight-outlier');
+    cell.classList.add('highlight-pareto');
+  }
+
+  updateCellHighlights({ 'row-1': 'excluded' });
+
+  expect(cell?.classList.contains('highlight-outlier')).toBe(false);
+  expect(cell?.classList.contains('highlight-pareto')).toBe(false);
+  expect(cell?.classList.contains('highlight-excluded')).toBe(true);
 });

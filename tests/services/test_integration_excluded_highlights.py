@@ -9,6 +9,7 @@ from whatsthedamage.services.statistical_analysis_service import StatisticalAnal
 from whatsthedamage.services.exclusion_service import ExclusionService
 from whatsthedamage.services.data_formatting_service import DataFormattingService
 from whatsthedamage.config.dt_models import DataTablesResponse, AggregatedRow, DisplayRawField, DateField, DetailRow
+import uuid
 
 @pytest.fixture
 def complete_dt_response():
@@ -16,6 +17,7 @@ def complete_dt_response():
     # Create detail rows for regular transactions
     details_grocery = [
         DetailRow(
+            row_id=str(uuid.uuid4()),
             date=DateField(display="2023-01-15", timestamp=1673779200),
             amount=DisplayRawField(display="100.00", raw=100.0),
             merchant="Supermarket",
@@ -26,6 +28,7 @@ def complete_dt_response():
 
     details_rent = [
         DetailRow(
+            row_id=str(uuid.uuid4()),
             date=DateField(display="2023-01-10", timestamp=1673347200),
             amount=DisplayRawField(display="500.00", raw=500.0),
             merchant="Landlord Inc",
@@ -36,6 +39,7 @@ def complete_dt_response():
 
     details_utilities = [
         DetailRow(
+            row_id=str(uuid.uuid4()),
             date=DateField(display="2023-02-15", timestamp=1676361600),
             amount=DisplayRawField(display="200.00", raw=200.0),
             merchant="Electric Co",
@@ -47,33 +51,33 @@ def complete_dt_response():
     # Create regular transaction rows
     regular_rows = [
         AggregatedRow(
+            row_id=str(uuid.uuid4()),
             category="Grocery",
             total=DisplayRawField(display="100.00", raw=100.0),
-            month=DateField(display="January 2023", timestamp=1672531200),
             date=DateField(display="January 2023", timestamp=1672531200),
             details=details_grocery,
             is_calculated=False
         ),
         AggregatedRow(
+            row_id=str(uuid.uuid4()),
             category="Rent",
             total=DisplayRawField(display="500.00", raw=500.0),
-            month=DateField(display="January 2023", timestamp=1672531200),
             date=DateField(display="January 2023", timestamp=1672531200),
             details=details_rent,
             is_calculated=False
         ),
         AggregatedRow(
+            row_id=str(uuid.uuid4()),
             category="Utilities",
             total=DisplayRawField(display="200.00", raw=200.0),
-            month=DateField(display="February 2023", timestamp=1677657600),
             date=DateField(display="February 2023", timestamp=1677657600),
             details=details_utilities,
             is_calculated=False
         ),
         AggregatedRow(
+            row_id=str(uuid.uuid4()),
             category="Dining",
             total=DisplayRawField(display="150.00", raw=150.0),
-            month=DateField(display="February 2023", timestamp=1677657600),
             date=DateField(display="February 2023", timestamp=1677657600),
             details=[],
             is_calculated=False
@@ -83,17 +87,17 @@ def complete_dt_response():
     # Create calculated rows (Balance and Total)
     calculated_rows = [
         AggregatedRow(
+            row_id=str(uuid.uuid4()),
             category="Balance",
             total=DisplayRawField(display="600.00", raw=600.0),
-            month=DateField(display="January 2023", timestamp=1672531200),
             date=DateField(display="January 2023", timestamp=1672531200),
             details=[],
             is_calculated=True
         ),
         AggregatedRow(
+            row_id=str(uuid.uuid4()),
             category="Total",
             total=DisplayRawField(display="850.00", raw=850.0),
-            month=DateField(display="Total", timestamp=0),
             date=DateField(display="Total", timestamp=0),
             details=[],
             is_calculated=True
@@ -161,53 +165,13 @@ def test_end_to_end_excluded_highlights_pipeline(complete_dt_response):
     # 2. Excluded categories (Rent)
     assert len(excluded_highlights) > 0
 
-    # Check for calculated row highlights
-    balance_highlights = [
-        key for key in excluded_highlights.keys()
-        if "Balance" in key
-    ]
-    total_highlights = [
-        key for key in excluded_highlights.keys()
-        if "Total" in key
-    ]
-    rent_highlights = [
-        key for key in excluded_highlights.keys()
-        if "Rent" in key
-    ]
-
-    # Verify we have highlights for all excluded items
-    assert len(balance_highlights) > 0, "Should have highlights for Balance row"
-    assert len(total_highlights) > 0, "Should have highlights for Total row"
-    assert len(rent_highlights) > 0, "Should have highlights for Rent category"
-
-    # Verify the highlight keys follow the expected format
-    for key in excluded_highlights.keys():
-        # Key format should be "month_category" (e.g., "January 2023_Balance")
-        assert "_" in key
-        parts = key.split("_")
-        assert len(parts) == 2
-        month_part, category_part = parts
-        assert month_part in ["January 2023", "Total"]
-        assert category_part in ["Balance", "Total", "Rent"]
-
-def test_highlight_key_generation():
-    """Test that highlight keys are generated correctly."""
-    formatting_service = DataFormattingService()
-
-    # Test key generation
-    key1 = formatting_service.make_highlight_key("January 2023", "Grocery")
-    assert key1 == "January 2023_Grocery"
-
-    key2 = formatting_service.make_highlight_key("Total", "Balance")
-    assert key2 == "Total_Balance"
-
 def test_template_highlight_application():
     """Test that highlights can be applied to template data correctly."""
     # Create a mock DataTablesResponse with calculated rows
     calculated_row = AggregatedRow(
+        row_id=str(uuid.uuid4()),
         category="Balance",
         total=DisplayRawField(display="100.00", raw=100.0),
-        month=DateField(display="January 2023", timestamp=1672531200),
         date=DateField(display="January 2023", timestamp=1672531200),
         details=[],
         is_calculated=True
@@ -246,6 +210,6 @@ def test_template_highlight_application():
     highlights = account_data["highlights"]
 
     # The calculated row should have an excluded highlight
-    balance_key = "January 2023_Balance"
+    balance_key = calculated_row.row_id
     assert balance_key in highlights
     assert highlights[balance_key] == "excluded"

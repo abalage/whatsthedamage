@@ -108,11 +108,13 @@ def mock_cache_service():
 @pytest.fixture
 def sample_cached_result():
     """Create sample cached processing result."""
+    import uuid
     return CachedProcessingResult(
         responses={
             "checking": DataTablesResponse(
                 data=[
                     AggregatedRow(
+                        row_id=str(uuid.uuid4()),
                         category="Grocery",
                         total=DisplayRawField(display="100.00", raw=100.0),
                         date=DateField(display="Jan 2023", timestamp=1672531200),
@@ -120,6 +122,7 @@ def sample_cached_result():
                         is_calculated=False
                     ),
                     AggregatedRow(
+                        row_id=str(uuid.uuid4()),
                         category="Utilities",
                         total=DisplayRawField(display="150.00", raw=150.0),
                         date=DateField(display="Jan 2023", timestamp=1672531200),
@@ -127,6 +130,7 @@ def sample_cached_result():
                         is_calculated=False
                     ),
                     AggregatedRow(
+                        row_id=str(uuid.uuid4()),
                         category="Rent",
                         total=DisplayRawField(display="1000.00", raw=1000.0),
                         date=DateField(display="Feb 2023", timestamp=1675209600),

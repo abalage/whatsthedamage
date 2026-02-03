@@ -193,8 +193,7 @@ def handle_drilldown_request(
             # Convert highlights to dictionary format for easier frontend processing
             highlights_dict = {}
             for highlight in cached.metadata.highlights:
-                key = f"{highlight.column}_{highlight.row}"
-                highlights_dict[key] = highlight.highlight_type
+                highlights_dict[highlight.row_id] = highlight.highlight_type
         else:
             highlights_dict = {}
     except Exception:
@@ -323,8 +322,7 @@ def handle_recalculate_statistics_request(
         # Convert highlights to dictionary format for easier frontend processing
         highlights_dict = {}
         for highlight in new_metadata.highlights:
-            key = f"{highlight.column}_{highlight.row}"
-            highlights_dict[key] = highlight.highlight_type
+            highlights_dict[highlight.row_id] = highlight.highlight_type
 
         return {
             'status': 'success',

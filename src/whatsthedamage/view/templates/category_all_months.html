@@ -29,10 +29,7 @@
                     {% for row in data %}
                     <tr>
                         <td>{{ row.date.display }}</td>
-                        {% set highlight_key = row.date.display ~ '_' ~ category %}
-                        {% set highlight_type = highlights.get(highlight_key, '') %}
-                        {% set highlight_class = 'highlight-' ~ highlight_type if highlight_type else '' %}
-                        <td class="{{ highlight_class }}">{{ row.total.display }}</td>
+                        <td data-row-id="{{ row.row_id }}" class="highlight-{{ highlights.get(row.row_id, '') }}">{{ row.total.display }}</td>
                     </tr>
                     {% endfor %}
                 </tbody>

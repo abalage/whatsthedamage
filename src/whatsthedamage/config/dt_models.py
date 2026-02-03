@@ -11,6 +11,7 @@ class DateField(BaseModel):
     timestamp: int
 
 class DetailRow(BaseModel):
+    row_id: str
     date: DateField
     amount: DisplayRawField
     merchant: str
@@ -18,6 +19,7 @@ class DetailRow(BaseModel):
     account: str
 
 class AggregatedRow(BaseModel):
+    row_id: str
     category: str
     total: DisplayRawField
     date: DateField
@@ -31,9 +33,8 @@ class DataTablesResponse(BaseModel):
     statistical_metadata: Optional['StatisticalMetadata'] = None
 
 class CellHighlight(BaseModel):
-    row: str  # category
-    column: str  # month
-    highlight_type: str  # e.g., 'outlier', 'pareto'
+    row_id: str  # Unique identifier referencing AggregatedRow or DetailRow
+    highlight_type: str  # e.g., 'outlier', 'pareto', 'excluded'
 
 class StatisticalMetadata(BaseModel):
     highlights: List[CellHighlight]

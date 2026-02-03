@@ -134,49 +134,38 @@ class StatisticalAnalysisService:
             return algo.direction
         return direction
 
-    def _build_highlight(self, algo_direction: AnalysisDirection, outer_key: str, inner_key: str, highlight_type: str) -> CellHighlight:
-        """Build a CellHighlight object based on analysis direction.
+    def _build_highlight(self, row_id: str, highlight_type: str) -> CellHighlight:
+        """Build a CellHighlight object based on row UUID.
 
         Args:
-            algo_direction: The analysis direction
-            outer_key: The outer key from transformed data
-            inner_key: The inner key from transformed data
+            row_id: The UUID of the row to highlight
             highlight_type: The type of highlight (e.g., 'outlier', 'pareto')
 
         Returns:
-            CellHighlight object with appropriate row and column assignment
+            CellHighlight object with row_id reference
         """
-        if algo_direction == AnalysisDirection.COLUMNS:
-            # COLUMNS: row=inner_key, column=outer_key (e.g., row=category, column=month)
-            return CellHighlight(
-                row=inner_key,
-                column=outer_key,
-                highlight_type=highlight_type
-            )
-        else:  # ROWS
-            # ROWS: row=outer_key, column=inner_key (e.g., row=month, column=category)
-            return CellHighlight(
-                row=outer_key,
-                column=inner_key,
-                highlight_type=highlight_type
-            )
+        return CellHighlight(
+            row_id=row_id,
+            highlight_type=highlight_type
+        )
 
     def _create_highlight_for_algorithm(
         self,
         algo: StatisticalAlgorithm,
         algo_direction: AnalysisDirection,
-        algo_transformed_data: List[Tuple[str, Dict[str, float]]]
+        algo_transformed_data: List[Tuple[str, Dict[str, float]]],
+        dt_response: DataTablesResponse
     ) -> List[CellHighlight]:
-        """Create highlights for a single algorithm.
+        """Create highlights for a single algorithm using direct row matching.
 
         Args:
-            algo_name: Name of the algorithm
             algo: The algorithm instance
             algo_direction: The direction to use for analysis
             algo_transformed_data: Transformed data for analysis
+            dt_response: DataTablesResponse containing the actual rows with UUIDs
 
         Returns:
-            List of CellHighlight objects
+            List of CellHighlight objects with direct UUID references
         """
         highlights: List[CellHighlight] = []
 
@@ -184,8 +173,22 @@ class StatisticalAnalysisService:
             algo_highlights = algo.analyze(inner_data)
 
             for inner_key, highlight_type in algo_highlights.items():
-                highlight = self._build_highlight(algo_direction, outer_key, inner_key, highlight_type)
-                highlights.append(highlight)
+                # Directly find the matching row in dt_response by comparing actual field values
+                for agg_row in dt_response.data:
+                    if algo_direction == AnalysisDirection.COLUMNS:
+                        # For COLUMNS: outer_key=month, inner_key=category
+                        if (agg_row.date.display == outer_key and
+                            agg_row.category == inner_key):
+                            highlight = self._build_highlight(agg_row.row_id, highlight_type)
+                            highlights.append(highlight)
+                            break
+                    else:
+                        # For ROWS: outer_key=category, inner_key=month
+                        if (agg_row.category == outer_key and
+                            agg_row.date.display == inner_key):
+                            highlight = self._build_highlight(agg_row.row_id, highlight_type)
+                            highlights.append(highlight)
+                            break
 
         return highlights
 
@@ -194,7 +197,8 @@ class StatisticalAnalysisService:
         summary: Dict[str, Dict[str, float]],
         direction: AnalysisDirection = AnalysisDirection.COLUMNS,
         algorithms: List[str] | None = None,
-        use_default_directions: bool = False
+        use_default_directions: bool = False,
+        dt_response: Optional[DataTablesResponse] = None
     ) -> List[CellHighlight]:
         """Get highlights for the summary data with flexible analysis direction.
 
@@ -204,6 +208,7 @@ class StatisticalAnalysisService:
         :param direction: Analysis direction (COLUMNS or ROWS), default COLUMNS
         :param algorithms: Optional list of algorithm names to use (overrides enabled_algorithms)
         :param use_default_directions: If True, use each algorithm's default direction instead of the provided direction
+        :param dt_response: DataTablesResponse needed for UUID lookup
         :return: List of CellHighlight
         """
         highlights: List[CellHighlight] = []
@@ -217,8 +222,9 @@ class StatisticalAnalysisService:
                 # Transform data for this algorithm
                 algo_transformed_data = self._transform_data_for_analysis(summary, algo_direction)
                 # Create highlights for this algorithm
-                algo_highlights = self._create_highlight_for_algorithm(algo, algo_direction, algo_transformed_data)
-                highlights.extend(algo_highlights)
+                if dt_response:
+                    algo_highlights = self._create_highlight_for_algorithm(algo, algo_direction, algo_transformed_data, dt_response)
+                    highlights.extend(algo_highlights)
 
         return highlights
 
@@ -242,11 +248,14 @@ class StatisticalAnalysisService:
             for category, amount in categories.items():
                 # Check if this cell should be excluded
                 if self._is_cell_excluded(month_display, category, dt_response):
-                    excluded_highlights.append(CellHighlight(
-                        row=category,
-                        column=month_display,
-                        highlight_type='excluded'
-                    ))
+                    # Find the row UUID for this cell
+                    for agg_row in dt_response.data:
+                        if agg_row.category == category and agg_row.date.display == month_display:
+                            excluded_highlights.append(CellHighlight(
+                                row_id=agg_row.row_id,
+                                highlight_type='excluded'
+                            ))
+                            break
 
         return excluded_highlights
 
@@ -407,10 +416,10 @@ class StatisticalAnalysisService:
                 summary,
                 algorithms=algorithms,
                 direction=analysis_direction,
-                use_default_directions=use_default_directions
+                use_default_directions=use_default_directions,
+                dt_response=dt_response
             )
-            for h in table_highlights:
-                highlights.append(CellHighlight(row=h.row, column=h.column, highlight_type=h.highlight_type))
+            highlights.extend(table_highlights)
 
             # Add highlights for excluded cells (calculated rows and excluded categories)
             excluded_highlights = self._get_excluded_cell_highlights(dt_response)

@@ -136,7 +136,7 @@ export function initStatisticalAnalysis(): void {
 
 /**
  * Update cell highlights based on statistical analysis results
- * @param {Object} highlights - Object containing highlight information
+ * @param {Object} highlights - Object containing highlight information with row_id as key
  */
 export function updateCellHighlights(highlights: Record<string, string>): void {
     // Remove all current highlights from all tables
@@ -145,54 +145,12 @@ export function updateCellHighlights(highlights: Record<string, string>): void {
         el.classList.remove('highlight-outlier', 'highlight-pareto', 'highlight-excluded');
     });
 
-    // Process each highlight entry
-    Object.entries(highlights).forEach(([key, highlightType]) => {
-        const [column, row] = key.split('_');
-        if (!column || !row) return;
-
-        // Find and update matching cells in all tables
-        document.querySelectorAll('table[data-datatable="true"]').forEach(table => {
-            const tbody = table.querySelector('tbody');
-            if (!tbody) return;
-
-            const rows = Array.from(tbody.querySelectorAll('tr'));
-
-            rows.forEach(tr => {
-                const cells = Array.from(tr.querySelectorAll('td'));
-                if (cells.length === 0) return;
-
-                // For tables with multiple columns (like results.html):
-                // - First column is category/label
-                // - Other columns are months/dates
-                // Match when first cell equals row and any other cell equals column
-                if (cells.length > 1) {
-                    const firstCell = cells[0];
-                    const firstCellText = firstCell?.textContent?.trim() || '';
-                    const otherCells = cells.slice(1);
-
-                    if (firstCellText === row) {
-                        otherCells.forEach(cell => {
-                            const cellText = cell?.textContent?.trim() || '';
-                            if (cellText === column) {
-                                cell.classList.add(`highlight-${highlightType}`);
-                            }
-                        });
-                    }
-                }
-                // For tables with 2 columns (like drilldown views):
-                // - First column is label
-                // - Second column is value
-                // Match when second cell equals row
-                else if (cells.length === 2) {
-                    const valueCell = cells[1];
-                    if (valueCell) {
-                        const valueCellText = valueCell.textContent?.trim() || '';
-                        if (valueCellText === row) {
-                            valueCell.classList.add(`highlight-${highlightType}`);
-                        }
-                    }
-                }
-            });
+    // Process each highlight entry using UUID-based addressing
+    Object.entries(highlights).forEach(([rowId, highlightType]) => {
+        // Find all cells with matching data-row-id attribute
+        const cells = document.querySelectorAll(`[data-row-id="${rowId}"]`);
+        cells.forEach(cell => {
+            cell.classList.add(`highlight-${highlightType}`);
         });
     });
 }

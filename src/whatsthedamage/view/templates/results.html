@@ -75,10 +75,9 @@
                                                 {% set _ = details_list.append(detail.date.display ~ ': ' ~ detail.amount.display ~ ' - ' ~ detail.merchant) %}
                                             {% endfor %}
                                             {% set details_str = details_list | join('<br>') %}
-                                            {% set highlight_key = month_display ~ '_' ~ category %}
-                                            {% set highlight_type = account.highlights.get(highlight_key, '') %}
-                                            {% set highlight_class = 'highlight-' ~ highlight_type if highlight_type else '' %}
-                                            <td data-order="{{ agg_row_data.total.raw }}" class="{{ highlight_class }}"
+                                            <td data-order="{{ agg_row_data.total.raw }}"
+                                                data-row-id="{{ agg_row_data.row_id }}"
+                                                class="highlight-{{ account.highlights.get(agg_row_data.row_id, '') }}"
                                                 {% if agg_row_data.details %}
                                                     tabindex="0"
                                                     data-bs-toggle="popover"

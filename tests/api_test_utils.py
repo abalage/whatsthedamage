@@ -7,7 +7,7 @@ and make tests more readable and maintainable.
 from io import BytesIO
 from typing import Dict, List, Any, Optional
 from unittest.mock import Mock
-
+import uuid
 
 class MockProcessingService:
     """Mock ProcessingService for testing with simplified result builders."""
@@ -39,6 +39,7 @@ class MockProcessingService:
             details = []
             for detail_dict in row_dict.get('details', []):
                 details.append(DetailRow(
+                    row_id=str(uuid.uuid4()),
                     date=DateField(**detail_dict['date']),
                     amount=DisplayRawField(**detail_dict['amount']),
                     merchant=detail_dict['merchant'],
@@ -47,6 +48,7 @@ class MockProcessingService:
                 ))
             
             aggregated_rows.append(AggregatedRow(
+                row_id=str(uuid.uuid4()),
                 category=row_dict['category'],
                 total=DisplayRawField(**row_dict['total']),
                 date=DateField(**row_dict['details'][0]['date']),  # Use date instead of month

@@ -2,6 +2,7 @@
 
 from whatsthedamage.services.statistical_analysis_service import StatisticalAnalysisService, AnalysisDirection
 from whatsthedamage.config.dt_models import DataTablesResponse, AggregatedRow, DisplayRawField, DateField, StatisticalMetadata
+import uuid
 
 def test_recalculate_highlights_method():
     """Test the compute_statistical_metadata method in StatisticalAnalysisService."""
@@ -10,6 +11,7 @@ def test_recalculate_highlights_method():
         'account1': DataTablesResponse(
             data=[
                 AggregatedRow(
+                    row_id=str(uuid.uuid4()),
                     category='Grocery',
                     total=DisplayRawField(display='100.00', raw=100.0),
                     date=DateField(display='January 2024', timestamp=1704067200),
@@ -17,6 +19,7 @@ def test_recalculate_highlights_method():
                     is_calculated=False
                 ),
                 AggregatedRow(
+                    row_id=str(uuid.uuid4()),
                     category='Utilities',
                     total=DisplayRawField(display='50.00', raw=50.0),
                     date=DateField(display='January 2024', timestamp=1704067200),
@@ -60,6 +63,7 @@ def test_recalculate_highlights_with_both_algorithms():
         'account1': DataTablesResponse(
             data=[
                 AggregatedRow(
+                    row_id=str(uuid.uuid4()),
                     category='Grocery',
                     total=DisplayRawField(display='1000.00', raw=1000.0),  # Large value - potential outlier
                     date=DateField(display='January 2024', timestamp=1704067200),
@@ -67,6 +71,7 @@ def test_recalculate_highlights_with_both_algorithms():
                     is_calculated=False
                 ),
                 AggregatedRow(
+                    row_id=str(uuid.uuid4()),
                     category='Utilities',
                     total=DisplayRawField(display='50.00', raw=50.0),
                     date=DateField(display='January 2024', timestamp=1704067200),
@@ -74,6 +79,7 @@ def test_recalculate_highlights_with_both_algorithms():
                     is_calculated=False
                 ),
                 AggregatedRow(
+                    row_id=str(uuid.uuid4()),
                     category='Entertainment',
                     total=DisplayRawField(display='200.00', raw=200.0),
                     date=DateField(display='January 2024', timestamp=1704067200),
@@ -81,6 +87,7 @@ def test_recalculate_highlights_with_both_algorithms():
                     is_calculated=False
                 ),
                 AggregatedRow(
+                    row_id=str(uuid.uuid4()),
                     category='Entertainment',
                     total=DisplayRawField(display='-500.00', raw=-500.0),
                     date=DateField(display='January 2024', timestamp=1704067200),
@@ -124,6 +131,7 @@ def test_highlight_key_format():
         'account1': DataTablesResponse(
             data=[
                 AggregatedRow(
+                    row_id=str(uuid.uuid4()),
                     category='TestCategory',
                     total=DisplayRawField(display='100.00', raw=100.0),
                     date=DateField(display='January 2024', timestamp=1704067200),
@@ -144,7 +152,6 @@ def test_highlight_key_format():
 
     # Check that highlights have the correct format
     for highlight in result.highlights:
-        assert hasattr(highlight, 'row')
-        assert hasattr(highlight, 'column')
+        assert hasattr(highlight, 'row_id')
         assert hasattr(highlight, 'highlight_type')
         assert highlight.highlight_type in ['outlier', 'pareto', 'excluded']

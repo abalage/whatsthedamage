@@ -20,6 +20,7 @@ from whatsthedamage.models.api_models import (
     ErrorResponse,
     ProcessingRequest
 )
+from whatsthedamage.config.dt_models import DataTablesResponse
 from whatsthedamage.services.data_formatting_service import DataFormattingService
 
 
@@ -40,7 +41,7 @@ class ResponseBuilderService:
 
     def build_api_detailed_response(
         self,
-        datatables_response: Any,
+        datatables_response: Dict[str, DataTablesResponse],
         metadata: Dict[str, Any],
         params: ProcessingRequest,
         processing_time: float

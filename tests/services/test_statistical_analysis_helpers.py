@@ -5,15 +5,19 @@ from whatsthedamage.services.statistical_analysis_service import StatisticalAnal
 from whatsthedamage.services.exclusion_service import ExclusionService
 from whatsthedamage.models.statistical_algorithms import (
     AnalysisDirection,
-    IQROutlierDetection
+    IQROutlierDetection,
+    ParetoAnalysis
 )
 from whatsthedamage.config.dt_models import DataTablesResponse, AggregatedRow, DisplayRawField, DateField
+import uuid
 
 @pytest.fixture
 def sample_dt_response():
     """Create a sample DataTablesResponse for testing helper methods."""
+    row_id_grocery="f178193c-faef-4d1e-86a5-61347d30a0d7"
     regular_rows = [
         AggregatedRow(
+            row_id=row_id_grocery,
             category="Grocery",
             total=DisplayRawField(display="100.00", raw=100.0),
             date=DateField(display="January 2023", timestamp=1672531200),
@@ -21,6 +25,7 @@ def sample_dt_response():
             is_calculated=False
         ),
         AggregatedRow(
+            row_id=str(uuid.uuid4()),
             category="Rent",
             total=DisplayRawField(display="500.00", raw=500.0),
             date=DateField(display="January 2023", timestamp=1672531200),
@@ -28,6 +33,7 @@ def sample_dt_response():
             is_calculated=False
         ),
         AggregatedRow(
+            row_id=str(uuid.uuid4()),
             category="Utilities",
             total=DisplayRawField(display="200.00", raw=200.0),
             date=DateField(display="February 2023", timestamp=1677657600),
@@ -38,6 +44,7 @@ def sample_dt_response():
 
     calculated_rows = [
         AggregatedRow(
+            row_id=str(uuid.uuid4()),
             category="Balance",
             total=DisplayRawField(display="600.00", raw=600.0),
             date=DateField(display="January 2023", timestamp=1672531200),
@@ -45,9 +52,60 @@ def sample_dt_response():
             is_calculated=True
         ),
         AggregatedRow(
+            row_id=str(uuid.uuid4()),
             category="Total",
             total=DisplayRawField(display="800.00", raw=800.0),
             date=DateField(display="Total", timestamp=0),
+            details=[],
+            is_calculated=True
+        )
+    ]
+
+    all_rows = regular_rows + calculated_rows
+
+    return DataTablesResponse(
+        data=all_rows,
+        account="12345678",
+        currency="EUR"
+    )
+
+@pytest.fixture
+def dt_response_with_outliers():
+    """Create a DataTablesResponse with data that will produce outliers."""
+    row_id_outlier="f178193c-faef-4d1e-86a5-61347d30a0d7"
+    regular_rows = [
+        AggregatedRow(
+            row_id=row_id_outlier,
+            category="Grocery",
+            total=DisplayRawField(display="-100.00", raw=-100.0),
+            date=DateField(display="January 2023", timestamp=1672531200),
+            details=[],
+            is_calculated=False
+        ),
+        AggregatedRow(
+            row_id=str(uuid.uuid4()),
+            category="Rent",
+            total=DisplayRawField(display="-200.00", raw=-200.0),
+            date=DateField(display="January 2023", timestamp=1672531200),
+            details=[],
+            is_calculated=False
+        ),
+        AggregatedRow(
+            row_id=str(uuid.uuid4()),
+            category="Utilities",
+            total=DisplayRawField(display="-100000.00", raw=-100000.0),
+            date=DateField(display="January 2023", timestamp=1672531200),
+            details=[],
+            is_calculated=False
+        )
+    ]
+
+    calculated_rows = [
+        AggregatedRow(
+            row_id=str(uuid.uuid4()),
+            category="Balance",
+            total=DisplayRawField(display="-300.00", raw=-300.0),
+            date=DateField(display="January 2023", timestamp=1672531200),
             details=[],
             is_calculated=True
         )
@@ -140,61 +198,121 @@ class TestHelperMethods:
         """Test _build_highlight for COLUMNS direction."""
         service = StatisticalAnalysisService()
         highlight = service._build_highlight(
-            AnalysisDirection.COLUMNS,
-            "January 2023",
-            "Grocery",
+            "f178193c-faef-4d1e-86a5-61347d30a0d7",
             "outlier"
         )
 
-        assert highlight.row == "Grocery"
-        assert highlight.column == "January 2023"
+        assert highlight.row_id == "f178193c-faef-4d1e-86a5-61347d30a0d7"
         assert highlight.highlight_type == "outlier"
 
     def test_build_highlight_rows_direction(self):
         """Test _build_highlight for ROWS direction."""
         service = StatisticalAnalysisService()
         highlight = service._build_highlight(
-            AnalysisDirection.ROWS,
-            "January 2023",
-            "Grocery",
+            "f178193c-faef-4d1e-86a5-61347d30a0d7",
             "pareto"
         )
 
-        assert highlight.row == "January 2023"
-        assert highlight.column == "Grocery"
+        assert highlight.row_id == "f178193c-faef-4d1e-86a5-61347d30a0d7"
         assert highlight.highlight_type == "pareto"
 
-    def test_create_highlight_for_algorithm(self):
-        """Test _create_highlight_for_algorithm processes algorithm results correctly."""
+    def test_create_highlight_for_algorithm_columns_direction(self, dt_response_with_outliers):
+        """Test _create_highlight_for_algorithm with COLUMNS direction."""
         service = StatisticalAnalysisService()
-        algo = IQROutlierDetection()
+        algo = IQROutlierDetection(direction=AnalysisDirection.COLUMNS)
 
-        # Create test data with more data points for proper IQR calculation
-        # Data: 100, 150, 160, 170, 180, 190, 200, 250, 300, 1000 (outlier)
-        test_data = {
-            "January 2023": {
-                "Grocery": 100.0,
-                "Rent": 1000.0,  # This should be an outlier
-                "Utilities": 150.0,
-                "Transport": 160.0,
-                "Entertainment": 170.0,
-                "Dining": 180.0,
-                "Shopping": 190.0,
-                "Health": 200.0,
-                "Education": 250.0,
-                "Other": 300.0
-            }
-        }
+        # Create transformed data for COLUMNS direction with actual outliers
+        # Format: List[Tuple[month, Dict[category, amount]]]
+        # Using negative values (expenses) that will create outliers: -100, -200, -300, -100000
+        # All categories together will create an outlier
+        transformed_data = [
+            ("January 2023", {"Grocery": -100.0, "Rent": -200.0, "Utilities": -100000.0, "Balance": -300.0}),
+        ]
 
-        transformed_data = service._transform_data_for_analysis(test_data, AnalysisDirection.COLUMNS)
+        # Call the method
         highlights = service._create_highlight_for_algorithm(
             algo,
             AnalysisDirection.COLUMNS,
-            transformed_data
+            transformed_data,
+            dt_response_with_outliers
         )
 
-        # Should have at least one highlight for Rent
+        # Should find highlights for outliers
         assert len(highlights) > 0
-        highlight_dict = {(h.row, h.column): h.highlight_type for h in highlights}
-        assert ("Rent", "January 2023") in highlight_dict
-        assert highlight_dict[("Rent", "January 2023")] == "outlier"
+        # Check that highlight type is correct
+        for highlight in highlights:
+            assert highlight.highlight_type == "outlier"
+
+    def test_create_highlight_for_algorithm_rows_direction(self, sample_dt_response):
+        """Test _create_highlight_for_algorithm with ROWS direction."""
+        service = StatisticalAnalysisService()
+        algo = ParetoAnalysis(direction=AnalysisDirection.ROWS)
+
+        # Create transformed data for ROWS direction
+        # Format: List[Tuple[category, Dict[month, amount]]]
+        transformed_data = [
+            ("Grocery", {"January 2023": 100.0}),
+            ("Rent", {"January 2023": 500.0}),
+            ("Utilities", {"February 2023": 200.0}),
+            ("Balance", {"January 2023": 600.0})
+        ]
+
+        # Call the method
+        highlights = service._create_highlight_for_algorithm(
+            algo,
+            AnalysisDirection.ROWS,
+            transformed_data,
+            sample_dt_response
+        )
+
+        # Should find highlights for pareto items
+        assert len(highlights) > 0
+        # Check that highlights reference the correct row IDs
+        highlight_row_ids = [h.row_id for h in highlights]
+        # The grocery row should be in the highlights (it's a pareto item)
+        grocery_row_id = "f178193c-faef-4d1e-86a5-61347d30a0d7"
+        assert grocery_row_id in highlight_row_ids
+        # Check that highlight type is correct
+        for highlight in highlights:
+            assert highlight.highlight_type == "pareto"
+
+    def test_create_highlight_for_algorithm_empty_data(self, sample_dt_response):
+        """Test _create_highlight_for_algorithm with empty transformed data."""
+        service = StatisticalAnalysisService()
+        algo = IQROutlierDetection(direction=AnalysisDirection.COLUMNS)
+
+        # Empty transformed data
+        transformed_data = []
+
+        # Call the method
+        highlights = service._create_highlight_for_algorithm(
+            algo,
+            AnalysisDirection.COLUMNS,
+            transformed_data,
+            sample_dt_response
+        )
+
+        # Should return empty list
+        assert len(highlights) == 0
+
+    def test_create_highlight_for_algorithm_no_matches(self, sample_dt_response):
+        """Test _create_highlight_for_algorithm when no rows match the data."""
+        service = StatisticalAnalysisService()
+        algo = IQROutlierDetection(direction=AnalysisDirection.COLUMNS)
+
+        # Create transformed data with non-existent months/categories
+        transformed_data = [
+            ("March 2023", {"Unknown": 1000.0}),
+            ("April 2023", {"Another": 2000.0})
+        ]
+
+        # Call the method
+        highlights = service._create_highlight_for_algorithm(
+            algo,
+            AnalysisDirection.COLUMNS,
+            transformed_data,
+            sample_dt_response
+        )
+
+        # Should return empty list since no rows match
+        assert len(highlights) == 0

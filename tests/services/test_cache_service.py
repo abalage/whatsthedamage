@@ -5,6 +5,7 @@ from whatsthedamage.services.cache_service import CacheService, CacheProtocol
 from whatsthedamage.config.dt_models import CachedProcessingResult, DataTablesResponse, StatisticalMetadata, AggregatedRow, CellHighlight, DisplayRawField, DateField, DetailRow
 from typing import Dict, Optional
 import time
+import uuid
 
 class MockCacheBackend:
     """Mock cache backend implementing CacheProtocol for testing."""
@@ -76,14 +77,15 @@ class TestCacheService:
     @pytest.fixture
     def sample_cached_result(self):
         """Fixture for sample cached processing result."""
+        row_id_sample=str(uuid.uuid4())
         return CachedProcessingResult(
             responses={
                 "account1": DataTablesResponse(
                     data=[
                         AggregatedRow(
+                            row_id=row_id_sample,
                             category="Grocery",
                             total=DisplayRawField(display="100.00", raw=100.0),
-                            month=DateField(display="Jan 2023", timestamp=1672531200),
                             date=DateField(display="Jan 2023", timestamp=1672531200),
                             details=[],
                             is_calculated=False
@@ -95,7 +97,7 @@ class TestCacheService:
                 )
             },
             metadata=StatisticalMetadata(highlights=[
-                CellHighlight(row="Grocery", column="2023-01", highlight_type="outlier")
+                CellHighlight(row_id=row_id_sample, highlight_type="outlier")
             ])
         )
 
@@ -220,6 +222,7 @@ class TestCacheServiceIntegration:
         # Create realistic test data
         detail_rows = [
             DetailRow(
+                row_id=str(uuid.uuid4()),
                 date=DateField(display="2023-01-01", timestamp=1672531200),
                 amount=DisplayRawField(display="50.00", raw=50.0),
                 merchant="Grocery Store",
@@ -228,19 +231,20 @@ class TestCacheServiceIntegration:
             )
         ]
 
+        row_id_utiilities=str(uuid.uuid4())
         aggregated_rows = [
             AggregatedRow(
+                row_id=str(uuid.uuid4()),
                 category="Grocery",
                 total=DisplayRawField(display="100.00", raw=100.0),
-                month=DateField(display="Jan 2023", timestamp=1672531200),
                 date=DateField(display="Jan 2023", timestamp=1672531200),
                 details=detail_rows,
                 is_calculated=False
             ),
             AggregatedRow(
+                row_id=str(uuid.uuid4()),
                 category="Utilities",
                 total=DisplayRawField(display="150.00", raw=150.0),
-                month=DateField(display="Jan 2023", timestamp=1672531200),
                 date=DateField(display="Jan 2023", timestamp=1672531200),
                 details=[],
                 is_calculated=False
@@ -252,14 +256,14 @@ class TestCacheServiceIntegration:
             account="checking",
             currency="USD",
             statistical_metadata=StatisticalMetadata(highlights=[
-                CellHighlight(row="Utilities", column="2023-01", highlight_type="outlier")
+                CellHighlight(row_id=row_id_utiilities, highlight_type="outlier")
             ])
         )
 
         cached_result = CachedProcessingResult(
             responses={"checking": dt_response},
             metadata=StatisticalMetadata(highlights=[
-                CellHighlight(row="Utilities", column="2023-01", highlight_type="outlier")
+                CellHighlight(row_id=row_id_utiilities, highlight_type="outlier")
             ])
         )
 
@@ -281,9 +285,9 @@ class TestCacheServiceIntegration:
         # Create responses for multiple accounts
         account1_response = DataTablesResponse(
             data=[AggregatedRow(
+                row_id=str(uuid.uuid4()),
                 category="Grocery",
                 total=DisplayRawField(display="100.00", raw=100.0),
-                month=DateField(display="Jan 2023", timestamp=1672531200),
                 date=DateField(display="Jan 2023", timestamp=1672531200),
                 details=[],
                 is_calculated=False
@@ -294,9 +298,9 @@ class TestCacheServiceIntegration:
 
         account2_response = DataTablesResponse(
             data=[AggregatedRow(
+                row_id=str(uuid.uuid4()),
                 category="Rent",
                 total=DisplayRawField(display="1000.00", raw=1000.0),
-                month=DateField(display="Jan 2023", timestamp=1672531200),
                 date=DateField(display="Jan 2023", timestamp=1672531200),
                 details=[],
                 is_calculated=False

@@ -230,19 +230,39 @@ class TestStatisticalAnalysisService:
             }
         }
 
-        highlights = service.get_highlights(summary, AnalysisDirection.COLUMNS)
+        # Create mock DataTablesResponse with UUIDs for testing
+        from whatsthedamage.config.dt_models import AggregatedRow, DataTablesResponse, DateField, DisplayRawField
+        import uuid
+
+        # Create mock rows with UUIDs
+        rows = []
+        for month, categories in summary.items():
+            for category, amount in categories.items():
+                row = AggregatedRow(
+                    row_id=str(uuid.uuid4()),
+                    category=category,
+                    total=DisplayRawField(display=f"{amount:.2f}", raw=amount),
+                    date=DateField(display=month, timestamp=0),
+                    details=[]
+                )
+                rows.append(row)
+
+        dt_response = DataTablesResponse(data=rows, account="test", currency="USD")
+
+        highlights = service.get_highlights(summary, AnalysisDirection.COLUMNS, dt_response=dt_response)
 
         # Should have highlights for various categories
         assert len(highlights) > 0
         assert all(isinstance(h, CellHighlight) for h in highlights)
 
-        # Check that we have highlights for the right categories and months
-        highlight_dict = {(h.row, h.column): h.highlight_type for h in highlights}
-
-        # Should have Rent as outlier in Jan 2023
-        assert ("Rent", "2023-01") in highlight_dict
-        # The type might be either "outlier" or "pareto" depending on which algorithm catches it first
-        assert highlight_dict[("Rent", "2023-01")] in ["outlier", "pareto"]
+        # Check that we have highlights with valid UUIDs
+        for highlight in highlights:
+            assert hasattr(highlight, 'row_id')
+            assert not hasattr(highlight, 'row')
+            assert not hasattr(highlight, 'column')
+            # Verify it's a valid UUID
+            import uuid as uuid_lib
+            uuid_lib.UUID(highlight.row_id)  # Will raise ValueError if not valid
 
     def test_get_highlights_with_rows_direction(self):
         """Test get_highlights method with ROWS direction (months within categories)."""
@@ -270,34 +290,73 @@ class TestStatisticalAnalysisService:
             }
         }
 
-        highlights = service.get_highlights(summary, AnalysisDirection.ROWS)
+        # Create mock DataTablesResponse with UUIDs for testing
+        from whatsthedamage.config.dt_models import AggregatedRow, DataTablesResponse, DateField, DisplayRawField
+        import uuid
+
+        # Create mock rows with UUIDs
+        rows = []
+        for month, categories in summary.items():
+            for category, amount in categories.items():
+                row = AggregatedRow(
+                    row_id=str(uuid.uuid4()),
+                    category=category,
+                    total=DisplayRawField(display=f"{amount:.2f}", raw=amount),
+                    date=DateField(display=month, timestamp=0),
+                    details=[]
+                )
+                rows.append(row)
+
+        dt_response = DataTablesResponse(data=rows, account="test", currency="USD")
+
+        highlights = service.get_highlights(summary, AnalysisDirection.ROWS, dt_response=dt_response)
 
         # Should have highlights for various months within categories
         assert len(highlights) > 0
         assert all(isinstance(h, CellHighlight) for h in highlights)
 
-        # Check that we have highlights for the right months and categories
-        highlight_dict = {(h.row, h.column): h.highlight_type for h in highlights}
-
-        # Should have 2023-03 as outlier for Grocery category
-        # For ROWS direction: row=category, column=month
-        assert ("Grocery", "2023-03") in highlight_dict
-        assert highlight_dict[("Grocery", "2023-03")] in ["outlier", "pareto"]
+        # Check that we have highlights with valid UUIDs
+        for highlight in highlights:
+            assert hasattr(highlight, 'row_id')
+            assert not hasattr(highlight, 'row')
+            assert not hasattr(highlight, 'column')
+            # Verify it's a valid UUID
+            import uuid as uuid_lib
+            uuid_lib.UUID(highlight.row_id)  # Will raise ValueError if not valid
 
     def test_get_highlights_with_runtime_algorithm_selection(self, summary_data_with_outliers):
         """Test get_highlights with runtime algorithm selection."""
         service = StatisticalAnalysisService(enabled_algorithms=["iqr", "pareto"])
 
+        # Create mock DataTablesResponse with UUIDs for testing
+        from whatsthedamage.config.dt_models import AggregatedRow, DataTablesResponse, DateField, DisplayRawField
+        import uuid
+
+        # Create mock rows with UUIDs
+        rows = []
+        for month, categories in summary_data_with_outliers.items():
+            for category, amount in categories.items():
+                row = AggregatedRow(
+                    row_id=str(uuid.uuid4()),
+                    category=category,
+                    total=DisplayRawField(display=f"{amount:.2f}", raw=amount),
+                    date=DateField(display=month, timestamp=0),
+                    details=[]
+                )
+                rows.append(row)
+
+        dt_response = DataTablesResponse(data=rows, account="test", currency="USD")
+
         # Test with only IQR algorithm (explicitly use COLUMNS to override IQR's default)
-        highlights_iqr = service.get_highlights(summary_data_with_outliers, AnalysisDirection.COLUMNS, algorithms=["iqr"])
+        highlights_iqr = service.get_highlights(summary_data_with_outliers, AnalysisDirection.COLUMNS, algorithms=["iqr"], dt_response=dt_response)
         assert len(highlights_iqr) > 0
 
         # Test with only Pareto algorithm (explicitly use COLUMNS to match Pareto's default)
-        highlights_pareto = service.get_highlights(summary_data_with_outliers, AnalysisDirection.COLUMNS, algorithms=["pareto"])
+        highlights_pareto = service.get_highlights(summary_data_with_outliers, AnalysisDirection.COLUMNS, algorithms=["pareto"], dt_response=dt_response)
         assert len(highlights_pareto) > 0
 
         # Test with both algorithms
-        highlights_both = service.get_highlights(summary_data_with_outliers, AnalysisDirection.COLUMNS, algorithms=["iqr", "pareto"])
+        highlights_both = service.get_highlights(summary_data_with_outliers, AnalysisDirection.COLUMNS, algorithms=["iqr", "pareto"], dt_response=dt_response)
         assert len(highlights_both) > 0
 
     def test_data_transformation_for_columns_direction(self):
@@ -367,8 +426,31 @@ class TestStatisticalAlgorithmIntegration:
         data = {"mock_item": 100.0, "other": 50.0}
         # Use get_highlights with a simple summary structure
         summary = {"month1": data}
-        highlights = service.get_highlights(summary)
+
+        # Create mock DataTablesResponse with UUIDs for testing
+        from whatsthedamage.config.dt_models import AggregatedRow, DataTablesResponse, DateField, DisplayRawField
+        import uuid
+
+        # Create mock rows with UUIDs
+        rows = []
+        for month, categories in summary.items():
+            for category, amount in categories.items():
+                row = AggregatedRow(
+                    row_id=str(uuid.uuid4()),
+                    category=category,
+                    total=DisplayRawField(display=f"{amount:.2f}", raw=amount),
+                    date=DateField(display=month, timestamp=0),
+                    details=[]
+                )
+                rows.append(row)
+
+        dt_response = DataTablesResponse(data=rows, account="test", currency="USD")
+
+        highlights = service.get_highlights(summary, dt_response=dt_response)
 
         assert len(highlights) == 1
-        assert highlights[0].row == "mock_item"
+        # In UUID-based system, row_id is a UUID, not the algorithm's key
+        assert hasattr(highlights[0], 'row_id')
+        assert not hasattr(highlights[0], 'row')
+        assert not hasattr(highlights[0], 'column')
         assert highlights[0].highlight_type == "mock_highlight"

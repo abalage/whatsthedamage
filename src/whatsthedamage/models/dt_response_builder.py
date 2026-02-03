@@ -2,6 +2,7 @@ from typing import List, Dict, Callable, Optional
 from whatsthedamage.models.csv_row import CsvRow
 from whatsthedamage.config.dt_models import DisplayRawField, DateField, DetailRow, AggregatedRow, DataTablesResponse
 from whatsthedamage.utils.date_converter import DateConverter
+import uuid
 
 
 # Type alias for row calculator callables
@@ -118,6 +119,7 @@ class DataTablesResponseBuilder:
 
             details.append(
                 DetailRow(
+                    row_id=str(uuid.uuid4()),
                     date=date_field,
                     amount=amount_field,
                     merchant=merchant,
@@ -156,6 +158,7 @@ class DataTablesResponseBuilder:
         total_field = DisplayRawField(display=total_display, raw=total_amount)
 
         return AggregatedRow(
+            row_id=str(uuid.uuid4()),
             category=category,
             total=total_field,
             date=date_field,

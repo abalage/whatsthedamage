@@ -7,7 +7,7 @@ import pytest
 from whatsthedamage.services.response_builder_service import ResponseBuilderService
 from whatsthedamage.models.api_models import ProcessingRequest, DetailedResponse
 from whatsthedamage.config.dt_models import AggregatedRow, DisplayRawField, DateField, DataTablesResponse
-
+import uuid
 
 @pytest.fixture
 def service():
@@ -22,8 +22,8 @@ class TestApiResponseBuilding:
         """Test building detailed response with transaction data."""
         agg_rows = [
             AggregatedRow(
+                row_id=str(uuid.uuid4()),
                 category="grocery",
-                month=DateField(display="2024-01", timestamp=1704067200),
                 date=DateField(display="2024-01", timestamp=1704067200),
                 total=DisplayRawField(display="150.50 HUF", raw=150.50),
                 details=[]

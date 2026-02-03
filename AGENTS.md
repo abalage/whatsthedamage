@@ -72,9 +72,9 @@ make web  # Flask development server
 ### Common Commands
 ```bash
 source .venv/bin/activate         # Activate virtual env
-make ruff                         # Python linting
-make mypy                         # Type checking
-make test                         # Run backend tests
+ruff check --fix src tests        # Python linting from virtual env
+mypy src                          # Type checking from virtual env
+pytest                            # Run backend tests from virtual env
 make frontend ARG=test            # Run frontend tests
 make docs                         # Generate documentation
 make lang                         # Extract translatable texts
@@ -116,9 +116,7 @@ make lang                         # Extract translatable texts
 - **Coverage**: Write tests for all new features/bug fixes
 - **Quality**: Ensure tests cover edge cases and error handling
 - **Documentation**: Include docstrings explaining test cases
-
-## Boundaries
-- NEVER change the original code to make it easier to test, instead, write tests that cover the original code as it is
+- The tests should cover what is implemented without being backward compatible with cases the tests currently cover.
 
 ## Documentation
 

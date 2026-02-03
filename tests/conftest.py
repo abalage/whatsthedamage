@@ -78,7 +78,7 @@ def mock_processing_service_result():
         for category, amount in data.items():
             agg_rows.append(
                 AggregatedRow(
-                    month=DateField(display="Total", timestamp=0),
+                    row_id=str(uuid.uuid4()),  # Add required row_id field
                     date=DateField(display="Total", timestamp=0),
                     category=category,
                     total=DisplayRawField(display=f"{amount:.2f} USD", raw=amount),

@@ -8,6 +8,7 @@ from io import BytesIO
 from typing import Dict, List, Any, Optional
 from unittest.mock import Mock
 import uuid
+from whatsthedamage.models.dt_models import ProcessingResponse
 
 class MockProcessingService:
     """Mock ProcessingService for testing with simplified result builders."""
@@ -16,7 +17,7 @@ class MockProcessingService:
         self.process_with_details = Mock()
 
     @staticmethod
-    def create_detailed_result(rows: Optional[List[Dict]] = None, row_count: int = 0) -> Dict[str, Any]:
+    def create_detailed_result(rows: Optional[List[Dict]] = None, row_count: int = 0) -> 'ProcessingResponse':
         """Create a detailed result structure for v2 API.
 
         Args:
@@ -24,11 +25,18 @@ class MockProcessingService:
             row_count: Number of rows processed
 
         Returns:
-            Result dict matching ProcessingService.process_with_details output
-            Note: Now returns a dict of account_id -> DataTablesResponse
+            ProcessingResponse object matching ProcessingService.process_with_details output
         """
-        from whatsthedamage.models.dt_models import DataTablesResponse, AggregatedRow, DisplayRawField, DateField, DetailRow
-        
+        from whatsthedamage.models.dt_models import (
+            DataTablesResponse,
+            AggregatedRow,
+            DisplayRawField,
+            DateField,
+            DetailRow,
+            ProcessingResponse,
+            StatisticalMetadata
+        )
+
         if rows is None:
             rows = []
 
@@ -46,7 +54,7 @@ class MockProcessingService:
                     currency=detail_dict['currency'],
                     account=detail_dict['account']
                 ))
-            
+
             aggregated_rows.append(AggregatedRow(
                 row_id=str(uuid.uuid4()),
                 category=row_dict['category'],
@@ -60,12 +68,17 @@ class MockProcessingService:
             data=aggregated_rows,
             currency="USD"
         )
-        
-        # Return dict of account_id -> response (multi-account structure)
-        return {
-            'data': {"": dt_response},  # Empty string for default/single account
-            'metadata': {'row_count': row_count}
-        }
+
+        # Create StatisticalMetadata with empty highlights
+        statistical_metadata = StatisticalMetadata(highlights=[])
+
+        # Return ProcessingResponse object
+        return ProcessingResponse(
+            result_id=str(uuid.uuid4()),
+            data={"": dt_response},  # Empty string for default/single account
+            metadata={'row_count': row_count},  # Simplified metadata
+            statistical_metadata=statistical_metadata
+        )
 
     @staticmethod
     def create_detail_row(category: str, total: float, merchant: str = 'Test Merchant') -> Dict[str, Any]:

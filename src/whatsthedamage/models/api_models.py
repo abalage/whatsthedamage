@@ -9,10 +9,6 @@ the REST API endpoints.
 from pydantic import BaseModel, Field, model_validator
 from typing import Optional, Dict, List, Union
 from whatsthedamage.config.config import CsvConfig
-from whatsthedamage.models.dt_models import (
-    AggregatedRow
-)
-from whatsthedamage.services.validation_service import ValidationService
 
 
 class ProcessingRequest(BaseModel):
@@ -62,6 +58,7 @@ class ProcessingRequest(BaseModel):
         date_format = self.date_format or CsvConfig().date_attribute_format
 
         # Use ValidationService for validation
+        from whatsthedamage.services.validation_service import ValidationService
         validation_service = ValidationService()
 
         # Validate start_date format
@@ -84,9 +81,8 @@ class ProcessingRequest(BaseModel):
         return self
 
 
-# FIXME rename this to ProcessMetadata
-class DetailedMetadata(BaseModel):
-    """Metadata for detailed response."""
+class ProcessingMetadata(BaseModel):
+    """Metadata for processing response."""
     row_count: int = Field(description="Number of rows processed")
     processing_time: float = Field(description="Processing time in seconds")
     ml_enabled: bool = Field(description="Whether ML categorization was used")
@@ -94,48 +90,6 @@ class DetailedMetadata(BaseModel):
         default=None,
         description="Date range filter applied (start and end dates)"
     )
-
-
-class DetailedResponse(BaseModel):
-    """Response model for v2 API (includes transaction details).
-
-    Returns transaction-level details grouped by category and month.
-    """
-    data: List[AggregatedRow] = Field(
-        description="List of aggregated rows with transaction details"
-    )
-    metadata: DetailedMetadata = Field(
-        description="Processing metadata"
-    )
-
-    class Config:
-        from_attributes = True
-        json_schema_extra = {
-            "example": {
-                "data": [
-                    {
-                        "category": "grocery",
-                        "total": {"display": "-45,000.00 HUF", "raw": -45000.00},
-                        "month": {"display": "January 2024", "timestamp": 1704067200},
-                        "details": [
-                            {
-                                "date": {"display": "2024-01-15", "timestamp": 1705276800},
-                                "amount": {"display": "-12,500.00", "raw": -12500.00},
-                                "merchant": "TESCO",
-                                "currency": "HUF"
-                            }
-                        ]
-                    }
-                ],
-                "metadata": {
-                    "result_id": "550e8400-e29b-41d4-a716-446655440000",
-                    "row_count": 1,
-                    "processing_time": 0.23,
-                    "ml_enabled": False
-                }
-            }
-        }
-
 
 class ErrorResponse(BaseModel):
     """Standardized error response for all API endpoints.

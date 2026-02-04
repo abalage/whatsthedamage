@@ -1,16 +1,14 @@
-from typing import List, Dict, Callable, Optional
+from typing import List, Dict, Callable, Optional, Any
 from whatsthedamage.models.csv_row import CsvRow
 from whatsthedamage.models.dt_models import DisplayRawField, DateField, DetailRow, AggregatedRow, DataTablesResponse
 from whatsthedamage.utils.date_converter import DateConverter
 import uuid
-
 
 # Type alias for row calculator callables
 # Calculators receive the builder instance and return a list of AggregatedRow objects.
 # They are invoked sequentially after all category data has been added, and can access
 # previously calculated rows from earlier calculators.
 RowCalculator = Callable[["DataTablesResponseBuilder"], List[AggregatedRow]]
-
 
 class DataTablesResponseBuilder:
     """
@@ -20,7 +18,15 @@ class DataTablesResponseBuilder:
     structures, providing a clear API for incrementally building the response.
     """
 
-    def __init__(self, date_format: str, calculators: Optional[List[RowCalculator]] = None) -> None:
+    def __init__(
+        self,
+        date_format: str,
+        calculators: Optional[List[RowCalculator]] = None,
+        account: str = "",
+        currency: str = "",
+        metadata: Optional[Any] = None,
+        statistical_metadata: Optional[Any] = None
+    ) -> None:
         """
         Initializes the DataTablesResponseBuilder.
 
@@ -31,6 +37,11 @@ class DataTablesResponseBuilder:
                 a list of AggregatedRow objects. Calculators are invoked sequentially during build()
                 after all category data has been added. Later calculators can access rows created by
                 earlier calculators. Defaults to [create_balance_rows, create_total_spendings].
+            row_count (Optional[int]): Total number of rows processed.
+            account (str): Account identifier.
+            currency (str): Currency code.
+            metadata (Optional[Any]): Optional detailed metadata.
+            statistical_metadata (Optional[Any]): Optional statistical metadata.
         """
         from whatsthedamage.models.dt_calculators import create_balance_rows, create_total_spendings
 
@@ -38,6 +49,10 @@ class DataTablesResponseBuilder:
         self._aggregated_rows: List[AggregatedRow] = []
         self._month_totals: Dict[int, tuple[DateField, float]] = {}
         self._calculators = calculators if calculators is not None else [create_balance_rows, create_total_spendings]
+        self._account = account
+        self._currency = currency
+        self._metadata = metadata
+        self._statistical_metadata = statistical_metadata
 
     def add_category_data(
         self,
@@ -87,7 +102,12 @@ class DataTablesResponseBuilder:
             calculated_rows = calculator(self)
             self._aggregated_rows.extend(calculated_rows)
 
-        return DataTablesResponse(data=self._aggregated_rows)
+        return DataTablesResponse(
+            data=self._aggregated_rows,
+            account=self._account,
+            currency=self._currency,
+            metadata=self._metadata
+        )
 
     def _build_detail_rows(self, rows: List[CsvRow]) -> List[DetailRow]:
         """

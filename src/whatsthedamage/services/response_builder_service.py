@@ -15,12 +15,11 @@ from typing import Dict, Any, Optional, List, Union, TYPE_CHECKING
 if TYPE_CHECKING:
     from flask import Response
 from whatsthedamage.models.api_models import (
-    DetailedResponse,
-    DetailedMetadata,
+    ProcessingMetadata,
     ErrorResponse,
     ProcessingRequest
 )
-from whatsthedamage.models.dt_models import DataTablesResponse
+from whatsthedamage.models.dt_models import DataTablesResponse, DetailedResponse
 from whatsthedamage.services.data_formatting_service import DataFormattingService
 
 
@@ -74,7 +73,7 @@ class ResponseBuilderService:
 
         return DetailedResponse(
             data=aggregated_rows,  # List[AggregatedRow] from all accounts
-            metadata=DetailedMetadata(
+            metadata=ProcessingMetadata(
                 row_count=metadata['row_count'],
                 processing_time=processing_time,
                 ml_enabled=params.ml_enabled,

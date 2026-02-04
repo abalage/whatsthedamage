@@ -13,7 +13,7 @@ from whatsthedamage.services.data_formatting_service import DataFormattingServic
 from whatsthedamage.services.file_upload_service import FileUploadService, FileUploadError
 from whatsthedamage.services.cache_service import CacheService
 from whatsthedamage.services.statistical_analysis_service import StatisticalAnalysisService
-from whatsthedamage.config.dt_models import CachedProcessingResult, DataTablesResponse, StatisticalMetadata, AggregatedRow
+from whatsthedamage.models.dt_models import CachedProcessingResult, DataTablesResponse, AggregatedRow
 from whatsthedamage.utils.flask_locale import get_default_language
 from whatsthedamage.models.statistical_algorithms import AnalysisDirection
 from typing import Dict, Callable, Optional, cast, Tuple, List, Any
@@ -241,9 +241,9 @@ def process_details_and_build_response(
     )
 
     # Extract Dict[str, DataTablesResponse] from result
-    dt_responses_by_account = result['data']
-    result_id = result['result_id']
-    statistical_metadata = result.get('statistical_metadata') or StatisticalMetadata(highlights=[])
+    dt_responses_by_account = result.data
+    result_id = result.result_id
+    statistical_metadata = result.statistical_metadata
 
     # Cache result at controller layer (separation of concerns)
     # Business logic (ProcessingService) doesn't know about caching
@@ -256,7 +256,10 @@ def process_details_and_build_response(
 
     # Prepare accounts data for template rendering
     formatting_service = _get_data_formatting_service()
-    accounts_data = formatting_service.prepare_accounts_for_template(dt_responses_by_account)
+    accounts_data = formatting_service.prepare_accounts_for_template(
+        dt_responses_by_account,
+        statistical_metadata
+    )
 
     # Pass the prepared data to template for multi-account rendering
     clear_upload_folder_fn()
@@ -264,7 +267,7 @@ def process_details_and_build_response(
         template='results.html',
         accounts_data=accounts_data,
         result_id=result_id,
-        timing=result.get('timing')
+        timing=result.metadata.processing_time
     )
 
 def handle_recalculate_statistics_request(

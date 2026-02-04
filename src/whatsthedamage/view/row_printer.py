@@ -1,5 +1,5 @@
 from typing import Dict, List
-from whatsthedamage.config.dt_models import DataTablesResponse, DetailRow
+from whatsthedamage.models.dt_models import DataTablesResponse, DetailRow
 import json
 import sys
 

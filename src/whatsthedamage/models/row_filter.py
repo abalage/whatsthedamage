@@ -1,6 +1,6 @@
 from whatsthedamage.utils.date_converter import DateConverter
 from whatsthedamage.models.csv_row import CsvRow
-from whatsthedamage.config.dt_models import DateField
+from whatsthedamage.models.dt_models import DateField
 from whatsthedamage.config.config import AppContext
 from typing import List, Dict, Tuple
 

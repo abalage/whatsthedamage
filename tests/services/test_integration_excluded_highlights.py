@@ -8,7 +8,7 @@ import pytest
 from whatsthedamage.services.statistical_analysis_service import StatisticalAnalysisService
 from whatsthedamage.services.exclusion_service import ExclusionService
 from whatsthedamage.services.data_formatting_service import DataFormattingService
-from whatsthedamage.config.dt_models import DataTablesResponse, AggregatedRow, DisplayRawField, DateField, DetailRow
+from whatsthedamage.models.dt_models import DataTablesResponse, AggregatedRow, DisplayRawField, DateField, DetailRow
 import uuid
 
 @pytest.fixture
@@ -134,16 +134,13 @@ def test_end_to_end_excluded_highlights_pipeline(complete_dt_response):
     assert metadata is not None
     assert len(metadata.highlights) > 0
 
-    # Step 4: Attach metadata to the DataTablesResponse
-    complete_dt_response.statistical_metadata = metadata
-
     # Step 5: Create data formatting service
     formatting_service = DataFormattingService(statistical_analysis_service=statistical_service)
 
     # Step 6: Prepare data for template
     template_data = formatting_service.prepare_accounts_for_template({
         "account1": complete_dt_response
-    })
+    }, metadata)
 
     # Verify template data structure
     assert "accounts" in template_data
@@ -197,13 +194,11 @@ def test_template_highlight_application():
         "account1": dt_response
     })
 
-    # Attach metadata to the DataTablesResponse
-    dt_response.statistical_metadata = metadata
-
     # Prepare template data
-    template_data = formatting_service.prepare_accounts_for_template({
-        "account1": dt_response
-    })
+    template_data = formatting_service.prepare_accounts_for_template(
+        {"account1": dt_response},
+        metadata
+    )
 
     # Verify the calculated row is marked as excluded
     account_data = template_data["accounts"][0]

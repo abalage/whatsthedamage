@@ -3,7 +3,7 @@ from whatsthedamage.models.csv_row import CsvRow
 from whatsthedamage.models.csv_file_handler import CsvFileHandler
 from whatsthedamage.models.rows_processor import RowsProcessor
 from whatsthedamage.config.config import AppContext
-from whatsthedamage.config.dt_models import DataTablesResponse
+from whatsthedamage.models.dt_models import DataTablesResponse
 
 
 class CSVProcessor:

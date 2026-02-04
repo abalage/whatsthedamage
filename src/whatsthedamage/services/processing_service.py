@@ -6,15 +6,15 @@ isolating them from file I/O and configuration details.
 
 Controllers are responsible for saving uploaded files to disk and passing file paths.
 """
-from typing import Dict, Any, Optional
+from typing import Dict, Optional
 import time
 import uuid
 from whatsthedamage.config.config import AppArgs, AppContext
 from whatsthedamage.models.csv_processor import CSVProcessor
 from whatsthedamage.services.configuration_service import ConfigurationService, ConfigLoadResult
 from whatsthedamage.services.statistical_analysis_service import StatisticalAnalysisService
-from whatsthedamage.models.dt_models import StatisticalMetadata, DataTablesResponse
-
+from whatsthedamage.models.dt_models import StatisticalMetadata, DataTablesResponse, ProcessingResponse
+from whatsthedamage.models.api_models import ProcessingMetadata
 
 class ProcessingService:
     """Service for processing CSV transaction files.
@@ -54,7 +54,7 @@ class ProcessingService:
         language: str = 'en',
         verbose: bool = False,
         training_data: bool = False
-    ) -> Dict[str, Any]:
+    ) -> ProcessingResponse:
         """Process CSV file and return detailed transaction data.
 
         This method processes a CSV file and returns detailed transaction-level
@@ -72,7 +72,7 @@ class ProcessingService:
             training_data: Print training data JSON to stderr
 
         Returns:
-            dict: Contains 'data' (Dict[str, DataTablesResponse]), 'metadata' (processing info)
+            ProcessingResponse: Contains processed data, metadata, and statistical analysis results
         """
         start_time = time.time()
 
@@ -104,36 +104,32 @@ class ProcessingService:
         # Compute statistical metadata
         statistical_metadata = self._compute_statistical_metadata(datatables_responses)
 
-        # Attach statistical metadata to each DataTablesResponse for easy access by consumers
-        # Check if datatables_responses is a dict (not a mock in tests)
-        if isinstance(datatables_responses, dict):
-            for account_id, dt_response in datatables_responses.items():
-                dt_response.statistical_metadata = statistical_metadata
-
         # Build response with metadata
         processing_time = time.time() - start_time
 
         # Get row count from cached rows to avoid re-reading CSV
         row_count = len(processor._rows)
 
-        # Generate result_id for caching purposes (controller will handle actual caching)
-        result_id = str(uuid.uuid4())
+        # Build date_range dictionary if dates are provided
+        date_range = None
+        if start_date or end_date:
+            date_range = {}
+            if start_date:
+                date_range["start"] = start_date
+            if end_date:
+                date_range["end"] = end_date
 
-        return {
-            "data": datatables_responses,
-            "metadata": {
-                "processing_time": round(processing_time, 2),
-                "row_count": row_count,
-                "ml_enabled": ml_enabled,
-                "filters_applied": {
-                    "start_date": start_date,
-                    "end_date": end_date,
-                    "category": category_filter
-                }
-            },
-            "result_id": result_id,
-            "statistical_metadata": statistical_metadata
-        }
+        return ProcessingResponse(
+            result_id=str(uuid.uuid4()),
+            data=datatables_responses,
+            metadata=ProcessingMetadata(
+                processing_time=round(processing_time, 2),
+                row_count=row_count,
+                ml_enabled=ml_enabled,
+                date_range=date_range
+            ),
+            statistical_metadata=statistical_metadata
+        )
 
     def _build_args(
         self,
@@ -178,11 +174,11 @@ class ProcessingService:
             ml=ml_enabled
         )
 
-    def _compute_statistical_metadata(self, datatables_responses: Dict[str, Any]) -> StatisticalMetadata:
+    def _compute_statistical_metadata(self, datatables_responses: Dict[str, DataTablesResponse]) -> StatisticalMetadata:
         """Compute statistical metadata including highlights for the given responses.
 
         Args:
-            datatables_responses: Dictionary of table responses
+            datatables_responses: Dictionary mapping account IDs to DataTablesResponse objects
 
         Returns:
             StatisticalMetadata with highlights

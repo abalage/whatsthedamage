@@ -388,7 +388,7 @@ class StatisticalAnalysisService:
         """Compute statistical metadata including highlights for the given responses.
 
         Args:
-            datatables_responses: Dictionary of table responses
+            datatables_responses: Dictionary mapping account IDs to DataTablesResponse objects
             algorithms: Optional list of algorithm names to use (if None, use enabled_algorithms)
             direction: Optional analysis direction (if None, use default behavior)
             use_default_directions: If True, use each algorithm's default direction

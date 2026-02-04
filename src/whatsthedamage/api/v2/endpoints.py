@@ -8,6 +8,7 @@ import time
 
 from whatsthedamage.services.processing_service import ProcessingService
 from whatsthedamage.services.response_builder_service import ResponseBuilderService
+from whatsthedamage.models.dt_models import ProcessingResponse
 from whatsthedamage.api.helpers import (
     validate_csv_file,
     get_config_file,
@@ -67,7 +68,7 @@ def process_transactions() -> tuple[Response, int]:
         csv_path, config_path = save_uploaded_files(csv_file, config_file)
 
         try:
-            result = _get_processing_service().process_with_details(
+            result: ProcessingResponse = _get_processing_service().process_with_details(
                 csv_file_path=csv_path,
                 config_file_path=config_path,
                 start_date=params.start_date,
@@ -79,8 +80,8 @@ def process_transactions() -> tuple[Response, int]:
 
             processing_time = time.time() - start_time
             response = _get_response_builder_service().build_api_detailed_response(
-                datatables_response=result['data'],
-                metadata=result['metadata'],
+                datatables_response=result.data,
+                metadata=result.metadata,
                 params=params,
                 processing_time=processing_time
             )

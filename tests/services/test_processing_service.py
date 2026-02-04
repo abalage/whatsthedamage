@@ -7,6 +7,7 @@ and provides business logic for Controllers (CLI, Web, API).
 import pytest
 from unittest.mock import Mock, patch
 from whatsthedamage.services.processing_service import ProcessingService
+from whatsthedamage.models.dt_models import ProcessingResponse
 
 
 @pytest.fixture
@@ -62,11 +63,12 @@ class TestProcessingService:
         result = service.process_with_details(csv_file_path='/path/to/file.csv')
 
         # Verify structure
-        assert 'data' in result
-        assert 'metadata' in result
-        assert result['metadata']['row_count'] == 2
-        assert result['metadata']['ml_enabled'] is False
-        assert 'processing_time' in result['metadata']
+        assert isinstance(result, ProcessingResponse)
+        assert 'data' in result.__dict__
+        assert 'metadata' in result.__dict__
+        assert result.metadata.row_count == 2
+        assert result.metadata.ml_enabled is False
+        assert hasattr(result.metadata, 'processing_time')
 
         # Verify method calls
         mock_dependencies['processor'].process.assert_called_once()
@@ -86,10 +88,16 @@ class TestProcessingService:
             category_filter=category
         )
 
-        assert result['metadata']['ml_enabled'] == ml
-        assert result['metadata']['filters_applied']['start_date'] == start_date
-        assert result['metadata']['filters_applied']['end_date'] == end_date
-        assert result['metadata']['filters_applied']['category'] == category
+        assert result.metadata.ml_enabled == ml
+        # Check date_range instead of filters_applied
+        if start_date or end_date:
+            assert result.metadata.date_range is not None
+            if start_date:
+                assert result.metadata.date_range['start'] == start_date
+            if end_date:
+                assert result.metadata.date_range['end'] == end_date
+        else:
+            assert result.metadata.date_range is None
 
     def test_process_with_details_empty_data(self, service, mock_dependencies):
         """Test process_with_details with empty CSV."""
@@ -98,7 +106,7 @@ class TestProcessingService:
 
         result = service.process_with_details(csv_file_path='/path/to/file.csv')
 
-        assert result['metadata']['row_count'] == 0
+        assert result.metadata.row_count == 0
 
     @pytest.mark.parametrize('config_input,expected', [
         (None, ''),

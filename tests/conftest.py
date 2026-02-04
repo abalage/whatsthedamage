@@ -4,6 +4,8 @@ from whatsthedamage.models.csv_row import CsvRow
 from whatsthedamage.config.config import AppConfig, CsvConfig, AppContext
 from whatsthedamage.config.config import AppArgs
 from whatsthedamage.config.config import EnricherPatternSets
+from whatsthedamage.models.dt_models import ProcessingResponse
+from whatsthedamage.models.api_models import ProcessingMetadata
 
 # Import API fixtures from separate module
 pytest_plugins = ['tests.api_fixtures']
@@ -66,7 +68,7 @@ class MockCSVProcessor:
 @pytest.fixture
 def mock_processing_service_result():
     """Factory fixture for creating mock ProcessingService results with DataTablesResponse."""
-    from whatsthedamage.config.dt_models import DataTablesResponse, AggregatedRow, DisplayRawField, DateField, StatisticalMetadata
+    from whatsthedamage.models.dt_models import DataTablesResponse, AggregatedRow, DisplayRawField, DateField, StatisticalMetadata
     import uuid
 
     def _create_result(data=None):
@@ -92,14 +94,19 @@ def mock_processing_service_result():
         dt_response = DataTablesResponse(
             data=agg_rows,
             currency="USD",
-            statistical_metadata=statistical_metadata
         )
 
-        return {
-            'data': {'default_account': dt_response},
-            'metadata': {},
-            'result_id': str(uuid.uuid4()),
-        }
+        return ProcessingResponse(
+            data= {'default_account': dt_response},
+            metadata=ProcessingMetadata(
+                row_count=1,
+                processing_time=5,
+                ml_enabled=True,
+                date_range=None
+            ),
+            result_id=str(uuid.uuid4()),
+            statistical_metadata=statistical_metadata,
+        )
     return _create_result
 
 

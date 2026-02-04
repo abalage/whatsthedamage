@@ -2,11 +2,11 @@
 import os
 import gettext
 import importlib.resources as resources
-from typing import Dict, Any
+from typing import Dict
 from whatsthedamage.controllers.cli_controller import CLIController
 from whatsthedamage.services.service_factory import create_service_container, ServiceContainer
 from whatsthedamage.config.config import AppArgs
-from whatsthedamage.config.dt_models import DataTablesResponse
+from whatsthedamage.models.dt_models import DataTablesResponse, ProcessingResponse
 
 
 def set_locale(locale_str: str | None) -> None:
@@ -71,7 +71,7 @@ def main() -> None:
 
     # Process using service layer
     try:
-        result: Dict[str, Any] = container.processing_service.process_with_details(
+        result: ProcessingResponse = container.processing_service.process_with_details(
             csv_file_path=args.filename,
             config_file_path=args.config,
             start_date=args.start_date,
@@ -84,10 +84,10 @@ def main() -> None:
         )
 
         # Extract DataTablesResponse per account
-        dt_responses: Dict[str, DataTablesResponse] = result['data']
+        dt_responses: Dict[str, DataTablesResponse] = result.data
 
         # Format all accounts using service (handles multi-account iteration)
-        output = format_output(dt_responses, args, container)  # type: ignore[arg-type]
+        output = format_output(dt_responses, args, container)
         print(output)
 
     except FileNotFoundError as e:

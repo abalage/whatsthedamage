@@ -8,7 +8,7 @@ from whatsthedamage.models.statistical_algorithms import (
     StatisticalAlgorithm,
     AnalysisDirection
 )
-from whatsthedamage.config.dt_models import CellHighlight
+from whatsthedamage.models.dt_models import CellHighlight
 from typing import Dict
 
 @pytest.fixture
@@ -214,7 +214,7 @@ class TestStatisticalAnalysisService:
         service = StatisticalAnalysisService(enabled_algorithms=["iqr", "pareto"])
 
         # Create test summary data with more data points for proper IQR calculation
-        from whatsthedamage.config.dt_models import SummaryData
+        from whatsthedamage.models.dt_models import SummaryData
 
         summary = SummaryData(
             summary={
@@ -237,7 +237,7 @@ class TestStatisticalAnalysisService:
         )
 
         # Create mock DataTablesResponse with UUIDs for testing
-        from whatsthedamage.config.dt_models import AggregatedRow, DataTablesResponse, DateField, DisplayRawField
+        from whatsthedamage.models.dt_models import AggregatedRow, DataTablesResponse, DateField, DisplayRawField
         import uuid
 
         # Create mock rows with UUIDs
@@ -275,7 +275,7 @@ class TestStatisticalAnalysisService:
         service = StatisticalAnalysisService(enabled_algorithms=["iqr", "pareto"])
 
         # Create test summary data
-        from whatsthedamage.config.dt_models import SummaryData
+        from whatsthedamage.models.dt_models import SummaryData
 
         summary = SummaryData(
             summary={
@@ -303,7 +303,7 @@ class TestStatisticalAnalysisService:
         )
 
         # Create mock DataTablesResponse with UUIDs for testing
-        from whatsthedamage.config.dt_models import AggregatedRow, DataTablesResponse, DateField, DisplayRawField
+        from whatsthedamage.models.dt_models import AggregatedRow, DataTablesResponse, DateField, DisplayRawField
         import uuid
 
         # Create mock rows with UUIDs
@@ -341,7 +341,7 @@ class TestStatisticalAnalysisService:
         service = StatisticalAnalysisService(enabled_algorithms=["iqr", "pareto"])
 
         # Wrap summary data in SummaryData object
-        from whatsthedamage.config.dt_models import SummaryData
+        from whatsthedamage.models.dt_models import SummaryData
 
         summary = SummaryData(
             summary=summary_data_with_outliers,
@@ -350,7 +350,7 @@ class TestStatisticalAnalysisService:
         )
 
         # Create mock DataTablesResponse with UUIDs for testing
-        from whatsthedamage.config.dt_models import AggregatedRow, DataTablesResponse, DateField, DisplayRawField
+        from whatsthedamage.models.dt_models import AggregatedRow, DataTablesResponse, DateField, DisplayRawField
         import uuid
 
         # Create mock rows with UUIDs
@@ -384,7 +384,7 @@ class TestStatisticalAnalysisService:
         """Test data transformation for COLUMNS direction."""
         service = StatisticalAnalysisService()
 
-        from whatsthedamage.config.dt_models import SummaryData
+        from whatsthedamage.models.dt_models import SummaryData
 
         summary = SummaryData(
             summary={
@@ -404,7 +404,7 @@ class TestStatisticalAnalysisService:
         """Test data transformation for ROWS direction."""
         service = StatisticalAnalysisService()
 
-        from whatsthedamage.config.dt_models import SummaryData
+        from whatsthedamage.models.dt_models import SummaryData
 
         summary = SummaryData(
             summary={
@@ -424,7 +424,7 @@ class TestStatisticalAnalysisService:
     def test_get_highlights_with_empty_summary(self):
         """Test get_highlights with empty summary."""
         service = StatisticalAnalysisService()
-        from whatsthedamage.config.dt_models import SummaryData
+        from whatsthedamage.models.dt_models import SummaryData
         summary = SummaryData(summary={}, currency="USD", account_id="test")
         highlights = service.get_highlights(summary)
         assert highlights == []
@@ -432,7 +432,7 @@ class TestStatisticalAnalysisService:
     def test_get_highlights_with_no_highlights(self):
         """Test get_highlights when no highlights are detected."""
         service = StatisticalAnalysisService(enabled_algorithms=["iqr"])
-        from whatsthedamage.config.dt_models import SummaryData
+        from whatsthedamage.models.dt_models import SummaryData
         summary = SummaryData(
             summary={
                 "2023-01": {
@@ -465,7 +465,7 @@ class TestStatisticalAlgorithmIntegration:
         service.enabled_algorithms = ["mock"]
         data = {"mock_item": 100.0, "other": 50.0}
         # Use get_highlights with a simple summary structure
-        from whatsthedamage.config.dt_models import SummaryData
+        from whatsthedamage.models.dt_models import SummaryData
         summary = SummaryData(
             summary={"month1": data},
             currency="USD",
@@ -473,7 +473,7 @@ class TestStatisticalAlgorithmIntegration:
         )
 
         # Create mock DataTablesResponse with UUIDs for testing
-        from whatsthedamage.config.dt_models import AggregatedRow, DataTablesResponse, DateField, DisplayRawField
+        from whatsthedamage.models.dt_models import AggregatedRow, DataTablesResponse, DateField, DisplayRawField
         import uuid
 
         # Create mock rows with UUIDs

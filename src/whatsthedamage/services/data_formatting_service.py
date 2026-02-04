@@ -14,7 +14,7 @@ Architecture Patterns:
 import pandas as pd
 import json
 from typing import Dict, Optional, Any
-from whatsthedamage.config.dt_models import DataTablesResponse, StatisticalMetadata, SummaryData
+from whatsthedamage.models.dt_models import DataTablesResponse, StatisticalMetadata, SummaryData
 from gettext import gettext as _
 from whatsthedamage.services.statistical_analysis_service import StatisticalAnalysisService
 
@@ -448,7 +448,8 @@ class DataFormattingService:
 
     def prepare_accounts_for_template(
         self,
-        dt_responses: Dict[str, DataTablesResponse]
+        dt_responses: Dict[str, DataTablesResponse],
+        statistical_metadata: StatisticalMetadata
     ) -> Dict[str, Any]:
         """Prepare accounts data for Jinja2 template rendering.
 
@@ -457,6 +458,7 @@ class DataFormattingService:
         the underlying DataTablesResponse for detailed rendering.
 
         :param dt_responses: Dict mapping account_id to DataTablesResponse
+        :param statistical_metadata: StatisticalMetadata containing highlights for all accounts
         :return: Dict with 'accounts' list and 'has_multiple_accounts' flag
         """
         accounts = []
@@ -470,10 +472,7 @@ class DataFormattingService:
                 for i in range(0, len(account_id), 8)
             )
 
-            # Use cached statistical metadata (attached by ProcessingService)
-            statistical_metadata = dt_response.statistical_metadata
-            if statistical_metadata is None:
-                raise ValueError("Statistical metadata not found. This should be attached by ProcessingService.")
+            # Use the provided statistical metadata
             highlights = self._convert_metadata_to_highlights_dict(statistical_metadata)
 
             accounts.append({

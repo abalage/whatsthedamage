@@ -1,7 +1,7 @@
 """Test cases for the new statistical analysis controls feature."""
 
 from whatsthedamage.services.statistical_analysis_service import StatisticalAnalysisService, AnalysisDirection
-from whatsthedamage.config.dt_models import DataTablesResponse, AggregatedRow, DisplayRawField, DateField, StatisticalMetadata
+from whatsthedamage.models.dt_models import DataTablesResponse, AggregatedRow, DisplayRawField, DateField, StatisticalMetadata
 import uuid
 
 def test_recalculate_highlights_method():

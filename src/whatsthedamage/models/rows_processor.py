@@ -1,6 +1,6 @@
 from typing import Optional, Dict, List, Union, Tuple
 from whatsthedamage.config.config import AppContext, EnricherPatternSets
-from whatsthedamage.config.dt_models import DataTablesResponse, DateField
+from whatsthedamage.models.dt_models import DataTablesResponse, DateField
 from whatsthedamage.models.csv_row import CsvRow
 from whatsthedamage.models.row_enrichment import RowEnrichment
 from whatsthedamage.models.row_enrichment_ml import RowEnrichmentML
@@ -78,8 +78,12 @@ class RowsProcessor:
             # Filter rows by date or month for this account
             filtered_sets = self._filter_rows(account_rows)
 
-            # Initialize the builder with date format
-            builder = DataTablesResponseBuilder(self._date_attribute_format)
+            # Initialize the builder with all necessary fields
+            builder = DataTablesResponseBuilder(
+                date_format=self._date_attribute_format,
+                account=account_id,
+                currency=account_rows[0].currency if account_rows else ""
+            )
 
             # Process each month/date range for this account
             for month_field, set_rows in filtered_sets:
@@ -104,11 +108,6 @@ class RowsProcessor:
 
             # Build and store the final response for this account
             account_response = builder.build()
-
-            # Store account identifier and currency in the response
-            account_response.account = account_id
-            account_response.currency = account_rows[0].currency if account_rows else ""
-
             responses_by_account[account_id] = account_response
 
         # Store first account's response

@@ -13,7 +13,7 @@ from whatsthedamage.services.data_formatting_service import DataFormattingServic
 from whatsthedamage.services.file_upload_service import FileUploadService, FileUploadError
 from whatsthedamage.services.cache_service import CacheService
 from whatsthedamage.services.statistical_analysis_service import StatisticalAnalysisService
-from whatsthedamage.models.dt_models import CachedProcessingResult, DataTablesResponse, AggregatedRow
+from whatsthedamage.models.dt_models import ProcessingResponse, DataTablesResponse, AggregatedRow
 from whatsthedamage.utils.flask_locale import get_default_language
 from whatsthedamage.models.statistical_algorithms import AnalysisDirection
 from typing import Dict, Callable, Optional, cast, Tuple, List, Any
@@ -123,7 +123,7 @@ def get_cached_data_for_drilldown(
         if not cached:
             return None, 'Result not found or expired.'
 
-        dt_response = cached.responses.get(account)
+        dt_response = cached.data.get(account)
         if not dt_response:
             return None, f'Account "{account}" not found.'
 
@@ -248,11 +248,7 @@ def process_details_and_build_response(
     # Cache result at controller layer (separation of concerns)
     # Business logic (ProcessingService) doesn't know about caching
     cache_service = _get_cache_service()
-    cached_result = CachedProcessingResult(
-        responses=dt_responses_by_account,
-        metadata=statistical_metadata
-    )
-    cache_service.set(result_id, cached_result)
+    cache_service.set(result_id, result)
 
     # Prepare accounts data for template rendering
     formatting_service = _get_data_formatting_service()
@@ -308,23 +304,25 @@ def handle_recalculate_statistics_request(
 
         # Recalculate highlights using statistical analysis service
         stat_service = _get_statistical_analysis_service()
-        new_metadata = stat_service.compute_statistical_metadata(
-            cached.responses,
+        new_statistical_metadata = stat_service.compute_statistical_metadata(
+            cached.data,
             algorithms=algorithms,
             direction=AnalysisDirection(direction),
             use_default_directions=use_default_directions
         )
 
         # Update cache with new metadata
-        updated_cached = CachedProcessingResult(
-            responses=cached.responses,
-            metadata=new_metadata
+        updated_cached = ProcessingResponse(
+            result_id=cached.result_id,
+            data=cached.data,
+            metadata=cached.metadata,
+            statistical_metadata=new_statistical_metadata
         )
         cache_service.set(result_id, updated_cached)
 
         # Convert highlights to dictionary format for easier frontend processing
         highlights_dict = {}
-        for highlight in new_metadata.highlights:
+        for highlight in new_statistical_metadata.highlights:
             highlights_dict[highlight.row_id] = highlight.highlight_type
 
         return {

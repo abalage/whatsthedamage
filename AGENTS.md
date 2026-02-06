@@ -10,6 +10,7 @@ This document enables AI coding agents to be immediately productive in the `what
 - Ask questions if unsure about implementation details or design choices
 - Answer in the same language as the question
 - Use English for generated content (code, comments, documentation)
+- Do not create summary Markdown files unless it is explicitly asked for.
 
 ### Project Overview
 - **Monolithic layout**: Backend and frontend in the same repository

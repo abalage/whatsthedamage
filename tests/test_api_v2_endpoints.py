@@ -33,7 +33,7 @@ class TestAPIv2Process:
         assert 'display' in first_row['total']
         assert 'raw' in first_row['total']
 
-    def test_process_with_config_file(self, api_test_helper, mock_processing_service, sample_csv_file, config_yml_default_path):
+    def test_process_with_config_file(self, api_test_helper, mock_processing_service, sample_csv_file):
         """Test processing with both CSV and config file."""
         # Create a minimal config file for testing
         import tempfile

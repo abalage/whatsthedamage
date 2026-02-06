@@ -10,7 +10,7 @@ from whatsthedamage.controllers.routes_helpers import (
     handle_drilldown_request
 )
 from whatsthedamage.models.dt_models import (
-    CachedProcessingResult, DataTablesResponse, AggregatedRow,
+    ProcessingResponse, DataTablesResponse, AggregatedRow,
     DisplayRawField, DateField, StatisticalMetadata
 )
 from whatsthedamage.services.cache_service import CacheService
@@ -109,8 +109,9 @@ def mock_cache_service():
 def sample_cached_result():
     """Create sample cached processing result."""
     import uuid
-    return CachedProcessingResult(
-        responses={
+    return ProcessingResponse(
+        result_id="test-result-id",
+        data={
             "checking": DataTablesResponse(
                 data=[
                     AggregatedRow(
@@ -140,10 +141,11 @@ def sample_cached_result():
                 ],
                 account="checking",
                 currency="USD",
-                statistical_metadata=StatisticalMetadata(highlights=[])
+                metadata=None
             )
         },
-        metadata=StatisticalMetadata(highlights=[])
+        metadata=None,
+        statistical_metadata=StatisticalMetadata(highlights=[])
     )
 
 @pytest.fixture

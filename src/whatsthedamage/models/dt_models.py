@@ -165,12 +165,6 @@ class SummaryData:
         )
 
 @dataclass
-class CachedProcessingResult:
-    """Cached processing result dataclass."""
-    responses: Dict[str, DataTablesResponse]
-    metadata: StatisticalMetadata
-
-@dataclass
 class ProcessingResponse:
     """Complete response from CSV processing including data and metadata.
 

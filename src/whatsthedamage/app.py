@@ -20,8 +20,7 @@ from whatsthedamage.services.cache_service import CacheService
 from whatsthedamage.services.statistical_analysis_service import StatisticalAnalysisService
 from whatsthedamage.services.session_service import SessionService
 from whatsthedamage.services.exclusion_service import ExclusionService
-from whatsthedamage.models.dt_models import CachedProcessingResult
-
+from whatsthedamage.models.dt_models import ProcessingResponse
 
 class FlaskCacheAdapter:
     """Adapter to make Flask-Caching work with CacheProtocol.
@@ -33,19 +32,18 @@ class FlaskCacheAdapter:
     def __init__(self, flask_cache: Cache):
         self._flask_cache = flask_cache
 
-    def set(self, key: str, value: CachedProcessingResult, timeout: int) -> None:
+    def set(self, key: str, value: ProcessingResponse, timeout: int) -> None:
         """Store value in Flask cache."""
         self._flask_cache.set(key, value, timeout=timeout)
 
-    def get(self, key: str) -> Optional[CachedProcessingResult]:
+    def get(self, key: str) -> Optional[ProcessingResponse]:
         """Retrieve value from Flask cache."""
-        result: Optional[CachedProcessingResult] = self._flask_cache.get(key)
+        result: Optional[ProcessingResponse] = self._flask_cache.get(key)
         return result
 
     def delete(self, key: str) -> None:
         """Remove value from Flask cache."""
         self._flask_cache.delete(key)
-
 
 def create_app(
     config_class: Optional[FlaskAppConfig] = None,
@@ -173,7 +171,6 @@ def create_app(
     register_error_handlers(app)
 
     return app
-
 
 # Create the app instance for Gunicorn
 app = create_app()

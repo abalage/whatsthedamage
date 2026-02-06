@@ -241,21 +241,17 @@ class StatisticalAnalysisService:
         """
         excluded_highlights: List[CellHighlight] = []
 
-        # Extract summary from original data (including calculated rows and excluded categories)
-        full_summary = self._extract_summary_from_response(dt_response)
+        # Iterate through all rows directly instead of extracting summary
+        for agg_row in dt_response.data:
+            month_display = agg_row.date.display
+            category = agg_row.category
 
-        for month_display, categories in full_summary.summary.items():
-            for category, amount in categories.items():
-                # Check if this cell should be excluded
-                if self._is_cell_excluded(month_display, category, dt_response):
-                    # Find the row UUID for this cell
-                    for agg_row in dt_response.data:
-                        if agg_row.category == category and agg_row.date.display == month_display:
-                            excluded_highlights.append(CellHighlight(
-                                row_id=agg_row.row_id,
-                                highlight_type='excluded'
-                            ))
-                            break
+            # Check if this cell should be excluded
+            if self._is_cell_excluded(month_display, category, dt_response):
+                excluded_highlights.append(CellHighlight(
+                    row_id=agg_row.row_id,
+                    highlight_type='excluded'
+                ))
 
         return excluded_highlights
 

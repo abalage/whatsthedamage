@@ -272,9 +272,10 @@ class DataFormattingService:
         selected_account_id = self._select_account(dt_responses, account_id)
 
         # Extract summary for selected account
-        summary_data: SummaryData = self._extract_summary_from_account(
-            dt_responses[selected_account_id],
-            selected_account_id
+        summary_data: SummaryData = SummaryData.from_datatable_response(
+            dt_response=dt_responses[selected_account_id],
+            account_id=selected_account_id,
+            include_calculated=False
         )
 
         return self.format_as_html_table(
@@ -303,9 +304,10 @@ class DataFormattingService:
         selected_account_id = self._select_account(dt_responses, account_id)
 
         # Extract summary for selected account
-        summary_data: SummaryData = self._extract_summary_from_account(
-            dt_responses[selected_account_id],
-            selected_account_id
+        summary_data: SummaryData = SummaryData.from_datatable_response(
+            dt_response=dt_responses[selected_account_id],
+            account_id=selected_account_id,
+            include_calculated=False
         )
 
         return self.format_as_csv(
@@ -334,9 +336,10 @@ class DataFormattingService:
         selected_account_id = self._select_account(dt_responses, account_id)
 
         # Extract summary for selected account
-        summary_data: SummaryData = self._extract_summary_from_account(
-            dt_responses[selected_account_id],
-            selected_account_id
+        summary_data: SummaryData = SummaryData.from_datatable_response(
+            dt_response=dt_responses[selected_account_id],
+            account_id=selected_account_id,
+            include_calculated=False
         )
 
         return self.format_as_string(
@@ -370,9 +373,10 @@ class DataFormattingService:
         selected_account_id = self._select_account(dt_responses, account_id)
 
         # Extract summary for selected account
-        summary_data: SummaryData = self._extract_summary_from_account(
-            dt_responses[selected_account_id],
-            selected_account_id
+        summary_data: SummaryData = SummaryData.from_datatable_response(
+            dt_response=dt_responses[selected_account_id],
+            account_id=selected_account_id,
+            include_calculated=False
         )
 
         return self.format_for_output(
@@ -527,68 +531,3 @@ class DataFormattingService:
 
         return account_id
 
-    def _extract_summary_from_account(
-        self,
-        dt_response: DataTablesResponse,
-        account_id: str,
-        include_calculated: bool = False
-    ) -> SummaryData:
-        """Extract summary data from a single account's DataTablesResponse.
-
-        This method extracts and caches summary data from a DataTablesResponse for
-        a single account. Results are cached by account_id to avoid repeated extraction.
-
-        :param dt_response: DataTablesResponse for a single account
-        :param account_id: Account identifier for caching
-        :param include_calculated: Whether to include calculated rows in summary (for statistical analysis)
-        :return: SummaryData with extracted summary, currency, and account_id
-
-        Example::
-
-            >>> dt_response = DataTablesResponse(...)
-            >>> summary_data = service._extract_summary_from_account(dt_response, '12345')
-            >>> assert summary_data.account_id == '12345'
-            >>> assert summary_data.currency == 'EUR'
-        """
-        # Aggregate by canonical timestamp first. This keeps year information
-        # unambiguous and simplifies merging category totals.
-        # period_map: timestamp -> { 'display': str (column header), 'categories': {category: amount} }
-        period_map: Dict[int, Dict[str, Any]] = {}
-
-        for agg_row in dt_response.data:
-            # Skip calculated rows if requested (for statistical analysis)
-            if not include_calculated and getattr(agg_row, 'is_calculated', False):
-                continue
-
-            period_field = agg_row.date
-
-            ts = period_field.timestamp
-            display = period_field.display
-
-            if ts not in period_map:
-                period_map[ts] = {'display': display, 'categories': {}}
-
-            cats = period_map[ts]['categories']
-            cats[agg_row.category] = cats.get(agg_row.category, 0.0) + float(agg_row.total.raw)
-
-        # If multiple timestamps share the same display (e.g., 'January' across different years),
-        # append the timestamp to disambiguate. This creates unique column headers like
-        # 'January (1704067200)'. Otherwise use the human-readable display as the column header.
-        display_counts: Dict[str, int] = {}
-        for v in period_map.values():
-            display_counts[v['display']] = display_counts.get(v['display'], 0) + 1
-
-        summary = {}
-        # Iterate periods in descending timestamp order (most recent first)
-        for ts in sorted(period_map.keys(), reverse=True):
-            display = period_map[ts]['display']
-            column_header = display if display_counts.get(display, 0) == 1 else f"{display} ({ts})"
-            summary[column_header] = period_map[ts]['categories']
-
-        summary_data = SummaryData(
-            summary=summary,
-            currency=dt_response.currency,
-            account_id=account_id
-        )
-
-        return summary_data

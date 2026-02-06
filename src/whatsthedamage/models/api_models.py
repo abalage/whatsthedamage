@@ -6,7 +6,7 @@ and serialization. Web UI forms use FlaskForm, and file uploads use Flask's
 request.files. These models provide type safety and automatic validation for
 the REST API endpoints.
 """
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, model_validator, ConfigDict
 from typing import Optional, Dict, List, Union
 from whatsthedamage.config.config import CsvConfig
 
@@ -110,8 +110,8 @@ class ErrorResponse(BaseModel):
         description="Additional error context and debugging information"
     )
 
-    class Config:
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "code": 422,
                 "message": "CSV processing failed",
@@ -121,3 +121,4 @@ class ErrorResponse(BaseModel):
                 }
             }
         }
+    )

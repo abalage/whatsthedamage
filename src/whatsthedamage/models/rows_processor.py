@@ -34,7 +34,6 @@ class RowsProcessor:
         self._filter: Optional[str] = context.args.filter
         self._training_data: bool = context.args.training_data
         self._ml: bool = context.args.ml
-        self._dt_json_data: DataTablesResponse = DataTablesResponse(data=[])
 
         # Convert start and end dates to epoch if provided
         if self._start_date:
@@ -109,11 +108,6 @@ class RowsProcessor:
             # Build and store the final response for this account
             account_response = builder.build()
             responses_by_account[account_id] = account_response
-
-        # Store first account's response
-        if responses_by_account:
-            first_account = next(iter(responses_by_account.keys()))
-            self._dt_json_data = responses_by_account[first_account]
 
         # Print verbose/training_data output if flags are set
         if self._verbose:

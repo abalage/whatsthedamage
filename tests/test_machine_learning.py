@@ -38,7 +38,7 @@ def train_obj_not_enough_data(tmp_path):
     ]
     config = MLConfig()
     config.feature_columns = ["type", "partner", "currency", "amount"]
-    with mock.patch.object(TrainingData, "__init__", lambda self, p, config: None), \
+    with mock.patch.object(TrainingData, "__init__", lambda self, training_data_path, config: None), \
          mock.patch.object(TrainingData, "get_training_data", return_value=pd.DataFrame(data)):
         yield lambda: Train("dummy_path", config)
 
@@ -60,7 +60,7 @@ def train_obj_enough_data(tmp_path):
     ]
     config = MLConfig()
     config.feature_columns = ["type", "partner", "currency", "amount"]
-    with mock.patch.object(TrainingData, "__init__", lambda self, p, config: None), \
+    with mock.patch.object(TrainingData, "__init__", lambda self, training_data_path, config: None), \
          mock.patch.object(TrainingData, "get_training_data", return_value=pd.DataFrame(data)):
         yield Train("dummy_path", config)
 
@@ -162,7 +162,7 @@ def test_mlconfig_custom():
 
 
 def test_trainingdata_valid(valid_json):
-    path, data = valid_json
+    path, _ = valid_json
     config = MLConfig()
     config.feature_columns = ["type", "partner", "currency", "amount"]
     td = TrainingData(path, config)

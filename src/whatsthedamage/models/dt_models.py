@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from typing import List, Any, Dict, Optional
 from dataclasses import dataclass
 from whatsthedamage.models.api_models import ProcessingMetadata
@@ -53,9 +53,9 @@ class DetailedResponse(BaseModel):
         description="Processing metadata"
     )
 
-    class Config:
-        from_attributes = True
-        json_schema_extra = {
+    model_config = ConfigDict(
+        from_attributes=True,
+        json_schema_extra={
             "example": {
                 "data": [
                     {
@@ -80,6 +80,7 @@ class DetailedResponse(BaseModel):
                 }
             }
         }
+    )
 
 @dataclass(frozen=True)
 class SummaryData:

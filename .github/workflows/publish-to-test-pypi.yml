@@ -1,20 +1,20 @@
-name: Build test and publish Python 🐍 distribution 📦 to PyPI
+name: Build test and publish Python distribution to PyPI
 
 on: push
 
 jobs:
   build:
-    name: Build distribution 📦
+    name: Build distribution
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
       with:
         persist-credentials: false
     - name: Set up Python
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@v6
       with:
-        python-version: "3.11"
+        python-version: "3.13"
     - name: Install pypa/build
       run: >-
         python3 -m
@@ -35,28 +35,40 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.11", "3.12"]    
+        python-version: ["3.12", "3.13"]
+
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
       with:
         persist-credentials: false
+        lfs: true
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v3
+      uses: actions/setup-python@v6
       with:
         python-version: ${{ matrix.python-version }}
+        cache: "pip"
     - name: Install dependencies
       run: |
-        python -m pip install --upgrade pip
-        python -m pip install tox ruff pytest pytest-sugar mypy
-        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+        pip install tox
     - name: Lint with ruff
       run: |
-        # stop the build if there are Python syntax errors or undefined names
-        ruff check .
-        # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
+        tox -e lint
+    - name: Type checks with mypy
+      run: |
+        tox -e type
     - name: Test with tox
       run: |
-        tox
+        tox -e py
+    - name: Setup Node.js
+      uses: actions/setup-node@v6
+      with:
+        node-version: '24.x'
+    - name: Run frontend tests
+      working-directory: src/whatsthedamage/view/frontend
+      run: |
+        npm ci
+        npm run build --if-present
+        npm test
 
   publish-to-pypi:
     name: >-
@@ -74,7 +86,7 @@ jobs:
 
     steps:
     - name: Download all the dists
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v5
       with:
         name: python-package-distributions
         path: dist/
@@ -83,7 +95,7 @@ jobs:
 
   github-release:
     name: >-
-      Sign the Python 🐍 distribution 📦 with Sigstore
+      Sign the Python distribution with Sigstore
       and upload them to GitHub Release
     needs:
     - publish-to-pypi
@@ -95,12 +107,12 @@ jobs:
 
     steps:
     - name: Download all the dists
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v5
       with:
         name: python-package-distributions
         path: dist/
     - name: Sign the dists with Sigstore
-      uses: sigstore/gh-action-sigstore-python@v3.0.0
+      uses: sigstore/gh-action-sigstore-python@v3.2.0
       with:
         inputs: >-
           ./dist/*.tar.gz
@@ -125,7 +137,7 @@ jobs:
         --repo "$GITHUB_REPOSITORY"
 
   # publish-to-testpypi:
-  #   name: Publish Python 🐍 distribution 📦 to TestPyPI
+  #   name: Publish Python distribution to TestPyPI
   #   needs:
   #   - build
   #   - test
@@ -140,11 +152,11 @@ jobs:
 
   #   steps:
   #   - name: Download all the dists
-  #     uses: actions/download-artifact@v4
+  #     uses: actions/download-artifact@v5
   #     with:
   #       name: python-package-distributions
   #       path: dist/
-  #   - name: Publish distribution 📦 to TestPyPI
+  #   - name: Publish distribution to TestPyPI
   #     uses: pypa/gh-action-pypi-publish@release/v1
   #     with:
   #       repository-url: https://test.pypi.org/legacy/

@@ -47,7 +47,7 @@ def test_index_route(client):
     assert b'<form' in response.data
 
 
-def test_process_route(client, monkeypatch, csv_rows, mapping, config_yml_default_path, mock_processing_service_result):
+def test_process_route(client, monkeypatch, csv_rows, mapping, mock_processing_service_result):
     def mock_process_with_details(**kwargs):
         return mock_processing_service_result({'balance': 100.0})
 
@@ -114,7 +114,7 @@ def test_clear_upload_folder(client):
         assert not os.path.exists(test_file_path)
 
 
-def test_process_route_invalid_data(client, monkeypatch, config_yml_default_path, mock_processing_service_result):
+def test_process_route_invalid_data(client, monkeypatch, mock_processing_service_result):
     def mock_process_with_details(**kwargs):
         return mock_processing_service_result()
 
@@ -139,7 +139,7 @@ def test_process_route_invalid_data(client, monkeypatch, config_yml_default_path
     assert response.status_code == 302  # Expecting a redirect due to validation failure
 
 
-def test_process_route_missing_file(client, monkeypatch, config_yml_default_path, mock_processing_service_result):
+def test_process_route_missing_file(client, monkeypatch, mock_processing_service_result):
     def mock_process_with_details(**kwargs):
         return mock_processing_service_result()
 
@@ -189,7 +189,7 @@ def test_process_route_missing_config(client, monkeypatch, csv_rows, mapping, mo
     os.remove(sample_csv_path)
 
 
-def test_process_route_invalid_end_date(client, monkeypatch, csv_rows, mapping, config_yml_default_path, mock_processing_service_result):
+def test_process_route_invalid_end_date(client, monkeypatch, csv_rows, mapping, mock_processing_service_result):
     def mock_process_with_details(**kwargs):
         return mock_processing_service_result()
 
@@ -220,7 +220,7 @@ def test_process_route_invalid_end_date(client, monkeypatch, csv_rows, mapping, 
     os.remove(sample_csv_path)
 
 
-def test_process_route_invalid_date(client, monkeypatch, csv_rows, mapping, config_yml_default_path, mock_processing_service_result):
+def test_process_route_invalid_date(client, monkeypatch, csv_rows, mapping, mock_processing_service_result):
     def mock_process_with_details(**kwargs):
         return mock_processing_service_result()
 

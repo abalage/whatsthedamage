@@ -47,6 +47,7 @@ dev = [
     "tox==4.25.0",
     "types-python-dateutil==2.9.0.20250822",
     "types-PyYAML==6.0.2",
+    "vulture==2.14"
 ]
 web = [
     "Flask-Caching==2.3.1",
@@ -90,3 +91,9 @@ line-length = 119
 
 [tool.ruff.lint.mccabe]
 max-complexity = 10
+
+[tool.vulture]
+min_confidence = 80
+paths = ["src", "tests"]
+sort_by_size = true
+verbose = false

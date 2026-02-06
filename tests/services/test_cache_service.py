@@ -2,7 +2,7 @@
 
 import pytest
 from whatsthedamage.services.cache_service import CacheService, CacheProtocol
-from whatsthedamage.models.dt_models import CachedProcessingResult, DataTablesResponse, StatisticalMetadata, AggregatedRow, CellHighlight, DisplayRawField, DateField, DetailRow
+from whatsthedamage.models.dt_models import ProcessingResponse, DataTablesResponse, StatisticalMetadata, AggregatedRow, CellHighlight, DisplayRawField, DateField, DetailRow
 from typing import Dict, Optional
 import time
 import uuid
@@ -11,14 +11,14 @@ class MockCacheBackend:
     """Mock cache backend implementing CacheProtocol for testing."""
 
     def __init__(self):
-        self._store: Dict[str, CachedProcessingResult] = {}
+        self._store: Dict[str, ProcessingResponse] = {}
         self._expiry_times: Dict[str, float] = {}
 
-    def set(self, key: str, value: CachedProcessingResult, timeout: int) -> None:
+    def set(self, key: str, value: ProcessingResponse, timeout: int) -> None:
         self._store[key] = value
         self._expiry_times[key] = time.time() + timeout
 
-    def get(self, key: str) -> Optional[CachedProcessingResult]:
+    def get(self, key: str) -> Optional[ProcessingResponse]:
         if key not in self._store:
             return None
 
@@ -46,9 +46,11 @@ class TestCacheProtocol:
         cache = MockCacheBackend()
 
         # Test data
-        test_result = CachedProcessingResult(
-            responses={},
-            metadata=StatisticalMetadata(highlights=[])
+        test_result = ProcessingResponse(
+            result_id="test-id",
+            data={},
+            metadata=None,
+            statistical_metadata=StatisticalMetadata(highlights=[])
         )
 
         # Test set and get
@@ -78,8 +80,9 @@ class TestCacheService:
     def sample_cached_result(self):
         """Fixture for sample cached processing result."""
         row_id_sample=str(uuid.uuid4())
-        return CachedProcessingResult(
-            responses={
+        return ProcessingResponse(
+            result_id="test-result-id",
+            data={
                 "account1": DataTablesResponse(
                     data=[
                         AggregatedRow(
@@ -93,10 +96,11 @@ class TestCacheService:
                     ],
                     account="account1",
                     currency="USD",
-                    statistical_metadata=StatisticalMetadata(highlights=[])
+                    metadata=None
                 )
             },
-            metadata=StatisticalMetadata(highlights=[
+            metadata=None,
+            statistical_metadata=StatisticalMetadata(highlights=[
                 CellHighlight(row_id=row_id_sample, highlight_type="outlier")
             ])
         )
@@ -115,7 +119,7 @@ class TestCacheService:
         retrieved = cache_service.get("test_result_id")
         assert retrieved is not None
         assert retrieved == sample_cached_result
-        assert retrieved.responses["account1"].account == "account1"
+        assert retrieved.data["account1"].account == "account1"
 
     def test_cache_service_get_nonexistent(self, cache_service):
         """Test getting non-existent cache entry."""
@@ -142,7 +146,12 @@ class TestCacheService:
         short_ttl_service = CacheService(backend, ttl=1)  # 1 second
         long_ttl_service = CacheService(backend, ttl=3600)  # 1 hour
 
-        sample_result = CachedProcessingResult(responses={}, metadata=StatisticalMetadata(highlights=[]))
+        sample_result = ProcessingResponse(
+            result_id="test-id",
+            data={},
+            metadata=None,
+            statistical_metadata=StatisticalMetadata(highlights=[])
+        )
 
         # Set with short TTL
         short_ttl_service.set("short_key", sample_result)
@@ -165,9 +174,11 @@ class TestCacheExpiry:
     @pytest.fixture
     def sample_result(self):
         """Fixture for minimal sample result."""
-        return CachedProcessingResult(
-            responses={},
-            metadata=StatisticalMetadata(highlights=[])
+        return ProcessingResponse(
+            result_id="test-id",
+            data={},
+            metadata=None,
+            statistical_metadata=StatisticalMetadata(highlights=[])
         )
 
     def test_cache_expiry_after_ttl(self, cache_service, sample_result):
@@ -255,14 +266,14 @@ class TestCacheServiceIntegration:
             data=aggregated_rows,
             account="checking",
             currency="USD",
-            statistical_metadata=StatisticalMetadata(highlights=[
-                CellHighlight(row_id=row_id_utiilities, highlight_type="outlier")
-            ])
+            metadata=None
         )
 
-        cached_result = CachedProcessingResult(
-            responses={"checking": dt_response},
-            metadata=StatisticalMetadata(highlights=[
+        cached_result = ProcessingResponse(
+            result_id="test-result-id",
+            data={"checking": dt_response},
+            metadata=None,
+            statistical_metadata=StatisticalMetadata(highlights=[
                 CellHighlight(row_id=row_id_utiilities, highlight_type="outlier")
             ])
         )
@@ -272,10 +283,10 @@ class TestCacheServiceIntegration:
         retrieved = service.get("realistic_test")
 
         assert retrieved is not None
-        assert len(retrieved.responses) == 1
-        assert retrieved.responses["checking"].account == "checking"
-        assert len(retrieved.responses["checking"].data) == 2
-        assert len(retrieved.metadata.highlights) == 1
+        assert len(retrieved.data) == 1
+        assert retrieved.data["checking"].account == "checking"
+        assert len(retrieved.data["checking"].data) == 2
+        assert len(retrieved.statistical_metadata.highlights) == 1
 
     def test_cache_service_with_multiple_accounts(self):
         """Test cache service with multiple account responses."""
@@ -309,12 +320,14 @@ class TestCacheServiceIntegration:
             currency="EUR"
         )
 
-        cached_result = CachedProcessingResult(
-            responses={
+        cached_result = ProcessingResponse(
+            result_id="test-result-id",
+            data={
                 "account1": account1_response,
                 "account2": account2_response
             },
-            metadata=StatisticalMetadata(highlights=[])
+            metadata=None,
+            statistical_metadata=StatisticalMetadata(highlights=[])
         )
 
         # Test caching and retrieval
@@ -322,11 +335,11 @@ class TestCacheServiceIntegration:
         retrieved = service.get("multi_account_test")
 
         assert retrieved is not None
-        assert len(retrieved.responses) == 2
-        assert "account1" in retrieved.responses
-        assert "account2" in retrieved.responses
-        assert retrieved.responses["account1"].currency == "USD"
-        assert retrieved.responses["account2"].currency == "EUR"
+        assert len(retrieved.data) == 2
+        assert "account1" in retrieved.data
+        assert "account2" in retrieved.data
+        assert retrieved.data["account1"].currency == "USD"
+        assert retrieved.data["account2"].currency == "EUR"
 
 class TestCacheServiceErrorHandling:
     """Tests for error handling in CacheService."""
@@ -334,10 +347,10 @@ class TestCacheServiceErrorHandling:
     def test_cache_service_with_failing_backend(self):
         """Test cache service with backend that raises exceptions."""
         class FailingCacheBackend:
-            def set(self, key: str, value: CachedProcessingResult, timeout: int) -> None:
+            def set(self, key: str, value: ProcessingResponse, timeout: int) -> None:
                 raise RuntimeError("Backend failure")
 
-            def get(self, key: str) -> Optional[CachedProcessingResult]:
+            def get(self, key: str) -> Optional[ProcessingResponse]:
                 raise RuntimeError("Backend failure")
 
             def delete(self, key: str) -> None:
@@ -346,7 +359,12 @@ class TestCacheServiceErrorHandling:
         backend = FailingCacheBackend()
         service = CacheService(backend)
 
-        sample_result = CachedProcessingResult(responses={}, metadata=StatisticalMetadata(highlights=[]))
+        sample_result = ProcessingResponse(
+            result_id="test-id",
+            data={},
+            metadata=None,
+            statistical_metadata=StatisticalMetadata(highlights=[])
+        )
 
         # These should propagate the exceptions
         with pytest.raises(RuntimeError, match="Backend failure"):
@@ -364,10 +382,10 @@ class TestCacheServiceErrorHandling:
             def __init__(self):
                 self.fail_get = False
 
-            def set(self, key: str, value: CachedProcessingResult, timeout: int) -> None:
+            def set(self, key: str, value: ProcessingResponse, timeout: int) -> None:
                 pass  # Always works
 
-            def get(self, key: str) -> Optional[CachedProcessingResult]:
+            def get(self, key: str) -> Optional[ProcessingResponse]:
                 if self.fail_get:
                     raise RuntimeError("Get failed")
                 return None
@@ -378,7 +396,12 @@ class TestCacheServiceErrorHandling:
         backend = PartialFailingCacheBackend()
         service = CacheService(backend)
 
-        sample_result = CachedProcessingResult(responses={}, metadata=StatisticalMetadata(highlights=[]))
+        sample_result = ProcessingResponse(
+            result_id="test-id",
+            data={},
+            metadata=None,
+            statistical_metadata=StatisticalMetadata(highlights=[])
+        )
 
         # Set should work
         service.set("test_key", sample_result)

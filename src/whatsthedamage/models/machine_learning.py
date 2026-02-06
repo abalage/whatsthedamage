@@ -19,15 +19,12 @@ def load_json_data(filepath: str) -> Any:
     try:
         with open(filepath, "r", encoding="utf-8") as f:
             return json.load(f)
-    except FileNotFoundError:
-        print(f"Error: File '{filepath}' not found.")
-        return None
-    except json.JSONDecodeError:
-        print(f"Error: File '{filepath}' is not valid JSON.")
-        return None
+    except FileNotFoundError as e:
+        raise FileNotFoundError(f"Error: File '{filepath}' not found.") from e
+    except json.JSONDecodeError as e:
+        raise ValueError(f"Error: File '{filepath}' is not valid JSON.") from e
     except Exception as e:
-        print(f"Error: An unexpected error occurred while reading '{filepath}': {e}")
-        return None
+        raise RuntimeError(f"Error: An unexpected error occurred while reading '{filepath}': {e}") from e
 
 
 def save(
@@ -52,25 +49,22 @@ def save(
         joblib.dump(model, model_save_path)
         print(f"Model training complete and saved as {model_save_path}")
     except Exception as e:
-        print(f"Error: Failed to save model to '{model_save_path}': {e}")
+        raise RuntimeError(f"Error: Failed to save model to '{model_save_path}': {e}")
 
     try:
         with open(model_manifest_save_path, "w", encoding="utf-8") as f:
             json.dump(manifest, f, indent=2, ensure_ascii=False)
         print(f"Manifest saved as {model_manifest_save_path}")
     except Exception as e:
-        print(f"Error: Failed to save manifest to '{model_manifest_save_path}': {e}")
+        raise RuntimeError(f"Error: Failed to save manifest to '{model_manifest_save_path}': {e}")
 
 
 def load(model_path: str) -> Pipeline:
     """Load a model from disk."""
-    model: Any = None
     try:
-        model = joblib.load(model_path)
+        return joblib.load(model_path)
     except Exception as e:
-        print(f"Error: Failed to load model from '{model_path}': {e}")
-
-    return model
+        raise RuntimeError(f"Failed to load model from '{model_path}': {e}") from e
 
 
 class MLConfig(BaseModel):

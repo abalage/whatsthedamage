@@ -105,16 +105,14 @@ def test_load_json_data_valid(valid_json):
 
 def test_load_json_data_file_not_found(tmp_path):
     non_existent_file = tmp_path / "nonexistent.json"
-    result = load_json_data(str(non_existent_file))
-    assert result is None
-
+    with pytest.raises(FileNotFoundError, match="Error: File.*not found."):
+        load_json_data(str(non_existent_file))
 
 def test_load_json_data_invalid_json(tmp_path):
     invalid_json_file = tmp_path / "invalid.json"
     invalid_json_file.write_text("{invalid json}", encoding="utf-8")
-    result = load_json_data(str(invalid_json_file))
-    assert result is None
-
+    with pytest.raises(ValueError, match="Error: File.*is not valid JSON."):
+        load_json_data(str(invalid_json_file))
 
 def test_load_json_data_unexpected_error(tmp_path):
     # Simulate a permission error by creating a file and removing read permissions
@@ -123,8 +121,8 @@ def test_load_json_data_unexpected_error(tmp_path):
     restricted_file.chmod(0o000)  # Remove all permissions
 
     try:
-        result = load_json_data(str(restricted_file))
-        assert result is None
+        with pytest.raises(RuntimeError, match="Error: An unexpected error occurred.*"):
+            load_json_data(str(restricted_file))
     finally:
         # Restore permissions to clean up the file
         restricted_file.chmod(0o644)
@@ -285,8 +283,8 @@ def test_prepare_input_data_empty_list():
 
 
 def test_prepare_input_data_invalid_type():
-    with pytest.raises(ValueError, match="Input must be a JSON file path or a List\\[dict\\]."):
-        Inference(new_data=12345)
+    with pytest.raises(FileNotFoundError, match="Error: File.*not found."):
+        Inference(new_data="invalid")  # Using a string that's not a valid file path
 
 
 def test_prepare_input_data_partial_data(tmp_path):

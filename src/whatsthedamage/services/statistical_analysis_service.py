@@ -3,7 +3,7 @@
 This service uses the Strategy Pattern to apply various statistical algorithms
 to transaction data, providing highlight metadata for visualization.
 """
-from typing import Dict, List, Tuple, Optional, Any
+from typing import Dict, List, Tuple, Optional
 from whatsthedamage.models.dt_models import CellHighlight, StatisticalMetadata, DataTablesResponse, AggregatedRow, SummaryData
 from whatsthedamage.services.exclusion_service import ExclusionService
 from whatsthedamage.models.statistical_algorithms import (
@@ -241,21 +241,17 @@ class StatisticalAnalysisService:
         """
         excluded_highlights: List[CellHighlight] = []
 
-        # Extract summary from original data (including calculated rows and excluded categories)
-        full_summary = self._extract_summary_from_response(dt_response)
+        # Iterate through all rows directly instead of extracting summary
+        for agg_row in dt_response.data:
+            month_display = agg_row.date.display
+            category = agg_row.category
 
-        for month_display, categories in full_summary.summary.items():
-            for category, amount in categories.items():
-                # Check if this cell should be excluded
-                if self._is_cell_excluded(month_display, category, dt_response):
-                    # Find the row UUID for this cell
-                    for agg_row in dt_response.data:
-                        if agg_row.category == category and agg_row.date.display == month_display:
-                            excluded_highlights.append(CellHighlight(
-                                row_id=agg_row.row_id,
-                                highlight_type='excluded'
-                            ))
-                            break
+            # Check if this cell should be excluded
+            if self._is_cell_excluded(month_display, category, dt_response):
+                excluded_highlights.append(CellHighlight(
+                    row_id=agg_row.row_id,
+                    highlight_type='excluded'
+                ))
 
         return excluded_highlights
 
@@ -331,8 +327,8 @@ class StatisticalAnalysisService:
     ) -> SummaryData:
         """Extract summary data from DataTablesResponse for statistical analysis.
 
-        Aggregates transaction data by month and category, creating a nested dictionary
-        suitable for statistical analysis.
+        Uses the canonical SummaryData.from_datatable_response method to extract
+        summary data, ensuring consistency across the codebase.
 
         Args:
             dt_response: DataTablesResponse containing aggregated transaction data
@@ -344,38 +340,9 @@ class StatisticalAnalysisService:
             >>> summary = service._extract_summary_from_response(dt_response)
             >>> summary.summary['January 2024']['Grocery']  # 1234.56
         """
-        # Aggregate by canonical timestamp first to keep year information unambiguous
-        month_map: Dict[int, Dict[str, Any]] = {}
-
-        for agg_row in dt_response.data:
-            date_field = agg_row.date
-
-            ts = date_field.timestamp
-            display = date_field.display
-
-            if ts not in month_map:
-                month_map[ts] = {'display': display, 'categories': {}}
-
-            cats = month_map[ts]['categories']
-            cats[agg_row.category] = cats.get(agg_row.category, 0.0) + float(agg_row.total.raw)
-
-        # Handle duplicate month displays (e.g., 'January' across different years)
-        # by appending timestamp if needed
-        display_counts: Dict[str, int] = {}
-        for v in month_map.values():
-            display_counts[v['display']] = display_counts.get(v['display'], 0) + 1
-
-        summary = {}
-        # Iterate months in descending timestamp order (most recent first)
-        for ts in sorted(month_map.keys(), reverse=True):
-            display = month_map[ts]['display']
-            key = display if display_counts.get(display, 0) == 1 else f"{display} ({ts})"
-            summary[key] = month_map[ts]['categories']
-
-        return SummaryData(
-            summary=summary,
-            currency=dt_response.currency,
-            account_id=dt_response.account
+        return SummaryData.from_datatable_response(
+            dt_response=dt_response,
+            include_calculated=True  # Always include calculated rows for statistical analysis
         )
 
     def compute_statistical_metadata(

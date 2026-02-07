@@ -13,7 +13,7 @@ Architecture Patterns:
 """
 import pandas as pd
 import json
-from typing import Dict, Optional, Any
+from typing import Dict, Optional, Any, List
 from whatsthedamage.models.dt_models import DataTablesResponse, StatisticalMetadata, SummaryData
 from gettext import gettext as _
 from whatsthedamage.services.statistical_analysis_service import StatisticalAnalysisService
@@ -439,16 +439,70 @@ class DataFormattingService:
 
         return result
 
-    def _convert_metadata_to_highlights_dict(self, metadata: 'StatisticalMetadata') -> Dict[str, str]:
+    def _get_css_class_for_highlight(self, highlight_type: str) -> str:
+        """Convert semantic highlight type to CSS class name.
+
+        This mapping allows adding new highlight types in the backend without
+        requiring template updates.
+
+        :param highlight_type: Semantic highlight type (e.g., 'outlier', 'pareto')
+        :return: Corresponding CSS class name (e.g., 'highlight-outlier')
+        """
+        css_class_map = {
+            'outlier': 'highlight-outlier',
+            'pareto': 'highlight-pareto',
+            'excluded': 'highlight-excluded',
+            # Add new highlight types here - no template changes needed
+        }
+        return css_class_map.get(highlight_type, '')
+
+    def _convert_metadata_to_highlights_dict(self, metadata: 'StatisticalMetadata') -> Dict[str, List[str]]:
         """Convert StatisticalMetadata to the highlights dict format expected by templates.
 
         :param metadata: StatisticalMetadata containing CellHighlight objects
-        :return: Dictionary of highlights keyed by row_id
+        :return: Dictionary of highlights keyed by row_id, with list of highlight types
         """
         highlights_dict = {}
         for highlight in metadata.highlights:
-            highlights_dict[highlight.row_id] = highlight.highlight_type
+            if highlight.row_id not in highlights_dict:
+                highlights_dict[highlight.row_id] = []
+            highlights_dict[highlight.row_id].extend(highlight.highlight_types)
         return highlights_dict
+
+    def _build_css_classes_dict(self, highlights_dict: Dict[str, List[str]]) -> Dict[str, str]:
+        """Build CSS classes dictionary from highlight types.
+
+        Converts semantic highlight types to CSS class names and handles
+        special cases like multiple highlights.
+
+        :param highlights_dict: Dictionary of highlights keyed by row_id
+        :return: Dictionary of CSS classes keyed by row_id
+        """
+        css_classes_dict = {}
+
+        for row_id, highlight_types in highlights_dict.items():
+            css_classes = []
+
+            # Separate algorithm highlights from excluded
+            algo_highlights = [t for t in highlight_types if t != 'excluded']
+
+            # Convert algorithm highlights to CSS classes
+            for h_type in algo_highlights:
+                css_class = self._get_css_class_for_highlight(h_type)
+                if css_class:
+                    css_classes.append(css_class)
+
+            # Handle multiple algorithm highlights
+            if len(algo_highlights) > 1:
+                css_classes.append('highlight-multiple')
+
+            # Add excluded class if present
+            if 'excluded' in highlight_types:
+                css_classes.append('highlight-excluded')
+
+            css_classes_dict[row_id] = ' '.join(css_classes)
+
+        return css_classes_dict
 
     def prepare_accounts_for_template(
         self,
@@ -478,6 +532,7 @@ class DataFormattingService:
 
             # Use the provided statistical metadata
             highlights = self._convert_metadata_to_highlights_dict(statistical_metadata)
+            css_classes = self._build_css_classes_dict(highlights)
 
             accounts.append({
                 'id': account_id,
@@ -485,6 +540,7 @@ class DataFormattingService:
                 'currency': dt_response.currency,
                 'dt_response': dt_response,
                 'highlights': highlights,
+                'css_classes': css_classes,
             })
 
         return {

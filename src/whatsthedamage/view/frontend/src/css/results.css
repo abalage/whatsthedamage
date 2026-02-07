@@ -24,6 +24,17 @@
     background-color: #f0f0f0 !important;
     color: black !important;
 }
+
+.highlight-multiple {
+    /* Override individual backgrounds with a distinct multi-highlight color */
+    background-color: #ffff99 !important;  /* Bright yellow */
+
+    /* Add visual indicators */
+    border: 2px solid #ff9800 !important;  /* Orange border */
+    position: relative;
+    box-shadow: 0 0 5px rgba(255, 152, 0, 0.3);
+}
+
 .clickable {
     cursor: pointer;
     text-decoration: none;

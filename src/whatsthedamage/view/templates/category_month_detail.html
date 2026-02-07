@@ -27,7 +27,7 @@
                     {% for detail in row.details %}
                     <tr>
                         <td>{{ detail.date.display }}</td>
-                        <td>{{ detail.amount.display }}</td>
+                        <td data-row-id="{{ detail.row_id }}" class="{{ css_classes.get(detail.row_id, '') }}">{{ detail.amount.display }}</td>
                         <td>{{ detail.merchant }}</td>
                     </tr>
                     {% endfor %}

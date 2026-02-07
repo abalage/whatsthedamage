@@ -29,7 +29,7 @@ class AggregatedRow(BaseModel):
 
 class CellHighlight(BaseModel):
     row_id: str  # Unique identifier referencing AggregatedRow or DetailRow
-    highlight_type: str  # e.g., 'outlier', 'pareto', 'excluded'
+    highlight_types: List[str]  # List of all highlight types for this row (e.g., ['outlier', 'pareto'])
 
 class StatisticalMetadata(BaseModel):
     highlights: List[CellHighlight]

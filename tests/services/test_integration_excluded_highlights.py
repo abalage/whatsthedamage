@@ -154,7 +154,7 @@ def test_end_to_end_excluded_highlights_pipeline(complete_dt_response):
     # Verify highlights dictionary contains excluded highlights
     excluded_highlights = {
         key: value for key, value in account_data["highlights"].items()
-        if value == "excluded"
+        if "excluded" in value
     }
 
     # Should have excluded highlights for:
@@ -207,4 +207,4 @@ def test_template_highlight_application():
     # The calculated row should have an excluded highlight
     balance_key = calculated_row.row_id
     assert balance_key in highlights
-    assert highlights[balance_key] == "excluded"
+    assert "excluded" in highlights[balance_key]

@@ -27,7 +27,7 @@ export function initStatisticalAnalysis(): void {
             const algorithms = Array.prototype.slice.call(document.querySelectorAll('input[type="checkbox"][value]:checked'))
                 .map(function(el: HTMLInputElement) { return el.value; });
             const directionInput = document.querySelector('input[name="direction"]:checked') as HTMLInputElement | null;
-            const direction = (directionInput?.value ?? 'columns') as 'columns' | 'rows';
+            const direction = directionInput?.value === 'rows' ? 'rows' : 'columns';
 
             const request: StatisticalAnalysisRequest = {
                 result_id: (globalThis as any).resultId,
@@ -134,23 +134,48 @@ export function initStatisticalAnalysis(): void {
     }
 }
 
+
+/**
+ * Apply highlight classes to a cell based on highlight types
+ * @param cell - DOM element to highlight
+ * @param types - Array of highlight types
+ */
+function applyHighlightClasses(cell: HTMLElement, types: string[]): void {
+    const algoHighlights = types;
+
+    if (algoHighlights.length === 1 && algoHighlights[0]) {
+        // Single algorithm highlight
+        cell.classList.add(`highlight-${algoHighlights[0]}`);
+    } else if ((algoHighlights.length > 1)) {
+        // Multiple highlights or excluded with algo highlight
+        cell.classList.add('highlight-multiple');
+    }
+}
+
 /**
  * Update cell highlights based on statistical analysis results
- * @param {Object} highlights - Object containing highlight information with row_id as key
+ * @param highlights - Object containing highlight information with row_id as key
+ *                     Each value is an array of highlight types (e.g., ['outlier', 'pareto'])
  */
-export function updateCellHighlights(highlights: Record<string, string>): void {
+export function updateCellHighlights(highlights: Record<string, string[]>): void {
     // Remove all current highlights from all tables
     const highlightElements = document.querySelectorAll('[class*="highlight-"]');
     highlightElements.forEach(el => {
-        el.classList.remove('highlight-outlier', 'highlight-pareto', 'highlight-excluded');
+        // Remove all highlight classes
+        Array.from(el.classList).forEach(cls => {
+            if (cls.startsWith('highlight-')) {
+                el.classList.remove(cls);
+            }
+        });
     });
 
     // Process each highlight entry using UUID-based addressing
-    Object.entries(highlights).forEach(([rowId, highlightType]) => {
+    Object.entries(highlights).forEach(([rowId, highlightTypes]) => {
         // Find all cells with matching data-row-id attribute
         const cells = document.querySelectorAll(`[data-row-id="${rowId}"]`);
         cells.forEach(cell => {
-            cell.classList.add(`highlight-${highlightType}`);
+            // highlightTypes is already an array from the template
+            applyHighlightClasses(cell as HTMLElement, highlightTypes);
         });
     });
 }

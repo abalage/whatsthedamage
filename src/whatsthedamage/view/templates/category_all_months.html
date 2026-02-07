@@ -29,7 +29,7 @@
                     {% for row in data %}
                     <tr>
                         <td>{{ row.date.display }}</td>
-                        <td data-row-id="{{ row.row_id }}" class="highlight-{{ highlights.get(row.row_id, '') }}">{{ row.total.display }}</td>
+                        <td data-row-id="{{ row.row_id }}" class="{{ css_classes.get(row.row_id, '') }}">{{ row.total.display }}</td>
                     </tr>
                     {% endfor %}
                 </tbody>

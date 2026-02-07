@@ -246,11 +246,11 @@ class TestExpenseFiltering:
         assert len(metadata.highlights) > 0
         # Map row_ids to categories for verification
         row_id_to_category = {row.row_id: row.category for row in sample_data_with_mixed_values}
-        highlight_categories = {row_id_to_category[h.row_id] for h in metadata.highlights if h.highlight_type == "pareto"}
+        highlight_categories = {row_id_to_category[h.row_id] for h in metadata.highlights if "pareto" in h.highlight_types}
         assert "Grocery" in highlight_categories
         assert "Maintenance" in highlight_categories
         # Income categories should not be in highlights
-        assert not any(row_id_to_category[h.row_id] in ["Interest", "Refund"] for h in metadata.highlights if h.highlight_type == "pareto")
+        assert not any(row_id_to_category[h.row_id] in ["Interest", "Refund"] for h in metadata.highlights if "pareto" in h.highlight_types)
 
     def test_compute_statistical_metadata_without_expense_filtering(self, sample_data_with_mixed_values):
         """Test that compute_statistical_metadata can skip expense filtering."""
@@ -268,7 +268,7 @@ class TestExpenseFiltering:
         assert len(metadata.highlights) > 0
         # Map row_ids to categories for verification
         row_id_to_category = {row.row_id: row.category for row in sample_data_with_mixed_values}
-        highlight_categories = {row_id_to_category[h.row_id] for h in metadata.highlights if h.highlight_type == "pareto"}
+        highlight_categories = {row_id_to_category[h.row_id] for h in metadata.highlights if "pareto" in h.highlight_types}
         # With all values included, the absolute values are:
         # Grocery (264100), Maintenance (140588), Vehicle (58542), Health (25795), Interest (9), Refund (2416)
         # Total = 489,025 + 2425 = 491,450, 80% = 393,160
@@ -296,11 +296,11 @@ class TestExpenseFiltering:
         # Should only analyze expense categories
         # Map row_ids to categories for verification
         row_id_to_category = {row.row_id: row.category for row in sample_data_with_mixed_values}
-        highlight_categories = {row_id_to_category[h.row_id] for h in metadata.highlights if h.highlight_type == "pareto"}
+        highlight_categories = {row_id_to_category[h.row_id] for h in metadata.highlights if "pareto" in h.highlight_types}
         assert "Grocery" in highlight_categories
         assert "Maintenance" in highlight_categories
         # Income categories should not be in highlights
-        assert not any(row_id_to_category[h.row_id] in ["Interest", "Refund"] for h in metadata.highlights if h.highlight_type == "pareto")
+        assert not any(row_id_to_category[h.row_id] in ["Interest", "Refund"] for h in metadata.highlights if "pareto" in h.highlight_types)
 
     def test_compute_statistical_metadata_without_expense_filtering_custom_params(self, sample_data_with_mixed_values):
         """Test that compute_statistical_metadata works with custom parameters and no filtering."""
@@ -321,7 +321,7 @@ class TestExpenseFiltering:
         # Should analyze all categories (both expenses and income)
         # Map row_ids to categories for verification
         row_id_to_category = {row.row_id: row.category for row in sample_data_with_mixed_values}
-        highlight_categories = {row_id_to_category[h.row_id] for h in metadata.highlights if h.highlight_type == "pareto"}
+        highlight_categories = {row_id_to_category[h.row_id] for h in metadata.highlights if "pareto" in h.highlight_types}
         # With all values included, the absolute values are:
         # Grocery (264100), Maintenance (140588), Vehicle (58542), Health (25795), Interest (9), Refund (2416)
         # Total = 489,025 + 2425 = 491,450, 80% = 393,160

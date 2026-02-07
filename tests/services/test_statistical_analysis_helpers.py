@@ -203,7 +203,7 @@ class TestHelperMethods:
         )
 
         assert highlight.row_id == "f178193c-faef-4d1e-86a5-61347d30a0d7"
-        assert highlight.highlight_type == "outlier"
+        assert highlight.highlight_types == ["outlier"]
 
     def test_build_highlight_rows_direction(self):
         """Test _build_highlight for ROWS direction."""
@@ -214,7 +214,7 @@ class TestHelperMethods:
         )
 
         assert highlight.row_id == "f178193c-faef-4d1e-86a5-61347d30a0d7"
-        assert highlight.highlight_type == "pareto"
+        assert highlight.highlight_types == ["pareto"]
 
     def test_create_highlight_for_algorithm_columns_direction(self, dt_response_with_outliers):
         """Test _create_highlight_for_algorithm with COLUMNS direction."""
@@ -241,7 +241,7 @@ class TestHelperMethods:
         assert len(highlights) > 0
         # Check that highlight type is correct
         for highlight in highlights:
-            assert highlight.highlight_type == "outlier"
+            assert highlight.highlight_types[0] == "outlier"
 
     def test_create_highlight_for_algorithm_rows_direction(self, sample_dt_response):
         """Test _create_highlight_for_algorithm with ROWS direction."""
@@ -274,7 +274,7 @@ class TestHelperMethods:
         assert grocery_row_id in highlight_row_ids
         # Check that highlight type is correct
         for highlight in highlights:
-            assert highlight.highlight_type == "pareto"
+            assert highlight.highlight_types[0] == "pareto"
 
     def test_create_highlight_for_algorithm_empty_data(self, sample_dt_response):
         """Test _create_highlight_for_algorithm with empty transformed data."""

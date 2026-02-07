@@ -132,6 +132,43 @@ def get_cached_data_for_drilldown(
         return None, 'Result not found or expired.'
 
 
+def _process_statistical_metadata(
+    cached_result: Optional[ProcessingResponse]
+) -> Tuple[Dict[str, List[str]], Dict[str, str]]:
+    """Process statistical metadata and return highlights and CSS classes.
+
+    Extracts highlight information from cached processing result and converts
+    it to the format expected by templates.
+
+    Args:
+        cached_result: The cached ProcessingResponse object
+
+    Returns:
+        Tuple of (highlights_dict, css_classes_dict)
+        - highlights_dict: Dictionary mapping row_id to list of highlight types
+        - css_classes_dict: Dictionary mapping row_id to CSS class strings
+
+    Example:
+        >>> highlights, css_classes = _process_statistical_metadata(cached)
+        >>> # highlights: {'row1': ['outlier'], 'row2': ['pareto']}
+        >>> # css_classes: {'row1': 'highlight-outlier', 'row2': 'highlight-pareto'}
+    """
+    if not cached_result or not cached_result.statistical_metadata:
+        return {}, {}
+
+    # Convert highlights to dictionary format
+    highlights_dict = {}
+    for highlight in cached_result.statistical_metadata.highlights:
+        if highlight.row_id not in highlights_dict:
+            highlights_dict[highlight.row_id] = []
+        highlights_dict[highlight.row_id].extend(highlight.highlight_types)
+
+    # Build CSS classes dictionary
+    formatting_service = _get_data_formatting_service()
+    css_classes_dict = formatting_service._build_css_classes_dict(highlights_dict)
+
+    return highlights_dict, css_classes_dict
+
 def handle_drilldown_request(
     result_id: str,
     account: str,
@@ -167,45 +204,39 @@ def handle_drilldown_request(
         >>>     {'category': 'Grocery', 'account': account}
         >>> )
     """
-    # Use the existing get_cached_data_for_drilldown helper to maintain consistency
+    # Get cached data
     dt_response, error = get_cached_data_for_drilldown(result_id, account)
     if error or not dt_response:
         flash(error or data_not_found_error, 'danger')
         return make_response(redirect(url_for(index_route)))
 
+    # Filter data
     filtered_data = [row for row in dt_response.data if filter_fn(row)]
-
-    # Check if filtered data is empty and redirect with error
     if not filtered_data:
         flash(data_not_found_error, 'danger')
         return make_response(redirect(url_for(index_route)))
 
-    # Format account ID using backend service for consistency
+    # Format account ID
     formatting_service = _get_data_formatting_service()
     formatted_account = formatting_service.format_account_id(account)
 
-    # Get statistical metadata from cache
+    # Process statistical metadata
     try:
         cache_service = _get_cache_service()
         cached = cache_service.get(result_id)
-
-        if cached and cached.metadata:
-            # Convert highlights to dictionary format for easier frontend processing
-            highlights_dict = {}
-            for highlight in cached.metadata.highlights:
-                highlights_dict[highlight.row_id] = highlight.highlight_type
-        else:
-            highlights_dict = {}
+        highlights_dict, css_classes_dict = _process_statistical_metadata(cached)
     except Exception:
         highlights_dict = {}
+        css_classes_dict = {}
 
-    # Merge account into template context, including formatted version and statistical data
+    # Build context and render
     context = {
         'data': filtered_data,
         'account': account,
         'formatted_account': formatted_account,
         'result_id': result_id,
         'highlights': highlights_dict,
+        'css_classes': css_classes_dict,
         **template_context
     }
     return make_response(render_template(template, **context))
@@ -323,7 +354,7 @@ def handle_recalculate_statistics_request(
         # Convert highlights to dictionary format for easier frontend processing
         highlights_dict = {}
         for highlight in new_statistical_metadata.highlights:
-            highlights_dict[highlight.row_id] = highlight.highlight_type
+            highlights_dict[highlight.row_id] = highlight.highlight_types
 
         return {
             'status': 'success',

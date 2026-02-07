@@ -146,7 +146,7 @@ class StatisticalAnalysisService:
         """
         return CellHighlight(
             row_id=row_id,
-            highlight_type=highlight_type
+            highlight_types=[highlight_type]
         )
 
     def _create_highlight_for_algorithm(
@@ -250,7 +250,7 @@ class StatisticalAnalysisService:
             if self._is_cell_excluded(month_display, category, dt_response):
                 excluded_highlights.append(CellHighlight(
                     row_id=agg_row.row_id,
-                    highlight_type='excluded'
+                    highlight_types=['excluded']
                 ))
 
         return excluded_highlights

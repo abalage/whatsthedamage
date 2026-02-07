@@ -101,7 +101,7 @@ class TestCacheService:
             },
             metadata=None,
             statistical_metadata=StatisticalMetadata(highlights=[
-                CellHighlight(row_id=row_id_sample, highlight_type="outlier")
+                CellHighlight(row_id=row_id_sample, highlight_types=["outlier"])
             ])
         )
 
@@ -274,7 +274,7 @@ class TestCacheServiceIntegration:
             data={"checking": dt_response},
             metadata=None,
             statistical_metadata=StatisticalMetadata(highlights=[
-                CellHighlight(row_id=row_id_utiilities, highlight_type="outlier")
+                CellHighlight(row_id=row_id_utiilities, highlight_types=["outlier"])
             ])
         )
 

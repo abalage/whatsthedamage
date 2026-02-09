@@ -58,7 +58,14 @@ afterEach(() => {
 });
 
 test('updateCellHighlights applies correct highlight class', () => {
-  updateCellHighlights({ 'row-1': 'outlier' });
+  updateCellHighlights({ 'row-1': ['outlier'] });
+
+  const cell = document.querySelector('tbody tr:first-child td:nth-child(2)');
+  expect(cell?.classList.contains('highlight-outlier')).toBe(true);
+});
+
+test('updateCellHighlights applies correct highlight class from string', () => {
+  updateCellHighlights({ 'row-1': ['outlier'] });
 
   const cell = document.querySelector('tbody tr:first-child td:nth-child(2)');
   expect(cell?.classList.contains('highlight-outlier')).toBe(true);
@@ -68,7 +75,7 @@ test('updateCellHighlights removes existing highlights', () => {
   const cell = document.querySelector('tbody tr:first-child td:nth-child(2)');
   if (cell) cell.classList.add('highlight-pareto');
 
-  updateCellHighlights({ 'row-1': 'outlier' });
+  updateCellHighlights({ 'row-1': ['outlier'] });
 
   expect(cell?.classList.contains('highlight-pareto')).toBe(false);
   expect(cell?.classList.contains('highlight-outlier')).toBe(true);
@@ -76,8 +83,8 @@ test('updateCellHighlights removes existing highlights', () => {
 
 test('updateCellHighlights handles multiple highlights', () => {
   updateCellHighlights({
-    'row-1': 'outlier',
-    'row-4': 'pareto'
+    'row-1': ['outlier'],
+    'row-4': ['pareto']
   });
 
   const foodJanCell = document.querySelector('tbody tr:first-child td:nth-child(2)');
@@ -88,7 +95,7 @@ test('updateCellHighlights handles multiple highlights', () => {
 });
 
 test('updateCellHighlights handles invalid row ID', () => {
-  updateCellHighlights({ 'invalid-row-id': 'outlier' });
+  updateCellHighlights({ 'invalid-row-id': ['outlier'] });
 
   const cells = document.querySelectorAll('[class*="highlight-"]');
   expect(cells.length).toBe(0);
@@ -107,7 +114,7 @@ test('initStatisticalAnalysis marks buttons as initialized', () => {
 test('updateCellHighlights handles missing table elements', () => {
   document.body.innerHTML = '<table data-datatable="true"></table>';
 
-  expect(() => updateCellHighlights({ 'row-1': 'outlier' })).not.toThrow();
+  expect(() => updateCellHighlights({ 'row-1': ['outlier'] })).not.toThrow();
 });
 
 test('updateCellHighlights handles empty highlights object', () => {
@@ -126,7 +133,7 @@ test('updateCellHighlights works with multiple tables', () => {
     </table>
   `;
 
-  updateCellHighlights({ 'row-1': 'excluded' });
+  updateCellHighlights({ 'row-1': ['excluded'] });
 
   const cells = document.querySelectorAll('[data-row-id="row-1"]');
   cells.forEach(cell => {
@@ -146,9 +153,9 @@ test('updateCellHighlights handles all highlight types', () => {
   `;
 
   updateCellHighlights({
-    'row-outlier': 'outlier',
-    'row-pareto': 'pareto',
-    'row-excluded': 'excluded'
+    'row-outlier': ['outlier'],
+    'row-pareto': ['pareto'],
+    'row-excluded': ['excluded']
   });
 
   const outlierCell = document.querySelector('[data-row-id="row-outlier"]');
@@ -167,7 +174,7 @@ test('updateCellHighlights removes all highlight classes before applying new one
     cell.classList.add('highlight-pareto');
   }
 
-  updateCellHighlights({ 'row-1': 'excluded' });
+  updateCellHighlights({ 'row-1': ['excluded'] });
 
   expect(cell?.classList.contains('highlight-outlier')).toBe(false);
   expect(cell?.classList.contains('highlight-pareto')).toBe(false);

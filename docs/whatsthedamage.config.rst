@@ -17,14 +17,6 @@ whatsthedamage.config.config module
    :show-inheritance:
    :undoc-members:
 
-whatsthedamage.config.dt\_models module
----------------------------------------
-
-.. automodule:: whatsthedamage.models.dt_models
-   :members:
-   :show-inheritance:
-   :undoc-members:
-
 whatsthedamage.config.flask\_config module
 ------------------------------------------
 

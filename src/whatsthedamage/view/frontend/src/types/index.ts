@@ -26,9 +26,15 @@ export interface DataTableConfig {
  */
 export interface StatisticalAnalysisResponse {
   status: 'success' | 'error';
-  highlights: Record<string, 'outlier' | 'pareto' | 'excluded'>;
+  highlights: Record<string, string[]>;  // row_id -> array of highlight types
   error?: string;
 }
+
+/**
+ * Type for cell highlights in templates
+ * Always an array of strings, never a string that needs parsing
+ */
+export type CellHighlights = Record<string, string[]>;
 
 /**
  * Request payload for statistical analysis

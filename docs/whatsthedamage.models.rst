@@ -49,6 +49,14 @@ whatsthedamage.models.dt\_calculators module
    :show-inheritance:
    :undoc-members:
 
+whatsthedamage.models.dt\_models module
+---------------------------------------
+
+.. automodule:: whatsthedamage.models.dt_models
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
 whatsthedamage.models.dt\_response\_builder module
 --------------------------------------------------
 
@@ -93,6 +101,14 @@ whatsthedamage.models.rows\_processor module
 --------------------------------------------
 
 .. automodule:: whatsthedamage.models.rows_processor
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
+whatsthedamage.models.statistical\_algorithms module
+----------------------------------------------------
+
+.. automodule:: whatsthedamage.models.statistical_algorithms
    :members:
    :show-inheritance:
    :undoc-members:

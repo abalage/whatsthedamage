@@ -96,8 +96,7 @@ def test_recalculate_highlights_with_both_algorithms():
                 )
             ],
             account='account1',
-            currency='USD',
-            statistical_metadata=None
+            currency='USD'
         )
     }
 
@@ -114,7 +113,7 @@ def test_recalculate_highlights_with_both_algorithms():
     assert isinstance(result.highlights, list)
 
     # Should have some highlights for the large grocery value
-    highlight_types = [h.highlight_type for h in result.highlights]
+    highlight_types = [h.highlight_types[0] for h in result.highlights]
     assert any(ht in ['outlier', 'pareto'] for ht in highlight_types)
 
 def test_recalculate_statistics_route():
@@ -153,5 +152,5 @@ def test_highlight_key_format():
     # Check that highlights have the correct format
     for highlight in result.highlights:
         assert hasattr(highlight, 'row_id')
-        assert hasattr(highlight, 'highlight_type')
-        assert highlight.highlight_type in ['outlier', 'pareto', 'excluded']
+        assert hasattr(highlight, 'highlight_types')
+        assert highlight.highlight_types[0] in ['outlier', 'pareto', 'excluded']

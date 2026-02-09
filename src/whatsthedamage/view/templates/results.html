@@ -10,6 +10,7 @@
         globalThis.resultId = '{{ result_id }}';
         globalThis.exportCsvText = '{{ _("Export CSV") }}';
         globalThis.exportExcelText = '{{ _("Export Excel") }}';
+        globalThis.highlights = '{{ accounts_data.highlights | tojson }}'
     </script>
 </head>
 <body>
@@ -27,13 +28,13 @@
         <div class="account-section">
             <div class="account-header">
                 <h2>
-                    {{ _('Account:') }} {{ account.formatted_id }}
+                    {{ _('Account') }}: {{ account.formatted_id }}
                     {% if account.currency %}
                         ({{ account.currency }})
                     {% endif %}
                 </h2>
             </div>
-            
+
             <div class="row">
                 <div class="col-md-12 mb-3">
                     <div class="table-responsive">
@@ -75,9 +76,10 @@
                                                 {% set _ = details_list.append(detail.date.display ~ ': ' ~ detail.amount.display ~ ' - ' ~ detail.merchant) %}
                                             {% endfor %}
                                             {% set details_str = details_list | join('<br>') %}
+
                                             <td data-order="{{ agg_row_data.total.raw }}"
                                                 data-row-id="{{ agg_row_data.row_id }}"
-                                                class="highlight-{{ account.highlights.get(agg_row_data.row_id, '') }}"
+                                                class=""
                                                 {% if agg_row_data.details %}
                                                     tabindex="0"
                                                     data-bs-toggle="popover"
@@ -101,7 +103,7 @@
             </div>
         </div>
         {% endfor %}
-        
+
         <div class="row">
             <div class="col-md-6">
                 <a href="/" class="btn btn-secondary mt-3 mb-3">{{ _('Back') }}</a>

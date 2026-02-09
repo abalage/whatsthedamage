@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: whatsthedamage-1.0\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2025-12-11 23:23+0100\n"
-"PO-Revision-Date: 2025-12-11 23:23+0100\n"
+"POT-Creation-Date: 2026-02-09 15:24+0100\n"
+"PO-Revision-Date: 2026-02-09 15:24+0100\n"
 "Last-Translator: Balázs Németh <balagetech@protonmail.com>\n"
 "Language-Team: Hungarian\n"
 "Language: hu_HU\n"
@@ -18,90 +18,98 @@ msgstr ""
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 "X-Generator: Poedit 3.6\n"
 
-#: src/whatsthedamage/cli_app.py:60
-#: src/whatsthedamage/controllers/routes.py:129
-#: src/whatsthedamage/models/csv_processor.py:92
-msgid "Categories"
-msgstr "Kategóriák"
-
-#: src/whatsthedamage/config/config.py:50
+#: src/whatsthedamage/config/config.py:55
 msgid "Grocery"
 msgstr "Bevásárlás"
 
-#: src/whatsthedamage/config/config.py:51
+#: src/whatsthedamage/config/config.py:56
 msgid "Clothes"
 msgstr "Ruházat"
 
-#: src/whatsthedamage/config/config.py:52
+#: src/whatsthedamage/config/config.py:57
 msgid "Health"
 msgstr "Egészség"
 
-#: src/whatsthedamage/config/config.py:53
+#: src/whatsthedamage/config/config.py:58
 msgid "Payment"
 msgstr "Kifizetés"
 
-#: src/whatsthedamage/config/config.py:54
+#: src/whatsthedamage/config/config.py:59
 msgid "Vehicle"
 msgstr "Jármű"
 
-#: src/whatsthedamage/config/config.py:55
+#: src/whatsthedamage/config/config.py:60
 msgid "Utility"
 msgstr "Rezsi"
 
-#: src/whatsthedamage/config/config.py:56
+#: src/whatsthedamage/config/config.py:61
 msgid "Home Maintenance"
 msgstr "Otthon karbantartás"
 
-#: src/whatsthedamage/config/config.py:57
+#: src/whatsthedamage/config/config.py:62
 msgid "Sports Recreation"
 msgstr "Sport Rekreáció"
 
-#: src/whatsthedamage/config/config.py:58
+#: src/whatsthedamage/config/config.py:63
 msgid "Insurance"
 msgstr "Biztosítás"
 
-#: src/whatsthedamage/config/config.py:59
+#: src/whatsthedamage/config/config.py:64
 msgid "Loan"
 msgstr "Hitel"
 
-#: src/whatsthedamage/config/config.py:60
+#: src/whatsthedamage/config/config.py:65
 msgid "Withdrawal"
 msgstr "Pénzfelvétel"
 
-#: src/whatsthedamage/config/config.py:61
+#: src/whatsthedamage/config/config.py:66
 msgid "Fee"
 msgstr "Díj"
 
-#: src/whatsthedamage/config/config.py:62
+#: src/whatsthedamage/config/config.py:67
 msgid "Deposit"
 msgstr "Bevétel"
 
-#: src/whatsthedamage/config/config.py:63
+#: src/whatsthedamage/config/config.py:68
 msgid "Refund"
 msgstr "Visszatérítés"
 
-#: src/whatsthedamage/config/config.py:64
+#: src/whatsthedamage/config/config.py:69
 msgid "Interest"
 msgstr "Kamat"
 
-#: src/whatsthedamage/config/config.py:65
+#: src/whatsthedamage/config/config.py:70
 msgid "Transfer"
 msgstr "Átvezetés"
 
-#: src/whatsthedamage/config/config.py:66
+#: src/whatsthedamage/config/config.py:71
 msgid "Other"
 msgstr "Egyéb"
 
-#: src/whatsthedamage/config/config.py:67
+#: src/whatsthedamage/config/config.py:72
 #: src/whatsthedamage/models/dt_calculators.py:36
-#: src/whatsthedamage/models/dt_calculators.py:67
+#: src/whatsthedamage/models/dt_calculators.py:68
 msgid "Balance"
 msgstr "Egyenleg"
 
-#: src/whatsthedamage/models/dt_calculators.py:67
-#: src/whatsthedamage/models/dt_calculators.py:84
+#: src/whatsthedamage/config/config.py:73
+#: src/whatsthedamage/models/dt_calculators.py:68
+#: src/whatsthedamage/models/dt_calculators.py:85
 msgid "Total Spendings"
 msgstr "Teljes költés"
+
+#: src/whatsthedamage/services/data_formatting_service.py:37
+#: src/whatsthedamage/view/templates/results.html:44
+msgid "Categories"
+msgstr "Kategóriák"
+
+#: src/whatsthedamage/services/data_formatting_service.py:419
+#: src/whatsthedamage/view/templates/category_all_months.html:20
+#: src/whatsthedamage/view/templates/category_month_detail.html:20
+#: src/whatsthedamage/view/templates/month_all_categories.html:20
+#: src/whatsthedamage/view/templates/results.html:31
+msgid "Account"
+msgstr "Számla"
 
 #: src/whatsthedamage/utils/date_converter.py:56
 msgid "January"
@@ -155,6 +163,44 @@ msgstr "December"
 msgid "Invalid month number. Please enter a number between 1 and 12."
 msgstr "Érvénytelen hónap. A hónap száma 1 és 12 között kell hogy legyen."
 
+#: src/whatsthedamage/view/templates/category_all_months.html:5
+#: src/whatsthedamage/view/templates/category_all_months.html:19
+msgid "Details for Category"
+msgstr "Kategória részletek"
+
+#: src/whatsthedamage/view/templates/category_all_months.html:29
+msgid "Month"
+msgstr "Hónap"
+
+#: src/whatsthedamage/view/templates/category_all_months.html:30
+#: src/whatsthedamage/view/templates/month_all_categories.html:30
+msgid "Total"
+msgstr "Teljes"
+
+#: src/whatsthedamage/view/templates/category_all_months.html:43
+#: src/whatsthedamage/view/templates/category_month_detail.html:43
+#: src/whatsthedamage/view/templates/month_all_categories.html:43
+#: src/whatsthedamage/view/templates/results.html:109
+msgid "Back"
+msgstr "Vissza"
+
+#: src/whatsthedamage/view/templates/category_month_detail.html:5
+#: src/whatsthedamage/view/templates/category_month_detail.html:19
+msgid "Transaction Details"
+msgstr "Tranzakció részletei"
+
+#: src/whatsthedamage/view/templates/category_month_detail.html:25
+msgid "Date"
+msgstr "Dátum"
+
+#: src/whatsthedamage/view/templates/category_month_detail.html:26
+msgid "Amount"
+msgstr "Összeg"
+
+#: src/whatsthedamage/view/templates/category_month_detail.html:27
+msgid "Merchant"
+msgstr "Kereskedő"
+
 #: src/whatsthedamage/view/templates/header.html:4
 msgid "Generate reports from your bank account CSV history."
 msgstr "Kimutatások készítése CSV fájlba mentett bankszámla tranzakciókból."
@@ -179,23 +225,23 @@ msgstr "Névjegy"
 msgid "Language"
 msgstr "Nyelv"
 
-#: src/whatsthedamage/view/templates/index.html:54
+#: src/whatsthedamage/view/templates/index.html:33
 msgid "File Uploads"
 msgstr "Fájl feltöltések"
 
-#: src/whatsthedamage/view/templates/index.html:58
-msgid "CSV file:"
-msgstr "CSV fájl:"
+#: src/whatsthedamage/view/templates/index.html:37
+msgid "CSV file"
+msgstr "CSV fájl"
 
-#: src/whatsthedamage/view/templates/index.html:60
+#: src/whatsthedamage/view/templates/index.html:39
 msgid "Upload your CSV file containing the exported bank account history here."
 msgstr "Töltsd ide fel a CSV fájlba elmentett bankszámla történetedet."
 
-#: src/whatsthedamage/view/templates/index.html:63
-msgid "Configuration file:"
-msgstr "Beállítások fájl:"
+#: src/whatsthedamage/view/templates/index.html:42
+msgid "Configuration file"
+msgstr "Beállítások fájl"
 
-#: src/whatsthedamage/view/templates/index.html:65
+#: src/whatsthedamage/view/templates/index.html:44
 msgid ""
 "Upload your configuration file here, or the default configuration will be "
 "used."
@@ -203,99 +249,116 @@ msgstr ""
 "Töltsd fel ide a beállításokat tartalmazó fájlt, ellenkező esetben az "
 "alapértelmezett lesz használva."
 
-#: src/whatsthedamage/view/templates/index.html:73
+#: src/whatsthedamage/view/templates/index.html:52
 msgid "Filters"
 msgstr "Szűrők"
 
-#: src/whatsthedamage/view/templates/index.html:77
-msgid "Start date:"
-msgstr "Kezdő dátum:"
+#: src/whatsthedamage/view/templates/index.html:56
+msgid "Start date"
+msgstr "Kezdő dátum"
 
-#: src/whatsthedamage/view/templates/index.html:79
+#: src/whatsthedamage/view/templates/index.html:58
 msgid "Filter results starting from this date."
 msgstr "Eredmények szűrése ettől a dátumtól kezdve."
 
-#: src/whatsthedamage/view/templates/index.html:82
-msgid "End date:"
-msgstr "Vége dátum:"
+#: src/whatsthedamage/view/templates/index.html:61
+msgid "End date"
+msgstr "Vége dátum"
 
-#: src/whatsthedamage/view/templates/index.html:84
+#: src/whatsthedamage/view/templates/index.html:63
 msgid "Filter results up until this date."
 msgstr "Eredmények szűrése eddig a dátumig."
 
-#: src/whatsthedamage/view/templates/index.html:87
-msgid "Category filter:"
-msgstr "Kategória szűrő:"
+#: src/whatsthedamage/view/templates/index.html:66
+msgid "Category filter"
+msgstr "Kategória szűrő"
 
-#: src/whatsthedamage/view/templates/index.html:89
+#: src/whatsthedamage/view/templates/index.html:68
 msgid "Filter by category. (default = 'category')"
 msgstr "Kategória szerinti szűrés. (alapértelmezett = 'category')"
 
-#: src/whatsthedamage/view/templates/index.html:99
+#: src/whatsthedamage/view/templates/index.html:78
 msgid "Advanced settings"
 msgstr "Haladó beállítások"
 
-#: src/whatsthedamage/view/templates/index.html:104
+#: src/whatsthedamage/view/templates/index.html:83
 msgid "Enable verbose logging"
 msgstr "Részletes naplózás"
 
-#: src/whatsthedamage/view/templates/index.html:105
+#: src/whatsthedamage/view/templates/index.html:84
 msgid "Enable detailed logging in the backend service's console."
 msgstr "Részletes naplózás engedélyezése a backend konzolon."
 
-#: src/whatsthedamage/view/templates/index.html:109
-msgid "No currency formatting"
-msgstr "Nincs valuta formázás"
-
-#: src/whatsthedamage/view/templates/index.html:110
-msgid ""
-"Select this option to exclude currency symbols in the exported CSV. You can "
-"format the cells in your spreadsheet application instead."
-msgstr ""
-"Jelöld be ha nem szeretnél valuta szimbólumokat látni a kimentett CSV "
-"fájlban. A formázást utólag is elvégezheted egy táblázatkezelő alkalmazásban."
-
-#: src/whatsthedamage/view/templates/index.html:115
+#: src/whatsthedamage/view/templates/index.html:89
 msgid "Use Machine Learning model for categorization"
 msgstr "Gépi tanulási modell használata a kategorizáláshoz"
 
-#: src/whatsthedamage/view/templates/index.html:119
+#: src/whatsthedamage/view/templates/index.html:93
 msgid "Uncheck to use regular expressions instead of the ML model."
 msgstr ""
 "Töröld ki a jelölést, hogy reguláris kifejezéseket használj a gépi tanulási "
 "modell helyett."
 
-#: src/whatsthedamage/view/templates/index.html:128
+#: src/whatsthedamage/view/templates/index.html:102
 msgid "Submit"
 msgstr "Beküldés"
 
-#: src/whatsthedamage/view/templates/index.html:131
+#: src/whatsthedamage/view/templates/index.html:105
 msgid "Clear Form"
 msgstr "Űrlap törlése"
 
-#: src/whatsthedamage/view/templates/result.html:12
+#: src/whatsthedamage/view/templates/month_all_categories.html:5
+#: src/whatsthedamage/view/templates/month_all_categories.html:19
+msgid "Details for Month"
+msgstr "Hónap részletei"
+
+#: src/whatsthedamage/view/templates/month_all_categories.html:29
+msgid "Category"
+msgstr "Kategória"
+
+#: src/whatsthedamage/view/templates/results.html:5
 msgid "Result"
 msgstr "Eredmény"
 
-#: src/whatsthedamage/view/templates/result.html:68
+#: src/whatsthedamage/view/templates/results.html:11
+msgid "Export CSV"
+msgstr "Mentés CSV-be"
+
+#: src/whatsthedamage/view/templates/results.html:12
+msgid "Export Excel"
+msgstr "Mentés Excel-be"
+
+#: src/whatsthedamage/view/templates/results.html:21
 msgid "Processed results"
 msgstr "Feldolgozott eredmények"
 
-#: src/whatsthedamage/view/templates/result.html:115
-msgid "Back"
-msgstr "Vissza"
+#~ msgid "Month Details"
+#~ msgstr "Hónap részletei"
 
-#: src/whatsthedamage/view/templates/result.html:118
-msgid "Download CSV"
-msgstr "CSV letöltése"
+#~ msgid "Category Details"
+#~ msgstr "Kategória részletei"
 
-#: src/whatsthedamage/view/templates/result.html:123
-msgid ""
-"Note: Should you want to have better results in importing the generated CSV "
-"file, please make sure to check \"No Currenty Format\" on the previous form."
-msgstr ""
-"Megjegyzés: A generált CSV jobb importálhatósága érdekében érdemes lehet a "
-"\"Nincs valuta formázás\" opciót bekapcsolni."
+#~ msgid "No currency formatting"
+#~ msgstr "Nincs valuta formázás"
+
+#~ msgid ""
+#~ "Select this option to exclude currency symbols in the exported CSV. You "
+#~ "can format the cells in your spreadsheet application instead."
+#~ msgstr ""
+#~ "Jelöld be ha nem szeretnél valuta szimbólumokat látni a kimentett CSV "
+#~ "fájlban. A formázást utólag is elvégezheted egy táblázatkezelő "
+#~ "alkalmazásban."
+
+#~ msgid "Download CSV"
+#~ msgstr "CSV letöltése"
+
+#~ msgid ""
+#~ "Note: Should you want to have better results in importing the generated "
+#~ "CSV file, please make sure to check \"No Currenty Format\" on the "
+#~ "previous form."
+#~ msgstr ""
+#~ "Megjegyzés: A generált CSV jobb importálhatósága érdekében érdemes lehet "
+#~ "a \"Nincs valuta formázás\" opciót bekapcsolni."
 
 #~ msgid "What's the Damage?"
 #~ msgstr "Hogy mennyi?!"

@@ -2,9 +2,14 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>{{ _('Category Details') }}: {{ _(category) }}</title>
+    <title>{{ _('Details for Category') }}: {{ _(category) }}</title>
     <link href="{{ url_for('static', filename='dist/css/main.css') }}" rel="stylesheet">
     <script type="module" src="{{ url_for('static', filename='dist/js/main.js') }}"></script>
+    <!-- Translated strings and highlights for JavaScript -->
+    <script>
+        globalThis.resultId = '{{ result_id }}';
+        globalThis.highlights = '{{ highlights | tojson }}';
+    </script>
 </head>
 <body>
     <header>
@@ -18,7 +23,7 @@
         {{ render_statistical_controls(result_id) }}
 
         <div class="table-responsive">
-            <table id="category-details-table" class="table table-bordered" data-datatable="true">
+            <table id="datatable-category" class="table table-bordered" data-datatable="true">
                 <thead>
                     <tr>
                         <th>{{ _('Month') }}</th>
@@ -28,8 +33,8 @@
                 <tbody>
                     {% for row in data %}
                     <tr>
-                        <td>{{ row.date.display }}</td>
-                        <td data-row-id="{{ row.row_id }}" class="highlight-{{ highlights.get(row.row_id, '') }}">{{ row.total.display }}</td>
+                        <td><a href="/details/{{ result_id }}/{{ account }}/{{ category }}/{{ row.date.timestamp }}" class="clickable">{{ row.date.display }}</a></td>
+                        <td data-row-id="{{ row.row_id }}" class="">{{ row.total.display }}</td>
                     </tr>
                     {% endfor %}
                 </tbody>

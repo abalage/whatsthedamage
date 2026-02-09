@@ -498,4 +498,4 @@ class TestStatisticalAlgorithmIntegration:
         assert hasattr(highlights[0], 'row_id')
         assert not hasattr(highlights[0], 'row')
         assert not hasattr(highlights[0], 'column')
-        assert highlights[0].highlight_type == "mock_highlight"
+        assert highlights[0].highlight_types == ["mock_highlight"]

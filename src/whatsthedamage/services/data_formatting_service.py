@@ -13,7 +13,7 @@ Architecture Patterns:
 """
 import pandas as pd
 import json
-from typing import Dict, Optional, Any
+from typing import Dict, Optional, Any, List
 from whatsthedamage.models.dt_models import DataTablesResponse, StatisticalMetadata, SummaryData
 from gettext import gettext as _
 from whatsthedamage.services.statistical_analysis_service import StatisticalAnalysisService
@@ -439,15 +439,17 @@ class DataFormattingService:
 
         return result
 
-    def _convert_metadata_to_highlights_dict(self, metadata: 'StatisticalMetadata') -> Dict[str, str]:
+    def _convert_metadata_to_highlights_dict(self, metadata: 'StatisticalMetadata') -> Dict[str, List[str]]:
         """Convert StatisticalMetadata to the highlights dict format expected by templates.
 
         :param metadata: StatisticalMetadata containing CellHighlight objects
-        :return: Dictionary of highlights keyed by row_id
+        :return: Dictionary of highlights keyed by row_id, with list of highlight types
         """
-        highlights_dict = {}
+        highlights_dict: Dict[str, List[str]] = {}
         for highlight in metadata.highlights:
-            highlights_dict[highlight.row_id] = highlight.highlight_type
+            if highlight.row_id not in highlights_dict:
+                highlights_dict[highlight.row_id] = []
+            highlights_dict[highlight.row_id].extend(highlight.highlight_types)
         return highlights_dict
 
     def prepare_accounts_for_template(
@@ -463,9 +465,10 @@ class DataFormattingService:
 
         :param dt_responses: Dict mapping account_id to DataTablesResponse
         :param statistical_metadata: StatisticalMetadata containing highlights for all accounts
-        :return: Dict with 'accounts' list and 'has_multiple_accounts' flag
+        :return: Dict with 'accounts' list, 'highlights' (combined), and 'has_multiple_accounts' flag
         """
         accounts = []
+        all_highlights_combined = self._convert_metadata_to_highlights_dict(statistical_metadata)
 
         for account_id in sorted(dt_responses.keys()):
             dt_response = dt_responses[account_id]
@@ -476,19 +479,25 @@ class DataFormattingService:
                 for i in range(0, len(account_id), 8)
             )
 
-            # Use the provided statistical metadata
-            highlights = self._convert_metadata_to_highlights_dict(statistical_metadata)
+            # Filter highlights to only include those that belong to this account
+            # This prevents JSON serialization errors by ensuring all row_ids exist in current account
+            existing_row_ids = {row.row_id for row in dt_response.data}
+            filtered_highlights = {}
+            for row_id, highlight_types in all_highlights_combined.items():
+                if row_id in existing_row_ids:
+                    filtered_highlights[row_id] = highlight_types
 
             accounts.append({
                 'id': account_id,
                 'formatted_id': formatted_id,
                 'currency': dt_response.currency,
                 'dt_response': dt_response,
-                'highlights': highlights,
+                'highlights': filtered_highlights,
             })
 
         return {
             'accounts': accounts,
+            'highlights': all_highlights_combined,  # Combined highlights for all accounts
             'has_multiple_accounts': len(accounts) > 1
         }
 

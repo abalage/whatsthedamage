@@ -5,6 +5,11 @@
     <title>{{ _('Transaction Details') }}: {{ _(category) }} / {{ _(data[0].date.display if data) }}</title>
     <link href="{{ url_for('static', filename='dist/css/main.css') }}" rel="stylesheet">
     <script type="module" src="{{ url_for('static', filename='dist/js/main.js') }}"></script>
+    <!-- Translated strings and highlights for JavaScript -->
+    <script>
+        globalThis.resultId = '{{ result_id }}';
+        globalThis.highlights = '{{ highlights | tojson }}';
+    </script>
 </head>
 <body>
     <header>
@@ -27,7 +32,7 @@
                     {% for detail in row.details %}
                     <tr>
                         <td>{{ detail.date.display }}</td>
-                        <td>{{ detail.amount.display }}</td>
+                        <td data-row-id="{{ detail.row_id }}" class="">{{ detail.amount.display }}</td>
                         <td>{{ detail.merchant }}</td>
                     </tr>
                     {% endfor %}

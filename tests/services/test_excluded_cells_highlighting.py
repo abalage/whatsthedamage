@@ -112,7 +112,7 @@ def test_excluded_cells_highlighting_with_exclusion_service(sample_dt_response):
     # Find excluded highlights
     excluded_highlights = [
         h for h in metadata.highlights
-        if h.highlight_type == "excluded"
+        if h.highlight_types[0] == "excluded"
     ]
 
     # Should have excluded highlights for:
@@ -123,8 +123,8 @@ def test_excluded_cells_highlighting_with_exclusion_service(sample_dt_response):
     # Verify the highlight structure
     for highlight in excluded_highlights:
         assert hasattr(highlight, 'row_id')
-        assert hasattr(highlight, 'highlight_type')
-        assert highlight.highlight_type == "excluded"
+        assert hasattr(highlight, 'highlight_types')
+        assert highlight.highlight_types[0] == "excluded"
 
 def test_excluded_cells_highlighting_without_exclusion_service(sample_dt_response):
     """Test that calculated rows are still excluded even without exclusion service."""
@@ -142,7 +142,7 @@ def test_excluded_cells_highlighting_without_exclusion_service(sample_dt_respons
     # Find excluded highlights
     excluded_highlights = [
         h for h in metadata.highlights
-        if h.highlight_type == "excluded"
+        if h.highlight_types[0] == "excluded"
     ]
 
     # Should have excluded highlights for calculated rows
@@ -174,4 +174,4 @@ def test_get_excluded_cell_highlights_method(sample_dt_response):
 
     # Verify all highlights have the correct type
     for highlight in excluded_highlights:
-        assert highlight.highlight_type == "excluded"
+        assert highlight.highlight_types[0] == "excluded"

@@ -6,11 +6,20 @@
 import { showNotification } from './utils';
 import { postData } from './api';
 import { AppError, StatisticalAnalysisRequest, StatisticalAnalysisResponse } from '../types';
+import { getCssClassesForHighlights } from '../config/highlight-config';
 
 /**
  * Initialize statistical analysis controls
  */
 export function initStatisticalAnalysis(): void {
+    // Apply initial highlights if available
+    const highlights = (globalThis as any).highlights;
+    if (highlights) {
+        // Parse the JSON string into an object if it's a string
+        const parsedHighlights = typeof highlights === 'string' ? JSON.parse(highlights) : highlights;
+        updateCellHighlights(parsedHighlights);
+    }
+
     const recalculateBtn = document.getElementById('recalculate-btn');
     const resetBtn = document.getElementById('reset-btn');
 
@@ -141,15 +150,13 @@ export function initStatisticalAnalysis(): void {
  * @param types - Array of highlight types
  */
 function applyHighlightClasses(cell: HTMLElement, types: string[]): void {
-    const algoHighlights = types;
+    // Get CSS classes using the configuration
+    const cssClasses = getCssClassesForHighlights(types);
 
-    if (algoHighlights.length === 1 && algoHighlights[0]) {
-        // Single algorithm highlight
-        cell.classList.add(`highlight-${algoHighlights[0]}`);
-    } else if ((algoHighlights.length > 1)) {
-        // Multiple highlights or excluded with algo highlight
-        cell.classList.add('highlight-multiple');
-    }
+    // Apply each CSS class to the cell
+    cssClasses.forEach(cssClass => {
+        cell.classList.add(cssClass);
+    });
 }
 
 /**

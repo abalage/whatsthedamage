@@ -10,6 +10,7 @@
         globalThis.resultId = '{{ result_id }}';
         globalThis.exportCsvText = '{{ _("Export CSV") }}';
         globalThis.exportExcelText = '{{ _("Export Excel") }}';
+        globalThis.highlights = '{{ accounts_data.highlights | tojson }}'
     </script>
 </head>
 <body>
@@ -33,7 +34,7 @@
                     {% endif %}
                 </h2>
             </div>
-            
+
             <div class="row">
                 <div class="col-md-12 mb-3">
                     <div class="table-responsive">
@@ -78,7 +79,7 @@
 
                                             <td data-order="{{ agg_row_data.total.raw }}"
                                                 data-row-id="{{ agg_row_data.row_id }}"
-                                                class="{{ account.css_classes.get(agg_row_data.row_id, '') }}"
+                                                class=""
                                                 {% if agg_row_data.details %}
                                                     tabindex="0"
                                                     data-bs-toggle="popover"
@@ -102,7 +103,7 @@
             </div>
         </div>
         {% endfor %}
-        
+
         <div class="row">
             <div class="col-md-6">
                 <a href="/" class="btn btn-secondary mt-3 mb-3">{{ _('Back') }}</a>

@@ -134,27 +134,25 @@ def get_cached_data_for_drilldown(
 
 def _process_statistical_metadata(
     cached_result: Optional[ProcessingResponse]
-) -> Tuple[Dict[str, List[str]], Dict[str, str]]:
-    """Process statistical metadata and return highlights and CSS classes.
+) -> Dict[str, List[str]]:
+    """Process statistical metadata and return highlights.
 
     Extracts highlight information from cached processing result and converts
-    it to the format expected by templates.
+    it to the format expected by templates. CSS class mapping is now handled
+    in the frontend presentation layer.
 
     Args:
         cached_result: The cached ProcessingResponse object
 
     Returns:
-        Tuple of (highlights_dict, css_classes_dict)
-        - highlights_dict: Dictionary mapping row_id to list of highlight types
-        - css_classes_dict: Dictionary mapping row_id to CSS class strings
+        Dictionary mapping row_id to list of highlight types
 
     Example:
-        >>> highlights, css_classes = _process_statistical_metadata(cached)
+        >>> highlights = _process_statistical_metadata(cached)
         >>> # highlights: {'row1': ['outlier'], 'row2': ['pareto']}
-        >>> # css_classes: {'row1': 'highlight-outlier', 'row2': 'highlight-pareto'}
     """
     if not cached_result or not cached_result.statistical_metadata:
-        return {}, {}
+        return {}
 
     # Convert highlights to dictionary format
     highlights_dict = {}
@@ -163,11 +161,7 @@ def _process_statistical_metadata(
             highlights_dict[highlight.row_id] = []
         highlights_dict[highlight.row_id].extend(highlight.highlight_types)
 
-    # Build CSS classes dictionary
-    formatting_service = _get_data_formatting_service()
-    css_classes_dict = formatting_service._build_css_classes_dict(highlights_dict)
-
-    return highlights_dict, css_classes_dict
+    return highlights_dict
 
 def handle_drilldown_request(
     result_id: str,
@@ -224,10 +218,9 @@ def handle_drilldown_request(
     try:
         cache_service = _get_cache_service()
         cached = cache_service.get(result_id)
-        highlights_dict, css_classes_dict = _process_statistical_metadata(cached)
+        highlights_dict = _process_statistical_metadata(cached)
     except Exception:
         highlights_dict = {}
-        css_classes_dict = {}
 
     # Build context and render
     context = {
@@ -236,7 +229,6 @@ def handle_drilldown_request(
         'formatted_account': formatted_account,
         'result_id': result_id,
         'highlights': highlights_dict,
-        'css_classes': css_classes_dict,
         **template_context
     }
     return make_response(render_template(template, **context))
@@ -290,11 +282,13 @@ def process_details_and_build_response(
 
     # Pass the prepared data to template for multi-account rendering
     clear_upload_folder_fn()
-    return _get_response_builder_service().build_html_response(
-        template='results.html',
-        accounts_data=accounts_data,
-        result_id=result_id,
-        timing=result.metadata.processing_time
+
+    return make_response(
+        render_template(
+            'results.html',
+            accounts_data=accounts_data,
+            result_id=result_id
+        )
     )
 
 def handle_recalculate_statistics_request(

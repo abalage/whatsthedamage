@@ -5,6 +5,11 @@
     <title>{{ _('Month Details') }}: {{ _(data[0].date.display if data) }}</title>
     <link href="{{ url_for('static', filename='dist/css/main.css') }}" rel="stylesheet">
     <script type="module" src="{{ url_for('static', filename='dist/js/main.js') }}"></script>
+    <!-- Translated strings and highlights for JavaScript -->
+    <script>
+        globalThis.resultId = '{{ result_id }}';
+        globalThis.highlights = '{{ highlights | tojson }}';
+    </script>
 </head>
 <body>
     <header>
@@ -18,7 +23,7 @@
         {{ render_statistical_controls(result_id) }}
 
         <div class="table-responsive">
-            <table id="month-details-table" class="table table-bordered" data-datatable="true">
+            <table id="datatable-month" class="table table-bordered" data-datatable="true">
                 <thead>
                     <tr>
                         <th>{{ _('Category') }}</th>
@@ -28,8 +33,8 @@
                 <tbody>
                     {% for row in data %}
                     <tr>
-                        <td>{{ row.category }}</td>
-                        <td data-row-id="{{ row.row_id }}" class="{{ css_classes.get(row.row_id, '') }}">{{ row.total.display }}</td>
+                        <td><a href="/details/{{ result_id }}/{{ account }}/{{ row.category }}" class="clickable">{{ row.category }}</a></td>
+                        <td data-row-id="{{ row.row_id }}" class="">{{ row.total.display }}</td>
                     </tr>
                     {% endfor %}
                 </tbody>

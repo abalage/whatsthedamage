@@ -141,6 +141,9 @@ def _process_statistical_metadata(
     it to the format expected by templates. CSS class mapping is now handled
     in the frontend presentation layer.
 
+    Uses DataFormattingService._convert_metadata_to_highlights_dict() to
+    eliminate code duplication and centralize the conversion logic.
+
     Args:
         cached_result: The cached ProcessingResponse object
 
@@ -154,14 +157,11 @@ def _process_statistical_metadata(
     if not cached_result or not cached_result.statistical_metadata:
         return {}
 
-    # Convert highlights to dictionary format
-    highlights_dict = {}
-    for highlight in cached_result.statistical_metadata.highlights:
-        if highlight.row_id not in highlights_dict:
-            highlights_dict[highlight.row_id] = []
-        highlights_dict[highlight.row_id].extend(highlight.highlight_types)
-
-    return highlights_dict
+    # Use DataFormattingService to convert metadata to highlights dict
+    formatting_service = _get_data_formatting_service()
+    return formatting_service._convert_metadata_to_highlights_dict(
+        cached_result.statistical_metadata
+    )
 
 def handle_drilldown_request(
     result_id: str,
@@ -346,9 +346,10 @@ def handle_recalculate_statistics_request(
         cache_service.set(result_id, updated_cached)
 
         # Convert highlights to dictionary format for easier frontend processing
-        highlights_dict = {}
-        for highlight in new_statistical_metadata.highlights:
-            highlights_dict[highlight.row_id] = highlight.highlight_types
+        formatting_service = _get_data_formatting_service()
+        highlights_dict = formatting_service._convert_metadata_to_highlights_dict(
+            new_statistical_metadata
+        )
 
         return {
             'status': 'success',

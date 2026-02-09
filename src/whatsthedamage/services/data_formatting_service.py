@@ -445,7 +445,7 @@ class DataFormattingService:
         :param metadata: StatisticalMetadata containing CellHighlight objects
         :return: Dictionary of highlights keyed by row_id, with list of highlight types
         """
-        highlights_dict = {}
+        highlights_dict: Dict[str, List[str]] = {}
         for highlight in metadata.highlights:
             if highlight.row_id not in highlights_dict:
                 highlights_dict[highlight.row_id] = []

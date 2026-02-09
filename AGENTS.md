@@ -73,8 +73,8 @@ make web  # Flask development server
 ### Common Commands
 ```bash
 source .venv/bin/activate         # Activate virtual env
-ruff check --fix src tests        # Python linting from virtual env
-mypy src                          # Type checking from virtual env
+tox -e lint                       # Python linting from virtual env
+tox -e type                       # Type checking from virtual env
 pytest                            # Run backend tests from virtual env
 make frontend ARG=test            # Run frontend tests
 make docs                         # Generate documentation
@@ -97,6 +97,7 @@ make lang                         # Extract translatable texts
 - **Line length**: Maximum 79 characters
 - **Indentation**: 4 spaces per level
 - **Imports**: Group by type, separate with blank lines
+- **Trailing whitespaces**: Remove trailing whitespaces
 
 ### JavaScript/TypeScript
 - Use modern JavaScript with ES2022 features

@@ -10,7 +10,7 @@ Architecture Patterns:
 - Template Method: Common structure, variant implementations
 - DRY Principle: Single implementation for response building
 """
-from typing import Dict, Any, Optional, List, Union, TYPE_CHECKING
+from typing import Dict, Any, Optional, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from flask import Response

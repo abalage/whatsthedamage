@@ -81,42 +81,6 @@ class ResponseBuilderService:
             )
         )
 
-    def build_html_response(
-        self,
-        template: str,
-        headers: Optional[List[str]] = None,
-        rows: Optional[List[List[Dict[str, Union[str, float, None]]]]] = None,
-        **kwargs: Any
-    ) -> "Response":
-        """Build HTML response with proper headers.
-
-        Args:
-            template: Template name (e.g., 'result.html')
-            headers: Table headers (for v1 templates)
-            rows: Table rows with display/order/details metadata (for v1 templates)
-            \\**kwargs: Additional template context variables (e.g., dt_responses for v2)
-
-        Returns:
-            Flask Response object with rendered HTML
-
-        Example:
-            >>> response = service.build_html_response(
-            ...     template='results.html',
-            ...     dt_responses=dt_responses_dict
-            ... )
-        """
-        from flask import make_response, render_template
-
-        template_context = {**kwargs}
-        if headers is not None:
-            template_context['headers'] = headers
-        if rows is not None:
-            template_context['rows'] = rows
-
-        return make_response(
-            render_template(template, **template_context)
-        )
-
     def build_error_response(
         self,
         error: Exception,

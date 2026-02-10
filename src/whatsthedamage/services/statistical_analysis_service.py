@@ -68,7 +68,7 @@ class StatisticalAnalysisService:
 
         return month_map
 
-    def _get_excluded_categories(self) -> set:
+    def _get_excluded_categories(self) -> set[str]:
         """Get excluded categories as a set for efficient lookup.
 
         Returns:

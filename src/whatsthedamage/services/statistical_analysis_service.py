@@ -68,6 +68,16 @@ class StatisticalAnalysisService:
 
         return month_map
 
+    def _get_excluded_categories(self) -> set:
+        """Get excluded categories as a set for efficient lookup.
+
+        Returns:
+            Set of excluded category names, or empty set if no exclusion service
+        """
+        if self._exclusion_service:
+            return set(self._exclusion_service.get_exclusions())
+        return set()
+
     def _is_cell_excluded(self, month_display: str, category: str, dt_response: DataTablesResponse, month_map: Optional[Dict[str, List[AggregatedRow]]] = None) -> bool:
         """Check if a specific cell (month, category) should be excluded.
 
@@ -84,10 +94,8 @@ class StatisticalAnalysisService:
         Returns:
             True if the cell should be excluded, False otherwise
         """
-        # Get excluded categories if exclusion service is available
-        excluded_categories = set()
-        if self._exclusion_service:
-            excluded_categories = set(self._exclusion_service.get_exclusions())
+        # Get excluded categories using optimized method
+        excluded_categories = self._get_excluded_categories()
 
         # Build or use provided month to rows mapping for quick lookup
         if month_map is None:
@@ -112,23 +120,24 @@ class StatisticalAnalysisService:
     ) -> List[Tuple[str, Dict[str, float]]]:
         """Transform summary data based on analysis direction.
 
+        Optimized implementation that handles both COLUMNS and ROWS directions efficiently.
+
         :param summary: SummaryData object containing nested dictionary structure Dict[outer_key, Dict[inner_key, amount]]
         :param direction: Analysis direction (COLUMNS or ROWS)
         :return: List of (key, data_dict) tuples for analysis
         """
         if direction == AnalysisDirection.COLUMNS:
-            # Analyze inner keys within each outer key (e.g., categories within months)
-            return [(outer_key, inner_data) for outer_key, inner_data in summary.summary.items()]
+            # For COLUMNS: Direct mapping - outer_key=month, inner_data=categories
+            return list(summary.summary.items())
         else:  # ROWS
-            # Analyze outer keys within each inner key (e.g., months within categories)
-            # Transpose the data structure
+            # For ROWS: Transpose data - outer_key=category, inner_data=months
             transposed_data: Dict[str, Dict[str, float]] = {}
             for outer_key, inner_data in summary.summary.items():
                 for inner_key, amount in inner_data.items():
                     if inner_key not in transposed_data:
                         transposed_data[inner_key] = {}
                     transposed_data[inner_key][outer_key] = amount
-            return [(inner_key, outer_data) for inner_key, outer_data in transposed_data.items()]
+            return list(transposed_data.items())
 
 
     def _build_highlight(self, row_id: str, highlight_type: str) -> CellHighlight:
@@ -146,6 +155,27 @@ class StatisticalAnalysisService:
             highlight_types=[highlight_type]
         )
 
+    def _create_row_index(self, dt_response: DataTablesResponse) -> Dict[Tuple[str, str], str]:
+        """Create an efficient lookup index for rows by (month_display, category) or (category, month_display).
+
+        Args:
+            dt_response: DataTablesResponse containing the actual rows with UUIDs
+
+        Returns:
+            Dictionary mapping (month_display, category) tuples to row_ids for COLUMNS direction,
+            or (category, month_display) tuples to row_ids for ROWS direction
+        """
+        row_index: Dict[Tuple[str, str], str] = {}
+
+        for agg_row in dt_response.data:
+            month_display = agg_row.date.display
+            category = agg_row.category
+            # Index by both (month, category) and (category, month) for flexibility
+            row_index[(month_display, category)] = agg_row.row_id
+            row_index[(category, month_display)] = agg_row.row_id
+
+        return row_index
+
     def _create_highlight_for_algorithm(
         self,
         algo: StatisticalAlgorithm,
@@ -153,7 +183,9 @@ class StatisticalAnalysisService:
         algo_transformed_data: List[Tuple[str, Dict[str, float]]],
         dt_response: DataTablesResponse
     ) -> List[CellHighlight]:
-        """Create highlights for a single algorithm using direct row matching.
+        """Create highlights for a single algorithm using efficient row lookup.
+
+        Optimized implementation that uses a pre-built row index for O(1) lookups instead of O(n) searches.
 
         Args:
             algo: The algorithm instance
@@ -166,26 +198,24 @@ class StatisticalAnalysisService:
         """
         highlights: List[CellHighlight] = []
 
+        # Build efficient row index once for all highlight lookups
+        row_index = self._create_row_index(dt_response)
+
         for outer_key, inner_data in algo_transformed_data:
             algo_highlights = algo.analyze(inner_data)
 
             for inner_key, highlight_type in algo_highlights.items():
-                # Directly find the matching row in dt_response by comparing actual field values
-                for agg_row in dt_response.data:
-                    if algo_direction == AnalysisDirection.COLUMNS:
-                        # For COLUMNS: outer_key=month, inner_key=category
-                        if (agg_row.date.display == outer_key and
-                            agg_row.category == inner_key):
-                            highlight = self._build_highlight(agg_row.row_id, highlight_type)
-                            highlights.append(highlight)
-                            break
-                    else:
-                        # For ROWS: outer_key=category, inner_key=month
-                        if (agg_row.category == outer_key and
-                            agg_row.date.display == inner_key):
-                            highlight = self._build_highlight(agg_row.row_id, highlight_type)
-                            highlights.append(highlight)
-                            break
+                if algo_direction == AnalysisDirection.COLUMNS:
+                    # For COLUMNS: lookup by (month, category)
+                    lookup_key = (outer_key, inner_key)
+                else:
+                    # For ROWS: lookup by (category, month)
+                    lookup_key = (inner_key, outer_key)
+
+                if lookup_key in row_index:
+                    row_id = row_index[lookup_key]
+                    highlight = self._build_highlight(row_id, highlight_type)
+                    highlights.append(highlight)
 
         return highlights
 

@@ -125,14 +125,14 @@ class TestExpenseFiltering:
         assert service.filter_expenses_only is False
 
     def test_filter_expenses_only_removes_positive_values(self, sample_data_with_mixed_values):
-        """Test that _filter_expenses_only removes positive values when enabled."""
+        """Test that _filter_data_for_analysis removes positive values when expense filtering is enabled."""
         dt_response = DataTablesResponse(
             data=sample_data_with_mixed_values,
             account="Test Account",
             currency="USD"
         )
         service = StatisticalAnalysisService(filter_expenses_only=True)
-        filtered_response = service._filter_expenses_only(dt_response)
+        filtered_response = service._filter_data_for_analysis(dt_response)
 
         # Should only have negative values
         assert len(filtered_response.data) == 4  # Grocery, Maintenance, Health, Vehicle
@@ -145,7 +145,7 @@ class TestExpenseFiltering:
         assert "Refund" not in categories
 
     def test_filter_expenses_only_removes_zero_values(self):
-        """Test that _filter_expenses_only removes zero values."""
+        """Test that _filter_data_for_analysis removes zero values when expense filtering is enabled."""
         data = [
             AggregatedRow(
                 row_id=str(uuid.uuid4()),
@@ -170,21 +170,21 @@ class TestExpenseFiltering:
             currency="USD"
         )
         service = StatisticalAnalysisService(filter_expenses_only=True)
-        filtered_response = service._filter_expenses_only(dt_response)
+        filtered_response = service._filter_data_for_analysis(dt_response)
 
         # Should only have negative values (zero is not negative)
         assert len(filtered_response.data) == 1
         assert filtered_response.data[0].category == "Grocery"
 
     def test_filter_expenses_only_disabled_keeps_all_values(self, sample_data_with_mixed_values):
-        """Test that _filter_expenses_only keeps all values when disabled."""
+        """Test that _filter_data_for_analysis keeps all values when expense filtering is disabled."""
         dt_response = DataTablesResponse(
             data=sample_data_with_mixed_values,
             account="Test Account",
             currency="USD"
         )
         service = StatisticalAnalysisService(filter_expenses_only=False)
-        filtered_response = service._filter_expenses_only(dt_response)
+        filtered_response = service._filter_data_for_analysis(dt_response)
 
         # Should have all values
         assert len(filtered_response.data) == 6
@@ -197,14 +197,14 @@ class TestExpenseFiltering:
         assert "Vehicle" in categories
 
     def test_filter_expenses_only_with_all_expenses(self, sample_data_all_expenses):
-        """Test that _filter_expenses_only keeps all values when all are expenses."""
+        """Test that _filter_data_for_analysis keeps all values when all are expenses."""
         dt_response = DataTablesResponse(
             data=sample_data_all_expenses,
             account="Test Account",
             currency="USD"
         )
         service = StatisticalAnalysisService(filter_expenses_only=True)
-        filtered_response = service._filter_expenses_only(dt_response)
+        filtered_response = service._filter_data_for_analysis(dt_response)
 
         # Should have all values since they're all expenses
         assert len(filtered_response.data) == 3
@@ -214,14 +214,14 @@ class TestExpenseFiltering:
         assert "Health" in categories
 
     def test_filter_expenses_only_with_all_income(self, sample_data_all_income):
-        """Test that _filter_expenses_only removes all values when all are income."""
+        """Test that _filter_data_for_analysis removes all values when all are income."""
         dt_response = DataTablesResponse(
             data=sample_data_all_income,
             account="Test Account",
             currency="USD"
         )
         service = StatisticalAnalysisService(filter_expenses_only=True)
-        filtered_response = service._filter_expenses_only(dt_response)
+        filtered_response = service._filter_data_for_analysis(dt_response)
 
         # Should have no values since they're all income
         assert len(filtered_response.data) == 0

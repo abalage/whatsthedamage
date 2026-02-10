@@ -68,7 +68,7 @@ class StatisticalAnalysisService:
 
         return month_map
 
-    def _is_cell_excluded(self, month_display: str, category: str, dt_response: DataTablesResponse) -> bool:
+    def _is_cell_excluded(self, month_display: str, category: str, dt_response: DataTablesResponse, month_map: Optional[Dict[str, List[AggregatedRow]]] = None) -> bool:
         """Check if a specific cell (month, category) should be excluded.
 
         A cell is excluded if:
@@ -79,6 +79,7 @@ class StatisticalAnalysisService:
             month_display: The month display string
             category: The category name
             dt_response: DataTablesResponse containing all rows
+            month_map: Optional pre-built month to rows mapping for performance optimization
 
         Returns:
             True if the cell should be excluded, False otherwise
@@ -88,8 +89,9 @@ class StatisticalAnalysisService:
         if self._exclusion_service:
             excluded_categories = set(self._exclusion_service.get_exclusions())
 
-        # Build month to rows mapping for quick lookup
-        month_map = self._build_month_to_rows_map(dt_response)
+        # Build or use provided month to rows mapping for quick lookup
+        if month_map is None:
+            month_map = self._build_month_to_rows_map(dt_response)
 
         # Check if this month exists in the map
         if month_display not in month_map:
@@ -226,6 +228,7 @@ class StatisticalAnalysisService:
         """Get highlights for cells that should be excluded from statistical analysis.
 
         Identifies cells that are either calculated rows or belong to excluded categories.
+        Uses caching mechanism for better performance by building month map once.
 
         Args:
             dt_response: Original DataTablesResponse with all rows
@@ -235,13 +238,16 @@ class StatisticalAnalysisService:
         """
         excluded_highlights: List[CellHighlight] = []
 
+        # Build month map once and reuse it for all exclusion checks
+        month_map = self._build_month_to_rows_map(dt_response)
+
         # Iterate through all rows directly instead of extracting summary
         for agg_row in dt_response.data:
             month_display = agg_row.date.display
             category = agg_row.category
 
-            # Check if this cell should be excluded
-            if self._is_cell_excluded(month_display, category, dt_response):
+            # Check if this cell should be excluded, using pre-built month map
+            if self._is_cell_excluded(month_display, category, dt_response, month_map):
                 excluded_highlights.append(CellHighlight(
                     row_id=agg_row.row_id,
                     highlight_types=['excluded']
@@ -249,66 +255,40 @@ class StatisticalAnalysisService:
 
         return excluded_highlights
 
-    def _filter_calculated_rows(self, dt_response: DataTablesResponse) -> DataTablesResponse:
-        """Filter out calculated rows from DataTablesResponse for statistical analysis.
+
+    def _filter_data_for_analysis(self, dt_response: DataTablesResponse) -> DataTablesResponse:
+        """Filter DataTablesResponse for statistical analysis in a single pass.
+
+        Applies all filtering criteria (calculated rows, excluded categories, expenses)
+        in one iteration to improve performance and reduce object creation overhead.
 
         Args:
             dt_response: Original DataTablesResponse with all rows
 
         Returns:
-            DataTablesResponse with only non-calculated rows
+            DataTablesResponse with filtered rows ready for analysis
         """
-        filtered_rows = [
-            row for row in dt_response.data
-            if not row.is_calculated
-        ]
-        return DataTablesResponse(
-            data=filtered_rows,
-            account=dt_response.account,
-            currency=dt_response.currency
-        )
+        # Pre-compute exclusions if exclusion service is available
+        excluded_categories = set()
+        if self._exclusion_service:
+            excluded_categories = set(self._exclusion_service.get_exclusions())
 
-    def _filter_excluded_categories(self, dt_response: DataTablesResponse) -> DataTablesResponse:
-        """Filter out excluded categories from DataTablesResponse for statistical analysis.
+        filtered_rows = []
+        for row in dt_response.data:
+            # Skip calculated rows
+            if row.is_calculated:
+                continue
 
-        Args:
-            dt_response: Original DataTablesResponse with all rows
+            # Skip excluded categories
+            if row.category in excluded_categories:
+                continue
 
-        Returns:
-            DataTablesResponse with excluded categories removed
-        """
-        if not self._exclusion_service:
-            return dt_response
+            # Skip non-expenses if filter is enabled
+            if self.filter_expenses_only and float(row.total.raw) >= 0:
+                continue
 
-        # Get all exclusions (union of all algorithm exclusions)
-        exclusions = self._exclusion_service.get_exclusions()
+            filtered_rows.append(row)
 
-        filtered_rows = [
-            row for row in dt_response.data
-            if row.category not in exclusions
-        ]
-        return DataTablesResponse(
-            data=filtered_rows,
-            account=dt_response.account,
-            currency=dt_response.currency
-        )
-
-    def _filter_expenses_only(self, dt_response: DataTablesResponse) -> DataTablesResponse:
-        """Filter DataTablesResponse to only include expense transactions (negative amounts).
-
-        Args:
-            dt_response: Original DataTablesResponse with all rows
-
-        Returns:
-            DataTablesResponse with only expense rows (where total.raw < 0)
-        """
-        if not self.filter_expenses_only:
-            return dt_response
-
-        filtered_rows = [
-            row for row in dt_response.data
-            if float(row.total.raw) < 0
-        ]
         return DataTablesResponse(
             data=filtered_rows,
             account=dt_response.account,
@@ -363,15 +343,8 @@ class StatisticalAnalysisService:
         analysis_direction = direction if direction is not None else AnalysisDirection.COLUMNS
 
         for table_name, dt_response in datatables_responses.items():
-            # Filter out calculated rows before analysis
-            filtered_response = self._filter_calculated_rows(dt_response)
-
-            # Apply category exclusions if exclusion service is available
-            if self._exclusion_service:
-                filtered_response = self._filter_excluded_categories(filtered_response)
-
-            # Apply expense filtering if enabled
-            filtered_response = self._filter_expenses_only(filtered_response)
+            # Apply all filters in a single pass for better performance
+            filtered_response = self._filter_data_for_analysis(dt_response)
 
             # Extract summary from filtered data only
             summary: SummaryData = self._extract_summary_from_response(filtered_response)

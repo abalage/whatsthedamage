@@ -53,8 +53,14 @@ class IQROutlierDetection(StatisticalAlgorithm):
         amounts = list(data.values())
         keys = list(data.keys())
 
-        if not amounts:
+        # Validate dataset size and warn/return early for small datasets
+        if not amounts or len(amounts) < 4:
+            print("Warning: Not enough data. IQR outlier detection requires at least 4 data points for meaningful results.")
             return highlights
+
+        # Warn for very small datasets
+        if 4 <= len(amounts) <= 10:
+            print("Warning: Small dataset size (4-10 points). IQR may not be representative.")
 
         # Calculate Q1, Q3, IQR using scipy
         q1 = np.percentile(amounts, 25)
@@ -86,6 +92,11 @@ class ParetoAnalysis(StatisticalAlgorithm):
         items = [(key, abs(amount)) for key, amount in data.items()]
 
         if not items:
+            return highlights
+
+        # Check for zero total using original values (before abs)
+        if sum(data.values()) == 0:
+            print("Warning: Not enough data. Pareto principle won't apply.")
             return highlights
 
         # Sort by amount descending

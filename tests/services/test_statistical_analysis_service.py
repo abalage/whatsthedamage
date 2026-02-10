@@ -65,17 +65,21 @@ def summary_data_with_outliers():
 class TestIQROutlierDetection:
     """Tests for IQROutlierDetection algorithm."""
 
-    def test_empty_data_returns_empty_highlights(self):
-        """Test with empty data returns empty highlights."""
+    def test_empty_data_returns_empty_highlights_with_warning(self, capsys):
+        """Test with empty data returns empty highlights with warning."""
         algorithm = IQROutlierDetection()
         result = algorithm.analyze({})
+        captured = capsys.readouterr()
+        assert "Warning: Not enough data. IQR outlier detection requires at least 4 data points for meaningful results." in captured.out
         assert result == {}
 
-    def test_single_data_point_no_outliers(self):
-        """Test single data point is never an outlier."""
+    def test_single_data_point_returns_empty_with_warning(self, capsys):
+        """Test single data point returns empty highlights with warning (requires at least 4 points)."""
         algorithm = IQROutlierDetection()
         data = {"item1": 100.0}
         result = algorithm.analyze(data)
+        captured = capsys.readouterr()
+        assert "Warning: Not enough data. IQR outlier detection requires at least 4 data points for meaningful results." in captured.out
         assert result == {}
 
     def test_normal_distribution_no_outliers(self):
@@ -120,6 +124,59 @@ class TestIQROutlierDetection:
         assert "high_outlier" in result
         assert result["low_outlier"] == "outlier"
         assert result["high_outlier"] == "outlier"
+
+    def test_small_dataset_warning_and_early_return(self, capsys):
+        """Test that IQROutlierDetection prints warning and returns empty for datasets with < 4 points."""
+        algorithm = IQROutlierDetection()
+
+        # Test with 3 points
+        data = {"item1": 10.0, "item2": 20.0, "item3": 30.0}
+        result = algorithm.analyze(data)
+        captured = capsys.readouterr()
+        assert "Warning: Not enough data. IQR outlier detection requires at least 4 data points for meaningful results." in captured.out
+        assert result == {}
+
+        # Test with 2 points
+        data = {"item1": 10.0, "item2": 20.0}
+        result = algorithm.analyze(data)
+        captured = capsys.readouterr()
+        assert "Warning: Not enough data. IQR outlier detection requires at least 4 data points for meaningful results." in captured.out
+        assert result == {}
+
+        # Test with 1 point
+        data = {"item1": 10.0}
+        result = algorithm.analyze(data)
+        captured = capsys.readouterr()
+        assert "Warning: Not enough data. IQR outlier detection requires at least 4 data points for meaningful results." in captured.out
+        assert result == {}
+
+        # Test with empty data (should also warn in new implementation)
+        result = algorithm.analyze({})
+        captured = capsys.readouterr()
+        assert "Warning: Not enough data. IQR outlier detection requires at least 4 data points for meaningful results." in captured.out
+        assert result == {}
+
+    def test_small_dataset_warning(self, capsys):
+        """Test that IQROutlierDetection prints warning for datasets with 4-10 points."""
+        algorithm = IQROutlierDetection()
+
+        # Test with 4 points (should print warning)
+        data = {"item1": 10.0, "item2": 20.0, "item3": 30.0, "item4": 40.0}
+        algorithm.analyze(data)
+        captured = capsys.readouterr()
+        assert "Warning: Small dataset size (4-10 points). IQR may not be representative." in captured.out
+
+        # Test with 10 points (should print warning)
+        data = {f"item{i}": float(10 * i) for i in range(1, 11)}
+        algorithm.analyze(data)
+        captured = capsys.readouterr()
+        assert "Warning: Small dataset size (4-10 points). IQR may not be representative." in captured.out
+
+        # Test with 11 points (should not print warning)
+        data = {f"item{i}": float(10 * i) for i in range(1, 12)}
+        algorithm.analyze(data)
+        captured = capsys.readouterr()
+        assert "Warning: Small dataset size (4-10 points). IQR may not be representative." not in captured.out
 
 class TestParetoAnalysis:
     """Tests for ParetoAnalysis algorithm."""
@@ -185,6 +242,25 @@ class TestParetoAnalysis:
         assert result["item1"] == "pareto"
         assert result["item2"] == "pareto"
         assert result["item3"] == "pareto"
+
+    def test_zero_total_returns_empty_highlights(self):
+        """Test that ParetoAnalysis returns empty highlights when total is zero."""
+        algorithm = ParetoAnalysis()
+
+        # Test with all zeros
+        data = {"item1": 0.0, "item2": 0.0, "item3": 0.0}
+        result = algorithm.analyze(data)
+        assert result == {}
+
+        # Test with mixed positive and negative that sum to zero
+        data = {"item1": 10.0, "item2": -10.0, "item3": 5.0, "item4": -5.0}
+        result = algorithm.analyze(data)
+        assert result == {}
+
+        # Test with single zero (total is zero, so should return empty)
+        data = {"item1": 0.0}
+        result = algorithm.analyze(data)
+        assert result == {}  # Total is zero, so return empty highlights
 
 class TestStatisticalAnalysisService:
     """Tests for StatisticalAnalysisService integration."""
@@ -274,7 +350,7 @@ class TestStatisticalAnalysisService:
         """Test get_highlights method with ROWS direction (months within categories)."""
         service = StatisticalAnalysisService(enabled_algorithms=["iqr", "pareto"])
 
-        # Create test summary data
+        # Create test summary data with at least 4 data points per category for IQR
         from whatsthedamage.models.dt_models import SummaryData
 
         summary = SummaryData(
@@ -288,14 +364,24 @@ class TestStatisticalAnalysisService:
                 },
                 "2023-02": {
                     "Grocery": 400.0,
+                    "Rent": 900.0,
                     "Utilities": 200.0,
                     "Entertainment": 50.0,
                     "Transport": 150.0
                 },
                 "2023-03": {
                     "Grocery": 1500.0,  # Should be outlier for Grocery category
+                    "Rent": 1100.0,
                     "Utilities": 250.0,
-                    "Entertainment": 75.0
+                    "Entertainment": 75.0,
+                    "Transport": 160.0
+                },
+                "2023-04": {
+                    "Grocery": 600.0,
+                    "Rent": 950.0,
+                    "Utilities": 220.0,
+                    "Entertainment": 80.0,
+                    "Transport": 140.0
                 }
             },
             currency="USD",

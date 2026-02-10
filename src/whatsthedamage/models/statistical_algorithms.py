@@ -4,29 +4,16 @@ This module contains the Strategy Pattern implementation for various
 statistical analysis algorithms used to identify patterns in transaction data.
 """
 from abc import ABC, abstractmethod
-from enum import Enum
 from typing import Dict
 import numpy as np
 from scipy import stats
 
-class AnalysisDirection(Enum):
-    """Direction for statistical analysis.
-
-    COLUMNS: Analyze inner keys within each outer key (e.g., categories within months)
-    ROWS: Analyze outer keys within each inner key (e.g., months within categories)
-    """
-    COLUMNS = "columns"
-    ROWS = "rows"
-
 class StatisticalAlgorithm(ABC):
     """Abstract base class for statistical algorithms."""
 
-    def __init__(self, direction: AnalysisDirection | None = None):
-        """Initialize algorithm with optional preferred direction.
-
-        :param direction: Preferred analysis direction (None for no preference)
-        """
-        self.direction = direction
+    def __init__(self) -> None:
+        """Initialize algorithm."""
+        pass
 
     @abstractmethod
     def analyze(self, data: Dict[str, float]) -> Dict[str, str]:

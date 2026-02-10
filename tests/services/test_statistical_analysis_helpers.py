@@ -3,8 +3,8 @@
 import pytest
 from whatsthedamage.services.statistical_analysis_service import StatisticalAnalysisService
 from whatsthedamage.services.exclusion_service import ExclusionService
+from whatsthedamage.services.statistical_analysis_service import AnalysisDirection
 from whatsthedamage.models.statistical_algorithms import (
-    AnalysisDirection,
     IQROutlierDetection,
     ParetoAnalysis
 )
@@ -176,23 +176,36 @@ class TestHelperMethods:
         result = service._is_cell_excluded("March 2023", "Grocery", sample_dt_response)
         assert result is False
 
-    def test_get_algorithm_direction_with_default(self):
-        """Test _get_algorithm_direction uses algorithm's default when requested."""
+    def test_direction_handling_simplification(self):
+        """Test that direction handling is simplified after removing _get_algorithm_direction."""
         service = StatisticalAnalysisService()
-        algo = IQROutlierDetection(direction=AnalysisDirection.ROWS)
 
-        # When use_default_directions is True, should use algorithm's direction
-        result = service._get_algorithm_direction(algo, AnalysisDirection.COLUMNS, True)
-        assert result == AnalysisDirection.ROWS
+        # Since algorithms no longer have preferred directions, direction is used directly
+        # The _get_algorithm_direction method has been removed as it was just a wrapper
+        # Test that the service still works correctly with direction parameters
+        from whatsthedamage.models.dt_models import SummaryData
 
-    def test_get_algorithm_direction_without_default(self):
-        """Test _get_algorithm_direction uses parameter when default not requested."""
-        service = StatisticalAnalysisService()
-        algo = IQROutlierDetection(direction=AnalysisDirection.ROWS)
+        summary = SummaryData(
+            summary={
+                "2023-01": {
+                    "Grocery": 500.0,
+                    "Rent": 1000.0,
+                    "Entertainment": 100.0,
+                    "Utilities": 200.0,
+                    "Transport": 150.0
+                }
+            },
+            currency="USD",
+            account_id="test"
+        )
 
-        # When use_default_directions is False, should use parameter direction
-        result = service._get_algorithm_direction(algo, AnalysisDirection.COLUMNS, False)
-        assert result == AnalysisDirection.COLUMNS
+        # Test that both COLUMNS and ROWS directions work
+        highlights_columns = service.get_highlights(summary, AnalysisDirection.COLUMNS)
+        highlights_rows = service.get_highlights(summary, AnalysisDirection.ROWS)
+
+        # Both should work without errors
+        assert isinstance(highlights_columns, list)
+        assert isinstance(highlights_rows, list)
 
     def test_build_highlight_columns_direction(self):
         """Test _build_highlight for COLUMNS direction."""
@@ -219,7 +232,7 @@ class TestHelperMethods:
     def test_create_highlight_for_algorithm_columns_direction(self, dt_response_with_outliers):
         """Test _create_highlight_for_algorithm with COLUMNS direction."""
         service = StatisticalAnalysisService()
-        algo = IQROutlierDetection(direction=AnalysisDirection.COLUMNS)
+        algo = IQROutlierDetection()
 
         # Create transformed data for COLUMNS direction with actual outliers
         # Format: List[Tuple[month, Dict[category, amount]]]
@@ -246,7 +259,7 @@ class TestHelperMethods:
     def test_create_highlight_for_algorithm_rows_direction(self, sample_dt_response):
         """Test _create_highlight_for_algorithm with ROWS direction."""
         service = StatisticalAnalysisService()
-        algo = ParetoAnalysis(direction=AnalysisDirection.ROWS)
+        algo = ParetoAnalysis()
 
         # Create transformed data for ROWS direction
         # Format: List[Tuple[category, Dict[month, amount]]]
@@ -279,7 +292,7 @@ class TestHelperMethods:
     def test_create_highlight_for_algorithm_empty_data(self, sample_dt_response):
         """Test _create_highlight_for_algorithm with empty transformed data."""
         service = StatisticalAnalysisService()
-        algo = IQROutlierDetection(direction=AnalysisDirection.COLUMNS)
+        algo = IQROutlierDetection()
 
         # Empty transformed data
         transformed_data = []
@@ -298,7 +311,7 @@ class TestHelperMethods:
     def test_create_highlight_for_algorithm_no_matches(self, sample_dt_response):
         """Test _create_highlight_for_algorithm when no rows match the data."""
         service = StatisticalAnalysisService()
-        algo = IQROutlierDetection(direction=AnalysisDirection.COLUMNS)
+        algo = IQROutlierDetection()
 
         # Create transformed data with non-existent months/categories
         transformed_data = [

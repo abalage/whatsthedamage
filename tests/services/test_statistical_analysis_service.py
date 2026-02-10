@@ -5,9 +5,9 @@ from whatsthedamage.services.statistical_analysis_service import StatisticalAnal
 from whatsthedamage.models.statistical_algorithms import (
     IQROutlierDetection,
     ParetoAnalysis,
-    StatisticalAlgorithm,
-    AnalysisDirection
+    StatisticalAlgorithm
 )
+from whatsthedamage.services.statistical_analysis_service import AnalysisDirection
 from whatsthedamage.models.dt_models import CellHighlight
 from typing import Dict
 

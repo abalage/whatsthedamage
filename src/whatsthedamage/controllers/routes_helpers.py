@@ -15,7 +15,7 @@ from whatsthedamage.services.cache_service import CacheService
 from whatsthedamage.services.statistical_analysis_service import StatisticalAnalysisService
 from whatsthedamage.models.dt_models import ProcessingResponse, DataTablesResponse, AggregatedRow
 from whatsthedamage.utils.flask_locale import get_default_language
-from whatsthedamage.models.statistical_algorithms import AnalysisDirection
+from whatsthedamage.services.statistical_analysis_service import AnalysisDirection
 from typing import Dict, Callable, Optional, cast, Tuple, List, Any
 
 

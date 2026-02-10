@@ -4,14 +4,23 @@ This service uses the Strategy Pattern to apply various statistical algorithms
 to transaction data, providing highlight metadata for visualization.
 """
 from typing import Dict, List, Tuple, Optional
+from enum import Enum
 from whatsthedamage.models.dt_models import CellHighlight, StatisticalMetadata, DataTablesResponse, AggregatedRow, SummaryData
 from whatsthedamage.services.exclusion_service import ExclusionService
 from whatsthedamage.models.statistical_algorithms import (
-    AnalysisDirection,
     StatisticalAlgorithm,
     IQROutlierDetection,
     ParetoAnalysis
 )
+
+class AnalysisDirection(Enum):
+    """Direction for statistical analysis.
+
+    COLUMNS: Analyze inner keys within each outer key (e.g., categories within months)
+    ROWS: Analyze outer keys within each inner key (e.g., months within categories)
+    """
+    COLUMNS = "columns"
+    ROWS = "rows"
 
 class StatisticalAnalysisService:
     """Service for applying statistical algorithms to data.
@@ -30,8 +39,8 @@ class StatisticalAnalysisService:
                                      If False, all values are passed (original behavior).
         """
         self.algorithms: Dict[str, StatisticalAlgorithm] = {
-            'iqr': IQROutlierDetection(direction=AnalysisDirection.COLUMNS),
-            'pareto': ParetoAnalysis(direction=AnalysisDirection.ROWS),
+            'iqr': IQROutlierDetection(),  # type: ignore[no-untyped-call]
+            'pareto': ParetoAnalysis(),  # type: ignore[no-untyped-call]
         }
         self.enabled_algorithms = enabled_algorithms if enabled_algorithms is not None else list(self.algorithms.keys())
         self._exclusion_service = exclusion_service
@@ -119,20 +128,6 @@ class StatisticalAnalysisService:
                     transposed_data[inner_key][outer_key] = amount
             return [(inner_key, outer_data) for inner_key, outer_data in transposed_data.items()]
 
-    def _get_algorithm_direction(self, algo: StatisticalAlgorithm, direction: AnalysisDirection, use_default_directions: bool) -> AnalysisDirection:
-        """Determine which direction to use for an algorithm.
-
-        Args:
-            algo: The algorithm to check
-            direction: The default direction parameter
-            use_default_directions: Whether to use algorithm's preferred direction
-
-        Returns:
-            The direction to use for this algorithm
-        """
-        if algo.direction is not None and use_default_directions:
-            return algo.direction
-        return direction
 
     def _build_highlight(self, row_id: str, highlight_type: str) -> CellHighlight:
         """Build a CellHighlight object based on row UUID.
@@ -217,13 +212,12 @@ class StatisticalAnalysisService:
         for algo_name in algos_to_use:
             if algo_name in self.algorithms:
                 algo = self.algorithms[algo_name]
-                # Determine direction to use for this algorithm
-                algo_direction = self._get_algorithm_direction(algo, direction, use_default_directions)
+                # Since algorithms no longer have preferred directions, always use the provided direction
                 # Transform data for this algorithm
-                algo_transformed_data = self._transform_data_for_analysis(summary, algo_direction)
+                algo_transformed_data = self._transform_data_for_analysis(summary, direction)
                 # Create highlights for this algorithm
                 if dt_response:
-                    algo_highlights = self._create_highlight_for_algorithm(algo, algo_direction, algo_transformed_data, dt_response)
+                    algo_highlights = self._create_highlight_for_algorithm(algo, direction, algo_transformed_data, dt_response)
                     highlights.extend(algo_highlights)
 
         return highlights

@@ -295,7 +295,6 @@ def handle_recalculate_statistics_request(
     result_id: str,
     algorithms: List[str],
     direction: str,
-    use_default_directions: bool = False
 ) -> Tuple[Dict[str, Any], int]:
     """Handle recalculate statistics request with business logic.
 
@@ -332,8 +331,7 @@ def handle_recalculate_statistics_request(
         new_statistical_metadata = stat_service.compute_statistical_metadata(
             cached.data,
             algorithms=algorithms,
-            direction=AnalysisDirection(direction),
-            use_default_directions=use_default_directions
+            direction=AnalysisDirection(direction)
         )
 
         # Update cache with new metadata

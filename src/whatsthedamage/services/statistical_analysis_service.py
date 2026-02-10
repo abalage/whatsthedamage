@@ -194,7 +194,6 @@ class StatisticalAnalysisService:
         summary: SummaryData,
         direction: AnalysisDirection = AnalysisDirection.COLUMNS,
         algorithms: List[str] | None = None,
-        use_default_directions: bool = False,
         dt_response: Optional[DataTablesResponse] = None
     ) -> List[CellHighlight]:
         """Get highlights for the summary data with flexible analysis direction.
@@ -214,7 +213,6 @@ class StatisticalAnalysisService:
         for algo_name in algos_to_use:
             if algo_name in self.algorithms:
                 algo = self.algorithms[algo_name]
-                # Since algorithms no longer have preferred directions, always use the provided direction
                 # Transform data for this algorithm
                 algo_transformed_data = self._transform_data_for_analysis(summary, direction)
                 # Create highlights for this algorithm
@@ -324,7 +322,6 @@ class StatisticalAnalysisService:
         datatables_responses: Dict[str, DataTablesResponse],
         algorithms: List[str] | None = None,
         direction: AnalysisDirection | None = None,
-        use_default_directions: bool = False
     ) -> StatisticalMetadata:
         """Compute statistical metadata including highlights for the given responses.
 
@@ -354,7 +351,6 @@ class StatisticalAnalysisService:
                 summary,
                 algorithms=algorithms,
                 direction=analysis_direction,
-                use_default_directions=use_default_directions,
                 dt_response=dt_response
             )
             highlights.extend(table_highlights)

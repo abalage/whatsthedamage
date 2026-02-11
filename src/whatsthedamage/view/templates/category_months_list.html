@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>{{ _('Details for Month') }}: {{ _(data[0].date.display if data) }}</title>
+    <title>{{ _('Details for Category') }}: {{ _(category) }}</title>
     <link href="{{ url_for('static', filename='dist/css/main.css') }}" rel="stylesheet">
     <script type="module" src="{{ url_for('static', filename='dist/js/main.js') }}"></script>
     <!-- Translated strings and highlights for JavaScript -->
@@ -16,24 +16,24 @@
         {% include 'header.html' %}
     </header>
     <main class="container-fluid">
-        <h1>{{ _('Details for Month') }}: {{ _(data[0].date.display if data) }}</h1>
+        <h1>{{ _('Details for Category') }}: {{ _(category) }}</h1>
         <h2>{{ _('Account') }}: {{ formatted_account }}</h2>
 
         {% from '_statistical_controls.html' import render_statistical_controls %}
         {{ render_statistical_controls(result_id) }}
 
         <div class="table-responsive">
-            <table id="datatable-month" class="table table-bordered" data-datatable="true">
+            <table id="datatable-category" class="table table-bordered" data-datatable="true">
                 <thead>
                     <tr>
-                        <th>{{ _('Category') }}</th>
+                        <th>{{ _('Month') }}</th>
                         <th>{{ _('Total') }}</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for row in data %}
                     <tr>
-                        <td><a href="/details/{{ result_id }}/{{ account }}/{{ row.category }}" class="clickable">{{ row.category }}</a></td>
+                        <td><a href="{{ urls.cell_urls.get(row.row_id, {}).cell_url or '#' }}" class="clickable">{{ row.date.display }}</a></td>
                         <td data-row-id="{{ row.row_id }}" class="">{{ row.total.display }}</td>
                     </tr>
                     {% endfor %}

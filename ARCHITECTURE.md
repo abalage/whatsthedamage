@@ -46,8 +46,10 @@ whatsthedamage/
 │   │   ├── cache_service.py      # Caching service
 │   │   ├── configuration_service.py # Configuration loading
 │   │   ├── data_formatting_service.py # Output formatting
+│   │   ├── drilldown_service.py    # Drilldown functionality
 │   │   ├── exclusion_service.py     # Exclusion handling
 │   │   ├── file_upload_service.py   # File upload handling
+│   │   ├── id_mapping_service.py    # ID mapping for secure URLs
 │   │   ├── processing_service.py    # Core processing service
 │   │   ├── response_builder_service.py # Response construction
 │   │   ├── service_factory.py      # Service container factory
@@ -163,6 +165,26 @@ The system follows a layered architecture with clear separation of concerns:
 **Name**: Data Formatting Service
 
 **Description**: Formats processed transaction data for various output targets including console, HTML, CSV, and JSON. Supports the unified DataTablesResponse format for web and API interfaces.
+
+**Technologies**: Python
+
+**Deployment**: Part of the Flask application
+
+#### 3.2.5. IdMappingService
+
+**Name**: ID Mapping Service
+
+**Description**: Provides secure URL generation and mapping between internal IDs and user-facing identifiers. This service enables safe drilldown functionality by creating non-predictable URLs for accessing specific transaction details.
+
+**Technologies**: Python, Flask-Caching integration
+
+**Deployment**: Part of the Flask application
+
+#### 3.2.6. DrilldownService
+
+**Name**: Drilldown Service
+
+**Description**: Enables detailed transaction analysis by providing drilldown capabilities. This service allows users to explore specific transactions, categories, or time periods in greater detail through secure URL-based access.
 
 **Technologies**: Python
 
@@ -291,7 +313,7 @@ The system follows a layered architecture with clear separation of concerns:
 
 **Primary Contact/Team**: Balage Abalage
 
-**Date of Last Update**: 2026-01-30
+**Date of Last Update**: 2026-02-11
 
 ## 11. Glossary / Acronyms
 

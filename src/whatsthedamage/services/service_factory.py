@@ -9,6 +9,8 @@ from whatsthedamage.services.validation_service import ValidationService
 from whatsthedamage.services.response_builder_service import ResponseBuilderService
 from whatsthedamage.services.configuration_service import ConfigurationService
 from whatsthedamage.services.data_formatting_service import DataFormattingService
+from whatsthedamage.services.id_mapping_service import IdMappingService
+from whatsthedamage.services.statistical_analysis_service import StatisticalAnalysisService
 
 
 class ServiceContainer:
@@ -25,6 +27,8 @@ class ServiceContainer:
         self._data_formatting_service: Optional[DataFormattingService] = None
         self._processing_service: Optional[ProcessingService] = None
         self._response_builder_service: Optional[ResponseBuilderService] = None
+        self._id_mapping_service: Optional[IdMappingService] = None
+        self._statistical_analysis_service: Optional[StatisticalAnalysisService] = None
 
     @property
     def configuration_service(self) -> ConfigurationService:
@@ -64,6 +68,37 @@ class ServiceContainer:
                 formatting_service=self.data_formatting_service
             )
         return self._response_builder_service
+
+    @property
+    def id_mapping_service(self) -> IdMappingService:
+        """Get or create IdMappingService instance.
+
+        Note: In CLI context, this service may have limited functionality
+        as it depends on Flask caching. For full functionality, use Flask app.
+        """
+        if self._id_mapping_service is None:
+            # Create a basic IdMappingService for CLI usage
+            # This may have limited functionality without Flask cache
+            from flask_caching import Cache
+            from flask import Flask
+            app = Flask(__name__)
+            cache = Cache(app, config={'CACHE_TYPE': 'SimpleCache'})
+            self._id_mapping_service = IdMappingService(cache)
+        return self._id_mapping_service
+
+    @property
+    def statistical_analysis_service(self) -> StatisticalAnalysisService:
+        """Get or create StatisticalAnalysisService instance."""
+        if self._statistical_analysis_service is None:
+            # Create statistical analysis service with default configuration
+            from whatsthedamage.services.exclusion_service import ExclusionService
+            config = self.configuration_service.get_default_config()
+            exclusion_service = ExclusionService()
+            self._statistical_analysis_service = StatisticalAnalysisService(
+                enabled_algorithms=config.enabled_statistical_algorithms,
+                exclusion_service=exclusion_service
+            )
+        return self._statistical_analysis_service
 
 
 def create_service_container() -> ServiceContainer:

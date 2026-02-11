@@ -20,6 +20,8 @@ from whatsthedamage.services.cache_service import CacheService
 from whatsthedamage.services.statistical_analysis_service import StatisticalAnalysisService
 from whatsthedamage.services.session_service import SessionService
 from whatsthedamage.services.exclusion_service import ExclusionService
+from whatsthedamage.services.id_mapping_service import IdMappingService
+from whatsthedamage.services.drilldown_service import DrilldownService
 from whatsthedamage.models.dt_models import ProcessingResponse
 
 class FlaskCacheAdapter:
@@ -54,7 +56,8 @@ def create_app(
     file_upload_service: Optional[FileUploadService] = None,
     data_formatting_service: Optional[DataFormattingService] = None,
     statistical_analysis_service: Optional[StatisticalAnalysisService] = None,
-    session_service: Optional[SessionService] = None
+    session_service: Optional[SessionService] = None,
+    id_mapping_service: Optional[IdMappingService] = None
 ) -> Flask:
     app: Flask = Flask(__name__, template_folder='view/templates', static_folder='view/static')
 
@@ -79,6 +82,11 @@ def create_app(
     cache_adapter = FlaskCacheAdapter(cache)
     cache_service = CacheService(cache_adapter)
     app.extensions['cache_service'] = cache_service
+
+    # Initialize ID mapping service for secure URL generation
+    if id_mapping_service is None:
+        id_mapping_service = IdMappingService(cache)
+    app.extensions['id_mapping_service'] = id_mapping_service
 
     # Initialize configuration service first (dependency injection)
     if configuration_service is None:
@@ -133,6 +141,15 @@ def create_app(
         response_builder_service = ResponseBuilderService(formatting_service=data_formatting_service)
     app.extensions['response_builder_service'] = response_builder_service
 
+    # Initialize drilldown service (dependency injection)
+    drilldown_service = DrilldownService(
+        id_mapping_service=id_mapping_service,
+        cache_service=cache_service,
+        data_formatting_service=data_formatting_service,
+        statistical_analysis_service=stat_svc
+    )
+    app.extensions['drilldown_service'] = drilldown_service
+
     # --- BEGIN: Gettext integration for templates ---
     # Note: File cleanup should be done via background job or event-driven mechanism,
     # not on every request. Consider implementing:
@@ -159,7 +176,7 @@ def create_app(
 
     @app.context_processor
     def inject_gettext() -> dict[str, Any]:
-        return dict(_=g._, ngettext=g.ngettext, app_version=get_version())
+        return {'_': g._, 'ngettext': g.ngettext, 'app_version': get_version()}
     # --- END: Gettext integration for templates ---
 
     # Register blueprints
@@ -171,6 +188,11 @@ def create_app(
     register_error_handlers(app)
 
     return app
+
+def _get_id_mapping_service() -> IdMappingService:
+    """Get ID mapping service from app extensions (dependency injection)."""
+    from typing import cast
+    return cast(IdMappingService, current_app.extensions['id_mapping_service'])
 
 # Create the app instance for Gunicorn
 app = create_app()

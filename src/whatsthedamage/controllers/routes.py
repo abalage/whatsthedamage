@@ -6,12 +6,13 @@ from flask import (
 from whatsthedamage.view.forms import UploadForm
 from whatsthedamage.controllers.routes_helpers import (
     handle_file_uploads,
-    process_details_and_build_response
+    process_details_and_build_response,
+    handle_drilldown_request
 )
 from whatsthedamage.services.session_service import SessionService
 from whatsthedamage.services.configuration_service import ConfigurationService
 from whatsthedamage.services.data_formatting_service import DataFormattingService
-from typing import Optional, Union
+from typing import Optional, Union, Any
 import os
 import shutil
 from whatsthedamage.utils.flask_locale import get_locale, get_languages
@@ -257,3 +258,72 @@ def health() -> Response:
             {"status": "unhealthy", "reason": f"Unexpected error: {e}"},
             503
         )
+
+# New secure routes with ID mapping
+@bp.route('/results/<result_id>/accounts/<account_id>/categories/<category_id>/months')
+def show_category_months(result_id: str, account_id: str, category_id: str) -> Union[Response, Any]:
+    """Show category details across all months using secure IDs."""
+    from whatsthedamage.controllers.routes_helpers import handle_entity_drilldown
+
+    return handle_entity_drilldown(
+        result_id=result_id,
+        account_id=account_id,
+        entity_id=category_id,
+        entity_type='category',
+        template='category_months_list.html',
+        data_not_found_error=DATA_NOT_FOUND_ERROR,
+        index_route=INDEX_ROUTE
+    )
+
+@bp.route('/results/<result_id>/accounts/<account_id>/months/<month_id>/categories')
+def show_month_categories(result_id: str, account_id: str, month_id: str) -> Union[Response, Any]:
+    """Show month details across all categories using secure IDs."""
+    from whatsthedamage.controllers.routes_helpers import handle_entity_drilldown
+
+    return handle_entity_drilldown(
+        result_id=result_id,
+        account_id=account_id,
+        entity_id=month_id,
+        entity_type='month',
+        template='month_categories_list.html',
+        data_not_found_error=DATA_NOT_FOUND_ERROR,
+        index_route=INDEX_ROUTE
+    )
+
+@bp.route('/results/<result_id>/accounts/<account_id>/categories/<category_id>/months/<month_id>/transactions')
+def show_category_month_transactions(result_id: str, account_id: str, category_id: str, month_id: str) -> Response:
+    """Show specific category and month transaction details using secure IDs."""
+    from whatsthedamage.controllers.routes_helpers import _get_id_mapping_service
+
+    # Resolve IDs to original values
+    id_mapping_service = _get_id_mapping_service()
+    account_number = id_mapping_service.get_account_number(result_id, account_id)
+    category_name = id_mapping_service.get_category_name(result_id, category_id)
+    month_timestamp = id_mapping_service.get_month_timestamp(month_id)
+
+    if not account_number or not category_name or not month_timestamp:
+        flash('Invalid account, category, or month ID', 'danger')
+        return make_response(redirect(url_for(INDEX_ROUTE)))
+
+    # Convert month_timestamp to a date range for the entire month
+    month_start_dt = datetime.fromtimestamp(int(month_timestamp))
+
+    return handle_drilldown_request(
+        result_id=result_id,
+        account=account_number,
+        template='category_month_transactions.html',
+        filter_fn=lambda row: (
+            row.category == category_name and
+            datetime.fromtimestamp(row.date.timestamp).year == month_start_dt.year and
+            datetime.fromtimestamp(row.date.timestamp).month == month_start_dt.month
+        ),
+        template_context={
+            'category_id': category_id,
+            'month_id': month_id,
+            'account_id': account_id,
+            'category': category_name,
+            'month_ts': month_timestamp
+        },
+        data_not_found_error=DATA_NOT_FOUND_ERROR,
+        index_route=INDEX_ROUTE
+    )

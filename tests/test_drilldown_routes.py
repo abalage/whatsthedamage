@@ -194,7 +194,7 @@ class TestDrillDownRoutesHelpers:
                 assert 'data' in context
                 assert len(context['data']) == scenario["expected_data_count"]
                 if scenario["expected_category"]:
-                    assert context['data'][0].category == scenario["expected_category"]
+                    assert context['data'][0]['category'] == scenario["expected_category"]
                 assert context['account'] == 'checking'
 
     @pytest.mark.parametrize("scenario", TEST_ERROR_SCENARIOS)

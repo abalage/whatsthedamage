@@ -11,6 +11,7 @@ This document enables AI coding agents to be immediately productive in the `what
 - Answer in the same language as the question
 - Use English for generated content (code, comments, documentation)
 - Do not create summary Markdown files unless it is explicitly asked for.
+- Local terminal uses ZSH and not BASH. Keep in mind when executing shell commands.
 
 ### Project Overview
 - **Monolithic layout**: Backend and frontend in the same repository

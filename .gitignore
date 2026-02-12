@@ -177,3 +177,7 @@ src/whatsthedamage/view/frontend/test/node_modules/
 
 # Vite cache
 src/whatsthedamage/view/frontend/.vite/
+
+# Cline memory-bank
+memory-bank/
+.clinerules

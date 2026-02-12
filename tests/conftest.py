@@ -223,3 +223,86 @@ def client():
     with app.test_client() as client:
         with app.app_context():
             yield client
+
+@pytest.fixture
+def standard_csv_content():
+    """Standard CSV content for testing."""
+    return """date,amount,currency,partner
+2023-01-01,100.00,EUR,Test Grocery
+2023-01-02,50.00,EUR,Test Vehicle
+"""
+
+@pytest.fixture
+def standard_config_content():
+    """Standard config content for testing."""
+    return """csv:
+  dialect: excel
+  delimiter: ','
+  date_attribute_format: '%Y-%m-%d'
+  attribute_mapping:
+    date: date
+    amount: amount
+    currency: currency
+    partner: partner
+"""
+
+@pytest.fixture
+def csv_content(request):
+    """Parameterized CSV content fixture.
+
+    Usage:
+    @pytest.mark.parametrize('csv_content', ['standard', 'empty', 'large', 'single'], indirect=True)
+    def test_with_csv(csv_content):
+        # csv_content will be the appropriate CSV string
+    """
+    content_type = getattr(request, 'param', 'standard')
+
+    if content_type == 'standard':
+        return """date,amount,currency,partner
+2023-01-01,100.00,EUR,Test Grocery
+2023-01-02,50.00,EUR,Test Vehicle
+"""
+    elif content_type == 'empty':
+        return """date,amount,currency,partner
+"""
+    elif content_type == 'large':
+        lines = ["date,amount,currency,partner"]
+        for i in range(100):
+            lines.append(f"2023-01-{i%28+1:02d},{i*10}.00,EUR,Test Partner {i}")
+        return "\n".join(lines)
+    elif content_type == 'single':
+        return """date,amount,currency,partner
+2023-01-01,100.00,EUR,Test Grocery
+"""
+    else:
+        # Default to standard
+        return """date,amount,currency,partner
+2023-01-01,100.00,EUR,Test Grocery
+2023-01-02,50.00,EUR,Test Vehicle
+"""
+
+@pytest.fixture
+def process_test_data(standard_csv_content, standard_config_content):
+    """Helper fixture to prepare test data dictionary for process route tests.
+
+    Args:
+        csv_content_override: Optional CSV content override
+        config_content_override: Optional config content override
+        **extra_data: Additional data fields to include
+
+    Returns:
+        Dictionary ready for POST request
+    """
+    def _prepare_data(csv_content_override=None, config_content_override=None, **extra_data):
+        from io import BytesIO
+
+        data = {
+            'csrf_token': "test-csrf-token",
+            'filename': (BytesIO((csv_content_override or standard_csv_content).encode()), 'test.csv'),
+            'config': (BytesIO((config_content_override or standard_config_content).encode()), 'config.yml'),
+            'start_date': '2023-01-01',
+            'end_date': '2023-12-31',
+        }
+        data.update(extra_data)
+        return data
+    return _prepare_data

@@ -15,9 +15,8 @@ from whatsthedamage.services.cache_service import CacheService
 from whatsthedamage.services.statistical_analysis_service import StatisticalAnalysisService
 from whatsthedamage.services.id_mapping_service import IdMappingService
 from whatsthedamage.services.drilldown_service import DrilldownService
-from whatsthedamage.models.dt_models import ProcessingResponse, DataTablesResponse, AggregatedRow
+from whatsthedamage.models.dt_models import ProcessingResponse
 from whatsthedamage.utils.flask_locale import get_default_language
-from whatsthedamage.services.statistical_analysis_service import AnalysisDirection
 from typing import Dict, Callable, Optional, cast, Tuple, List, Any, Union
 
 
@@ -104,250 +103,10 @@ def handle_file_uploads(form: UploadForm) -> Dict[str, str]:
         raise ValueError(str(e))
 
 
-def get_cached_data_for_drilldown(
-    result_id: str,
-    account: str
-) -> Tuple[Optional[DataTablesResponse], Optional[str]]:
-    """Retrieve cached processing result for drill-down routes.
-
-    Centralizes cache retrieval logic to eliminate duplication across
-    the three drill-down route handlers.
-
-    Args:
-        result_id: UUID of the cached processing result
-        account: Account identifier
-
-    Returns:
-        Tuple of (DataTablesResponse, error_message)
-        If successful: (dt_response, None)
-        If failed: (None, error_message)
-
-    Example:
-        >>> dt_response, error = get_cached_data_for_drilldown(result_id, account)
-        >>> if error:
-        >>>     flash(error, 'danger')
-        >>>     return redirect(url_for(INDEX_ROUTE))
-    """
-    try:
-        cache_service = _get_cache_service()
-        cached = cache_service.get(result_id)
-
-        if not cached:
-            return None, 'Result not found or expired.'
-
-        dt_response = cached.data.get(account)
-        if not dt_response:
-            return None, f'Account "{account}" not found.'
-
-        return dt_response, None
-    except Exception:
-        return None, 'Result not found or expired.'
 
 
-def _process_statistical_metadata(
-    cached_result: Optional[ProcessingResponse]
-) -> Dict[str, List[str]]:
-    """Process statistical metadata and return highlights.
 
-    Extracts highlight information from cached processing result and converts
-    it to the format expected by templates. CSS class mapping is now handled
-    in the frontend presentation layer.
 
-    Uses DataFormattingService._convert_metadata_to_highlights_dict() to
-    eliminate code duplication and centralize the conversion logic.
-
-    Args:
-        cached_result: The cached ProcessingResponse object
-
-    Returns:
-        Dictionary mapping row_id to list of highlight types
-
-    Example:
-        >>> highlights = _process_statistical_metadata(cached)
-        >>> # highlights: {'row1': ['outlier'], 'row2': ['pareto']}
-    """
-    if not cached_result or not cached_result.statistical_metadata:
-        return {}
-
-    # Use DataFormattingService to convert metadata to highlights dict
-    formatting_service = _get_data_formatting_service()
-    return formatting_service._convert_metadata_to_highlights_dict(
-        cached_result.statistical_metadata
-    )
-
-def process_statistical_metadata_for_context(result_id: str) -> Dict[str, List[str]]:
-    """Process statistical metadata for template context.
-
-    Centralizes the pattern of retrieving cached data and processing statistical metadata
-    that appears in multiple drilldown handlers. This eliminates code duplication and
-    provides consistent error handling.
-
-    Args:
-        result_id: UUID of the cached processing result
-
-    Returns:
-        Dictionary of highlights for template context, empty dict on error
-
-    Example:
-        >>> highlights_dict = process_statistical_metadata_for_context(result_id)
-        >>> # highlights_dict: {'row1': ['outlier'], 'row2': ['pareto']}
-    """
-    try:
-        cache_service = _get_cache_service()
-        cached = cache_service.get(result_id)
-        if cached and cached.statistical_metadata:
-            formatting_service = _get_data_formatting_service()
-            return formatting_service._convert_metadata_to_highlights_dict(
-                cached.statistical_metadata
-            )
-    except Exception:
-        pass
-    return {}
-
-def build_drilldown_context(
-    filtered_data: List[Any],
-    account_number: str,
-    result_id: str,
-    account_id: str,
-    entity_type: str,
-    entity_id: str,
-    entity_name: str,
-    drilldown_urls: Dict[str, Any],
-    template_specific_context: Optional[Dict[str, Any]] = None
-) -> Dict[str, Any]:
-    """Build standardized context dictionary for drilldown templates.
-
-    Centralizes the context building pattern that appears in multiple drilldown handlers.
-    Provides consistent structure while allowing template-specific additions.
-
-    Args:
-        filtered_data: Filtered data rows for the template
-        account_number: Original account number
-        result_id: Processing result ID
-        account_id: Secure account ID
-        entity_type: Type of entity ('category' or 'month')
-        entity_id: Secure entity ID
-        entity_name: Original entity name
-        drilldown_urls: Pre-generated drilldown URLs
-        template_specific_context: Additional context specific to the template
-
-    Returns:
-        Complete context dictionary ready for template rendering
-
-    Example:
-        >>> context = build_drilldown_context(
-        >>>     filtered_data, account_number, result_id, account_id,
-        >>>     'category', category_id, category_name, drilldown_urls
-        >>> )
-    """
-    # Format account ID
-    formatting_service = _get_data_formatting_service()
-    formatted_account = formatting_service.format_account_id(account_number)
-
-    # Process statistical metadata
-    highlights_dict = process_statistical_metadata_for_context(result_id)
-
-    # Build base context
-    context = {
-        'data': filtered_data,
-        'account': account_number,
-        'formatted_account': formatted_account,
-        'result_id': result_id,
-        'account_id': account_id,
-        f'{entity_type}_id': entity_id,
-        entity_type: entity_name,
-        'urls': drilldown_urls,
-        'highlights': highlights_dict
-    }
-
-    # Add template-specific context if provided
-    if template_specific_context:
-        context.update(template_specific_context)
-
-    return context
-
-def handle_drilldown_request(
-    result_id: str,
-    account: str,
-    template: str,
-    filter_fn: Callable[[AggregatedRow], bool],
-    template_context: Dict[str, str],
-    data_not_found_error: str = 'Data not found',
-    index_route: str = 'main.index'
-) -> Response:
-    """Generic handler for drill-down requests.
-
-    Eliminates code duplication across category, month, and cell drill-down routes
-    by providing a single implementation with customizable filtering and rendering.
-
-    Args:
-        result_id: UUID of the cached processing result
-        account: Account identifier
-        template: Template name to render (e.g., 'category_all_months.html')
-        filter_fn: Function to filter aggregated rows
-        template_context: Additional context to pass to template (e.g., {'category': 'Grocery'})
-        data_not_found_error: Error message for missing data
-        index_route: Route to redirect on error
-
-    Returns:
-        Flask Response with rendered template or redirect
-
-    Example:
-        >>> # For category drill-down:
-        >>> handle_drilldown_request(
-        >>>     result_id, account,
-        >>>     'category_all_months.html',
-        >>>     lambda row: row.category == 'Grocery',
-        >>>     {'category': 'Grocery', 'account': account}
-        >>> )
-    """
-    # Get cached data
-    dt_response, error = get_cached_data_for_drilldown(result_id, account)
-    if error or not dt_response:
-        flash(error or data_not_found_error, 'danger')
-        return make_response(redirect(url_for(index_route)))
-
-    # Filter data
-    filtered_data: List[AggregatedRow] = [row for row in dt_response.data if filter_fn(row)]
-    if not filtered_data:
-        flash(data_not_found_error, 'danger')
-        return make_response(redirect(url_for(index_route)))
-
-    # Format account ID
-    formatting_service = _get_data_formatting_service()
-    formatted_account = formatting_service.format_account_id(account)
-
-    # Pre-compute IDs for templates that need them (separation of concerns)
-    # Create enhanced data objects with pre-computed IDs to avoid template business logic
-    try:
-        id_mapping_service = _get_id_mapping_service()
-
-        # Add pre-computed IDs to each row for template use
-        enhanced_data: List[Dict[str, Any]] = []
-        for row in filtered_data:
-            # Create a dictionary with all row data plus pre-computed IDs
-            row_dict = row.model_dump()  # Convert Pydantic model to dict
-            row_dict['month_id'] = id_mapping_service.get_month_id(str(row.date.timestamp))
-            row_dict['category_id'] = id_mapping_service.get_category_id(result_id, row.category)
-            enhanced_data.append(row_dict)
-    except (KeyError, AttributeError):
-        # Fallback for when id_mapping_service is not available (e.g., in tests)
-        # This maintains backward compatibility
-        enhanced_data = [row.model_dump() for row in filtered_data]
-
-    # Process statistical metadata using centralized helper
-    highlights_dict = process_statistical_metadata_for_context(result_id)
-
-    # Build context and render
-    context = {
-        'data': enhanced_data,
-        'account': account,
-        'formatted_account': formatted_account,
-        'result_id': result_id,
-        'highlights': highlights_dict,
-        **template_context
-    }
-    return make_response(render_template(template, **context))
 
 
 def process_details_and_build_response(
@@ -396,10 +155,11 @@ def process_details_and_build_response(
         statistical_metadata
     )
 
-    # Generate secure drill-down URLs for each account
+    # Generate secure drill-down URLs for each account using DrilldownService
     drilldown_urls_by_account = {}
+    drilldown_service = _get_drilldown_service()
     for account_id, dt_response in dt_responses_by_account.items():
-        drilldown_urls_by_account[account_id] = generate_drilldown_urls(
+        drilldown_urls_by_account[account_id] = drilldown_service.generate_drilldown_urls(
             result_id, account_id, dt_response
         )
 
@@ -415,78 +175,6 @@ def process_details_and_build_response(
         )
     )
 
-def generate_drilldown_urls(result_id: str, account: str, dt_response: DataTablesResponse) -> Dict[str, Any]:
-    """Generate all drill-down URLs for a result using ID mapping.
-
-    This function handles the business logic of mapping sensitive data to secure IDs
-    and generating appropriate URLs for drill-down navigation. Templates should only
-    receive pre-generated URLs, not perform ID mapping themselves.
-
-    Args:
-        result_id: Processing result ID
-        account: Original account number
-        dt_response: DataTablesResponse containing the data
-
-    Returns:
-        Dictionary containing pre-generated URLs for all drill-down levels
-    """
-    id_mapping_service = _get_id_mapping_service()
-
-    # Map account to secure ID
-    account_id = id_mapping_service.get_account_id(result_id, account)
-
-    # Generate category URLs
-    category_urls = {}
-    for row in dt_response.data:
-        category_name = row.category
-        if category_name not in category_urls:
-            category_id = id_mapping_service.get_category_id(result_id, category_name)
-            category_urls[category_name] = {
-                'category_url': f"/results/{result_id}/accounts/{account_id}/categories/{category_id}/months",
-                'category_id': category_id
-            }
-
-    # Generate month URLs - ensure all months from the data are covered
-    month_urls = {}
-    for row in dt_response.data:
-        month_ts = str(row.date.timestamp)
-        if month_ts not in month_urls:
-            month_id = id_mapping_service.get_month_id(month_ts)
-            month_urls[month_ts] = {
-                'month_url': f"/results/{result_id}/accounts/{account_id}/months/{month_id}/categories",
-                'month_id': month_id
-            }
-
-    # Also generate URLs for any months that might be in the template but not in data
-    # This ensures we don't get "dict has no element" errors
-    for row in dt_response.data:
-        month_ts = str(row.date.timestamp)
-        if month_ts not in month_urls:
-            month_id = id_mapping_service.get_month_id(month_ts)
-            month_urls[month_ts] = {
-                'month_url': f"/results/{result_id}/accounts/{account_id}/months/{month_id}/categories",
-                'month_id': month_id
-            }
-
-    # Generate cell URLs using row_id as key (more robust than string concatenation)
-    cell_urls = {}
-    for row in dt_response.data:
-        category_name = row.category
-        month_ts = str(row.date.timestamp)
-        category_id = id_mapping_service.get_category_id(result_id, category_name)
-        month_id = id_mapping_service.get_month_id(month_ts)
-        cell_urls[row.row_id] = {
-            'cell_url': f"/results/{result_id}/accounts/{account_id}/categories/{category_id}/months/{month_id}/transactions",
-            'category_id': category_id,
-            'month_id': month_id
-        }
-
-    return {
-        'account_id': account_id,
-        'category_urls': category_urls,
-        'month_urls': month_urls,
-        'cell_urls': cell_urls
-    }
 
 def handle_entity_drilldown(
     result_id: str,
@@ -615,7 +303,7 @@ def handle_recalculate_statistics_request(
         new_statistical_metadata = stat_service.compute_statistical_metadata(
             cached.data,
             algorithms=algorithms,
-            direction=AnalysisDirection(direction)
+            direction=direction
         )
 
         # Update cache with new metadata

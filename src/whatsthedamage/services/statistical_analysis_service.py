@@ -12,6 +12,7 @@ from whatsthedamage.models.statistical_algorithms import (
     IQROutlierDetection,
     ParetoAnalysis
 )
+from whatsthedamage.services.interfaces import IStatisticalAnalysisService
 
 class AnalysisDirection(Enum):
     """Direction for statistical analysis.
@@ -22,7 +23,7 @@ class AnalysisDirection(Enum):
     COLUMNS = "columns"
     ROWS = "rows"
 
-class StatisticalAnalysisService:
+class StatisticalAnalysisService(IStatisticalAnalysisService):
     """Service for applying statistical algorithms to data.
 
     Uses Strategy Pattern for extensible algorithm selection.
@@ -351,7 +352,7 @@ class StatisticalAnalysisService:
         self,
         datatables_responses: Dict[str, DataTablesResponse],
         algorithms: List[str] | None = None,
-        direction: AnalysisDirection | None = None,
+        direction: str | None = None,
     ) -> StatisticalMetadata:
         """Compute statistical metadata including highlights for the given responses.
 
@@ -367,7 +368,7 @@ class StatisticalAnalysisService:
         highlights: List[CellHighlight] = []
 
         # Determine direction to use
-        analysis_direction = direction if direction is not None else AnalysisDirection.COLUMNS
+        analysis_direction = AnalysisDirection.COLUMNS if direction is None else AnalysisDirection(direction)
 
         for table_name, dt_response in datatables_responses.items():
             # Apply all filters in a single pass for better performance

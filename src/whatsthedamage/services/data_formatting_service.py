@@ -17,9 +17,10 @@ from typing import Dict, Optional, Any, List
 from whatsthedamage.models.dt_models import DataTablesResponse, StatisticalMetadata, SummaryData
 from gettext import gettext as _
 from whatsthedamage.services.statistical_analysis_service import StatisticalAnalysisService
+from whatsthedamage.services.interfaces import IDataFormattingService
 
 
-class DataFormattingService:
+class DataFormattingService(IDataFormattingService):
     """Service for formatting data into various output formats.
 
     Supports multiple output formats:
@@ -37,19 +38,18 @@ class DataFormattingService:
         self._categories_header = _("Categories")
 
 
-    @staticmethod
-    def format_account_id(account_id: str) -> str:
+    def format_account_id(self, account_number: str) -> str:
         """Format account ID by adding dashes every 8 digits.
 
         This utility method provides consistent account ID formatting across
         all interfaces (CLI, Web, API).
 
-        :param account_id: Raw account ID string
+        :param account_number: Raw account ID string
         :return: Formatted account ID with dashes every 8 digits
         """
         formatted_id = '-'.join(
-                    account_id[i:i+8]
-                    for i in range(0, len(account_id), 8)
+                    account_number[i:i+8]
+                    for i in range(0, len(account_number), 8)
                 )
         return formatted_id
 
@@ -439,14 +439,14 @@ class DataFormattingService:
 
         return result
 
-    def _convert_metadata_to_highlights_dict(self, metadata: 'StatisticalMetadata') -> Dict[str, List[str]]:
+    def _convert_metadata_to_highlights_dict(self, statistical_metadata: 'StatisticalMetadata') -> Dict[str, List[str]]:
         """Convert StatisticalMetadata to the highlights dict format expected by templates.
 
-        :param metadata: StatisticalMetadata containing CellHighlight objects
+        :param statistical_metadata: StatisticalMetadata containing CellHighlight objects
         :return: Dictionary of highlights keyed by row_id, with list of highlight types
         """
         highlights_dict: Dict[str, List[str]] = {}
-        for highlight in metadata.highlights:
+        for highlight in statistical_metadata.highlights:
             if highlight.row_id not in highlights_dict:
                 highlights_dict[highlight.row_id] = []
             highlights_dict[highlight.row_id].extend(highlight.highlight_types)

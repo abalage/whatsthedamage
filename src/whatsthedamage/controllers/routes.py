@@ -152,12 +152,6 @@ def set_language(lang_code: str) -> Response:
     return make_response(redirect(request.referrer or url_for(INDEX_ROUTE)))
 
 
-
-
-
-
-
-
 @bp.route('/recalculate-statistics', methods=['POST'])
 def recalculate_statistics() -> Union[Response, tuple[Response, int]]:
     """Recalculate statistical highlights with custom algorithm and direction settings."""

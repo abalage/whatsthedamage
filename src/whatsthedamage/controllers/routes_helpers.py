@@ -103,12 +103,6 @@ def handle_file_uploads(form: UploadForm) -> Dict[str, str]:
         raise ValueError(str(e))
 
 
-
-
-
-
-
-
 def process_details_and_build_response(
     form: UploadForm,
     csv_path: str,

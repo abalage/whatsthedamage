@@ -6,11 +6,11 @@ a clean interface for controllers to access drilldown functionality while
 maintaining separation of concerns.
 """
 from typing import Dict, List, Any, Optional
-from whatsthedamage.services.id_mapping_service import IdMappingService
-from whatsthedamage.services.cache_service import CacheService
-from whatsthedamage.services.data_formatting_service import DataFormattingService
+from whatsthedamage.services.interfaces import (
+    IIdMappingService, ICacheService,
+    IDataFormattingService, IStatisticalAnalysisService
+)
 from whatsthedamage.models.dt_models import DataTablesResponse, AggregatedRow
-from whatsthedamage.services.statistical_analysis_service import StatisticalAnalysisService
 
 class DrilldownService:
     """Service for handling drilldown operations on processing results.
@@ -22,10 +22,10 @@ class DrilldownService:
 
     def __init__(
         self,
-        id_mapping_service: IdMappingService,
-        cache_service: CacheService,
-        data_formatting_service: DataFormattingService,
-        statistical_analysis_service: StatisticalAnalysisService
+        id_mapping_service: IIdMappingService,
+        cache_service: ICacheService,
+        data_formatting_service: IDataFormattingService,
+        statistical_analysis_service: IStatisticalAnalysisService
     ):
         """Initialize the drilldown service with required dependencies.
 

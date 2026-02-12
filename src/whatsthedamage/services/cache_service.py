@@ -5,6 +5,7 @@ Provides abstract protocol for cache implementations.
 """
 from typing import Optional, Protocol, runtime_checkable
 from whatsthedamage.models.dt_models import ProcessingResponse
+from whatsthedamage.services.interfaces import ICacheService
 
 @runtime_checkable
 class CacheProtocol(Protocol):
@@ -25,7 +26,7 @@ class CacheProtocol(Protocol):
         ...
 
 
-class CacheService:
+class CacheService(ICacheService):
     """Service for caching processing results.
 
     Wraps a cache backend implementing CacheProtocol.
@@ -41,9 +42,9 @@ class CacheService:
         self._cache = cache
         self._ttl = ttl
 
-    def set(self, key: str, value: ProcessingResponse) -> None:
+    def set(self, key: str, value: ProcessingResponse, timeout: Optional[int] = None) -> None:
         """Cache the result."""
-        self._cache.set(key, value, timeout=self._ttl)
+        self._cache.set(key, value, timeout=timeout if timeout is not None else self._ttl)
 
     def get(self, key: str) -> Optional[ProcessingResponse]:
         """Retrieve cached result."""

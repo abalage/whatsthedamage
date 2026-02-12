@@ -7,8 +7,9 @@ in URLs while maintaining the ability to look up the original data.
 from typing import Dict, Optional, Any, cast
 import hashlib
 from flask_caching import Cache
+from whatsthedamage.services.interfaces import IIdMappingService
 
-class IdMappingService:
+class IdMappingService(IIdMappingService):
     """Service for mapping sensitive data to opaque identifiers and vice versa."""
 
     def __init__(self, flask_cache: Cache):
@@ -110,29 +111,29 @@ class IdMappingService:
         cached_value = self._cache.get(reverse_cache_key)
         return cast(Optional[str], cached_value)
 
-    def get_month_id(self, timestamp: str) -> str:
+    def get_month_id(self, month_timestamp: str) -> str:
         """Map timestamp to opaque month ID using hashing.
 
         Uses the same approach as accounts and categories for consistent security.
 
         Args:
-            timestamp: Unix timestamp string
+            month_timestamp: Unix timestamp string
 
         Returns:
             Opaque month ID (e.g., 'month_a1b2c3d4')
         """
-        cache_key = f"mapping:month:{timestamp}"
+        cache_key = f"mapping:month:{month_timestamp}"
         cached_id = self._cache.get(cache_key)
         if cached_id:
             return cast(str, cached_id)
 
         # Generate deterministic ID and cache it
-        month_id = self._generate_deterministic_id("month", timestamp)
+        month_id = self._generate_deterministic_id("month", month_timestamp)
         self._cache.set(cache_key, month_id)
 
         # Store reverse mapping for lookup
         reverse_cache_key = f"reverse_mapping:month:{month_id}"
-        self._cache.set(reverse_cache_key, timestamp)
+        self._cache.set(reverse_cache_key, month_timestamp)
         return month_id
 
     def get_month_timestamp(self, month_id: str) -> Optional[str]:

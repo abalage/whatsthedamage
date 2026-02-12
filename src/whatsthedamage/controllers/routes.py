@@ -7,7 +7,7 @@ from whatsthedamage.view.forms import UploadForm
 from whatsthedamage.controllers.routes_helpers import (
     handle_file_uploads,
     process_details_and_build_response,
-    handle_drilldown_request
+    handle_entity_drilldown
 )
 from whatsthedamage.services.session_service import SessionService
 from whatsthedamage.services.configuration_service import ConfigurationService
@@ -152,55 +152,10 @@ def set_language(lang_code: str) -> Response:
     return make_response(redirect(request.referrer or url_for(INDEX_ROUTE)))
 
 
-@bp.route('/details/<result_id>/<account>/<category>')
-def details_category_all_months(result_id: str, account: str, category: str) -> Response:
-    """Show category details across all months."""
-    from whatsthedamage.controllers.routes_helpers import handle_drilldown_request
-
-    return handle_drilldown_request(
-        result_id=result_id,
-        account=account,
-        template='category_all_months.html',
-        filter_fn=lambda row: row.category == category,
-        template_context={'category': category},
-        data_not_found_error=DATA_NOT_FOUND_ERROR,
-        index_route=INDEX_ROUTE
-    )
 
 
-@bp.route('/details/<result_id>/<account>/month/<month_ts>')
-def details_month_all_categories(result_id: str, account: str, month_ts: str) -> Response:
-    """Show month details across all categories."""
-    from whatsthedamage.controllers.routes_helpers import handle_drilldown_request
-
-    return handle_drilldown_request(
-        result_id=result_id,
-        account=account,
-        template='month_all_categories.html',
-        filter_fn=lambda row: str(row.date.timestamp) == month_ts or str(row.date.timestamp) == month_ts,
-        template_context={'month_ts': month_ts},
-        data_not_found_error=DATA_NOT_FOUND_ERROR,
-        index_route=INDEX_ROUTE
-    )
 
 
-@bp.route('/details/<result_id>/<account>/<category>/<month_ts>')
-def details_category_month(result_id: str, account: str, category: str, month_ts: str) -> Response:
-    """Show specific category and month details."""
-    from whatsthedamage.controllers.routes_helpers import handle_drilldown_request
-
-    return handle_drilldown_request(
-        result_id=result_id,
-        account=account,
-        template='category_month_detail.html',
-        filter_fn=lambda row: (
-            row.category == category and
-            (str(row.date.timestamp) == month_ts or str(row.date.timestamp) == month_ts)
-        ),
-        template_context={'category': category, 'month_ts': month_ts},
-        data_not_found_error=DATA_NOT_FOUND_ERROR,
-        index_route=INDEX_ROUTE
-    )
 
 
 @bp.route('/recalculate-statistics', methods=['POST'])
@@ -263,7 +218,6 @@ def health() -> Response:
 @bp.route('/results/<result_id>/accounts/<account_id>/categories/<category_id>/months')
 def show_category_months(result_id: str, account_id: str, category_id: str) -> Union[Response, Any]:
     """Show category details across all months using secure IDs."""
-    from whatsthedamage.controllers.routes_helpers import handle_entity_drilldown
 
     return handle_entity_drilldown(
         result_id=result_id,
@@ -278,7 +232,6 @@ def show_category_months(result_id: str, account_id: str, category_id: str) -> U
 @bp.route('/results/<result_id>/accounts/<account_id>/months/<month_id>/categories')
 def show_month_categories(result_id: str, account_id: str, month_id: str) -> Union[Response, Any]:
     """Show month details across all categories using secure IDs."""
-    from whatsthedamage.controllers.routes_helpers import handle_entity_drilldown
 
     return handle_entity_drilldown(
         result_id=result_id,
@@ -293,10 +246,13 @@ def show_month_categories(result_id: str, account_id: str, month_id: str) -> Uni
 @bp.route('/results/<result_id>/accounts/<account_id>/categories/<category_id>/months/<month_id>/transactions')
 def show_category_month_transactions(result_id: str, account_id: str, category_id: str, month_id: str) -> Response:
     """Show specific category and month transaction details using secure IDs."""
-    from whatsthedamage.controllers.routes_helpers import _get_id_mapping_service
+    from whatsthedamage.controllers.routes_helpers import _get_drilldown_service, _get_id_mapping_service
 
-    # Resolve IDs to original values
+    # Use DrilldownService for all business logic
+    drilldown_service = _get_drilldown_service()
     id_mapping_service = _get_id_mapping_service()
+
+    # Resolve IDs to original values using service
     account_number = id_mapping_service.get_account_number(result_id, account_id)
     category_name = id_mapping_service.get_category_name(result_id, category_id)
     month_timestamp = id_mapping_service.get_month_timestamp(month_id)
@@ -305,25 +261,51 @@ def show_category_month_transactions(result_id: str, account_id: str, category_i
         flash('Invalid account, category, or month ID', 'danger')
         return make_response(redirect(url_for(INDEX_ROUTE)))
 
+    # Get cached data using service
+    cache_result = drilldown_service.get_cached_data_for_account(result_id, account_number)
+
+    if cache_result['error']:
+        flash(cache_result['error'], 'danger')
+        return make_response(redirect(url_for(INDEX_ROUTE)))
+
+    dt_response = cache_result['dt_response']
+    if not dt_response:
+        flash('No data found for the specified account', 'danger')
+        return make_response(redirect(url_for(INDEX_ROUTE)))
+
     # Convert month_timestamp to a date range for the entire month
     month_start_dt = datetime.fromtimestamp(int(month_timestamp))
 
-    return handle_drilldown_request(
-        result_id=result_id,
-        account=account_number,
-        template='category_month_transactions.html',
-        filter_fn=lambda row: (
-            row.category == category_name and
+    # Filter data for the specific category and month
+    filtered_data = [
+        row for row in dt_response.data
+        if (row.category == category_name and
             datetime.fromtimestamp(row.date.timestamp).year == month_start_dt.year and
-            datetime.fromtimestamp(row.date.timestamp).month == month_start_dt.month
-        ),
-        template_context={
+            datetime.fromtimestamp(row.date.timestamp).month == month_start_dt.month)
+    ]
+
+    if not filtered_data:
+        flash(DATA_NOT_FOUND_ERROR, 'danger')
+        return make_response(redirect(url_for(INDEX_ROUTE)))
+
+    # Generate drilldown URLs using service
+    drilldown_urls = drilldown_service.generate_drilldown_urls(result_id, account_number, dt_response)
+
+    # Build context using service
+    context = drilldown_service.build_drilldown_context(
+        filtered_data=filtered_data,
+        account_number=account_number,
+        result_id=result_id,
+        account_id=account_id,
+        entity_type='transaction',
+        entity_id=f"{category_id}_{month_id}",
+        entity_name=f"{category_name} - {month_start_dt.strftime('%Y-%m')}",
+        drilldown_urls=drilldown_urls,
+        template_specific_context={
             'category_id': category_id,
             'month_id': month_id,
-            'account_id': account_id,
-            'category': category_name,
             'month_ts': month_timestamp
-        },
-        data_not_found_error=DATA_NOT_FOUND_ERROR,
-        index_route=INDEX_ROUTE
+        }
     )
+
+    return make_response(render_template('category_month_transactions.html', **context))

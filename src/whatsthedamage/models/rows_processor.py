@@ -8,6 +8,8 @@ from whatsthedamage.models.row_filter import RowFilter
 from whatsthedamage.models.dt_response_builder import DataTablesResponseBuilder
 from whatsthedamage.utils.date_converter import DateConverter
 from whatsthedamage.view.row_printer import print_categorized_rows, print_training_data
+from whatsthedamage.config.text_config import TextCleaningConfig
+from whatsthedamage.services.text_correction_service import TextCorrectionService
 
 """
 RowsProcessor processes rows of CSV data. It filters, enriches, categorizes, and summarizes the rows.
@@ -34,6 +36,7 @@ class RowsProcessor:
         self._filter: Optional[str] = context.args.filter
         self._training_data: bool = context.args.training_data
         self._ml: bool = context.args.ml
+        self._text_correction_service = TextCorrectionService(TextCleaningConfig())
 
         # Convert start and end dates to epoch if provided
         if self._start_date:
@@ -51,6 +54,21 @@ class RowsProcessor:
                 formatted_end_date, self._date_attribute_format
             )
 
+    def _clean_rows(self, rows: List[CsvRow]) -> List[CsvRow]:
+        """
+        Clean text fields in rows before processing.
+
+        Args:
+            rows (List[CsvRow]): List of CsvRow objects to clean.
+
+        Returns:
+            List[CsvRow]: List of cleaned CsvRow objects.
+        """
+        for row in rows:
+            # Directly modify the partner attribute (partner field is mandatory)
+            row.partner = self._text_correction_service.clean_partner_field(row.partner)
+        return rows
+
     def process_rows(self, rows: List[CsvRow]) -> Dict[str, DataTablesResponse]:
         """
         Processes a list of CsvRow objects and returns per-account DataTablesResponse structures.
@@ -66,6 +84,9 @@ class RowsProcessor:
         Returns:
             Dict[str, DataTablesResponse]: Mapping of account_id → DataTablesResponse.
         """
+        # Apply text cleaning
+        rows = self._clean_rows(rows)
+
         # Group rows by account first
         row_filter = RowFilter(rows, self.context)
         rows_by_account = row_filter.filter_by_account()

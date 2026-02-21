@@ -1,5 +1,15 @@
-# Class representing a single row of data in the CSV file
+from dataclasses import dataclass
+
+@dataclass
 class CsvRow:
+    date: str
+    type: str
+    partner: str
+    amount: float
+    currency: str
+    category: str
+    account: str
+
     def __init__(self, row: dict[str, str], mapping: dict[str, str]) -> None:
         """
         Initialize the CsvRow object with header values as attributes.
@@ -14,40 +24,3 @@ class CsvRow:
         self.currency = row.get(mapping.get('currency', ''), '').strip()
         self.category = row.get(mapping.get('category', ''), '').strip()
         self.account = row.get(mapping.get('account', ''), '').strip()
-
-    def __repr__(self) -> str:
-        """
-        Return a string representation of the CsvRow object for easy printing.
-
-        :return: A string representation of the CsvRow.
-        """
-        return (
-            f"<CsvRow("
-            f"date={self.date}, "
-            f"type={self.type}, "
-            f"partner={self.partner}, "
-            f"amount={self.amount}, "
-            f"currency={self.currency}, "
-            f"category={self.category}, "
-            f"account={self.account}"
-            f")>"
-        )
-
-    def __eq__(self, other: object) -> bool:
-        """
-        Check if two CsvRow objects are equal based on their attributes.
-
-        :param other: The other CsvRow object to compare with.
-        :return: True if the objects are equal, False otherwise.
-        """
-        if not isinstance(other, CsvRow):
-            return False
-        return (
-            self.date == other.date and
-            self.type == other.type and
-            self.partner == other.partner and
-            self.amount == other.amount and
-            self.currency == other.currency and
-            self.category == other.category and
-            self.account == other.account
-        )

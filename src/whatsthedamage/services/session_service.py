@@ -8,6 +8,9 @@ from dataclasses import dataclass
 from flask import session
 import time
 from pathlib import Path
+from whatsthedamage.utils.logging import get_logger
+
+logger = get_logger(__name__)
 
 
 @dataclass
@@ -187,7 +190,8 @@ class SessionService:
                         else:
                             path.unlink()
                 except Exception as e:
-                    print("Failed to remove expired file %s: %s", path, e)
+                    logger.error(f"Failed to remove expired file {path}: {e}",
+                                extra={'context': {'file_path': str(path), 'error': str(e)}})
                 finally:
                     uploaded_files.pop(file_path, None)
 

@@ -10,6 +10,9 @@ from whatsthedamage.utils.date_converter import DateConverter
 from whatsthedamage.view.row_printer import print_categorized_rows, print_training_data
 from whatsthedamage.config.text_config import TextCleaningConfig
 from whatsthedamage.services.text_correction_service import TextCorrectionService
+from whatsthedamage.utils.logging import get_logger
+
+logger = get_logger(__name__)
 
 """
 RowsProcessor processes rows of CSV data. It filters, enriches, categorizes, and summarizes the rows.
@@ -64,9 +67,11 @@ class RowsProcessor:
         Returns:
             List[CsvRow]: List of cleaned CsvRow objects.
         """
+        logger.debug(f"Cleaning {len(rows)} rows")
         for row in rows:
             # Directly modify the partner attribute (partner field is mandatory)
             row.partner = self._text_correction_service.clean_partner_field(row.partner)
+        logger.info(f"Cleaned {len(rows)} rows successfully")
         return rows
 
     def process_rows(self, rows: List[CsvRow]) -> Dict[str, DataTablesResponse]:
@@ -84,6 +89,7 @@ class RowsProcessor:
         Returns:
             Dict[str, DataTablesResponse]: Mapping of account_id → DataTablesResponse.
         """
+        logger.info(f"Starting processing of {len(rows)} rows")
         # Apply text cleaning
         rows = self._clean_rows(rows)
 
@@ -136,6 +142,7 @@ class RowsProcessor:
         elif self._training_data:
             print_training_data(responses_by_account)
 
+        logger.info(f"Completed processing {len(responses_by_account)} accounts")
         return responses_by_account
 
     def _filter_rows(self, rows: List[CsvRow]) -> List[Tuple[DateField, List[CsvRow]]]:

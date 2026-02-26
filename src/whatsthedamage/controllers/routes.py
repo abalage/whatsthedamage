@@ -16,6 +16,9 @@ from typing import Optional, Union, Any
 import os
 import shutil
 from whatsthedamage.utils.flask_locale import get_locale, get_languages
+from whatsthedamage.utils.logging import get_logger
+
+logger = get_logger(__name__)
 
 bp: Blueprint = Blueprint('main', __name__)
 INDEX_ROUTE = 'main.index'
@@ -52,7 +55,8 @@ def clear_upload_folder() -> None:
             elif os.path.isdir(file_path):
                 shutil.rmtree(file_path)
         except Exception as e:
-            print(f'Failed to delete {file_path}. Reason: {e}')
+            logger.error(f'Failed to delete {file_path}. Reason: {e}',
+                        extra={'context': {'file_path': file_path, 'error': str(e)}})
 
 
 def get_lang_template(template_name: str) -> str:

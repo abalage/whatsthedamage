@@ -1,6 +1,9 @@
 import csv
 from typing import Sequence, Dict, List
 from whatsthedamage.models.csv_row import CsvRow
+from whatsthedamage.utils.logging import get_logger
+
+logger = get_logger(__name__)
 
 
 class CsvFileHandler:
@@ -32,19 +35,27 @@ class CsvFileHandler:
         :return: None
         """
         try:
+            logger.info(f"Reading CSV file: {self._filename}")
             with open(self._filename, mode='r', newline='', encoding='utf-8') as file:
                 csvreader = csv.DictReader(file, dialect=self._dialect, delimiter=self._delimiter, restkey='leftover')
                 if csvreader.fieldnames is None or all(fieldname is None for fieldname in csvreader.fieldnames):
-                    raise ValueError("CSV file is empty or missing headers.")
+                    error_msg = "CSV file is empty or missing headers."
+                    logger.error(error_msg)
+                    raise ValueError(error_msg)
                 self._headers = csvreader.fieldnames  # Save the header
                 self._rows = [CsvRow(row, self._mapping) for row in csvreader]
                 if not self._rows:
-                    raise ValueError("CSV file is empty or missing headers.")
+                    error_msg = "CSV file is empty or missing headers."
+                    logger.error(error_msg)
+                    raise ValueError(error_msg)
+                logger.info(f"Successfully read {len(self._rows)} rows from {self._filename}")
         except FileNotFoundError:
-            print(f"Error: The file '{self._filename}' was not found.")
-            raise
+            error_msg = f"The file '{self._filename}' was not found."
+            logger.error(error_msg)
+            raise FileNotFoundError(error_msg)
         except Exception as e:
-            print(f"An error occurred while reading the CSV file: {e}")
+            error_msg = f"An error occurred while reading the CSV file: {e}"
+            logger.error(error_msg)
             raise
 
     def get_headers(self) -> Sequence[str]:
@@ -77,10 +88,14 @@ class CsvFileHandler:
         headers = list(self._mapping.keys())
 
         try:
+            logger.info(f"Writing {len(rows)} rows to CSV file: {filename}")
             with open(filename, mode='w', newline='', encoding='utf-8') as file:
                 writer = csv.DictWriter(file, fieldnames=headers, dialect=self._dialect, delimiter=self._delimiter)
                 writer.writeheader()
                 for row in rows:
                     writer.writerow(row.__dict__)
+            logger.info(f"Successfully wrote {len(rows)} rows to {filename}")
         except Exception as e:
-            print(f"An error occurred while writing to the CSV file: {e}")
+            error_msg = f"An error occurred while writing to the CSV file: {e}"
+            logger.error(error_msg)
+            raise

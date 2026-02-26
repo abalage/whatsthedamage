@@ -3,6 +3,9 @@
 import unicodedata
 import re
 from whatsthedamage.config.text_config import TextCleaningConfig
+from whatsthedamage.utils.logging import get_logger
+
+logger = get_logger(__name__)
 
 class TextCorrectionService:
     """Service for text cleaning of partner field values."""
@@ -34,7 +37,8 @@ class TextCorrectionService:
             partner_text = self._clean_whitespace(partner_text)
 
         if original != partner_text:
-            print(f"[DEBUG]: original '{original}' -> {partner_text}")
+            logger.debug(f"Text correction: original '{original}' -> {partner_text}",
+                        extra={'context': {'original': original, 'corrected': partner_text}})
         return partner_text
 
     def _normalize_unicode(self, text: str) -> str:

@@ -7,7 +7,9 @@ from whatsthedamage.controllers.cli_controller import CLIController
 from whatsthedamage.services.service_factory import create_service_container, ServiceContainer
 from whatsthedamage.config.config import AppArgs
 from whatsthedamage.models.dt_models import DataTablesResponse, ProcessingResponse
+from whatsthedamage.utils.logging import configure_logging, get_logger
 
+logger = get_logger(__name__)
 
 def set_locale(locale_str: str | None) -> None:
     """
@@ -29,7 +31,7 @@ def set_locale(locale_str: str | None) -> None:
             gettext.textdomain('messages')
             gettext.translation('messages', str(localedir), languages=[locale_str], fallback=False).install()
         except FileNotFoundError:
-            print(f"Warning: Locale '{locale_str}' not found. Falling back to default.")
+            logger.warning(f"Locale '{locale_str}' not found. Falling back to default.")
             gettext.translation('messages', str(localedir), fallback=True).install()
 
 
@@ -60,14 +62,24 @@ def format_output(
 
 def main() -> None:
     """Main CLI entrypoint using service factory and dependency injection."""
+    # Parse arguments first to get logging configuration
     controller = CLIController()
     args = controller.parse_arguments()
+
+    # Configure logging with CLI arguments
+    configure_logging(log_level=args.log_level, log_output=args.log_output)
+    logger = get_logger(__name__)
+    logger.info("Starting CLI application")
+
+
+    logger.debug("CLI arguments parsed", context={"filename": args.filename, "config": args.config})
 
     # Set the locale
     set_locale(args.lang)
 
     # Initialize services via factory (dependency injection)
     container = create_service_container()
+    logger.info("Services initialized via factory")
 
     # Process using service layer
     try:
@@ -91,10 +103,10 @@ def main() -> None:
         print(output)
 
     except FileNotFoundError as e:
-        print(f"Error: {e}")
+        logger.error(f"File not found: {e}")
         exit(1)
     except Exception as e:
-        print(f"Error processing CSV: {e}")
+        logger.error(f"Error processing CSV: {e}")
         exit(1)
 
 

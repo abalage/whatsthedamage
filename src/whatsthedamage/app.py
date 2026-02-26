@@ -10,6 +10,7 @@ from whatsthedamage.api.error_handlers import register_error_handlers
 from whatsthedamage.config.flask_config import FlaskAppConfig
 from whatsthedamage.utils.flask_locale import get_locale
 from whatsthedamage.utils.version import get_version
+from whatsthedamage.utils.logging import configure_logging, get_logger
 from whatsthedamage.services.processing_service import ProcessingService
 from whatsthedamage.services.validation_service import ValidationService
 from whatsthedamage.services.response_builder_service import ResponseBuilderService
@@ -59,6 +60,12 @@ def create_app(
     session_service: Optional[SessionService] = None,
     id_mapping_service: Optional[IdMappingService] = None
 ) -> Flask:
+    # Configure logging before creating Flask app
+    # Use default WARN level and stdout output for web interface
+    configure_logging(log_level="WARN", log_output="stdout")
+    logger = get_logger(__name__)
+    logger.info("Starting Flask application initialization")
+
     app: Flask = Flask(__name__, template_folder='view/templates', static_folder='view/static')
 
     # Load default configuration from a class
@@ -66,6 +73,8 @@ def create_app(
 
     if config_class:
         app.config.from_object(config_class)
+
+    logger.info("Flask application configured successfully")
 
     # Check if external config file exists and load it
     config_file = 'config.py'

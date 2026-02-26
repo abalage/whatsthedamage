@@ -6,9 +6,11 @@ The configuration is coming from two directions:
 from typing import List, Dict, Optional
 from dataclasses import dataclass
 import yaml
-import sys
 from pydantic import BaseModel, ValidationError, Field
 from gettext import gettext as _
+from whatsthedamage.utils.logging import get_logger
+
+logger = get_logger(__name__)
 
 @dataclass
 class AppArgs:
@@ -25,6 +27,8 @@ class AppArgs:
     verbose: bool
     training_data: bool
     ml: bool
+    log_level: str = "WARN"
+    log_output: str = "stdout"
     end_date: Optional[str] = None
     filter: Optional[str] = None
     output: Optional[str] = None
@@ -107,7 +111,7 @@ def load_config(config_path: str | None) -> AppConfig:
     :return: An AppConfig object.
     """
     if not config_path or config_path == "":
-        print("Warning: No configuration file provided, using default settings.", file=sys.stderr)
+        logger.warning("No configuration file provided, using default settings")
         return AppConfig(
             csv=CsvConfig(),
             enricher_pattern_sets=EnricherPatternSets()
@@ -118,16 +122,16 @@ def load_config(config_path: str | None) -> AppConfig:
             config = AppConfig(**config_data)
         return config
     except yaml.YAMLError as e:
-        print(f"Error: Configuration file '{config_path}' is not a valid YAML: {e}", file=sys.stderr)
+        logger.error(f"Configuration file '{config_path}' is not a valid YAML: {e}")
         exit(1)
     except ValidationError as e:
-        print(f"Error: Configuration validation error: {e}", file=sys.stderr)
+        logger.error(f"Configuration validation error: {e}")
         exit(1)
     except ValueError as e:
-        print(f"Error: {e}", file=sys.stderr)
+        logger.error(f"Configuration error: {e}")
         exit(1)
     except FileNotFoundError:
-        print(f"Error: Configuration file '{config_path}' not found.", file=sys.stderr)
+        logger.error(f"Configuration file '{config_path}' not found")
         exit(1)
 
 

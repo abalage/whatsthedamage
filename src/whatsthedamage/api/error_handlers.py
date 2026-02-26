@@ -7,6 +7,9 @@ from flask import jsonify, Response, request, Flask
 from werkzeug.exceptions import BadRequest, RequestEntityTooLarge, HTTPException
 from pydantic import ValidationError
 from whatsthedamage.models.api_models import ErrorResponse
+from whatsthedamage.utils.logging import get_logger
+
+logger = get_logger(__name__)
 
 
 API_PREFIX = '/api/'
@@ -118,9 +121,8 @@ def handle_generic_exception(error: Exception) -> tuple[Response, int]:
     Returns:
         tuple: JSON response and status code 500
     """
-    # Log the full exception for debugging (in production, use proper logging)
-    import traceback
-    traceback.print_exc()
+    # Log the full exception for debugging
+    logger.exception("Unhandled exception in API endpoint", extra={"context": {"error_type": type(error).__name__}})
     
     error_response = ErrorResponse(
         code=500,

@@ -13,6 +13,9 @@ from whatsthedamage.models.csv_row import CsvRow
 from pydantic import BaseModel
 from datetime import datetime
 import os
+from whatsthedamage.utils.logging import get_logger
+
+logger = get_logger(__name__)
 
 
 def load_json_data(filepath: str) -> Any:
@@ -20,11 +23,17 @@ def load_json_data(filepath: str) -> Any:
         with open(filepath, "r", encoding="utf-8") as f:
             return json.load(f)
     except FileNotFoundError as e:
-        raise FileNotFoundError(f"Error: File '{filepath}' not found.") from e
+        error_msg = f"Error: File '{filepath}' not found."
+        logger.error(error_msg)
+        raise FileNotFoundError(error_msg) from e
     except json.JSONDecodeError as e:
-        raise ValueError(f"Error: File '{filepath}' is not valid JSON.") from e
+        error_msg = f"Error: File '{filepath}' is not valid JSON."
+        logger.error(error_msg)
+        raise ValueError(error_msg) from e
     except Exception as e:
-        raise RuntimeError(f"Error: An unexpected error occurred while reading '{filepath}': {e}") from e
+        error_msg = f"Error: An unexpected error occurred while reading '{filepath}': {e}"
+        logger.error(error_msg)
+        raise RuntimeError(error_msg) from e
 
 
 def save(
@@ -47,16 +56,20 @@ def save(
 
     try:
         joblib.dump(model, model_save_path)
-        print(f"Model training complete and saved as {model_save_path}")
+        logger.info(f"Model training complete and saved as {model_save_path}")
     except Exception as e:
-        raise RuntimeError(f"Error: Failed to save model to '{model_save_path}': {e}")
+        error_msg = f"Error: Failed to save model to '{model_save_path}': {e}"
+        logger.error(error_msg)
+        raise RuntimeError(error_msg)
 
     try:
         with open(model_manifest_save_path, "w", encoding="utf-8") as f:
             json.dump(manifest, f, indent=2, ensure_ascii=False)
-        print(f"Manifest saved as {model_manifest_save_path}")
+        logger.info(f"Manifest saved as {model_manifest_save_path}")
     except Exception as e:
-        raise RuntimeError(f"Error: Failed to save manifest to '{model_manifest_save_path}': {e}")
+        error_msg = f"Error: Failed to save manifest to '{model_manifest_save_path}': {e}"
+        logger.error(error_msg)
+        raise RuntimeError(error_msg)
 
 
 def load(model_path: str) -> Pipeline:
@@ -170,8 +183,8 @@ class Train:
         class_counts = self.y_train.value_counts(normalize=True)
         if class_counts.min() < self.config.classifier_imbalance_threshold:
             if self.verbose:
-                print("Class distribution in training set:")
-                print(self.y_train.value_counts())
+                logger.info("Class distribution in training set:")
+                logger.info(f"{self.y_train.value_counts()}")
             self.class_weight = "balanced"
         else:
             self.class_weight = None
@@ -253,7 +266,7 @@ class Train:
             }
         }
 
-        print(f"Feature matrix shape after preprocessing: {processed_shape}")
+        logger.info(f"Feature matrix shape after preprocessing: {processed_shape}")
 
         save(
             self.model,
@@ -280,29 +293,29 @@ class Train:
             raise ValueError("Training data (X_train or y_train) is None.")
 
         if method == "grid":
-            print("Using GridSearchCV for hyperparameter tuning. This may take a while.")
+            logger.info("Using GridSearchCV for hyperparameter tuning. This may take a while.")
             grid_search.fit(self.X_train, self.y_train)
-            print("Best parameters:", grid_search.best_params_)
+            logger.info(f"Best parameters: {grid_search.best_params_}")
             self.model = grid_search.best_estimator_
             self.evaluate()
         elif method == "random":
-            print("Using RandomizedSearchCV for hyperparameter tuning. This may take a while.")
+            logger.info("Using RandomizedSearchCV for hyperparameter tuning. This may take a while.")
             random_search.fit(self.X_train, self.y_train)
-            print("Best parameters:", random_search.best_params_)
+            logger.info(f"Best parameters: {random_search.best_params_}")
             self.model = random_search.best_estimator_
             self.evaluate()
         else:
-            print("No hyperparameter tuning method selected.")
+            logger.info("No hyperparameter tuning method selected.")
 
     def evaluate(self) -> None:
         """Evaluate the model and print metrics."""
         if self.model is not None and self.y_test is not None:
             y_pred: Any = self.model.predict(self.X_test)
             print("\nModel Evaluation Metrics:")
-            print("Accuracy:", accuracy_score(self.y_test, y_pred))
-            print(classification_report(self.y_test, y_pred))
+            print(f"Accuracy: {accuracy_score(self.y_test, y_pred)}")
+            print(f"Classification Report:\n{classification_report(self.y_test, y_pred)}")
         else:
-            print("Error: y_test is None. Cannot evaluate model.")
+            logger.error("Error: y_test is None. Cannot evaluate model.")
 
 
 class Inference:

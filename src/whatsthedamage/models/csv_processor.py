@@ -4,6 +4,9 @@ from whatsthedamage.models.csv_file_handler import CsvFileHandler
 from whatsthedamage.models.rows_processor import RowsProcessor
 from whatsthedamage.config.config import AppContext
 from whatsthedamage.models.dt_models import DataTablesResponse
+from whatsthedamage.utils.logging import get_logger
+
+logger = get_logger(__name__)
 
 
 class CSVProcessor:
@@ -39,8 +42,12 @@ class CSVProcessor:
         Returns:
             Dict[str, DataTablesResponse]: The DataTables-compatible structure for frontend.
         """
+        logger.info(f"Processing CSV file: {self.args.filename}")
         self._rows = self._read_csv_file()
-        return self.processor.process_rows(self._rows)
+        logger.debug(f"Read {len(self._rows)} rows from CSV file")
+        result = self.processor.process_rows(self._rows)
+        logger.info(f"Completed CSV processing with {len(result)} account responses")
+        return result
 
     def _read_csv_file(self) -> List[CsvRow]:
         """
@@ -49,11 +56,18 @@ class CSVProcessor:
         Returns:
             List[CsvRow]: The list of CsvRow objects.
         """
-        csv_reader = CsvFileHandler(
-            str(self.args.filename),
-            str(self.config.csv.dialect),
-            str(self.config.csv.delimiter),
-            dict(self.config.csv.attribute_mapping)
-        )
-        csv_reader.read()
-        return csv_reader.get_rows()
+        logger.info(f"Reading CSV file: {self.args.filename}")
+        try:
+            csv_reader = CsvFileHandler(
+                str(self.args.filename),
+                str(self.config.csv.dialect),
+                str(self.config.csv.delimiter),
+                dict(self.config.csv.attribute_mapping)
+            )
+            csv_reader.read()
+            rows = csv_reader.get_rows()
+            logger.info(f"Successfully read {len(rows)} rows from CSV file")
+            return rows
+        except Exception as e:
+            logger.error(f"Failed to read CSV file {self.args.filename}: {e}")
+            raise

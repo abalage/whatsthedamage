@@ -7,6 +7,9 @@ from abc import ABC, abstractmethod
 from typing import Dict
 import numpy as np
 from scipy import stats
+from whatsthedamage.utils.logging import get_logger
+
+logger = get_logger(__name__)
 
 class StatisticalAlgorithm(ABC):
     """Abstract base class for statistical algorithms."""
@@ -26,6 +29,10 @@ class StatisticalAlgorithm(ABC):
 
 class IQROutlierDetection(StatisticalAlgorithm):
     """IQR-based outlier detection algorithm."""
+
+    def __init__(self) -> None:
+        """Initialize algorithm."""
+        super().__init__()
 
     def analyze(self, data: Dict[str, float]) -> Dict[str, str]:
         """Detect outliers using Interquartile Range method.
@@ -64,6 +71,10 @@ class IQROutlierDetection(StatisticalAlgorithm):
 
 class ParetoAnalysis(StatisticalAlgorithm):
     """Pareto analysis for identifying top contributors."""
+
+    def __init__(self) -> None:
+        """Initialize algorithm."""
+        super().__init__()
 
     def analyze(self, data: Dict[str, float]) -> Dict[str, str]:
         """Identify top contributors using Pareto 80/20 rule.

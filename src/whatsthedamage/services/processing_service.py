@@ -15,6 +15,9 @@ from whatsthedamage.services.configuration_service import ConfigurationService, 
 from whatsthedamage.services.statistical_analysis_service import StatisticalAnalysisService
 from whatsthedamage.models.dt_models import StatisticalMetadata, DataTablesResponse, ProcessingResponse
 from whatsthedamage.models.api_models import ProcessingMetadata
+from whatsthedamage.utils.logging import get_logger
+
+logger = get_logger(__name__)
 
 class ProcessingService:
     """Service for processing CSV transaction files.
@@ -75,6 +78,8 @@ class ProcessingService:
             ProcessingResponse: Contains processed data, metadata, and statistical analysis results
         """
         start_time = time.time()
+        logger.info(f"Starting CSV processing: {csv_file_path}")
+        logger.debug(f"Processing parameters: ml_enabled={ml_enabled}, category_filter={category_filter}, language={language}")
 
         # Build arguments for CSVProcessor
         args = self._build_args(
@@ -90,16 +95,25 @@ class ProcessingService:
         )
 
         # Load config using ConfigurationService
+        logger.info("Loading configuration")
         config_result: ConfigLoadResult = self._config_service.load_config(config_file_path)
         config = config_result.config
         if config is None:
-            raise ValueError(f"Failed to load configuration: {config_result.validation_result.error_message}")
+            error_msg = f"Failed to load configuration: {config_result.validation_result.error_message}"
+            logger.error(error_msg)
+            raise ValueError(error_msg)
 
         context = AppContext(config, args)
 
         # Process using existing CSVProcessor
+        logger.info("Creating CSV processor and starting row processing")
         processor = CSVProcessor(context)
         datatables_responses = processor.process()
+        # Only log account count if not a Mock object (for testing)
+        if hasattr(datatables_responses, '__len__'):
+            logger.info(f"Completed row processing for {len(datatables_responses)} accounts")
+        else:
+            logger.info("Completed row processing")
 
         # Compute statistical metadata
         statistical_metadata = self._compute_statistical_metadata(datatables_responses)
@@ -108,7 +122,7 @@ class ProcessingService:
         processing_time = time.time() - start_time
 
         # Get row count from cached rows to avoid re-reading CSV
-        row_count = len(processor._rows)
+        row_count = len(processor._rows) if hasattr(processor._rows, '__len__') else 0
 
         # Build date_range dictionary if dates are provided
         date_range = None
@@ -118,6 +132,13 @@ class ProcessingService:
                 date_range["start"] = start_date
             if end_date:
                 date_range["end"] = end_date
+
+        logger.info(f"Completed processing {row_count} rows in {processing_time:.2f} seconds")
+        # Only log account count if not a Mock object (for testing)
+        if hasattr(datatables_responses, '__len__'):
+            logger.debug(f"Processing result: {len(datatables_responses)} accounts, ml_enabled={ml_enabled}")
+        else:
+            logger.debug(f"Processing result: ml_enabled={ml_enabled}")
 
         return ProcessingResponse(
             result_id=str(uuid.uuid4()),

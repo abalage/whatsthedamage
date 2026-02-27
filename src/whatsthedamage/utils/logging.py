@@ -5,7 +5,6 @@ This module provides a thin wrapper around Python's native logging
 to add structured formatting while keeping the implementation simple and maintainable.
 """
 import logging
-import os
 import sys
 import json
 import datetime
@@ -29,7 +28,9 @@ class StructuredFormatter(logging.Formatter):
         Returns:
             Formatted log string (JSON or text)
         """
-        use_json = os.environ.get("LOG_FORMAT", "text").lower() == "json"
+        # Get log format from the root logger (set by configure_logging)
+        root_logger = logging.getLogger()
+        use_json = getattr(root_logger, 'use_json_format', False)
 
         if use_json:
             return self._format_json(record)
@@ -115,13 +116,14 @@ class LoggerAdapter(logging.LoggerAdapter[Any]):
         return msg, kwargs
 
 
-def configure_logging(log_level: str = "WARN", log_output: str = "stdout") -> None:
+def configure_logging(log_level: str = "WARN", log_output: str = "stdout", log_format: str = "text") -> None:
     """
     Configure the root logger with structured formatting.
 
     Args:
         log_level: Logging level (DEBUG, INFO, WARN, ERROR)
         log_output: Output destination ('stdout' or filename)
+        log_format: Log format ('text' or 'json')
 
     This should be called once at application startup.
     """
@@ -140,8 +142,9 @@ def configure_logging(log_level: str = "WARN", log_output: str = "stdout") -> No
     for handler in root_logger.handlers[:]:
         root_logger.removeHandler(handler)
 
-    # Set up formatter
+    # Set up formatter with log format
     formatter = StructuredFormatter()
+    use_json_format = log_format.lower() == "json"
 
     # Configure output based on log_output parameter
     if log_output.lower() == "stdout":
@@ -164,6 +167,12 @@ def configure_logging(log_level: str = "WARN", log_output: str = "stdout") -> No
             root_logger.addHandler(console_handler)
 
     root_logger.setLevel(numeric_level)
+
+    # Set the log format on the root logger so it's available to all handlers
+    # We need to set this as an attribute on the Logger object
+    # This is safe to do - Python allows adding custom attributes to objects
+    # Disable mypy error for dynamically added attribute
+    setattr(root_logger, 'use_json_format', use_json_format)
 
 
 def get_logger(name: Optional[str] = None) -> LoggerAdapter:

@@ -26,6 +26,7 @@ class CLIController:
         parser.add_argument('--ml', action='store_true', help="Use machine learning for categorization instead of regular expressions. (experimental)")
         parser.add_argument('--log-level', type=str, default='WARN', help='Set the logging level (DEBUG, INFO, WARN, ERROR). Default: WARN')
         parser.add_argument('--log-output', type=str, default='stdout', help='Set the logging output (stdout or filename). Default: stdout')
+        parser.add_argument('--log-format', type=str, default='text', help='Set the logging format (text or json). Default: text')
         return parser
 
     def parse_arguments(self) -> AppArgs:
@@ -45,5 +46,6 @@ class CLIController:
             training_data=parsed_args.training_data,
             ml=parsed_args.ml,
             log_level=parsed_args.log_level,
-            log_output=parsed_args.log_output
+            log_output=parsed_args.log_output,
+            log_format=parsed_args.log_format
         )

@@ -87,20 +87,23 @@ def create_app(
     # Initialize Flask-Caching
     cache = Cache(app, config={'CACHE_TYPE': 'SimpleCache'})
 
+    # Initialize configuration service first (dependency injection)
+    if configuration_service is None:
+        configuration_service = ConfigurationService()
+    app.extensions['configuration_service'] = configuration_service
+
+    # Get configuration for TTL settings
+    config = configuration_service.get_default_config()
+
     # Create adapter and cache service (decoupled from Flask-Caching)
     cache_adapter = FlaskCacheAdapter(cache)
-    cache_service = CacheService(cache_adapter)
+    cache_service = CacheService(cache_adapter, ttl=config.cache_ttl)
     app.extensions['cache_service'] = cache_service
 
     # Initialize ID mapping service for secure URL generation
     if id_mapping_service is None:
         id_mapping_service = IdMappingService(cache)
     app.extensions['id_mapping_service'] = id_mapping_service
-
-    # Initialize configuration service first (dependency injection)
-    if configuration_service is None:
-        configuration_service = ConfigurationService()
-    app.extensions['configuration_service'] = configuration_service
 
     # Initialize exclusion service (dependency injection)
     exclusion_service = ExclusionService()

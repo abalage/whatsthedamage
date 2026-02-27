@@ -88,7 +88,7 @@ class AppConfig(BaseModel):
     csv: CsvConfig
     enricher_pattern_sets: EnricherPatternSets
     enabled_statistical_algorithms: List[str] = Field(default_factory=lambda: ['iqr', 'pareto'])
-    cache_ttl: int = Field(default=600)  # 10 minutes in seconds
+    cache_ttl: int = Field(default=1800)  # 30 minutes in seconds
 
 
 class AppContext:

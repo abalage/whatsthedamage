@@ -29,6 +29,7 @@ class AppArgs:
     ml: bool
     log_level: str = "WARN"
     log_output: str = "stdout"
+    log_format: str = "text"
     end_date: Optional[str] = None
     filter: Optional[str] = None
     output: Optional[str] = None

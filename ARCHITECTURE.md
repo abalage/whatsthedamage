@@ -246,7 +246,12 @@ The system follows a layered architecture with clear separation of concerns:
 - `make web`: Run Flask development server
 - `make vite-build`: Build production frontend assets
 
-**Monitoring & Logging**: No logging yet, just regular print methods.
+**Monitoring & Logging**:
+- **Structured Logging System**: Comprehensive logging with configurable levels (DEBUG, INFO, WARN, ERROR), output destinations (stdout or file), and formats (text or JSON)
+- **CLI Configuration**: Command line arguments `--log-level`, `--log-output`, and `--log-format` for runtime logging configuration
+- **Default Configuration**: WARN level logging to stdout for both CLI and web interfaces
+- **Context Support**: Structured logging with contextual information support via LoggerAdapter
+- **File Output**: Optional file-based logging with automatic fallback to stdout on errors
 
 ## 7. Security Considerations
 

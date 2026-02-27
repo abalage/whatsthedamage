@@ -61,8 +61,8 @@ def create_app(
     id_mapping_service: Optional[IdMappingService] = None
 ) -> Flask:
     # Configure logging before creating Flask app
-    # Use default WARN level and stdout output for web interface
-    configure_logging(log_level="WARN", log_output="stdout")
+    # Use default WARN level, stdout output, and text format for web interface
+    configure_logging(log_level="WARN", log_output="stdout", log_format="text")
     logger = get_logger(__name__)
     logger.info("Starting Flask application initialization")
 

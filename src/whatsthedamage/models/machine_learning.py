@@ -1,13 +1,14 @@
 import json
 import pandas as pd
-from typing import List, Any, Dict, Union, Optional
+import numpy as np
+from typing import List, Any, Dict, Union, Optional, cast
 from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split, GridSearchCV, RandomizedSearchCV
 from sklearn.metrics import classification_report, accuracy_score
+from sklearn.base import BaseEstimator, TransformerMixin
 import joblib
 from whatsthedamage.models.csv_row import CsvRow
 from pydantic import BaseModel
@@ -98,7 +99,7 @@ class MLConfig(BaseModel):
     max_depth: Union[int, None] = None
     test_size: float = 0.2
     model_version: str = "v5alpha_en"
-    feature_columns: List[str] = ["type", "partner", "currency", "amount"]
+    feature_columns: List[str] = ["type", "partner", "amount"]
 
     @property
     def model_path(self) -> str:
@@ -144,6 +145,36 @@ class TrainingData:
     def get_training_data(self) -> pd.DataFrame:
         return self._df
 
+
+class AmountSignTransformer(BaseEstimator, TransformerMixin):
+    """Custom transformer to extract sign (positive/negative) from amount values."""
+
+    def fit(self, X: Any, y: Optional[Any] = None) -> 'AmountSignTransformer':
+        """Fit method (no operation needed for this transformer)."""
+        return self
+
+    def transform(self, X: Any) -> np.ndarray:
+        """
+        Transform amount values to their sign (1 for positive, 0 for zero, -1 for negative).
+
+        Args:
+            X: Input array of amount values
+
+        Returns:
+            Array of sign values (-1, 0, 1)
+        """
+        if isinstance(X, pd.DataFrame) or isinstance(X, pd.Series):
+            X = X.values
+
+        # Convert to numpy array if not already
+        x_array = np.asarray(X)
+
+        # Extract sign: 1 for positive, 0 for zero, -1 for negative
+        signs = np.sign(x_array)
+
+        # Reshape to 2D array as expected by scikit-learn
+        result = signs.reshape(-1, 1).astype(float)
+        return cast(np.ndarray, result)
 
 class Train:
     """Prepare data and pipeline for model training."""
@@ -213,8 +244,7 @@ class Train:
                     ngram_range=(1, 1),
                     stop_words=self.config.hungarian_partner_stop_words),
                     "partner"),
-                ("currency_ohe", OneHotEncoder(handle_unknown="ignore"), ["currency"]),
-                ("amount_scaler", StandardScaler(), ["amount"]),
+                ("amount_sign", AmountSignTransformer(), ["amount"]),
             ]
         )
 
@@ -230,7 +260,7 @@ class Train:
         return Pipeline([
             ("preprocessor", self.preprocessor),
             ("classifier", classifier)
-        ])
+        ], memory=None)
 
     def train(self) -> None:
         """Train the model, optionally with hyperparameter search."""

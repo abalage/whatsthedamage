@@ -221,8 +221,8 @@ class Train:
             self.class_weight = None
 
         # Prepare feature columns
-        self.X_train = self.df_train[self.config.feature_columns]
-        self.X_test = self.df_test[self.config.feature_columns]
+        self.x_train = self.df_train[self.config.feature_columns]
+        self.x_test = self.df_test[self.config.feature_columns]
 
         # Create the preprocessor ONCE and use everywhere
         self.preprocessor: ColumnTransformer = self._create_preprocessor()
@@ -264,9 +264,9 @@ class Train:
 
     def train(self) -> None:
         """Train the model, optionally with hyperparameter search."""
-        if self.X_train is None or self.y_train is None:
+        if self.x_train is None or self.y_train is None:
             raise ValueError("Training data (X_train or y_train) is None.")
-        self.pipe.fit(self.X_train, self.y_train)
+        self.pipe.fit(self.x_train, self.y_train)
         self.model = self.pipe
 
         # Always evaluate if test data is available
@@ -274,7 +274,7 @@ class Train:
             self.evaluate()
 
         # Get processed feature matrix shape after fitting the pipeline
-        processed_shape = self.model.named_steps["preprocessor"].transform(self.X_train).shape
+        processed_shape = self.model.named_steps["preprocessor"].transform(self.x_train).shape
 
         # Create MANIFEST after training and evaluation
         MANIFEST = {
@@ -319,18 +319,18 @@ class Train:
             random_state=self.config.random_state
         )
 
-        if self.X_train is None or self.y_train is None:
+        if self.x_train is None or self.y_train is None:
             raise ValueError("Training data (X_train or y_train) is None.")
 
         if method == "grid":
             logger.info("Using GridSearchCV for hyperparameter tuning. This may take a while.")
-            grid_search.fit(self.X_train, self.y_train)
+            grid_search.fit(self.x_train, self.y_train)
             logger.info(f"Best parameters: {grid_search.best_params_}")
             self.model = grid_search.best_estimator_
             self.evaluate()
         elif method == "random":
             logger.info("Using RandomizedSearchCV for hyperparameter tuning. This may take a while.")
-            random_search.fit(self.X_train, self.y_train)
+            random_search.fit(self.x_train, self.y_train)
             logger.info(f"Best parameters: {random_search.best_params_}")
             self.model = random_search.best_estimator_
             self.evaluate()
@@ -340,7 +340,7 @@ class Train:
     def evaluate(self) -> None:
         """Evaluate the model and print metrics."""
         if self.model is not None and self.y_test is not None:
-            y_pred: Any = self.model.predict(self.X_test)
+            y_pred: Any = self.model.predict(self.x_test)
             print("\nModel Evaluation Metrics:")
             print(f"Accuracy: {accuracy_score(self.y_test, y_pred)}")
             print(f"Classification Report:\n{classification_report(self.y_test, y_pred)}")

@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: whatsthedamage-1.0\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-02-09 15:24+0100\n"
-"PO-Revision-Date: 2026-02-09 15:24+0100\n"
+"POT-Creation-Date: 2026-03-04 21:04+0100\n"
+"PO-Revision-Date: 2026-03-04 21:05+0100\n"
 "Last-Translator: Balázs Németh <balagetech@protonmail.com>\n"
 "Language-Team: Hungarian\n"
 "Language: hu_HU\n"
@@ -18,96 +18,96 @@ msgstr ""
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 "X-Generator: Poedit 3.6\n"
 
-#: src/whatsthedamage/config/config.py:55
+#: src/whatsthedamage/config/config.py:60
 msgid "Grocery"
 msgstr "Bevásárlás"
 
-#: src/whatsthedamage/config/config.py:56
+#: src/whatsthedamage/config/config.py:61
 msgid "Clothes"
 msgstr "Ruházat"
 
-#: src/whatsthedamage/config/config.py:57
+#: src/whatsthedamage/config/config.py:62
 msgid "Health"
 msgstr "Egészség"
 
-#: src/whatsthedamage/config/config.py:58
+#: src/whatsthedamage/config/config.py:63
 msgid "Payment"
 msgstr "Kifizetés"
 
-#: src/whatsthedamage/config/config.py:59
-msgid "Vehicle"
-msgstr "Jármű"
+#: src/whatsthedamage/config/config.py:64
+msgid "Transportation"
+msgstr "Közlekedés"
 
-#: src/whatsthedamage/config/config.py:60
+#: src/whatsthedamage/config/config.py:65
 msgid "Utility"
 msgstr "Rezsi"
 
-#: src/whatsthedamage/config/config.py:61
+#: src/whatsthedamage/config/config.py:66
 msgid "Home Maintenance"
 msgstr "Otthon karbantartás"
 
-#: src/whatsthedamage/config/config.py:62
-msgid "Sports Recreation"
-msgstr "Sport Rekreáció"
+#: src/whatsthedamage/config/config.py:67
+msgid "Entertainment and Leisure"
+msgstr "Szórakozás és szabadidő"
 
-#: src/whatsthedamage/config/config.py:63
+#: src/whatsthedamage/config/config.py:68
 msgid "Insurance"
 msgstr "Biztosítás"
 
-#: src/whatsthedamage/config/config.py:64
+#: src/whatsthedamage/config/config.py:69
 msgid "Loan"
 msgstr "Hitel"
 
-#: src/whatsthedamage/config/config.py:65
+#: src/whatsthedamage/config/config.py:70
 msgid "Withdrawal"
 msgstr "Pénzfelvétel"
 
-#: src/whatsthedamage/config/config.py:66
+#: src/whatsthedamage/config/config.py:71
 msgid "Fee"
 msgstr "Díj"
 
-#: src/whatsthedamage/config/config.py:67
+#: src/whatsthedamage/config/config.py:72
 msgid "Deposit"
 msgstr "Bevétel"
 
-#: src/whatsthedamage/config/config.py:68
+#: src/whatsthedamage/config/config.py:73
 msgid "Refund"
 msgstr "Visszatérítés"
 
-#: src/whatsthedamage/config/config.py:69
+#: src/whatsthedamage/config/config.py:74
 msgid "Interest"
 msgstr "Kamat"
 
-#: src/whatsthedamage/config/config.py:70
+#: src/whatsthedamage/config/config.py:76
 msgid "Transfer"
 msgstr "Átvezetés"
 
-#: src/whatsthedamage/config/config.py:71
+#: src/whatsthedamage/config/config.py:77
 msgid "Other"
 msgstr "Egyéb"
 
-#: src/whatsthedamage/config/config.py:72
+#: src/whatsthedamage/config/config.py:78
 #: src/whatsthedamage/models/dt_calculators.py:36
 #: src/whatsthedamage/models/dt_calculators.py:68
 msgid "Balance"
 msgstr "Egyenleg"
 
-#: src/whatsthedamage/config/config.py:73
+#: src/whatsthedamage/config/config.py:79
 #: src/whatsthedamage/models/dt_calculators.py:68
 #: src/whatsthedamage/models/dt_calculators.py:85
 msgid "Total Spendings"
 msgstr "Teljes költés"
 
-#: src/whatsthedamage/services/data_formatting_service.py:37
-#: src/whatsthedamage/view/templates/results.html:44
+#: src/whatsthedamage/services/data_formatting_service.py:38
+#: src/whatsthedamage/view/templates/results.html:45
 msgid "Categories"
 msgstr "Kategóriák"
 
 #: src/whatsthedamage/services/data_formatting_service.py:419
-#: src/whatsthedamage/view/templates/category_all_months.html:20
-#: src/whatsthedamage/view/templates/category_month_detail.html:20
-#: src/whatsthedamage/view/templates/month_all_categories.html:20
-#: src/whatsthedamage/view/templates/results.html:31
+#: src/whatsthedamage/view/templates/category_month_transactions.html:20
+#: src/whatsthedamage/view/templates/category_months_list.html:20
+#: src/whatsthedamage/view/templates/month_categories_list.html:20
+#: src/whatsthedamage/view/templates/results.html:32
 msgid "Account"
 msgstr "Számla"
 
@@ -163,43 +163,43 @@ msgstr "December"
 msgid "Invalid month number. Please enter a number between 1 and 12."
 msgstr "Érvénytelen hónap. A hónap száma 1 és 12 között kell hogy legyen."
 
-#: src/whatsthedamage/view/templates/category_all_months.html:5
-#: src/whatsthedamage/view/templates/category_all_months.html:19
-msgid "Details for Category"
-msgstr "Kategória részletek"
-
-#: src/whatsthedamage/view/templates/category_all_months.html:29
-msgid "Month"
-msgstr "Hónap"
-
-#: src/whatsthedamage/view/templates/category_all_months.html:30
-#: src/whatsthedamage/view/templates/month_all_categories.html:30
-msgid "Total"
-msgstr "Teljes"
-
-#: src/whatsthedamage/view/templates/category_all_months.html:43
-#: src/whatsthedamage/view/templates/category_month_detail.html:43
-#: src/whatsthedamage/view/templates/month_all_categories.html:43
-#: src/whatsthedamage/view/templates/results.html:109
-msgid "Back"
-msgstr "Vissza"
-
-#: src/whatsthedamage/view/templates/category_month_detail.html:5
-#: src/whatsthedamage/view/templates/category_month_detail.html:19
+#: src/whatsthedamage/view/templates/category_month_transactions.html:5
+#: src/whatsthedamage/view/templates/category_month_transactions.html:19
 msgid "Transaction Details"
 msgstr "Tranzakció részletei"
 
-#: src/whatsthedamage/view/templates/category_month_detail.html:25
+#: src/whatsthedamage/view/templates/category_month_transactions.html:25
 msgid "Date"
 msgstr "Dátum"
 
-#: src/whatsthedamage/view/templates/category_month_detail.html:26
+#: src/whatsthedamage/view/templates/category_month_transactions.html:26
 msgid "Amount"
 msgstr "Összeg"
 
-#: src/whatsthedamage/view/templates/category_month_detail.html:27
+#: src/whatsthedamage/view/templates/category_month_transactions.html:27
 msgid "Merchant"
 msgstr "Kereskedő"
+
+#: src/whatsthedamage/view/templates/category_month_transactions.html:43
+#: src/whatsthedamage/view/templates/category_months_list.html:43
+#: src/whatsthedamage/view/templates/month_categories_list.html:43
+#: src/whatsthedamage/view/templates/results.html:110
+msgid "Back"
+msgstr "Vissza"
+
+#: src/whatsthedamage/view/templates/category_months_list.html:5
+#: src/whatsthedamage/view/templates/category_months_list.html:19
+msgid "Details for Category"
+msgstr "Kategória részletek"
+
+#: src/whatsthedamage/view/templates/category_months_list.html:29
+msgid "Month"
+msgstr "Hónap"
+
+#: src/whatsthedamage/view/templates/category_months_list.html:30
+#: src/whatsthedamage/view/templates/month_categories_list.html:30
+msgid "Total"
+msgstr "Teljes"
 
 #: src/whatsthedamage/view/templates/header.html:4
 msgid "Generate reports from your bank account CSV history."
@@ -307,12 +307,12 @@ msgstr "Beküldés"
 msgid "Clear Form"
 msgstr "Űrlap törlése"
 
-#: src/whatsthedamage/view/templates/month_all_categories.html:5
-#: src/whatsthedamage/view/templates/month_all_categories.html:19
+#: src/whatsthedamage/view/templates/month_categories_list.html:5
+#: src/whatsthedamage/view/templates/month_categories_list.html:19
 msgid "Details for Month"
 msgstr "Hónap részletei"
 
-#: src/whatsthedamage/view/templates/month_all_categories.html:29
+#: src/whatsthedamage/view/templates/month_categories_list.html:29
 msgid "Category"
 msgstr "Kategória"
 
@@ -331,6 +331,12 @@ msgstr "Mentés Excel-be"
 #: src/whatsthedamage/view/templates/results.html:21
 msgid "Processed results"
 msgstr "Feldolgozott eredmények"
+
+#~ msgid "Vehicle"
+#~ msgstr "Jármű"
+
+#~ msgid "Sports Recreation"
+#~ msgstr "Sport Rekreáció"
 
 #~ msgid "Month Details"
 #~ msgstr "Hónap részletei"

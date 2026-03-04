@@ -49,12 +49,12 @@ class IQROutlierDetection(StatisticalAlgorithm):
 
         # Validate dataset size and warn/return early for small datasets
         if not amounts or len(amounts) < 4:
-            print("Warning: Not enough data. IQR outlier detection requires at least 4 data points for meaningful results.")
+            logger.warning("Not enough data. IQR outlier detection requires at least 4 data points for meaningful results.")
             return highlights
 
         # Warn for very small datasets
         if 4 <= len(amounts) <= 10:
-            print("Warning: Small dataset size (4-10 points). IQR may not be representative.")
+            logger.warning("Small dataset size (4-10 points). IQR may not be representative.")
 
         # Calculate Q1, Q3, IQR using scipy
         q1 = np.percentile(amounts, 25)

@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: whatsthedamage-1.0\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-03-04 21:04+0100\n"
-"PO-Revision-Date: 2026-03-04 21:05+0100\n"
+"POT-Creation-Date: 2026-03-04 22:26+0100\n"
+"PO-Revision-Date: 2026-03-04 22:27+0100\n"
 "Last-Translator: Balázs Németh <balagetech@protonmail.com>\n"
 "Language-Team: Hungarian\n"
 "Language: hu_HU\n"
@@ -27,72 +27,76 @@ msgid "Clothes"
 msgstr "Ruházat"
 
 #: src/whatsthedamage/config/config.py:62
+msgid "Dining Out"
+msgstr "Vendéglátás"
+
+#: src/whatsthedamage/config/config.py:63
 msgid "Health"
 msgstr "Egészség"
 
-#: src/whatsthedamage/config/config.py:63
+#: src/whatsthedamage/config/config.py:64
 msgid "Payment"
 msgstr "Kifizetés"
 
-#: src/whatsthedamage/config/config.py:64
+#: src/whatsthedamage/config/config.py:65
 msgid "Transportation"
 msgstr "Közlekedés"
 
-#: src/whatsthedamage/config/config.py:65
+#: src/whatsthedamage/config/config.py:66
 msgid "Utility"
 msgstr "Rezsi"
 
-#: src/whatsthedamage/config/config.py:66
+#: src/whatsthedamage/config/config.py:67
 msgid "Home Maintenance"
 msgstr "Otthon karbantartás"
 
-#: src/whatsthedamage/config/config.py:67
+#: src/whatsthedamage/config/config.py:68
 msgid "Entertainment and Leisure"
 msgstr "Szórakozás és szabadidő"
 
-#: src/whatsthedamage/config/config.py:68
+#: src/whatsthedamage/config/config.py:69
 msgid "Insurance"
 msgstr "Biztosítás"
 
-#: src/whatsthedamage/config/config.py:69
+#: src/whatsthedamage/config/config.py:70
 msgid "Loan"
 msgstr "Hitel"
 
-#: src/whatsthedamage/config/config.py:70
+#: src/whatsthedamage/config/config.py:71
 msgid "Withdrawal"
 msgstr "Pénzfelvétel"
 
-#: src/whatsthedamage/config/config.py:71
+#: src/whatsthedamage/config/config.py:72
 msgid "Fee"
 msgstr "Díj"
 
-#: src/whatsthedamage/config/config.py:72
+#: src/whatsthedamage/config/config.py:73
 msgid "Deposit"
 msgstr "Bevétel"
 
-#: src/whatsthedamage/config/config.py:73
+#: src/whatsthedamage/config/config.py:74
 msgid "Refund"
 msgstr "Visszatérítés"
 
-#: src/whatsthedamage/config/config.py:74
+#: src/whatsthedamage/config/config.py:75
 msgid "Interest"
 msgstr "Kamat"
 
-#: src/whatsthedamage/config/config.py:76
+#: src/whatsthedamage/config/config.py:77
 msgid "Transfer"
 msgstr "Átvezetés"
 
-#: src/whatsthedamage/config/config.py:77
+#: src/whatsthedamage/config/config.py:78
 msgid "Other"
 msgstr "Egyéb"
 
-#: src/whatsthedamage/config/config.py:78
+#: src/whatsthedamage/config/config.py:79
 #: src/whatsthedamage/models/dt_calculators.py:36
 #: src/whatsthedamage/models/dt_calculators.py:68
 msgid "Balance"
 msgstr "Egyenleg"
 
-#: src/whatsthedamage/config/config.py:79
+#: src/whatsthedamage/config/config.py:80
 #: src/whatsthedamage/models/dt_calculators.py:68
 #: src/whatsthedamage/models/dt_calculators.py:85
 msgid "Total Spendings"

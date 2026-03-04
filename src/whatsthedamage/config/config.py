@@ -59,6 +59,7 @@ class CategoryDefinition(BaseModel):
 AVAILABLE_CATEGORIES = [
     CategoryDefinition(id="grocery", default_name=_("Grocery"), patterns=[]),
     CategoryDefinition(id="clothes", default_name=_("Clothes"), patterns=[]),
+    CategoryDefinition(id="dining_out", default_name=_("Dining Out"), patterns=[]),
     CategoryDefinition(id="health", default_name=_("Health"), patterns=[]),
     CategoryDefinition(id="payment", default_name=_("Payment"), patterns=[]),
     CategoryDefinition(id="transportation", default_name=_("Transportation"), patterns=[]),

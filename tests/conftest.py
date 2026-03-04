@@ -1,4 +1,3 @@
-import os
 import pytest
 from whatsthedamage.models.csv_row import CsvRow
 from whatsthedamage.config.config import AppConfig, CsvConfig, AppContext
@@ -9,17 +8,6 @@ from whatsthedamage.models.api_models import ProcessingMetadata
 
 # Import API fixtures from separate module
 pytest_plugins = ['tests.api_fixtures']
-
-
-# Centralized config.yml.default path
-CONFIG_YML_DEFAULT_PATH = os.path.abspath(
-    os.path.join(os.path.dirname(__file__), "../docs/config.yml.default")
-)
-
-
-@pytest.fixture
-def config_yml_default_path():
-    return CONFIG_YML_DEFAULT_PATH
 
 
 # Mock classes for testing routes with ProcessingService

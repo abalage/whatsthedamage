@@ -2,10 +2,10 @@
 
 import unicodedata
 import re
-import os
 import yaml
 from typing import Optional
 from whatsthedamage.config.text_config import TextCleaningConfig, TextCleaningPatternsConfig
+from whatsthedamage.config import DEFAULT_CONFIG_PATH
 from whatsthedamage.utils.logging import get_logger
 
 logger = get_logger(__name__)
@@ -116,8 +116,7 @@ class TextCorrectionService:
         """Load default text cleaning patterns from configuration file."""
         try:
             # Try to load from default config file
-            config_path = os.path.join(os.path.dirname(__file__), '..', '..', '..', 'config', 'config.yml.default')
-            with open(config_path, 'r', encoding='utf-8') as file:
+            with open(DEFAULT_CONFIG_PATH, 'r', encoding='utf-8') as file:
                 config_data = yaml.safe_load(file)
                 text_cleaning_config = config_data.get('text_cleaning', {})
                 return TextCleaningPatternsConfig(

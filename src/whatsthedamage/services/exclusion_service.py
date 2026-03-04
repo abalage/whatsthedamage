@@ -7,6 +7,7 @@ and user-defined exclusions (session-based).
 import json
 from typing import Dict, List, Optional, Any
 from pathlib import Path
+from whatsthedamage.config import DEFAULT_EXCLUSIONS_PATH
 
 class ExclusionService:
     """Service for managing category exclusions in statistical analysis.
@@ -14,15 +15,13 @@ class ExclusionService:
     Supports algorithm-specific exclusions and user customizations.
     """
 
-    DEFAULT_EXCLUSIONS_PATH = "config/exclusions.json"
-
     def __init__(self, exclusions_path: Optional[str] = None):
         """Initialize the exclusion service.
 
         Args:
             exclusions_path: Path to JSON configuration file. If None, uses default path.
         """
-        self.exclusions_path = exclusions_path or self.DEFAULT_EXCLUSIONS_PATH
+        self.exclusions_path = exclusions_path or DEFAULT_EXCLUSIONS_PATH
         self.default_exclusions = self._load_default_exclusions()
         self.user_exclusions: Dict[str, List[str]] = {}
 

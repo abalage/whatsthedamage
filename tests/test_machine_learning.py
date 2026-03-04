@@ -213,7 +213,7 @@ def test_train_train_method(train_obj_enough_data):
          mock.patch.object(
             train_obj_enough_data.pipe.named_steps["preprocessor"], "transform",
             return_value=np.zeros(
-                (len(train_obj_enough_data.X_train), len(train_obj_enough_data.config.feature_columns))
+                (len(train_obj_enough_data.x_train), len(train_obj_enough_data.config.feature_columns))
             )
          ) as mock_transform:
         train_obj_enough_data.train()

@@ -3,7 +3,7 @@ The configuration is coming from two directions:
 1. arguments passed to the main method (AppArgs object)
 2. read from a configuration file (AppConfig object).
 '''
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Any
 from dataclasses import dataclass
 import yaml
 from pydantic import BaseModel, ValidationError, Field
@@ -87,6 +87,7 @@ class EnricherPatternSets(BaseModel):
 class AppConfig(BaseModel):
     csv: CsvConfig
     enricher_pattern_sets: EnricherPatternSets
+    text_cleaning: Optional[Dict[str, Any]] = Field(default_factory=dict)
     enabled_statistical_algorithms: List[str] = Field(default_factory=lambda: ['iqr', 'pareto'])
     cache_ttl: int = Field(default=1800)  # 30 minutes in seconds
 

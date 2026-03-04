@@ -80,6 +80,34 @@ def load(model_path: str) -> Pipeline:
     except Exception as e:
         raise RuntimeError(f"Failed to load model from '{model_path}': {e}") from e
 
+def apply_ml_text_cleaning(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Apply ML-specific text cleaning to the partner field.
+
+    This shared utility function is used by both TrainingData and Inference classes
+    to ensure consistent text cleaning between training and inference.
+
+    Args:
+        df: DataFrame containing data with partner field
+
+    Returns:
+        DataFrame with cleaned partner field
+    """
+    # Import here to avoid circular dependency
+    from whatsthedamage.config.text_config import TextCleaningConfig
+    from whatsthedamage.services.text_correction_service import TextCorrectionService
+
+    # Create text correction service with ML-specific cleaning (default config)
+    text_config = TextCleaningConfig()
+    text_service = TextCorrectionService(text_config)
+
+    # Apply ML-specific cleaning to partner field
+    df_cleaned = df.copy()
+    df_cleaned['partner'] = df_cleaned['partner'].apply(text_service.clean_partner_field)
+
+    logger.info(f"Applied ML-specific text cleaning to {len(df_cleaned)} samples")
+    return df_cleaned
+
 
 class MLConfig(BaseModel):
     hungarian_type_stop_words: List[str] = [
@@ -140,6 +168,10 @@ class TrainingData:
         df_clean = df.dropna(subset=list(self.required_columns))
         if df_clean.empty:
             raise ValueError("All rows were dropped due to missing values.")
+
+        # Apply ML-specific text cleaning to partner field
+        df_clean = apply_ml_text_cleaning(df_clean)
+
         return df_clean
 
     def get_training_data(self) -> pd.DataFrame:

@@ -51,8 +51,8 @@ def save(
         output_dir, model_filename.replace(".joblib", ".manifest.json")
     )
 
-    dir_path = output_dir if os.path.isdir(output_dir) else os.path.dirname(output_dir)
-    if dir_path and not os.path.isdir(dir_path):
+    dir_path = os.path.dirname(model_save_path)
+    if dir_path and not os.path.exists(dir_path):
         os.makedirs(dir_path, exist_ok=True)
 
     try:
@@ -332,7 +332,7 @@ class Train:
 
         save(
             self.model,
-            self.model_save_path,
+            os.path.dirname(self.model_save_path),
             MANIFEST,
             self.config.classifier_short_name,
             self.config.model_version

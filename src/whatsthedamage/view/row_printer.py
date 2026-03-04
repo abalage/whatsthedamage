@@ -85,7 +85,7 @@ def print_training_data(responses_by_account: Dict[str, DataTablesResponse]) -> 
                     "currency": detail_row.currency,
                     "date": detail_row.date.display,
                     "partner": detail_row.merchant,
-                    # Note: 'type' field not available in DetailRow, omitted for now
+                    "type": detail_row.type,
                 }
                 all_rows.append(row_dict)
 

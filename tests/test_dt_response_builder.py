@@ -299,3 +299,62 @@ def test_calculator_pattern_disable_balance(builder, sample_csv_rows):
         total_amount=-50.0,
         date_field=date_field
     )
+
+def test_build_detail_rows_with_confidence(builder, sample_csv_rows):
+    """Test that detail rows include confidence when available."""
+    # Add confidence to sample rows
+    sample_csv_rows[0].confidence = 0.95
+    sample_csv_rows[1].confidence = 0.87
+    sample_csv_rows[2].confidence = None  # Test None confidence
+
+    details = builder._build_detail_rows(sample_csv_rows)
+
+    assert len(details) == 3
+    assert details[0].confidence == 0.95
+    assert details[1].confidence == 0.87
+    assert details[2].confidence is None
+    assert details[0].merchant == "Grocery Store"
+    assert details[0].amount.raw == -50.0
+
+def test_build_detail_rows_without_confidence(builder, sample_csv_rows):
+    """Test that detail rows work correctly when confidence is not set."""
+    # Ensure no confidence is set
+    for row in sample_csv_rows:
+        row.confidence = None
+
+    details = builder._build_detail_rows(sample_csv_rows)
+
+    assert len(details) == 3
+    assert all(detail.confidence is None for detail in details)
+    assert details[0].merchant == "Grocery Store"
+    assert details[0].amount.raw == -50.0
+
+def test_full_pipeline_with_confidence(builder, sample_csv_rows):
+    """Test the full pipeline including confidence propagation."""
+    # Add confidence to sample rows
+    sample_csv_rows[0].confidence = 0.95
+    sample_csv_rows[1].confidence = 0.87
+    sample_csv_rows[2].confidence = 0.92
+
+    date_field = DateField(display="January", timestamp=1735689600)
+    builder.add_category_data(
+        category="Groceries",
+        rows=sample_csv_rows,
+        total_amount=-105.0,
+        date_field=date_field
+    )
+
+    response = builder.build()
+
+    assert isinstance(response, DataTablesResponse)
+    # Find the Groceries row (not Balance or Total Spendings)
+    groceries_row = next((row for row in response.data if row.category == "Groceries"), None)
+    assert groceries_row is not None
+    assert len(groceries_row.details) == 3
+
+    # Verify confidence values are preserved
+    assert groceries_row.details[0].confidence == 0.95
+    assert groceries_row.details[1].confidence == 0.87
+    assert groceries_row.details[2].confidence == 0.92
+    assert groceries_row.details[0].merchant == "Grocery Store"
+    assert groceries_row.details[0].amount.raw == -50.0

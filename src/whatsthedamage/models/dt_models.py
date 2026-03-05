@@ -18,7 +18,8 @@ class DetailRow(BaseModel):
     merchant: str
     currency: str
     account: str
-    type: str
+    type: Optional[str] = None
+    confidence: Optional[float] = None
 
 class AggregatedRow(BaseModel):
     row_id: str

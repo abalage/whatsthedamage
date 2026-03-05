@@ -30,7 +30,7 @@ class RowEnrichmentML:
 
         predictions = predict.get_predictions()
 
-        # Assign predicted categories to CsvRow objects
+        # Assign predicted categories and confidence to CsvRow objects
         for row, predicted_row in zip(self.rows, predictions):
             category_str = predicted_row.category
             # Quirk to not break existing setup
@@ -38,6 +38,8 @@ class RowEnrichmentML:
                 category_str = category_str.replace(" ", "_")
             localized_category = get_category_name(category_str.lower())
             row.category = localized_category
+            # Propagate confidence from ML prediction
+            row.confidence = predicted_row.confidence
             if localized_category not in self.categorized:
                 self.categorized[localized_category] = []
 

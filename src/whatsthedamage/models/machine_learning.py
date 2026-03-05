@@ -126,7 +126,7 @@ class MLConfig(BaseModel):
     n_estimators: int = 200
     max_depth: Union[int, None] = None
     test_size: float = 0.2
-    model_version: str = "v5alpha_en"
+    model_version: str = "v6alpha_en"
     feature_columns: List[str] = ["type", "partner", "amount"]
 
     @property
@@ -412,12 +412,13 @@ class Inference:
         return df_output
 
     def get_predictions(self) -> List[CsvRow]:
-        """Return predictions as a list of CsvRow objects with 'category' overwritten."""
+        """Return predictions as a list of CsvRow objects with 'category' overwritten and confidence included."""
         df_filtered = self.df_output.copy()
         df_filtered["category"] = df_filtered["predicted_category"]
 
-        return [
-            CsvRow(
+        csv_rows = []
+        for _, row in df_filtered.iterrows():
+            csv_row = CsvRow(
                 row.to_dict(),
                 mapping={
                     "date": "date",
@@ -427,8 +428,12 @@ class Inference:
                     "currency": "currency",
                     "category": "category"
                 }
-            ) for _, row in df_filtered.iterrows()
-        ]
+            )
+            # Set confidence from prediction
+            csv_row.confidence = row["prediction_confidence"]
+            csv_rows.append(csv_row)
+
+        return csv_rows
 
     def print_inference_data(self, with_confidence: bool = False) -> None:
         """Print the DataFrame with inference data."""

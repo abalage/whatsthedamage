@@ -20,15 +20,11 @@ The following transformers are used for feature engineering, also referenced in 
 
 2. `partner`:
    - Transformation: [TfidfVectorizer](https://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.text.TfidfVectorizer.html)
-   - Description: Text feature representing the transaction partner, processed with TF-IDF and custom stop words.
+   - Description: Text feature representing the transaction partner, processed with TF-IDF and custom stop words. The text undergoes ML-specific cleaning using the text correction service for consistent preprocessing.
 
-3. `currency`:
-   - Transformation: [OneHotEncoder](https://scikit-learn.org/stable/modules/generated/sklearn.preprocessing.OneHotEncoder.html)
-   - Description: Categorical feature for the currency, one-hot encoded.
-
-4. `amount`:
-   - Transformation: [StandardScaler](https://scikit-learn.org/stable/modules/generated/sklearn.preprocessing.StandardScaler.html)
-   - Description: Numerical feature for the transaction amount, standardized.
+3. `amount`:
+   - Transformation: `AmountSignTransformer` (custom transformer)
+   - Description: Categorical feature extracting the sign (positive/negative/zero) from transaction amounts, representing the direction of cash flow.
 
 ### Hyperparameter Tuning
 

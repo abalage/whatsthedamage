@@ -25,6 +25,7 @@
                         <th>{{ _('Date') }}</th>
                         <th>{{ _('Amount') }}</th>
                         <th>{{ _('Merchant') }}</th>
+                        <th>{{ _('Confidence') }}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -34,6 +35,7 @@
                         <td>{{ detail.date.display }}</td>
                         <td data-row-id="{{ detail.row_id }}" class="">{{ detail.amount.display }}</td>
                         <td>{{ detail.merchant }}</td>
+                        <td>{{ detail.confidence|default('N/A', true) }}</td>
                     </tr>
                     {% endfor %}
                     {% endfor %}

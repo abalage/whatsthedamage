@@ -73,7 +73,7 @@ AVAILABLE_CATEGORIES = [
     CategoryDefinition(id="deposit", default_name=_("Deposit"), patterns=[]),
     CategoryDefinition(id="refund", default_name=_("Refund"), patterns=[]),
     CategoryDefinition(id="interest", default_name=_("Interest"), patterns=[]),
-    CategoryDefinition(id="electronics_digital_services", default_name=("Electronics and Digital Services"), patterns=[]),
+    CategoryDefinition(id="electronics_digital_services", default_name=_("Electronics and Digital Services"), patterns=[]),
     CategoryDefinition(id="transfer", default_name=_("Transfer"), patterns=[]),
     CategoryDefinition(id="other", default_name=_("Other"), patterns=[]),
     CategoryDefinition(id="balance", default_name=_("Balance"), patterns=[]),

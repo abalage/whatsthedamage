@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: whatsthedamage-1.0\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-03-04 22:26+0100\n"
-"PO-Revision-Date: 2026-03-04 22:27+0100\n"
+"POT-Creation-Date: 2026-03-05 20:44+0100\n"
+"PO-Revision-Date: 2026-03-05 20:45+0100\n"
 "Last-Translator: Balázs Németh <balagetech@protonmail.com>\n"
 "Language-Team: Hungarian\n"
 "Language: hu_HU\n"
@@ -81,6 +81,10 @@ msgstr "Visszatérítés"
 #: src/whatsthedamage/config/config.py:75
 msgid "Interest"
 msgstr "Kamat"
+
+#: src/whatsthedamage/config/config.py:76
+msgid "Electronics and Digital Services"
+msgstr "Elektronika és digitális szolgáltatások"
 
 #: src/whatsthedamage/config/config.py:77
 msgid "Transfer"

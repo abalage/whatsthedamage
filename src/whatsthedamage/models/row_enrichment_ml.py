@@ -2,6 +2,9 @@ from typing import List, Dict
 from whatsthedamage.models.csv_row import CsvRow
 from whatsthedamage.config.config import get_category_name
 from whatsthedamage.models.machine_learning import Inference
+from whatsthedamage.utils.logging import get_logger
+
+logger = get_logger(__name__)
 
 
 class RowEnrichmentML:
@@ -40,6 +43,9 @@ class RowEnrichmentML:
             row.category = localized_category
             # Propagate confidence from ML prediction
             row.confidence = predicted_row.confidence
+            # Log rows with low confidence scores
+            if row.confidence is not None and row.confidence < 0.5:
+                logger.debug(f"Low confidence prediction: {row}")
             if localized_category not in self.categorized:
                 self.categorized[localized_category] = []
 

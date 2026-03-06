@@ -3,7 +3,7 @@
 import unicodedata
 import re
 import yaml
-from typing import Optional
+from typing import Optional, Dict, Any, Tuple
 from whatsthedamage.config.text_config import TextCleaningConfig, TextCleaningPatternsConfig
 from whatsthedamage.config import DEFAULT_CONFIG_PATH
 from whatsthedamage.utils.logging import get_logger
@@ -13,19 +13,41 @@ logger = get_logger(__name__)
 class TextCorrectionService:
     """Service for text cleaning of partner field values."""
 
-    def __init__(self, config: TextCleaningConfig, patterns_config: Optional[TextCleaningPatternsConfig] = None):
+    def __init__(self, text_cleaning_config_dict: Optional[Dict[str, Any]] = None):
         """
         Initialize the text cleaning service.
 
         Args:
-            config: Text cleaning configuration
-            patterns_config: Text cleaning patterns configuration (optional)
+            text_cleaning_config_dict: Optional dictionary containing text cleaning configuration
+                                     from the main config file. If None, uses default configuration.
         """
-        self.config = config
-        if patterns_config is None or self._is_patterns_empty(patterns_config):
-            self.patterns_config = self._load_default_patterns()
+        # Create both config objects from the provided dictionary or use defaults
+        self.config, self.patterns_config = self._create_config_from_dict(text_cleaning_config_dict)
+
+    def _create_config_from_dict(self, text_cleaning_config_dict: Optional[Dict[str, Any]]) -> Tuple[TextCleaningConfig, TextCleaningPatternsConfig]:
+        """
+        Create TextCleaningConfig and TextCleaningPatternsConfig from raw configuration dictionary.
+
+        Args:
+            text_cleaning_config_dict: Dictionary containing text cleaning configuration
+
+        Returns:
+            Tuple of (TextCleaningConfig, TextCleaningPatternsConfig)
+        """
+        # Create cleaning config (currently uses defaults, could be extended to use custom values)
+        cleaning_config = TextCleaningConfig()
+
+        # Create patterns config from provided dictionary or load defaults
+        if text_cleaning_config_dict:
+            patterns_config = TextCleaningPatternsConfig(
+                payment_providers=text_cleaning_config_dict.get('payment_providers', []),
+                company_suffixes=text_cleaning_config_dict.get('company_suffixes', []),
+                buggy_partner_replacements=text_cleaning_config_dict.get('buggy_partner_replacements', {})
+            )
         else:
-            self.patterns_config = patterns_config
+            patterns_config = self._load_default_patterns()
+
+        return cleaning_config, patterns_config
 
     def clean_partner_field(self, partner_text: str) -> str:
         """

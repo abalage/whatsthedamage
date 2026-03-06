@@ -94,12 +94,10 @@ def apply_ml_text_cleaning(df: pd.DataFrame) -> pd.DataFrame:
         DataFrame with cleaned partner field
     """
     # Import here to avoid circular dependency
-    from whatsthedamage.config.text_config import TextCleaningConfig
     from whatsthedamage.services.text_correction_service import TextCorrectionService
 
     # Create text correction service with ML-specific cleaning (default config)
-    text_config = TextCleaningConfig()
-    text_service = TextCorrectionService(text_config)
+    text_service = TextCorrectionService()
 
     # Apply ML-specific cleaning to partner field
     df_cleaned = df.copy()

@@ -8,7 +8,6 @@ from whatsthedamage.models.row_filter import RowFilter
 from whatsthedamage.models.dt_response_builder import DataTablesResponseBuilder
 from whatsthedamage.utils.date_converter import DateConverter
 from whatsthedamage.view.row_printer import print_categorized_rows, print_training_data
-from whatsthedamage.config.text_config import TextCleaningConfig
 from whatsthedamage.services.text_correction_service import TextCorrectionService
 from whatsthedamage.utils.logging import get_logger
 
@@ -39,7 +38,7 @@ class RowsProcessor:
         self._filter: Optional[str] = context.args.filter
         self._training_data: bool = context.args.training_data
         self._ml: bool = context.args.ml
-        self._text_correction_service = TextCorrectionService(TextCleaningConfig())
+        self._text_correction_service = TextCorrectionService(context.config.text_cleaning)
 
         # Convert start and end dates to epoch if provided
         if self._start_date:
@@ -144,6 +143,7 @@ class RowsProcessor:
 
         logger.info(f"Completed processing {len(responses_by_account)} accounts")
         return responses_by_account
+
 
     def _filter_rows(self, rows: List[CsvRow]) -> List[Tuple[DateField, List[CsvRow]]]:
         """

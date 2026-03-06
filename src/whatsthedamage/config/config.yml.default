@@ -95,6 +95,8 @@ enricher_pattern_sets:
       - "Kamat.*"
     transfer:
       - "Azonnali Ft átvezetés"
+    payment:
+      - "Rendszeres átutalás"
 
 text_cleaning:
   payment_providers:
@@ -133,11 +135,13 @@ text_cleaning:
     "tataba nya": "Tatabánya"
     "pizze ria": "Pizzéria"
     "pe kse g": "Pékség"
+    "PE'KSE'G": "Pékség"
     "PRI MA": "Príma"
     "ma v ": "MÁV "
     "M.V-": "MÁV-"
     "MA V-START": "MÁV-START"
     "lipo ti": "Lipóti"
+    "LIPO'TI": "Lipóti"
     "TO LTO A LL": "Töltőáll"
     "ja te k": "Játék"
     "fu rdo": "Fürdő"

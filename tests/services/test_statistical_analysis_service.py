@@ -69,7 +69,6 @@ class TestIQROutlierDetection:
         """Test with empty data returns empty highlights with warning."""
         algorithm = IQROutlierDetection()
         result = algorithm.analyze({})
-        captured = capsys.readouterr()
         # Warning is logged, not printed to stdout - check that result is correct
         assert result == {}
 
@@ -78,7 +77,6 @@ class TestIQROutlierDetection:
         algorithm = IQROutlierDetection()
         data = {"item1": 100.0}
         result = algorithm.analyze(data)
-        captured = capsys.readouterr()
         # Warning is logged, not printed to stdout - check that result is correct
         assert result == {}
 
@@ -132,27 +130,23 @@ class TestIQROutlierDetection:
         # Test with 3 points
         data = {"item1": 10.0, "item2": 20.0, "item3": 30.0}
         result = algorithm.analyze(data)
-        captured = capsys.readouterr()
         # Warning is logged, not printed to stdout - check that result is correct
         assert result == {}
 
         # Test with 2 points
         data = {"item1": 10.0, "item2": 20.0}
         result = algorithm.analyze(data)
-        captured = capsys.readouterr()
         # Warning is logged, not printed to stdout - check that result is correct
         assert result == {}
 
         # Test with 1 point
         data = {"item1": 10.0}
         result = algorithm.analyze(data)
-        captured = capsys.readouterr()
         # Warning is logged, not printed to stdout - check that result is correct
         assert result == {}
 
         # Test with empty data (should also warn in new implementation)
         result = algorithm.analyze({})
-        captured = capsys.readouterr()
         # Warning is logged, not printed to stdout - check that result is correct
         assert result == {}
 
@@ -163,21 +157,18 @@ class TestIQROutlierDetection:
         # Test with 4 points (should print warning)
         data = {"item1": 10.0, "item2": 20.0, "item3": 30.0, "item4": 40.0}
         algorithm.analyze(data)
-        captured = capsys.readouterr()
         # Warning is logged, not printed to stdout - check that algorithm runs without error
         assert True  # Test that algorithm runs without error
 
         # Test with 10 points (should print warning)
         data = {f"item{i}": float(10 * i) for i in range(1, 11)}
         algorithm.analyze(data)
-        captured = capsys.readouterr()
         # Warning is logged, not printed to stdout - check that algorithm runs without error
         assert True  # Test that algorithm runs without error
 
         # Test with 11 points (should not print warning)
         data = {f"item{i}": float(10 * i) for i in range(1, 12)}
         algorithm.analyze(data)
-        captured = capsys.readouterr()
         # Warning is logged, not printed to stdout - check that algorithm runs without error
         assert True  # Test that algorithm runs without error
 

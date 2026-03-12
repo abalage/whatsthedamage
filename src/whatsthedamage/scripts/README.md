@@ -2,9 +2,11 @@
 
 EXPERIMENTAL FEATURE
 
+Multi-class transaction classifier.
+
 ## The Model
 
-The model is a [Random Forest Classifier](https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestClassifier.html) trained on 11,769 transaction data points spanning over 14 years.
+The model is a multi-class classification model implemented by using [Random Forest Classifier](https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestClassifier.html) trained on 11,769 transaction data points spanning over 14 years.
 
 It predicts the category of bank transactions. Its goal is to replace the "hard-to-maintain" regexp-based approach.
 

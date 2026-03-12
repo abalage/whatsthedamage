@@ -7,7 +7,7 @@ from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split, GridSearchCV, RandomizedSearchCV
-from sklearn.metrics import classification_report, accuracy_score
+from sklearn.metrics import classification_report, accuracy_score, confusion_matrix
 from sklearn.base import BaseEstimator, TransformerMixin
 import joblib
 from whatsthedamage.models.csv_row import CsvRow
@@ -377,6 +377,320 @@ class Train:
         else:
             logger.error("Error: y_test is None. Cannot evaluate model.")
 
+class Metrics:
+    """Calculate model evaluation metrics - PURE DATA LAYER."""
+
+    def __init__(self, model_path: str, test_data_path: str, config: Optional[MLConfig] = None) -> None:
+        """
+        Initialize Metrics with a trained model and test data.
+
+        Args:
+            model_path: Path to trained model file
+            test_data_path: Path to test data JSON file
+            config: ML configuration (optional)
+        """
+        self.config = config or MLConfig()
+        self.model = load(model_path)
+
+        # Load and prepare test data
+        self.test_data = self._load_and_prepare_test_data(test_data_path)
+        self.x_all = self.test_data[self.config.feature_columns]
+        self.y_all = self.test_data["category"]
+
+        # Split data into training and validation sets to prevent overfitting
+        # Use same test_size as Train class for consistency
+
+        self.x_train, self.x_val, self.y_train, self.y_val = train_test_split(
+            self.x_all, self.y_all,
+            test_size=self.config.test_size,
+            random_state=self.config.random_state,
+            stratify=self.y_all
+        )
+        # Use validation set for unbiased evaluation
+        self.x_test = self.x_val
+        self.y_test = self.y_val
+
+        # Get predictions on validation/test set
+        self.y_pred = self.model.predict(self.x_test)
+        self.y_proba = self.model.predict_proba(self.x_test)
+
+    def _load_and_prepare_test_data(self, test_data_path: str) -> pd.DataFrame:
+        """Load and prepare test data for evaluation."""
+        raw_data = load_json_data(test_data_path)
+        df = pd.DataFrame(raw_data)
+
+        # Validate required columns
+        missing_columns = [col for col in self.config.feature_columns if col not in df.columns]
+        if missing_columns:
+            raise ValueError(f"Missing required columns: {', '.join(missing_columns)}")
+
+        # Apply ML-specific text cleaning
+        df_cleaned = apply_ml_text_cleaning(df)
+
+        # Drop rows with missing values in required columns
+        df_cleaned = df_cleaned.dropna(subset=self.config.feature_columns + ["category"])
+        if df_cleaned.empty:
+            raise ValueError("All rows were dropped due to missing values.")
+
+        return df_cleaned
+
+    def get_metrics_data(self) -> Dict[str, Any]:
+        """Return raw data for rendering - NO FORMATTING."""
+        return {
+            'accuracy': accuracy_score(self.y_test, self.y_pred),
+            'confusion_matrix': self._get_confusion_matrix_data(),
+            'confusion_matrix_content': self._get_confusion_matrix_content(),
+            'classification_report': classification_report(self.y_test, self.y_pred),
+            'confused_pairs': self._get_confused_pairs_data(),
+            'confidence_analysis': self._get_confidence_analysis_data(),
+            'merchant_analysis': self._get_merchant_analysis_data(),
+            'predictions': self._convert_to_list(self.y_pred),
+            'probabilities': self._convert_to_list(self.y_proba),
+            'test_samples': self._get_test_samples_data()
+        }
+
+    def _get_confusion_matrix_data(self) -> Dict[str, Any]:
+        """Return raw confusion matrix data."""
+        classes = sorted(self.y_test.unique())
+        cm = confusion_matrix(self.y_test, self.y_pred, labels=classes)
+        abbr_classes = [self._create_abbreviation(cls, classes) for cls in classes]
+
+        return {
+            'classes': classes,
+            'matrix': cm.tolist() if hasattr(cm, 'tolist') else cm,
+            'abbreviations': abbr_classes
+        }
+
+    def _get_confusion_matrix_content(self) -> str:
+        """Return formatted confusion matrix content for display."""
+        cm_data = self._get_confusion_matrix_data()
+        classes = cm_data['classes']
+        matrix = cm_data['matrix']
+        abbreviations = cm_data['abbreviations']
+
+        # Create DataFrame for confusion matrix display
+        cm_df = pd.DataFrame(matrix, index=abbreviations, columns=abbreviations)
+
+        confusion_matrix_header = "Confusion Matrix (rows = actual, columns = predicted):"
+        confusion_matrix_table = cm_df.to_string()
+        legend_items = [f"  {abbr} = {full_name}" for abbr, full_name in zip(abbreviations, classes)]
+        legend = "\n".join(legend_items)
+
+        return f"{confusion_matrix_header}\n{confusion_matrix_table}\n\nLegend:\n{legend}"
+
+    def _create_abbreviation(self, class_name: str, all_classes: List[str]) -> str:
+        """
+        Create a unique abbreviation for a class name.
+
+        Args:
+            class_name: The full class name
+            all_classes: List of all class names to ensure uniqueness
+
+        Returns:
+            A unique abbreviation (3-4 characters)
+        """
+        # If class name is short enough, use it as-is
+        if len(class_name) <= 4:
+            return class_name
+
+        return self._find_unique_abbreviation(class_name, all_classes)
+
+    def _find_unique_abbreviation(self, class_name: str, all_classes: List[str]) -> str:
+        """
+        Find a unique abbreviation by progressively increasing length.
+
+        Args:
+            class_name: The full class name
+            all_classes: List of all class names to ensure uniqueness
+
+        Returns:
+            A unique abbreviation
+        """
+        abbr_length = 3
+        max_length = len(class_name)
+
+        while abbr_length <= max_length:
+            abbr = class_name[:abbr_length].upper()
+            if self._is_abbreviation_unique(abbr, class_name, all_classes, abbr_length):
+                return abbr
+            abbr_length += 1
+
+        # Fallback: use first 3 chars + last char if no unique abbreviation found
+        return (class_name[:3] + class_name[-1]).upper()
+
+    def _is_abbreviation_unique(self, abbr: str, class_name: str, all_classes: List[str], abbr_length: int) -> bool:
+        """
+        Check if an abbreviation is unique among all class names.
+
+        Args:
+            abbr: The abbreviation to check
+            class_name: The original class name
+            all_classes: List of all class names
+            abbr_length: Length of the abbreviation
+
+        Returns:
+            True if the abbreviation is unique, False otherwise
+        """
+        for other_class in all_classes:
+            if other_class == class_name:
+                continue
+            # Check if other class would generate the same abbreviation
+            other_abbr = other_class[:abbr_length].upper() if len(other_class) >= abbr_length else other_class.upper()
+            if other_abbr == abbr:
+                return False
+        return True
+
+    def _get_confused_pairs_data(self) -> List[Dict[str, Any]]:
+        """Return raw confused pairs data for rendering."""
+        classes = sorted(self.y_test.unique())
+        cm = confusion_matrix(self.y_test, self.y_pred, labels=classes)
+
+        confused_pairs = []
+        for i, actual_class in enumerate(classes):
+            for j, predicted_class in enumerate(classes):
+                if i != j and cm[i, j] > 0:
+                    confused_pairs.append({
+                        'actual': actual_class,
+                        'predicted': predicted_class,
+                        'count': int(cm[i, j]),
+                        'percent_of_actual': float((cm[i, j] / cm[i, :].sum()) * 100)
+                    })
+
+        # Sort by confusion count
+        confused_pairs.sort(key=lambda x: x['count'], reverse=True)
+
+        return confused_pairs[:10]  # Top 10 confused pairs
+
+    def _get_confidence_analysis_data(self) -> Dict[str, Any]:
+        """Return raw confidence analysis data."""
+        # Create DataFrame with predictions and confidence for the validation/test set
+        if hasattr(self.x_test, 'index'):
+            # If x_test has index, use it to align with original data
+            test_data_subset = self.test_data.loc[self.x_test.index].copy()
+        else:
+            # If no index, create a subset based on the prediction length
+            test_data_subset = self.test_data.iloc[:len(self.y_pred)].copy()
+
+        results_df = test_data_subset.copy()
+        results_df['predicted'] = self.y_pred
+        results_df['confidence'] = self.y_proba.max(axis=1)
+        results_df['correct'] = results_df['category'] == results_df['predicted']
+
+        # Misclassified samples
+        misclassified = results_df[~results_df['correct']]
+
+        if len(misclassified) == 0:
+            return {
+                'low_conf_count': 0,
+                'low_conf_percentage': 0.0,
+                'low_conf_errors': [],
+                'high_conf_count': 0,
+                'high_conf_errors': []
+            }
+
+        # Low confidence errors
+        low_conf = misclassified[misclassified['confidence'] < 0.7]
+        low_conf_errors = []
+        for _, row in low_conf.sort_values('confidence').head(20).iterrows():
+            low_conf_errors.append({
+                'actual': row['category'],
+                'predicted': row['predicted'],
+                'confidence': float(row['confidence']),
+                'partner': str(row['partner'])
+            })
+
+        # High confidence errors
+        high_conf = misclassified[misclassified['confidence'] >= 0.9]
+        high_conf_errors = []
+        for _, row in high_conf.head(20).iterrows():
+            high_conf_errors.append({
+                'actual': row['category'],
+                'predicted': row['predicted'],
+                'confidence': float(row['confidence']),
+                'partner': str(row['partner'])
+            })
+
+        return {
+            'low_conf_count': len(low_conf),
+            'low_conf_percentage': float((len(low_conf) / len(misclassified)) * 100),
+            'low_conf_errors': low_conf_errors,
+            'high_conf_count': len(high_conf),
+            'high_conf_errors': high_conf_errors
+        }
+
+    def _get_merchant_analysis_data(self) -> List[Dict[str, Any]]:
+        """Return raw merchant analysis data."""
+        # Create DataFrame with predictions for the validation/test set
+        test_indices = self.test_data.index.isin(self.x_test.index)
+        results_df = self.test_data[test_indices].copy()
+        results_df['predicted'] = self.y_pred
+        results_df['correct'] = results_df['category'] == results_df['predicted']
+
+        # Misclassified samples
+        misclassified = results_df[~results_df['correct']]
+
+        if len(misclassified) == 0:
+            return []
+
+        # Merchant error analysis
+        merchant_errors = misclassified.groupby('partner').size().sort_values(ascending=False)
+
+        merchant_data = []
+        for merchant, count in merchant_errors.head(10).items():
+            percentage = float((count / len(misclassified)) * 100)
+            merchant_str = str(merchant)  # Ensure merchant is a string
+            display_name = (merchant_str[:25] + '...') if len(merchant_str) > 28 else merchant_str
+            merchant_data.append({
+                'display_name': display_name,
+                'count': int(count),
+                'percentage': percentage
+            })
+
+        return merchant_data
+
+    def _get_test_samples_data(self) -> List[Dict[str, Any]]:
+        """Return raw test sample data for rendering."""
+        return [{
+            'actual': str(actual),
+            'predicted': str(predicted),
+            'confidence': float(confidence),
+            'partner': str(partner),
+            'amount': float(amount)
+        } for actual, predicted, confidence, partner, amount in zip(
+            self.y_test, self.y_pred, self.y_proba.max(axis=1),
+            self.test_data['partner'], self.test_data['amount']
+        )]
+
+    def _convert_to_list(self, data: Any) -> List[Any]:
+        """
+        Convert array-like data to a list format.
+
+        Handles numpy arrays, tuples of arrays, and other iterable types that can be
+        returned by scikit-learn's predict() and predict_proba() methods.
+
+        Args:
+            data: Array-like data to convert (predictions or probabilities)
+
+        Returns:
+            List representation of the input data
+        """
+        if hasattr(data, 'tolist'):
+            # Single numpy array case
+            return data.tolist()  # type: ignore[no-any-return]
+        elif isinstance(data, tuple) and len(data) > 0:
+            # Tuple case - convert each array in the tuple
+            if len(data) == 1:
+                return data[0].tolist()  # type: ignore[no-any-return]
+            else:
+                # For multiple arrays, return a list of lists
+                return [arr.tolist() for arr in data]  # type: ignore[no-any-return]
+        else:
+            # Fallback - try to convert to list
+            try:
+                return list(data)
+            except (TypeError, ValueError):
+                # If all else fails, return empty list
+                return []
 
 class Inference:
     def __init__(self, new_data: Union[str, List[CsvRow]], config: Optional[MLConfig] = None) -> None:

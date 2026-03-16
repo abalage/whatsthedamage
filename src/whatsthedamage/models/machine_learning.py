@@ -1,4 +1,3 @@
-import json
 import pandas as pd
 import numpy as np
 from typing import List, Any, Dict, Union, Optional, cast
@@ -11,64 +10,59 @@ from sklearn.metrics import classification_report, accuracy_score, confusion_mat
 from sklearn.base import BaseEstimator, TransformerMixin
 import joblib
 from whatsthedamage.models.csv_row import CsvRow
-from pydantic import BaseModel
+from whatsthedamage.config.ml_config import MLConfig
 from datetime import datetime
 import os
 from whatsthedamage.utils.logging import get_logger
+import json
+from whatsthedamage.utils.data_loader import load_json_data
 
 logger = get_logger(__name__)
 
 
-def load_json_data(filepath: str) -> Any:
-    try:
-        with open(filepath, "r", encoding="utf-8") as f:
-            return json.load(f)
-    except FileNotFoundError as e:
-        error_msg = f"Error: File '{filepath}' not found."
-        logger.error(error_msg)
-        raise FileNotFoundError(error_msg) from e
-    except json.JSONDecodeError as e:
-        error_msg = f"Error: File '{filepath}' is not valid JSON."
-        logger.error(error_msg)
-        raise ValueError(error_msg) from e
-    except Exception as e:
-        error_msg = f"Error: An unexpected error occurred while reading '{filepath}': {e}"
-        logger.error(error_msg)
-        raise RuntimeError(error_msg) from e
-
-
 def save(
     model: Pipeline,
-    output_dir: str,
     manifest: Dict[str, Any],
-    classifier_short_name: str,
-    model_version: str
+    config: MLConfig,
+    test_data_df: Optional[pd.DataFrame] = None
 ) -> None:
-    """Save the trained model and its manifest metadata to disk in the specified directory."""
-    model_filename = f"model-{classifier_short_name}-{model_version}.joblib"
-    model_save_path = os.path.join(output_dir, model_filename)
-    model_manifest_save_path = os.path.join(
-        output_dir, model_filename.replace(".joblib", ".manifest.json")
-    )
+    """Save the trained model, manifest, and optionally test data to disk using MLConfig paths.
 
+    This centralized function handles all file saving operations for the training process,
+    ensuring atomic and consistent file operations.
+
+    Args:
+        model: Trained pipeline to save
+        manifest: Training metadata dictionary
+        config: MLConfig with file paths
+        test_data_df: Optional DataFrame containing test data to export
+    """
+    model_save_path = config.model_path
+    model_manifest_save_path = config.manifest_path
+    model_testdata_path = config.test_data_path
+
+    # Ensure output directory exists
     dir_path = os.path.dirname(model_save_path)
     if dir_path and not os.path.exists(dir_path):
         os.makedirs(dir_path, exist_ok=True)
 
     try:
+        # Save model
         joblib.dump(model, model_save_path)
-        logger.info(f"Model training complete and saved as {model_save_path}")
-    except Exception as e:
-        error_msg = f"Error: Failed to save model to '{model_save_path}': {e}"
-        logger.error(error_msg)
-        raise RuntimeError(error_msg)
+        logger.info(f"Model saved as {model_save_path}")
 
-    try:
+        # Save manifest
         with open(model_manifest_save_path, "w", encoding="utf-8") as f:
             json.dump(manifest, f, indent=2, ensure_ascii=False)
         logger.info(f"Manifest saved as {model_manifest_save_path}")
+
+        # Save test data if provided
+        if test_data_df is not None:
+            test_data_df.to_json(model_testdata_path, orient="records", indent=2)
+            logger.info(f"Test data saved as {model_testdata_path} with {len(test_data_df)} samples")
+
     except Exception as e:
-        error_msg = f"Error: Failed to save manifest to '{model_manifest_save_path}': {e}"
+        error_msg = f"Error during save operation: {e}"
         logger.error(error_msg)
         raise RuntimeError(error_msg)
 
@@ -107,52 +101,10 @@ def apply_ml_text_cleaning(df: pd.DataFrame) -> pd.DataFrame:
     return df_cleaned
 
 
-class MLConfig(BaseModel):
-    hungarian_type_stop_words: List[str] = [
-        "ft", "forint", "bol"
-    ]
-    hungarian_partner_stop_words: List[str] = [
-        "es", "bt", "kft", "zrt", "rt", "nyrt", "ev", "korlatolt", "felelossegu",
-        "tarsasag", "alapitvany", "kisker", "szolgaltato", "kereskedelmi",
-        "kereskedes", "sz", "u.", "utca", "ut", "&", "huf", "otpmobl", "paypal",
-        "crv", "sumup", "www", "toltoall"
-    ]
-    classifier_short_name: str = "rf"
-    classifier_imbalance_threshold: float = 0.2
-    random_state: int = 42
-    min_samples_split: int = 10
-    n_estimators: int = 200
-    max_depth: Union[int, None] = None
-    test_size: float = 0.2
-    model_version: str = "v6alpha_en"
-    feature_columns: List[str] = ["type", "partner", "amount"]
-
-    @property
-    def model_path(self) -> str:
-        base_dir = os.path.dirname(os.path.abspath(__file__))
-        static_dir = os.path.join(base_dir, "..", "static")
-        return os.path.abspath(
-            os.path.join(
-                static_dir,
-                f"model-{self.classifier_short_name}-{self.model_version}.joblib"
-            )
-        )
-
-    @property
-    def manifest_path(self) -> str:
-        base_dir = os.path.dirname(os.path.abspath(__file__))
-        static_dir = os.path.join(base_dir, "..", "static")
-        return os.path.abspath(
-            os.path.join(
-                static_dir,
-                f"model-{self.classifier_short_name}-{self.model_version}.manifest.json"
-            )
-        )
-
-
 class TrainingData:
     def __init__(self, training_data_path: str, config: MLConfig):
         self.required_columns: set[str] = set(config.feature_columns)
+        self.training_data_path = training_data_path
         raw_data = load_json_data(training_data_path)
         df = pd.DataFrame(raw_data)
         self._df = self._validate_and_clean_data(df)
@@ -179,7 +131,7 @@ class TrainingData:
 class AmountSignTransformer(BaseEstimator, TransformerMixin):
     """Custom transformer to extract sign (positive/negative) from amount values."""
 
-    def fit(self, X: Any, y: Optional[Any] = None) -> 'AmountSignTransformer':
+    def fit(self, X: Any, y: Optional[Any] = None) -> 'AmountSignTransformer':  # noqa: F841
         """Fit method (no operation needed for this transformer)."""
         return self
 
@@ -210,25 +162,25 @@ class Train:
     """Prepare data and pipeline for model training."""
     def __init__(
         self,
-        training_data_path: str,
+        training_data: TrainingData,
         config: Optional[MLConfig] = None,
-        output: str = "",
         verbose: bool = False
     ) -> None:
-        self.training_data_path = training_data_path
-        self.output = output
-        self.config = config or MLConfig()
-        self.model_save_path = self.output if self.output else self.config.model_path
-        self.class_weight = None
-        self.verbose = verbose
+        self._training_data = training_data
+        self._config = config or MLConfig()
+        self._class_weight = None
+        self._verbose = verbose
+
+        # Use MLConfig paths for model and testdata files
+        self._model_save_path = self._config.model_path
+        self._testdata_save_path = self._config.test_data_path
 
         # Load and validate data
-        tdo = TrainingData(self.training_data_path, config=self.config)
-        self.df: pd.DataFrame = tdo.get_training_data()
-        self.y: pd.Series = self.df["category"]
+        self._df: pd.DataFrame = self._training_data.get_training_data()
+        self._y: pd.Series = self._df["category"]
 
         # Validate class sizes for stratified split
-        class_counts = self.y.value_counts()
+        class_counts = self._y.value_counts()
         if (class_counts < 2).any():
             raise ValueError(
                 f"Each class must have at least 2 samples for stratified splitting. "
@@ -236,28 +188,28 @@ class Train:
             )
 
         # Always split data to prevent Data Leakage
-        self.df_train, self.df_test, self.y_train, self.y_test = train_test_split(
-            self.df, self.y, test_size=self.config.test_size, random_state=self.config.random_state, stratify=self.y
+        self._df_train, self._df_test, self._y_train, self._y_test = train_test_split(
+            self._df, self._y, test_size=self._config.test_size, random_state=self._config.random_state, stratify=self._y
         )
 
         # Detect class imbalance
-        class_counts = self.y_train.value_counts(normalize=True)
-        if class_counts.min() < self.config.classifier_imbalance_threshold:
-            if self.verbose:
+        class_counts = self._y_train.value_counts(normalize=True)
+        if class_counts.min() < self._config.classifier_imbalance_threshold:
+            if self._verbose:
                 logger.info("Class distribution in training set:")
-                logger.info(f"{self.y_train.value_counts()}")
-            self.class_weight = "balanced"
+                logger.info(f"{self._y_train.value_counts()}")
+            self._class_weight = "balanced"
         else:
-            self.class_weight = None
+            self._class_weight = None
 
         # Prepare feature columns
-        self.x_train = self.df_train[self.config.feature_columns]
-        self.x_test = self.df_test[self.config.feature_columns]
+        self._x_train = self._df_train[self._config.feature_columns]
+        self._x_test = self._df_test[self._config.feature_columns]
 
         # Create the preprocessor ONCE and use everywhere
-        self.preprocessor: ColumnTransformer = self._create_preprocessor()
-        self.pipe: Pipeline = self._create_pipeline()
-        self.model: Any = None
+        self._preprocessor: ColumnTransformer = self._create_preprocessor()
+        self._pipe: Pipeline = self._create_pipeline()
+        self._model: Any = None
 
     def _create_preprocessor(self) -> ColumnTransformer:
         """Create and return the feature engineering pipeline."""
@@ -266,13 +218,13 @@ class Train:
                 ("type_tfidf", TfidfVectorizer(
                     lowercase=True,
                     strip_accents='unicode',
-                    stop_words=self.config.hungarian_type_stop_words),
+                    stop_words=self._config.hungarian_type_stop_words),
                     "type"),
                 ("partner_tfidf", TfidfVectorizer(
                     lowercase=True,
                     strip_accents='unicode',
                     ngram_range=(1, 1),
-                    stop_words=self.config.hungarian_partner_stop_words),
+                    stop_words=self._config.hungarian_partner_stop_words),
                     "partner"),
                 ("amount_sign", AmountSignTransformer(), ["amount"]),
             ]
@@ -281,59 +233,62 @@ class Train:
     def _create_pipeline(self) -> Pipeline:
         """Create and return the full model pipeline using the single preprocessor instance."""
         classifier = RandomForestClassifier(
-            random_state=self.config.random_state,
-            min_samples_split=self.config.min_samples_split,
-            n_estimators=self.config.n_estimators,
-            max_depth=self.config.max_depth,
-            class_weight=self.class_weight if self.class_weight in ('balanced', 'balanced_subsample', None) else None
+            random_state=self._config.random_state,
+            min_samples_split=self._config.min_samples_split,
+            n_estimators=self._config.n_estimators,
+            max_depth=self._config.max_depth,
+            class_weight=self._class_weight if self._class_weight in ('balanced', 'balanced_subsample', None) else None
         )
         return Pipeline([
-            ("preprocessor", self.preprocessor),
+            ("preprocessor", self._preprocessor),
             ("classifier", classifier)
         ], memory=None)
 
     def train(self) -> None:
         """Train the model, optionally with hyperparameter search."""
-        if self.x_train is None or self.y_train is None:
+        if self._x_train is None or self._y_train is None:
             raise ValueError("Training data (X_train or y_train) is None.")
-        self.pipe.fit(self.x_train, self.y_train)
-        self.model = self.pipe
-
-        # Always evaluate if test data is available
-        if self.df_test is not None and self.y_test is not None:
-            self.evaluate()
+        self._pipe.fit(self._x_train, self._y_train)
+        self._model = self._pipe
 
         # Get processed feature matrix shape after fitting the pipeline
-        processed_shape = self.model.named_steps["preprocessor"].transform(self.x_train).shape
+        processed_shape = self._model.named_steps["preprocessor"].transform(self._x_train).shape
 
-        # Create MANIFEST after training and evaluation
+        # Create MANIFEST after training
         MANIFEST = {
-            "model_file": self.model_save_path,
-            "model_version": self.config.model_version,
-            "training_data": self.training_data_path,
+            "model_file": self._model_save_path,
+            "model_version": self._config.model_version,
+            "training_data": self._training_data.training_data_path,
             "training_date": datetime.now().isoformat(),
+            "test_data": self._testdata_save_path,
+            "test_date": datetime.now().isoformat(),
             "parameters": {
-                "classifier_short_name": self.config.classifier_short_name,
-                "random_state": self.config.random_state,
-                "min_samples_split": self.config.min_samples_split,
-                "n_estimators": self.config.n_estimators
+                "classifier_short_name": self._config.classifier_short_name,
+                "random_state": self._config.random_state,
+                "min_samples_split": self._config.min_samples_split,
+                "n_estimators": self._config.n_estimators
             },
             "data_info": {
-                "row_count": len(self.df),
+                "row_count": len(self._df),
                 "feature_matrix_shape": processed_shape,
-                "test_size": self.config.test_size,
-                "feature_columns": self.config.feature_columns,
+                "test_size": self._config.test_size,
+                "feature_columns": self._config.feature_columns,
             }
         }
 
         logger.info(f"Feature matrix shape after preprocessing: {processed_shape}")
 
+        # Prepare test data for saving (add category labels)
+        test_data_with_labels = self._df_test.copy()
+        test_data_with_labels["category"] = self._y_test
+
+        # Delegate all file saving to the enhanced package save function
+        # This centralizes model, manifest, and test data saving in one atomic operation
         save(
-            self.model,
-            os.path.dirname(self.model_save_path),
-            MANIFEST,
-            self.config.classifier_short_name,
-            self.config.model_version
+            model=self._model,
+            manifest=MANIFEST,
+            config=self._config,
+            test_data_df=test_data_with_labels
         )
 
     def hyperparameter_tuning(self, method: str) -> None:
@@ -343,39 +298,30 @@ class Train:
             "classifier__max_depth": [None, 10, 20, 30],
             "classifier__min_samples_split": [2, 5, 10],
         }
-        grid_search = GridSearchCV(self.pipe, cross_validation_params, cv=3, n_jobs=-1)
+        grid_search = GridSearchCV(self._pipe, cross_validation_params, cv=3, n_jobs=-1)
         random_search = RandomizedSearchCV(
-            self.pipe, cross_validation_params, n_iter=10, cv=3, n_jobs=-1,
-            random_state=self.config.random_state
+            self._pipe, cross_validation_params, n_iter=10, cv=3, n_jobs=-1,
+            random_state=self._config.random_state
         )
 
-        if self.x_train is None or self.y_train is None:
+        if self._x_train is None or self._y_train is None:
             raise ValueError("Training data (X_train or y_train) is None.")
 
         if method == "grid":
             logger.info("Using GridSearchCV for hyperparameter tuning. This may take a while.")
-            grid_search.fit(self.x_train, self.y_train)
+            grid_search.fit(self._x_train, self._y_train)
             logger.info(f"Best parameters: {grid_search.best_params_}")
-            self.model = grid_search.best_estimator_
-            self.evaluate()
+            self._model = grid_search.best_estimator_
         elif method == "random":
             logger.info("Using RandomizedSearchCV for hyperparameter tuning. This may take a while.")
-            random_search.fit(self.x_train, self.y_train)
+            random_search.fit(self._x_train, self._y_train)
             logger.info(f"Best parameters: {random_search.best_params_}")
-            self.model = random_search.best_estimator_
-            self.evaluate()
+            self._model = random_search.best_estimator_
         else:
             logger.info("No hyperparameter tuning method selected.")
 
-    def evaluate(self) -> None:
-        """Evaluate the model and print metrics."""
-        if self.model is not None and self.y_test is not None:
-            y_pred: Any = self.model.predict(self.x_test)
-            print("\nModel Evaluation Metrics:")
-            print(f"Accuracy: {accuracy_score(self.y_test, y_pred)}")
-            print(f"Classification Report:\n{classification_report(self.y_test, y_pred)}")
-        else:
-            logger.error("Error: y_test is None. Cannot evaluate model.")
+
+
 
 class Metrics:
     """Calculate model evaluation metrics - PURE DATA LAYER."""
@@ -394,23 +340,10 @@ class Metrics:
 
         # Load and prepare test data
         self.test_data = self._load_and_prepare_test_data(test_data_path)
-        self.x_all = self.test_data[self.config.feature_columns]
-        self.y_all = self.test_data["category"]
+        self.x_test = self.test_data[self.config.feature_columns]
+        self.y_test = self.test_data["category"]
 
-        # Split data into training and validation sets to prevent overfitting
-        # Use same test_size as Train class for consistency
-
-        self.x_train, self.x_val, self.y_train, self.y_val = train_test_split(
-            self.x_all, self.y_all,
-            test_size=self.config.test_size,
-            random_state=self.config.random_state,
-            stratify=self.y_all
-        )
-        # Use validation set for unbiased evaluation
-        self.x_test = self.x_val
-        self.y_test = self.y_val
-
-        # Get predictions on validation/test set
+        # Get predictions on the entire test set
         self.y_pred = self.model.predict(self.x_test)
         self.y_proba = self.model.predict_proba(self.x_test)
 

@@ -244,18 +244,22 @@ class Train:
             ("classifier", classifier)
         ], memory=None)
 
-    def train(self) -> None:
-        """Train the model, optionally with hyperparameter search."""
-        if self._x_train is None or self._y_train is None:
-            raise ValueError("Training data (X_train or y_train) is None.")
-        self._pipe.fit(self._x_train, self._y_train)
-        self._model = self._pipe
+    def _create_manifest(self, model: Pipeline, tuning_method: Optional[str] = None, best_params: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        """Create a MANIFEST dictionary for the trained model.
 
+        Args:
+            model: The trained pipeline model
+            tuning_method: Optional tuning method ("grid" or "random")
+            best_params: Optional dictionary of best parameters from tuning
+
+        Returns:
+            MANIFEST dictionary with training metadata
+        """
         # Get processed feature matrix shape after fitting the pipeline
-        processed_shape = self._model.named_steps["preprocessor"].transform(self._x_train).shape
+        processed_shape = model.named_steps["preprocessor"].transform(self._x_train).shape
 
-        # Create MANIFEST after training
-        MANIFEST = {
+        # Base manifest structure with explicit type annotation
+        manifest: Dict[str, Any] = {
             "model_file": self._model_save_path,
             "model_version": self._config.model_version,
             "training_data": self._training_data.training_data_path,
@@ -265,8 +269,6 @@ class Train:
             "parameters": {
                 "classifier_short_name": self._config.classifier_short_name,
                 "random_state": self._config.random_state,
-                "min_samples_split": self._config.min_samples_split,
-                "n_estimators": self._config.n_estimators
             },
             "data_info": {
                 "row_count": len(self._df),
@@ -276,7 +278,30 @@ class Train:
             }
         }
 
+        # Add tuning-specific information if provided
+        if tuning_method:
+            manifest["model_version"] = f"{self._config.model_version}-{tuning_method}"
+            manifest["parameters"]["tuning_method"] = tuning_method
+            if best_params:
+                manifest["parameters"]["best_parameters"] = best_params
+        else:
+            # Add regular training parameters
+            manifest["parameters"]["min_samples_split"] = self._config.min_samples_split
+            manifest["parameters"]["n_estimators"] = self._config.n_estimators
+
         logger.info(f"Feature matrix shape after preprocessing: {processed_shape}")
+
+        return manifest
+
+    def train(self) -> None:
+        """Train the model with fixed hyperparameters."""
+        if self._x_train is None or self._y_train is None:
+            raise ValueError("Training data (X_train or y_train) is None.")
+        self._pipe.fit(self._x_train, self._y_train)
+        self._model = self._pipe
+
+        # Create MANIFEST using shared method
+        MANIFEST = self._create_manifest(self._model)
 
         # Prepare test data for saving (add category labels)
         test_data_with_labels = self._df_test.copy()
@@ -291,8 +316,18 @@ class Train:
             test_data_df=test_data_with_labels
         )
 
-    def hyperparameter_tuning(self, method: str) -> None:
-        """Perform hyperparameter tuning and evaluate the best model."""
+    def hyperparameter_tuning(self, method: str) -> Pipeline:
+        """Perform hyperparameter tuning and train the best model.
+
+        This method performs hyperparameter tuning using GridSearchCV or RandomizedSearchCV,
+        then saves the best model (which is already trained on all training data due to refit=True).
+
+        Args:
+            method: Either "grid" for GridSearchCV or "random" for RandomizedSearchCV
+
+        Returns:
+            The trained pipeline with best hyperparameters
+        """
         cross_validation_params: Dict[str, List[Any]] = {
             "classifier__n_estimators": [50, 100, 200],
             "classifier__max_depth": [None, 10, 20, 30],
@@ -312,16 +347,33 @@ class Train:
             grid_search.fit(self._x_train, self._y_train)
             logger.info(f"Best parameters: {grid_search.best_params_}")
             self._model = grid_search.best_estimator_
+            best_params = grid_search.best_params_
         elif method == "random":
             logger.info("Using RandomizedSearchCV for hyperparameter tuning. This may take a while.")
             random_search.fit(self._x_train, self._y_train)
             logger.info(f"Best parameters: {random_search.best_params_}")
             self._model = random_search.best_estimator_
+            best_params = random_search.best_params_
         else:
             logger.info("No hyperparameter tuning method selected.")
+            return self._model
 
+        # Create MANIFEST using shared method
+        MANIFEST = self._create_manifest(self._model, tuning_method=method, best_params=best_params)
 
+        # Prepare test data for saving (add category labels)
+        test_data_with_labels = self._df_test.copy()
+        test_data_with_labels["category"] = self._y_test
 
+        # Save the tuned model (same as train() method)
+        save(
+            model=self._model,
+            manifest=MANIFEST,
+            config=self._config,
+            test_data_df=test_data_with_labels
+        )
+
+        return self._model
 
 class Metrics:
     """Calculate model evaluation metrics - PURE DATA LAYER."""

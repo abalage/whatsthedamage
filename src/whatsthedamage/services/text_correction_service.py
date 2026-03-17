@@ -37,6 +37,21 @@ class TextCorrectionService:
         # Create cleaning config (currently uses defaults, could be extended to use custom values)
         cleaning_config = TextCleaningConfig()
 
+        # # Create cleaning config from provided dictionary or use defaults
+        # if text_cleaning_config_dict:
+        #     cleaning_config = TextCleaningConfig(
+        #         unicode_normalization=text_cleaning_config_dict.get('unicode_normalization', True),
+        #         whitespace_cleaning=text_cleaning_config_dict.get('whitespace_cleaning', True),
+        #         replace_buggy_partners=text_cleaning_config_dict.get('replace_buggy_partners', True),
+        #         remove_payment_providers=text_cleaning_config_dict.get('remove_payment_providers', True),
+        #         remove_hungarian_suffixes=text_cleaning_config_dict.get('remove_hungarian_suffixes', True),
+        #         remove_numbers=text_cleaning_config_dict.get('remove_numbers', True),
+        #         remove_punctuation=text_cleaning_config_dict.get('remove_punctuation', True),
+        #         remove_comment_prefix=text_cleaning_config_dict.get('remove_comment_prefix', True)
+        #     )
+        # else:
+        #     cleaning_config = TextCleaningConfig()
+
         # Create patterns config from provided dictionary or load defaults
         if text_cleaning_config_dict:
             patterns_config = TextCleaningPatternsConfig(
@@ -81,6 +96,9 @@ class TextCorrectionService:
         if self.config.remove_punctuation:
             partner_text = self._remove_punctuation(partner_text)
 
+        if self.config.remove_comment_prefix:
+            partner_text = self._remove_comment_prefix(partner_text)
+
         if self.config.whitespace_cleaning:
             partner_text = self._clean_whitespace(partner_text)
 
@@ -115,6 +133,11 @@ class TextCorrectionService:
 
     def _remove_punctuation(self, text: str) -> str:
         text = re.sub(r'(?:^|[^a-zA-Z])\.(?:[^a-zA-Z]|$)','', text)
+        return text.strip()
+
+    def _remove_comment_prefix(self, text: str) -> str:
+        """Remove '// :' comment prefix from partner text."""
+        text = re.sub(r'\/\/\s*:', '', text)
         return text.strip()
 
     def _replace_buggy_partners(self, text: str) -> str:

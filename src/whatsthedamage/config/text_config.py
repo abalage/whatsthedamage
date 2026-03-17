@@ -12,6 +12,7 @@ class TextCleaningConfig(BaseModel):
     remove_hungarian_suffixes: bool = Field(default=True)
     remove_numbers: bool = Field(default=True)
     remove_punctuation: bool = Field(default=True)
+    remove_comment_prefix: bool = Field(default=True)
 
 class TextCleaningPatternsConfig(BaseModel):
     """Configuration for text cleaning patterns."""

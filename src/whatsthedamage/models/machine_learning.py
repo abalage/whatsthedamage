@@ -1,21 +1,23 @@
-import pandas as pd
-import numpy as np
-from typing import List, Any, Dict, Union, Optional, cast
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.compose import ColumnTransformer
-from sklearn.pipeline import Pipeline
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.model_selection import train_test_split, GridSearchCV, RandomizedSearchCV
-from sklearn.metrics import classification_report, accuracy_score, confusion_matrix
-from sklearn.base import BaseEstimator, TransformerMixin
-import joblib
-from whatsthedamage.models.csv_row import CsvRow
-from whatsthedamage.config.ml_config import MLConfig
-from datetime import datetime
-import os
-from whatsthedamage.utils.logging import get_logger
 import json
+import os
+from datetime import datetime
+from typing import Any, Dict, List, Optional, Union, cast
+
+import joblib
+import numpy as np
+import pandas as pd
+from sklearn.base import BaseEstimator, TransformerMixin
+from sklearn.compose import ColumnTransformer
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
+from sklearn.model_selection import GridSearchCV, RandomizedSearchCV, train_test_split
+from sklearn.pipeline import Pipeline
+
+from whatsthedamage.config.ml_config import MLConfig
+from whatsthedamage.models.csv_row import CsvRow
 from whatsthedamage.utils.data_loader import load_json_data
+from whatsthedamage.utils.logging import get_logger
 
 logger = get_logger(__name__)
 
@@ -168,16 +170,38 @@ class Train:
     ) -> None:
         self._training_data = training_data
         self._config = config or MLConfig()
-        self._class_weight = None
+        self._class_weight: Optional[str] = None
         self._verbose = verbose
 
         # Use MLConfig paths for model and testdata files
         self._model_save_path = self._config.model_path
         self._testdata_save_path = self._config.test_data_path
 
+        # Initialize data attributes
+        self._df: pd.DataFrame = pd.DataFrame()
+        self._y: pd.Series = pd.Series(dtype=object)
+        self._df_train: pd.DataFrame = pd.DataFrame()
+        self._df_test: pd.DataFrame = pd.DataFrame()
+        self._y_train: pd.Series = pd.Series(dtype=object)
+        self._y_test: pd.Series = pd.Series(dtype=object)
+        self._x_train: pd.DataFrame = pd.DataFrame()
+        self._x_test: pd.DataFrame = pd.DataFrame()
+
+        # Prepare data through separate methods
+        self._prepare_data()
+        self._detect_class_imbalance()
+        self._prepare_features()
+
+        # Create the preprocessor ONCE and use everywhere
+        self._preprocessor: ColumnTransformer = self._create_preprocessor()
+        self._pipe: Pipeline = self._create_pipeline()
+        self._model: Any = None
+
+    def _prepare_data(self) -> None:
+        """Load, validate, and split training data."""
         # Load and validate data
-        self._df: pd.DataFrame = self._training_data.get_training_data()
-        self._y: pd.Series = self._df["category"]
+        self._df = self._training_data.get_training_data()
+        self._y = self._df["category"]
 
         # Validate class sizes for stratified split
         class_counts = self._y.value_counts()
@@ -192,7 +216,8 @@ class Train:
             self._df, self._y, test_size=self._config.test_size, random_state=self._config.random_state, stratify=self._y
         )
 
-        # Detect class imbalance
+    def _detect_class_imbalance(self) -> None:
+        """Detect class imbalance and set class weights if needed."""
         class_counts = self._y_train.value_counts(normalize=True)
         if class_counts.min() < self._config.classifier_imbalance_threshold:
             if self._verbose:
@@ -202,30 +227,32 @@ class Train:
         else:
             self._class_weight = None
 
-        # Prepare feature columns
+    def _prepare_features(self) -> None:
+        """Prepare feature columns for training."""
         self._x_train = self._df_train[self._config.feature_columns]
         self._x_test = self._df_test[self._config.feature_columns]
-
-        # Create the preprocessor ONCE and use everywhere
-        self._preprocessor: ColumnTransformer = self._create_preprocessor()
-        self._pipe: Pipeline = self._create_pipeline()
-        self._model: Any = None
 
     def _create_preprocessor(self) -> ColumnTransformer:
         """Create and return the feature engineering pipeline."""
         return ColumnTransformer(
             transformers=[
-                ("type_tfidf", TfidfVectorizer(
-                    lowercase=True,
-                    strip_accents='unicode',
-                    stop_words=self._config.hungarian_type_stop_words),
-                    "type"),
-                ("partner_tfidf", TfidfVectorizer(
-                    lowercase=True,
-                    strip_accents='unicode',
-                    ngram_range=(1, 1),
-                    stop_words=self._config.hungarian_partner_stop_words),
-                    "partner"),
+                (
+                    "type_tfidf",
+                    TfidfVectorizer(
+                        lowercase=True, strip_accents="unicode", stop_words=self._config.hungarian_type_stop_words
+                    ),
+                    "type",
+                ),
+                (
+                    "partner_tfidf",
+                    TfidfVectorizer(
+                        lowercase=True,
+                        strip_accents="unicode",
+                        ngram_range=(1, 1),
+                        stop_words=self._config.hungarian_partner_stop_words,
+                    ),
+                    "partner",
+                ),
                 ("amount_sign", AmountSignTransformer(), ["amount"]),
             ]
         )
@@ -239,12 +266,11 @@ class Train:
             max_depth=self._config.max_depth,
             class_weight=self._class_weight if self._class_weight in ('balanced', 'balanced_subsample', None) else None
         )
-        return Pipeline([
-            ("preprocessor", self._preprocessor),
-            ("classifier", classifier)
-        ], memory=None)
+        return Pipeline([("preprocessor", self._preprocessor), ("classifier", classifier)], memory=None)
 
-    def _create_manifest(self, model: Pipeline, tuning_method: Optional[str] = None, best_params: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    def _create_manifest(
+        self, model: Pipeline, tuning_method: Optional[str] = None, best_params: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
         """Create a MANIFEST dictionary for the trained model.
 
         Args:
@@ -293,15 +319,18 @@ class Train:
 
         return manifest
 
-    def train(self) -> None:
-        """Train the model with fixed hyperparameters."""
-        if self._x_train is None or self._y_train is None:
-            raise ValueError("Training data (X_train or y_train) is None.")
-        self._pipe.fit(self._x_train, self._y_train)
-        self._model = self._pipe
+    def _save_model(
+        self, model: Pipeline, tuning_method: Optional[str] = None, best_params: Optional[Dict[str, Any]] = None
+    ) -> None:
+        """Save the trained model, manifest, and test data.
 
+        Args:
+            model: The trained pipeline model
+            tuning_method: Optional tuning method ("grid" or "random")
+            best_params: Optional dictionary of best parameters from tuning
+        """
         # Create MANIFEST using shared method
-        MANIFEST = self._create_manifest(self._model)
+        MANIFEST = self._create_manifest(model, tuning_method, best_params)
 
         # Prepare test data for saving (add category labels)
         test_data_with_labels = self._df_test.copy()
@@ -310,11 +339,21 @@ class Train:
         # Delegate all file saving to the enhanced package save function
         # This centralizes model, manifest, and test data saving in one atomic operation
         save(
-            model=self._model,
+            model=model,
             manifest=MANIFEST,
             config=self._config,
             test_data_df=test_data_with_labels
         )
+
+    def train(self) -> None:
+        """Train the model with fixed hyperparameters."""
+        if self._x_train is None or self._y_train is None:
+            raise ValueError("Training data (X_train or y_train) is None.")
+        self._pipe.fit(self._x_train, self._y_train)
+        self._model = self._pipe
+
+        # Save the model using the centralized method
+        self._save_model(self._model)
 
     def hyperparameter_tuning(self, method: str) -> Pipeline:
         """Perform hyperparameter tuning and train the best model.
@@ -335,8 +374,7 @@ class Train:
         }
         grid_search = GridSearchCV(self._pipe, cross_validation_params, cv=3, n_jobs=-1)
         random_search = RandomizedSearchCV(
-            self._pipe, cross_validation_params, n_iter=10, cv=3, n_jobs=-1,
-            random_state=self._config.random_state
+            self._pipe, cross_validation_params, n_iter=10, cv=3, n_jobs=-1, random_state=self._config.random_state
         )
 
         if self._x_train is None or self._y_train is None:
@@ -358,20 +396,8 @@ class Train:
             logger.info("No hyperparameter tuning method selected.")
             return self._model
 
-        # Create MANIFEST using shared method
-        MANIFEST = self._create_manifest(self._model, tuning_method=method, best_params=best_params)
-
-        # Prepare test data for saving (add category labels)
-        test_data_with_labels = self._df_test.copy()
-        test_data_with_labels["category"] = self._y_test
-
-        # Save the tuned model (same as train() method)
-        save(
-            model=self._model,
-            manifest=MANIFEST,
-            config=self._config,
-            test_data_df=test_data_with_labels
-        )
+        # Save the tuned model using the centralized method
+        self._save_model(self._model, tuning_method=method, best_params=best_params)
 
         return self._model
 

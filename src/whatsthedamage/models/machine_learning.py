@@ -164,11 +164,11 @@ class Train:
     """Prepare data and pipeline for model training."""
     def __init__(
         self,
-        training_data: TrainingData,
+        data: TrainingData,
         config: Optional[MLConfig] = None,
         verbose: bool = False
     ) -> None:
-        self._training_data = training_data
+        self._training_data = data
         self._config = config or MLConfig()
         self._class_weight: Optional[str] = None
         self._verbose = verbose
@@ -306,7 +306,6 @@ class Train:
 
         # Add tuning-specific information if provided
         if tuning_method:
-            manifest["model_version"] = f"{self._config.model_version}-{tuning_method}"
             manifest["parameters"]["tuning_method"] = tuning_method
             if best_params:
                 manifest["parameters"]["best_parameters"] = best_params

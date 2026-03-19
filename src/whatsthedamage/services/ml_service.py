@@ -18,7 +18,7 @@ class MLService:
         config = MLConfig()
         training_data = TrainingData(training_data_path, config=config)
         train = Train(
-            training_data=training_data,
+            data=training_data,
             config=config,
             verbose=verbose
         )

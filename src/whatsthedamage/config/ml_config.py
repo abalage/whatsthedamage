@@ -22,6 +22,10 @@ class MLConfig(BaseModel):
     test_size: float = 0.2
     model_version: str = "v6alpha_en"
     feature_columns: List[str] = ["type", "partner", "amount"]
+    # Confidence calibration settings
+    enable_calibration: bool = True
+    calibration_method: str = "sigmoid"  # Options: 'sigmoid', 'isotonic'
+    calibration_cv: int = 3  # Number of folds for calibration cross-validation
 
     @property
     def model_path(self) -> str:

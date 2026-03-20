@@ -37,8 +37,9 @@ def train_obj_not_enough_data(tmp_path):
         {"type": "A", "partner": "B", "currency": "EUR", "amount": 10, "category": "X"},
         {"type": "C", "partner": "D", "currency": "USD", "amount": 20, "category": "Y"}
     ]
-    config = MLConfig()
+    config = MLConfig(enable_calibration=False)  # Disable calibration for tests
     config.feature_columns = ["type", "partner", "currency", "amount"]
+    config.enable_calibration = False  # Disable calibration for tests to maintain compatibility
 
     # Create a mock TrainingData object
     training_data = mock.Mock(spec=TrainingData)
@@ -64,6 +65,7 @@ def train_obj_enough_data(tmp_path):
     ]
     config = MLConfig()
     config.feature_columns = ["type", "partner", "currency", "amount"]
+    config.enable_calibration = False  # Disable calibration for tests to maintain compatibility
 
     # Create a mock TrainingData object
     training_data = mock.Mock(spec=TrainingData)
@@ -274,11 +276,18 @@ def test_train_pipeline_creation(train_obj_enough_data):
 
 def test_train_train_method(train_obj_enough_data):
     train_obj = train_obj_enough_data
+
+    # Determine how to access the preprocessor based on calibration
+    if train_obj._config.enable_calibration:
+        preprocessor_path = train_obj._pipe.named_steps["calibration"].estimator.named_steps["preprocessor"]
+    else:
+        preprocessor_path = train_obj._pipe.named_steps["preprocessor"]
+
     with mock.patch.object(train_obj._pipe, "fit") as mock_fit, \
          mock.patch("joblib.dump"), \
          mock.patch("builtins.open", mock.mock_open()), \
          mock.patch.object(
-            train_obj._pipe.named_steps["preprocessor"], "transform",
+            preprocessor_path, "transform",
             return_value=np.zeros(
                 (len(train_obj._x_train), len(train_obj._config.feature_columns))
             )

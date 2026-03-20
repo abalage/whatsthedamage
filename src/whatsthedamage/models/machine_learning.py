@@ -7,6 +7,7 @@ import joblib
 import numpy as np
 import pandas as pd
 from sklearn.base import BaseEstimator, TransformerMixin
+from sklearn.calibration import CalibratedClassifierCV
 from sklearn.compose import ColumnTransformer
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.feature_extraction.text import TfidfVectorizer
@@ -266,7 +267,43 @@ class Train:
             max_depth=self._config.max_depth,
             class_weight=self._class_weight if self._class_weight in ('balanced', 'balanced_subsample', None) else None
         )
-        return Pipeline([("preprocessor", self._preprocessor), ("classifier", classifier)], memory=None)
+
+        # Create base pipeline
+        pipeline = Pipeline([("preprocessor", self._preprocessor), ("classifier", classifier)], memory=None)
+
+        # Add calibration if enabled
+        if self._config.enable_calibration:
+            calibrated_classifier = CalibratedClassifierCV(
+                estimator=pipeline,
+                method=self._config.calibration_method,
+                cv=self._config.calibration_cv
+            )
+            return Pipeline([("calibration", calibrated_classifier)], memory=None)
+
+        return pipeline
+
+    def _get_preprocessor_from_model(self, model: Pipeline) -> ColumnTransformer:
+        """Extract preprocessor from model, handling calibration if present.
+
+        Args:
+            model: The trained pipeline model
+
+        Returns:
+            The preprocessor from the model pipeline
+        """
+        if "calibration" in model.named_steps:
+            # For calibrated models, access the fitted preprocessor from the calibrated estimators
+            calibration_step = model.named_steps["calibration"]
+            if hasattr(calibration_step, 'calibrated_classifiers_') and len(calibration_step.calibrated_classifiers_) > 0:
+                # Get the fitted estimator from the first calibrated classifier
+                fitted_estimator = calibration_step.calibrated_classifiers_[0].estimator
+                return fitted_estimator.named_steps["preprocessor"]
+            else:
+                # Fallback: use the estimator from the calibration step
+                return calibration_step.estimator.named_steps["preprocessor"]
+        else:
+            # For non-calibrated models, access preprocessor directly
+            return model.named_steps["preprocessor"]
 
     def _create_manifest(
         self, model: Pipeline, tuning_method: Optional[str] = None, best_params: Optional[Dict[str, Any]] = None
@@ -282,7 +319,8 @@ class Train:
             MANIFEST dictionary with training metadata
         """
         # Get processed feature matrix shape after fitting the pipeline
-        processed_shape = model.named_steps["preprocessor"].transform(self._x_train).shape
+        preprocessor = self._get_preprocessor_from_model(model)
+        processed_shape = preprocessor.transform(self._x_train).shape
 
         # Base manifest structure with explicit type annotation
         manifest: Dict[str, Any] = {
@@ -295,6 +333,7 @@ class Train:
             "parameters": {
                 "classifier_short_name": self._config.classifier_short_name,
                 "random_state": self._config.random_state,
+                "calibration_enabled": self._config.enable_calibration,
             },
             "data_info": {
                 "row_count": len(self._df),
@@ -313,6 +352,11 @@ class Train:
             # Add regular training parameters
             manifest["parameters"]["min_samples_split"] = self._config.min_samples_split
             manifest["parameters"]["n_estimators"] = self._config.n_estimators
+
+        # Add calibration parameters if enabled
+        if self._config.enable_calibration:
+            manifest["parameters"]["calibration_method"] = self._config.calibration_method
+            manifest["parameters"]["calibration_cv"] = self._config.calibration_cv
 
         logger.info(f"Feature matrix shape after preprocessing: {processed_shape}")
 
@@ -366,10 +410,16 @@ class Train:
         Returns:
             The trained pipeline with best hyperparameters
         """
+        # Determine parameter names based on whether calibration is enabled
+        if self._config.enable_calibration:
+            classifier_prefix = "calibration__classifier__"
+        else:
+            classifier_prefix = "classifier__"
+
         cross_validation_params: Dict[str, List[Any]] = {
-            "classifier__n_estimators": [50, 100, 200],
-            "classifier__max_depth": [None, 10, 20, 30],
-            "classifier__min_samples_split": [2, 5, 10],
+            f"{classifier_prefix}n_estimators": [50, 100, 200],
+            f"{classifier_prefix}max_depth": [None, 10, 20, 30],
+            f"{classifier_prefix}min_samples_split": [2, 5, 10],
         }
         grid_search = GridSearchCV(self._pipe, cross_validation_params, cv=3, n_jobs=-1)
         random_search = RandomizedSearchCV(

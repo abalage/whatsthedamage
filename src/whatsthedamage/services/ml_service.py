@@ -1,4 +1,4 @@
-from whatsthedamage.models.machine_learning import Train, Inference, Metrics, TrainingData
+from whatsthedamage.models.machine_learning import Train, Inference, Metrics
 from whatsthedamage.config.ml_config import MLConfig
 from whatsthedamage.utils.logging import get_logger
 
@@ -16,9 +16,8 @@ class MLService:
     ) -> None:
         """Train the model."""
         config = MLConfig()
-        training_data = TrainingData(training_data_path, config=config)
         train = Train(
-            data=training_data,
+            training_data_path=training_data_path,
             config=config,
             verbose=verbose
         )

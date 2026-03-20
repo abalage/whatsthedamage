@@ -11,7 +11,6 @@ from whatsthedamage.models.machine_learning import (
     save,
     load,
     MLConfig,
-    TrainingData,
     Train,
     Inference,
     Metrics
@@ -41,11 +40,11 @@ def train_obj_not_enough_data(tmp_path):
     config.feature_columns = ["type", "partner", "currency", "amount"]
     config.enable_calibration = False  # Disable calibration for tests to maintain compatibility
 
-    # Create a mock TrainingData object
-    training_data = mock.Mock(spec=TrainingData)
-    training_data.get_training_data.return_value = pd.DataFrame(data)
+    # Create a temporary JSON file for training data
+    file = tmp_path / "training_data.json"
+    file.write_text(json.dumps(data), encoding="utf-8")
 
-    yield lambda: Train(training_data, config)
+    yield lambda: Train(str(file), config)
 
 
 @pytest.fixture
@@ -67,12 +66,11 @@ def train_obj_enough_data(tmp_path):
     config.feature_columns = ["type", "partner", "currency", "amount"]
     config.enable_calibration = False  # Disable calibration for tests to maintain compatibility
 
-    # Create a mock TrainingData object
-    training_data = mock.Mock(spec=TrainingData)
-    training_data.get_training_data.return_value = pd.DataFrame(data)
-    training_data.training_data_path = "dummy_path"
+    # Create a temporary JSON file for training data
+    file = tmp_path / "training_data.json"
+    file.write_text(json.dumps(data), encoding="utf-8")
 
-    yield Train(training_data, config)
+    yield Train(str(file), config)
 
 
 @pytest.fixture
@@ -229,43 +227,55 @@ def test_mlconfig_custom():
     assert config.feature_columns == ["foo", "bar"]
 
 
-def test_trainingdata_valid(valid_json):
-    path, _ = valid_json
+def test_train_data_loading_valid(tmp_path):
+    # Create test data with enough samples for stratified splitting
+    # Need at least 5 samples per class to work with default test_size=0.2
+    data = [
+        {"type": "A", "partner": "B", "currency": "EUR", "amount": 10, "category": "X"},
+        {"type": "C", "partner": "D", "currency": "USD", "amount": 20, "category": "X"},
+        {"type": "E", "partner": "F", "currency": "GBP", "amount": 30, "category": "X"},
+        {"type": "G", "partner": "H", "currency": "EUR", "amount": 40, "category": "Y"},
+        {"type": "I", "partner": "J", "currency": "USD", "amount": 50, "category": "Y"},
+        {"type": "K", "partner": "L", "currency": "GBP", "amount": 60, "category": "Y"}
+    ]
+    file = tmp_path / "data.json"
+    file.write_text(json.dumps(data), encoding="utf-8")
+    
     config = MLConfig()
     config.feature_columns = ["type", "partner", "currency", "amount"]
-    td = TrainingData(path, config)
-    df = td.get_training_data()
-    assert not df.empty
-    assert set(config.feature_columns).issubset(df.columns)
+    # Test that Train class can load and validate data correctly
+    train_obj = Train(str(file), config)
+    assert not train_obj._df.empty
+    assert set(config.feature_columns).issubset(train_obj._df.columns)
 
 
-def test_trainingdata_missing_columns(tmp_path):
+def test_train_data_loading_missing_columns(tmp_path):
     data = [{"type": "A", "partner": "B"}]
     file = tmp_path / "data.json"
     file.write_text(json.dumps(data), encoding="utf-8")
     config = MLConfig()
     config.feature_columns = ["type", "partner", "currency", "amount"]
     with pytest.raises(ValueError, match="Missing required columns.*"):
-        TrainingData(str(file), config)
+        Train(str(file), config)
 
 
-def test_trainingdata_empty(tmp_path):
+def test_train_data_loading_empty(tmp_path):
     file = tmp_path / "data.json"
     file.write_text(json.dumps([]), encoding="utf-8")
     config = MLConfig()
     config.feature_columns = ["type", "partner", "currency", "amount"]
     with pytest.raises(ValueError, match="Loaded DataFrame is empty."):
-        TrainingData(str(file), config)
+        Train(str(file), config)
 
 
-def test_trainingdata_missing_values(tmp_path):
+def test_train_data_loading_missing_values(tmp_path):
     data = [{"type": "A", "partner": None, "currency": "EUR", "amount": 10, "category": "X"}]
     file = tmp_path / "data.json"
     file.write_text(json.dumps(data), encoding="utf-8")
     config = MLConfig()
     config.feature_columns = ["type", "partner", "currency", "amount"]
     with pytest.raises(ValueError, match="All rows were dropped due to missing values."):
-        TrainingData(str(file), config)
+        Train(str(file), config)
 
 
 def test_train_pipeline_creation(train_obj_enough_data):

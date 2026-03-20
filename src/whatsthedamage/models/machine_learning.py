@@ -103,34 +103,6 @@ def apply_ml_text_cleaning(df: pd.DataFrame) -> pd.DataFrame:
     logger.info(f"Applied ML-specific text cleaning to {len(df_cleaned)} samples")
     return df_cleaned
 
-
-class TrainingData:
-    def __init__(self, training_data_path: str, config: MLConfig):
-        self.required_columns: set[str] = set(config.feature_columns)
-        self.training_data_path = training_data_path
-        raw_data = load_json_data(training_data_path)
-        df = pd.DataFrame(raw_data)
-        self._df = self._validate_and_clean_data(df)
-
-    def _validate_and_clean_data(self, df: pd.DataFrame) -> pd.DataFrame:
-        missing_columns = [col for col in self.required_columns if col not in df.columns]
-        if df.empty:
-            raise ValueError("Loaded DataFrame is empty.")
-        if missing_columns:
-            raise ValueError(f"Missing required columns: {', '.join(missing_columns)}")
-        df_clean = df.dropna(subset=list(self.required_columns))
-        if df_clean.empty:
-            raise ValueError("All rows were dropped due to missing values.")
-
-        # Apply ML-specific text cleaning to partner field
-        df_clean = apply_ml_text_cleaning(df_clean)
-
-        return df_clean
-
-    def get_training_data(self) -> pd.DataFrame:
-        return self._df
-
-
 class AmountSignTransformer(BaseEstimator, TransformerMixin):
     """Custom transformer to extract sign (positive/negative) from amount values."""
 
@@ -165,11 +137,11 @@ class Train:
     """Prepare data and pipeline for model training."""
     def __init__(
         self,
-        data: TrainingData,
+        training_data_path: str,
         config: Optional[MLConfig] = None,
         verbose: bool = False
     ) -> None:
-        self._training_data = data
+        self._training_data_path = training_data_path
         self._config = config or MLConfig()
         self._class_weight: Optional[str] = None
         self._verbose = verbose
@@ -189,7 +161,7 @@ class Train:
         self._x_test: pd.DataFrame = pd.DataFrame()
 
         # Prepare data through separate methods
-        self._prepare_data()
+        self._load_and_validate_data()
         self._detect_class_imbalance()
         self._prepare_features()
 
@@ -198,10 +170,14 @@ class Train:
         self._pipe: Pipeline = self._create_pipeline()
         self._model: Any = None
 
-    def _prepare_data(self) -> None:
+    def _load_and_validate_data(self) -> None:
         """Load, validate, and split training data."""
-        # Load and validate data
-        self._df = self._training_data.get_training_data()
+        # Load raw data
+        raw_data = load_json_data(self._training_data_path)
+        df = pd.DataFrame(raw_data)
+
+        # Validate and clean data (originally from TrainingData class)
+        self._df = self._validate_and_clean_data(df)
         self._y = self._df["category"]
 
         # Validate class sizes for stratified split
@@ -216,6 +192,23 @@ class Train:
         self._df_train, self._df_test, self._y_train, self._y_test = train_test_split(
             self._df, self._y, test_size=self._config.test_size, random_state=self._config.random_state, stratify=self._y
         )
+
+    def _validate_and_clean_data(self, df: pd.DataFrame) -> pd.DataFrame:
+        """Validate and clean training data (moved from TrainingData class)."""
+        required_columns = set(self._config.feature_columns)
+        missing_columns = [col for col in required_columns if col not in df.columns]
+        if df.empty:
+            raise ValueError("Loaded DataFrame is empty.")
+        if missing_columns:
+            raise ValueError(f"Missing required columns: {', '.join(missing_columns)}")
+        df_clean = df.dropna(subset=list(required_columns))
+        if df_clean.empty:
+            raise ValueError("All rows were dropped due to missing values.")
+
+        # Apply ML-specific text cleaning to partner field
+        df_clean = apply_ml_text_cleaning(df_clean)
+
+        return df_clean
 
     def _detect_class_imbalance(self) -> None:
         """Detect class imbalance and set class weights if needed."""
@@ -326,7 +319,7 @@ class Train:
         manifest: Dict[str, Any] = {
             "model_file": self._model_save_path,
             "model_version": self._config.model_version,
-            "training_data": self._training_data.training_data_path,
+            "training_data": self._training_data_path,
             "training_date": datetime.now().isoformat(),
             "test_data": self._testdata_save_path,
             "test_date": datetime.now().isoformat(),

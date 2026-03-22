@@ -4,6 +4,7 @@ from whatsthedamage.services.validation_service import ValidationService
 from whatsthedamage.services.response_builder_service import ResponseBuilderService
 from whatsthedamage.services.configuration_service import ConfigurationService
 from whatsthedamage.services.data_formatting_service import DataFormattingService
+from whatsthedamage.services.smote_service import SmoteService
 from whatsthedamage.services.service_factory import create_service_container, ServiceContainer
 
 # SessionService requires Flask - import directly where needed (web routes only)
@@ -14,6 +15,7 @@ __all__ = [
     'ResponseBuilderService',
     'ConfigurationService',
     'DataFormattingService',
+    'SmoteService',
     'create_service_container',
     'ServiceContainer',
 ]

@@ -11,6 +11,7 @@ def main() -> None:
     train_parser.add_argument("--data", help="Path to training data JSON file")
     train_parser.add_argument("--gridsearch", action="store_true", help="Use GridSearchCV for hyperparameter tuning")  # noqa: E501
     train_parser.add_argument("--randomsearch", action="store_true", help="Use RandomizedSearchCV for hyperparameter tuning")  # noqa: E501
+    train_parser.add_argument("--smote", action="store_true", help="Enable SMOTE for synthetic data generation on rare categories")  # noqa: E501
     train_parser.add_argument("--verbose", "-v", action="store_true", help="Enable verbose output during training")
 
     # Predict subcommand
@@ -35,7 +36,8 @@ def main() -> None:
             training_data_path=args.data,
             verbose=args.verbose,
             gridsearch=args.gridsearch,
-            randomsearch=args.randomsearch
+            randomsearch=args.randomsearch,
+            enable_smote=args.smote
         )
 
     elif args.command == "predict":

@@ -1,7 +1,7 @@
 import json
 import os
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Union, cast
+from typing import Any, Dict, List, Optional, Tuple, Union, cast
 
 import joblib
 import numpy as np
@@ -21,6 +21,7 @@ from whatsthedamage.utils.data_loader import load_json_data
 from whatsthedamage.utils.logging import get_logger
 
 logger = get_logger(__name__)
+logger.setLevel("DEBUG")
 
 
 def save(
@@ -150,6 +151,10 @@ class Train:
         self._model_save_path = self._config.model_path
         self._testdata_save_path = self._config.test_data_path
 
+        # Initialize SMOTE service (service layer pattern)
+        from whatsthedamage.services.smote_service import SmoteService
+        self._smote_service = SmoteService(self._config)
+
         # Initialize data attributes
         self._df: pd.DataFrame = pd.DataFrame()
         self._y: pd.Series = pd.Series(dtype=object)
@@ -160,13 +165,14 @@ class Train:
         self._x_train: pd.DataFrame = pd.DataFrame()
         self._x_test: pd.DataFrame = pd.DataFrame()
 
+        # Create the preprocessor ONCE and use everywhere
+        self._preprocessor: ColumnTransformer = self._create_preprocessor()
+
         # Prepare data through separate methods
         self._load_and_validate_data()
         self._detect_class_imbalance()
         self._prepare_features()
 
-        # Create the preprocessor ONCE and use everywhere
-        self._preprocessor: ColumnTransformer = self._create_preprocessor()
         self._pipe: Pipeline = self._create_pipeline()
         self._model: Any = None
 
@@ -210,6 +216,52 @@ class Train:
 
         return df_clean
 
+    def _identify_rare_categories(self, y: pd.Series) -> List[str]:
+        """Identify categories that need SMOTE oversampling."""
+        class_counts = y.value_counts()
+
+        if self._config.smote_target_categories:
+            # Use explicitly specified categories
+            rare_categories = [cat for cat in self._config.smote_target_categories if cat in class_counts.index]
+        else:
+            # Use threshold-based approach
+            rare_categories = class_counts[class_counts < self._config.smote_min_samples_threshold].index.tolist()
+
+        logger.info(f"Identified rare categories for SMOTE: {rare_categories}")
+        return rare_categories
+
+    def _apply_smote_after_preprocessing(self, X: pd.DataFrame, y: pd.Series) -> Tuple[pd.DataFrame, pd.Series]:
+        """Apply SMOTE after preprocessing text features to numerical format.
+
+        This method delegates SMOTE operations to the SmoteService, following the service layer
+        pattern and separation of concerns principle.
+        """
+        # Identify rare categories
+        rare_categories = self._identify_rare_categories(y)
+
+        # Delegate to SMOTE service
+        X_resampled, y_resampled = self._smote_service.apply_smote(
+            X, y, self._preprocessor, rare_categories
+        )
+
+        # Log results if SMOTE was actually applied
+        if hasattr(X_resampled, 'shape') and hasattr(X, 'shape'):
+            if X_resampled.shape[0] != X.shape[0]:
+                self._log_smote_results(X, X_resampled, y_resampled)
+
+        return X_resampled, y_resampled
+
+    def _log_smote_results(self, X: pd.DataFrame, X_resampled_df: pd.DataFrame, y_resampled: pd.Series) -> None:
+        """Log SMOTE results in a consistent format.
+
+        Separates logging concern for better maintainability.
+        """
+        logger.info("SMOTE synthesis completed:")
+        logger.info(f"  Original training samples: {len(X)}")
+        logger.info(f"  Synthetic samples generated: {len(X_resampled_df) - len(X)}")
+        logger.info(f"  Total training samples after SMOTE: {len(X_resampled_df)}")
+        logger.info(f"  Final class distribution: {dict(pd.Series(y_resampled).value_counts())}")
+
     def _detect_class_imbalance(self) -> None:
         """Detect class imbalance and set class weights if needed."""
         class_counts = self._y_train.value_counts(normalize=True)
@@ -225,6 +277,12 @@ class Train:
         """Prepare feature columns for training."""
         self._x_train = self._df_train[self._config.feature_columns]
         self._x_test = self._df_test[self._config.feature_columns]
+
+        # Apply SMOTE if enabled (after preprocessing)
+        if self._config.enable_smote:
+            self._x_train, self._y_train = self._apply_smote_after_preprocessing(
+                self._x_train, self._y_train
+            )
 
     def _create_preprocessor(self) -> ColumnTransformer:
         """Create and return the feature engineering pipeline."""

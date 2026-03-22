@@ -1,5 +1,5 @@
 # src/whatsthedamage/config/ml_config.py
-from typing import List, Union
+from typing import List, Union, Optional
 from pydantic import BaseModel
 import os
 
@@ -26,6 +26,14 @@ class MLConfig(BaseModel):
     enable_calibration: bool = True
     calibration_method: str = "sigmoid"  # Options: 'sigmoid', 'isotonic'
     calibration_cv: int = 3  # Number of folds for calibration cross-validation
+    # SMOTE settings for synthetic data generation
+    enable_smote: bool = False
+    smote_random_state: int = 42
+    smote_k_neighbors: int = 5
+    smote_oversampling_factor: int = 3
+    smote_majority_size_limit: float = 0.8
+    smote_target_categories: Optional[List[str]] = None  # Specific categories to oversample
+    smote_min_samples_threshold: int = 150  # Categories with fewer samples get SMOTE
 
     @property
     def model_path(self) -> str:

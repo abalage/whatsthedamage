@@ -12,10 +12,11 @@ class MLService:
         training_data_path: str,
         verbose: bool = False,
         gridsearch: bool = False,
-        randomsearch: bool = False
+        randomsearch: bool = False,
+        enable_smote: bool = False
     ) -> None:
         """Train the model."""
-        config = MLConfig()
+        config = MLConfig(enable_smote=enable_smote)
         train = Train(
             training_data_path=training_data_path,
             config=config,

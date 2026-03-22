@@ -6,10 +6,15 @@
 #
 annotated-types==0.7.0
     # via pydantic
+imbalanced-learn==0.14.1
+    # via whatsthedamage (pyproject.toml)
 joblib==1.5.3
-    # via scikit-learn
+    # via
+    #   imbalanced-learn
+    #   scikit-learn
 numpy==2.4.2
     # via
+    #   imbalanced-learn
     #   pandas
     #   scikit-learn
     #   scipy
@@ -26,15 +31,23 @@ python-magic==0.4.27
 pyyaml==6.0.3
     # via whatsthedamage (pyproject.toml)
 scikit-learn==1.7.2
-    # via whatsthedamage (pyproject.toml)
+    # via
+    #   imbalanced-learn
+    #   sklearn-compat
+    #   whatsthedamage (pyproject.toml)
 scipy==1.17.0
     # via
+    #   imbalanced-learn
     #   scikit-learn
     #   whatsthedamage (pyproject.toml)
 six==1.17.0
     # via python-dateutil
+sklearn-compat==0.1.5
+    # via imbalanced-learn
 threadpoolctl==3.6.0
-    # via scikit-learn
+    # via
+    #   imbalanced-learn
+    #   scikit-learn
 typing-extensions==4.15.0
     # via
     #   pydantic

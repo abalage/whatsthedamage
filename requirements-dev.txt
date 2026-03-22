@@ -44,12 +44,16 @@ idna==3.11
     # via requests
 imagesize==1.4.1
     # via sphinx
+imbalanced-learn==0.14.1
+    # via whatsthedamage (pyproject.toml)
 iniconfig==2.3.0
     # via pytest
 jinja2==3.1.6
     # via sphinx
 joblib==1.5.3
-    # via scikit-learn
+    # via
+    #   imbalanced-learn
+    #   scikit-learn
 markupsafe==3.0.3
     # via jinja2
 mypy==1.18.2
@@ -58,6 +62,7 @@ mypy-extensions==1.1.0
     # via mypy
 numpy==2.4.2
     # via
+    #   imbalanced-learn
     #   pandas
     #   pandas-stubs
     #   scikit-learn
@@ -125,13 +130,19 @@ roman-numerals-py==4.1.0
 ruff==0.13.2
     # via whatsthedamage (pyproject.toml)
 scikit-learn==1.7.2
-    # via whatsthedamage (pyproject.toml)
+    # via
+    #   imbalanced-learn
+    #   sklearn-compat
+    #   whatsthedamage (pyproject.toml)
 scipy==1.17.0
     # via
+    #   imbalanced-learn
     #   scikit-learn
     #   whatsthedamage (pyproject.toml)
 six==1.17.0
     # via python-dateutil
+sklearn-compat==0.1.5
+    # via imbalanced-learn
 snowballstemmer==3.0.1
     # via sphinx
 sphinx==8.2.3
@@ -161,7 +172,9 @@ sphinxcontrib-serializinghtml==2.0.0
 termcolor==3.3.0
     # via pytest-sugar
 threadpoolctl==3.6.0
-    # via scikit-learn
+    # via
+    #   imbalanced-learn
+    #   scikit-learn
 tox==4.25.0
     # via whatsthedamage (pyproject.toml)
 types-python-dateutil==2.9.0.20250822

@@ -96,9 +96,8 @@ def apply_ml_text_cleaning(df: pd.DataFrame) -> pd.DataFrame:
     # Create text correction service with ML-specific cleaning (default config)
     text_service = TextCorrectionService()
 
-    # Apply ML-specific cleaning to partner field
-    df_cleaned = df.copy()
-    df_cleaned['partner'] = df_cleaned['partner'].apply(text_service.clean_partner_field)
+    # Apply ML-specific cleaning to partner field using assign to avoid full copy
+    df_cleaned = df.assign(partner=df['partner'].apply(text_service.clean_partner_field))
 
     logger.info(f"Applied ML-specific text cleaning to {len(df_cleaned)} samples")
     return df_cleaned
@@ -120,10 +119,7 @@ class AmountSignTransformer(BaseEstimator, TransformerMixin):
         Returns:
             Array of sign values (-1, 0, 1)
         """
-        if isinstance(X, pd.DataFrame) or isinstance(X, pd.Series):
-            X = X.values
-
-        # Convert to numpy array if not already
+        # Convert to numpy array directly (handles both pandas and numpy inputs)
         x_array = np.asarray(X)
 
         # Extract sign: 1 for positive, 0 for zero, -1 for negative
@@ -206,14 +202,16 @@ class Train:
             raise ValueError("Loaded DataFrame is empty.")
         if missing_columns:
             raise ValueError(f"Missing required columns: {', '.join(missing_columns)}")
-        df_clean = df.dropna(subset=list(required_columns))
-        if df_clean.empty:
+
+        # Use inplace=True to avoid creating a new DataFrame
+        df.dropna(subset=list(required_columns), inplace=True)
+        if df.empty:
             raise ValueError("All rows were dropped due to missing values.")
 
         # Apply ML-specific text cleaning to partner field
-        df_clean = apply_ml_text_cleaning(df_clean)
+        df = apply_ml_text_cleaning(df)
 
-        return df_clean
+        return df
 
     def _identify_rare_categories(self, y: pd.Series) -> List[str]:
         """Identify categories that need SMOTE oversampling."""
@@ -263,11 +261,14 @@ class Train:
 
     def _detect_class_imbalance(self) -> None:
         """Detect class imbalance and set class weights if needed."""
-        class_counts = self._y_train.value_counts(normalize=True)
-        if class_counts.min() < self._config.classifier_imbalance_threshold:
+        # Compute value_counts once and reuse the result
+        value_counts = self._y_train.value_counts()
+        normalized_counts = value_counts / value_counts.sum()
+
+        if normalized_counts.min() < self._config.classifier_imbalance_threshold:
             if self._verbose:
                 logger.info("Class distribution in training set:")
-                logger.info(f"{self._y_train.value_counts()}")
+                logger.info(f"{value_counts}")
             self._class_weight = "balanced"
         else:
             self._class_weight = None
@@ -371,9 +372,22 @@ class Train:
         Returns:
             MANIFEST dictionary with training metadata
         """
-        # Get processed feature matrix shape after fitting the pipeline
+        # Get processed feature matrix shape from the fitted preprocessor
         preprocessor = self._get_preprocessor_from_model(model)
-        processed_shape = preprocessor.transform(self._x_train).shape
+        # Try to get shape from transformer attributes first to avoid re-transforming
+        if hasattr(preprocessor, 'transformers_') and len(preprocessor.transformers_) > 0:
+            # Get shape from the first transformer's output (most reliable method)
+            first_transformer = preprocessor.transformers_[0][1]
+            if hasattr(first_transformer, 'shape'):
+                processed_shape = (len(self._x_train), first_transformer.shape[1])
+            else:
+                # Fallback: transform a small sample to get shape
+                sample_shape = preprocessor.transform(self._x_train.head(1)).shape
+                processed_shape = (len(self._x_train), sample_shape[1])
+        else:
+            # Final fallback: transform the full data (original behavior)
+            logger.warning("Transforming full data to get the shape.")
+            processed_shape = preprocessor.transform(self._x_train).shape
 
         # Base manifest structure with explicit type annotation
         manifest: Dict[str, Any] = {
@@ -679,14 +693,16 @@ class Metrics:
         # Create DataFrame with predictions and confidence for the validation/test set
         if hasattr(self.x_test, 'index'):
             # If x_test has index, use it to align with original data
-            test_data_subset = self.test_data.loc[self.x_test.index].copy()
+            test_data_subset = self.test_data.loc[self.x_test.index]
         else:
             # If no index, create a subset based on the prediction length
-            test_data_subset = self.test_data.iloc[:len(self.y_pred)].copy()
+            test_data_subset = self.test_data.iloc[:len(self.y_pred)]
 
-        results_df = test_data_subset.copy()
-        results_df['predicted'] = self.y_pred
-        results_df['confidence'] = self.y_proba.max(axis=1)
+        # Avoid copying the entire DataFrame - use assign to add columns
+        results_df = test_data_subset.assign(
+            predicted=self.y_pred,
+            confidence=self.y_proba.max(axis=1)
+        )
         results_df['correct'] = results_df['category'] == results_df['predicted']
 
         # Misclassified samples
@@ -735,9 +751,10 @@ class Metrics:
         """Return raw merchant analysis data."""
         # Create DataFrame with predictions for the validation/test set
         test_indices = self.test_data.index.isin(self.x_test.index)
-        results_df = self.test_data[test_indices].copy()
-        results_df['predicted'] = self.y_pred
-        results_df['correct'] = results_df['category'] == results_df['predicted']
+        results_df = self.test_data[test_indices].assign(
+            predicted=self.y_pred,
+            correct=lambda x: x['category'] == self.y_pred
+        )
 
         # Misclassified samples
         misclassified = results_df[~results_df['correct']]

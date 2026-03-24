@@ -21,7 +21,6 @@ from whatsthedamage.utils.data_loader import load_json_data
 from whatsthedamage.utils.logging import get_logger
 
 logger = get_logger(__name__)
-logger.setLevel("DEBUG")
 
 
 def save(

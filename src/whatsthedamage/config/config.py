@@ -8,6 +8,7 @@ from dataclasses import dataclass
 import yaml
 from pydantic import BaseModel, ValidationError, Field
 from gettext import gettext as _
+from whatsthedamage.config.ml_config import MLConfig
 from whatsthedamage.utils.logging import get_logger
 
 logger = get_logger(__name__)
@@ -92,6 +93,7 @@ class AppConfig(BaseModel):
     text_cleaning: Optional[Dict[str, Any]] = Field(default_factory=dict)
     enabled_statistical_algorithms: List[str] = Field(default_factory=lambda: ['iqr', 'pareto'])
     cache_ttl: int = Field(default=1800)  # 30 minutes in seconds
+    ml_config: MLConfig = Field(default_factory=MLConfig)  # ML configuration including confidence threshold
 
 
 class AppContext:

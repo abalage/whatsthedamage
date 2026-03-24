@@ -8,7 +8,7 @@ logger = get_logger(__name__)
 
 
 class RowEnrichmentML:
-    def __init__(self, rows: List[CsvRow]):
+    def __init__(self, rows: List[CsvRow], confidence_threshold: float = 0.5):
         """
         Initialize with a list of CsvRow objects and a trained ML model pipeline.
 
@@ -16,6 +16,7 @@ class RowEnrichmentML:
         :param model: Trained ML pipeline (e.g., from train_model.py).
         """
         self.rows = rows
+        self.confidence_threshold = confidence_threshold
         self.categorized: Dict[str, List[CsvRow]] = {get_category_name('other'): []}
 
     def _enrich_rows(self) -> None:
@@ -40,12 +41,20 @@ class RowEnrichmentML:
             if " " in category_str:
                 category_str = category_str.replace(" ", "_")
             localized_category = get_category_name(category_str.lower())
-            row.category = localized_category
+
             # Propagate confidence from ML prediction
             row.confidence = predicted_row.confidence
-            # Log rows with low confidence scores
-            if row.confidence is not None and row.confidence < 0.5:
+
+            # Apply confidence threshold
+            if (row.confidence is not None and
+                row.confidence < self.confidence_threshold):
+                # Use 'other' category for low-confidence predictions
+                localized_category = get_category_name('other')
+                # Log rows with low confidence scores
                 logger.debug(f"Low confidence prediction: {row}")
+
+            row.category = localized_category
+
             if localized_category not in self.categorized:
                 self.categorized[localized_category] = []
 

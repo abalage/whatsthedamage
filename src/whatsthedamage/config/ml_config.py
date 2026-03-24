@@ -34,6 +34,8 @@ class MLConfig(BaseModel):
     smote_majority_size_limit: float = 0.8
     smote_target_categories: Optional[List[str]] = None  # Specific categories to oversample
     smote_min_samples_threshold: int = 150  # Categories with fewer samples get SMOTE
+    # Confidence threshold for ML categorization
+    ml_confidence_threshold: float = 0.65  # Default threshold for categorization confidence
 
     @property
     def model_path(self) -> str:

@@ -294,3 +294,17 @@ def process_test_data(standard_csv_content, standard_config_content):
         data.update(extra_data)
         return data
     return _prepare_data
+
+
+@pytest.fixture
+def ml_config():
+    """Fixture for MLConfig with default values."""
+    from whatsthedamage.config.ml_config import MLConfig
+    return MLConfig()
+
+
+@pytest.fixture
+def custom_ml_config():
+    """Fixture for MLConfig with custom confidence threshold."""
+    from whatsthedamage.config.ml_config import MLConfig
+    return MLConfig(ml_confidence_threshold=0.7)

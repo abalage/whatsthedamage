@@ -181,7 +181,7 @@ class RowsProcessor:
             raise ValueError("Category attribute is not set")
         enricher: Union[RowEnrichmentML, RowEnrichment]
         if self._ml:
-            enricher = RowEnrichmentML(rows)
+            enricher = RowEnrichmentML(rows, self.context.config.ml_config.ml_confidence_threshold)
         else:
             enricher = RowEnrichment(rows, self._cfg_pattern_sets)
         return enricher.categorize_by_attribute(self._category)

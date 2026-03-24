@@ -25,8 +25,7 @@ class CSVProcessor:
         Initializes the CSVProcessor with configuration and arguments.
 
         Args:
-            config (AppConfig): The configuration object.
-            args (AppArgs): The application arguments.
+            context (AppContext): The application context containing configuration and arguments.
         """
         self.context = context
         self.config = context.config

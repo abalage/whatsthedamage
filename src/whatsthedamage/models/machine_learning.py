@@ -305,7 +305,8 @@ class Train:
                     "partner",
                 ),
                 ("amount_sign", AmountSignTransformer(), ["amount"]),
-            ]
+            ],
+            n_jobs=self._config.n_jobs  # Use configured number of jobs for parallel processing
         )
 
     def _create_pipeline(self) -> Pipeline:
@@ -315,7 +316,8 @@ class Train:
             min_samples_split=self._config.min_samples_split,
             n_estimators=self._config.n_estimators,
             max_depth=self._config.max_depth,
-            class_weight=self._class_weight if self._class_weight in ('balanced', 'balanced_subsample', None) else None
+            class_weight=self._class_weight if self._class_weight in ('balanced', 'balanced_subsample', None) else None,
+            n_jobs=self._config.n_jobs  # Use configured number of jobs for RandomForest
         )
 
         # Create base pipeline
@@ -326,7 +328,8 @@ class Train:
             calibrated_classifier = CalibratedClassifierCV(
                 estimator=pipeline,
                 method=self._config.calibration_method,
-                cv=self._config.calibration_cv
+                cv=self._config.calibration_cv,
+                n_jobs=self._config.n_jobs  # Use configured number of jobs for calibration
             )
             return Pipeline([("calibration", calibrated_classifier)], memory=None)
 

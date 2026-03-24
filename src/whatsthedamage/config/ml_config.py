@@ -19,6 +19,7 @@ class MLConfig(BaseModel):
     min_samples_split: int = 10
     n_estimators: int = 200
     max_depth: Union[int, None] = None
+    n_jobs: int = 1 # Number of jobs for parallel processing (-1 = use all cores)
     test_size: float = 0.2
     model_version: str = "v6alpha_en"
     feature_columns: List[str] = ["type", "partner", "amount"]

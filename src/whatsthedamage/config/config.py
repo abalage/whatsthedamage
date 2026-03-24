@@ -66,7 +66,7 @@ AVAILABLE_CATEGORIES = [
     CategoryDefinition(id="transportation", default_name=_("Transportation"), patterns=[]),
     CategoryDefinition(id="utility", default_name=_("Utility"), patterns=[]),
     CategoryDefinition(id="home_maintenance", default_name=_("Home Maintenance"), patterns=[]),
-    CategoryDefinition(id="entertainment_leasure", default_name=_("Entertainment and Leisure"), patterns=[]),
+    CategoryDefinition(id="entertainment_and_leisure", default_name=_("Entertainment and Leisure"), patterns=[]),
     CategoryDefinition(id="insurance", default_name=_("Insurance"), patterns=[]),
     CategoryDefinition(id="loan", default_name=_("Loan"), patterns=[]),
     CategoryDefinition(id="withdrawal", default_name=_("Withdrawal"), patterns=[]),

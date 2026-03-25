@@ -237,26 +237,26 @@ class Train:
         rare_categories = self._identify_rare_categories(y)
 
         # Delegate to SMOTE service
-        X_resampled, y_resampled = self._smote_service.apply_smote(
+        x_resampled, y_resampled = self._smote_service.apply_smote(
             X, y, self._preprocessor, rare_categories
         )
 
         # Log results if SMOTE was actually applied
-        if hasattr(X_resampled, 'shape') and hasattr(X, 'shape'):
-            if X_resampled.shape[0] != X.shape[0]:
-                self._log_smote_results(X, X_resampled, y_resampled)
+        if hasattr(x_resampled, 'shape') and hasattr(X, 'shape'):
+            if x_resampled.shape[0] != X.shape[0]:
+                self._log_smote_results(X, x_resampled, y_resampled)
 
-        return X_resampled, y_resampled
+        return x_resampled, y_resampled
 
-    def _log_smote_results(self, X: pd.DataFrame, X_resampled_df: pd.DataFrame, y_resampled: pd.Series) -> None:
+    def _log_smote_results(self, X: pd.DataFrame, x_resampled_df: pd.DataFrame, y_resampled: pd.Series) -> None:
         """Log SMOTE results in a consistent format.
 
         Separates logging concern for better maintainability.
         """
         logger.info("SMOTE synthesis completed:")
         logger.info(f"  Original training samples: {len(X)}")
-        logger.info(f"  Synthetic samples generated: {len(X_resampled_df) - len(X)}")
-        logger.info(f"  Total training samples after SMOTE: {len(X_resampled_df)}")
+        logger.info(f"  Synthetic samples generated: {len(x_resampled_df) - len(X)}")
+        logger.info(f"  Total training samples after SMOTE: {len(x_resampled_df)}")
         logger.info(f"  Final class distribution: {dict(pd.Series(y_resampled).value_counts())}")
 
     def _detect_class_imbalance(self) -> None:

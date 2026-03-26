@@ -135,12 +135,10 @@ class Train:
         self,
         training_data_path: str,
         config: Optional[MLConfig] = None,
-        verbose: bool = False
     ) -> None:
         self._training_data_path = training_data_path
         self._config = config or MLConfig()
         self._class_weight: Optional[str] = None
-        self._verbose = verbose
 
         # Use MLConfig paths for model and testdata files
         self._model_save_path = self._config.model_path
@@ -257,7 +255,6 @@ class Train:
         logger.info(f"  Original training samples: {len(X)}")
         logger.info(f"  Synthetic samples generated: {len(x_resampled_df) - len(X)}")
         logger.info(f"  Total training samples after SMOTE: {len(x_resampled_df)}")
-        logger.info(f"  Final class distribution: {dict(pd.Series(y_resampled).value_counts())}")
 
     def _detect_class_imbalance(self) -> None:
         """Detect class imbalance and set class weights if needed."""
@@ -266,9 +263,8 @@ class Train:
         normalized_counts = value_counts / value_counts.sum()
 
         if normalized_counts.min() < self._config.classifier_imbalance_threshold:
-            if self._verbose:
-                logger.info("Class distribution in training set:")
-                logger.info(f"{value_counts}")
+            logger.info("Class distribution in training set:")
+            logger.info(f"{value_counts}")
             self._class_weight = "balanced"
         else:
             self._class_weight = None

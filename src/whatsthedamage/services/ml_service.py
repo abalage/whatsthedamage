@@ -10,7 +10,6 @@ class MLService:
     def train(
         self,
         training_data_path: str,
-        verbose: bool = False,
         gridsearch: bool = False,
         randomsearch: bool = False,
         enable_smote: bool = False
@@ -20,7 +19,6 @@ class MLService:
         train = Train(
             training_data_path=training_data_path,
             config=config,
-            verbose=verbose
         )
 
         if gridsearch or randomsearch:
@@ -44,7 +42,6 @@ class MLService:
         self,
         model_path: str,
         test_data_path: str,
-        verbose: bool = False
     ) -> None:
         """Calculate model evaluation metrics."""
         metrics = Metrics(

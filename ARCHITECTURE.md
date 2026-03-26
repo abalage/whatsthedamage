@@ -7,7 +7,6 @@ This section provides a high-level overview of the project's directory and file 
 ```
 whatsthedamage/
 ├── config/                  # Configuration files
-│   ├── config.yml.default   # Default configuration template
 │   └── gunicorn_conf.py     # Gunicorn production configuration
 ├── docs/                    # Project documentation
 │   ├── calculator_pattern_example.py
@@ -21,27 +20,32 @@ whatsthedamage/
 │   │   └── helpers.py       # API helper functions
 │   ├── config/              # Configuration classes
 │   │   ├── config.py        # Central configuration
+|   │   ├── config.yml.default   # Default configuration template
 │   │   ├── dt_models.py     # Data models for API responses
-│   │   └── flask_config.py  # Flask-specific configuration
+│   │   ├── exclusions.json  # ExclusionService configuration
+│   │   ├── flask_config.py  # Flask-specific configuration
+│   │   └── ml_config.py     # ML configuration
+│   │   └── text_config.py     # TextCorrectionService configuration
 │   ├── controllers/         # Request handling
 │   │   ├── cli_controller.py # CLI argument parsing
+│   │   ├── ml_cli.py         # ML CLI interface
 │   │   ├── routes.py        # Web routes
 │   │   └── routes_helpers.py # Web route helpers
 │   ├── models/              # Data models and processing
+│   │   ├── api_models.py       # API models
 │   │   ├── csv_file_handler.py # CSV file parsing
 │   │   ├── csv_processor.py    # CSV processing orchestrator
 │   │   ├── csv_row.py          # Transaction row model
 │   │   ├── dt_calculators.py   # Calculator pattern implementations
+│   │   ├── dt_models.py        # DataTable related models
 │   │   ├── dt_response_builder.py # DataTables response builder
-│   │   ├── machine_learning.py  # ML model loading
+│   │   ├── machine_learning.py  # ML model training and inference
 │   │   ├── row_enrichment.py    # Regex-based categorization
 │   │   ├── row_enrichment_ml.py # ML-based categorization
 │   │   ├── row_filter.py        # Date filtering
 │   │   ├── rows_processor.py    # Main processing pipeline
 │   │   └── statistical_algorithms.py # Statistical analysis
-│   ├── scripts/              # ML training and utilities
-│   │   ├── ml_util.py         # ML utility functions
-│   │   └── README.md          # ML documentation
+│   ├── scripts/              # placeholder
 │   ├── services/             # Business logic services
 │   │   ├── cache_service.py      # Caching service
 │   │   ├── configuration_service.py # Configuration loading
@@ -50,18 +54,21 @@ whatsthedamage/
 │   │   ├── exclusion_service.py     # Exclusion handling
 │   │   ├── file_upload_service.py   # File upload handling
 │   │   ├── id_mapping_service.py    # ID mapping for secure URLs
+│   │   ├── ml_service.py        # ML business logic orchestration
 │   │   ├── processing_service.py    # Core processing service
 │   │   ├── response_builder_service.py # Response construction
 │   │   ├── service_factory.py      # Service container factory
 │   │   ├── session_service.py      # Web session management
+│   │   ├── smote_service.py      # SMOTE synthetic data generation
 │   │   ├── statistical_analysis_service.py # Statistical analysis
+│   │   ├── text_correction_service.py # Text cleaning for ML
 │   │   └── validation_service.py   # File validation
 │   ├── static/               # Backend static assets
-│   │   ├── model-rf-v5alpha_en.joblib # ML model
-│   │   └── model-rf-v5alpha_en.manifest.json # Model metadata
 │   ├── utils/                # Utility functions
+│   │   ├── data_loader.py  # Data loading utils for Machine Learning
 │   │   ├── date_converter.py  # Date parsing/formatting
 │   │   ├── flask_locale.py    # Flask localization
+│   │   ├── logging.py          # Centralized logging utils
 │   │   ├── validation.py      # Validation utilities
 │   │   └── version.py         # Version management
 │   ├── view/                 # Presentation layer
@@ -190,6 +197,36 @@ The system follows a layered architecture with clear separation of concerns:
 
 **Deployment**: Part of the Flask application
 
+#### 3.2.7. MLService
+
+**Name**: ML Service
+
+**Description**: Core business logic service for machine learning operations. Orchestrates model training, prediction, and evaluation. Provides a unified interface for ML operations including hyperparameter tuning, confidence calibration, and SMOTE support.
+
+**Technologies**: Python, scikit-learn, joblib
+
+**Deployment**: Part of the Flask application
+
+#### 3.2.8. SmoteService
+
+**Name**: SMOTE Service
+
+**Description**: Handles synthetic data generation for rare categories using Synthetic Minority Oversampling Technique. Identifies imbalanced classes and generates synthetic samples to improve model performance on underrepresented categories.
+
+**Technologies**: Python, imbalanced-learn
+
+**Deployment**: Part of the Flask application
+
+#### 3.2.9. TextCorrectionService
+
+**Name**: Text Correction Service
+
+**Description**: Provides ML-specific text cleaning and preprocessing for partner field values. Ensures consistent text normalization between training and inference phases, including unicode normalization, payment provider removal, and suffix cleaning.
+
+**Technologies**: Python, regex
+
+**Deployment**: Part of the Flask application
+
 ## 4. Data Stores
 
 ### 4.1. File-based Storage
@@ -217,11 +254,24 @@ The system follows a layered architecture with clear separation of concerns:
 
 ### 5.1. Machine Learning Model
 
-**Service Name**: Random Forest Model
+**Service Name**: Random Forest Model with Confidence Calibration
 
-**Purpose**: Provides ML-based transaction categorization as an alternative to regex-based categorization. The model is trained on historical transaction data.
+**Purpose**: Provides ML-based transaction categorization as an alternative to regex-based categorization. The model is trained on historical transaction data and includes advanced features like confidence calibration, SMOTE for rare categories, and multi-CPU training support.
 
 **Integration Method**: joblib model loading (security warning: only use trusted models)
+
+**Key Features**:
+- Random Forest classifier with 200 estimators
+- Confidence calibration using CalibratedClassifierCV
+- SMOTE support for handling imbalanced datasets
+- Multi-CPU parallel processing
+- Confidence threshold for categorization
+- Comprehensive metrics and evaluation
+
+**Model Files**:
+- `model-rf-v6alpha_en.joblib`: Trained model with calibration
+- `model-rf-v6alpha_en.manifest.json`: Training metadata and parameters
+- `model-rf-v6alpha_en.testdata.json`: Test data for validation
 
 ### 5.2. Localization
 
@@ -308,7 +358,6 @@ The system follows a layered architecture with clear separation of concerns:
 - Enhanced API capabilities for third-party integrations
 - Mobile application support
 - Additional localization languages
-- Improved ML model training and evaluation
 
 ## 10. Project Identification
 
@@ -318,7 +367,7 @@ The system follows a layered architecture with clear separation of concerns:
 
 **Primary Contact/Team**: Balage Abalage
 
-**Date of Last Update**: 2026-02-11
+**Date of Last Update**: 2026-03-25
 
 ## 11. Glossary / Acronyms
 
@@ -326,7 +375,7 @@ The system follows a layered architecture with clear separation of concerns:
 
 **CSV**: Comma-Separated Values - The file format used for bank transaction exports
 
-**ML**: Machine Learning - Experimental feature for transaction categorization
+**ML**: Machine Learning - Production-ready feature for transaction categorization using Random Forest with confidence calibration and SMOTE support
 
 **DataTablesResponse**: Unified response format containing processed transaction data with aggregation by category and time period
 

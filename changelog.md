@@ -1,18 +1,29 @@
 # Changelog
 
-## [Unreleased]
+## [0.20.0] - 2026-03-26
+
+### BREAKING CHANGES
+- **ML Architecture**: Complete refactoring of machine learning module with proper OOP design and service layer pattern.
+- **ML CLI**: The `ml_util.py` has been renamed to `ml_cli.py` and got extended with train/predict/metrics subcommands and comprehensive options.
 
 ### Added
-- **Service Factory** (`service_factory.py`): Centralized dependency injection for CLI and standalone usage via `ServiceContainer`.
-- **CLI Dependency Injection**: CLI now uses service factory pattern with lazy-loaded singleton services, consistent with Flask app's DI approach.
-- **Test Coverage**: Added comprehensive tests for `ServiceContainer` and service factory (`test_service_factory.py`).
+- **Logging**: introduce Python logger to standardize logging.
+- **ML Configuration**: New `MLConfig` class with Pydantic validation for centralized ML configuration management.
+- **ML Services**: New `MLService`, `SmoteService`, and `TextCorrectionService` for business logic orchestration.
+- **ML Features**: Confidence calibration, SMOTE support, multi-CPU training, and confidence threshold for categorization.
+- **ML Metrics**: Enhanced `Metrics` class with detailed analysis including confusion matrix, confidence analysis, and merchant error analysis.
 
 ### Changed
-- **CLI Architecture**: Refactored `cli_app.py` to use `create_service_container()` instead of direct service instantiation.
-- **Documentation**: Updated ARCHITECTURE.md and copilot-instructions.md to document service factory and DI patterns across all interfaces.
+- **ML Model**: New model version built on more data. The model's features have been also reviwed and optimized to improve its accuracy. 
+- **ML Training**: Training now automatically splits data, validates class distribution, and exports test data for metrics validation.
+- **ML Configuration**: Moved from hardcoded values to centralized `MLConfig` with sensible defaults and validation.
+- **ML Text Processing**: Integrated `TextCorrectionService` for consistent partner field cleaning between training and inference. Regexp engine also uses it.
+- **ML Performance**: Added parallel processing support with configurable `n_jobs` parameter.
 
 ### Fixed
-- **Architectural Consistency**: CLI, Web, and API now all use dependency injection consistently (CLI via `ServiceContainer`, Web/API via `app.extensions`).
+- **ML Data Leakage**: Training now always splits data to prevent data leakage and overfitting.
+- **ML Model Saving**: Fixed model saving paths and added automatic test data export.
+- **ML Error Handling**: Improved error handling and logging throughout ML pipeline.
 
 ## [0.10.0] - 2026-01-03
 

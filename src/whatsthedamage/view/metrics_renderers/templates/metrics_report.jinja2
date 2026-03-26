@@ -1,0 +1,58 @@
+## Model Evaluation Metrics
+
+### Accuracy Score
+```
+{{ "%.4f"|format(accuracy) }}
+```
+
+### Confusion Matrix
+```
+{{ confusion_matrix_content }}
+```
+
+### Classification Report
+```
+{{ classification_report | safe }}
+```
+
+{% if confused_pairs %}
+### Most Confused Category Pairs
+
+| Actual | Predicted | Count | % of Actual |
+|--------|-----------|-------|-------------|
+{% for pair in confused_pairs -%}
+| {{ pair.actual }} | {{ pair.predicted }} | {{ pair.count }} | {{ "%.1f"|format(pair.percent_of_actual) }}% |
+{% endfor %}
+{% endif %}
+
+{% if confidence_analysis %}
+### Confidence Analysis
+
+#### Low Confidence Errors (confidence < 0.7)
+Found {{ confidence_analysis.low_conf_count }} low confidence errors ({{ "%.1f"|format(confidence_analysis.low_conf_percentage) }}% of all errors)
+
+| Actual | Predicted | Confidence | Partner |
+|--------|-----------|------------|---------|
+{% for error in confidence_analysis.low_conf_errors -%}
+| {{ error.actual }} | {{ error.predicted }} | {{ "%.3f"|format(error.confidence) }} | {{ error.partner }} |
+{% endfor %}
+
+#### High Confidence Errors (confidence ≥ 0.9)
+Found {{ confidence_analysis.high_conf_count }} high confidence errors (potential data issues)
+
+| Actual | Predicted | Confidence | Partner |
+|--------|-----------|------------|---------|
+{% for error in confidence_analysis.high_conf_errors -%}
+| {{ error.actual }} | {{ error.predicted }} | {{ "%.3f"|format(error.confidence) }} | {{ error.partner }} |
+{% endfor %}
+{% endif %}
+
+{% if merchant_analysis %}
+### Top 10 Merchants by Error Count
+
+| Merchant | Error Count | % of Errors |
+|----------|-------------|-------------|
+{% for merchant in merchant_analysis -%}
+| {{ merchant.display_name }} | {{ merchant.count }} | {{ "%.1f"|format(merchant.percentage) }}% |
+{% endfor %}
+{% endif %}

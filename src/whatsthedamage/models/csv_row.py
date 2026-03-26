@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from typing import Optional
 
 @dataclass
 class CsvRow:
@@ -9,6 +10,7 @@ class CsvRow:
     currency: str
     category: str
     account: str
+    confidence: Optional[float] = None
 
     def __init__(self, row: dict[str, str], mapping: dict[str, str]) -> None:
         """
@@ -24,3 +26,4 @@ class CsvRow:
         self.currency = row.get(mapping.get('currency', ''), '').strip()
         self.category = row.get(mapping.get('category', ''), '').strip()
         self.account = row.get(mapping.get('account', ''), '').strip()
+        self.confidence = None

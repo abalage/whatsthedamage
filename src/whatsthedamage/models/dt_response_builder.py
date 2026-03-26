@@ -136,6 +136,8 @@ class DataTablesResponseBuilder:
 
             merchant = getattr(row, 'partner', getattr(row, 'merchant', ""))
             account = getattr(row, 'account', '')
+            transaction_type = getattr(row, 'type', '')
+            confidence = getattr(row, 'confidence', None)
 
             details.append(
                 DetailRow(
@@ -144,7 +146,9 @@ class DataTablesResponseBuilder:
                     amount=amount_field,
                     merchant=merchant,
                     currency=row_currency,
-                    account=account
+                    account=account,
+                    type=transaction_type,
+                    confidence=confidence
                 )
             )
         return details

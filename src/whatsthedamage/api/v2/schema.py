@@ -279,6 +279,18 @@ def get_openapi_schema() -> dict[str, Any]:
                             "type": "string",
                             "description": "Transaction currency code",
                             "example": "HUF"
+                        },
+                        "type": {
+                            "type": "string",
+                            "nullable": True,
+                            "description": "Transaction type (e.g., 'deposit', 'withdrawal', 'card_payment')",
+                            "example": "card_payment"
+                        },
+                        "confidence": {
+                            "type": "number",
+                            "nullable": True,
+                            "description": "ML prediction confidence score (0-1), null if not using ML categorization",
+                            "example": 0.95
                         }
                     }
                 },

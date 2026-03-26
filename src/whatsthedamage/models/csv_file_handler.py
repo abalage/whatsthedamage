@@ -93,7 +93,9 @@ class CsvFileHandler:
                 writer = csv.DictWriter(file, fieldnames=headers, dialect=self._dialect, delimiter=self._delimiter)
                 writer.writeheader()
                 for row in rows:
-                    writer.writerow(row.__dict__)
+                    # Only write fields that are in the mapping to avoid extra fields like confidence
+                    row_data = {key: getattr(row, key, None) for key in headers}
+                    writer.writerow(row_data)
             logger.info(f"Successfully wrote {len(rows)} rows to {filename}")
         except Exception as e:
             error_msg = f"An error occurred while writing to the CSV file: {e}"

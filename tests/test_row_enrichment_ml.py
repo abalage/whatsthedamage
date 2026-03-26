@@ -2,8 +2,9 @@ from unittest.mock import patch
 
 
 class DummyPrediction:
-    def __init__(self, category):
+    def __init__(self, category, confidence=None):
         self.category = category
+        self.confidence = confidence
 
 
 def test_enrich_rows_sets_type_and_category(csv_rows):
@@ -48,3 +49,33 @@ def test_enrich_rows_empty_rows():
         enricher = RowEnrichmentML([])
         enricher._enrich_rows()
         assert list(enricher.categorized.keys()) == ["other".upper()]
+
+def test_enrich_rows_propagates_confidence(csv_rows):
+    with patch("whatsthedamage.models.row_enrichment_ml.get_category_name", side_effect=lambda x: x.upper()), \
+         patch("whatsthedamage.models.row_enrichment_ml.Inference") as MockInference:
+        MockInference.return_value.get_predictions.return_value = [
+            DummyPrediction("groceries", 0.95),
+            DummyPrediction("other", 0.87)
+        ]
+        from whatsthedamage.models.row_enrichment_ml import RowEnrichmentML
+        enricher = RowEnrichmentML(csv_rows)
+        enricher._enrich_rows()
+        assert csv_rows[0].confidence == 0.95
+        assert csv_rows[1].confidence == 0.87
+        assert csv_rows[0].category == "groceries".upper()
+        assert csv_rows[1].category == "other".upper()
+
+def test_enrich_rows_handles_none_confidence(csv_rows):
+    with patch("whatsthedamage.models.row_enrichment_ml.get_category_name", side_effect=lambda x: x.upper()), \
+         patch("whatsthedamage.models.row_enrichment_ml.Inference") as MockInference:
+        MockInference.return_value.get_predictions.return_value = [
+            DummyPrediction("groceries", None),
+            DummyPrediction("other", 0.75)
+        ]
+        from whatsthedamage.models.row_enrichment_ml import RowEnrichmentML
+        enricher = RowEnrichmentML(csv_rows)
+        enricher._enrich_rows()
+        assert csv_rows[0].confidence is None
+        assert csv_rows[1].confidence == 0.75
+        assert csv_rows[0].category == "groceries".upper()
+        assert csv_rows[1].category == "other".upper()

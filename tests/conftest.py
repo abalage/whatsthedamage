@@ -1,4 +1,3 @@
-import os
 import pytest
 from whatsthedamage.models.csv_row import CsvRow
 from whatsthedamage.config.config import AppConfig, CsvConfig, AppContext
@@ -9,17 +8,6 @@ from whatsthedamage.models.api_models import ProcessingMetadata
 
 # Import API fixtures from separate module
 pytest_plugins = ['tests.api_fixtures']
-
-
-# Centralized config.yml.default path
-CONFIG_YML_DEFAULT_PATH = os.path.abspath(
-    os.path.join(os.path.dirname(__file__), "../docs/config.yml.default")
-)
-
-
-@pytest.fixture
-def config_yml_default_path():
-    return CONFIG_YML_DEFAULT_PATH
 
 
 # Mock classes for testing routes with ProcessingService
@@ -306,3 +294,17 @@ def process_test_data(standard_csv_content, standard_config_content):
         data.update(extra_data)
         return data
     return _prepare_data
+
+
+@pytest.fixture
+def ml_config():
+    """Fixture for MLConfig with default values."""
+    from whatsthedamage.config.ml_config import MLConfig
+    return MLConfig()
+
+
+@pytest.fixture
+def custom_ml_config():
+    """Fixture for MLConfig with custom confidence threshold."""
+    from whatsthedamage.config.ml_config import MLConfig
+    return MLConfig(ml_confidence_threshold=0.7)

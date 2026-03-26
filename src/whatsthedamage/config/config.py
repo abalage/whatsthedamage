@@ -3,11 +3,12 @@ The configuration is coming from two directions:
 1. arguments passed to the main method (AppArgs object)
 2. read from a configuration file (AppConfig object).
 '''
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Any
 from dataclasses import dataclass
 import yaml
 from pydantic import BaseModel, ValidationError, Field
 from gettext import gettext as _
+from whatsthedamage.config.ml_config import MLConfig
 from whatsthedamage.utils.logging import get_logger
 
 logger = get_logger(__name__)
@@ -59,12 +60,13 @@ class CategoryDefinition(BaseModel):
 AVAILABLE_CATEGORIES = [
     CategoryDefinition(id="grocery", default_name=_("Grocery"), patterns=[]),
     CategoryDefinition(id="clothes", default_name=_("Clothes"), patterns=[]),
+    CategoryDefinition(id="dining_out", default_name=_("Dining Out"), patterns=[]),
     CategoryDefinition(id="health", default_name=_("Health"), patterns=[]),
     CategoryDefinition(id="payment", default_name=_("Payment"), patterns=[]),
-    CategoryDefinition(id="vehicle", default_name=_("Vehicle"), patterns=[]),
+    CategoryDefinition(id="transportation", default_name=_("Transportation"), patterns=[]),
     CategoryDefinition(id="utility", default_name=_("Utility"), patterns=[]),
     CategoryDefinition(id="home_maintenance", default_name=_("Home Maintenance"), patterns=[]),
-    CategoryDefinition(id="sports_recreation", default_name=_("Sports Recreation"), patterns=[]),
+    CategoryDefinition(id="entertainment_and_leisure", default_name=_("Entertainment and Leisure"), patterns=[]),
     CategoryDefinition(id="insurance", default_name=_("Insurance"), patterns=[]),
     CategoryDefinition(id="loan", default_name=_("Loan"), patterns=[]),
     CategoryDefinition(id="withdrawal", default_name=_("Withdrawal"), patterns=[]),
@@ -72,6 +74,7 @@ AVAILABLE_CATEGORIES = [
     CategoryDefinition(id="deposit", default_name=_("Deposit"), patterns=[]),
     CategoryDefinition(id="refund", default_name=_("Refund"), patterns=[]),
     CategoryDefinition(id="interest", default_name=_("Interest"), patterns=[]),
+    CategoryDefinition(id="electronics_digital_services", default_name=_("Electronics and Digital Services"), patterns=[]),
     CategoryDefinition(id="transfer", default_name=_("Transfer"), patterns=[]),
     CategoryDefinition(id="other", default_name=_("Other"), patterns=[]),
     CategoryDefinition(id="balance", default_name=_("Balance"), patterns=[]),
@@ -87,8 +90,10 @@ class EnricherPatternSets(BaseModel):
 class AppConfig(BaseModel):
     csv: CsvConfig
     enricher_pattern_sets: EnricherPatternSets
+    text_cleaning: Optional[Dict[str, Any]] = Field(default_factory=dict)
     enabled_statistical_algorithms: List[str] = Field(default_factory=lambda: ['iqr', 'pareto'])
     cache_ttl: int = Field(default=1800)  # 30 minutes in seconds
+    ml_config: MLConfig = Field(default_factory=MLConfig)  # ML configuration including confidence threshold
 
 
 class AppContext:

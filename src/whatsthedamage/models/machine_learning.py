@@ -242,11 +242,11 @@ class Train:
         # Log results if SMOTE was actually applied
         if hasattr(x_resampled, 'shape') and hasattr(X, 'shape'):
             if x_resampled.shape[0] != X.shape[0]:
-                self._log_smote_results(X, x_resampled, y_resampled)
+                self._log_smote_results(X, x_resampled)
 
         return x_resampled, y_resampled
 
-    def _log_smote_results(self, X: pd.DataFrame, x_resampled_df: pd.DataFrame, y_resampled: pd.Series) -> None:
+    def _log_smote_results(self, X: pd.DataFrame, x_resampled_df: pd.DataFrame) -> None:
         """Log SMOTE results in a consistent format.
 
         Separates logging concern for better maintainability.

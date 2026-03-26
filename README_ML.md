@@ -1,7 +1,5 @@
 # Use Machine Learning for Predicting Categories
 
-EXPERIMENTAL FEATURE
-
 Multi-class transaction classifier.
 
 ## The Model
@@ -14,14 +12,12 @@ The machine-learning library in `whatsthedamage` uses [scikit-learn 1.7.2](https
 
 ## Architecture Overview
 
-The ML module follows a layered architecture:
+The ML module follows a layered architecture with significant improvements:
 
-- **Controllers**: `ml_cli.py` - Command-line interface handling
-- **Services**: `MLService` - Business logic and orchestration
-- **Models**: Machine learning classes (`Train`, `Inference`, `Metrics`, `TrainingData`)
-- **Configuration**: `MLConfig` - Centralized configuration management
-
-This separation of concerns makes the system more maintainable and testable.
+- **Controllers**: `ml_cli.py` - Command-line interface handling with train/predict/metrics subcommands
+- **Services**: `MLService`, `SmoteService`, `TextCorrectionService` - Business logic and orchestration
+- **Models**: Machine learning classes (`Train`, `Inference`, `Metrics`)
+- **Configuration**: `MLConfig` - Centralized configuration management with Pydantic validation
 
 ### Feature Engineering
 
@@ -38,6 +34,40 @@ The following transformers are used for feature engineering, also referenced in 
 3. `amount`:
    - Transformation: `AmountSignTransformer` (custom transformer)
    - Description: Categorical feature extracting the sign (positive/negative/zero) from transaction amounts, representing the direction of cash flow.
+
+### New Features and Improvements
+
+#### Confidence Calibration
+
+The model now includes confidence calibration using `CalibratedClassifierCV` to improve the reliability of prediction confidence scores. This helps prevent overconfident predictions and provides better uncertainty estimates.
+
+- **Enabled by default** in `MLConfig.enable_calibration`
+- Uses sigmoid calibration method with 3-fold cross-validation
+- Can be configured or disabled in `MLConfig`
+
+#### SMOTE for Rare Categories
+
+Synthetic Minority Oversampling Technique (SMOTE) is now available to handle imbalanced datasets by generating synthetic samples for rare categories.
+
+- **Optional feature** enabled via `MLConfig.enable_smote`
+- Automatically identifies categories with fewer than 150 samples (configurable)
+- Uses k-nearest neighbors approach with configurable parameters
+- Implemented as a separate `SmoteService` following service layer pattern
+
+#### Multi-CPU Support
+
+Training now supports parallel processing across multiple CPU cores:
+
+- Configured via `MLConfig.n_jobs` (default: 1 for single CPU)
+- Set to `-1` to use all available cores
+- Applied to RandomForest training, hyperparameter tuning, and calibration
+
+#### Confidence Threshold
+
+A confidence threshold (`MLConfig.ml_confidence_threshold`) has been added to prevent false categorizations:
+
+- Default threshold: 0.65
+- Transactions with confidence below threshold are automatically categorized as "Other"
 
 ### Hyperparameter Tuning
 
@@ -57,37 +87,53 @@ By default the following Random Forest parameters are tuned by default:
 You can customize these in the [MLConfig](../config/ml_config.py) class if needed.
 
 Note, that hyperparameter tuning may take longer than standard training, depending on dataset size and parameter ranges.
+- **Randomized Search (`RandomizedSearchCV`)**: Randomly samples parameter combinations, which can be faster for large search spaces.
+
+By default the following Random Forest parameters are tuned by default:
+
+- `n_estimators`: Number of trees in the forest (e.g., 50, 100, 200)
+- `max_depth`: Maximum depth of the trees (e.g., None, 10, 20, 30)
+- `min_samples_split`: Minimum number of samples required to split a node (e.g., 2, 5, 10)
+
+You can customize these in the [MLConfig](../config/ml_config.py) class if needed.
+
+Note, that hyperparameter tuning may take longer than standard training, depending on dataset size and parameter ranges.
 
 ### Accuracy
 
-The 'v5alpha_en' model's accuracy is shown below:
+The 'v6alpha_en' model's accuracy is shown below:
 
 ```
 Model Evaluation Metrics:
-Accuracy: 0.9855564995751912
-                   precision    recall  f1-score   support
+Accuracy: 0.9724
 
-          Clothes       1.00      0.99      0.99        83
-          Deposit       1.00      0.99      1.00       159
-              Fee       1.00      1.00      1.00       323
-          Grocery       0.99      0.99      0.99       697
-           Health       1.00      1.00      1.00        67
- Home Maintenance       0.94      0.94      0.94        94
-        Insurance       1.00      0.88      0.93         8
-         Interest       0.98      1.00      0.99        64
-             Loan       1.00      0.96      0.98        24
-            Other       0.94      0.97      0.96       325
-          Payment       1.00      1.00      1.00        81
-           Refund       1.00      1.00      1.00        48
-Sports Recreation       1.00      0.94      0.97        36
-         Transfer       0.98      0.98      0.98        47
-          Utility       0.99      0.98      0.99       161
-          Vehicle       1.00      0.97      0.99       108
-       Withdrawal       0.97      1.00      0.98        29
+Classification Report:
+                                  precision    recall  f1-score   support
 
-         accuracy                           0.99      2354
-        macro avg       0.99      0.98      0.98      2354
-     weighted avg       0.99      0.99      0.99      2354
+                         Clothes       0.95      0.96      0.95        99
+                         Deposit       1.00      1.00      1.00       163
+                      Dining Out       0.99      0.96      0.97        93
+Electronics and Digital Services       1.00      0.91      0.95        23
+       Entertainment and Leisure       1.00      0.85      0.92        79
+                             Fee       1.00      1.00      1.00       339
+                         Grocery       1.00      1.00      1.00       628
+                          Health       1.00      0.96      0.98        71
+                Home Maintenance       0.94      0.95      0.95       100
+                       Insurance       1.00      0.67      0.80         9
+                        Interest       1.00      1.00      1.00        66
+                            Loan       1.00      1.00      1.00        26
+                           Other       0.82      0.95      0.88       176
+                         Payment       0.99      1.00      0.99        84
+                          Refund       1.00      1.00      1.00        50
+                        Transfer       1.00      1.00      1.00        48
+                  Transportation       1.00      0.96      0.98       180
+                         Utility       0.99      0.98      0.98       165
+                      Withdrawal       1.00      1.00      1.00        28
+
+                        accuracy                           0.98      2427
+                       macro avg       0.98      0.95      0.97      2427
+                    weighted avg       0.98      0.98      0.98      2427
+
 ```
 
 ### Model Evaluation with Metrics Class
@@ -178,14 +224,28 @@ Features:
 
 - Automated categorization of transactions using the trained model.
 - Hyperparameter tuning can optionally be done via GridSearchCV or RandomizedSearchCV.
+- SMOTE support for handling rare categories via `--smote` flag.
 - Comprehensive model evaluation with the new Metrics class.
 - Prediction confidence scores can optionally be printed during inference.
+- Multi-CPU support for faster training.
 
 Usage:
 
 ```bash
-$ python3 src/whatsthedamage/controllers/ml_cli.py train <TRAINING_DATA_JSON_PATH>
-$ python3 src/whatsthedamage/controllers/ml_cli.py predict <MODEL_PATH> <TEST_DATA_JSON_PATH>
+# Basic training
+$ python3 src/whatsthedamage/controllers/ml_cli.py train --data <TRAINING_DATA_JSON_PATH>
+
+# Training with hyperparameter tuning
+$ python3 src/whatsthedamage/controllers/ml_cli.py train --data <TRAINING_DATA_JSON_PATH> --gridsearch
+$ python3 src/whatsthedamage/controllers/ml_cli.py train --data <TRAINING_DATA_JSON_PATH> --randomsearch
+
+# Training with SMOTE for rare categories
+$ python3 src/whatsthedamage/controllers/ml_cli.py train --data <TRAINING_DATA_JSON_PATH> --smote
+
+# Prediction with confidence scores
+$ python3 src/whatsthedamage/controllers/ml_cli.py predict --model <MODEL_PATH> --data <TEST_DATA_JSON_PATH> --confidence
+
+# Comprehensive metrics calculation
 $ python3 src/whatsthedamage/controllers/ml_cli.py metrics --model <MODEL_PATH> --data <TEST_DATA_JSON_PATH>
 ```
 
@@ -205,19 +265,21 @@ options:
   -h, --help       show this help message and exit
 
 $ python3 src/whatsthedamage/controllers/ml_cli.py train -h
-usage: ml_cli.py train [-h] [--gridsearch] [--randomsearch] [--verbose] training_data
+usage: ml_cli.py train [-h] [--data DATA] [--gridsearch] [--randomsearch] [--smote] [--verbose]
 
 positional arguments:
   training_data    Path to training data JSON file
 
 options:
   -h, --help       show this help message and exit
+  --data DATA      Path to training data JSON file
   --gridsearch     Use GridSearchCV for hyperparameter tuning
   --randomsearch   Use RandomizedSearchCV for hyperparameter tuning
+  --smote          Enable SMOTE for synthetic data generation on rare categories
   --verbose, -v    Enable verbose output during training
 
 $ python3 src/whatsthedamage/controllers/ml_cli.py predict -h
-usage: ml_cli.py predict [-h] [--confidence] model new_data
+usage: ml_cli.py predict [-h] [--model MODEL] [--data DATA] [--confidence]
 
 positional arguments:
   model         Path to trained model file
@@ -225,6 +287,8 @@ positional arguments:
 
 options:
   -h, --help    show this help message and exit
+  --model MODEL        Path to trained model file
+  --data DATA          Path to new data JSON file
   --confidence  Show prediction confidence scores and verbose data
 
 $ python3 src/whatsthedamage/controllers/ml_cli.py metrics -h

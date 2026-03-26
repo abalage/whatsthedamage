@@ -819,9 +819,11 @@ class Metrics:
                 return []
 
 class Inference:
-    def __init__(self, new_data: Union[str, List[CsvRow]], config: Optional[MLConfig] = None) -> None:
+    def __init__(self, model_path: str, new_data: Union[str, List[CsvRow]], config: Optional[MLConfig] = None) -> None:
         self.config = config or MLConfig()
-        self.model: Pipeline = load(self.config.model_path)
+        # self.model: Pipeline = load(self.config.model_path)
+        self.model_path = model_path if model_path else self.config.model_path
+        self.model: Pipeline = load(self.model_path)
         self.df_input = self._prepare_input_data(new_data)
         self.df_output = self._make_predictions(self.df_input)
 

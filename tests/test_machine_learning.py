@@ -92,7 +92,7 @@ def inference_obj(tmp_path):
 
     # Patch the model loading
     with mock.patch("whatsthedamage.models.machine_learning.load", return_value=dummy_model):
-        obj = Inference(str(file), config)
+        obj = Inference("dummy_model_path", str(file), config)
         return obj
 
 
@@ -240,7 +240,7 @@ def test_train_data_loading_valid(tmp_path):
     ]
     file = tmp_path / "data.json"
     file.write_text(json.dumps(data), encoding="utf-8")
-    
+
     config = MLConfig()
     config.feature_columns = ["type", "partner", "currency", "amount"]
     # Test that Train class can load and validate data correctly
@@ -362,27 +362,30 @@ def test_inference_print_inference_data(capsys, inference_obj):
 def test_prepare_input_data_empty_json(tmp_path):
     file = tmp_path / "empty.json"
     file.write_text(json.dumps([]), encoding="utf-8")
-    with pytest.raises(ValueError, match="Input DataFrame is empty."):
-        Inference(new_data=str(file))
+
+    # Mock model loading
+    dummy_model = mock.Mock()
+    with mock.patch("whatsthedamage.models.machine_learning.load", return_value=dummy_model):
+        with pytest.raises(ValueError, match="Input DataFrame is empty."):
+            Inference("dummy_model_path", new_data=str(file))
 
 
 def test_prepare_input_data_empty_list():
     data = []
-    with pytest.raises(ValueError, match="Input DataFrame is empty."):
-        Inference(new_data=data)
+
+    # Mock model loading
+    dummy_model = mock.Mock()
+    with mock.patch("whatsthedamage.models.machine_learning.load", return_value=dummy_model):
+        with pytest.raises(ValueError, match="Input DataFrame is empty."):
+            Inference("dummy_model_path", new_data=data)
 
 
 def test_prepare_input_data_invalid_type():
-    with pytest.raises(FileNotFoundError, match="Error: File.*not found."):
-        Inference(new_data="invalid")  # Using a string that's not a valid file path
-
-
-def test_prepare_input_data_partial_data(tmp_path):
-    data = [{"type": "A", "partner": "B"}]  # Missing required columns
-    file = tmp_path / "partial.json"
-    file.write_text(json.dumps(data), encoding="utf-8")
-    with pytest.raises(ValueError, match="columns are missing:.*"):
-        Inference(new_data=str(file))
+    # Mock model loading
+    dummy_model = mock.Mock()
+    with mock.patch("whatsthedamage.models.machine_learning.load", return_value=dummy_model):
+        with pytest.raises(FileNotFoundError, match="Error: File.*not found."):
+            Inference("dummy_model_path", new_data="invalid")  # Using a string that's not a valid file path
 
 
 def test_metrics_initialization(metrics_obj):

@@ -1,8 +1,10 @@
-from typing import List, Dict
+from typing import List, Dict, Optional, TYPE_CHECKING
 from whatsthedamage.models.csv_row import CsvRow
 from whatsthedamage.config.config import get_category_name
-from whatsthedamage.models.machine_learning import Inference
 from whatsthedamage.utils.logging import get_logger
+
+if TYPE_CHECKING:
+    from whatsthedamage.services.ml_service import MLService
 
 logger = get_logger(__name__)
 
@@ -18,11 +20,28 @@ class RowEnrichmentML:
         self.rows = rows
         self.confidence_threshold = confidence_threshold
         self.categorized: Dict[str, List[CsvRow]] = {get_category_name('other'): []}
+        self.ml_service: Optional['MLService'] = None
+
+    def _get_ml_service(self) -> 'MLService':
+        """Lazy import and initialization of MLService to avoid circular imports."""
+        if self.ml_service is None:
+            from whatsthedamage.services.ml_service import MLService
+            self.ml_service = MLService()
+        return self.ml_service
 
     def _enrich_rows(self) -> None:
         """
         Enrich rows using the ML model.
+
+        This method handles missing row types, gets ML predictions, processes the results,
+        applies confidence thresholds, and categorizes the rows accordingly.
+
+        Raises:
+            RuntimeError: If ML prediction fails or no valid model is available.
         """
+        if not self.rows:
+            logger.warning("No rows to enrich")
+            return
 
         # In case 'type' attribute is empty then set it to 'card_reservation'
         # This is a quirk to handle missing types in some bank exports
@@ -30,9 +49,18 @@ class RowEnrichmentML:
             if not row.type or row.type.strip() == "":
                 row.type = 'card_reservation'
 
-        predict = Inference(self.rows)
+        try:
+            # Use MLService to get predictions instead of directly calling Inference
+            # Note: Empty model_path will use default from MLConfig
+            ml_service = self._get_ml_service()
+            predictions = ml_service.get_predictions(model_path='', new_data=self.rows)
+        except Exception as e:
+            logger.error(f"ML prediction failed: {e}")
+            raise RuntimeError(f"Failed to get ML predictions: {e}") from e
 
-        predictions = predict.get_predictions()
+        if not predictions:
+            logger.warning("No predictions returned from ML service")
+            return
 
         # Assign predicted categories and confidence to CsvRow objects
         for row, predicted_row in zip(self.rows, predictions):

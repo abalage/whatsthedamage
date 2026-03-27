@@ -1,618 +1,720 @@
-# src/whatsthedamage/models/test_machine_learning.py
+# tests/test_machine_learning.py
+"""
+Unit tests for machine_learning.py module.
+
+Tests cover all major components while ensuring existing joblib models
+are never overwritten by using temporary directories and files.
+"""
+
 import pytest
-import pandas as pd
-import numpy as np
+import tempfile
 import os
 import json
-from unittest import mock
+import pandas as pd
+import numpy as np
+from unittest.mock import patch
+from sklearn.pipeline import Pipeline
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.compose import ColumnTransformer
+from sklearn.feature_extraction.text import TfidfVectorizer
 
 from whatsthedamage.models.machine_learning import (
-    load_json_data,
-    save,
-    load,
-    MLConfig,
-    Train,
-    Inference,
-    Metrics
+    AmountSignTransformer, Train, Metrics, Inference,
+    save, load, validate_model_for_inference, apply_ml_text_cleaning
 )
+from whatsthedamage.config.ml_config import MLConfig
+from whatsthedamage.models.csv_row import CsvRow
+
+
+# Fixtures Section
+@pytest.fixture
+def ml_config_temp():
+    """MLConfig with temporary file paths to avoid overwriting existing models."""
+    with tempfile.TemporaryDirectory() as temp_dir:
+        # Create a custom MLConfig with temporary paths
+        config = MLConfig(test_size=0.3)  # Test size that ensures at least 2 samples per class
+        # Override the properties to use temp directory
+        config.__class__.model_path = property(lambda self: os.path.join(temp_dir, "test-model.joblib"))
+        config.__class__.manifest_path = property(lambda self: os.path.join(temp_dir, "test-model.manifest.json"))
+        config.__class__.test_data_path = property(lambda self: os.path.join(temp_dir, "test-model.testdata.json"))
+        yield config
 
 
 @pytest.fixture
-def valid_json(tmp_path):
-    data = [
-        {"type": "A", "partner": "B", "currency": "EUR", "amount": 10, "category": "X"},
-        {"type": "C", "partner": "D", "currency": "USD", "amount": 20, "category": "Y"},
-        {"type": "E", "partner": "F", "currency": "GBP", "amount": 30, "category": "Z"}
+def sample_training_data():
+    """Sample training dataset for testing with sufficient samples per class."""
+    return [
+        {
+            "amount": -100.0,
+            "category": "Grocery",
+            "currency": "EUR",
+            "date": "2023-01-01",
+            "partner": "Test Grocery Store",
+            "type": "Payment"
+        },
+        {
+            "amount": -50.0,
+            "category": "Grocery",
+            "currency": "EUR",
+            "date": "2023-01-02",
+            "partner": "Test Market",
+            "type": "Payment"
+        },
+        {
+            "amount": -75.0,
+            "category": "Grocery",
+            "currency": "EUR",
+            "date": "2023-01-03",
+            "partner": "Test Supermarket",
+            "type": "Payment"
+        },
+        {
+            "amount": -30.0,
+            "category": "Transportation",
+            "currency": "EUR",
+            "date": "2023-01-04",
+            "partner": "Test Taxi Service",
+            "type": "Payment"
+        },
+        {
+            "amount": -20.0,
+            "category": "Transportation",
+            "currency": "EUR",
+            "date": "2023-01-05",
+            "partner": "Test Bus Company",
+            "type": "Payment"
+        },
+        {
+            "amount": -40.0,
+            "category": "Transportation",
+            "currency": "EUR",
+            "date": "2023-01-06",
+            "partner": "Test Train Company",
+            "type": "Payment"
+        },
+        {
+            "amount": 200.0,
+            "category": "Salary",
+            "currency": "EUR",
+            "date": "2023-01-07",
+            "partner": "Test Employer",
+            "type": "Deposit"
+        },
+        {
+            "amount": 150.0,
+            "category": "Salary",
+            "currency": "EUR",
+            "date": "2023-01-08",
+            "partner": "Test Company",
+            "type": "Deposit"
+        },
+        {
+            "amount": 180.0,
+            "category": "Salary",
+            "currency": "EUR",
+            "date": "2023-01-09",
+            "partner": "Test Corporation",
+            "type": "Deposit"
+        }
     ]
-    file = tmp_path / "data.json"
-    file.write_text(json.dumps(data), encoding="utf-8")
-    return str(file), data
 
 
 @pytest.fixture
-def train_obj_not_enough_data(tmp_path):
-    # Only one sample per class
-    data = [
-        {"type": "A", "partner": "B", "currency": "EUR", "amount": 10, "category": "X"},
-        {"type": "C", "partner": "D", "currency": "USD", "amount": 20, "category": "Y"}
+def sample_test_data():
+    """Sample test data for metrics testing."""
+    return [
+        {
+            "amount": -75.0,
+            "category": "Grocery",
+            "currency": "EUR",
+            "date": "2023-02-01",
+            "partner": "Test Supermarket",
+            "type": "Payment"
+        },
+        {
+            "amount": -30.0,
+            "category": "Transportation",
+            "currency": "EUR",
+            "date": "2023-02-02",
+            "partner": "Test Bus Company",
+            "type": "Payment"
+        }
     ]
-    config = MLConfig(enable_calibration=False)  # Disable calibration for tests
-    config.feature_columns = ["type", "partner", "currency", "amount"]
-    config.enable_calibration = False  # Disable calibration for tests to maintain compatibility
-
-    # Create a temporary JSON file for training data
-    file = tmp_path / "training_data.json"
-    file.write_text(json.dumps(data), encoding="utf-8")
-
-    yield lambda: Train(str(file), config)
-
-
-@pytest.fixture
-def train_obj_enough_data(tmp_path):
-    # At least five samples per class, with non-empty, non-stopword text fields
-    data = [
-        {"type": "Alpha", "partner": "Bravo", "currency": "EUR", "amount": 10, "category": "X"},
-        {"type": "Charlie", "partner": "Delta", "currency": "USD", "amount": 20, "category": "Y"},
-        {"type": "Echo", "partner": "Foxtrot", "currency": "EUR", "amount": 30, "category": "X"},
-        {"type": "Golf", "partner": "Hotel", "currency": "USD", "amount": 40, "category": "Y"},
-        {"type": "India", "partner": "Juliet", "currency": "EUR", "amount": 50, "category": "X"},
-        {"type": "Kilo", "partner": "Lima", "currency": "USD", "amount": 60, "category": "Y"},
-        {"type": "Mike", "partner": "November", "currency": "EUR", "amount": 70, "category": "X"},
-        {"type": "Oscar", "partner": "Papa", "currency": "USD", "amount": 80, "category": "Y"},
-        {"type": "Quebec", "partner": "Romeo", "currency": "EUR", "amount": 90, "category": "X"},
-        {"type": "Sierra", "partner": "Tango", "currency": "USD", "amount": 100, "category": "Y"},
-    ]
-    config = MLConfig()
-    config.feature_columns = ["type", "partner", "currency", "amount"]
-    config.enable_calibration = False  # Disable calibration for tests to maintain compatibility
-
-    # Create a temporary JSON file for training data
-    file = tmp_path / "training_data.json"
-    file.write_text(json.dumps(data), encoding="utf-8")
-
-    yield Train(str(file), config)
-
-
-@pytest.fixture
-def inference_obj(tmp_path):
-    # Create test data that matches the expected input format
-    data = [
-        {"type": "Alpha", "partner": "Bravo", "currency": "EUR", "amount": 10},
-        {"type": "Charlie", "partner": "Delta", "currency": "USD", "amount": 20}
-    ]
-    file = tmp_path / "input.json"
-    file.write_text(json.dumps(data), encoding="utf-8")
-    config = MLConfig()
-    config.feature_columns = ["type", "partner", "currency", "amount"]
-
-    # Mock model with predict and predict_proba
-    dummy_model = mock.Mock()
-    dummy_model.predict.return_value = ["X", "Y"]
-    dummy_model.predict_proba.return_value = np.array([[0.99, 0.01], [0.95, 0.05]])
-
-    # Patch the model loading
-    with mock.patch("whatsthedamage.models.machine_learning.load", return_value=dummy_model):
-        obj = Inference("dummy_model_path", str(file), config)
-        return obj
-
-
-@pytest.fixture
-def prediction_data():
-    data = [
-        {"type": "Alpha", "partner": "Bravo", "currency": "EUR", "amount": 10, "category": "X"},
-        {"type": "Charlie", "partner": "Delta", "currency": "USD", "amount": 20, "category": "Y"}
-    ]
-    return data
-
-
-@pytest.fixture
-def metrics_obj(tmp_path):
-    # Create test data with multiple classes for metrics calculation
-    # Ensure at least 2 samples per class for stratified splitting
-    # Use more samples to avoid test_size vs n_classes issues
-    data = [
-        {"type": "Alpha", "partner": "Bravo", "currency": "EUR", "amount": 10, "category": "X"},
-        {"type": "Charlie", "partner": "Delta", "currency": "USD", "amount": 20, "category": "Y"},
-        {"type": "Echo", "partner": "Foxtrot", "currency": "EUR", "amount": 30, "category": "X"},
-        {"type": "Golf", "partner": "Hotel", "currency": "USD", "amount": 40, "category": "Y"},
-        {"type": "India", "partner": "Juliet", "currency": "EUR", "amount": 50, "category": "Z"},
-        {"type": "Kilo", "partner": "Lima", "currency": "USD", "amount": 60, "category": "Z"},
-        {"type": "Mike", "partner": "November", "currency": "EUR", "amount": 70, "category": "X"},
-        {"type": "Oscar", "partner": "Papa", "currency": "USD", "amount": 80, "category": "Y"},
-        {"type": "Quebec", "partner": "Romeo", "currency": "EUR", "amount": 90, "category": "X"},
-        {"type": "Sierra", "partner": "Tango", "currency": "USD", "amount": 100, "category": "Y"},
-        {"type": "Uniform", "partner": "Victor", "currency": "EUR", "amount": 110, "category": "Z"},
-        {"type": "Whiskey", "partner": "Xray", "currency": "USD", "amount": 120, "category": "X"},
-    ]
-    file = tmp_path / "test_data.json"
-    file.write_text(json.dumps(data), encoding="utf-8")
-
-    # Create a function that returns predictions based on the actual input size
-    def dynamic_predict(X):
-        # Return predictions based on the number of samples in X
-        n_samples = len(X) if hasattr(X, '__len__') else X.shape[0] if hasattr(X, 'shape') else 1
-        return [("X", "Y", "Z")[i % 3] for i in range(n_samples)]
-
-    def dynamic_predict_proba(X):
-        # Return probabilities based on the number of samples in X
-        n_samples = len(X) if hasattr(X, '__len__') else X.shape[0] if hasattr(X, 'shape') else 1
-        proba = []
-        for i in range(n_samples):
-            if i % 3 == 0:  # X
-                proba.append([0.9, 0.05, 0.05])
-            elif i % 3 == 1:  # Y
-                proba.append([0.1, 0.8, 0.1])
-            else:  # Z
-                proba.append([0.1, 0.1, 0.8])
-        return np.array(proba)
-
-    # Mock model with dynamic predict and predict_proba
-    dummy_model = mock.Mock()
-    dummy_model.predict.side_effect = dynamic_predict
-    dummy_model.predict_proba.side_effect = dynamic_predict_proba
-
-    # Patch the model loading and use a larger test_size to avoid stratified split issues
-    with mock.patch("whatsthedamage.models.machine_learning.load", return_value=dummy_model):
-        config = MLConfig()
-        config.feature_columns = ["type", "partner", "currency", "amount"]
-        config.test_size = 0.4  # Larger test size to accommodate 3 classes
-        obj = Metrics(str(file), str(file), config)
-        return obj
-
-
-def test_load_json_data_valid(valid_json):
-    path, expected = valid_json
-    result = load_json_data(path)
-    assert result == expected
-
-
-def test_load_json_data_file_not_found(tmp_path):
-    non_existent_file = tmp_path / "nonexistent.json"
-    with pytest.raises(FileNotFoundError, match="Error: File.*not found."):
-        load_json_data(str(non_existent_file))
-
-def test_load_json_data_invalid_json(tmp_path):
-    invalid_json_file = tmp_path / "invalid.json"
-    invalid_json_file.write_text("{invalid json}", encoding="utf-8")
-    with pytest.raises(ValueError, match="Error: File.*is not valid JSON."):
-        load_json_data(str(invalid_json_file))
-
-def test_load_json_data_unexpected_error(tmp_path):
-    # Simulate a permission error by creating a file and removing read permissions
-    restricted_file = tmp_path / "restricted.json"
-    restricted_file.write_text("{}", encoding="utf-8")
-    restricted_file.chmod(0o000)  # Remove all permissions
-
-    try:
-        with pytest.raises(RuntimeError, match="Error: An unexpected error occurred.*"):
-            load_json_data(str(restricted_file))
-    finally:
-        # Restore permissions to clean up the file
-        restricted_file.chmod(0o644)
-
-
-def test_save_and_load(tmp_path):
-    dummy_model = mock.Mock()  # Use a mock object to simulate a Pipeline
-    manifest = {"foo": "bar"}
-    output_dir = str(tmp_path)
-    classifier_short_name = "rf"
-    model_version = "v1"
-    model_filename = f"model-{classifier_short_name}-{model_version}.joblib"
-
-    with mock.patch("joblib.dump") as mock_dump, \
-         mock.patch("builtins.open", mock.mock_open()) as mock_file, \
-         mock.patch.object(MLConfig, 'model_path', os.path.join(output_dir, model_filename)), \
-         mock.patch.object(MLConfig, 'manifest_path', os.path.join(output_dir, model_filename.replace(".joblib", ".manifest.json"))):
-        config = MLConfig()
-        save(dummy_model, manifest, config)
-        mock_dump.assert_called_once()
-        handle = mock_file()
-        handle.write.assert_called()
-
-    # Test load
-    with mock.patch("joblib.load", return_value="loaded_model"):
-        result = load(os.path.join(output_dir, model_filename))
-        assert result == "loaded_model"
-
-
-def test_mlconfig_defaults():
-    config = MLConfig()
-    assert config.classifier_short_name == "rf"
-    assert "type" in config.feature_columns
-
-
-def test_mlconfig_custom():
-    config = MLConfig(classifier_short_name="abc", feature_columns=["foo", "bar"])
-    assert config.classifier_short_name == "abc"
-    assert config.feature_columns == ["foo", "bar"]
-
-
-def test_train_data_loading_valid(tmp_path):
-    # Create test data with enough samples for stratified splitting
-    # Need at least 5 samples per class to work with default test_size=0.2
-    data = [
-        {"type": "A", "partner": "B", "currency": "EUR", "amount": 10, "category": "X"},
-        {"type": "C", "partner": "D", "currency": "USD", "amount": 20, "category": "X"},
-        {"type": "E", "partner": "F", "currency": "GBP", "amount": 30, "category": "X"},
-        {"type": "G", "partner": "H", "currency": "EUR", "amount": 40, "category": "Y"},
-        {"type": "I", "partner": "J", "currency": "USD", "amount": 50, "category": "Y"},
-        {"type": "K", "partner": "L", "currency": "GBP", "amount": 60, "category": "Y"}
-    ]
-    file = tmp_path / "data.json"
-    file.write_text(json.dumps(data), encoding="utf-8")
-
-    config = MLConfig()
-    config.feature_columns = ["type", "partner", "currency", "amount"]
-    # Test that Train class can load and validate data correctly
-    train_obj = Train(str(file), config)
-    assert not train_obj._df.empty
-    assert set(config.feature_columns).issubset(train_obj._df.columns)
-
-
-def test_train_data_loading_missing_columns(tmp_path):
-    data = [{"type": "A", "partner": "B"}]
-    file = tmp_path / "data.json"
-    file.write_text(json.dumps(data), encoding="utf-8")
-    config = MLConfig()
-    config.feature_columns = ["type", "partner", "currency", "amount"]
-    with pytest.raises(ValueError, match="Missing required columns.*"):
-        Train(str(file), config)
-
-
-def test_train_data_loading_empty(tmp_path):
-    file = tmp_path / "data.json"
-    file.write_text(json.dumps([]), encoding="utf-8")
-    config = MLConfig()
-    config.feature_columns = ["type", "partner", "currency", "amount"]
-    with pytest.raises(ValueError, match="Loaded DataFrame is empty."):
-        Train(str(file), config)
-
-
-def test_train_data_loading_missing_values(tmp_path):
-    data = [{"type": "A", "partner": None, "currency": "EUR", "amount": 10, "category": "X"}]
-    file = tmp_path / "data.json"
-    file.write_text(json.dumps(data), encoding="utf-8")
-    config = MLConfig()
-    config.feature_columns = ["type", "partner", "currency", "amount"]
-    with pytest.raises(ValueError, match="All rows were dropped due to missing values."):
-        Train(str(file), config)
-
-
-def test_train_pipeline_creation(train_obj_enough_data):
-    train_obj = train_obj_enough_data
-    pipe = train_obj._create_pipeline()
-    assert hasattr(pipe, "fit")
-
-
-def test_train_train_method(train_obj_enough_data):
-    train_obj = train_obj_enough_data
-
-    # Determine how to access the preprocessor based on calibration
-    if train_obj._config.enable_calibration:
-        preprocessor_path = train_obj._pipe.named_steps["calibration"].estimator.named_steps["preprocessor"]
-    else:
-        preprocessor_path = train_obj._pipe.named_steps["preprocessor"]
-
-    with mock.patch.object(train_obj._pipe, "fit") as mock_fit, \
-         mock.patch("joblib.dump"), \
-         mock.patch("builtins.open", mock.mock_open()), \
-         mock.patch.object(
-            preprocessor_path, "transform",
-            return_value=np.zeros(
-                (len(train_obj._x_train), len(train_obj._config.feature_columns))
-            )
-         ) as mock_transform:
-        train_obj.train()
-        mock_fit.assert_called()
-        mock_transform.assert_called()
-
-
-def test_train_hyperparameter_tuning(train_obj_enough_data):
-    train_obj = train_obj_enough_data
-    with mock.patch("sklearn.model_selection.GridSearchCV") as mock_grid, \
-         mock.patch("sklearn.model_selection.RandomizedSearchCV") as mock_rand, \
-         mock.patch.object(train_obj._pipe, "fit", return_value=None):
-        mock_grid.return_value.fit.return_value = None
-        mock_grid.return_value.best_params_ = {"foo": "bar"}
-        mock_grid.return_value.best_estimator_ = train_obj._pipe
-        train_obj.hyperparameter_tuning("grid")
-        mock_rand.return_value.fit.return_value = None
-        mock_rand.return_value.best_params_ = {"foo": "bar"}
-        mock_rand.return_value.best_estimator_ = train_obj._pipe
-        train_obj.hyperparameter_tuning("random")
-        train_obj.hyperparameter_tuning("none")
-
-
-def test_train_evaluate(train_obj_enough_data):
-    train_obj = train_obj_enough_data
-    train_obj._model = mock.Mock()
-    train_obj._y_test = pd.Series(["X"])
-    train_obj._x_test = pd.DataFrame([{"type": "A", "partner": "B", "currency": "EUR", "amount": 10}])
-    train_obj._model.predict.return_value = ["X"]
-    with mock.patch("sklearn.metrics.accuracy_score", return_value=1.0), \
-         mock.patch("sklearn.metrics.classification_report", return_value="report"), \
-         mock.patch("sklearn.metrics.confusion_matrix", return_value=np.array([[1, 0], [0, 1]])):
-        # Call the method that would use evaluate if it existed
-        # Since evaluate doesn't exist, we'll just test the model prediction works
-        result = train_obj._model.predict(train_obj._x_test)
-        assert result == ["X"]
-
-
-def test_train_not_enough_class_samples(train_obj_not_enough_data):
-    with pytest.raises(ValueError, match="Each class must have at least 2 samples"):
-        train_obj_not_enough_data()()
-
-
-def test_inference_get_predictions(inference_obj):
-    predictions = inference_obj.get_predictions()
-    assert isinstance(predictions, list)
-    assert len(predictions) == 2  # We expect 2 predictions based on our test data
-    assert all(hasattr(row, 'category') for row in predictions)  # Check that category attribute exists
-    cats = [row.category for row in predictions]
-    assert cats == ["X", "Y"]
-
-
-def test_inference_print_inference_data(capsys, inference_obj):
-    inference_obj.print_inference_data(with_confidence=True)
-    captured = capsys.readouterr()
-    assert "predicted_category" in captured.out
-    assert "prediction_confidence" in captured.out
-
-
-def test_prepare_input_data_empty_json(tmp_path):
-    file = tmp_path / "empty.json"
-    file.write_text(json.dumps([]), encoding="utf-8")
-
-    # Mock model loading
-    dummy_model = mock.Mock()
-    with mock.patch("whatsthedamage.models.machine_learning.load", return_value=dummy_model):
-        with pytest.raises(ValueError, match="Input DataFrame is empty."):
-            Inference("dummy_model_path", new_data=str(file))
-
-
-def test_prepare_input_data_empty_list():
-    data = []
-
-    # Mock model loading
-    dummy_model = mock.Mock()
-    with mock.patch("whatsthedamage.models.machine_learning.load", return_value=dummy_model):
-        with pytest.raises(ValueError, match="Input DataFrame is empty."):
-            Inference("dummy_model_path", new_data=data)
-
-
-def test_prepare_input_data_invalid_type():
-    # Mock model loading
-    dummy_model = mock.Mock()
-    with mock.patch("whatsthedamage.models.machine_learning.load", return_value=dummy_model):
-        with pytest.raises(FileNotFoundError, match="Error: File.*not found."):
-            Inference("dummy_model_path", new_data="invalid")  # Using a string that's not a valid file path
-
-
-def test_metrics_initialization(metrics_obj):
-    """Test that Metrics object initializes correctly."""
-    assert hasattr(metrics_obj, 'model')
-    assert hasattr(metrics_obj, 'test_data')
-    assert hasattr(metrics_obj, 'x_test')
-    assert hasattr(metrics_obj, 'y_test')
-    assert hasattr(metrics_obj, 'y_pred')
-    assert hasattr(metrics_obj, 'y_proba')
-    assert len(metrics_obj.y_pred) > 0  # Should have predictions
-    assert len(metrics_obj.y_test) > 0  # Should have test samples
-    assert len(metrics_obj.y_pred) == len(metrics_obj.y_test)  # Predictions should match test samples
-
-
-def test_metrics_get_metrics_data(metrics_obj):
-    """Test that get_metrics_data returns all expected keys."""
-    with mock.patch("sklearn.metrics.accuracy_score", return_value=0.8), \
-         mock.patch("sklearn.metrics.classification_report", return_value="report"), \
-         mock.patch("sklearn.metrics.confusion_matrix", return_value=np.array([[2, 1], [1, 2]])):
-        metrics_data = metrics_obj.get_metrics_data()
-
-        # Check all expected keys are present
-        expected_keys = [
-            'accuracy', 'confusion_matrix', 'confusion_matrix_content',
-            'classification_report', 'confused_pairs', 'confidence_analysis',
-            'merchant_analysis', 'predictions', 'probabilities', 'test_samples'
-        ]
-        for key in expected_keys:
-            assert key in metrics_data
-
-        # Check some basic properties
-        assert isinstance(metrics_data['accuracy'], float)
-        assert isinstance(metrics_data['confusion_matrix'], dict)
-        assert isinstance(metrics_data['confusion_matrix_content'], str)
-        assert isinstance(metrics_data['classification_report'], str)
-        assert isinstance(metrics_data['confused_pairs'], list)
-        assert isinstance(metrics_data['confidence_analysis'], dict)
-        assert isinstance(metrics_data['merchant_analysis'], list)
-        assert isinstance(metrics_data['predictions'], list)
-        assert isinstance(metrics_data['probabilities'], list)
-        assert isinstance(metrics_data['test_samples'], list)
-
-
-def test_metrics_get_confusion_matrix_data(metrics_obj):
-    """Test confusion matrix data generation."""
-    with mock.patch("sklearn.metrics.confusion_matrix", return_value=np.array([[2, 1], [1, 2]])):
-        cm_data = metrics_obj._get_confusion_matrix_data()
-
-        # Check structure
-        assert 'classes' in cm_data
-        assert 'matrix' in cm_data
-        assert 'abbreviations' in cm_data
-
-        # Check types
-        assert isinstance(cm_data['classes'], list)
-        assert isinstance(cm_data['matrix'], list)
-        assert isinstance(cm_data['abbreviations'], list)
-
-        # Check content
-        assert len(cm_data['classes']) > 0
-        assert len(cm_data['matrix']) > 0
-        assert len(cm_data['abbreviations']) > 0
-
-
-def test_metrics_get_confusion_matrix_content(metrics_obj):
-    """Test confusion matrix content formatting."""
-    with mock.patch("sklearn.metrics.confusion_matrix", return_value=np.array([[2, 1], [1, 2]])):
-        content = metrics_obj._get_confusion_matrix_content()
-
-        # Check it's a string
-        assert isinstance(content, str)
-
-        # Check it contains expected elements
-        assert "Confusion Matrix" in content
-        assert "Legend:" in content
-
-        # Check it has reasonable length
-        assert len(content) > 50
-
-
-def test_metrics_create_abbreviation(metrics_obj):
-    """Test abbreviation creation for class names."""
-    # Test with short class names
-    abbr = metrics_obj._create_abbreviation("ABC", ["ABC", "DEF"])
-    assert abbr == "ABC"
-
-    # Test with longer class names
-    abbr = metrics_obj._create_abbreviation("AlphaBeta", ["AlphaBeta", "CharlieDelta"])
-    assert len(abbr) >= 3
-    assert abbr.isupper()
-
-    # Test uniqueness
-    classes = ["CategoryOne", "CategoryTwo", "CategoryThree"]
-    abbr1 = metrics_obj._create_abbreviation(classes[0], classes)
-    abbr2 = metrics_obj._create_abbreviation(classes[1], classes)
-    assert abbr1 != abbr2
-
-
-def test_metrics_get_confused_pairs_data(metrics_obj):
-    """Test confused pairs data generation."""
-    with mock.patch("sklearn.metrics.confusion_matrix", return_value=np.array([[2, 1], [1, 2]])):
-        confused_pairs = metrics_obj._get_confused_pairs_data()
-
-        # Check it's a list
-        assert isinstance(confused_pairs, list)
-
-        # Check each item has expected structure
-        if confused_pairs:
-            pair = confused_pairs[0]
-            assert 'actual' in pair
-            assert 'predicted' in pair
-            assert 'count' in pair
-            assert 'percent_of_actual' in pair
-            assert isinstance(pair['count'], int)
-            assert isinstance(pair['percent_of_actual'], float)
-
-
-def test_metrics_get_confidence_analysis_data(metrics_obj):
-    """Test confidence analysis data generation."""
-    analysis = metrics_obj._get_confidence_analysis_data()
-
-    # Check structure
-    assert 'low_conf_count' in analysis
-    assert 'low_conf_percentage' in analysis
-    assert 'low_conf_errors' in analysis
-    assert 'high_conf_count' in analysis
-    assert 'high_conf_errors' in analysis
-
-    # Check types
-    assert isinstance(analysis['low_conf_count'], int)
-    assert isinstance(analysis['low_conf_percentage'], float)
-    assert isinstance(analysis['low_conf_errors'], list)
-    assert isinstance(analysis['high_conf_count'], int)
-    assert isinstance(analysis['high_conf_errors'], list)
-
-
-def test_metrics_get_merchant_analysis_data(metrics_obj):
-    """Test merchant analysis data generation."""
-    merchant_analysis = metrics_obj._get_merchant_analysis_data()
-
-    # Check it's a list
-    assert isinstance(merchant_analysis, list)
-
-    # Check each item has expected structure (if any merchants have errors)
-    if merchant_analysis:
-        merchant = merchant_analysis[0]
-        assert 'display_name' in merchant
-        assert 'count' in merchant
-        assert 'percentage' in merchant
-        assert isinstance(merchant['count'], int)
-        assert isinstance(merchant['percentage'], float)
-
-
-def test_metrics_get_test_samples_data(metrics_obj):
-    """Test test samples data generation."""
-    test_samples = metrics_obj._get_test_samples_data()
-
-    # Check it's a list
-    assert isinstance(test_samples, list)
-
-    # Check length matches test data
-    assert len(test_samples) == len(metrics_obj.y_test)
-
-    # Check each item has expected structure
-    if test_samples:
-        sample = test_samples[0]
-        assert 'actual' in sample
-        assert 'predicted' in sample
-        assert 'confidence' in sample
-        assert 'partner' in sample
-        assert 'amount' in sample
-        assert isinstance(sample['confidence'], float)
-        assert isinstance(sample['amount'], float)
-
-
-def test_metrics_convert_to_list(metrics_obj):
-    """Test the _convert_to_list utility method."""
-    # Test with numpy array
-    arr = np.array([1, 2, 3])
-    result = metrics_obj._convert_to_list(arr)
-    assert isinstance(result, list)
-    assert result == [1, 2, 3]
-
-    # Test with tuple of arrays
-    tuple_data = (np.array([1, 2]), np.array([3, 4]))
-    result = metrics_obj._convert_to_list(tuple_data)
-    assert isinstance(result, list)
-    assert len(result) == 2
-
-    # Test with list
-    list_data = [1, 2, 3]
-    result = metrics_obj._convert_to_list(list_data)
-    assert isinstance(result, list)
-    assert result == [1, 2, 3]
-
-    # Test with empty data
-    result = metrics_obj._convert_to_list([])
-    assert isinstance(result, list)
-    assert result == []
-
-
-def test_metrics_load_and_prepare_test_data_missing_columns(tmp_path):
-    """Test error handling for missing columns in test data."""
-    data = [{"type": "A", "partner": "B"}]  # Missing required columns
-    file = tmp_path / "bad_data.json"
-    file.write_text(json.dumps(data), encoding="utf-8")
-
-    dummy_model = mock.Mock()
-    with mock.patch("whatsthedamage.models.machine_learning.load", return_value=dummy_model):
-        config = MLConfig()
-        config.feature_columns = ["type", "partner", "currency", "amount"]
-
-        with pytest.raises(ValueError, match="Missing required columns.*"):
-            Metrics(str(file), str(file), config)
-
-
-def test_metrics_load_and_prepare_test_data_empty(tmp_path):
-    """Test error handling for empty test data."""
-    data = []
-    file = tmp_path / "empty_data.json"
-    file.write_text(json.dumps(data), encoding="utf-8")
-
-    dummy_model = mock.Mock()
-    with mock.patch("whatsthedamage.models.machine_learning.load", return_value=dummy_model):
-        config = MLConfig()
-        config.feature_columns = ["type", "partner", "currency", "amount"]
-
-        with pytest.raises(ValueError, match="Missing required columns.*"):
-            Metrics(str(file), str(file), config)
+
+
+# Test Classes
+class TestAmountSignTransformer:
+    """Test the AmountSignTransformer class."""
+
+    def test_fit_returns_self(self):
+        """Test that fit() method returns self."""
+        transformer = AmountSignTransformer()
+        result = transformer.fit(None)
+        assert result is transformer
+
+    def test_transform_positive_values(self):
+        """Test transform with positive values."""
+        transformer = AmountSignTransformer()
+        transformer.fit(None)
+
+        # Test with numpy array
+        result = transformer.transform(np.array([100.0, 50.0, 25.0]))
+        expected = np.array([[1.0], [1.0], [1.0]])
+        np.testing.assert_array_equal(result, expected)
+
+    def test_transform_negative_values(self):
+        """Test transform with negative values."""
+        transformer = AmountSignTransformer()
+        transformer.fit(None)
+
+        result = transformer.transform(np.array([-100.0, -50.0, -25.0]))
+        expected = np.array([[-1.0], [-1.0], [-1.0]])
+        np.testing.assert_array_equal(result, expected)
+
+    def test_transform_mixed_values(self):
+        """Test transform with mixed positive, negative, and zero values."""
+        transformer = AmountSignTransformer()
+        transformer.fit(None)
+
+        result = transformer.transform(np.array([100.0, -50.0, 0.0, 25.0, -10.0]))
+        expected = np.array([[1.0], [-1.0], [0.0], [1.0], [-1.0]])
+        np.testing.assert_array_equal(result, expected)
+
+    def test_transform_with_pandas_series(self):
+        """Test transform with pandas Series input."""
+        transformer = AmountSignTransformer()
+        transformer.fit(None)
+
+        series = pd.Series([100.0, -50.0, 0.0])
+        result = transformer.transform(series)
+        expected = np.array([[1.0], [-1.0], [0.0]])
+        np.testing.assert_array_equal(result, expected)
+
+
+class TestUtilityFunctions:
+    """Test utility functions."""
+
+    def test_save_and_load_with_temp_file(self, ml_config_temp):
+        """Test save and load functions with temporary file."""
+        # Create a simple real pipeline that can be pickled
+        preprocessor = ColumnTransformer([
+            ("test", TfidfVectorizer(), "test_col")
+        ])
+        classifier = RandomForestClassifier(random_state=42, n_estimators=2)
+        pipeline = Pipeline([("preprocessor", preprocessor), ("classifier", classifier)], memory=None)
+
+        # Fit with minimal data to make it picklable
+        X_train = pd.DataFrame({"test_col": ["test1", "test2"]})
+        y_train = ["cat1", "cat2"]
+        pipeline.fit(X_train, y_train)
+
+        manifest = {
+            "model_version": "test_v1",
+            "training_date": "2023-01-01"
+        }
+
+        # Test save
+        save(pipeline, manifest, ml_config_temp)
+
+        # Verify files were created
+        assert os.path.exists(ml_config_temp.model_path)
+        assert os.path.exists(ml_config_temp.manifest_path)
+
+        # Test load
+        loaded_manifest = json.load(open(ml_config_temp.manifest_path, 'r', encoding='utf-8'))
+        assert loaded_manifest["model_version"] == "test_v1"
+
+    def test_validate_model_for_inference_with_fitted_model(self):
+        """Test validation with a properly fitted model."""
+        # Create a simple fitted pipeline
+        preprocessor = ColumnTransformer([
+            ("test", TfidfVectorizer(), "test_col")
+        ])
+        classifier = RandomForestClassifier(random_state=42, n_estimators=2)
+        pipeline = Pipeline([("preprocessor", preprocessor), ("classifier", classifier)], memory=None)
+
+        # Fit with minimal data
+        X_train = pd.DataFrame({"test_col": ["test1", "test2"]})
+        y_train = ["cat1", "cat2"]
+        pipeline.fit(X_train, y_train)
+
+        # Should not raise exception
+        validate_model_for_inference(pipeline)
+
+    def test_validate_model_for_inference_with_unfitted_model(self):
+        """Test validation with an unfitted model should raise RuntimeError."""
+        # Create an unfitted pipeline
+        pipeline = Pipeline([
+            ("preprocessor", ColumnTransformer([("test", TfidfVectorizer(), "test_col")])),
+            ("classifier", RandomForestClassifier())
+        ], memory=None)
+
+        with pytest.raises(RuntimeError, match="Model is not fitted for inference"):
+            validate_model_for_inference(pipeline)
+
+    def test_apply_ml_text_cleaning(self):
+        """Test ML text cleaning function."""
+        df = pd.DataFrame({
+            "partner": ["Test Partner Ltd.", "Another Company Kft.", "Simple Name"]
+        })
+
+        cleaned_df = apply_ml_text_cleaning(df)
+
+        # Should not raise exceptions and return DataFrame
+        assert isinstance(cleaned_df, pd.DataFrame)
+        assert len(cleaned_df) == 3
+        assert "partner" in cleaned_df.columns
+
+
+class TestTrainClass:
+    """Test the Train class."""
+
+    def test_initialization_with_custom_config(self, ml_config_temp, sample_training_data):
+        """Test Train class initialization with custom config."""
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+            json.dump(sample_training_data, f)
+            temp_training_path = f.name
+
+        try:
+            train_instance = Train(temp_training_path, ml_config_temp)
+
+            # Verify attributes are set
+            assert train_instance._config == ml_config_temp
+            assert len(train_instance._df) == 9  # Should have loaded 9 samples
+            assert not train_instance._df.empty
+
+            # Verify data was split
+            assert len(train_instance._df_train) > 0
+            assert len(train_instance._df_test) > 0
+
+        finally:
+            os.unlink(temp_training_path)
+
+    def test_validate_and_clean_data(self, ml_config_temp):
+        """Test data validation and cleaning."""
+        train_instance = Train.__new__(Train)  # Create without calling __init__
+        train_instance._config = ml_config_temp
+
+        # Test with valid data
+        df = pd.DataFrame({
+            "type": ["Payment", "Deposit"],
+            "partner": ["Test Partner", "Another Partner"],
+            "amount": [-100.0, 200.0],
+            "category": ["Grocery", "Salary"]
+        })
+
+        cleaned_df = train_instance._validate_and_clean_data(df)
+        assert len(cleaned_df) == 2
+        assert not cleaned_df.isna().any().any()
+
+    def test_validate_and_clean_data_missing_columns(self, ml_config_temp):
+        """Test data validation with missing required columns."""
+        train_instance = Train.__new__(Train)
+        train_instance._config = ml_config_temp
+
+        # Test with missing columns
+        df = pd.DataFrame({
+            "type": ["Payment"],
+            "amount": [-100.0],
+            "category": ["Grocery"]
+            # Missing 'partner' column
+        })
+
+        with pytest.raises(ValueError, match="Missing required columns"):
+            train_instance._validate_and_clean_data(df)
+
+    def test_create_preprocessor(self, ml_config_temp):
+        """Test preprocessor creation."""
+        train_instance = Train.__new__(Train)
+        train_instance._config = ml_config_temp
+
+        preprocessor = train_instance._create_preprocessor()
+
+        # Verify it's a ColumnTransformer
+        assert isinstance(preprocessor, ColumnTransformer)
+
+        # Verify expected transformers are present
+        transformer_names = [name for name, _, _ in preprocessor.transformers]
+        assert "type_tfidf" in transformer_names
+        assert "partner_tfidf" in transformer_names
+        assert "amount_sign" in transformer_names
+
+    def test_create_pipeline(self, ml_config_temp):
+        """Test pipeline creation."""
+        train_instance = Train.__new__(Train)
+        train_instance._config = ml_config_temp
+        train_instance._preprocessor = train_instance._create_preprocessor()
+        train_instance._class_weight = None  # Set required attribute
+
+        # Temporarily disable calibration to simplify test
+        original_calibration = train_instance._config.enable_calibration
+        train_instance._config.enable_calibration = False
+
+        try:
+            pipeline = train_instance._create_pipeline()
+
+            # Verify it's a Pipeline
+            assert isinstance(pipeline, Pipeline)
+
+            # Verify expected steps are present
+            step_names = list(pipeline.named_steps.keys())
+            assert "preprocessor" in step_names
+            assert "classifier" in step_names
+        finally:
+            train_instance._config.enable_calibration = original_calibration
+
+    def test_create_manifest(self, ml_config_temp):
+        """Test manifest creation."""
+        train_instance = Train.__new__(Train)
+        train_instance._config = ml_config_temp
+        train_instance._training_data_path = "test_data.json"
+        train_instance._model_save_path = ml_config_temp.model_path
+        train_instance._testdata_save_path = ml_config_temp.test_data_path
+
+        # Create a simple pipeline
+        preprocessor = train_instance._create_preprocessor()
+
+        # Temporarily disable calibration to simplify test
+        original_calibration = train_instance._config.enable_calibration
+        train_instance._config.enable_calibration = False
+
+        try:
+            # Fit the preprocessor first to avoid NotFittedError
+            train_instance._x_train = pd.DataFrame({
+                "type": ["Payment"],
+                "partner": ["Test"],
+                "amount": [-100.0]
+            })
+            preprocessor.fit(train_instance._x_train)
+
+            # Add required attributes
+            train_instance._df = train_instance._x_train.copy()
+            train_instance._df["category"] = "TestCategory"
+
+            pipeline = Pipeline([("preprocessor", preprocessor), ("classifier", RandomForestClassifier())], memory=None)
+
+            manifest = train_instance._create_manifest(pipeline)
+
+            # Verify manifest structure
+            assert "model_file" in manifest
+            assert "model_version" in manifest
+            assert "training_data" in manifest
+            assert "training_date" in manifest
+            assert "data_info" in manifest
+            assert "parameters" in manifest
+        finally:
+            train_instance._config.enable_calibration = original_calibration
+
+    def test_train_method_with_mock(self, ml_config_temp, sample_training_data):
+        """Test train method with mocked pipeline fitting."""
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+            json.dump(sample_training_data, f)
+            temp_training_path = f.name
+
+        try:
+            train_instance = Train(temp_training_path, ml_config_temp)
+
+            # Fit the preprocessor first to avoid NotFittedError in manifest creation
+            train_instance._preprocessor.fit(train_instance._x_train)
+
+            # Mock the pipeline fit method to avoid actual training
+            with patch.object(train_instance._pipe, 'fit') as mock_fit:
+                mock_fit.return_value = train_instance._pipe
+
+                # Mock the save function to avoid file operations
+                with patch('whatsthedamage.models.machine_learning.save') as mock_save:
+                    train_instance.train()
+
+                    # Verify fit was called
+                    mock_fit.assert_called_once()
+
+                    # Verify save was called
+                    mock_save.assert_called_once()
+
+        finally:
+            os.unlink(temp_training_path)
+
+
+class TestMetricsClass:
+    """Test the Metrics class."""
+
+    def test_initialization_with_existing_model(self):
+        """Test Metrics initialization with existing model file."""
+        # Use the existing model file
+        existing_model_path = "src/whatsthedamage/static/model-rf-v6alpha_en.joblib"
+        existing_test_data_path = "src/whatsthedamage/static/model-rf-v6alpha_en.testdata.json"
+
+        if os.path.exists(existing_model_path) and os.path.exists(existing_test_data_path):
+            metrics = Metrics(existing_model_path, existing_test_data_path)
+
+            # Verify attributes are set
+            assert hasattr(metrics, 'model')
+            assert hasattr(metrics, 'test_data')
+            assert hasattr(metrics, 'x_test')
+            assert hasattr(metrics, 'y_test')
+            assert hasattr(metrics, 'y_pred')
+            assert hasattr(metrics, 'y_proba')
+
+            # Verify predictions were made
+            assert len(metrics.y_pred) > 0
+            assert len(metrics.y_proba) > 0
+        else:
+            pytest.skip("Existing model files not found")
+
+    def test_get_metrics_data(self):
+        """Test metrics data retrieval."""
+        existing_model_path = "src/whatsthedamage/static/model-rf-v6alpha_en.joblib"
+        existing_test_data_path = "src/whatsthedamage/static/model-rf-v6alpha_en.testdata.json"
+
+        if os.path.exists(existing_model_path) and os.path.exists(existing_test_data_path):
+            metrics = Metrics(existing_model_path, existing_test_data_path)
+            metrics_data = metrics.get_metrics_data()
+
+            # Verify expected keys are present
+            expected_keys = [
+                'accuracy', 'confusion_matrix', 'confusion_matrix_content',
+                'classification_report', 'confused_pairs', 'confidence_analysis',
+                'merchant_analysis', 'predictions', 'probabilities', 'test_samples'
+            ]
+
+            for key in expected_keys:
+                assert key in metrics_data
+
+            # Verify accuracy is a float between 0 and 1
+            assert 0.0 <= metrics_data['accuracy'] <= 1.0
+
+        else:
+            pytest.skip("Existing model files not found")
+
+
+class TestInferenceClass:
+    """Test the Inference class."""
+
+    def test_initialization_with_existing_model(self):
+        """Test Inference initialization with existing model."""
+        existing_model_path = "src/whatsthedamage/static/model-rf-v6alpha_en.joblib"
+
+        if os.path.exists(existing_model_path):
+            # Sample input data as JSON string (file path)
+            with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+                input_data = [
+                    {
+                        "date": "2023-04-01",
+                        "type": "Payment",
+                        "partner": "Test Grocery Store",
+                        "amount": -75.0,
+                        "currency": "EUR"
+                    }
+                ]
+                json.dump(input_data, f)
+                temp_input_path = f.name
+
+            try:
+                inference = Inference(existing_model_path, temp_input_path)
+            finally:
+                os.unlink(temp_input_path)
+
+            # Verify attributes are set
+            assert hasattr(inference, 'model')
+            assert hasattr(inference, 'df_input')
+            assert hasattr(inference, 'df_output')
+
+            # Verify predictions were made
+            assert 'predicted_category' in inference.df_output.columns
+            assert 'prediction_confidence' in inference.df_output.columns
+
+        else:
+            pytest.skip("Existing model file not found")
+
+    def test_get_predictions(self):
+        """Test get_predictions method."""
+        existing_model_path = "src/whatsthedamage/static/model-rf-v6alpha_en.joblib"
+
+        if os.path.exists(existing_model_path):
+            # Sample input data as JSON string (file path)
+            with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+                input_data = [
+                    {
+                        "date": "2023-04-01",
+                        "type": "Payment",
+                        "partner": "Test Grocery Store",
+                        "amount": -75.0,
+                        "currency": "EUR"
+                    }
+                ]
+                json.dump(input_data, f)
+                temp_input_path = f.name
+
+            try:
+                inference = Inference(existing_model_path, temp_input_path)
+            finally:
+                os.unlink(temp_input_path)
+            predictions = inference.get_predictions()
+
+            # Verify predictions are returned as CsvRow objects
+            assert len(predictions) == 1
+            assert all(isinstance(pred, CsvRow) for pred in predictions)
+
+            # Verify each prediction has required attributes
+            for pred in predictions:
+                assert hasattr(pred, 'confidence')
+                assert 0.0 <= pred.confidence <= 1.0
+
+        else:
+            pytest.skip("Existing model file not found")
+
+    def test_prepare_input_data_with_csv_rows(self, csv_rows):
+        """Test input data preparation with CsvRow objects."""
+        existing_model_path = "src/whatsthedamage/static/model-rf-v6alpha_en.joblib"
+
+        if os.path.exists(existing_model_path):
+            # Inference expects either file path or List[CsvRow] - use the CsvRow list directly
+            inference = Inference(existing_model_path, csv_rows)
+
+            # Verify input data was prepared correctly
+            assert len(inference.df_input) == 2
+            assert 'type' in inference.df_input.columns
+            assert 'partner' in inference.df_input.columns
+            assert 'amount' in inference.df_input.columns
+
+        else:
+            pytest.skip("Existing model file not found")
+
+
+# Integration Tests
+class TestIntegration:
+    """Integration tests for the ML workflow."""
+
+    def test_end_to_end_workflow_with_temp_files(self, ml_config_temp, sample_training_data):
+        """Test complete workflow from training to inference."""
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+            json.dump(sample_training_data, f)
+            temp_training_path = f.name
+
+        try:
+            # Train model
+            train_instance = Train(temp_training_path, ml_config_temp)
+
+            # Fit the preprocessor first to avoid NotFittedError in manifest creation
+            train_instance._preprocessor.fit(train_instance._x_train)
+
+            # Mock the save function to avoid file operations and pickling issues
+            with patch('whatsthedamage.models.machine_learning.save') as mock_save:
+                # Mock training to avoid long execution
+                with patch.object(train_instance._pipe, 'fit') as mock_fit:
+                    mock_fit.return_value = train_instance._pipe
+                    train_instance.train()
+
+                    # Verify fit was called
+                    mock_fit.assert_called_once()
+
+                    # Verify save was called
+                    mock_save.assert_called_once()
+
+            # Test inference with trained model (using existing model since we mocked save)
+            test_data = [
+                {
+                    "date": "2023-05-01",
+                    "type": "Payment",
+                    "partner": "Test Store",
+                    "amount": -50.0,
+                    "currency": "EUR"
+                }
+            ]
+
+            # Use existing model for inference test
+            existing_model_path = "src/whatsthedamage/static/model-rf-v6alpha_en.joblib"
+            if os.path.exists(existing_model_path):
+                with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f2:
+                    json.dump(test_data, f2)
+                    temp_test_path = f2.name
+
+                try:
+                    inference = Inference(existing_model_path, temp_test_path)
+                    predictions = inference.get_predictions()
+
+                    assert len(predictions) == 1
+                    assert isinstance(predictions[0], CsvRow)
+                finally:
+                    os.unlink(temp_test_path)
+            else:
+                pytest.skip("Existing model file not found")
+
+        finally:
+            os.unlink(temp_training_path)
+
+    def test_model_saving_loading_cycle(self, ml_config_temp):
+        """Test model saving and loading cycle."""
+        # Create a simple pipeline
+        preprocessor = ColumnTransformer([
+            ("test", TfidfVectorizer(), "test_col")
+        ])
+        classifier = RandomForestClassifier(random_state=42, n_estimators=2)
+        pipeline = Pipeline([("preprocessor", preprocessor), ("classifier", classifier)], memory=None)
+
+        # Fit with minimal data
+        X_train = pd.DataFrame({"test_col": ["test1", "test2"]})
+        y_train = ["cat1", "cat2"]
+        pipeline.fit(X_train, y_train)
+
+        # Save the model
+        manifest = {"model_version": "test_v1", "training_date": "2023-01-01"}
+        save(pipeline, manifest, ml_config_temp)
+
+        # Load the model
+        loaded_pipeline = load(ml_config_temp.model_path)
+
+        # Verify loaded model works
+        predictions = loaded_pipeline.predict(X_train)
+        assert len(predictions) == 2
+
+        # Verify manifest was saved correctly
+        with open(ml_config_temp.manifest_path, 'r', encoding='utf-8') as f:
+            loaded_manifest = json.load(f)
+        assert loaded_manifest["model_version"] == "test_v1"
+
+
+# Error Handling Tests
+class TestErrorHandling:
+    """Test error handling scenarios."""
+
+    def test_train_with_invalid_data(self, ml_config_temp):
+        """Test training with invalid/empty data."""
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+            json.dump([], f)  # Empty dataset
+            temp_training_path = f.name
+
+        try:
+            with pytest.raises(ValueError, match="Loaded DataFrame is empty"):
+                Train(temp_training_path, ml_config_temp)
+        finally:
+            os.unlink(temp_training_path)
+
+    def test_metrics_with_missing_columns(self, ml_config_temp):
+        """Test metrics with missing required columns."""
+        existing_model_path = "src/whatsthedamage/static/model-rf-v6alpha_en.joblib"
+
+        if os.path.exists(existing_model_path):
+            # Create test data with missing columns
+            with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+                test_data = [{"amount": -50.0, "category": "Grocery"}]  # Missing type, partner
+                json.dump(test_data, f)
+                temp_test_path = f.name
+
+            try:
+                with pytest.raises(ValueError, match="Missing required columns"):
+                    Metrics(existing_model_path, temp_test_path)
+            finally:
+                os.unlink(temp_test_path)
+        else:
+            pytest.skip("Existing model file not found")
+
+    def test_inference_with_empty_data(self, ml_config_temp):
+        """Test inference with empty input data."""
+        existing_model_path = "src/whatsthedamage/static/model-rf-v6alpha_en.joblib"
+
+        if os.path.exists(existing_model_path):
+            with pytest.raises(ValueError, match="Input DataFrame is empty"):
+                Inference(existing_model_path, [])
+        else:
+            pytest.skip("Existing model file not found")

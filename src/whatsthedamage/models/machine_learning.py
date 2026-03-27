@@ -10,10 +10,12 @@ from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.calibration import CalibratedClassifierCV
 from sklearn.compose import ColumnTransformer
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.exceptions import NotFittedError
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
 from sklearn.model_selection import GridSearchCV, RandomizedSearchCV, train_test_split
 from sklearn.pipeline import Pipeline
+from sklearn.utils.validation import check_is_fitted
 
 from whatsthedamage.config.ml_config import MLConfig
 from whatsthedamage.models.csv_row import CsvRow
@@ -77,6 +79,50 @@ def load(model_path: str) -> Pipeline:
     except Exception as e:
         raise RuntimeError(f"Failed to load model from '{model_path}': {e}") from e
 
+
+def validate_model_for_inference(model: Any) -> None:
+    """
+    Validate that a model is properly fitted and ready for inference.
+
+    This function performs model-specific checks to ensure the classifier
+    is fitted and can be used for prediction. It handles both regular
+    Pipelines and calibrated Pipelines.
+
+    Args:
+        model: The scikit-learn estimator (Pipeline, classifier, etc.) to validate
+
+    Raises:
+        RuntimeError: If the model is not fitted or invalid for inference
+    """
+    try:
+        # Get the actual estimator to validate
+        if hasattr(model, 'named_steps'):
+            # This is a Pipeline - get the classifier step
+            if "calibration" in model.named_steps:
+                # For calibrated models, get the calibrated classifier
+                calibration_step = model.named_steps["calibration"]
+                estimator_to_check = calibration_step
+            else:
+                # For regular pipelines, get the classifier step if it exists
+                if "classifier" in model.named_steps:
+                    estimator_to_check = model.named_steps["classifier"]
+                else:
+                    # Fallback to the full pipeline if no classifier step found
+                    estimator_to_check = model
+        else:
+            # Direct estimator
+            estimator_to_check = model
+
+        # Use scikit-learn's native approach to check if the estimator is fitted
+        check_is_fitted(estimator_to_check)
+        logger.debug("Model validation passed: model is properly fitted for inference")
+    except NotFittedError as e:
+        logger.error(f"Model validation failed: model is not fitted - {e}")
+        raise RuntimeError(f"Model is not fitted for inference: {e}") from e
+    except Exception as e:
+        logger.error(f"Model validation failed: {e}")
+        raise RuntimeError(f"Model validation failed: {e}") from e
+
 def apply_ml_text_cleaning(df: pd.DataFrame) -> pd.DataFrame:
     """
     Apply ML-specific text cleaning to the partner field.
@@ -135,12 +181,10 @@ class Train:
         self,
         training_data_path: str,
         config: Optional[MLConfig] = None,
-        verbose: bool = False
     ) -> None:
         self._training_data_path = training_data_path
         self._config = config or MLConfig()
         self._class_weight: Optional[str] = None
-        self._verbose = verbose
 
         # Use MLConfig paths for model and testdata files
         self._model_save_path = self._config.model_path
@@ -244,11 +288,11 @@ class Train:
         # Log results if SMOTE was actually applied
         if hasattr(x_resampled, 'shape') and hasattr(X, 'shape'):
             if x_resampled.shape[0] != X.shape[0]:
-                self._log_smote_results(X, x_resampled, y_resampled)
+                self._log_smote_results(X, x_resampled)
 
         return x_resampled, y_resampled
 
-    def _log_smote_results(self, X: pd.DataFrame, x_resampled_df: pd.DataFrame, y_resampled: pd.Series) -> None:
+    def _log_smote_results(self, X: pd.DataFrame, x_resampled_df: pd.DataFrame) -> None:
         """Log SMOTE results in a consistent format.
 
         Separates logging concern for better maintainability.
@@ -257,7 +301,6 @@ class Train:
         logger.info(f"  Original training samples: {len(X)}")
         logger.info(f"  Synthetic samples generated: {len(x_resampled_df) - len(X)}")
         logger.info(f"  Total training samples after SMOTE: {len(x_resampled_df)}")
-        logger.info(f"  Final class distribution: {dict(pd.Series(y_resampled).value_counts())}")
 
     def _detect_class_imbalance(self) -> None:
         """Detect class imbalance and set class weights if needed."""
@@ -266,9 +309,8 @@ class Train:
         normalized_counts = value_counts / value_counts.sum()
 
         if normalized_counts.min() < self._config.classifier_imbalance_threshold:
-            if self._verbose:
-                logger.info("Class distribution in training set:")
-                logger.info(f"{value_counts}")
+            logger.info("Class distribution in training set:")
+            logger.info(f"{value_counts}")
             self._class_weight = "balanced"
         else:
             self._class_weight = None
@@ -448,12 +490,16 @@ class Train:
 
         # Delegate all file saving to the enhanced package save function
         # This centralizes model, manifest, and test data saving in one atomic operation
-        save(
-            model=model,
-            manifest=MANIFEST,
-            config=self._config,
-            test_data_df=test_data_with_labels
-        )
+        try:
+            save(
+                model=model,
+                manifest=MANIFEST,
+                config=self._config,
+                test_data_df=test_data_with_labels
+            )
+        except Exception as e:
+            logger.error(f"Model saving has failed: {e}")
+            raise e
 
     def train(self) -> None:
         """Train the model with fixed hyperparameters."""
@@ -509,7 +555,8 @@ class Train:
             self._model = random_search.best_estimator_
             best_params = random_search.best_params_
         else:
-            logger.info("No hyperparameter tuning method selected.")
+            logger.warning("Invalid hyperparameter tuning method selected. No tuning will be performed.")
+            # Return the current model (which should be None if not trained)
             return self._model
 
         # Save the tuned model using the centralized method
@@ -537,9 +584,16 @@ class Metrics:
         self.x_test = self.test_data[self.config.feature_columns]
         self.y_test = self.test_data["category"]
 
+        # Validate model before attempting inference
+        validate_model_for_inference(self.model)
+
         # Get predictions on the entire test set
-        self.y_pred = self.model.predict(self.x_test)
-        self.y_proba = self.model.predict_proba(self.x_test)
+        try:
+            self.y_pred = self.model.predict(self.x_test)
+            self.y_proba = self.model.predict_proba(self.x_test)
+        except NotFittedError as e:
+            logger.error(f"Model is not fitted for inference: {e}")
+            raise RuntimeError(f"Model is not fitted for inference: {e}") from e
 
     def _load_and_prepare_test_data(self, test_data_path: str) -> pd.DataFrame:
         """Load and prepare test data for evaluation."""
@@ -823,9 +877,11 @@ class Metrics:
                 return []
 
 class Inference:
-    def __init__(self, new_data: Union[str, List[CsvRow]], config: Optional[MLConfig] = None) -> None:
+    def __init__(self, model_path: str, new_data: Union[str, List[CsvRow]], config: Optional[MLConfig] = None) -> None:
         self.config = config or MLConfig()
-        self.model: Pipeline = load(self.config.model_path)
+        # self.model: Pipeline = load(self.config.model_path)
+        self.model_path = model_path if model_path else self.config.model_path
+        self.model: Pipeline = load(self.model_path)
         self.df_input = self._prepare_input_data(new_data)
         self.df_output = self._make_predictions(self.df_input)
 
@@ -845,8 +901,15 @@ class Inference:
 
     def _make_predictions(self, df_input: pd.DataFrame) -> pd.DataFrame:
         """Make predictions and add them to the DataFrame."""
-        predicted_categories = self.model.predict(df_input)
-        proba = self.model.predict_proba(df_input)
+        # Validate model before attempting inference
+        validate_model_for_inference(self.model)
+
+        try:
+            predicted_categories = self.model.predict(df_input)
+            proba = self.model.predict_proba(df_input)
+        except NotFittedError as e:
+            logger.error(f"Model is not fitted for inference: {e}")
+            raise RuntimeError(f"Model is not fitted for inference: {e}") from e
         confidence = proba.max(axis=1)
         df_output = df_input.copy()
         df_output["predicted_category"] = predicted_categories

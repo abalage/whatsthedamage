@@ -1,4 +1,6 @@
+from typing import List, Union
 from whatsthedamage.models.machine_learning import Train, Inference, Metrics
+from whatsthedamage.models.csv_row import CsvRow
 from whatsthedamage.config.ml_config import MLConfig
 from whatsthedamage.utils.logging import get_logger
 
@@ -10,7 +12,6 @@ class MLService:
     def train(
         self,
         training_data_path: str,
-        verbose: bool = False,
         gridsearch: bool = False,
         randomsearch: bool = False,
         enable_smote: bool = False
@@ -20,7 +21,6 @@ class MLService:
         train = Train(
             training_data_path=training_data_path,
             config=config,
-            verbose=verbose
         )
 
         if gridsearch or randomsearch:
@@ -37,14 +37,30 @@ class MLService:
         show_confidence: bool = False
     ) -> None:
         """Predict categories for new data."""
-        predict = Inference(new_data_path)
+        predict = Inference(new_data_path, model_path)
         predict.print_inference_data(show_confidence)
+
+    def get_predictions(
+        self,
+        model_path: str,
+        new_data: Union[str, List[CsvRow]]
+    ) -> List[CsvRow]:
+        """Get predictions for new data and return as CsvRow objects.
+
+        Args:
+            model_path: Path to trained model file
+            new_data: Either path to JSON file or List[CsvRow] objects
+
+        Returns:
+            List of CsvRow objects with predicted categories and confidence scores
+        """
+        inference = Inference(model_path, new_data)
+        return inference.get_predictions()
 
     def calculate_metrics(
         self,
         model_path: str,
         test_data_path: str,
-        verbose: bool = False
     ) -> None:
         """Calculate model evaluation metrics."""
         metrics = Metrics(

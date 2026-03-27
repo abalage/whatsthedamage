@@ -1,4 +1,5 @@
 """Test RowEnrichmentML confidence threshold functionality."""
+import pytest
 from unittest.mock import patch
 from whatsthedamage.models.csv_row import CsvRow
 from whatsthedamage.models.row_enrichment_ml import RowEnrichmentML
@@ -10,53 +11,71 @@ class DummyPrediction:
         self.confidence = confidence
 
 
+def _create_mock_csv_row_from_prediction(csv_row, dummy_prediction, mapping):
+    """Helper to create a mock CsvRow with predicted values."""
+    row_data = {
+        'date': csv_row.date,
+        'type': csv_row.type,
+        'partner': csv_row.partner,
+        'amount': str(csv_row.amount),
+        'currency': csv_row.currency,
+        'category': dummy_prediction.category,
+        'account': csv_row.account
+    }
+    mock_row = CsvRow(row_data, mapping)
+    mock_row.confidence = dummy_prediction.confidence
+    return mock_row
+
+
 def test_row_enrichment_ml_confidence_threshold():
     """Test that RowEnrichmentML applies confidence threshold correctly."""
-    
+
     # Create test rows
     rows = []
     mapping = {
         "date": "date",
-        "type": "type", 
+        "type": "type",
         "partner": "partner",
         "amount": "amount",
         "currency": "currency",
         "account": "account",
         "category": "category"
     }
-    
+
     row1 = CsvRow({
         "date": "2023-01-01", "type": "card_reservation", "partner": "Test Merchant 1",
         "amount": "100", "currency": "HUF", "account": "12345"
     }, mapping)
-    
+
     row2 = CsvRow({
         "date": "2023-01-02", "type": "card_reservation", "partner": "Test Merchant 2",
         "amount": "200", "currency": "HUF", "account": "12345"
     }, mapping)
-    
+
     rows = [row1, row2]
-    
+
     # Test with threshold of 0.5
     with patch('whatsthedamage.models.row_enrichment_ml.get_category_name', side_effect=lambda x: x.upper()), \
-         patch('whatsthedamage.models.row_enrichment_ml.Inference') as MockInference:
-        
-        # Mock predictions: first high confidence, second low confidence
-        MockInference.return_value.get_predictions.return_value = [
-            DummyPrediction('groceries', 0.9),  # High confidence - should keep category
-            DummyPrediction('dining_out', 0.4)   # Low confidence - should become 'OTHER'
+         patch('whatsthedamage.services.ml_service.MLService') as MockMLService:
+
+        # Create mock CsvRow objects with the predicted categories and confidence
+        mock_rows = [
+            _create_mock_csv_row_from_prediction(row1, DummyPrediction('groceries', 0.9), mapping),
+            _create_mock_csv_row_from_prediction(row2, DummyPrediction('dining_out', 0.4), mapping)
         ]
-        
+
+        MockMLService.return_value.get_predictions.return_value = mock_rows
+
         # Test with default threshold (0.5)
         enricher = RowEnrichmentML(rows)  # Uses default threshold of 0.5
         enricher.categorize_by_attribute("category")
-        
+
         # Verify results
         assert row1.category == 'GROCERIES'  # High confidence kept original
         assert row2.category == 'OTHER'      # Low confidence changed to 'other'
-        assert row1.confidence == 0.9
-        assert row2.confidence == 0.4
-        
+        assert row1.confidence == pytest.approx(0.9)
+        assert row2.confidence == pytest.approx(0.4)
+
         # Verify categorized dict
         assert 'GROCERIES' in enricher.categorized
         assert 'OTHER' in enricher.categorized
@@ -66,63 +85,62 @@ def test_row_enrichment_ml_confidence_threshold():
 
 def test_row_enrichment_ml_custom_threshold():
     """Test RowEnrichmentML with custom confidence threshold."""
-    
+
     # Create test row
     mapping = {
         "date": "date", "type": "type", "partner": "partner",
         "amount": "amount", "currency": "currency", "account": "account", "category": "category"
     }
-    
+
     row = CsvRow({
         "date": "2023-01-01", "type": "card_reservation", "partner": "Test Merchant",
         "amount": "100", "currency": "HUF", "account": "12345"
     }, mapping)
-    
+
     rows = [row]
-    
+
     with patch('whatsthedamage.models.row_enrichment_ml.get_category_name', side_effect=lambda x: x.upper()), \
-         patch('whatsthedamage.models.row_enrichment_ml.Inference') as MockInference:
-        
-        # Mock prediction with 0.6 confidence
-        MockInference.return_value.get_predictions.return_value = [
-            DummyPrediction('groceries', 0.6)
-        ]
-        
+         patch('whatsthedamage.services.ml_service.MLService') as MockMLService:
+
+        # Create mock CsvRow with the predicted category and confidence
+        mock_row = _create_mock_csv_row_from_prediction(row, DummyPrediction('groceries', 0.6), mapping)
+
+        MockMLService.return_value.get_predictions.return_value = [mock_row]
+
         # Test with custom threshold of 0.7
         enricher = RowEnrichmentML(rows, confidence_threshold=0.7)
         enricher.categorize_by_attribute("category")
-        
         # 0.6 < 0.7, so should become 'OTHER'
         assert row.category == 'OTHER'
-        assert row.confidence == 0.6
+        assert row.confidence == pytest.approx(0.6)
 
 
 def test_row_enrichment_ml_none_confidence():
     """Test RowEnrichmentML handles None confidence correctly."""
-    
+
     mapping = {
         "date": "date", "type": "type", "partner": "partner",
         "amount": "amount", "currency": "currency", "account": "account", "category": "category"
     }
-    
+
     row = CsvRow({
         "date": "2023-01-01", "type": "card_reservation", "partner": "Test Merchant",
         "amount": "100", "currency": "HUF", "account": "12345"
     }, mapping)
-    
+
     rows = [row]
-    
+
     with patch('whatsthedamage.models.row_enrichment_ml.get_category_name', side_effect=lambda x: x.upper()), \
-         patch('whatsthedamage.models.row_enrichment_ml.Inference') as MockInference:
-        
-        # Mock prediction with None confidence
-        MockInference.return_value.get_predictions.return_value = [
-            DummyPrediction('groceries', None)
-        ]
-        
+         patch('whatsthedamage.services.ml_service.MLService') as MockMLService:
+
+        # Create mock CsvRow with the predicted category and None confidence
+        mock_row = _create_mock_csv_row_from_prediction(row, DummyPrediction('groceries', None), mapping)
+
+        MockMLService.return_value.get_predictions.return_value = [mock_row]
+
         enricher = RowEnrichmentML(rows)
         enricher.categorize_by_attribute("category")
-        
+
         # None confidence should keep original category
         assert row.category == 'GROCERIES'
         assert row.confidence is None

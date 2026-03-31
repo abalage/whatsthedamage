@@ -33,6 +33,14 @@ whatsthedamage.services.data\_formatting\_service module
    :show-inheritance:
    :undoc-members:
 
+whatsthedamage.services.drilldown\_service module
+-------------------------------------------------
+
+.. automodule:: whatsthedamage.services.drilldown_service
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
 whatsthedamage.services.exclusion\_service module
 -------------------------------------------------
 
@@ -45,6 +53,30 @@ whatsthedamage.services.file\_upload\_service module
 ----------------------------------------------------
 
 .. automodule:: whatsthedamage.services.file_upload_service
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
+whatsthedamage.services.id\_mapping\_service module
+---------------------------------------------------
+
+.. automodule:: whatsthedamage.services.id_mapping_service
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
+whatsthedamage.services.interfaces module
+-----------------------------------------
+
+.. automodule:: whatsthedamage.services.interfaces
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
+whatsthedamage.services.ml\_service module
+------------------------------------------
+
+.. automodule:: whatsthedamage.services.ml_service
    :members:
    :show-inheritance:
    :undoc-members:
@@ -81,10 +113,26 @@ whatsthedamage.services.session\_service module
    :show-inheritance:
    :undoc-members:
 
+whatsthedamage.services.smote\_service module
+---------------------------------------------
+
+.. automodule:: whatsthedamage.services.smote_service
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
 whatsthedamage.services.statistical\_analysis\_service module
 -------------------------------------------------------------
 
 .. automodule:: whatsthedamage.services.statistical_analysis_service
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
+whatsthedamage.services.text\_correction\_service module
+--------------------------------------------------------
+
+.. automodule:: whatsthedamage.services.text_correction_service
    :members:
    :show-inheritance:
    :undoc-members:

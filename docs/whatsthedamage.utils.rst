@@ -9,6 +9,14 @@ whatsthedamage.utils package
 Submodules
 ----------
 
+whatsthedamage.utils.data\_loader module
+----------------------------------------
+
+.. automodule:: whatsthedamage.utils.data_loader
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
 whatsthedamage.utils.date\_converter module
 -------------------------------------------
 
@@ -21,6 +29,14 @@ whatsthedamage.utils.flask\_locale module
 -----------------------------------------
 
 .. automodule:: whatsthedamage.utils.flask_locale
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
+whatsthedamage.utils.logging module
+-----------------------------------
+
+.. automodule:: whatsthedamage.utils.logging
    :members:
    :show-inheritance:
    :undoc-members:

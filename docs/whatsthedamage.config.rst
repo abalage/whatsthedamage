@@ -24,3 +24,19 @@ whatsthedamage.config.flask\_config module
    :members:
    :show-inheritance:
    :undoc-members:
+
+whatsthedamage.config.ml\_config module
+---------------------------------------
+
+.. automodule:: whatsthedamage.config.ml_config
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
+whatsthedamage.config.text\_config module
+-----------------------------------------
+
+.. automodule:: whatsthedamage.config.text_config
+   :members:
+   :show-inheritance:
+   :undoc-members:

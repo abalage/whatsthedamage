@@ -1,4 +1,4 @@
-VENV := venv
+VENV := .venv
 PYTHON := $(VENV)/bin/python
 PYBABEL := $(VENV)/bin/pybabel
 PIP := $(VENV)/bin/pip
@@ -18,7 +18,8 @@ DOCKER_IMAGE := whatsthedamage
 DOCKER_TAG ?= $(shell set -o pipefail; python3 -m setuptools_scm 2>/dev/null | sed 's/\+/_/' || echo "latest")
 VERSION ?= $(shell set -o pipefail; python3 -m setuptools_scm 2>/dev/null || echo "v0.0.0")
 
-.PHONY: docs web test lang clean mrproper image compile-deps update-deps compile-deps-secure help docs
+
+.PHONY: web test lint lang clean mrproper image compile-deps update-deps compile-deps-secure help docs build frontend
 
 # =============================================================================
 # DEVELOPMENT TARGETS
@@ -38,16 +39,19 @@ frontend:
 build: dev
 	$(MAKE) frontend ARG=build
 
+# Ensure build depends on dev being up to date
+build: $(VENV)/.deps-synced $(FRONTEND_DIR)/node_modules/.installed
+
 # Create venv and install pip-tools
 $(VENV)/pyvenv.cfg:
-	python3 -m venv $(VENV)
-	$(PIP) install --upgrade pip==25.2
-	$(PIP) install pip-tools==7.2.0
+	python3 -m venv $(VENV) || { echo "Failed to create virtual environment"; exit 1; }
+	$(PIP) install --upgrade pip || { echo "Failed to upgrade pip"; exit 1; }
+	$(PIP) install pip-tools || { echo "Failed to install pip-tools"; exit 1; }
 
 # Track when dependencies were last synced
 $(VENV)/.deps-synced: requirements.txt requirements-dev.txt requirements-web.txt $(VENV)/pyvenv.cfg pyproject.toml
-	$(PIP_SYNC) requirements.txt requirements-dev.txt requirements-web.txt
-	$(PIP) install -e .
+	$(PIP_SYNC) requirements.txt requirements-dev.txt requirements-web.txt || { echo "Failed to sync dependencies"; exit 1; }
+	$(PIP) install -e . || { echo "Failed to install package"; exit 1; }
 	touch $(VENV)/.deps-synced
 
 # Track when frontend dependencies were last installed
@@ -63,22 +67,19 @@ $(FRONTEND_DIR)/node_modules/.installed: $(FRONTEND_DIR)/package.json $(FRONTEND
 dev: $(VENV)/.deps-synced $(FRONTEND_DIR)/node_modules/.installed
 
 # Run Flask development server
-web: dev
+web: dev $(FRONTEND_DIR)/node_modules/.installed
 	$(MAKE) frontend ARG=build
-	export FLASK_APP=src.whatsthedamage.app && $(PYTHON) -m flask run
+	FLASK_APP=src.whatsthedamage.app $(PYTHON) -m flask run
 
 # Run tests using tox
 test: dev
 	$(TOX)
 	$(MAKE) frontend ARG=test
 
-# Run ruff linter/formatter
-ruff: dev
-	$(RUFF) check .
-
-# Run mypy type checker
-mypy: dev
-	$(MYPY) src/
+# Run linter/formatter
+lint: dev
+	$(TOX) -e lint
+	$(TOX) -e type
 
 lang: dev
 	$(PYBABEL) extract -F babel.cfg -o src/whatsthedamage/locale/en/LC_MESSAGES/messages.pot src/whatsthedamage/
@@ -86,7 +87,7 @@ lang: dev
 # Build Sphinx documentation
 docs:
 	$(PYTHON) $(VENV)/bin/sphinx-apidoc -f -M -T -o docs/ src/
-	export SPHINXBUILD=../$(VENV)/bin/sphinx-build && $(MAKE) -C docs clean html
+	SPHINXBUILD=../$(VENV)/bin/sphinx-build $(MAKE) -C docs clean html
 
 # =============================================================================
 # PODMAN TARGETS
@@ -152,11 +153,10 @@ mrproper: clean
 # Help target
 help:
 	@echo "Development workflow:"
-	@echo "  dev            - Create venv, install pip-tools, sync all requirementsm, install frontend dependencies"
-	@echo "  web            - Run Flask development server"
+	@echo "  dev            - Create venv, install pip-tools, sync all requirements, install frontend dependencies"
+	@echo "  web            - Run Flask development server (requires frontend build)"
 	@echo "  test           - Run tests using tox"
-	@echo "  ruff           - Run ruff linter/formatter"
-	@echo "  mypy           - Run mypy type checker"
+	@echo "  lint           - Run linter/formatter on Python code"
 	@echo "  image          - Build Podman image with version tag"
 	@echo "  lang           - Extract translatable strings to English .pot file"
 	@echo "  docs           - Build Sphinx documentation"
@@ -166,6 +166,7 @@ help:
 	@echo "Dependency management for Python:"
 	@echo "  compile-deps   - Compile requirements files from pyproject.toml"
 	@echo "  update-deps    - Update requirements to latest versions"
+	@echo "  compile-deps-secure - Compile requirements with security hashes"
 	@echo ""
 	@echo "Cleanup for Python and JavaScript:"
 	@echo "  clean          - Clean up build files"

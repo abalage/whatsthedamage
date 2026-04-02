@@ -22,10 +22,19 @@ export default defineConfig({
       output: {
         entryFileNames: 'js/[name].js',
         chunkFileNames: 'js/[name].js',
-        assetFileNames: 'css/[name].[ext]',
-        manualChunks: {
-          vendor: ['jquery', 'bootstrap', 'datatables.net']
-        }
+        assetFileNames: 'css/[name].[ext]'
+      }
+    }
+  },
+  rolldownOptions: {
+    output: {
+      codeSplitting: {
+        groups: [
+          {
+            name: 'vendor',
+            test: /node_modules\/(jquery|bootstrap|datatables\.net)/
+          }
+        ]
       }
     }
   },

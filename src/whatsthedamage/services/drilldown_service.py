@@ -59,20 +59,13 @@ class DrilldownService:
             entity_type: Type of entity ('category' or 'month')
 
         Returns:
-            Dictionary containing resolved values and filter information:
-            {
-                'account_number': original account number,
-                'entity_name': original entity name,
-                'filter_value': value to use for filtering,
-                'error': error message if resolution failed
-            }
+            Dict[str, Optional[str]]: Dictionary containing resolved values and filter information
+                with keys:
+                - 'account_number': original account number
+                - 'entity_name': original entity name
+                - 'filter_value': value to use for filtering
+                - 'error': error message if resolution failed
 
-        Example:
-            >>> resolution = service.resolve_entity_ids(result_id, account_id, category_id, 'category')
-            >>> if resolution['error']:
-            >>>     return redirect_with_error(resolution['error'])
-            >>> account_number = resolution['account_number']
-            >>> category_name = resolution['entity_name']
         """
         resolution: Dict[str, Optional[str]] = {
             'account_number': None,
@@ -121,17 +114,10 @@ class DrilldownService:
             account_number: Original account number
 
         Returns:
-            Dictionary containing:
-            {
-                'dt_response': DataTablesResponse object or None,
-                'error': error message or None if retrieval failed
-            }
+            Dict[str, Optional[Any]]: Dictionary containing:
+                - 'dt_response': DataTablesResponse object or None
+                - 'error': error message or None if retrieval failed
 
-        Example:
-            >>> cache_result = service.get_cached_data_for_account(result_id, account_number)
-            >>> if cache_result['error']:
-            >>>     return redirect_with_error(cache_result['error'])
-            >>> dt_response = cache_result['dt_response']
         """
         result: Dict[str, Optional[Any]] = {
             'dt_response': None,

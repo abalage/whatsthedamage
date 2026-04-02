@@ -65,14 +65,14 @@ def summary_data_with_outliers():
 class TestIQROutlierDetection:
     """Tests for IQROutlierDetection algorithm."""
 
-    def test_empty_data_returns_empty_highlights_with_warning(self, capsys):
+    def test_empty_data_returns_empty_highlights_with_warning(self):
         """Test with empty data returns empty highlights with warning."""
         algorithm = IQROutlierDetection()
         result = algorithm.analyze({})
         # Warning is logged, not printed to stdout - check that result is correct
         assert result == {}
 
-    def test_single_data_point_returns_empty_with_warning(self, capsys):
+    def test_single_data_point_returns_empty_with_warning(self):
         """Test single data point returns empty highlights with warning (requires at least 4 points)."""
         algorithm = IQROutlierDetection()
         data = {"item1": 100.0}
@@ -123,7 +123,7 @@ class TestIQROutlierDetection:
         assert result["low_outlier"] == "outlier"
         assert result["high_outlier"] == "outlier"
 
-    def test_small_dataset_warning_and_early_return(self, capsys):
+    def test_small_dataset_warning_and_early_return(self):
         """Test that IQROutlierDetection prints warning and returns empty for datasets with < 4 points."""
         algorithm = IQROutlierDetection()
 
@@ -150,7 +150,7 @@ class TestIQROutlierDetection:
         # Warning is logged, not printed to stdout - check that result is correct
         assert result == {}
 
-    def test_small_dataset_warning(self, capsys):
+    def test_small_dataset_warning(self):
         """Test that IQROutlierDetection prints warning for datasets with 4-10 points."""
         algorithm = IQROutlierDetection()
 

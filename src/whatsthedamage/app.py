@@ -12,7 +12,6 @@ from whatsthedamage.utils.version import get_version
 from whatsthedamage.utils.logging import configure_logging, get_logger
 from whatsthedamage.services.service_container import ServiceContainer, create_service_container
 from whatsthedamage.services.id_mapping_service import IdMappingService
-from whatsthedamage.services.exclusion_service import ExclusionService
 
 def create_app(
     config_class: Optional[FlaskAppConfig] = None,
@@ -48,13 +47,11 @@ def create_app(
 
     # Register services in Flask extensions for backward compatibility
     app.extensions['configuration_service'] = service_container.configuration_service
-    app.extensions['validation_service'] = service_container.validation_service
-    app.extensions['data_formatting_service'] = service_container.data_formatting_service
     app.extensions['processing_service'] = service_container.processing_service
-    app.extensions['response_builder_service'] = service_container.response_builder_service
+    app.extensions['response_formatting_service'] = service_container.response_formatting_service
     app.extensions['cache_service'] = service_container.cache_service
     app.extensions['id_mapping_service'] = service_container.id_mapping_service
-    app.extensions['exclusion_service'] = service_container.get_service(ExclusionService)
+
     app.extensions['statistical_analysis_service'] = service_container.statistical_analysis_service
     app.extensions['file_upload_service'] = service_container.file_upload_service
     app.extensions['session_service'] = service_container.session_service

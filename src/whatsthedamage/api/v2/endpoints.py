@@ -7,7 +7,7 @@ from flask import Blueprint, jsonify, Response, current_app
 import time
 
 from whatsthedamage.services.processing_service import ProcessingService
-from whatsthedamage.services.response_builder_service import ResponseBuilderService
+from whatsthedamage.services.response_formatting_service import ResponseFormattingService
 from whatsthedamage.models.dt_models import ProcessingResponse
 from whatsthedamage.api.helpers import (
     validate_csv_file,
@@ -29,10 +29,10 @@ def _get_processing_service() -> ProcessingService:
     return cast(ProcessingService, current_app.extensions['processing_service'])
 
 
-def _get_response_builder_service() -> ResponseBuilderService:
+def _get_response_builder_service() -> ResponseFormattingService:
     """Get response builder service from app extensions (dependency injection)."""
     from typing import cast
-    return cast(ResponseBuilderService, current_app.extensions['response_builder_service'])
+    return cast(ResponseFormattingService, current_app.extensions['response_formatting_service'])
 
 
 @v2_bp.route('/process', methods=['POST'])

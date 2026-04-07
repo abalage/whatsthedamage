@@ -57,22 +57,22 @@ class ProcessingRequest(BaseModel):
         # Get date_format or use CsvConfig default
         date_format = self.date_format or CsvConfig().date_attribute_format
 
-        # Use ValidationService for validation
-        from whatsthedamage.services.validation_service import ValidationService
-        validation_service = ValidationService()
+        # Use FileUploadService for validation
+        from whatsthedamage.services.file_upload_service import FileUploadService
+        file_upload_service = FileUploadService()
 
         # Validate start_date format
-        start_result = validation_service.validate_date_format(self.start_date, date_format)
+        start_result = file_upload_service.validate_date_format(self.start_date, date_format)
         if not start_result.is_valid:
             raise ValueError(start_result.error_message or "Invalid start_date")
 
         # Validate end_date format
-        end_result = validation_service.validate_date_format(self.end_date, date_format)
+        end_result = file_upload_service.validate_date_format(self.end_date, date_format)
         if not end_result.is_valid:
             raise ValueError(end_result.error_message or "Invalid end_date")
 
         # Validate date range (start <= end)
-        range_result = validation_service.validate_date_range(
+        range_result = file_upload_service.validate_date_range(
             self.start_date, self.end_date, date_format
         )
         if not range_result.is_valid:

@@ -6,7 +6,7 @@ through statistical analysis to template data preparation.
 
 import pytest
 from whatsthedamage.services.statistical_analysis_service import StatisticalAnalysisService
-from whatsthedamage.services.exclusion_service import ExclusionService
+
 from whatsthedamage.services.data_formatting_service import DataFormattingService
 from whatsthedamage.models.dt_models import DataTablesResponse, AggregatedRow, DisplayRawField, DateField, DetailRow
 import uuid
@@ -115,15 +115,11 @@ def complete_dt_response():
 
 def test_end_to_end_excluded_highlights_pipeline(complete_dt_response):
     """Test the complete pipeline from DataTablesResponse to template data."""
-    # Step 1: Create exclusion service with some excluded categories
-    exclusion_service = ExclusionService()
-    exclusion_service.set_user_exclusions("default", ["Rent", "Deposit"])
-
-    # Step 2: Create statistical analysis service
+    # Step 1: Create statistical analysis service
     statistical_service = StatisticalAnalysisService(
-        enabled_algorithms=["iqr", "pareto"],
-        exclusion_service=exclusion_service
+        enabled_algorithms=["iqr", "pareto"]
     )
+    statistical_service.set_user_exclusions("default", ["Rent", "Deposit"])
 
     # Step 3: Compute statistical metadata
     metadata = statistical_service.compute_statistical_metadata({
@@ -181,10 +177,7 @@ def test_template_highlight_application():
     )
 
     # Create services
-    exclusion_service = ExclusionService()
-    statistical_service = StatisticalAnalysisService(
-        exclusion_service=exclusion_service
-    )
+    statistical_service = StatisticalAnalysisService()
     formatting_service = DataFormattingService(
         statistical_analysis_service=statistical_service
     )

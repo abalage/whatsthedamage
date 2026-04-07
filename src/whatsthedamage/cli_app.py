@@ -50,7 +50,7 @@ def format_output(
     Returns:
         str: Formatted output string
     """
-    formatting_service = container.data_formatting_service
+    formatting_service = container.response_formatting_service
 
     return formatting_service.format_all_accounts_for_output(
         dt_responses=dt_responses,

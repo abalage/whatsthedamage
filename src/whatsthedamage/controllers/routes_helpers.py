@@ -6,10 +6,8 @@ Following the Single Responsibility Principle and DRY patterns.
 from flask import current_app, Response, flash, redirect, url_for, make_response, render_template
 from whatsthedamage.view.forms import UploadForm
 from whatsthedamage.services.processing_service import ProcessingService
-from whatsthedamage.services.validation_service import ValidationService
-from whatsthedamage.services.response_builder_service import ResponseBuilderService
 from whatsthedamage.services.session_service import SessionService
-from whatsthedamage.services.data_formatting_service import DataFormattingService
+from whatsthedamage.services.response_formatting_service import ResponseFormattingService
 from whatsthedamage.services.file_upload_service import FileUploadService, FileUploadError
 from whatsthedamage.services.cache_service import CacheService
 from whatsthedamage.services.statistical_analysis_service import StatisticalAnalysisService
@@ -24,15 +22,6 @@ def _get_processing_service() -> ProcessingService:
     """Get processing service from app extensions (dependency injection)."""
     return cast(ProcessingService, current_app.extensions['processing_service'])
 
-
-def _get_validation_service() -> ValidationService:
-    """Get validation service from app extensions (dependency injection)."""
-    return cast(ValidationService, current_app.extensions['validation_service'])
-
-
-def _get_response_builder_service() -> ResponseBuilderService:
-    """Get response builder service from app extensions (dependency injection)."""
-    return cast(ResponseBuilderService, current_app.extensions['response_builder_service'])
 
 def _get_id_mapping_service() -> 'IdMappingService':
     """Get ID mapping service from app extensions (dependency injection)."""
@@ -50,9 +39,9 @@ def _get_session_service() -> SessionService:
     return cast(SessionService, current_app.extensions['session_service'])
 
 
-def _get_data_formatting_service() -> DataFormattingService:
+def _get_data_formatting_service() -> ResponseFormattingService:
     """Get data formatting service from app extensions (dependency injection)."""
-    return cast(DataFormattingService, current_app.extensions['data_formatting_service'])
+    return cast(ResponseFormattingService, current_app.extensions['response_formatting_service'])
 
 
 def _get_cache_service() -> CacheService:

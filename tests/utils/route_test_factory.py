@@ -9,7 +9,6 @@ from whatsthedamage.app import create_app
 from whatsthedamage.services.data_formatting_service import DataFormattingService
 from whatsthedamage.services.statistical_analysis_service import StatisticalAnalysisService
 from whatsthedamage.services.configuration_service import ConfigurationService
-from whatsthedamage.services.exclusion_service import ExclusionService
 from tests.utils.drilldown_test_data_builder import DrilldownTestDataBuilder
 from typing import Optional
 
@@ -100,8 +99,7 @@ class RouteTestFactory:
         # Override the services we want to test with our specific instances
         service_container._services[ConfigurationService] = config_service
         service_container._services[StatisticalAnalysisService] = StatisticalAnalysisService(
-            enabled_algorithms=config_service.get_default_config().enabled_statistical_algorithms,
-            exclusion_service=ExclusionService()
+            enabled_algorithms=config_service.get_default_config().enabled_statistical_algorithms
         )
         service_container._services[DataFormattingService] = DataFormattingService(
             statistical_analysis_service=service_container.get_service(StatisticalAnalysisService)

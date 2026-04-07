@@ -6,12 +6,9 @@ with proper dependency injection that works for both CLI and Web contexts.
 from typing import Type, TypeVar, Dict, Any, Optional, cast
 from flask import Flask
 from whatsthedamage.services.configuration_service import ConfigurationService
-from whatsthedamage.services.validation_service import ValidationService
 from whatsthedamage.services.processing_service import ProcessingService
-from whatsthedamage.services.response_builder_service import ResponseBuilderService
-from whatsthedamage.services.data_formatting_service import DataFormattingService
+from whatsthedamage.services.response_formatting_service import ResponseFormattingService
 from whatsthedamage.services.statistical_analysis_service import StatisticalAnalysisService
-from whatsthedamage.services.exclusion_service import ExclusionService
 from whatsthedamage.services.file_upload_service import FileUploadService
 from whatsthedamage.services.session_service import SessionService
 from whatsthedamage.services.id_mapping_service import IdMappingService
@@ -72,25 +69,17 @@ class ServiceContainer:
         # Service creation registry - maps service classes to their creation functions
         service_creators = {
             ConfigurationService: lambda: ConfigurationService(),
-            ValidationService: lambda: ValidationService(),
-            ExclusionService: lambda: ExclusionService(),
             StatisticalAnalysisService: lambda: StatisticalAnalysisService(
-                enabled_algorithms=self.get_service(ConfigurationService).get_default_config().enabled_statistical_algorithms,
-                exclusion_service=self.get_service(ExclusionService)
-            ),
-            DataFormattingService: lambda: DataFormattingService(
-                statistical_analysis_service=self.get_service(StatisticalAnalysisService)
+                enabled_algorithms=self.get_service(ConfigurationService).get_default_config().enabled_statistical_algorithms
             ),
             ProcessingService: lambda: ProcessingService(
                 configuration_service=self.get_service(ConfigurationService),
                 statistical_analysis_service=self.get_service(StatisticalAnalysisService)
             ),
-            ResponseBuilderService: lambda: ResponseBuilderService(
-                formatting_service=self.get_service(DataFormattingService)
+            ResponseFormattingService: lambda: ResponseFormattingService(
+                statistical_analysis_service=self.get_service(StatisticalAnalysisService)
             ),
-            FileUploadService: lambda: FileUploadService(
-                validation_service=self.get_service(ValidationService)
-            ),
+            FileUploadService: lambda: FileUploadService(),
             SessionService: lambda: SessionService(),
             MLService: lambda: MLService(),
             TextCorrectionService: lambda: TextCorrectionService(),
@@ -135,7 +124,7 @@ class ServiceContainer:
         return DrilldownService(
             id_mapping_service=self.get_service(IdMappingService),
             cache_service=self.get_service(CacheService),
-            data_formatting_service=self.get_service(DataFormattingService),
+            data_formatting_service=self.get_service(ResponseFormattingService),
             statistical_analysis_service=self.get_service(StatisticalAnalysisService)
         )
 
@@ -146,24 +135,14 @@ class ServiceContainer:
         return self.get_service(ConfigurationService)
 
     @property
-    def validation_service(self) -> ValidationService:
-        """Get ValidationService instance."""
-        return self.get_service(ValidationService)
-
-    @property
     def processing_service(self) -> ProcessingService:
         """Get ProcessingService instance."""
         return self.get_service(ProcessingService)
 
     @property
-    def response_builder_service(self) -> ResponseBuilderService:
-        """Get ResponseBuilderService instance."""
-        return self.get_service(ResponseBuilderService)
-
-    @property
-    def data_formatting_service(self) -> DataFormattingService:
-        """Get DataFormattingService instance."""
-        return self.get_service(DataFormattingService)
+    def response_formatting_service(self) -> ResponseFormattingService:
+        """Get ResponseFormattingService instance."""
+        return self.get_service(ResponseFormattingService)
 
     @property
     def statistical_analysis_service(self) -> StatisticalAnalysisService:

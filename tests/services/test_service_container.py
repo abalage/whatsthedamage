@@ -8,13 +8,11 @@ import pytest
 from flask import Flask
 from whatsthedamage.services.service_container import create_service_container, ServiceContainer
 from whatsthedamage.services.processing_service import ProcessingService
-from whatsthedamage.services.validation_service import ValidationService
-from whatsthedamage.services.response_builder_service import ResponseBuilderService
 from whatsthedamage.services.configuration_service import ConfigurationService
-from whatsthedamage.services.data_formatting_service import DataFormattingService
 from whatsthedamage.services.cache_service import CacheService
 from whatsthedamage.services.id_mapping_service import IdMappingService
 from whatsthedamage.services.drilldown_service import DrilldownService
+from whatsthedamage.services.response_formatting_service import ResponseFormattingService
 
 
 @pytest.fixture
@@ -31,10 +29,8 @@ def test_create_service_container() -> None:
 
 @pytest.mark.parametrize("service_name,expected_type", [
     ("processing_service", ProcessingService),
-    ("validation_service", ValidationService),
-    ("data_formatting_service", DataFormattingService),
     ("configuration_service", ConfigurationService),
-    ("response_builder_service", ResponseBuilderService)
+    ("response_formatting_service", ResponseFormattingService)
 ])
 def test_container_creates_and_caches_services(
     container: ServiceContainer, service_name: str, expected_type: type
@@ -52,7 +48,7 @@ def test_container_creates_and_caches_services(
 
 @pytest.mark.parametrize("service_with_dep,dependency_service", [
     ("processing_service", "configuration_service"),
-    ("response_builder_service", "data_formatting_service"),
+    ("response_formatting_service", "statistical_analysis_service"),
 ])
 def test_services_receive_dependencies(
     container: ServiceContainer, service_with_dep: str, dependency_service: str
@@ -75,17 +71,18 @@ def test_lazy_initialization(container: ServiceContainer) -> None:
     assert len(container._services) == 0
 
     # Access one service
-    validation_service = container.validation_service
+    response_formatting_service = container.response_formatting_service
 
-    # Now only validation service should be in the cache
-    assert len(container._services) == 1
-    assert 'ValidationService' in str(list(container._services.keys())[0])
+    # Now response formatting service and its dependencies should be in the cache
+    # ResponseFormattingService depends on StatisticalAnalysisService, which depends on ConfigurationService
+    assert len(container._services) == 3
+    assert 'ResponseFormattingService' in str(list(container._services.keys())[2])
     
-    # Access another simple service (configuration service has no dependencies)
+    # Configuration service is already in cache (dependency of response formatting service)
     config_service = container.configuration_service
     
-    # Now two services should be in the cache
-    assert len(container._services) == 2
+    # Still 3 services in cache (no new services added)
+    assert len(container._services) == 3
     
     # Access processing service - this will create its dependencies too
     processing_service = container.processing_service
@@ -94,9 +91,9 @@ def test_lazy_initialization(container: ServiceContainer) -> None:
     assert len(container._services) > 2
     
     # Verify same instances are returned (singleton behavior)
-    assert container.validation_service is validation_service
     assert container.configuration_service is config_service
     assert container.processing_service is processing_service
+    assert container.response_formatting_service is response_formatting_service
 
 
 def test_web_services_require_flask_app() -> None:
@@ -139,12 +136,12 @@ def test_get_service_method() -> None:
     config_service = container.get_service(ConfigurationService)
     assert isinstance(config_service, ConfigurationService)
     
-    validation_service = container.get_service(ValidationService)
-    assert isinstance(validation_service, ValidationService)
+    response_formatting_service = container.get_service(ResponseFormattingService)
+    assert isinstance(response_formatting_service, ResponseFormattingService)
     
     # Verify singleton behavior
     assert container.get_service(ConfigurationService) is config_service
-    assert container.get_service(ValidationService) is validation_service
+    assert container.get_service(ResponseFormattingService) is response_formatting_service
 
 
 def test_unknown_service_raises_error() -> None:

@@ -136,9 +136,8 @@ class DrilldownTestFactory:
         """
         from whatsthedamage.services.id_mapping_service import IdMappingService
         from whatsthedamage.services.cache_service import CacheService
-        from whatsthedamage.services.data_formatting_service import DataFormattingService
+        from whatsthedamage.services.response_formatting_service import ResponseFormattingService
         from whatsthedamage.services.statistical_analysis_service import StatisticalAnalysisService
-        from whatsthedamage.services.exclusion_service import ExclusionService
         from flask_caching import Cache
         from flask import Flask
         from whatsthedamage.models.dt_models import ProcessingResponse
@@ -172,11 +171,9 @@ class DrilldownTestFactory:
         # Create real service instances
         id_mapping_service = IdMappingService(flask_cache)
         cache_service = CacheService(cache_adapter)
-        data_formatting_service = DataFormattingService()
-        exclusion_service = ExclusionService()
+        data_formatting_service = ResponseFormattingService()
         statistical_analysis_service = StatisticalAnalysisService(
-            enabled_algorithms=['iqr', 'pareto'],
-            exclusion_service=exclusion_service
+            enabled_algorithms=['iqr', 'pareto']
         )
 
         return DrilldownService(

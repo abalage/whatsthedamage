@@ -4,7 +4,7 @@ import gettext
 import importlib.resources as resources
 from typing import Dict
 from whatsthedamage.controllers.cli_controller import CLIController
-from whatsthedamage.services.service_factory import create_service_container, ServiceContainer
+from whatsthedamage.services.service_container import create_service_container, ServiceContainer
 from whatsthedamage.config.config import AppArgs
 from whatsthedamage.models.dt_models import DataTablesResponse, ProcessingResponse
 from whatsthedamage.utils.logging import configure_logging, get_logger
@@ -50,7 +50,7 @@ def format_output(
     Returns:
         str: Formatted output string
     """
-    formatting_service = container.data_formatting_service
+    formatting_service = container.response_formatting_service
 
     return formatting_service.format_all_accounts_for_output(
         dt_responses=dt_responses,

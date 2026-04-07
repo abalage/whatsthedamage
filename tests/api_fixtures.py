@@ -21,6 +21,7 @@ def _create_test_client(processing_service=None):
         Flask test client with app context
     """
     from whatsthedamage.app import create_app
+    from whatsthedamage.services.processing_service import ProcessingService
 
     temp_dir = tempfile.mkdtemp()
 
@@ -30,7 +31,16 @@ def _create_test_client(processing_service=None):
         'MAX_CONTENT_LENGTH': 16 * 1024 * 1024  # 16MB max file size
     }
 
-    app = create_app(processing_service=processing_service)
+    # Create basic Flask app first
+    app = create_app()
+
+    # Now create service container with the Flask app and register our test processing service
+    from whatsthedamage.services.service_container import ServiceContainer
+    service_container = ServiceContainer(flask_app=app)
+    service_container._services[ProcessingService] = processing_service
+
+    # Update Flask extensions with our test service
+    app.extensions['processing_service'] = processing_service
     app.config.from_mapping(config)
 
     try:

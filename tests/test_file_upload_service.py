@@ -20,9 +20,9 @@ def validation_service():
 
 
 @pytest.fixture
-def file_upload_service(validation_service):
+def file_upload_service():
     """Create a FileUploadService instance for testing."""
-    return FileUploadService(validation_service)
+    return FileUploadService()
 
 
 @pytest.fixture

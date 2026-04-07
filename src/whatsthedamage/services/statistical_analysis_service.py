@@ -2,17 +2,21 @@
 
 This service uses the Strategy Pattern to apply various statistical algorithms
 to transaction data, providing highlight metadata for visualization.
+
+Now includes exclusion management functionality that was previously in ExclusionService.
 """
-from typing import Dict, List, Tuple, Optional
+import json
+from typing import Dict, List, Tuple, Optional, Any
 from enum import Enum
+from pathlib import Path
 from whatsthedamage.models.dt_models import CellHighlight, StatisticalMetadata, DataTablesResponse, AggregatedRow, SummaryData
-from whatsthedamage.services.exclusion_service import ExclusionService
 from whatsthedamage.models.statistical_algorithms import (
     StatisticalAlgorithm,
     IQROutlierDetection,
     ParetoAnalysis
 )
 from whatsthedamage.services.interfaces import IStatisticalAnalysisService
+from whatsthedamage.config import DEFAULT_EXCLUSIONS_PATH
 
 class AnalysisDirection(Enum):
     """Direction for statistical analysis.
@@ -28,14 +32,15 @@ class StatisticalAnalysisService(IStatisticalAnalysisService):
 
     Uses Strategy Pattern for extensible algorithm selection.
     Decoupled from AppConfig - only depends on algorithm names.
+    Now includes exclusion management functionality.
     """
 
-    def __init__(self, enabled_algorithms: List[str] | None = None, exclusion_service: Optional[ExclusionService] = None, filter_expenses_only: bool = True):
+    def __init__(self, enabled_algorithms: List[str] | None = None, exclusions_path: Optional[str] = None, filter_expenses_only: bool = True):
         """Initialize statistical analysis service.
 
         :param enabled_algorithms: List of algorithm names to enable (e.g., ['iqr', 'pareto'])
                                    If None, all algorithms are enabled.
-        :param exclusion_service: Service for managing category exclusions (optional)
+        :param exclusions_path: Path to JSON configuration file for exclusions. If None, uses default path.
         :param filter_expenses_only: If True (default), only negative values (expenses) are passed to algorithms.
                                      If False, all values are passed (original behavior).
         """
@@ -44,8 +49,126 @@ class StatisticalAnalysisService(IStatisticalAnalysisService):
             'pareto': ParetoAnalysis(),  # type: ignore[no-untyped-call]
         }
         self.enabled_algorithms = enabled_algorithms if enabled_algorithms is not None else list(self.algorithms.keys())
-        self._exclusion_service = exclusion_service
+        self.exclusions_path = exclusions_path or DEFAULT_EXCLUSIONS_PATH
+        self.default_exclusions = self._load_default_exclusions()
+        self.user_exclusions: Dict[str, List[str]] = {}
         self.filter_expenses_only = filter_expenses_only
+
+    def _load_default_exclusions(self) -> Dict[str, List[str]]:
+        """Load default exclusions from JSON configuration file.
+
+        Returns:
+            Dictionary mapping algorithm names to lists of excluded categories.
+            Returns empty dict if file doesn't exist or is invalid.
+        """
+        try:
+            config_path = Path(self.exclusions_path)
+            if config_path.exists():
+                with open(config_path, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+                    # Ensure we have the expected structure
+                    if isinstance(data, dict):
+                        return self._normalize_exclusions(data)
+        except (json.JSONDecodeError, IOError, OSError):
+            pass
+        return {}
+
+    def _normalize_exclusions(self, raw_data: Dict[str, Any]) -> Dict[str, List[str]]:
+        """Normalize raw exclusion data to ensure proper structure.
+
+        Args:
+            raw_data: Raw data from JSON file
+
+        Returns:
+            Normalized dictionary with algorithm-specific exclusion lists
+        """
+        normalized = {}
+
+        # Handle 'default' key
+        if 'default' in raw_data and isinstance(raw_data['default'], list):
+            normalized['default'] = [str(item) for item in raw_data['default']]
+
+        # Handle algorithm-specific keys
+        for algo in ['iqr', 'pareto']:
+            if algo in raw_data and isinstance(raw_data[algo], list):
+                normalized[algo] = [str(item) for item in raw_data[algo]]
+
+        return normalized
+
+    def get_exclusions(self, algorithm: str | None = None) -> List[str]:
+        """Get exclusions for specific algorithm or all algorithms.
+
+        Args:
+            algorithm: Optional algorithm name ('iqr', 'pareto'). If None, returns all exclusions.
+
+        Returns:
+            List of excluded category names
+        """
+        if algorithm:
+            # Get algorithm-specific exclusions
+            algo_exclusions = self.default_exclusions.get(algorithm, [])
+            user_algo_exclusions = self.user_exclusions.get(algorithm, [])
+            return list(set(algo_exclusions + user_algo_exclusions))
+
+        # Get all exclusions (union of all algorithm exclusions)
+        all_exclusions = []
+        for excl_list in self.default_exclusions.values():
+            all_exclusions.extend(excl_list)
+        for excl_list in self.user_exclusions.values():
+            all_exclusions.extend(excl_list)
+        return list(set(all_exclusions))
+
+    def set_user_exclusions(self, algorithm: str, exclusions: List[str]) -> None:
+        """Set user-defined exclusions for a specific algorithm.
+
+        Args:
+            algorithm: Algorithm name ('iqr', 'pareto', or 'default')
+            exclusions: List of category names to exclude
+        """
+        if not isinstance(exclusions, list):
+            raise ValueError("Exclusions must be a list of strings")
+
+        # Normalize to strings
+        normalized_exclusions = [str(excl) for excl in exclusions]
+        self.user_exclusions[algorithm] = normalized_exclusions
+
+    def clear_user_exclusions(self, algorithm: Optional[str] = None) -> None:
+        """Clear user-defined exclusions.
+
+        Args:
+            algorithm: Optional algorithm name. If None, clears all user exclusions.
+        """
+        if algorithm:
+            self.user_exclusions.pop(algorithm, None)
+        else:
+            self.user_exclusions.clear()
+
+    def is_excluded(self, category: str, algorithm: str | None = None) -> bool:
+        """Check if a category is excluded.
+
+        Args:
+            category: Category name to check
+            algorithm: Optional algorithm name for algorithm-specific check
+
+        Returns:
+            True if category is excluded, False otherwise
+        """
+        if not category:
+            return False
+
+        exclusions = self.get_exclusions(algorithm)
+        return str(category) in exclusions
+
+    def get_exclusion_config(self) -> Dict[str, Any]:
+        """Get the current exclusion configuration for frontend display.
+
+        Returns:
+            Dictionary containing both default and user exclusions
+        """
+        return {
+            'default': self.default_exclusions,
+            'user': self.user_exclusions
+        }
 
     def _build_month_to_rows_map(self, dt_response: DataTablesResponse) -> Dict[str, List[AggregatedRow]]:
         """Build a mapping of month displays to their corresponding rows.
@@ -73,11 +196,9 @@ class StatisticalAnalysisService(IStatisticalAnalysisService):
         """Get excluded categories as a set for efficient lookup.
 
         Returns:
-            Set of excluded category names, or empty set if no exclusion service
+            Set of excluded category names
         """
-        if self._exclusion_service:
-            return set(self._exclusion_service.get_exclusions())
-        return set()
+        return set(self.get_exclusions())
 
     def _is_cell_excluded(self, month_display: str, category: str, dt_response: DataTablesResponse, month_map: Optional[Dict[str, List[AggregatedRow]]] = None) -> bool:
         """Check if a specific cell (month, category) should be excluded.
@@ -297,10 +418,8 @@ class StatisticalAnalysisService(IStatisticalAnalysisService):
         Returns:
             DataTablesResponse with filtered rows ready for analysis
         """
-        # Pre-compute exclusions if exclusion service is available
-        excluded_categories = set()
-        if self._exclusion_service:
-            excluded_categories = set(self._exclusion_service.get_exclusions())
+        # Get excluded categories
+        excluded_categories = set(self.get_exclusions())
 
         filtered_rows = []
         for row in dt_response.data:

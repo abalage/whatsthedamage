@@ -9,19 +9,13 @@ from werkzeug.datastructures import FileStorage
 from typing import Optional, cast
 
 from whatsthedamage.models.api_models import ProcessingRequest
-from whatsthedamage.services.validation_service import ValidationService
-from whatsthedamage.services.response_builder_service import ResponseBuilderService
+from whatsthedamage.services.response_formatting_service import ResponseFormattingService
 from whatsthedamage.services.file_upload_service import FileUploadService, FileUploadError
 
 
-def _get_validation_service() -> ValidationService:
-    """Get validation service from app extensions (dependency injection)."""
-    return cast(ValidationService, current_app.extensions['validation_service'])
-
-
-def _get_response_builder_service() -> ResponseBuilderService:
+def _get_response_builder_service() -> ResponseFormattingService:
     """Get response builder service from app extensions (dependency injection)."""
-    return cast(ResponseBuilderService, current_app.extensions['response_builder_service'])
+    return cast(ResponseFormattingService, current_app.extensions['response_formatting_service'])
 
 
 def _get_file_upload_service() -> FileUploadService:
@@ -43,9 +37,9 @@ def validate_csv_file() -> FileStorage:
 
     csv_file = request.files['csv_file']
 
-    # Use ValidationService for validation
-    validation_service = _get_validation_service()
-    result = validation_service.validate_file_upload(csv_file)
+    # Use FileUploadService for validation
+    file_upload_service = _get_file_upload_service()
+    result = file_upload_service.validate_file_upload(csv_file)
 
     if not result.is_valid:
         raise BadRequest(result.error_message or "Invalid file upload")
@@ -63,9 +57,9 @@ def get_config_file() -> Optional[FileStorage]:
     if not config_file or not config_file.filename:
         return None
 
-    # Use ValidationService for validation
-    validation_service = _get_validation_service()
-    result = validation_service.validate_file_upload(config_file)
+    # Use FileUploadService for validation
+    file_upload_service = _get_file_upload_service()
+    result = file_upload_service.validate_file_upload(config_file)
 
     if not result.is_valid:
         raise BadRequest(result.error_message or "Invalid config file upload")

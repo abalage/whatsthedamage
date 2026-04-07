@@ -2,7 +2,7 @@
 
 import pytest
 from whatsthedamage.services.statistical_analysis_service import StatisticalAnalysisService
-from whatsthedamage.services.exclusion_service import ExclusionService
+
 from whatsthedamage.services.statistical_analysis_service import AnalysisDirection
 from whatsthedamage.models.statistical_algorithms import (
     IQROutlierDetection,
@@ -158,10 +158,8 @@ class TestHelperMethods:
 
     def test_is_cell_excluded_with_exclusion_service(self, sample_dt_response):
         """Test _is_cell_excluded with exclusion service."""
-        exclusion_service = ExclusionService()
-        exclusion_service.set_user_exclusions("default", ["Rent"])
-
-        service = StatisticalAnalysisService(exclusion_service=exclusion_service)
+        service = StatisticalAnalysisService()
+        service.set_user_exclusions("default", ["Rent"])
         # Rent is in exclusion list
         result = service._is_cell_excluded("January 2023", "Rent", sample_dt_response)
         assert result is True

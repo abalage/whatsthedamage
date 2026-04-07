@@ -2,7 +2,7 @@
 
 import pytest
 from whatsthedamage.services.statistical_analysis_service import StatisticalAnalysisService
-from whatsthedamage.services.exclusion_service import ExclusionService
+
 from whatsthedamage.models.dt_models import DataTablesResponse, AggregatedRow, DisplayRawField, DateField, DetailRow
 import uuid
 
@@ -91,15 +91,13 @@ def sample_dt_response():
 
 def test_excluded_cells_highlighting_with_exclusion_service(sample_dt_response):
     """Test that excluded cells are properly highlighted."""
-    # Create exclusion service with some excluded categories
-    exclusion_service = ExclusionService()
-    exclusion_service.set_user_exclusions("default", ["Rent", "Deposit"])
-
-    # Create statistical analysis service with exclusion service
+    # Create statistical analysis service
     statistical_service = StatisticalAnalysisService(
-        enabled_algorithms=["iqr", "pareto"],
-        exclusion_service=exclusion_service
+        enabled_algorithms=["iqr", "pareto"]
     )
+
+    # Set user exclusions directly on the service
+    statistical_service.set_user_exclusions("default", ["Rent", "Deposit"])
 
     # Compute statistical metadata
     metadata = statistical_service.compute_statistical_metadata({
@@ -128,10 +126,9 @@ def test_excluded_cells_highlighting_with_exclusion_service(sample_dt_response):
 
 def test_excluded_cells_highlighting_without_exclusion_service(sample_dt_response):
     """Test that calculated rows are still excluded even without exclusion service."""
-    # Create statistical analysis service without exclusion service
+    # Create statistical analysis service without setting any user exclusions
     statistical_service = StatisticalAnalysisService(
-        enabled_algorithms=["iqr", "pareto"],
-        exclusion_service=None
+        enabled_algorithms=["iqr", "pareto"]
     )
 
     # Compute statistical metadata
@@ -157,14 +154,9 @@ def test_excluded_cells_highlighting_without_exclusion_service(sample_dt_respons
 
 def test_get_excluded_cell_highlights_method(sample_dt_response):
     """Test the _get_excluded_cell_highlights method directly."""
-    # Create exclusion service
-    exclusion_service = ExclusionService()
-    exclusion_service.set_user_exclusions("default", ["Rent"])
-
     # Create statistical analysis service
-    statistical_service = StatisticalAnalysisService(
-        exclusion_service=exclusion_service
-    )
+    statistical_service = StatisticalAnalysisService()
+    statistical_service.set_user_exclusions("default", ["Rent"])
 
     # Call the method directly
     excluded_highlights = statistical_service._get_excluded_cell_highlights(sample_dt_response)

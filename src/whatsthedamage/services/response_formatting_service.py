@@ -1,42 +1,52 @@
-"""Data Formatting Service for standardized data output formatting.
+"""Response Formatting Service combining data formatting and response building.
 
-This service centralizes all data formatting logic across web, API, and CLI,
-consolidating logic from DataFrameFormatter and various formatting
-scattered in controllers.
+This service merges the functionality of DataFormattingService and ResponseBuilderService
+to provide a unified interface for all output formatting and response building needs.
 
 Architecture Patterns:
 - Strategy Pattern: Different formatting strategies per output type
 - Adapter Pattern: Adapt DataFrame to various output formats
 - Factory Pattern: Create appropriate formatter based on output type
 - Decorator Pattern: Add features (sorting, currency) to base formatters
-- DRY Principle: Single implementation for formatting operations
+- Builder Pattern: Complex response objects built step-by-step
+- Facade Pattern: Simplifies complex response building logic
+- Template Method: Common structure, variant implementations
+- DRY Principle: Single implementation for formatting and response building operations
 """
 import pandas as pd
 import json
-from typing import Dict, Optional, Any, List
-from whatsthedamage.models.dt_models import DataTablesResponse, StatisticalMetadata, SummaryData
+from typing import Dict, Optional, Any, List, TYPE_CHECKING
+from whatsthedamage.models.dt_models import DataTablesResponse, StatisticalMetadata, SummaryData, DetailedResponse
+from whatsthedamage.models.api_models import ProcessingMetadata, ErrorResponse, ProcessingRequest
 from gettext import gettext as _
 from whatsthedamage.services.statistical_analysis_service import StatisticalAnalysisService
 from whatsthedamage.services.interfaces import IDataFormattingService
 
+if TYPE_CHECKING:
+    from flask import Response
 
-class DataFormattingService(IDataFormattingService):
-    """Service for formatting data into various output formats.
 
-    Supports multiple output formats:
+class ResponseFormattingService(IDataFormattingService):
+    """Service for formatting data and building responses.
+
+    Combines the functionality of DataFormattingService and ResponseBuilderService.
+    Supports multiple output formats and response types:
     - HTML tables (with optional sorting metadata)
     - CSV strings
     - JSON strings
     - Currency formatting
+    - API detailed responses
+    - Error responses
 
     Account aware.
     """
 
     def __init__(self, statistical_analysis_service: Optional[StatisticalAnalysisService] = None) -> None:
-        """Initialize the data formatting service."""
+        """Initialize the response formatting service."""
         self.statistical_analysis_service = statistical_analysis_service
         self._categories_header = _("Categories")
 
+    # Data Formatting Methods (from DataFormattingService)
 
     def format_account_id(self, account_number: str) -> str:
         """Format account ID by adding dashes every 8 digits.
@@ -62,14 +72,13 @@ class DataFormattingService(IDataFormattingService):
 
         :param data: Data dictionary where outer keys are column headers (time periods),
             inner keys are rows (categories), values are amounts
-        :param currency: Currency code (e.g., "EUR", "USD")
         :param nowrap: If True, disables text wrapping in pandas output
         :return: HTML string with formatted table
 
         Example::
 
             >>> data = {"Total": {"Grocery": 150.5, "Utilities": 80.0}}
-            >>> html = service.format_as_html_table(data, "EUR")
+            >>> html = service.format_as_html_table(data)
             >>> assert "150.5" in html
         """
         # Configure pandas display options
@@ -105,14 +114,13 @@ class DataFormattingService(IDataFormattingService):
 
         :param data: Data dictionary where outer keys are column headers (time periods),
             inner keys are rows (categories), values are amounts
-        :param currency: Currency code (e.g., "EUR", "USD")
         :param delimiter: CSV delimiter character
         :return: CSV formatted string
 
         Example::
 
             >>> data = {"January": {"Grocery": 150.5}}
-            >>> csv = service.format_as_csv(data, "EUR")
+            >>> csv = service.format_as_csv(data)
             >>> assert "Grocery,150.5" in csv
         """
         # Create DataFrame
@@ -132,14 +140,13 @@ class DataFormattingService(IDataFormattingService):
 
         :param data: Data dictionary where outer keys are column headers (time periods),
             inner keys are rows (categories), values are amounts
-        :param currency: Currency code (e.g., "EUR", "USD")
         :param nowrap: If True, disables text wrapping in pandas output
         :return: Plain text formatted string
 
         Example::
 
             >>> data = {"Total": {"Grocery": 150.5}}
-            >>> text = service.format_as_string(data, "EUR")
+            >>> text = service.format_as_string(data)
             >>> assert "Grocery" in text and "150.5" in text
         """
         # Configure pandas display options
@@ -215,7 +222,6 @@ class DataFormattingService(IDataFormattingService):
 
         :param data: Data dictionary where outer keys are column headers (time periods),
             inner keys are rows (categories), values are amounts
-        :param currency: Currency code (e.g., "EUR", "USD")
         :param output_format: Output format ('html' or None for default)
         :param output_file: Path to output file (triggers CSV export)
         :param nowrap: If True, disables text wrapping in pandas output
@@ -225,11 +231,11 @@ class DataFormattingService(IDataFormattingService):
 
             >>> data = {"Total": {"Grocery": 150.5}}
             >>> # HTML output
-            >>> html = service.format_for_output(data, "EUR", output_format="html")
+            >>> html = service.format_for_output(data, output_format="html")
             >>> # CSV to file
-            >>> csv = service.format_for_output(data, "EUR", output_file="output.csv")
+            >>> csv = service.format_for_output(data, output_file="output.csv")
             >>> # Console string
-            >>> text = service.format_for_output(data, "EUR")
+            >>> text = service.format_for_output(data)
         """
         if output_format == 'html':
             return self.format_as_html_table(
@@ -540,3 +546,156 @@ class DataFormattingService(IDataFormattingService):
 
         return account_id
 
+    # Response Building Methods (from ResponseBuilderService)
+
+    def build_api_detailed_response(
+        self,
+        datatables_response: Dict[str, DataTablesResponse],
+        metadata: Dict[str, Any],
+        params: ProcessingRequest,
+        processing_time: float
+    ) -> DetailedResponse:
+        """Build standardized API detailed response.
+
+        Args:
+            datatables_response: Dict[str, DataTablesResponse] mapping account to response objects
+            metadata: Processing metadata (row_count, etc.)
+            params: Request parameters
+            processing_time: Total processing time in seconds
+
+        Returns:
+            DetailedResponse: Pydantic model for v2 API response with array of account responses
+
+        Example:
+            >>> response = service.build_api_detailed_response(
+            ...     datatables_response={'12345': dt_response1, '67890': dt_response2},
+            ...     metadata={'row_count': 150},
+            ...     params=ProcessingRequest(ml_enabled=True),
+            ...     processing_time=1.2
+            ... )
+        """
+        # Convert dict to array, sorted by account ID
+        aggregated_rows = []
+        for account_id in sorted(datatables_response.keys()):
+            dt_response = datatables_response[account_id]
+            # Add all aggregated rows from this account
+            aggregated_rows.extend(dt_response.data)
+
+        return DetailedResponse(
+            data=aggregated_rows,  # List[AggregatedRow] from all accounts
+            metadata=ProcessingMetadata(
+                row_count=metadata['row_count'],
+                processing_time=processing_time,
+                ml_enabled=params.ml_enabled,
+                date_range=self._build_date_range(params)
+            )
+        )
+
+    def build_error_response(
+        self,
+        error: Exception,
+        default_code: int = 500,
+        default_message: str = "Internal server error",
+        context: Optional[Dict[str, Any]] = None
+    ) -> tuple["Response", int]:
+        """Build standardized error response.
+
+        Centralizes error response building logic that was duplicated in
+        api/helpers.py::handle_error() and api/error_handlers.py.
+
+        Args:
+            error: The exception to handle
+            default_code: Default status code if exception type not recognized
+            default_message: Default error message
+            context: Optional additional context
+
+        Returns:
+            tuple: (jsonified error response, status code)
+
+        Example:
+            >>> response, code = service.build_error_response(
+            ...     ValueError("Invalid date format"),
+            ...     default_code=422,
+            ...     default_message="Validation error"
+            ... )
+        """
+        from flask import jsonify
+        from werkzeug.exceptions import BadRequest
+        from pydantic import ValidationError as PydanticValidationError
+        from whatsthedamage.utils.validation import ValidationError
+
+        # Determine status code and message based on exception type
+        if isinstance(error, BadRequest):
+            field_value = context.get("field", "unknown") if context else "unknown"
+            error_response = ErrorResponse(
+                code=400,
+                message=str(error),
+                details={"field": str(field_value)}
+            )
+            status_code = 400
+
+        elif isinstance(error, PydanticValidationError):
+            validation_errors = [str(err) for err in error.errors()]
+            error_response = ErrorResponse(
+                code=400,
+                message="Invalid request parameters",
+                details={"errors": validation_errors}
+            )
+            status_code = 400
+
+        elif isinstance(error, ValidationError):
+            error_response = ErrorResponse(
+                code=400,
+                message=error.result.error_message or "Validation failed",
+                details=error.result.details or {}
+            )
+            status_code = 400
+
+        elif isinstance(error, FileNotFoundError):
+            error_response = ErrorResponse(
+                code=400,
+                message="File not found",
+                details={"error": str(error)}
+            )
+            status_code = 400
+
+        elif isinstance(error, ValueError):
+            error_response = ErrorResponse(
+                code=422,
+                message="Processing error",
+                details={"error": str(error)}
+            )
+            status_code = 422
+
+        else:
+            # Generic exception handling
+            error_response = ErrorResponse(
+                code=default_code,
+                message=default_message,
+                details={"error": str(error), "type": type(error).__name__}
+            )
+            status_code = default_code
+
+        return jsonify(error_response.model_dump()), status_code
+
+    # Private helper methods
+
+    def _build_date_range(self, params: ProcessingRequest) -> Optional[Dict[str, str]]:
+        """Build date range dictionary from parameters.
+
+        Args:
+            params: Processing request parameters
+
+        Returns:
+            Dict with start/end dates or None if no dates specified
+        """
+        if not params.start_date and not params.end_date:
+            return None
+
+        date_range = {}
+        if params.start_date:
+            date_range['start'] = params.start_date
+        if params.end_date:
+            date_range['end'] = params.end_date
+
+        return date_range

@@ -275,7 +275,7 @@ class DataFormattingService(IDataFormattingService):
         summary_data: SummaryData = SummaryData.from_datatable_response(
             dt_response=dt_responses[selected_account_id],
             account_id=selected_account_id,
-            include_calculated=False
+            include_calculated=True  # Include Balance and Total Spendings rows
         )
 
         return self.format_as_html_table(
@@ -335,11 +335,11 @@ class DataFormattingService(IDataFormattingService):
         # Select and validate account
         selected_account_id = self._select_account(dt_responses, account_id)
 
-        # Extract summary for selected account
+        # Extract summary for selected account (include Balance and Total Spendings)
         summary_data: SummaryData = SummaryData.from_datatable_response(
             dt_response=dt_responses[selected_account_id],
             account_id=selected_account_id,
-            include_calculated=False
+            include_calculated=True  # Include Balance and Total Spendings rows
         )
 
         return self.format_as_string(
@@ -372,11 +372,11 @@ class DataFormattingService(IDataFormattingService):
         # Select and validate account
         selected_account_id = self._select_account(dt_responses, account_id)
 
-        # Extract summary for selected account
+        # Extract summary for selected account (include Balance and Total Spendings)
         summary_data: SummaryData = SummaryData.from_datatable_response(
             dt_response=dt_responses[selected_account_id],
             account_id=selected_account_id,
-            include_calculated=False
+            include_calculated=True  # Include Balance and Total Spendings rows
         )
 
         return self.format_for_output(

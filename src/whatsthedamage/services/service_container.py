@@ -116,8 +116,8 @@ class ServiceContainer:
         """Create IdMappingService instance."""
         if self._flask_app is None:
             raise ValueError("IdMappingService requires Flask app in web context")
-        cache = Cache(self._flask_app, config={'CACHE_TYPE': 'SimpleCache'})
-        return IdMappingService(cache)
+        cache_service = self.get_service(CacheService)
+        return IdMappingService(cache_service)
 
     def _create_drilldown_service(self) -> DrilldownService:
         """Create DrilldownService instance."""

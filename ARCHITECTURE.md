@@ -49,15 +49,16 @@ whatsthedamage/
 │   ├── services/             # Business logic services
 │   │   ├── cache_service.py      # Caching service
 │   │   ├── configuration_service.py # Configuration loading
-│   │   ├── data_formatting_service.py # Output formatting
+│   │   ├── data_formatting_service.py # Output formatting (deprecated)
 │   │   ├── drilldown_service.py    # Drilldown functionality
 │   │   ├── exclusion_service.py     # Exclusion handling
 │   │   ├── file_upload_service.py   # File upload handling
 │   │   ├── id_mapping_service.py    # ID mapping for secure URLs
 │   │   ├── ml_service.py        # ML business logic orchestration
 │   │   ├── processing_service.py    # Core processing service
-│   │   ├── response_builder_service.py # Response construction
-│   │   ├── service_factory.py      # Service container factory
+│   │   ├── response_builder_service.py # Response construction (deprecated)
+│   │   ├── response_formatting_service.py # Unified formatting & response building
+│   │   ├── service_container.py      # Service container factory
 │   │   ├── session_service.py      # Web session management
 │   │   ├── smote_service.py      # SMOTE synthetic data generation
 │   │   ├── statistical_analysis_service.py # Statistical analysis
@@ -167,25 +168,39 @@ The system follows a layered architecture with clear separation of concerns:
 
 **Deployment**: Part of the Flask application
 
-#### 3.2.4. DataFormattingService
+#### 3.2.4. ResponseFormattingService
 
-**Name**: Data Formatting Service
+**Name**: Response Formatting Service
 
-**Description**: Formats processed transaction data for various output targets including console, HTML, CSV, and JSON. Supports the unified DataTablesResponse format for web and API interfaces.
+**Description**: Unified service combining data formatting and response building capabilities. Formats processed transaction data for various output targets including console, HTML, CSV, and JSON. Supports the unified DataTablesResponse format for web and API interfaces. This service merges the functionality of the previous DataFormattingService and ResponseBuilderService to reduce cognitive complexity and ensure consistent formatting across all interfaces.
 
 **Technologies**: Python
 
 **Deployment**: Part of the Flask application
 
+**Key Features**:
+- Multiple output formats: HTML tables, CSV strings, JSON, plain text
+- DataTablesResponse formatting for web and API interfaces
+- Currency formatting with locale support
+- Template preparation for Jinja2 rendering
+- Error response building for consistent API error handling
+- Account-aware formatting with secure ID handling
+
 #### 3.2.5. IdMappingService
 
 **Name**: ID Mapping Service
 
-**Description**: Provides secure URL generation and mapping between internal IDs and user-facing identifiers. This service enables safe drilldown functionality by creating non-predictable URLs for accessing specific transaction details.
+**Description**: Provides secure URL generation and mapping between internal IDs and user-facing identifiers. This service enables safe drilldown functionality by creating non-predictable URLs for accessing specific transaction details. Uses CacheService for storage to comply with existing architectural patterns.
 
 **Technologies**: Python, Flask-Caching integration
 
 **Deployment**: Part of the Flask application
+
+**Key Features**:
+- Secure mapping between account numbers and IDs
+- Category name/ID mapping for URL safety
+- Month timestamp/ID mapping for time-based drilldown
+- Cache-backed storage for performance
 
 #### 3.2.6. DrilldownService
 
@@ -216,6 +231,12 @@ The system follows a layered architecture with clear separation of concerns:
 **Technologies**: Python, imbalanced-learn
 
 **Deployment**: Part of the Flask application
+
+**Key Features**:
+- Automatic detection of imbalanced classes
+- Configurable SMOTE parameters via ML configuration
+- Integration with MLService for model training
+- Support for rare category enhancement
 
 #### 3.2.9. TextCorrectionService
 
@@ -344,7 +365,7 @@ The system follows a layered architecture with clear separation of concerns:
 ## 9. Future Considerations / Roadmap
 
 **Known Architectural Debts**:
-- Migrate from monolith to separate backend and fronend repositories.
+- Migrate from monolith to separate backend and frontend repositories.
 
 **Planned Major Changes**:
 - Migrate from memory-based caching to more robust solution
@@ -359,6 +380,12 @@ The system follows a layered architecture with clear separation of concerns:
 - Mobile application support
 - Additional localization languages
 
+**Recent Architectural Improvements**:
+- Service consolidation: Merged DataFormattingService and ResponseBuilderService into unified ResponseFormattingService
+- Improved dependency injection patterns with standardized service container
+- Enhanced IdMappingService to use CacheService for consistency
+- Simplified service registration and usage across CLI and web contexts
+
 ## 10. Project Identification
 
 **Project Name**: whatsthedamage
@@ -367,7 +394,7 @@ The system follows a layered architecture with clear separation of concerns:
 
 **Primary Contact/Team**: Balage Abalage
 
-**Date of Last Update**: 2026-03-25
+**Date of Last Update**: 2026-04-07
 
 ## 11. Glossary / Acronyms
 

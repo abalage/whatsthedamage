@@ -6,19 +6,18 @@ in URLs while maintaining the ability to look up the original data.
 """
 from typing import Dict, Optional, Any, cast
 import hashlib
-from flask_caching import Cache
-from whatsthedamage.services.interfaces import IIdMappingService
+from whatsthedamage.services.interfaces import IIdMappingService, ICacheService
 
 class IdMappingService(IIdMappingService):
     """Service for mapping sensitive data to opaque identifiers and vice versa."""
 
-    def __init__(self, flask_cache: Cache):
-        """Initialize the ID mapping service with Flask-Caching.
+    def __init__(self, cache_service: ICacheService):
+        """Initialize the ID mapping service with CacheService.
 
         Args:
-            flask_cache: Flask-Caching instance for storing ID mappings
+            cache_service: CacheService instance for storing ID mappings
         """
-        self._cache = flask_cache
+        self._cache = cache_service
 
     def _generate_deterministic_id(self, prefix: str, value: str) -> str:
         """Generate a deterministic opaque ID from a value.

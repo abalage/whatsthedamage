@@ -51,6 +51,11 @@ whatsthedamage/
   - **CLI**: Uses `ServiceContainer` from `service_factory.py`
   - **Flask**: Uses `app.extensions` dictionary
 - **SOLID Principles**: Clean OOP design
+  - **Single Responsibility Principle (SRP)**: A class should have only one reason to change, meaning it should have only one job or responsibility.
+  - **Open/Closed Principle (OCP)**: Software entities (classes, modules, functions) should be open for extension but closed for modification. You should be able to add new functionality without altering existing code.
+  - **Liskov Substitution Principle (LSP)**: Objects of a superclass should be replaceable with objects of its subclasses without breaking the application. Subclasses should extend the behavior of the parent class, not restrict it.
+  - **Interface Segregation Principle (ISP)**: Clients should not be forced to depend on interfaces they do not use. It’s better to have many small, specific interfaces than one large, general-purpose interface.
+  - **Dependency Inversion Principle (DIP)**: High-level modules should not depend on low-level modules. Both should depend on abstractions (e.g., interfaces). Abstractions should not depend on details; details should depend on abstractions.
 - **DRY Principle**: Don't Repeat Yourself
 
 ## Tooling & Dependencies

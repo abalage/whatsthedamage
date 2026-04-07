@@ -4,18 +4,19 @@ This module provides a factory for creating Flask test clients with properly
 configured services and test data for route testing.
 """
 from flask import Flask
+from typing import Dict, Any
 from whatsthedamage.app import create_app
 from whatsthedamage.services.data_formatting_service import DataFormattingService
 from whatsthedamage.services.statistical_analysis_service import StatisticalAnalysisService
 from whatsthedamage.services.configuration_service import ConfigurationService
 from whatsthedamage.services.exclusion_service import ExclusionService
 from tests.utils.drilldown_test_data_builder import DrilldownTestDataBuilder
-from typing import Dict, Optional
+from typing import Optional
 
 class RouteTestFactory:
     """Factory for creating test clients and setting up test data for route testing."""
 
-    def create_test_client(self):
+    def create_test_client(self):  # type: ignore[no-untyped-def]
         """Create Flask test client with all services configured.
 
         Returns:
@@ -25,13 +26,13 @@ class RouteTestFactory:
         app.config['TESTING'] = True
         app.config['WTF_CSRF_ENABLED'] = False  # Disable CSRF for testing
 
-        return app.test_client()
+        return app.test_client()  # type: ignore[return-value]
 
     def setup_test_data(
         self,
         result_id: str = 'test123',
         account_number: str = 'ACCT12345678'
-    ) -> dict:
+    ) -> Dict[str, Any]:
         """Setup cached data and ID mappings for testing.
 
         Args:
@@ -80,7 +81,7 @@ class RouteTestFactory:
             'processing_response': processing_response
         }
 
-    def create_app_with_test_services(self) -> Flask:
+    def create_app_with_test_services(self):  # type: ignore[no-untyped-def]
         """Create Flask app with test-configured services.
 
         Returns:
@@ -89,32 +90,34 @@ class RouteTestFactory:
         # Create configuration service
         config_service = ConfigurationService()
 
-        # Create exclusion service
-        exclusion_service = ExclusionService()
+        # Create basic Flask app first
+        app = create_app()  # type: ignore[assignment]
 
-        # Create statistical analysis service
-        config = config_service.get_default_config()
-        stat_service = StatisticalAnalysisService(
-            enabled_algorithms=config.enabled_statistical_algorithms,
-            exclusion_service=exclusion_service
+        # Now create service container with the Flask app and register our test services
+        from whatsthedamage.services.service_container import ServiceContainer
+        service_container = ServiceContainer(flask_app=app)
+
+        # Override the services we want to test with our specific instances
+        service_container._services[ConfigurationService] = config_service
+        service_container._services[StatisticalAnalysisService] = StatisticalAnalysisService(
+            enabled_algorithms=config_service.get_default_config().enabled_statistical_algorithms,
+            exclusion_service=ExclusionService()
+        )
+        service_container._services[DataFormattingService] = DataFormattingService(
+            statistical_analysis_service=service_container.get_service(StatisticalAnalysisService)
         )
 
-        # Create data formatting service
-        data_formatting_service = DataFormattingService(statistical_analysis_service=stat_service)
-
-        # Create app with test services
-        app = create_app(
-            configuration_service=config_service,
-            statistical_analysis_service=stat_service,
-            data_formatting_service=data_formatting_service
-        )
+        # Update Flask extensions with our test services
+        app.extensions['configuration_service'] = config_service
+        app.extensions['statistical_analysis_service'] = service_container.get_service(StatisticalAnalysisService)
+        app.extensions['data_formatting_service'] = service_container.get_service(DataFormattingService)
 
         app.config['TESTING'] = True
         app.config['WTF_CSRF_ENABLED'] = False
 
         return app
 
-    def get_service_from_app(self, app: Flask, service_name: str):
+    def get_service_from_app(self, app: Flask, service_name: str) -> Any:
         """Get a service from the Flask app extensions.
 
         Args:

@@ -6,6 +6,31 @@ Provides abstract protocol for cache implementations.
 from typing import Optional, Protocol, runtime_checkable
 from whatsthedamage.models.dt_models import ProcessingResponse
 from whatsthedamage.services.interfaces import ICacheService
+from flask_caching import Cache
+
+
+class FlaskCacheAdapter:
+    """Adapter to make Flask-Caching work with CacheProtocol.
+
+    This adapter allows CacheService to work with Flask-Caching without
+    being tightly coupled to it.
+    """
+
+    def __init__(self, flask_cache: Cache):
+        self._flask_cache = flask_cache
+
+    def set(self, key: str, value: ProcessingResponse, timeout: int) -> None:
+        """Store value in Flask cache."""
+        self._flask_cache.set(key, value, timeout=timeout)
+
+    def get(self, key: str) -> Optional[ProcessingResponse]:
+        """Retrieve value from Flask cache."""
+        result: Optional[ProcessingResponse] = self._flask_cache.get(key)
+        return result
+
+    def delete(self, key: str) -> None:
+        """Remove value from Flask cache."""
+        self._flask_cache.delete(key)
 
 @runtime_checkable
 class CacheProtocol(Protocol):

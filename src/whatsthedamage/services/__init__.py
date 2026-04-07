@@ -5,7 +5,7 @@ from whatsthedamage.services.response_builder_service import ResponseBuilderServ
 from whatsthedamage.services.configuration_service import ConfigurationService
 from whatsthedamage.services.data_formatting_service import DataFormattingService
 from whatsthedamage.services.smote_service import SmoteService
-from whatsthedamage.services.service_factory import create_service_container, ServiceContainer
+from whatsthedamage.services.service_container import create_service_container, ServiceContainer
 
 # SessionService requires Flask - import directly where needed (web routes only)
 

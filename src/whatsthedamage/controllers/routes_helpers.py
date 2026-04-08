@@ -16,6 +16,9 @@ from whatsthedamage.services.drilldown_service import DrilldownService
 from whatsthedamage.models.dt_models import ProcessingResponse
 from whatsthedamage.utils.flask_locale import get_default_language
 from typing import Dict, Callable, Optional, cast, Tuple, List, Any, Union
+from whatsthedamage.utils.logging import get_logger
+
+logger = get_logger(__name__)
 
 
 def _get_processing_service() -> ProcessingService:
@@ -129,6 +132,7 @@ def process_details_and_build_response(
     # Cache result at controller layer (separation of concerns)
     # Business logic (ProcessingService) doesn't know about caching
     cache_service = _get_cache_service()
+    logger.info(f"Caching processing result {result_id} for drilldown views")
     cache_service.set(result_id, result)
 
     # Prepare accounts data for template rendering

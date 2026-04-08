@@ -104,13 +104,18 @@ class ServiceContainer:
             raise ValueError(f"Unknown service class: {service_class}")
 
     def _create_cache_service(self) -> CacheService:
-        """Create CacheService instance."""
+        """Create CacheService instance with configured TTL."""
         if self._flask_app is None:
             raise ValueError("CacheService requires Flask app in web context")
         from whatsthedamage.services.cache_service import FlaskCacheAdapter
         cache = Cache(self._flask_app, config={'CACHE_TYPE': 'SimpleCache'})
         adapter = FlaskCacheAdapter(cache)
-        return CacheService(adapter)
+
+        # Get cache_ttl from configuration
+        config_service = self.get_service(ConfigurationService)
+        cache_ttl = config_service.get_default_config().cache_ttl
+
+        return CacheService(adapter, ttl=cache_ttl)
 
     def _create_id_mapping_service(self) -> IdMappingService:
         """Create IdMappingService instance."""

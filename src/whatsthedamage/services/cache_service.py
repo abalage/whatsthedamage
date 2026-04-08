@@ -7,6 +7,9 @@ from typing import Optional, Protocol, runtime_checkable
 from whatsthedamage.models.dt_models import ProcessingResponse
 from whatsthedamage.services.interfaces import ICacheService
 from flask_caching import Cache
+from whatsthedamage.utils.logging import get_logger
+
+logger = get_logger(__name__)
 
 
 class FlaskCacheAdapter:
@@ -69,11 +72,16 @@ class CacheService(ICacheService):
 
     def set(self, key: str, value: ProcessingResponse, timeout: Optional[int] = None) -> None:
         """Cache the result."""
-        self._cache.set(key, value, timeout=timeout if timeout is not None else self._ttl)
+        actual_timeout = timeout if timeout is not None else self._ttl
+        logger.info(f"Caching result {key} with TTL {actual_timeout} seconds")
+        self._cache.set(key, value, timeout=actual_timeout)
 
     def get(self, key: str) -> Optional[ProcessingResponse]:
         """Retrieve cached result."""
-        return self._cache.get(key)
+        result = self._cache.get(key)
+        if result is None:
+            logger.debug(f"Cache miss for key: {key}")
+        return result
 
     def delete(self, key: str) -> None:
         """Delete cached result."""

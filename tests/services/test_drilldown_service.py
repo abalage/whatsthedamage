@@ -78,7 +78,7 @@ class TestDrilldownService:
         )
 
         # Verify
-        assert result['error'] == 'Invalid account ID'
+        assert result['error'] == 'Invalid account ID (may be due to expired cache)'
         assert result['account_number'] is None
         assert result['entity_name'] is None
         assert result['filter_value'] is None
@@ -138,7 +138,7 @@ class TestDrilldownService:
         result = service.get_cached_data_for_account('test123', 'ACCT123')
 
         # Verify
-        assert result['error'] == 'Result not found or expired.'
+        assert result['error'] == 'Result not found or cache expired. Please reprocess the file.'
         assert result['dt_response'] is None
 
     def test_get_cached_data_for_account_invalid_account(self):

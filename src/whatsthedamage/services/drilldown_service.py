@@ -77,7 +77,7 @@ class DrilldownService:
         # Resolve account number
         account_number = self._id_mapping_service.get_account_number(result_id, account_id)
         if not account_number:
-            resolution['error'] = 'Invalid account ID'
+            resolution['error'] = 'Invalid account ID (may be due to expired cache)'
             return resolution
 
         # Resolve entity based on type
@@ -131,7 +131,10 @@ class DrilldownService:
         try:
             cached = self._cache_service.get(result_id)
             if not cached:
-                result['error'] = 'Result not found or expired.'
+                from whatsthedamage.utils.logging import get_logger
+                logger = get_logger(__name__)
+                logger.warning(f"Cache expiration detected for result_id: {result_id}")
+                result['error'] = 'Result not found or cache expired. Please reprocess the file.'
                 return result
 
             dt_response = cached.data.get(account_number)

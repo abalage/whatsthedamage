@@ -7,7 +7,8 @@ from whatsthedamage.view.forms import UploadForm
 from whatsthedamage.controllers.routes_helpers import (
     handle_file_uploads,
     process_details_and_build_response,
-    handle_entity_drilldown
+    handle_entity_drilldown,
+    show_detail_results
 )
 from whatsthedamage.services.session_service import SessionService
 from whatsthedamage.services.configuration_service import ConfigurationService
@@ -307,3 +308,19 @@ def show_category_month_transactions(result_id: str, account_id: str, category_i
     )
 
     return make_response(render_template('category_month_transactions.html', **context))
+
+
+@bp.route('/results/<result_id>/details')
+def show_details(result_id: str) -> Union[Response, Any]:
+    """Show all transaction details in a single DataTable view.
+
+    Route handler for displaying all DetailRow objects from a processing result
+    in a searchable DataTable format.
+
+    Args:
+        result_id: UUID of the cached processing result
+
+    Returns:
+        Flask Response with rendered detail_results.html template or redirect
+    """
+    return show_detail_results(result_id)

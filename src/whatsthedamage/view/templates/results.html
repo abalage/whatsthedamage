@@ -23,6 +23,14 @@
         {% from '_statistical_controls.html' import render_statistical_controls %}
         {{ render_statistical_controls(result_id) }}
 
+        <div class="row mb-3">
+            <div class="col-md-12 text-end">
+                <a href="/results/{{ result_id }}/details" class="btn btn-primary">
+                    {{ _('View All Transactions') }}
+                </a>
+            </div>
+        </div>
+
         {% for account in accounts_data.accounts %}
         {% set dt_response = account.dt_response %}
         {% set urls = drilldown_urls_by_account[account.id] %}

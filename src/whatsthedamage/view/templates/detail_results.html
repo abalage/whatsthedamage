@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>"What's the Damage" - {{ _('Detail Results') }}</title>
+    <link href="{{ url_for('static', filename='dist/css/main.css') }}" rel="stylesheet">
+    <script type="module" src="{{ url_for('static', filename='dist/js/main.js') }}"></script>
+    <!-- Translated strings for JavaScript -->
+    <script>
+        globalThis.resultId = '{{ result_id }}';
+        globalThis.exportCsvText = '{{ _("Export CSV") }}';
+        globalThis.exportExcelText = '{{ _("Export Excel") }}';
+        globalThis.highlights = '{{ accounts_data.highlights | tojson }}'
+    </script>
+</head>
+<body>
+    <header>
+        {% include 'header.html' %}
+    </header>
+    <main class="container-fluid">
+        <h1 class="text-center p-2 pb-1">{{ _('Transaction Details') }}</h1>
+
+        {% from '_statistical_controls.html' import render_statistical_controls %}
+        {{ render_statistical_controls(result_id) }}
+
+        <div class="row mb-3">
+            <div class="col-md-12">
+                <div class="table-responsive">
+                    <table id="detail-datatable" class="table table-bordered" data-datatable="true">
+                        <thead>
+                            <tr>
+                                <th>{{ _('Date') }}</th>
+                                <th>{{ _('Category') }}</th>
+                                <th>{{ _('Merchant') }}</th>
+                                <th>{{ _('Amount') }}</th>
+                                <th>{{ _('Currency') }}</th>
+                                <th>{{ _('Account') }}</th>
+                                <th>{{ _('Type') }}</th>
+                                <th>{{ _('Confidence') }}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for account in accounts_data.accounts %}
+                                {% for agg_row in account.dt_response.data %}
+                                    {% for detail in agg_row.details %}
+                                    <tr>
+                                        <td>{{ detail.date.display }}</td>
+                                        <td>{{ agg_row.category }}</td>
+                                        <td>{{ detail.merchant }}</td>
+                                        <td>{{ detail.amount.display }}</td>
+                                        <td>{{ detail.currency }}</td>
+                                        <td>{{ account.formatted_id }}</td>
+                                        <td>{{ detail.type or '' }}</td>
+                                        <td>{{ detail.confidence | string if detail.confidence is not none else '' }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                {% endfor %}
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-6">
+                <a href="/results/{{ result_id }}" class="btn btn-secondary mt-3 mb-3">{{ _('Back to Summary') }}</a>
+            </div>
+        </div>
+    </main>
+    <footer class="bg-success text-white text-center py-3 mt-3">
+        {% include 'footer.html' %}
+    </footer>
+</body>
+</html>

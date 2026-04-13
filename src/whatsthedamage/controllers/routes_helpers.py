@@ -250,6 +250,42 @@ def handle_entity_drilldown(
 
     return make_response(render_template(template, **context))
 
+def show_detail_results(result_id: str) -> Union[Response, Any]:
+    """Show all transaction details in a single DataTable view.
+
+    This function retrieves cached processing results and displays all DetailRow
+    objects in a searchable DataTable format.
+
+    Args:
+        result_id: UUID of the cached processing result
+
+    Returns:
+        Flask Response with rendered detail_results.html template or redirect
+    """
+    # Get cached result using service (dependency injection pattern)
+    cache_service = _get_cache_service()
+    cached_result = cache_service.get(result_id)
+
+    if cached_result is None:
+        flash('Result data not found or expired', 'danger')
+        return redirect(url_for('main.index'))
+
+    # Prepare accounts data for template rendering
+    formatting_service = _get_data_formatting_service()
+    accounts_data = formatting_service.prepare_accounts_for_template(
+        cached_result.data,
+        cached_result.statistical_metadata
+    )
+
+    return make_response(
+        render_template(
+            'detail_results.html',
+            accounts_data=accounts_data,
+            result_id=result_id
+        )
+    )
+
+
 def handle_recalculate_statistics_request(
     result_id: str,
     algorithms: List[str],

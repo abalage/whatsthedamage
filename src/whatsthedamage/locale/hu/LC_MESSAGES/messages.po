@@ -195,6 +195,54 @@ msgstr "Kereskedő"
 msgid "Back"
 msgstr "Vissza"
 
+#: src/whatsthedamage/view/templates/results.html:115
+msgid "View All Transactions"
+msgstr "Összes tranzakció megtekintése"
+
+#: src/whatsthedamage/view/templates/detail_results.html:5
+msgid "Detail Results"
+msgstr "Részletes eredmények"
+
+#: src/whatsthedamage/view/templates/detail_results.html:11
+msgid "Transaction Details"
+msgstr "Tranzakció részletek"
+
+#: src/whatsthedamage/view/templates/detail_results.html:18
+msgid "Date"
+msgstr "Dátum"
+
+#: src/whatsthedamage/view/templates/detail_results.html:19
+msgid "Category"
+msgstr "Kategória"
+
+#: src/whatsthedamage/view/templates/detail_results.html:20
+msgid "Merchant"
+msgstr "Kereskedő"
+
+#: src/whatsthedamage/view/templates/detail_results.html:21
+msgid "Amount"
+msgstr "Összeg"
+
+#: src/whatsthedamage/view/templates/detail_results.html:22
+msgid "Currency"
+msgstr "Pénznem"
+
+#: src/whatsthedamage/view/templates/detail_results.html:23
+msgid "Account"
+msgstr "Számlaszám"
+
+#: src/whatsthedamage/view/templates/detail_results.html:24
+msgid "Type"
+msgstr "Típus"
+
+#: src/whatsthedamage/view/templates/detail_results.html:25
+msgid "Confidence"
+msgstr "Biztosság"
+
+#: src/whatsthedamage/view/templates/detail_results.html:55
+msgid "Back to Summary"
+msgstr "Vissza az összefoglalóhoz"
+
 #: src/whatsthedamage/view/templates/category_months_list.html:5
 #: src/whatsthedamage/view/templates/category_months_list.html:19
 msgid "Details for Category"

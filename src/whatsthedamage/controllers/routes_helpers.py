@@ -250,6 +250,51 @@ def handle_entity_drilldown(
 
     return make_response(render_template(template, **context))
 
+def show_summary_results(result_id: str) -> Union[Response, Any]:
+    """Show summary results view.
+
+    This function retrieves cached processing results and displays them
+    in the summary view format.
+
+    Args:
+        result_id: UUID of the cached processing result
+
+    Returns:
+        Flask Response with rendered results.html template or redirect
+    """
+    # Get cached result using service (dependency injection pattern)
+    cache_service = _get_cache_service()
+    cached_result = cache_service.get(result_id)
+
+    if cached_result is None:
+        flash('Result data not found or expired', 'danger')
+        return redirect(url_for('main.index'))
+
+    # Prepare accounts data for template rendering
+    formatting_service = _get_data_formatting_service()
+    accounts_data = formatting_service.prepare_accounts_for_template(
+        cached_result.data,
+        cached_result.statistical_metadata
+    )
+
+    # Generate secure drill-down URLs for each account using DrilldownService
+    drilldown_urls_by_account = {}
+    drilldown_service = _get_drilldown_service()
+    for account_id, dt_response in cached_result.data.items():
+        drilldown_urls_by_account[account_id] = drilldown_service.generate_drilldown_urls(
+            result_id, account_id, dt_response
+        )
+
+    return make_response(
+        render_template(
+            'results.html',
+            accounts_data=accounts_data,
+            result_id=result_id,
+            drilldown_urls_by_account=drilldown_urls_by_account
+        )
+    )
+
+
 def show_detail_results(result_id: str) -> Union[Response, Any]:
     """Show all transaction details in a single DataTable view.
 

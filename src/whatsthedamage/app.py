@@ -1,4 +1,4 @@
-from flask import Flask, g, current_app
+from flask import Flask, current_app
 import os
 import gettext
 from typing import Optional, Any
@@ -33,6 +33,39 @@ def create_app(
 
     logger.info("Flask application configured successfully")
 
+    # Configure Jinja2 environment to make translation functions available to macros
+    def jinja_gettext(message: str) -> str:
+        """Jinja2 global gettext function that works with macros."""
+        lang = get_locale()
+        try:
+            translations = gettext.translation(
+                'messages',  # domain
+                localedir=os.path.join(app.root_path, 'locale'),  # adjust if needed
+                languages=[lang],
+                fallback=True
+            )
+        except Exception:
+            translations = gettext.NullTranslations()
+        return translations.gettext(message)
+
+    def jinja_ngettext(singular: str, plural: str, n: int) -> str:
+        """Jinja2 global ngettext function that works with macros."""
+        lang = get_locale()
+        try:
+            translations = gettext.translation(
+                'messages',  # domain
+                localedir=os.path.join(app.root_path, 'locale'),  # adjust if needed
+                languages=[lang],
+                fallback=True
+            )
+        except Exception:
+            translations = gettext.NullTranslations()
+        return translations.ngettext(singular, plural, n)
+
+    # Set up Jinja2 globals for macro access
+    app.jinja_env.globals['_'] = jinja_gettext
+    app.jinja_env.globals['ngettext'] = jinja_ngettext
+
     # Check if external config file exists and load it
     config_file = 'config.py'
     if os.path.exists(config_file):
@@ -64,8 +97,9 @@ def create_app(
     # - Cleanup on upload instead of every request
     # - TTL-based automatic cleanup in upload folder
 
-    @app.before_request
-    def set_gettext() -> None:
+    @app.context_processor
+    def inject_gettext() -> dict[str, Any]:
+        # Translation setup moved here to ensure availability during template rendering
         lang = get_locale()
         try:
             translations = gettext.translation(
@@ -76,14 +110,13 @@ def create_app(
             )
         except Exception:
             translations = gettext.NullTranslations()
-        g._ = translations.gettext
-        g.ngettext = translations.ngettext
-        # Store language in g for templates if needed
-        g.lang = lang
 
-    @app.context_processor
-    def inject_gettext() -> dict[str, Any]:
-        return {'_': g._, 'ngettext': g.ngettext, 'app_version': get_version()}
+        return {
+            '_': translations.gettext,
+            'ngettext': translations.ngettext,
+            'app_version': get_version(),
+            'lang': lang
+        }
     # --- END: Gettext integration for templates ---
 
     # Register blueprints

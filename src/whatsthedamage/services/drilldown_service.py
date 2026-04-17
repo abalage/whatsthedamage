@@ -6,6 +6,7 @@ a clean interface for controllers to access drilldown functionality while
 maintaining separation of concerns.
 """
 from typing import Dict, List, Any, Optional
+from datetime import datetime
 from whatsthedamage.services.interfaces import (
     IIdMappingService, ICacheService,
     IDataFormattingService, IStatisticalAnalysisService
@@ -85,8 +86,16 @@ class DrilldownService:
             entity_name = self._id_mapping_service.get_category_name(result_id, entity_id)
             filter_value = entity_name
         elif entity_type == 'month':
-            entity_name = self._id_mapping_service.get_month_timestamp(entity_id)
-            filter_value = entity_name
+            timestamp = self._id_mapping_service.get_month_timestamp(entity_id)
+            if timestamp:
+                # Format timestamp as YYYY-MM-DD for display
+                from datetime import datetime
+                month_dt = datetime.fromtimestamp(int(timestamp))
+                entity_name = month_dt.strftime('%Y-%m-%d')
+                filter_value = timestamp  # Keep raw timestamp for filtering
+            else:
+                entity_name = None
+                filter_value = None
         else:
             resolution['error'] = 'Invalid entity type'
             return resolution
@@ -182,6 +191,40 @@ class DrilldownService:
             return [row for row in dt_response.data if str(row.date.timestamp) == filter_value]
         return []
 
+    def filter_data_for_category_month(
+        self,
+        dt_response: Optional[DataTablesResponse],
+        category_name: str,
+        month_start_dt: datetime
+    ) -> List[AggregatedRow]:
+        """Filter drilldown data for a specific category and month combination.
+
+        Applies combined filtering logic to find transactions that match both
+        the specified category and month.
+
+        Args:
+            dt_response: DataTablesResponse containing the data to filter
+            category_name: Category name to filter by
+            month_start_dt: Datetime object representing the month to filter by
+
+        Returns:
+            List of filtered AggregatedRow objects
+
+        Example:
+            >>> filtered_data = service.filter_data_for_category_month(
+            >>>     dt_response, 'Grocery', datetime(2023, 5, 1)
+            >>> )
+        """
+        if not dt_response or not category_name or not month_start_dt:
+            return []
+
+        return [
+            row for row in dt_response.data
+            if (row.category == category_name and
+                datetime.fromtimestamp(row.date.timestamp).year == month_start_dt.year and
+                datetime.fromtimestamp(row.date.timestamp).month == month_start_dt.month)
+        ]
+
     def process_statistical_metadata(self, result_id: str) -> Dict[str, List[str]]:
         """Process statistical metadata for template context.
 
@@ -252,6 +295,7 @@ class DrilldownService:
                 'formatted_account': None,
                 'result_id': result_id,
                 'account_id': account_id,
+                'entity_name': entity_name,
                 f'{entity_type}_id': entity_id,
                 entity_type: entity_name,
                 'urls': drilldown_urls,
@@ -271,6 +315,7 @@ class DrilldownService:
             'formatted_account': formatted_account,
             'result_id': result_id,
             'account_id': account_id,
+            'entity_name': entity_name,
             f'{entity_type}_id': entity_id,
             entity_type: entity_name,
             'urls': drilldown_urls,

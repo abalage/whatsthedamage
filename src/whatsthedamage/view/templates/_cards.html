@@ -1,0 +1,46 @@
+{# Card component macros #}
+
+{% macro card(title, classes='', id=None) %}
+<div class="card {{ classes }}" {% if id %}id="{{ id }}"{% endif %}>
+    {% if title %}
+    <div class="card-header bg-success text-white">
+        {{ title }}
+    </div>
+    {% endif %}
+    <div class="card-body bg-light">
+        {{ caller() }}
+    </div>
+</div>
+{% endmacro %}
+
+{% macro simple_card(classes='', id=None) %}
+<div class="card {{ classes }}" {% if id %}id="{{ id }}"{% endif %}>
+    <div class="card-body">
+        {{ caller() }}
+    </div>
+</div>
+{% endmacro %}
+
+{% macro account_card(account) %}
+<div class="account-section mb-4">
+    <div class="account-header bg-light p-3 rounded">
+        <h2 class="mb-0">
+            {{ _('Account') }}: {{ account.formatted_id }}
+            {% if account.currency %}
+                <span class="badge bg-info">({{ account.currency }})</span>
+            {% endif %}
+        </h2>
+    </div>
+    <div class="account-content mt-3">
+        {{ caller() }}
+    </div>
+</div>
+{% endmacro %}
+
+{# Alert/Info card #}
+{% macro info_card(title, message, type='info') %}
+<div class="alert alert-{{ type }} alert-dismissible fade show" role="alert">
+    <strong>{{ title }}:</strong> {{ message }}
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+</div>
+{% endmacro %}

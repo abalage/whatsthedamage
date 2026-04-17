@@ -55,8 +55,8 @@ class TestDrilldownService:
 
         # Verify
         assert result['account_number'] == 'ACCT123'
-        assert result['entity_name'] == '1704067200'
-        assert result['filter_value'] == '1704067200'
+        assert result['entity_name'] == '2024-01-01'  # Formatted date
+        assert result['filter_value'] == '1704067200'  # Raw timestamp for filtering
         assert result['error'] is None
 
     def test_resolve_entity_ids_invalid_account(self):

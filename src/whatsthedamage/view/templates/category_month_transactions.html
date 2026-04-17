@@ -1,51 +1,73 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>{{ _('Transaction Details') }}: {{ _(category) }} / {{ _(data[0].date.display if data) }}</title>
-    <link href="{{ url_for('static', filename='dist/css/main.css') }}" rel="stylesheet">
-    <script type="module" src="{{ url_for('static', filename='dist/js/main.js') }}"></script>
-    <!-- Translated strings and highlights for JavaScript -->
-    <script>
-        globalThis.resultId = '{{ result_id }}';
-        globalThis.highlights = '{{ highlights | tojson }}';
-    </script>
-</head>
-<body>
-    <header>
-        {% include 'header.html' %}
-    </header>
-    <main class="container-fluid">
-        <h1>{{ _('Transaction Details') }}: {{ _(category) }} / {{ _(data[0].date.display if data) }}</h1>
-        <h2>{{ _('Account') }}: {{ formatted_account }}</h2>
-        <div class="table-responsive">
-            <table id="transaction-details-table" class="table table-bordered" data-datatable="true">
-                <thead>
-                    <tr>
-                        <th>{{ _('Date') }}</th>
-                        <th>{{ _('Amount') }}</th>
-                        <th>{{ _('Merchant') }}</th>
-                        <th>{{ _('Confidence') }}</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for row in data %}
-                    {% for detail in row.details %}
-                    <tr>
-                        <td>{{ detail.date.display }}</td>
-                        <td data-row-id="{{ detail.row_id }}" class="">{{ detail.amount.display }}</td>
-                        <td>{{ detail.merchant }}</td>
-                        <td>{{ detail.confidence|default('N/A', true) }}</td>
-                    </tr>
-                    {% endfor %}
-                    {% endfor %}
-                </tbody>
-            </table>
+{% extends "base.html" %}
+
+{% block title %}{{ _('Transaction Details') }}: {{ entity_name }}{% endblock %}
+
+{% block breadcrumb %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="/">{{ _('Home') }}</a></li>
+        <li class="breadcrumb-item"><a href="/results/{{ result_id }}">{{ _('Results') }}</a></li>
+        <li class="breadcrumb-item"><a href="/results/{{ result_id }}/accounts/{{ account_id }}/categories/{{ category_id }}/months">{{ _('Category Months') }}</a></li>
+        <li class="breadcrumb-item active" aria-current="page">{{ _('Transaction Details') }}</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block js_config %}
+<script type="module" src="{{ url_for('static', filename='dist/js/main.js') }}"></script>
+<script>
+    globalThis.resultId = '{{ result_id }}';
+    globalThis.highlights = '{{ highlights | tojson }}';
+</script>
+{% endblock %}
+
+{% block content %}
+{% from '_statistical_controls.html' import render_statistical_controls %}
+{% from '_cards.html' import account_card %}
+{{ render_statistical_controls(result_id) }}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="mb-0">{{ _('Transaction Details') }}: {{ entity_name }}</h1>
+</div>
+
+{% if not data %}
+<div class="alert alert-info">
+    {{ _('No transactions found for this category and month.') }}
+</div>
+{% else %}
+{% call account_card({'formatted_id': formatted_account}) %}
+    <div class="row">
+        <div class="col-md-8 mb-3">
+            <div class="table-responsive">
+                <table id="transaction-details-table" class="table table-bordered" data-datatable="true">
+                    <thead>
+                        <tr>
+                            <th>{{ _('Date') }}</th>
+                            <th>{{ _('Amount') }}</th>
+                            <th>{{ _('Merchant') }}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in data %}
+                        {% for detail in row.details %}
+                        <tr>
+                            <td>{{ detail.date.display }}</td>
+                            <td data-row-id="{{ detail.row_id }}" class="">{{ detail.amount.display }}</td>
+                            <td>{{ detail.merchant }}</td>
+                        </tr>
+                        {% endfor %}
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         </div>
-        <a href="/" class="btn btn-secondary">{{ _('Back') }}</a>
-    </main>
-    <footer class="bg-success text-white text-center py-3 mt-3">
-        {% include 'footer.html' %}
-    </footer>
-</body>
-</html>
+    </div>
+{% endcall %}
+{% endif %}
+
+<div class="row">
+    <div class="col-md-6">
+        <a href="/results/{{ result_id }}/accounts/{{ account_id }}/categories/{{ category_id }}/months" class="btn btn-secondary me-2 mt-3 mb-3">{{ _('Back to Category Months') }}</a>
+        <a href="/results/{{ result_id }}" class="btn btn-outline-secondary mt-3 mb-3">{{ _('Back to Results') }}</a>
+    </div>
+</div>
+{% endblock %}

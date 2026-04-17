@@ -95,6 +95,7 @@ def process() -> Response:
         for field, errors in form.errors.items():
             for error in errors:
                 flash(f"Error in {getattr(form, field).label.text}: {error}", 'danger')
+                logger.error(f"Error in {getattr(form, field).label.text}: {error}")
         return make_response(redirect(url_for(INDEX_ROUTE)))
 
     try:
@@ -118,9 +119,11 @@ def process() -> Response:
 
     except ValueError as e:
         flash(str(e), 'danger')
+        logger.error(str(e))
         return make_response(redirect(url_for(INDEX_ROUTE)))
     except Exception as e:
         flash(f'Error processing CSV: {e}')
+        logger.error(f'Error processing CSV: {e}')
         return make_response(redirect(url_for(INDEX_ROUTE)))
 
 
@@ -246,69 +249,16 @@ def show_month_categories(result_id: str, account_id: str, month_id: str) -> Uni
 @bp.route('/results/<result_id>/accounts/<account_id>/categories/<category_id>/months/<month_id>/transactions')
 def show_category_month_transactions(result_id: str, account_id: str, category_id: str, month_id: str) -> Response:
     """Show specific category and month transaction details using secure IDs."""
-    from whatsthedamage.controllers.routes_helpers import _get_drilldown_service, _get_id_mapping_service
+    from whatsthedamage.controllers.routes_helpers import handle_category_month_transactions
 
-    # Use DrilldownService for all business logic
-    drilldown_service = _get_drilldown_service()
-    id_mapping_service = _get_id_mapping_service()
-
-    # Resolve IDs to original values using service
-    account_number = id_mapping_service.get_account_number(result_id, account_id)
-    category_name = id_mapping_service.get_category_name(result_id, category_id)
-    month_timestamp = id_mapping_service.get_month_timestamp(month_id)
-
-    if not account_number or not category_name or not month_timestamp:
-        flash('Invalid account, category, or month ID', 'danger')
-        return make_response(redirect(url_for(INDEX_ROUTE)))
-
-    # Get cached data using service
-    cache_result = drilldown_service.get_cached_data_for_account(result_id, account_number)
-
-    if cache_result['error']:
-        flash(cache_result['error'], 'danger')
-        return make_response(redirect(url_for(INDEX_ROUTE)))
-
-    dt_response = cache_result['dt_response']
-    if not dt_response:
-        flash('No data found for the specified account', 'danger')
-        return make_response(redirect(url_for(INDEX_ROUTE)))
-
-    # Convert month_timestamp to a date range for the entire month
-    month_start_dt = datetime.fromtimestamp(int(month_timestamp))
-
-    # Filter data for the specific category and month
-    filtered_data = [
-        row for row in dt_response.data
-        if (row.category == category_name and
-            datetime.fromtimestamp(row.date.timestamp).year == month_start_dt.year and
-            datetime.fromtimestamp(row.date.timestamp).month == month_start_dt.month)
-    ]
-
-    if not filtered_data:
-        flash(DATA_NOT_FOUND_ERROR, 'danger')
-        return make_response(redirect(url_for(INDEX_ROUTE)))
-
-    # Generate drilldown URLs using service
-    drilldown_urls = drilldown_service.generate_drilldown_urls(result_id, account_number, dt_response)
-
-    # Build context using service
-    context = drilldown_service.build_drilldown_context(
-        filtered_data=filtered_data,
-        account_number=account_number,
+    return handle_category_month_transactions(
         result_id=result_id,
         account_id=account_id,
-        entity_type='transaction',
-        entity_id=f"{category_id}_{month_id}",
-        entity_name=f"{category_name} - {month_start_dt.strftime('%Y-%m')}",
-        drilldown_urls=drilldown_urls,
-        template_specific_context={
-            'category_id': category_id,
-            'month_id': month_id,
-            'month_ts': month_timestamp
-        }
+        category_id=category_id,
+        month_id=month_id,
+        data_not_found_error=DATA_NOT_FOUND_ERROR,
+        index_route=INDEX_ROUTE
     )
-
-    return make_response(render_template('category_month_transactions.html', **context))
 
 
 @bp.route('/results/<result_id>')

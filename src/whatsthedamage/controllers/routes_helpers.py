@@ -17,6 +17,7 @@ from whatsthedamage.models.dt_models import ProcessingResponse
 from whatsthedamage.utils.flask_locale import get_default_language
 from typing import Dict, Callable, Optional, cast, Tuple, List, Any, Union
 from whatsthedamage.utils.logging import get_logger
+from datetime import datetime
 
 logger = get_logger(__name__)
 
@@ -249,6 +250,91 @@ def handle_entity_drilldown(
     )
 
     return make_response(render_template(template, **context))
+
+
+def handle_category_month_transactions(
+    result_id: str,
+    account_id: str,
+    category_id: str,
+    month_id: str,
+    data_not_found_error: str = 'Data not found',
+    index_route: str = 'main.index'
+) -> Union[Response, Any]:
+    """Handle category-month transaction drilldown requests.
+
+    This function provides a unified handler for showing transaction details
+    for a specific category and month combination, following the same pattern
+    as handle_entity_drilldown but with additional filtering logic.
+
+    Args:
+        result_id: UUID of the cached processing result
+        account_id: Secure account ID
+        category_id: Secure category ID
+        month_id: Secure month ID
+        data_not_found_error: Error message for missing data
+        index_route: Route to redirect on error
+
+    Returns:
+        Flask Response with rendered template or redirect
+    """
+    # Use DrilldownService for all business logic
+    drilldown_service = _get_drilldown_service()
+    id_mapping_service = _get_id_mapping_service()
+
+    # Resolve IDs to original values using service
+    account_number = id_mapping_service.get_account_number(result_id, account_id)
+    category_name = id_mapping_service.get_category_name(result_id, category_id)
+    month_timestamp = id_mapping_service.get_month_timestamp(month_id)
+
+    if not account_number or not category_name or not month_timestamp:
+        flash('Invalid account, category, or month ID', 'danger')
+        return redirect(url_for(index_route))
+
+    # Get cached data using service
+    cache_result = drilldown_service.get_cached_data_for_account(result_id, account_number)
+
+    if cache_result['error']:
+        flash(cache_result['error'], 'danger')
+        return redirect(url_for(index_route))
+
+    dt_response = cache_result['dt_response']
+    if not dt_response:
+        flash('No data found for the specified account', 'danger')
+        return redirect(url_for(index_route))
+
+    # Convert month_timestamp to a date range for the entire month
+    month_start_dt = datetime.fromtimestamp(int(month_timestamp))
+
+    # Filter data for the specific category and month using service
+    filtered_data = drilldown_service.filter_data_for_category_month(
+        dt_response, category_name, month_start_dt
+    )
+
+    if not filtered_data:
+        flash(data_not_found_error, 'danger')
+        return redirect(url_for(index_route))
+
+    # Generate drilldown URLs using service
+    drilldown_urls = drilldown_service.generate_drilldown_urls(result_id, account_number, dt_response)
+
+    # Build context using service
+    context = drilldown_service.build_drilldown_context(
+        filtered_data=filtered_data,
+        account_number=account_number,
+        result_id=result_id,
+        account_id=account_id,
+        entity_type='transaction',
+        entity_id=f"{category_id}_{month_id}",
+        entity_name=f"{category_name} - {month_start_dt.strftime('%Y-%m-%d')}",
+        drilldown_urls=drilldown_urls,
+        template_specific_context={
+            'category_id': category_id,
+            'month_id': month_id,
+            'month_ts': month_timestamp
+        }
+    )
+
+    return make_response(render_template('category_month_transactions.html', **context))
 
 def show_summary_results(result_id: str) -> Union[Response, Any]:
     """Show summary results view.

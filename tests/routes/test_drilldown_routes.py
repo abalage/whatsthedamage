@@ -358,9 +358,9 @@ class TestDrilldownRoutes:
 
         # Test category month transactions template
         with client.application.test_request_context():
-            with patch('whatsthedamage.controllers.routes.render_template') as mock_render:
+            with patch('whatsthedamage.controllers.routes_helpers.render_template') as mock_render:
                 mock_render.return_value = "Mocked template"
-                with patch('whatsthedamage.controllers.routes.make_response') as mock_make_response:
+                with patch('whatsthedamage.controllers.routes_helpers.make_response') as mock_make_response:
                     mock_make_response.return_value = "Mocked response"
 
                     client.get(f'/results/{result_id}/accounts/{account_id}/categories/{category_id}/months/{month_id}/transactions')

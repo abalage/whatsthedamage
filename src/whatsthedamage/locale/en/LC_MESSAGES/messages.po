@@ -269,6 +269,54 @@ msgstr ""
 msgid "Back"
 msgstr ""
 
+#: src/whatsthedamage/view/templates/results.html:115
+msgid "View All Transactions"
+msgstr "View All Transactions"
+
+#: src/whatsthedamage/view/templates/detail_results.html:5
+msgid "Detail Results"
+msgstr "Detail Results"
+
+#: src/whatsthedamage/view/templates/detail_results.html:11
+msgid "Transaction Details"
+msgstr "Transaction Details"
+
+#: src/whatsthedamage/view/templates/detail_results.html:18
+msgid "Date"
+msgstr "Date"
+
+#: src/whatsthedamage/view/templates/detail_results.html:19
+msgid "Category"
+msgstr "Category"
+
+#: src/whatsthedamage/view/templates/detail_results.html:20
+msgid "Merchant"
+msgstr "Merchant"
+
+#: src/whatsthedamage/view/templates/detail_results.html:21
+msgid "Amount"
+msgstr "Amount"
+
+#: src/whatsthedamage/view/templates/detail_results.html:22
+msgid "Currency"
+msgstr "Currency"
+
+#: src/whatsthedamage/view/templates/detail_results.html:23
+msgid "Account"
+msgstr "Account"
+
+#: src/whatsthedamage/view/templates/detail_results.html:24
+msgid "Type"
+msgstr "Type"
+
+#: src/whatsthedamage/view/templates/detail_results.html:25
+msgid "Confidence"
+msgstr "Confidence"
+
+#: src/whatsthedamage/view/templates/detail_results.html:55
+msgid "Back to Summary"
+msgstr "Back to Summary"
+
 #: src/whatsthedamage/view/templates/result.html:46
 msgid "Download CSV"
 msgstr ""

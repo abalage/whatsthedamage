@@ -1,0 +1,49 @@
+{# Button component macros #}
+{% macro primary_button(text, url=None, icon=None, classes='', id=None, onclick=None) %}
+<a href="{{ url if url else '#' }}"
+   class="btn btn-primary {{ classes }}"
+   {% if id %}id="{{ id }}"{% endif %}
+   {% if onclick %}onclick="{{ onclick }}"{% endif %}>
+    {% if icon %}<i class="{{ icon }}"></i> {% endif %}
+    {{ text }}
+</a>
+{% endmacro %}
+
+{% macro secondary_button(text, url=None, icon=None, classes='', id=None, onclick=None) %}
+<a href="{{ url if url else '#' }}"
+   class="btn btn-secondary {{ classes }}"
+   {% if id %}id="{{ id }}"{% endif %}
+   {% if onclick %}onclick="{{ onclick }}"{% endif %}>
+    {% if icon %}<i class="{{ icon }}"></i> {% endif %}
+    {{ text }}
+</a>
+{% endmacro %}
+
+{% macro back_button(url="/", text=None) %}
+<a href="{{ url }}" class="btn btn-secondary">
+    {{ text if text else _('Back') }}
+</a>
+{% endmacro %}
+
+{% macro action_button(text, type='button', classes='btn-primary', icon=None, id=None, onclick=None) %}
+<button type="{{ type }}"
+        class="btn {{ classes }} {{ 'btn-' + classes if 'btn-' not in classes else '' }}"
+        {% if id %}id="{{ id }}"{% endif %}
+        {% if onclick %}onclick="{{ onclick }}"{% endif %}>
+    {% if icon %}<i class="{{ icon }}"></i> {% endif %}
+    {{ text }}
+</button>
+{% endmacro %}
+
+{# View toggle buttons - context-aware macro #}
+{% macro view_toggle_button(current_view, result_id) %}
+{% if current_view == 'summary' %}
+<a href="/results/{{ result_id }}/details" class="btn btn-outline-primary">
+    <i class="bi bi-list-ul"></i> {{ _('Detailed View') }}
+</a>
+{% elif current_view == 'details' %}
+<a href="/results/{{ result_id }}" class="btn btn-outline-primary">
+    <i class="bi bi-grid"></i> {{ _('Summary View') }}
+</a>
+{% endif %}
+{% endmacro %}

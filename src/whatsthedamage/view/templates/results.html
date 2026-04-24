@@ -1,40 +1,42 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>"What's the Damage" - {{ _('Result') }}</title>
-    <link href="{{ url_for('static', filename='dist/css/main.css') }}" rel="stylesheet">
-    <script type="module" src="{{ url_for('static', filename='dist/js/main.js') }}"></script>
-    <!-- Translated strings for JavaScript -->
-    <script>
-        globalThis.resultId = '{{ result_id }}';
-        globalThis.exportCsvText = '{{ _("Export CSV") }}';
-        globalThis.exportExcelText = '{{ _("Export Excel") }}';
-        globalThis.highlights = '{{ accounts_data.highlights | tojson }}'
-    </script>
-</head>
-<body>
-    <header>
-        {% include 'header.html' %}
-    </header>
-    <main class="container-fluid">
-        <h1 class="text-center p-2 pb-1">{{ _('Processed results') }}</h1>
+{% extends "base.html" %}
 
-        {% from '_statistical_controls.html' import render_statistical_controls %}
-        {{ render_statistical_controls(result_id) }}
+{% block title %}{{ _('Processed results') }}{% endblock %}
 
+{% from '_cards.html' import account_card %}
+{% from '_buttons.html' import view_toggle_button, secondary_button %}
+
+{% block breadcrumb %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="/">{{ _('Home') }}</a></li>
+        <li class="breadcrumb-item active" aria-current="page">{{ _('Results') }}</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block js_config %}
+<script type="module" src="{{ url_for('static', filename='dist/js/main.js') }}"></script>
+<script>
+    globalThis.resultId = '{{ result_id }}';
+    globalThis.exportCsvText = '{{ _("Export CSV") }}';
+    globalThis.exportExcelText = '{{ _("Export Excel") }}';
+    globalThis.highlights = '{{ accounts_data.highlights | tojson }}'
+</script>
+{% endblock %}
+
+{% block content %}
+{% from '_statistical_controls.html' import render_statistical_controls %}
+{{ render_statistical_controls(result_id) }}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="mb-0">{{ _('Processed results') }}</h1>
+    <div class="view-toggle">
+        {{ view_toggle_button('summary', result_id) }}
+    </div>
+</div>
         {% for account in accounts_data.accounts %}
         {% set dt_response = account.dt_response %}
         {% set urls = drilldown_urls_by_account[account.id] %}
-        <div class="account-section">
-            <div class="account-header">
-                <h2>
-                    {{ _('Account') }}: {{ account.formatted_id }}
-                    {% if account.currency %}
-                        ({{ account.currency }})
-                    {% endif %}
-                </h2>
-            </div>
+        {% call account_card(account) %}
 
             <div class="row">
                 <div class="col-md-12 mb-3">
@@ -103,16 +105,12 @@
                 </div>
             </div>
         </div>
+        {% endcall %}
         {% endfor %}
 
         <div class="row">
             <div class="col-md-6">
-                <a href="/" class="btn btn-secondary mt-3 mb-3">{{ _('Back') }}</a>
+                <a href="/" class="btn btn-secondary mt-3 mb-3">{{ _('Back to Form') }}</a>
             </div>
         </div>
-    </main>
-    <footer class="bg-success text-white text-center py-3 mt-3">
-        {% include 'footer.html' %}
-    </footer>
-</body>
-</html>
+{% endblock %}

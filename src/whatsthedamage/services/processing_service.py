@@ -140,13 +140,17 @@ class ProcessingService:
         else:
             logger.debug(f"Processing result: ml_enabled={ml_enabled}")
 
+        # Generate result_id for this processing session
+        generated_result_id = str(uuid.uuid4())
+
         return ProcessingResponse(
-            result_id=str(uuid.uuid4()),
+            result_id=generated_result_id,
             data=datatables_responses,
             metadata=ProcessingMetadata(
                 processing_time=round(processing_time, 2),
                 row_count=row_count,
                 ml_enabled=ml_enabled,
+                result_id=generated_result_id,  # Include result_id in metadata
                 date_range=date_range
             ),
             statistical_metadata=statistical_metadata

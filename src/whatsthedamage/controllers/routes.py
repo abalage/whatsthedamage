@@ -1,23 +1,23 @@
-from datetime import datetime
 from flask import (
-    Blueprint, request, make_response, render_template, redirect, url_for,
-    flash, current_app, Response, jsonify
+    Blueprint, request, make_response, redirect, url_for,
+    current_app, Response, jsonify
 )
-from whatsthedamage.view.forms import UploadForm
-from whatsthedamage.controllers.routes_helpers import (
-    handle_file_uploads,
-    process_details_and_build_response,
-    handle_entity_drilldown,
-    show_detail_results,
-    show_summary_results
-)
+# from whatsthedamage.view.forms import UploadForm  # Deprecated - API-only backend
+
 from whatsthedamage.services.session_service import SessionService
 from whatsthedamage.services.configuration_service import ConfigurationService
 from whatsthedamage.services.data_formatting_service import DataFormattingService
-from typing import Optional, Union, Any
+from whatsthedamage.controllers.routes_helpers import (
+    handle_entity_drilldown_json,
+    handle_category_month_transactions_json,
+    show_summary_results_json,
+    show_detail_results_json,
+    handle_recalculate_statistics_request
+)
+from typing import Union, Any
 import os
 import shutil
-from whatsthedamage.utils.flask_locale import get_locale, get_languages
+from whatsthedamage.utils.flask_locale import get_languages
 from whatsthedamage.utils.logging import get_logger
 
 logger = get_logger(__name__)
@@ -61,93 +61,103 @@ def clear_upload_folder() -> None:
                         extra={'context': {'file_path': file_path, 'error': str(e)}})
 
 
-def get_lang_template(template_name: str) -> str:
-    lang: str = get_locale()
-    return f"{lang}/{template_name}"
+# def get_lang_template(template_name: str) -> str:  # Removed - no templates
+#     lang: str = get_locale()
+#     return f"{lang}/{template_name}"
 
 
 
 @bp.route('/')
 def index() -> Response:
-    form: UploadForm = UploadForm()
-    session_service = _get_session_service()
-    if session_service.has_form_data():
-        form_data_obj = session_service.retrieve_form_data()
-        if form_data_obj:
-            form.filename.data = form_data_obj.filename
-            form.config.data = form_data_obj.config
-
-            for date_field in ['start_date', 'end_date']:
-                date_value: Optional[str] = getattr(form_data_obj, date_field)
-                if date_value:
-                    getattr(form, date_field).data = datetime.strptime(date_value, '%Y-%m-%d')
-
-            form.verbose.data = form_data_obj.verbose
-            form.filter.data = form_data_obj.filter
-    return make_response(render_template('index.html', form=form))
+    """
+    API-only backend information.
+    The web interface has been moved to a separate frontend application.
+    """
+    return make_response(
+        jsonify({
+            'status': 'api-only',
+            'message': 'This is an API-only backend. The web interface has been moved to a separate frontend application.',
+            'frontend': 'See frontend/README.md for the decoupled frontend application',
+            'api_documentation': url_for('api_docs.v2_openapi_spec', _external=True),
+            'available_endpoints': {
+                'api_v2': {
+                    'process': url_for('api_v2.process_transactions', _external=True),
+                    'recalculate_statistics': url_for('api_v2.recalculate_statistics', _external=True)
+                }
+            }
+        }),
+        200
+    )
 
 
 @bp.route('/process', methods=['POST'])
 def process() -> Response:
-    """Process CSV and return detailed DataTables HTML page for web UI."""
-    form: UploadForm = UploadForm()
-    if not form.validate_on_submit():
-        for field, errors in form.errors.items():
-            for error in errors:
-                flash(f"Error in {getattr(form, field).label.text}: {error}", 'danger')
-                logger.error(f"Error in {getattr(form, field).label.text}: {error}")
-        return make_response(redirect(url_for(INDEX_ROUTE)))
-
-    try:
-        # Handle file uploads
-        files = handle_file_uploads(form)
-
-        # Resolve config path using ConfigurationService
-        config_service = _get_configuration_service()
-        config_path = config_service.resolve_config_path(
-            user_path=files['config_path'] if files['config_path'] else None,
-            ml_enabled=form.ml.data,
-            default_config_path=None  # No default config file, will use built-in defaults
-        )
-
-        # Store form data in session
-        session_service = _get_session_service()
-        session_service.store_form_data(request.form.to_dict())
-
-        # Process and build response
-        return process_details_and_build_response(form, files['csv_path'], clear_upload_folder, config_path )
-
-    except ValueError as e:
-        flash(str(e), 'danger')
-        logger.error(str(e))
-        return make_response(redirect(url_for(INDEX_ROUTE)))
-    except Exception as e:
-        flash(f'Error processing CSV: {e}')
-        logger.error(f'Error processing CSV: {e}')
-        return make_response(redirect(url_for(INDEX_ROUTE)))
+    """
+    Process CSV via form submission - DEPRECATED
+    This endpoint is deprecated. Please use the API v2 endpoints instead.
+    """
+    return make_response(
+        jsonify({
+            'error': 'This endpoint is deprecated. Please use /api/v2/process instead.',
+            'status': 'deprecated',
+            'api_endpoint': url_for('api_v2.process_transactions', _external=True)
+        }),
+        410  # Gone
+    )
 
 
 @bp.route('/clear', methods=['POST'])
 def clear() -> Response:
-    session_service = _get_session_service()
-    session_service.clear_session()
-    flash('Form data cleared.', 'success')
-    return make_response(redirect(url_for(INDEX_ROUTE)))
+    """
+    Clear session - DEPRECATED
+    This endpoint is deprecated. The frontend now manages its own state.
+    """
+    return make_response(
+        jsonify({
+            'error': 'This endpoint is deprecated. The frontend manages its own state.',
+            'status': 'deprecated'
+        }),
+        410  # Gone
+    )
 
 
 @bp.route('/legal')
 def legal() -> Response:
-    return make_response(render_template(get_lang_template('legal.html')))
+    """Legal information - now available in frontend only."""
+    return make_response(
+        jsonify({
+            'error': 'Legal page moved to frontend. This is an API-only backend.',
+            'status': 'deprecated',
+            'frontend': 'See frontend/README.md for the new frontend application'
+        }),
+        410  # Gone
+    )
 
 
 @bp.route('/privacy')
 def privacy() -> Response:
-    return make_response(render_template(get_lang_template('privacy.html')))
+    """Privacy information - now available in frontend only."""
+    return make_response(
+        jsonify({
+            'error': 'Privacy page moved to frontend. This is an API-only backend.',
+            'status': 'deprecated',
+            'frontend': 'See frontend/README.md for the new frontend application'
+        }),
+        410  # Gone
+    )
 
 
 @bp.route('/about')
 def about() -> Response:
-    return make_response(render_template(get_lang_template('about.html')))
+    """About information - now available in frontend only."""
+    return make_response(
+        jsonify({
+            'error': 'About page moved to frontend. This is an API-only backend.',
+            'status': 'deprecated',
+            'frontend': 'See frontend/README.md for the new frontend application'
+        }),
+        410  # Gone
+    )
 
 
 @bp.route('/set_language/<lang_code>')
@@ -183,7 +193,6 @@ def recalculate_statistics() -> Union[Response, tuple[Response, int]]:
             return jsonify({'error': 'direction must be either "columns" or "rows"'}), 400
 
         # Use helper function to handle the business logic
-        from whatsthedamage.controllers.routes_helpers import handle_recalculate_statistics_request
         response_data, status_code = handle_recalculate_statistics_request(
             result_id=result_id,
             algorithms=algorithms,
@@ -217,47 +226,47 @@ def health() -> Response:
             503
         )
 
-# New secure routes with ID mapping
+# New secure routes with ID mapping - Now return JSON for Vue frontend
 @bp.route('/results/<result_id>/accounts/<account_id>/categories/<category_id>/months')
 def show_category_months(result_id: str, account_id: str, category_id: str) -> Union[Response, Any]:
-    """Show category details across all months using secure IDs."""
+    """Show category details across all months using secure IDs.
 
-    return handle_entity_drilldown(
+    Returns JSON data for Vue frontend instead of rendering templates.
+    """
+    return handle_entity_drilldown_json(
         result_id=result_id,
         account_id=account_id,
         entity_id=category_id,
         entity_type='category',
-        template='category_months_list.html',
-        data_not_found_error=DATA_NOT_FOUND_ERROR,
-        index_route=INDEX_ROUTE
+        data_not_found_error=DATA_NOT_FOUND_ERROR
     )
 
 @bp.route('/results/<result_id>/accounts/<account_id>/months/<month_id>/categories')
 def show_month_categories(result_id: str, account_id: str, month_id: str) -> Union[Response, Any]:
-    """Show month details across all categories using secure IDs."""
+    """Show month details across all categories using secure IDs.
 
-    return handle_entity_drilldown(
+    Returns JSON data for Vue frontend instead of rendering templates.
+    """
+    return handle_entity_drilldown_json(
         result_id=result_id,
         account_id=account_id,
         entity_id=month_id,
         entity_type='month',
-        template='month_categories_list.html',
-        data_not_found_error=DATA_NOT_FOUND_ERROR,
-        index_route=INDEX_ROUTE
+        data_not_found_error=DATA_NOT_FOUND_ERROR
     )
 
 @bp.route('/results/<result_id>/accounts/<account_id>/categories/<category_id>/months/<month_id>/transactions')
 def show_category_month_transactions(result_id: str, account_id: str, category_id: str, month_id: str) -> Response:
-    """Show specific category and month transaction details using secure IDs."""
-    from whatsthedamage.controllers.routes_helpers import handle_category_month_transactions
+    """Show specific category and month transaction details using secure IDs.
 
-    return handle_category_month_transactions(
+    Returns JSON data for Vue frontend instead of rendering templates.
+    """
+    return handle_category_month_transactions_json(
         result_id=result_id,
         account_id=account_id,
         category_id=category_id,
         month_id=month_id,
-        data_not_found_error=DATA_NOT_FOUND_ERROR,
-        index_route=INDEX_ROUTE
+        data_not_found_error=DATA_NOT_FOUND_ERROR
     )
 
 
@@ -265,28 +274,27 @@ def show_category_month_transactions(result_id: str, account_id: str, category_i
 def show_results(result_id: str) -> Union[Response, Any]:
     """Show summary results view.
 
-    Route handler for displaying processing results in summary view format.
+    Route handler for returning processing results as JSON for Vue frontend.
 
     Args:
         result_id: UUID of the cached processing result
 
     Returns:
-        Flask Response with rendered results.html template or redirect
+        JSON Response with results data or error
     """
-    return show_summary_results(result_id)
+    return show_summary_results_json(result_id)
 
 
 @bp.route('/results/<result_id>/details')
 def show_details(result_id: str) -> Union[Response, Any]:
     """Show all transaction details in a single DataTable view.
 
-    Route handler for displaying all DetailRow objects from a processing result
-    in a searchable DataTable format.
+    Route handler for returning all transaction details as JSON for Vue frontend.
 
     Args:
         result_id: UUID of the cached processing result
 
     Returns:
-        Flask Response with rendered detail_results.html template or redirect
+        JSON Response with all transaction details or error
     """
-    return show_detail_results(result_id)
+    return show_detail_results_json(result_id)

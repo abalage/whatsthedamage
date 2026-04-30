@@ -43,7 +43,8 @@ class ResponseBuilderService:
         datatables_response: Dict[str, DataTablesResponse],
         metadata: Dict[str, Any],
         params: ProcessingRequest,
-        processing_time: float
+        processing_time: float,
+        result_id: str
     ) -> DetailedResponse:
         """Build standardized API detailed response.
 
@@ -71,12 +72,24 @@ class ResponseBuilderService:
             # Add all aggregated rows from this account
             aggregated_rows.extend(dt_response.data)
 
+        # Handle both ProcessingMetadata object and dict for backward compatibility
+        if isinstance(metadata, dict):
+            row_count = metadata.get('row_count', 0)
+            # Preserve existing result_id if present in metadata
+            existing_result_id = metadata.get('result_id', result_id)
+        else:
+            # Assume it's a ProcessingMetadata object
+            row_count = metadata.row_count
+            # Preserve existing result_id if present in metadata
+            existing_result_id = getattr(metadata, 'result_id', result_id)
+
         return DetailedResponse(
             data=aggregated_rows,  # List[AggregatedRow] from all accounts
             metadata=ProcessingMetadata(
-                row_count=metadata['row_count'],
+                row_count=row_count,
                 processing_time=processing_time,
                 ml_enabled=params.ml_enabled,
+                result_id=existing_result_id or result_id,
                 date_range=self._build_date_range(params)
             )
         )

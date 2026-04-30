@@ -1,4 +1,5 @@
 from flask import Flask, current_app
+from flask_cors import CORS
 import os
 import gettext
 from typing import Optional, Any
@@ -18,8 +19,8 @@ def create_app(
     service_container: Optional[ServiceContainer] = None
 ) -> Flask:
     # Configure logging before creating Flask app
-    # Use default WARN level, stdout output, and text format for web interface
-    configure_logging(log_level="WARN", log_output="stdout", log_format="text")
+    # Use INFO level to capture more details, stdout output, and text format for web interface
+    configure_logging(log_level="INFO", log_output="stdout", log_format="text")
     logger = get_logger(__name__)
     logger.info("Starting Flask application initialization")
 
@@ -30,6 +31,11 @@ def create_app(
 
     if config_class:
         app.config.from_object(config_class)
+
+    # Enable CORS for API endpoints
+    CORS(app, resources={
+        r"/api/*": {"origins": ["http://localhost:3000", "http://127.0.0.1:3000"]}
+    })
 
     logger.info("Flask application configured successfully")
 
@@ -126,6 +132,21 @@ def create_app(
 
     # Register error handlers for API routes
     register_error_handlers(app)
+
+    # Add request logging middleware
+    @app.before_request
+    def log_request_info():
+        """Log basic request information for debugging purposes."""
+        from flask import request
+        if request.path.startswith('/api/'):
+            logger.debug(f"API Request: {request.method} {request.path}", extra={
+                "context": {
+                    "user_agent": request.user_agent.string if request.user_agent else "unknown",
+                    "remote_addr": request.remote_addr,
+                    "content_type": request.content_type,
+                    "content_length": request.content_length
+                }
+            })
 
     return app
 

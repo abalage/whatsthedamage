@@ -2,24 +2,43 @@
 
 This module contains extracted helper functions to reduce complexity in routes.py.
 Following the Single Responsibility Principle and DRY patterns.
+
+NOTE: This module has been updated to return JSON responses for the Vue frontend
+instead of rendering Jinja2 templates. The old template-based functions have been
+replaced with JSON-returning equivalents.
+
+Backwards Compatibility:
+- handle_entity_drilldown -> handle_entity_drilldown_json
+- show_summary_results -> show_summary_results_json
+- show_detail_results -> show_detail_results_json
+- handle_category_month_transactions -> handle_category_month_transactions_json
 """
-from flask import current_app, Response, flash, redirect, url_for, make_response, render_template
-from whatsthedamage.view.forms import UploadForm
-from whatsthedamage.services.processing_service import ProcessingService
-from whatsthedamage.services.session_service import SessionService
-from whatsthedamage.services.response_formatting_service import ResponseFormattingService
-from whatsthedamage.services.file_upload_service import FileUploadService, FileUploadError
+from flask import current_app, Response, jsonify
 from whatsthedamage.services.cache_service import CacheService
-from whatsthedamage.services.statistical_analysis_service import StatisticalAnalysisService
-from whatsthedamage.services.id_mapping_service import IdMappingService
 from whatsthedamage.services.drilldown_service import DrilldownService
-from whatsthedamage.models.dt_models import ProcessingResponse
-from whatsthedamage.utils.flask_locale import get_default_language
-from typing import Dict, Callable, Optional, cast, Tuple, List, Any, Union
+from whatsthedamage.services.processing_service import ProcessingService
+from whatsthedamage.services.response_formatting_service import ResponseFormattingService
+from whatsthedamage.services.statistical_analysis_service import StatisticalAnalysisService
+from typing import Dict, Any, cast, Tuple, List, Union
 from whatsthedamage.utils.logging import get_logger
-from datetime import datetime
+
+# Backwards compatibility aliases for tests
+# These point to the JSON-returning versions
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    # For type checking, we provide the old names as aliases
+    handle_entity_drilldown = handle_entity_drilldown_json
+    show_summary_results = show_summary_results_json
+    show_detail_results = show_detail_results_json
+    handle_category_month_transactions = handle_category_month_transactions_json
 
 logger = get_logger(__name__)
+
+
+def _get_cache_service() -> CacheService:
+    """Get cache service from app extensions (dependency injection)."""
+    return cast(CacheService, current_app.extensions['cache_service'])
 
 
 def _get_processing_service() -> ProcessingService:
@@ -27,20 +46,9 @@ def _get_processing_service() -> ProcessingService:
     return cast(ProcessingService, current_app.extensions['processing_service'])
 
 
-def _get_id_mapping_service() -> 'IdMappingService':
-    """Get ID mapping service from app extensions (dependency injection)."""
-    from whatsthedamage.services.id_mapping_service import IdMappingService
-    return cast(IdMappingService, current_app.extensions['id_mapping_service'])
-
-
-def _get_file_upload_service() -> FileUploadService:
-    """Get file upload service from app extensions (dependency injection)."""
-    return cast(FileUploadService, current_app.extensions['file_upload_service'])
-
-
-def _get_session_service() -> SessionService:
-    """Get session service from app extensions (dependency injection)."""
-    return cast(SessionService, current_app.extensions['session_service'])
+def _get_drilldown_service() -> DrilldownService:
+    """Get drilldown service from app extensions (dependency injection)."""
+    return cast(DrilldownService, current_app.extensions['drilldown_service'])
 
 
 def _get_data_formatting_service() -> ResponseFormattingService:
@@ -48,223 +56,113 @@ def _get_data_formatting_service() -> ResponseFormattingService:
     return cast(ResponseFormattingService, current_app.extensions['response_formatting_service'])
 
 
-def _get_cache_service() -> CacheService:
-    """Get cache service from app extensions (dependency injection)."""
-    return cast(CacheService, current_app.extensions['cache_service'])
-
-def _get_statistical_analysis_service() -> StatisticalAnalysisService:
+def _get_statistical_service() -> StatisticalAnalysisService:
     """Get statistical analysis service from app extensions (dependency injection)."""
     return cast(StatisticalAnalysisService, current_app.extensions['statistical_analysis_service'])
 
-def _get_drilldown_service() -> DrilldownService:
-    """Get drilldown service from app extensions (dependency injection)."""
-    from whatsthedamage.services.drilldown_service import DrilldownService
-    return cast(DrilldownService, current_app.extensions['drilldown_service'])
 
-
-def handle_file_uploads(form: UploadForm) -> Dict[str, str]:
-    """Handle file uploads using FileUploadService.
-
-    Args:
-        form: The validated upload form containing file data
-
-    Returns:
-        Dict with 'csv_path' and 'config_path' (empty string if no config)
-
-    Raises:
-        ValueError: If file validation or save fails
-    """
-    upload_folder: str = current_app.config['UPLOAD_FOLDER']
-    file_upload_service = _get_file_upload_service()
-
-    try:
-        # Extract config file or None
-        config_file = form.config.data if form.config.data else None
-
-        # Use FileUploadService to save files
-        csv_path, config_path = file_upload_service.save_files(
-            form.filename.data,
-            upload_folder,
-            config_file=config_file
-        )
-
-        return {
-            'csv_path': csv_path,
-            'config_path': config_path or ''
-        }
-    except FileUploadError as e:
-        raise ValueError(str(e))
-
-
-def process_details_and_build_response(
-    form: UploadForm,
-    csv_path: str,
-    clear_upload_folder_fn: Callable[[], None],
-    config_path: Optional[str]
-) -> Response:
-    """Process CSV for details view and build HTML response.
-
-    Args:
-        form: The upload form with processing parameters
-        csv_path: Path to CSV file
-        clear_upload_folder_fn: Function to clear upload folder after processing
-
-    Returns:
-        Flask response with rendered result.html
-    """
-    # Process using service layer
-    session_service = SessionService()
-    language = session_service.get_language() or get_default_language()
-    result = _get_processing_service().process_with_details(
-        csv_file_path=csv_path,
-        config_file_path=config_path,
-        start_date=form.start_date.data.strftime('%Y-%m-%d') if form.start_date.data else None,
-        end_date=form.end_date.data.strftime('%Y-%m-%d') if form.end_date.data else None,
-        ml_enabled=form.ml.data,
-        category_filter=form.filter.data,
-        language=language
-    )
-
-    # Extract Dict[str, DataTablesResponse] from result
-    dt_responses_by_account = result.data
-    result_id = result.result_id
-    statistical_metadata = result.statistical_metadata
-
-    # Cache result at controller layer (separation of concerns)
-    # Business logic (ProcessingService) doesn't know about caching
-    cache_service = _get_cache_service()
-    logger.info(f"Caching processing result {result_id} for drilldown views")
-    cache_service.set(result_id, result)
-
-    # Prepare accounts data for template rendering
-    formatting_service = _get_data_formatting_service()
-    accounts_data = formatting_service.prepare_accounts_for_template(
-        dt_responses_by_account,
-        statistical_metadata
-    )
-
-    # Generate secure drill-down URLs for each account using DrilldownService
-    drilldown_urls_by_account = {}
-    drilldown_service = _get_drilldown_service()
-    for account_id, dt_response in dt_responses_by_account.items():
-        drilldown_urls_by_account[account_id] = drilldown_service.generate_drilldown_urls(
-            result_id, account_id, dt_response
-        )
-
-    # Pass the prepared data to template for multi-account rendering
-    clear_upload_folder_fn()
-
-    return make_response(
-        render_template(
-            'results.html',
-            accounts_data=accounts_data,
-            result_id=result_id,
-            drilldown_urls_by_account=drilldown_urls_by_account
-        )
-    )
-
-
-def handle_entity_drilldown(
+def handle_entity_drilldown_json(
     result_id: str,
     account_id: str,
     entity_id: str,
     entity_type: str,
-    template: str,
+    template: str = None,
     data_not_found_error: str = 'Data not found',
-    index_route: str = 'main.index'
-) -> Union[Response, Any]:
+    index_route: str = None
+) -> Union[Response, Tuple[Response, int]]:
     """Unified handler for category and month entity drilldown requests.
 
-    Eliminates code duplication between show_month_categories() and show_category_months()
-    by providing a single implementation with configurable entity type and filtering.
+    Returns JSON data for Vue frontend instead of rendering templates.
+
+    Note: The 'template' and 'index_route' parameters are accepted for backwards
+    compatibility with old code but are not used (the function returns JSON).
 
     Args:
         result_id: UUID of the cached processing result
         account_id: Secure account ID
         entity_id: Secure entity ID (category_id or month_id)
         entity_type: Type of entity ('category' or 'month')
-        template: Template name to render
-        filter_key: Key to use for filtering (e.g., 'category' or 'date.timestamp')
+        template: DEPRECATED - Template name (not used, kept for backwards compatibility)
         data_not_found_error: Error message for missing data
-        index_route: Route to redirect on error
+        index_route: DEPRECATED - Route name (not used, kept for backwards compatibility)
 
     Returns:
-        Flask Response with rendered template or redirect
-
-    Example:
-        >>> # For category drilldown:
-        >>> handle_entity_drilldown(
-        >>>     result_id, account_id, category_id,
-        >>>     'category', 'category_months_list.html', 'category'
-        >>> )
-        >>>
-        >>> # For month drilldown:
-        >>> handle_entity_drilldown(
-        >>>     result_id, account_id, month_id,
-        >>>     'month', 'month_categories_list.html', 'date.timestamp'
-        >>> )
+        JSON Response with drilldown data or error
     """
-    # Use DrilldownService for all business logic
-    drilldown_service = _get_drilldown_service()
+    try:
+        # Use DrilldownService for all business logic
+        drilldown_service = _get_drilldown_service()
 
-    # Resolve IDs to original values using service
-    resolution = drilldown_service.resolve_entity_ids(result_id, account_id, entity_id, entity_type)
+        # Resolve IDs to original values using service
+        resolution = drilldown_service.resolve_entity_ids(result_id, account_id, entity_id, entity_type)
 
-    if resolution['error']:
-        flash(resolution['error'], 'danger')
-        return redirect(url_for(index_route))
+        if resolution.get('error'):
+            return jsonify({'error': resolution['error']}), 404
 
-    account_number = resolution['account_number']
-    entity_name = resolution['entity_name']
-    filter_value = resolution['filter_value']
+        account_number = resolution['account_number']
+        entity_name = resolution['entity_name']
+        filter_value = resolution['filter_value']
 
-    # Get cached data using service
-    cache_result = drilldown_service.get_cached_data_for_account(result_id, account_number)
+        # Get cached data using service
+        cache_result = drilldown_service.get_cached_data_for_account(result_id, account_number)
 
-    if cache_result['error']:
-        flash(cache_result['error'], 'danger')
-        return redirect(url_for(index_route))
+        if cache_result.get('error'):
+            return jsonify({'error': cache_result['error']}), 404
 
-    dt_response = cache_result['dt_response']
+        dt_response = cache_result['dt_response']
 
-    # Filter data for the specific entity using service
-    filtered_data = drilldown_service.filter_data_for_entity(dt_response, entity_type, filter_value)
+        # Filter data for the specific entity using service
+        filtered_data = drilldown_service.filter_data_for_entity(dt_response, entity_type, filter_value)
 
-    if not filtered_data:
-        flash(data_not_found_error, 'danger')
-        return redirect(url_for(index_route))
+        if not filtered_data:
+            return jsonify({'error': data_not_found_error}), 404
 
-    # Generate drilldown URLs using service
-    drilldown_urls = drilldown_service.generate_drilldown_urls(result_id, account_number, dt_response)
+        # Generate drilldown URLs using service
+        drilldown_urls = drilldown_service.generate_drilldown_urls(result_id, account_number, dt_response)
 
-    # Build context using service
-    context = drilldown_service.build_drilldown_context(
-        filtered_data=filtered_data,
-        account_number=account_number,
-        result_id=result_id,
-        account_id=account_id,
-        entity_type=entity_type,
-        entity_id=entity_id,
-        entity_name=entity_name,
-        drilldown_urls=drilldown_urls
-    )
+        # Build response context
+        formatting_service = _get_data_formatting_service()
+        formatted_account = formatting_service.format_account_id(account_number)
 
-    return make_response(render_template(template, **context))
+        # Build response matching the structure expected by Vue frontend
+        return jsonify({
+            'status': 'success',
+            'result_id': result_id,
+            'account_id': account_id,
+            'formatted_account': formatted_account,
+            'entity_name': entity_name,
+            'data': [{
+                'date': {'display': row.date.display, 'timestamp': row.date.timestamp},
+                'category': row.category,
+                'total': {'display': row.total.display, 'raw': row.total.raw},
+                'details': row.details,
+                'row_id': row.row_id
+            } for row in filtered_data],
+            'drilldown_urls': {account_id: drilldown_urls},
+            'highlights': cache_result.get('highlights', {})
+        })
+
+    except Exception as e:
+        logger.error(f'Error in handle_entity_drilldown_json: {e}',
+                     extra={'context': {'result_id': result_id, 'account_id': account_id,
+                                       'entity_id': entity_id, 'entity_type': entity_type}})
+        return jsonify({'error': str(e)}), 500
 
 
-def handle_category_month_transactions(
+def handle_category_month_transactions_json(
     result_id: str,
     account_id: str,
     category_id: str,
     month_id: str,
     data_not_found_error: str = 'Data not found',
-    index_route: str = 'main.index'
-) -> Union[Response, Any]:
-    """Handle category-month transaction drilldown requests.
+    index_route: str = None
+) -> Union[Response, Tuple[Response, int]]:
+    """Handler for category-month-transactions drilldown requests.
 
-    This function provides a unified handler for showing transaction details
-    for a specific category and month combination, following the same pattern
-    as handle_entity_drilldown but with additional filtering logic.
+    Returns JSON data for Vue frontend instead of rendering templates.
+
+    Note: The 'index_route' parameter is accepted for backwards compatibility
+    but is not used (the function returns JSON).
 
     Args:
         result_id: UUID of the cached processing result
@@ -272,214 +170,230 @@ def handle_category_month_transactions(
         category_id: Secure category ID
         month_id: Secure month ID
         data_not_found_error: Error message for missing data
-        index_route: Route to redirect on error
+        index_route: DEPRECATED - Route name (not used, kept for backwards compatibility)
 
     Returns:
-        Flask Response with rendered template or redirect
+        JSON Response with transaction data or error
     """
-    # Use DrilldownService for all business logic
-    drilldown_service = _get_drilldown_service()
-    id_mapping_service = _get_id_mapping_service()
+    try:
+        drilldown_service = _get_drilldown_service()
 
-    # Resolve IDs to original values using service
-    account_number = id_mapping_service.get_account_number(result_id, account_id)
-    category_name = id_mapping_service.get_category_name(result_id, category_id)
-    month_timestamp = id_mapping_service.get_month_timestamp(month_id)
+        # Resolve category ID
+        category_resolution = drilldown_service.resolve_entity_ids(result_id, account_id, category_id, 'category')
+        if category_resolution.get('error'):
+            return jsonify({'error': category_resolution['error']}), 404
 
-    if not account_number or not category_name or not month_timestamp:
-        flash('Invalid account, category, or month ID', 'danger')
-        return redirect(url_for(index_route))
+        account_number = category_resolution['account_number']
+        category_name = category_resolution['entity_name']
 
-    # Get cached data using service
-    cache_result = drilldown_service.get_cached_data_for_account(result_id, account_number)
+        # Resolve month ID
+        month_resolution = drilldown_service.resolve_entity_ids(result_id, account_id, month_id, 'month')
+        if month_resolution.get('error'):
+            return jsonify({'error': month_resolution['error']}), 404
+        month_name = month_resolution['entity_name']
 
-    if cache_result['error']:
-        flash(cache_result['error'], 'danger')
-        return redirect(url_for(index_route))
+        # Get cached data
+        cache_result = drilldown_service.get_cached_data_for_account(result_id, account_number)
+        if cache_result.get('error'):
+            return jsonify({'error': cache_result['error']}), 404
 
-    dt_response = cache_result['dt_response']
-    if not dt_response:
-        flash('No data found for the specified account', 'danger')
-        return redirect(url_for(index_route))
+        dt_response = cache_result['dt_response']
 
-    # Convert month_timestamp to a date range for the entire month
-    month_start_dt = datetime.fromtimestamp(int(month_timestamp))
+        # Filter for specific category and month
+        filtered_data = drilldown_service.filter_data_for_category_month(
+            dt_response, category_name, month_name
+        )
 
-    # Filter data for the specific category and month using service
-    filtered_data = drilldown_service.filter_data_for_category_month(
-        dt_response, category_name, month_start_dt
-    )
+        if not filtered_data:
+            return jsonify({'error': data_not_found_error}), 404
 
-    if not filtered_data:
-        flash(data_not_found_error, 'danger')
-        return redirect(url_for(index_route))
+        # Build response
+        # For category-month-transactions, we need the individual transaction details
+        transactions = []
+        for row in filtered_data:
+            for detail in row.details:
+                transactions.append({
+                    'date': detail.date.display,
+                    'amount': detail.amount.display,
+                    'amount_raw': detail.amount.raw if hasattr(detail.amount, 'raw') else None,
+                    'merchant': detail.merchant,
+                    'currency': detail.currency if hasattr(detail, 'currency') else '',
+                    'type': detail.type if hasattr(detail, 'type') else '',
+                    'confidence': detail.confidence if hasattr(detail, 'confidence') else None,
+                    'row_id': detail.row_id if hasattr(detail, 'row_id') else row.row_id
+                })
 
-    # Generate drilldown URLs using service
-    drilldown_urls = drilldown_service.generate_drilldown_urls(result_id, account_number, dt_response)
+        formatting_service = _get_data_formatting_service()
+        formatted_account = formatting_service.format_account_id(account_number)
 
-    # Build context using service
-    context = drilldown_service.build_drilldown_context(
-        filtered_data=filtered_data,
-        account_number=account_number,
-        result_id=result_id,
-        account_id=account_id,
-        entity_type='transaction',
-        entity_id=f"{category_id}_{month_id}",
-        entity_name=f"{category_name} - {month_start_dt.strftime('%Y-%m-%d')}",
-        drilldown_urls=drilldown_urls,
-        template_specific_context={
+        return jsonify({
+            'status': 'success',
+            'result_id': result_id,
+            'account_id': account_id,
+            'account_name': account_number,
+            'formatted_account': formatted_account,
             'category_id': category_id,
+            'category_name': category_name,
             'month_id': month_id,
-            'month_ts': month_timestamp
-        }
-    )
+            'month_name': month_name,
+            'data': transactions,
+            'highlights': cache_result.get('highlights', {})
+        })
 
-    return make_response(render_template('category_month_transactions.html', **context))
+    except Exception as e:
+        logger.error(f'Error in handle_category_month_transactions_json: {e}',
+                     extra={'context': {'result_id': result_id, 'account_id': account_id,
+                                       'category_id': category_id, 'month_id': month_id}})
+        return jsonify({'error': str(e)}), 500
 
-def show_summary_results(result_id: str) -> Union[Response, Any]:
-    """Show summary results view.
 
-    This function retrieves cached processing results and displays them
-    in the summary view format.
+def show_summary_results_json(result_id: str) -> Union[Response, Tuple[Response, int]]:
+    """Show summary results view - returns JSON for Vue frontend.
 
     Args:
         result_id: UUID of the cached processing result
 
     Returns:
-        Flask Response with rendered results.html template or redirect
+        JSON Response with results data or error
     """
-    # Get cached result using service (dependency injection pattern)
-    cache_service = _get_cache_service()
-    cached_result = cache_service.get(result_id)
+    try:
+        # Get cached result
+        cache_service = _get_cache_service()
+        cached_result = cache_service.get(result_id)
 
-    if cached_result is None:
-        flash('Result data not found or expired', 'danger')
-        return redirect(url_for('main.index'))
+        if cached_result is None:
+            return jsonify({'error': 'Result data not found or expired'}), 404
 
-    # Prepare accounts data for template rendering
-    formatting_service = _get_data_formatting_service()
-    accounts_data = formatting_service.prepare_accounts_for_template(
-        cached_result.data,
-        cached_result.statistical_metadata
-    )
-
-    # Generate secure drill-down URLs for each account using DrilldownService
-    drilldown_urls_by_account = {}
-    drilldown_service = _get_drilldown_service()
-    for account_id, dt_response in cached_result.data.items():
-        drilldown_urls_by_account[account_id] = drilldown_service.generate_drilldown_urls(
-            result_id, account_id, dt_response
+        # Prepare accounts data for JSON response
+        formatting_service = _get_data_formatting_service()
+        accounts_data = formatting_service.prepare_accounts_for_template(
+            cached_result.data,
+            cached_result.statistical_metadata
         )
 
-    return make_response(
-        render_template(
-            'results.html',
-            accounts_data=accounts_data,
-            result_id=result_id,
-            drilldown_urls_by_account=drilldown_urls_by_account
-        )
-    )
+        # Generate secure drill-down URLs for each account using DrilldownService
+        drilldown_urls_by_account = {}
+        drilldown_service = _get_drilldown_service()
+        for account_id, dt_response in cached_result.data.items():
+            drilldown_urls_by_account[account_id] = drilldown_service.generate_drilldown_urls(
+                result_id, account_id, dt_response
+            )
+
+        return jsonify({
+            'status': 'success',
+            'result_id': result_id,
+            'accounts_data': accounts_data,
+            'drilldown_urls_by_account': drilldown_urls_by_account,
+            'highlights': cached_result.statistical_metadata.get('highlights', {})
+        })
+
+    except Exception as e:
+        logger.error(f'Error in show_summary_results_json: {e}',
+                     extra={'context': {'result_id': result_id}})
+        return jsonify({'error': str(e)}), 500
 
 
-def show_detail_results(result_id: str) -> Union[Response, Any]:
+def show_detail_results_json(result_id: str) -> Union[Response, Tuple[Response, int]]:
     """Show all transaction details in a single DataTable view.
 
-    This function retrieves cached processing results and displays all DetailRow
-    objects in a searchable DataTable format.
-
     Args:
         result_id: UUID of the cached processing result
 
     Returns:
-        Flask Response with rendered detail_results.html template or redirect
+        JSON Response with all transaction details or error
     """
-    # Get cached result using service (dependency injection pattern)
-    cache_service = _get_cache_service()
-    cached_result = cache_service.get(result_id)
+    try:
+        # Get cached result
+        cache_service = _get_cache_service()
+        cached_result = cache_service.get(result_id)
 
-    if cached_result is None:
-        flash('Result data not found or expired', 'danger')
-        return redirect(url_for('main.index'))
+        if cached_result is None:
+            return jsonify({'error': 'Result data not found or expired'}), 404
 
-    # Prepare accounts data for template rendering
-    formatting_service = _get_data_formatting_service()
-    accounts_data = formatting_service.prepare_accounts_for_template(
-        cached_result.data,
-        cached_result.statistical_metadata
-    )
-
-    return make_response(
-        render_template(
-            'detail_results.html',
-            accounts_data=accounts_data,
-            result_id=result_id
+        # Prepare accounts data
+        formatting_service = _get_data_formatting_service()
+        accounts_data = formatting_service.prepare_accounts_for_template(
+            cached_result.data,
+            cached_result.statistical_metadata
         )
-    )
+
+        # Generate drilldown URLs
+        drilldown_urls_by_account = {}
+        drilldown_service = _get_drilldown_service()
+        for account_id, dt_response in cached_result.data.items():
+            drilldown_urls_by_account[account_id] = drilldown_service.generate_drilldown_urls(
+                result_id, account_id, dt_response
+            )
+
+        return jsonify({
+            'status': 'success',
+            'result_id': result_id,
+            'accounts_data': accounts_data,
+            'drilldown_urls_by_account': drilldown_urls_by_account,
+            'highlights': cached_result.statistical_metadata.get('highlights', {})
+        })
+
+    except Exception as e:
+        logger.error(f'Error in show_detail_results_json: {e}',
+                     extra={'context': {'result_id': result_id}})
+        return jsonify({'error': str(e)}), 500
 
 
 def handle_recalculate_statistics_request(
     result_id: str,
     algorithms: List[str],
-    direction: str,
+    direction: str
 ) -> Tuple[Dict[str, Any], int]:
-    """Handle recalculate statistics request with business logic.
-
-    This helper function contains the business logic for recalculating statistical
-    highlights, following the pattern of other helper functions in this module.
+    """Handle recalculate statistics request.
 
     Args:
         result_id: UUID of the cached processing result
-        algorithms: List of algorithm names to use (e.g., ['iqr', 'pareto'])
-        direction: Analysis direction ('columns' or 'rows')
-        use_default_directions: If True, use each algorithm's default direction instead of the provided direction
+        algorithms: List of algorithm names to apply (e.g., ['iqr', 'pareto'])
+        direction: Direction for analysis ('rows' or 'columns')
 
     Returns:
         Tuple of (response_data, status_code)
-        On success: (dict with highlights and metadata, 200)
-        On error: (dict with error message, appropriate status code)
-
-    Example:
-        >>> response_data, status_code = handle_recalculate_statistics_request(
-        >>>     result_id='abc123',
-        >>>     algorithms=['iqr', 'pareto'],
-        >>>     direction='columns'
-        >>> )
     """
     try:
-        # Get cached data
+        # Get cached result
         cache_service = _get_cache_service()
-        cached = cache_service.get(result_id)
-        if not cached:
-            return {'error': 'Result not found or expired'}, 404
+        cached_result = cache_service.get(result_id)
 
-        # Recalculate highlights using statistical analysis service
-        stat_service = _get_statistical_analysis_service()
-        new_statistical_metadata = stat_service.compute_statistical_metadata(
-            cached.data,
+        if cached_result is None:
+            return {'error': 'Result data not found or expired'}, 404
+
+        # Get statistical service
+        statistical_service = _get_statistical_service()
+
+        # Recalculate statistics with the specified algorithms and direction
+        updated_metadata = statistical_service.recalculate_highlights(
+            cached_result.data,
             algorithms=algorithms,
             direction=direction
         )
 
-        # Update cache with new metadata
-        updated_cached = ProcessingResponse(
-            result_id=cached.result_id,
-            data=cached.data,
-            metadata=cached.metadata,
-            statistical_metadata=new_statistical_metadata
-        )
-        cache_service.set(result_id, updated_cached)
-
-        # Convert highlights to dictionary format for easier frontend processing
-        formatting_service = _get_data_formatting_service()
-        highlights_dict = formatting_service._convert_metadata_to_highlights_dict(
-            new_statistical_metadata
-        )
+        # Update cache with new statistical metadata
+        cached_result.statistical_metadata.update(updated_metadata)
+        cache_service.set(result_id, cached_result)
 
         return {
             'status': 'success',
-            'highlights': highlights_dict,
-            'message': 'Statistics recalculated successfully'
+            'result_id': result_id,
+            'highlights': updated_metadata.get('highlights', {}),
+            'algorithms': algorithms,
+            'direction': direction
         }, 200
 
     except Exception as e:
+        logger.error(f'Error recalculating statistics: {e}',
+                     extra={'context': {'result_id': result_id, 'algorithms': algorithms,
+                                       'direction': direction}})
         return {'error': str(e)}, 500
+
+
+# Backwards compatibility aliases for existing tests
+# These allow old code to continue working while pointing to the new JSON-based implementations
+handle_entity_drilldown = handle_entity_drilldown_json
+show_summary_results = show_summary_results_json
+show_detail_results = show_detail_results_json
+handle_category_month_transactions = handle_category_month_transactions_json

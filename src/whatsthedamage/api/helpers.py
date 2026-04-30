@@ -11,6 +11,8 @@ from typing import Optional, cast
 from whatsthedamage.models.api_models import ProcessingRequest
 from whatsthedamage.services.response_formatting_service import ResponseFormattingService
 from whatsthedamage.services.file_upload_service import FileUploadService, FileUploadError
+from whatsthedamage.services.processing_service import ProcessingService
+from whatsthedamage.services.cache_service import CacheService
 
 
 def _get_response_builder_service() -> ResponseFormattingService:
@@ -21,6 +23,16 @@ def _get_response_builder_service() -> ResponseFormattingService:
 def _get_file_upload_service() -> FileUploadService:
     """Get file upload service from app extensions (dependency injection)."""
     return cast(FileUploadService, current_app.extensions['file_upload_service'])
+
+
+def _get_processing_service() -> ProcessingService:
+    """Get processing service from app extensions (dependency injection)."""
+    return cast(ProcessingService, current_app.extensions['processing_service'])
+
+
+def _get_cache_service() -> CacheService:
+    """Get cache service from app extensions (dependency injection)."""
+    return cast(CacheService, current_app.extensions['cache_service'])
 
 
 def validate_csv_file() -> FileStorage:

@@ -1,0 +1,81 @@
+<script setup lang="ts">
+import { useLocaleStore } from '../stores/locale'
+import { getTranslation } from '../stores/translations'
+import { ref, onMounted } from 'vue'
+
+const localeStore = useLocaleStore()
+
+const t = (key: string) => getTranslation(key, localeStore.locale)
+
+// Email obfuscation
+const email = ref('<a href="mailto:balagetech@protonmail.com">balagetech@protonmail.com</a>')
+
+onMounted(() => {
+  // Simple obfuscation: use HTML entities
+  const obfuscateEmail = (username: string, domain: string) => {
+    const userChars = username.split('').map(c => `&#${c.charCodeAt(0)};`).join('')
+    const domainChars = domain.split('').map(c => `&#${c.charCodeAt(0)};`).join('')
+    return `<a href="mailto:${userChars}@${domainChars}">${userChars}@${domainChars}</a>`
+  }
+  email.value = obfuscateEmail('balagetech', 'protonmail.com')
+})
+</script>
+
+<template>
+  <div class="container">
+    <h1>Privacy Policy</h1>
+    <p><strong>Effective Date:</strong> 03-02-2025</p>
+    <h2>1. Introduction</h2>
+    <p>Welcome to Whatsthedamage (the "App"). This Privacy Policy explains how we collect, use, disclose, and protect your personal information when you use our App. We are committed to protecting your privacy and ensuring that your personal data is handled in accordance with the General Data Protection Regulation (GDPR) and other applicable data protection laws.</p>
+    <h2>2. Information We Collect</h2>
+    <p>We may collect and process the following types of personal data when you use our App:</p>
+    <ul>
+        <li><strong>Personal Identification Information:</strong> This may include your name, email address, and any other information you provide when uploading CSV files.</li>
+        <li><strong>Bank Account Information:</strong> This includes bank account numbers and account names associated with the transactions.</li>
+        <li><strong>Transaction Data:</strong> Information contained in the bank account transaction histories you upload, which may include:
+            <ul>
+                <li>Partner Names: Names of individuals or entities involved in the transactions.</li>
+                <li>Transaction Identifiers: Unique identifiers for each transaction that help track and reference them.</li>
+                <li>Partner Account Names: Names of the accounts associated with the partners in the transactions.</li>
+                <li>Foreign Exchange Information: Details regarding any currency conversions or foreign exchange rates applied to the transactions.</li>
+                <li>Comments: Any additional notes or comments you may include in the CSV file related to the transactions.</li>
+            </ul>
+        </li>
+    </ul>
+    <p>By collecting this information, we aim to provide you with accurate and comprehensive reports based on your transaction histories.</p>
+    <h2>3. Purpose of Data Processing</h2>
+    <p>We process your personal data for the following purposes:</p>
+    <ul>
+        <li>To generate reports based on the transaction histories you upload.</li>
+    </ul>
+    <h2>4. Legal Basis for Processing</h2>
+    <p>We process your personal data based on the following legal grounds under the GDPR:</p>
+    <ul>
+        <li><strong>Consent:</strong> By using our App and uploading your data, you consent to the processing of your personal data as described in this Privacy Policy.</li>
+        <li><strong>Contractual Necessity:</strong> Processing is necessary for the performance of a contract to which you are a party.</li>
+    </ul>
+    <h2>5. Data Retention</h2>
+    <p>We will retain your personal data only for as long as necessary to fulfill the purposes for which it was collected, including for the purposes of satisfying any legal, accounting, or reporting requirements. All uploaded content is deleted immediately after the report is generated.</p>
+    <h2>6. Data Security</h2>
+    <p>We implement appropriate technical and organizational measures to protect your personal data against unauthorized access, loss, or destruction. However, please be aware that no method of transmission over the internet or method of electronic storage is 100% secure.</p>
+    <h2>7. Your Rights</h2>
+    <p>Under the GDPR, you have the following rights regarding your personal data:</p>
+    <ul>
+        <li><strong>Right to Access:</strong> You have the right to request copies of your personal data.</li>
+        <li><strong>Right to Rectification:</strong> You have the right to request that we correct any information you believe is inaccurate or incomplete.</li>
+        <li><strong>Right to Erasure:</strong> You have the right to request that we erase your personal data, under certain conditions.</li>
+        <li><strong>Right to Restrict Processing:</strong> You have the right to request that we restrict the processing of your personal data, under certain conditions.</li>
+        <li><strong>Right to Data Portability:</strong> You have the right to request that we transfer the data we have collected to another organization, or directly to you, under certain conditions.</li>
+    </ul>
+    <p>To exercise any of these rights, please contact us at <span v-html="email"></span>.</p>
+    <h2>8. Changes to This Privacy Policy</h2>
+    <p>We may update this Privacy Policy from time to time. Any changes will be effective immediately upon posting the revised policy on the App. Your continued use of the App after any changes constitutes your acceptance of the new terms.</p>
+    <h2>9. Contact Us</h2>
+    <p>If you have any questions or concerns about this Privacy Policy or our data practices, please contact us at <span v-html="email"></span>.</p>
+    <p>By using the App, you acknowledge that you have read and understood this Privacy Policy and agree to its terms.</p>
+  </div>
+</template>
+
+<style scoped>
+/* Add component-specific styles here */
+</style>

@@ -4,8 +4,9 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "vite serve",
     "build": "vite build",
+    "build:prod": "VITE_API_BASE_URL=/api/v2 vite build",
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
@@ -24,7 +25,9 @@
     "datatables.net-fixedheader": "^4.0.5",
     "datatables.net-fixedheader-bs5": "^4.0.5",
     "jquery": "^4.0.0",
-    "jszip": "^3.10.1"
+    "jszip": "^3.10.1",
+    "svelte-routing": "^2.13.0",
+    "vue": "^3.5.12"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.3",
@@ -32,7 +35,9 @@
     "@types/datatables.net": "^1.10.28",
     "@types/jquery": "^3.5.33",
     "@types/jsdom": "^27.0.0",
+    "@vitejs/plugin-vue": "^5.1.4",
     "@vitest/ui": "^4.0.18",
+    "@vue/compiler-sfc": "^3.5.12",
     "@vue/eslint-config-prettier": "^10.2.0",
     "eslint": "^9.39.2",
     "eslint-config-prettier": "^10.1.8",
@@ -44,7 +49,10 @@
     "prettier": "^3.8.1",
     "terser": "^5.46.0",
     "typescript": "^5.9.3",
+    "typescript-eslint": "^8.59.0",
     "vite": "^8.0.3",
-    "vitest": "^4.0.18"
+    "vitest": "^4.0.18",
+    "vue-eslint-parser": "^10.4.0",
+    "vue-router": "^4.4.5"
   }
 }

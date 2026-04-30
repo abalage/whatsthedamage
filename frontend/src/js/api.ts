@@ -5,6 +5,9 @@
 
 import { AppError, ApiResponse } from '../types';
 
+// API base URL configuration
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
+
 /**
  * Fetch with proper error handling and response wrapping
  * @param url - API endpoint URL
@@ -76,5 +79,56 @@ export async function postData<T>(
   return fetchWithErrorHandling<T>(url, {
     method: 'POST',
     body: JSON.stringify(data),
+  });
+}
+
+/**
+ * Get full API URL
+ * @param endpoint - API endpoint path
+ * @returns Full API URL
+ */
+export function getApiUrl(endpoint: string): string {
+  return `${API_BASE_URL}${endpoint}`;
+}
+
+/**
+ * Process transactions via API
+ * @param formData - Form data containing CSV and config
+ * @returns Promise with processing result
+ */
+export async function processTransactions(formData: FormData): Promise<any> {
+  const response = await fetch(`${API_BASE_URL}/process`, {
+    method: 'POST',
+    body: formData,
+    // Don't set Content-Type header - let browser set it with boundary for multipart
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    console.log('API Error Response:', errorData); // Debug log
+    throw new AppError(errorData.error || errorData.message || errorData.detail || 'Transaction processing failed', {
+      status: response.status,
+    });
+  }
+
+  return response.json();
+}
+
+/**
+ * Recalculate statistics
+ * @param resultId - Result ID
+ * @param algorithms - Algorithms to use
+ * @param direction - Direction (columns/rows)
+ * @returns Promise with statistics result
+ */
+export async function recalculateStatistics(
+  resultId: string,
+  algorithms: string[],
+  direction: 'columns' | 'rows'
+): Promise<any> {
+  return postData(`${API_BASE_URL}/recalculate-statistics`, {
+    result_id: resultId,
+    algorithms,
+    direction,
   });
 }

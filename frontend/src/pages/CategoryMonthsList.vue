@@ -1,19 +1,31 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { ref, onMounted, computed, nextTick } from 'vue'
+import { useRoute } from 'vue-router'
 import { useLocaleStore } from '../stores/locale'
 import { getTranslation } from '../stores/translations'
 import { fetchWithErrorHandling } from '../js/api'
 import CardComponent from '../components/ui/CardComponent.vue'
 import ButtonComponent from '../components/ui/ButtonComponent.vue'
+import { initMainPage } from '../js/main'
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api'
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api/v2'
 
 const localeStore = useLocaleStore()
 const route = useRoute()
-const router = useRouter()
 
 const t = (key: string) => getTranslation(key, localeStore.locale)
+
+interface DrilldownUrlInfo {
+  category_url: string
+  category_id: string
+}
+
+interface DrilldownUrls {
+  account_id: string | null
+  category_urls: Record<string, DrilldownUrlInfo>
+  month_urls: Record<string, { month_url: string; month_id: string }>
+  cell_urls: Record<string, { cell_url: string; category_id: string; month_id: string }>
+}
 
 interface MonthData {
   month: string
@@ -33,6 +45,7 @@ interface CategoryMonthsResponse {
   category_id: string
   category_name: string
   data: MonthData[]
+  drilldown_urls?: Record<string, DrilldownUrls>
 }
 
 const resultId = computed(() => route.params.resultId as string)
@@ -53,12 +66,22 @@ const fetchCategoryMonths = async () => {
   try {
     isLoading.value = true
     error.value = null
-    
+
     const response = await fetchWithErrorHandling<CategoryMonthsResponse>(
       `${API_BASE_URL}/results/${resultId.value}/accounts/${accountId.value}/categories/${categoryId.value}/months`
     )
-    
+
     categoryMonthsData.value = response
+
+    // Wait for Vue to render the tables with the new data
+    await nextTick()
+
+    // Set translation strings for DataTables export buttons
+    window.exportCsvText = t('Export CSV')
+    window.exportExcelText = t('Export Excel')
+
+    // Initialize DataTables now that tables exist in DOM
+    initMainPage()
   } catch (err) {
     console.error('Failed to fetch category months:', err)
     error.value = err instanceof Error ? err.message : 'Failed to load category months'
@@ -67,19 +90,22 @@ const fetchCategoryMonths = async () => {
   }
 }
 
-const navigateToTransactions = (monthData: MonthData) => {
-  // Navigate to the transactions view for this specific month
-  // Use month_timestamp instead of row_id for backend matching
-  router.push({
-    name: 'category-month-transactions',
-    params: {
-      resultId: resultId.value,
-      accountId: accountId.value,
-      categoryId: categoryId.value,
-      monthId: String(monthData.month_timestamp)
+/**
+ * Extract month_id from month data (from cell_url or month_timestamp)
+ */
+const extractMonthId = (month: MonthData): string => {
+  // Try to extract from cell_url first
+  if (month.cell_url) {
+    const match = month.cell_url.match(/months\/([^\/]+)\/transactions/)
+    if (match) {
+      return match[1]
     }
-  })
+  }
+  // Fallback to month_timestamp as string
+  return String(month.month_timestamp)
 }
+
+
 
 onMounted(() => {
   fetchCategoryMonths()
@@ -131,9 +157,7 @@ onMounted(() => {
                 <tbody>
                   <tr v-for="month in categoryMonthsData.data" :key="month.row_id">
                     <td>
-                      <a href="#" class="clickable" @click.prevent="navigateToTransactions(month)">
-                        {{ month.month }}
-                      </a>
+                      <router-link :to="{ name: 'category-month-transactions', params: { resultId: resultId, accountId: accountId, categoryId: categoryId, monthId: extractMonthId(month) } }" class="clickable">{{ month.month }}</router-link>
                     </td>
                     <td :data-row-id="month.row_id" class="">
                       {{ month.total.display }}
@@ -149,10 +173,10 @@ onMounted(() => {
       <!-- Navigation -->
       <div class="row">
         <div class="col-md-6">
-          <ButtonComponent 
-            :text="t('Back to Results')" 
-            variant="secondary" 
-            :to="{ name: 'results', query: { resultId: resultId } }" 
+          <ButtonComponent
+            :text="t('Back to Results')"
+            variant="secondary"
+            :to="{ name: 'results', query: { resultId: resultId } }"
             class="mt-3 mb-3"
           />
         </div>

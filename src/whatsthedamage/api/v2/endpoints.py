@@ -16,7 +16,8 @@ from whatsthedamage.api.helpers import (
     handle_error,
     _get_cache_service,
     _get_response_builder_service,
-    _get_processing_service
+    _get_processing_service,
+    _get_id_mapping_service
 )
 
 
@@ -195,10 +196,15 @@ def _get_frontend_url(endpoint: str, **values) -> str:
     return "#"
 
 
-def _find_account_data(cached_result, account_id: str):
-    """Find account data in cached result by account ID."""
+def _find_account_data(cached_result, account_id: str, result_id: str = None):
+    """Find account data in cached result by account ID.
+
+    Attempts to match account_id directly first, then tries to resolve
+    secure mapped ID to original account number if result_id is provided.
+    """
     try:
         if hasattr(cached_result, 'data') and isinstance(cached_result.data, dict):
+            # First, try direct match
             for acc_id, account_data in cached_result.data.items():
                 if acc_id == account_id:
                     return {
@@ -206,6 +212,23 @@ def _find_account_data(cached_result, account_id: str):
                         'name': getattr(account_data, 'name', f'Account {account_id}'),
                         'data': account_data.data if hasattr(account_data, 'data') else []
                     }
+
+            # If no direct match and we have a result_id, try resolving secure ID
+            if result_id:
+                try:
+                    id_mapping_service = _get_id_mapping_service()
+                    # Try to resolve account_id as a secure ID to get original account number
+                    original_account = id_mapping_service.get_account_number(result_id, account_id)
+                    if original_account:
+                        for acc_id, account_data in cached_result.data.items():
+                            if acc_id == original_account:
+                                return {
+                                    'id': acc_id,
+                                    'name': getattr(account_data, 'name', f'Account {original_account}'),
+                                    'data': account_data.data if hasattr(account_data, 'data') else []
+                                }
+                except Exception:
+                    pass  # Fall through to return None
         return None
     except Exception as e:
         from whatsthedamage.utils.logging import get_logger
@@ -254,15 +277,22 @@ def get_category_months(result_id: str, account_id: str, category_id: str) -> tu
         if not cached_result:
             return jsonify({'error': 'Results not found'}), 404
 
-        account_data = _find_account_data(cached_result, account_id)
+        account_data = _find_account_data(cached_result, account_id, result_id)
 
         if not account_data:
             return jsonify({'error': 'Account not found in results'}), 404
 
+        # Resolve secure category_id to original category name
+        try:
+            id_mapping_service = _get_id_mapping_service()
+            original_category = id_mapping_service.get_category_name(result_id, category_id)
+        except Exception:
+            original_category = category_id  # Fallback to direct use
+
         category_months = {}
 
         for row in account_data['data']:
-            if hasattr(row, 'category') and row.category == category_id:
+            if hasattr(row, 'category') and row.category == original_category:
                 month_key = _extract_month_key(row.date)
                 if month_key not in category_months:
                     category_months[month_key] = {
@@ -296,9 +326,9 @@ def get_category_months(result_id: str, account_id: str, category_id: str) -> tu
                 month_id=month_identifier
             )
 
-        category_name = category_id.replace('_', ' ').title()
+        category_name = original_category.replace('_', ' ').title()
         for row in account_data['data']:
-            if hasattr(row, 'category') and row.category == category_id:
+            if hasattr(row, 'category') and row.category == original_category:
                 if hasattr(row, 'category_display'):
                     category_name = row.category_display
                 break
@@ -345,16 +375,23 @@ def get_month_categories(result_id: str, account_id: str, month_id: str) -> tupl
         if not cached_result:
             return jsonify({'error': 'Results not found'}), 404
 
-        account_data = _find_account_data(cached_result, account_id)
+        account_data = _find_account_data(cached_result, account_id, result_id)
 
         if not account_data:
             return jsonify({'error': 'Account not found in results'}), 404
+
+        # Resolve secure month_id to original timestamp
+        try:
+            id_mapping_service = _get_id_mapping_service()
+            original_month_ts = id_mapping_service.get_month_timestamp(month_id)
+        except Exception:
+            original_month_ts = month_id  # Fallback to direct use
 
         month_categories = {}
 
         for row in account_data['data']:
             row_month_key = _extract_month_key(row.date)
-            if row_month_key == month_id:
+            if row_month_key == original_month_ts:
                 category = row.category if hasattr(row, 'category') else 'uncategorized'
                 if category not in month_categories:
                     month_categories[category] = {
@@ -389,7 +426,7 @@ def get_month_categories(result_id: str, account_id: str, month_id: str) -> tupl
         month_name = month_id.replace('-', ' ').title()
         for row in account_data['data']:
             row_month_key = _extract_month_key(row.date)
-            if row_month_key == month_id:
+            if row_month_key == original_month_ts:
                 if hasattr(row.date, 'display'):
                     month_name = row.date.display
                 break
@@ -437,13 +474,25 @@ def get_category_month_transactions(result_id: str, account_id: str, category_id
         if not cached_result:
             return jsonify({'error': 'Results not found'}), 404
 
-        account_data = _find_account_data(cached_result, account_id)
+        account_data = _find_account_data(cached_result, account_id, result_id)
 
         if not account_data:
             return jsonify({'error': 'Account not found in results'}), 404
 
-        category_name = category_id.replace('_', ' ').title()
-        month_name = month_id.replace('-', ' ').title()
+        # Resolve secure category_id and month_id to original values
+        try:
+            id_mapping_service = _get_id_mapping_service()
+            original_category = id_mapping_service.get_category_name(result_id, category_id)
+        except Exception:
+            original_category = category_id  # Fallback to direct use
+
+        try:
+            original_month_ts = id_mapping_service.get_month_timestamp(month_id)
+        except Exception:
+            original_month_ts = month_id  # Fallback to direct use
+
+        category_name = original_category.replace('_', ' ').title()
+        month_name = original_month_ts.replace('-', ' ').title()
 
         transactions = []
 
@@ -451,7 +500,7 @@ def get_category_month_transactions(result_id: str, account_id: str, category_id
             row_category = row.category if hasattr(row, 'category') else 'uncategorized'
             row_month_key = _extract_month_key(row.date)
 
-            if row_category == category_id and row_month_key == month_id:
+            if row_category == original_category and row_month_key == original_month_ts:
                 if hasattr(row, 'category_display'):
                     category_name = row.category_display
                 if hasattr(row.date, 'display'):

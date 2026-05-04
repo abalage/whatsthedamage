@@ -6,7 +6,7 @@
 import { AppError, ApiResponse } from '../types';
 
 // API base URL configuration
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api/v2';
 
 /**
  * Fetch with proper error handling and response wrapping

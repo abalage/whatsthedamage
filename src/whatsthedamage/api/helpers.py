@@ -13,6 +13,7 @@ from whatsthedamage.services.response_formatting_service import ResponseFormatti
 from whatsthedamage.services.file_upload_service import FileUploadService, FileUploadError
 from whatsthedamage.services.processing_service import ProcessingService
 from whatsthedamage.services.cache_service import CacheService
+from whatsthedamage.services.id_mapping_service import IdMappingService
 
 
 def _get_response_builder_service() -> ResponseFormattingService:
@@ -33,6 +34,11 @@ def _get_processing_service() -> ProcessingService:
 def _get_cache_service() -> CacheService:
     """Get cache service from app extensions (dependency injection)."""
     return cast(CacheService, current_app.extensions['cache_service'])
+
+
+def _get_id_mapping_service() -> IdMappingService:
+    """Get ID mapping service from app extensions (dependency injection)."""
+    return cast(IdMappingService, current_app.extensions['id_mapping_service'])
 
 
 def validate_csv_file() -> FileStorage:

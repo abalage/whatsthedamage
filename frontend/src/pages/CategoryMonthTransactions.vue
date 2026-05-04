@@ -1,17 +1,17 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { ref, onMounted, computed, nextTick } from 'vue'
+import { useRoute } from 'vue-router'
 import { useLocaleStore } from '../stores/locale'
 import { getTranslation } from '../stores/translations'
 import { fetchWithErrorHandling } from '../js/api'
 import CardComponent from '../components/ui/CardComponent.vue'
 import ButtonComponent from '../components/ui/ButtonComponent.vue'
+import { initMainPage } from '../js/main'
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api'
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api/v2'
 
 const localeStore = useLocaleStore()
 const route = useRoute()
-const router = useRouter()
 
 const t = (key: string) => getTranslation(key, localeStore.locale)
 
@@ -56,12 +56,22 @@ const fetchTransactions = async () => {
   try {
     isLoading.value = true
     error.value = null
-    
+
     const response = await fetchWithErrorHandling<CategoryMonthTransactionsResponse>(
       `${API_BASE_URL}/results/${resultId.value}/accounts/${accountId.value}/categories/${categoryId.value}/months/${monthId.value}/transactions`
     )
-    
+
     transactionsData.value = response
+
+    // Wait for Vue to render the tables with the new data
+    await nextTick()
+
+    // Set translation strings for DataTables export buttons
+    window.exportCsvText = t('Export CSV')
+    window.exportExcelText = t('Export Excel')
+
+    // Initialize DataTables now that tables exist in DOM
+    initMainPage()
   } catch (err) {
     console.error('Failed to fetch transactions:', err)
     error.value = err instanceof Error ? err.message : 'Failed to load transactions'
@@ -70,16 +80,7 @@ const fetchTransactions = async () => {
   }
 }
 
-const navigateBackToCategoryMonths = () => {
-  router.push({
-    name: 'category-months',
-    params: {
-      resultId: resultId.value,
-      accountId: accountId.value,
-      categoryId: categoryId.value
-    }
-  })
-}
+
 
 onMounted(() => {
   fetchTransactions()
@@ -94,7 +95,7 @@ onMounted(() => {
         <li class="breadcrumb-item"><router-link to="/">{{ t('Home') }}</router-link></li>
         <li class="breadcrumb-item"><router-link :to="{ name: 'results', query: { resultId: resultId } }">{{ t('Results') }}</router-link></li>
         <li class="breadcrumb-item">
-          <router-link 
+          <router-link
             :to="{ name: 'category-months', params: { resultId: resultId, accountId: accountId, categoryId: categoryId } }"
           >
             {{ t('Category Months') }}
@@ -154,18 +155,8 @@ onMounted(() => {
       <!-- Navigation -->
       <div class="row">
         <div class="col-md-6">
-          <ButtonComponent 
-            :text="t('Back to Category Months')" 
-            variant="secondary" 
-            @click="navigateBackToCategoryMonths" 
-            class="me-2 mt-3 mb-3"
-          />
-          <ButtonComponent 
-            :text="t('Back to Results')" 
-            variant="outline-secondary" 
-            :to="{ name: 'results', query: { resultId: resultId } }" 
-            class="mt-3 mb-3"
-          />
+          <router-link :to="{ name: 'category-months', params: { resultId: resultId, accountId: accountId, categoryId: categoryId } }" class="btn btn-secondary me-2 mt-3 mb-3">{{ t('Back to Category Months') }}</router-link>
+          <router-link :to="{ name: 'results', query: { resultId: resultId } }" class="btn btn-outline-secondary mt-3 mb-3">{{ t('Back to Results') }}</router-link>
         </div>
       </div>
     </div>

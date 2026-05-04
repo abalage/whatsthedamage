@@ -1,12 +1,13 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
 import { useLocaleStore } from '../stores/locale'
 import { getTranslation } from '../stores/translations'
 import { fetchWithErrorHandling } from '../js/api'
 import ButtonComponent from '../components/ui/ButtonComponent.vue'
+import { initMainPage } from '../js/main'
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api'
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api/v2'
 
 const localeStore = useLocaleStore()
 const route = useRoute()
@@ -69,12 +70,22 @@ const fetchResults = async () => {
   try {
     isLoading.value = true
     error.value = null
-    
+
     const response = await fetchWithErrorHandling<ResultsResponse>(
       `${API_BASE_URL}/results/${resultId.value}/details`
     )
-    
+
     resultsData.value = response
+
+    // Wait for Vue to render the tables with the new data
+    await nextTick()
+
+    // Set translation strings for DataTables export buttons
+    window.exportCsvText = t('Export CSV')
+    window.exportExcelText = t('Export Excel')
+
+    // Initialize DataTables now that tables exist in DOM
+    initMainPage()
   } catch (err) {
     console.error('Failed to fetch results:', err)
     error.value = err instanceof Error ? err.message : 'Failed to load results'
@@ -86,9 +97,9 @@ const fetchResults = async () => {
 // Flatten all transactions for the data table
 const allTransactions = computed(() => {
   if (!resultsData.value) return []
-  
+
   const transactions = []
-  
+
   for (const account of resultsData.value.accounts_data.accounts) {
     for (const aggRow of account.dt_response.data) {
       for (const detail of aggRow.details) {
@@ -106,7 +117,7 @@ const allTransactions = computed(() => {
       }
     }
   }
-  
+
   return transactions
 })
 
@@ -184,10 +195,10 @@ onMounted(() => {
       <!-- Navigation -->
       <div class="row">
         <div class="col-md-6">
-          <ButtonComponent 
-            :text="t('Back to Results')" 
-            variant="secondary" 
-            :to="{ name: 'results', query: { resultId: resultId } }" 
+          <ButtonComponent
+            :text="t('Back to Results')"
+            variant="secondary"
+            :to="{ name: 'results', query: { resultId: resultId } }"
             class="mt-3 mb-3"
           />
         </div>

@@ -5,7 +5,7 @@ import { useLocaleStore } from '../stores/locale'
 import { getTranslation } from '../stores/translations'
 import { fetchWithErrorHandling } from '../js/api'
 import { useFeedbackStore } from '../stores/feedback'
-import { initMainPage } from '../js/main'
+
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api/v2'
 
@@ -89,9 +89,10 @@ const fetchResults = async () => {
 
       // Initialize DataTables for fallback data
       await nextTick()
+      await new Promise(resolve => setTimeout(resolve, 0))
       window.exportCsvText = t('Export CSV')
       window.exportExcelText = t('Export Excel')
-      initMainPage()
+      window.initMainPage()
     } catch (fallbackError) {
       console.error('Fallback fetch also failed:', fallbackError)
       // Don't set error here since we already have the original error
@@ -104,21 +105,25 @@ const fetchResults = async () => {
     // Fetch results data from the API endpoint we created
     const response = await fetchWithErrorHandling<ResultsResponse>(`${API_BASE_URL}/results/${resultId.value}`)
     resultsData.value = response
+    error.value = null
+
+    // Set isLoading to false BEFORE initializing DataTables so the results block renders
+    isLoading.value = false
 
     // Wait for Vue to render the tables with the new data
     await nextTick()
+    await new Promise(resolve => setTimeout(resolve, 0))
 
     // Set translation strings for DataTables export buttons
     window.exportCsvText = t('Export CSV')
     window.exportExcelText = t('Export Excel')
 
     // Initialize DataTables now that tables exist in DOM
-    initMainPage()
+    window.initMainPage()
   } catch (err) {
     console.error('Failed to fetch results:', err)
     error.value = err instanceof Error ? err.message : 'Failed to load results'
     feedback.showError('Failed to load results: ' + error.value)
-  } finally {
     isLoading.value = false
   }
 }

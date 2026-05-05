@@ -5,7 +5,7 @@ import { useLocaleStore } from '../stores/locale'
 import { getTranslation } from '../stores/translations'
 import { fetchWithErrorHandling } from '../js/api'
 import ButtonComponent from '../components/ui/ButtonComponent.vue'
-import { initMainPage } from '../js/main'
+
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api/v2'
 
@@ -76,6 +76,10 @@ const fetchResults = async () => {
     )
 
     resultsData.value = response
+    error.value = null
+
+    // Set isLoading to false BEFORE initializing DataTables so the results block renders
+    isLoading.value = false
 
     // Wait for Vue to render the tables with the new data
     await nextTick()
@@ -85,11 +89,10 @@ const fetchResults = async () => {
     window.exportExcelText = t('Export Excel')
 
     // Initialize DataTables now that tables exist in DOM
-    initMainPage()
+    window.initMainPage()
   } catch (err) {
     console.error('Failed to fetch results:', err)
     error.value = err instanceof Error ? err.message : 'Failed to load results'
-  } finally {
     isLoading.value = false
   }
 }

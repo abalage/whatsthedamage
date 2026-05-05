@@ -11,13 +11,26 @@ import 'datatables.net-buttons-bs5/css/buttons.bootstrap5.min.css'
 
 // Import DataTables JavaScript libraries
 import $ from 'jquery'
-import 'bootstrap'
+import * as bootstrapNs from 'bootstrap'
+
+// Assign jQuery and Bootstrap to window BEFORE importing DataTables
+// This ensures DataTables can find jQuery as a global
+(window as any).$ = (window as any).jQuery = $;
+(window as any).bootstrap = bootstrapNs.default || bootstrapNs;
+
+// Import DataTables - these will use window.$ / window.jQuery
 import 'datatables.net'
 import 'datatables.net-bs5'
 import 'datatables.net-buttons'
 import 'datatables.net-buttons-bs5'
 import 'datatables.net-fixedheader'
 import 'datatables.net-fixedheader-bs5'
+
+// Import JSZip and assign to window BEFORE importing buttons.html5
+// buttons.html5.js requires window.JSZip to be set when it executes
+import JSZip from 'jszip';
+(window as any).JSZip = JSZip;
+import 'datatables.net-buttons/js/buttons.html5';
 
 // Import DataTables initialization
 import { initMainPage } from './js/main'
@@ -28,8 +41,13 @@ declare global {
     exportCsvText: string
     exportExcelText: string
     bootstrap: any
+    JSZip: any
+    initMainPage: () => void
   }
 }
+
+// Make initMainPage available globally for components
+window.initMainPage = initMainPage;
 
 // Create Vue app
 const app = createApp(App)

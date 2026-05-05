@@ -6,7 +6,7 @@ import { getTranslation } from '../stores/translations'
 import { fetchWithErrorHandling } from '../js/api'
 import CardComponent from '../components/ui/CardComponent.vue'
 import ButtonComponent from '../components/ui/ButtonComponent.vue'
-import { initMainPage } from '../js/main'
+
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api/v2'
 
@@ -62,6 +62,10 @@ const fetchTransactions = async () => {
     )
 
     transactionsData.value = response
+    error.value = null
+
+    // Set isLoading to false BEFORE initializing DataTables so the results block renders
+    isLoading.value = false
 
     // Wait for Vue to render the tables with the new data
     await nextTick()
@@ -71,11 +75,10 @@ const fetchTransactions = async () => {
     window.exportExcelText = t('Export Excel')
 
     // Initialize DataTables now that tables exist in DOM
-    initMainPage()
+    window.initMainPage()
   } catch (err) {
     console.error('Failed to fetch transactions:', err)
     error.value = err instanceof Error ? err.message : 'Failed to load transactions'
-  } finally {
     isLoading.value = false
   }
 }

@@ -3,7 +3,8 @@
 This module provides REST API endpoints for processing CSV transaction files
 with detailed transaction-level data for DataTables rendering.
 """
-from flask import Blueprint, jsonify, Response
+from flask import Blueprint, jsonify, Response, request
+from typing import Tuple
 import time
 
 from whatsthedamage.models.dt_models import ProcessingResponse
@@ -17,7 +18,8 @@ from whatsthedamage.api.helpers import (
     _get_cache_service,
     _get_response_builder_service,
     _get_processing_service,
-    _get_id_mapping_service
+    _get_id_mapping_service,
+    _get_statistical_service
 )
 
 
@@ -342,6 +344,13 @@ def get_category_months(result_id: str, account_id: str, category_id: str) -> tu
             'data': months_list
         }
 
+
+        # Extract highlights from statistical_metadata
+        if hasattr(cached_result, 'statistical_metadata') and hasattr(cached_result.statistical_metadata, 'highlights'):
+            highlights_dict = {}
+            for cell_highlight in cached_result.statistical_metadata.highlights:
+                highlights_dict[cell_highlight.row_id] = cell_highlight.highlight_types
+            response_data['highlights'] = highlights_dict
         return jsonify(response_data), 200
 
     except Exception as e:
@@ -440,6 +449,13 @@ def get_month_categories(result_id: str, account_id: str, month_id: str) -> tupl
             'data': categories_list
         }
 
+
+        # Extract highlights from statistical_metadata
+        if hasattr(cached_result, 'statistical_metadata') and hasattr(cached_result.statistical_metadata, 'highlights'):
+            highlights_dict = {}
+            for cell_highlight in cached_result.statistical_metadata.highlights:
+                highlights_dict[cell_highlight.row_id] = cell_highlight.highlight_types
+            response_data['highlights'] = highlights_dict
         return jsonify(response_data), 200
 
     except Exception as e:
@@ -539,6 +555,13 @@ def get_category_month_transactions(result_id: str, account_id: str, category_id
             'data': transactions
         }
 
+
+        # Extract highlights from statistical_metadata
+        if hasattr(cached_result, 'statistical_metadata') and hasattr(cached_result.statistical_metadata, 'highlights'):
+            highlights_dict = {}
+            for cell_highlight in cached_result.statistical_metadata.highlights:
+                highlights_dict[cell_highlight.row_id] = cell_highlight.highlight_types
+            response_data['highlights'] = highlights_dict
         return jsonify(response_data), 200
 
     except Exception as e:
@@ -550,3 +573,85 @@ def get_category_month_transactions(result_id: str, account_id: str, category_id
 
 # Helper functions
 
+
+
+@v2_bp.route('/recalculate-statistics', methods=['POST'])
+def recalculate_statistics_v2() -> Tuple[Response, int]:
+    """Recalculate statistical highlights with custom algorithm and direction settings.
+
+    Args:
+        JSON payload with:
+        - result_id (required): UUID of the cached processing result
+        - algorithms (required): List of algorithm names (e.g., ['iqr', 'pareto'])
+        - direction (required): Direction for analysis ('rows' or 'columns')
+
+    Returns:
+        JSON response with updated statistical metadata
+
+    Status Codes:
+        200: Successfully recalculated statistics
+        400: Bad request (missing parameters, invalid values)
+        404: Result data not found
+        500: Internal server error
+    """
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'No data provided'}), 400
+
+        result_id = data.get('result_id')
+        algorithms = data.get('algorithms', [])
+        direction = data.get('direction', 'columns')
+
+        if not result_id:
+            return jsonify({'error': 'result_id is required'}), 400
+
+        if not isinstance(algorithms, list):
+            return jsonify({'error': 'algorithms must be a list'}), 400
+
+        if direction not in ['columns', 'rows']:
+            return jsonify({'error': 'direction must be either "columns" or "rows"'}), 400
+
+        # Get cached result
+        cache_service = _get_cache_service()
+        cached_result = cache_service.get(result_id)
+
+        if cached_result is None:
+            return jsonify({'error': 'Result data not found or expired'}), 404
+
+        # Get statistical service
+        statistical_service = _get_statistical_service()
+
+        # Recalculate statistics
+        updated_metadata = statistical_service.compute_statistical_metadata(
+            cached_result.data,
+            algorithms=algorithms,
+            direction=direction
+        )
+
+        # Convert highlights list to dict format, merging types for same row_id
+        highlights_dict = {}
+        for cell_highlight in updated_metadata.highlights:
+            if cell_highlight.row_id in highlights_dict:
+                # Merge highlight types for existing row_id
+                highlights_dict[cell_highlight.row_id].extend(cell_highlight.highlight_types)
+            else:
+                highlights_dict[cell_highlight.row_id] = cell_highlight.highlight_types.copy()
+
+        # Update cache
+        cached_result.statistical_metadata = updated_metadata
+        cache_service.set(result_id, cached_result)
+
+        return jsonify({
+            'status': 'success',
+            'result_id': result_id,
+            'highlights': highlights_dict,
+            'algorithms': algorithms,
+            'direction': direction
+        }), 200
+
+    except Exception as e:
+        from whatsthedamage.utils.logging import get_logger
+        logger = get_logger(__name__)
+        logger.error(f'Error recalculating statistics: {e}')
+        return jsonify({'error': str(e)}), 500

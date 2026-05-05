@@ -14,6 +14,7 @@ from whatsthedamage.services.file_upload_service import FileUploadService, FileU
 from whatsthedamage.services.processing_service import ProcessingService
 from whatsthedamage.services.cache_service import CacheService
 from whatsthedamage.services.id_mapping_service import IdMappingService
+from whatsthedamage.services.statistical_analysis_service import StatisticalAnalysisService
 
 
 def _get_response_builder_service() -> ResponseFormattingService:
@@ -39,6 +40,11 @@ def _get_cache_service() -> CacheService:
 def _get_id_mapping_service() -> IdMappingService:
     """Get ID mapping service from app extensions (dependency injection)."""
     return cast(IdMappingService, current_app.extensions['id_mapping_service'])
+
+
+def _get_statistical_service() -> StatisticalAnalysisService:
+    """Get statistical analysis service from app extensions (dependency injection)."""
+    return cast(StatisticalAnalysisService, current_app.extensions['statistical_analysis_service'])
 
 
 def validate_csv_file() -> FileStorage:

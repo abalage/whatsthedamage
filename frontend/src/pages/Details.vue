@@ -50,7 +50,7 @@ interface ResultsResponse {
   result_id: string
   accounts_data: {
     accounts: AccountData[]
-    highlights: any
+    highlights: Record<string, string[]>
   }
 }
 
@@ -76,6 +76,10 @@ const fetchResults = async () => {
     )
 
     resultsData.value = response
+    // Set highlights for statistical cell highlighting
+    window.highlights = resultsData.value?.accounts_data.highlights || {}
+    // Set highlights for statistical cell highlighting
+    window.highlights = resultsData.value?.accounts_data.highlights || {}
     error.value = null
 
     // Set isLoading to false BEFORE initializing DataTables so the results block renders

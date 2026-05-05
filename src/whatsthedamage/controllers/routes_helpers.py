@@ -366,20 +366,29 @@ def handle_recalculate_statistics_request(
         statistical_service = _get_statistical_service()
 
         # Recalculate statistics with the specified algorithms and direction
-        updated_metadata = statistical_service.recalculate_highlights(
+        updated_metadata = statistical_service.compute_statistical_metadata(
             cached_result.data,
             algorithms=algorithms,
             direction=direction
         )
 
+        # Convert highlights list to dict format: {row_id: [highlight_types]}
+        # Merge types for same row_id (when multiple algorithms highlight the same cell)
+        highlights_dict = {}
+        for cell_highlight in updated_metadata.highlights:
+            if cell_highlight.row_id in highlights_dict:
+                highlights_dict[cell_highlight.row_id].extend(cell_highlight.highlight_types)
+            else:
+                highlights_dict[cell_highlight.row_id] = cell_highlight.highlight_types.copy()
+
         # Update cache with new statistical metadata
-        cached_result.statistical_metadata.update(updated_metadata)
+        cached_result.statistical_metadata = updated_metadata
         cache_service.set(result_id, cached_result)
 
         return {
             'status': 'success',
             'result_id': result_id,
-            'highlights': updated_metadata.get('highlights', {}),
+            'highlights': highlights_dict,
             'algorithms': algorithms,
             'direction': direction
         }, 200

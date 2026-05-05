@@ -5,6 +5,7 @@ import { useLocaleStore } from '../stores/locale'
 import { getTranslation } from '../stores/translations'
 import { fetchWithErrorHandling } from '../js/api'
 import { useFeedbackStore } from '../stores/feedback'
+import StatisticalControls from '../components/ui/StatisticalControls.vue'
 
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api/v2'
@@ -54,7 +55,7 @@ interface ResultsResponse {
   result_id: string
   accounts_data: {
     accounts: AccountData[]
-    highlights: any
+    highlights: Record<string, string[]>
   }
   drilldown_urls_by_account: Record<string, DrilldownUrls>
 }
@@ -92,6 +93,10 @@ const fetchResults = async () => {
       await new Promise(resolve => setTimeout(resolve, 0))
       window.exportCsvText = t('Export CSV')
       window.exportExcelText = t('Export Excel')
+
+      // Set highlights for statistical cell highlighting
+      window.highlights = fallbackResponse.accounts_data?.highlights || {}
+
       window.initMainPage()
     } catch (fallbackError) {
       console.error('Fallback fetch also failed:', fallbackError)
@@ -117,6 +122,9 @@ const fetchResults = async () => {
     // Set translation strings for DataTables export buttons
     window.exportCsvText = t('Export CSV')
     window.exportExcelText = t('Export Excel')
+
+    // Set highlights for statistical cell highlighting
+    window.highlights = resultsData.value?.accounts_data.highlights || {}
 
     // Initialize DataTables now that tables exist in DOM
     window.initMainPage()
@@ -192,6 +200,8 @@ onMounted(() => {
         <li class="breadcrumb-item active" aria-current="page">{{ t('Results') }}</li>
       </ol>
     </nav>
+
+    <StatisticalControls v-if="resultsData" :resultId="resultId" />
 
     <div v-if="isLoading" class="text-center my-5">
       <div class="spinner-border text-primary" role="status">

@@ -2,6 +2,8 @@ import { createApp, nextTick } from 'vue'
 import App from './App.vue'
 import router from './router'
 import './css/main.css'
+import './css/components.css'
+import './css/results.css'
 
 // Import Bootstrap CSS
 import 'bootstrap/dist/css/bootstrap.min.css'
@@ -34,6 +36,7 @@ import 'datatables.net-buttons/js/buttons.html5';
 
 // Import DataTables initialization
 import { initMainPage } from './js/main'
+import { updateCellHighlights } from './js/statistical-analysis'
 
 // Declare global window types
 declare global {
@@ -43,11 +46,13 @@ declare global {
     bootstrap: any
     JSZip: any
     initMainPage: () => void
+    updateCellHighlights: (highlights: Record<string, string[]>) => void
   }
 }
 
 // Make initMainPage available globally for components
 window.initMainPage = initMainPage;
+window.updateCellHighlights = updateCellHighlights;
 
 // Create Vue app
 const app = createApp(App)

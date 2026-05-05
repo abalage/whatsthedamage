@@ -6,6 +6,7 @@ import { getTranslation } from '../stores/translations'
 import { fetchWithErrorHandling } from '../js/api'
 import CardComponent from '../components/ui/CardComponent.vue'
 import ButtonComponent from '../components/ui/ButtonComponent.vue'
+import StatisticalControls from '../components/ui/StatisticalControls.vue'
 
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api/v2'
@@ -46,6 +47,7 @@ interface CategoryMonthsResponse {
   category_name: string
   data: MonthData[]
   drilldown_urls?: Record<string, DrilldownUrls>
+  highlights?: Record<string, string[]>
 }
 
 const resultId = computed(() => route.params.resultId as string)
@@ -83,6 +85,9 @@ const fetchCategoryMonths = async () => {
     // Set translation strings for DataTables export buttons
     window.exportCsvText = t('Export CSV')
     window.exportExcelText = t('Export Excel')
+
+    // Set highlights for statistical cell highlighting
+    window.highlights = categoryMonthsData.value?.highlights || {}
 
     // Initialize DataTables now that tables exist in DOM
     window.initMainPage()
@@ -125,6 +130,8 @@ onMounted(() => {
         <li class="breadcrumb-item active" aria-current="page">{{ t('Category Details') }}</li>
       </ol>
     </nav>
+
+    <StatisticalControls v-if="categoryMonthsData" :resultId="resultId" />
 
     <!-- Loading State -->
     <div v-if="isLoading" class="text-center my-5">

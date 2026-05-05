@@ -735,7 +735,7 @@ class ResponseFormattingService(IDataFormattingService):
             'result_id': cached_result.result_id,
             'accounts_data': {
                 'accounts': [],
-                'highlights': metadata_dict.get('highlights', {})
+                'highlights': self._convert_metadata_to_highlights_dict(cached_result.statistical_metadata) if hasattr(cached_result, 'statistical_metadata') else {}
             },
             'drilldown_urls_by_account': {}
         }

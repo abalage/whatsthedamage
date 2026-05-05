@@ -1,6 +1,8 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, reactive, computed } from 'vue'
 import { useStatisticalStore } from '../../stores/statistical'
+import { useLocaleStore } from '../../stores/locale'
+import { getTranslation } from '../../stores/translations'
 import { recalculateStatistics } from '../../js/api'
 import ButtonComponent from './ButtonComponent.vue'
 
@@ -10,14 +12,17 @@ interface StatisticalControlsProps {
 
 const props = defineProps<StatisticalControlsProps>()
 
+const localeStore = useLocaleStore()
 const statisticalStore = useStatisticalStore()
+
+const t = (key: string) => getTranslation(key, localeStore.locale)
 
 // Legend visibility
 const legendVisible = ref(false)
 const statsControlsVisible = ref(false)
 
-// Algorithm selections
-const algorithms = ref({
+// Algorithm selections - use reactive for proper nested property reactivity
+const algorithms = reactive({
   iqr: true,
   pareto: true
 })
@@ -36,24 +41,34 @@ const toggleStatsControls = () => {
   statsControlsVisible.value = !statsControlsVisible.value
 }
 
-const recalculateStatistics = async () => {
+const handleRecalculate = async () => {
   try {
     isRecalculating.value = true
-    
+
     const selectedAlgorithms = []
-    if (algorithms.value.iqr) selectedAlgorithms.push('iqr')
-    if (algorithms.value.pareto) selectedAlgorithms.push('pareto')
-    
-    await recalculateStatistics(
+    if (algorithms.iqr) selectedAlgorithms.push('iqr')
+    if (algorithms.pareto) selectedAlgorithms.push('pareto')
+
+    const response = await recalculateStatistics(
       props.resultId,
       selectedAlgorithms,
       direction.value
     )
-    
+
+    // Update window.highlights with new highlights from response
+    if (response && response.highlights) {
+      window.highlights = response.highlights
+    }
+
     // Update store with new settings
     statisticalStore.setAlgorithms(selectedAlgorithms)
     statisticalStore.setDirection(direction.value)
-    
+
+    // Re-apply highlights to cells
+    if (typeof window.updateCellHighlights === 'function') {
+      window.updateCellHighlights(response.highlights || {})
+    }
+
   } catch (error) {
     console.error('Error recalculating statistics:', error)
     // Could show error message to user
@@ -62,13 +77,35 @@ const recalculateStatistics = async () => {
   }
 }
 
-const resetToDefaults = () => {
-  algorithms.value = {
-    iqr: true,
-    pareto: true
-  }
+const resetToDefaults = async () => {
+  algorithms.iqr = true
+  algorithms.pareto = true
   direction.value = 'columns'
   statisticalStore.resetToDefaults()
+
+  // Trigger recalculation with defaults
+  try {
+    isRecalculating.value = true
+    const response = await recalculateStatistics(
+      props.resultId,
+      ['iqr', 'pareto'],
+      'columns'
+    )
+
+    // Update window.highlights with new highlights from response
+    if (response && response.highlights) {
+      window.highlights = response.highlights
+    }
+
+    // Re-apply highlights to cells
+    if (typeof window.updateCellHighlights === 'function') {
+      window.updateCellHighlights(response.highlights || {})
+    }
+  } catch (error) {
+    console.error('Error restoring defaults:', error)
+  } finally {
+    isRecalculating.value = false
+  }
 }
 
 const legendClasses = computed(() => {
@@ -93,13 +130,13 @@ const statsControlsClasses = computed(() => {
         aria-controls="legend"
         @click="toggleLegend"
       >
-        {{ $t('legend') }}
+        {{ t('legend') }}
       </button>
       <div :class="legendClasses" id="legend">
         <div class="card card-body">
-          <p><span class="badge highlight-outlier">{{ $t('outlier') }}</span> {{ $t('outlierDescription') }}</p>
-          <p><span class="badge highlight-pareto">{{ $t('pareto') }}</span> {{ $t('paretoDescription') }}</p>
-          <p><span class="badge highlight-excluded">{{ $t('excluded') }}</span> {{ $t('excludedDescription') }}</p>
+          <p><span class="badge highlight-outlier">{{ t('outlier') }}</span> {{ t('outlierDescription') }}</p>
+          <p><span class="badge highlight-pareto">{{ t('pareto') }}</span> {{ t('paretoDescription') }}</p>
+          <p><span class="badge highlight-excluded">{{ t('excluded') }}</span> {{ t('excludedDescription') }}</p>
         </div>
       </div>
     </div>
@@ -115,60 +152,60 @@ const statsControlsClasses = computed(() => {
         aria-controls="stats-controls"
         @click="toggleStatsControls"
       >
-        {{ $t('statisticalAnalysisControls') }}
+        {{ t('statisticalAnalysisControls') }}
       </button>
       <div :class="statsControlsClasses" id="stats-controls">
         <div class="card card-body">
           <div class="mb-3">
-            <h6>{{ $t('algorithms') }}</h6>
+            <h6>{{ t('algorithms') }}</h6>
             <div class="form-check">
               <input class="form-check-input" type="checkbox" value="iqr" id="algorithm-iqr" v-model="algorithms.iqr">
               <label class="form-check-label" for="algorithm-iqr">
-                {{ $t('iqrOutlierDetection') }}
+                {{ t('iqrOutlierDetection') }}
               </label>
             </div>
             <div class="form-check">
               <input class="form-check-input" type="checkbox" value="pareto" id="algorithm-pareto" v-model="algorithms.pareto">
               <label class="form-check-label" for="algorithm-pareto">
-                {{ $t('paretoAnalysis') }}
+                {{ t('paretoAnalysis') }}
               </label>
             </div>
           </div>
 
           <div class="mb-3">
-            <h6>{{ $t('analysisDirection') }}</h6>
+            <h6>{{ t('analysisDirection') }}</h6>
             <div class="form-check">
               <input class="form-check-input" type="radio" name="direction" id="direction-rows" value="rows" v-model="direction">
               <label class="form-check-label" for="direction-rows">
-                {{ $t('rows') }}
+                {{ t('rows') }}
               </label>
             </div>
             <div class="form-check">
               <input class="form-check-input" type="radio" name="direction" id="direction-columns" value="columns" v-model="direction">
               <label class="form-check-label" for="direction-columns">
-                {{ $t('columns') }}
+                {{ t('columns') }}
               </label>
             </div>
           </div>
 
           <div class="d-flex gap-2">
             <ButtonComponent
-              text="{{ $t('recalculate') }}"
+              :text="t('recalculate')"
               buttonType="primary"
               size="sm"
               :disabled="isRecalculating"
-              @click="recalculateStatistics"
+              @click="handleRecalculate"
             >
               <template v-if="isRecalculating">
                 <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-                <span>{{ $t('recalculating') }}...</span>
+                <span>{{ t('recalculating') }}...</span>
               </template>
               <template v-else>
-                <span>{{ $t('recalculate') }}</span>
+                <span>{{ t('recalculate') }}</span>
               </template>
             </ButtonComponent>
             <ButtonComponent
-              text="{{ $t('resetToDefaults') }}"
+              :text="t('resetToDefaults')"
               buttonType="secondary"
               size="sm"
               @click="resetToDefaults"
@@ -182,17 +219,17 @@ const statsControlsClasses = computed(() => {
 
 <style scoped>
 .highlight-outlier {
-  background-color: #dc3545;
-  color: white;
+  background-color: #ffe6e6 !important;
+  color: black !important;
 }
 
 .highlight-pareto {
-  background-color: #28a745;
-  color: white;
+  background-color: #e6ffe6 !important;
+  color: black !important;
 }
 
 .highlight-excluded {
-  background-color: #6c757d;
-  color: white;
+  background-color: #f0f0f0 !important;
+  color: black !important;
 }
 </style>

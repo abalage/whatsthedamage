@@ -34,7 +34,7 @@ def serve_frontend(path: str) -> Any:
 
     Note: This assumes the frontend has been built and the dist/ directory
     is available. In production, the frontend should be built with:
-        cd frontend && npm run build:prod
+    cd frontend && npm run build:prod
 
     Args:
         path: The path requested by the client

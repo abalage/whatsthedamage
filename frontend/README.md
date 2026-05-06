@@ -106,7 +106,7 @@ npm run dev
 
 # Start backend API (port 5000)
 cd ..
-make web
+make backend
 ```
 
 The development setup uses Vite's proxy to forward API requests to the backend.
@@ -184,32 +184,3 @@ const result = await processTransactions(formData);
 // Recalculate statistics
 const stats = await recalculateStatistics(resultId, algorithms, direction);
 ```
-
-## 🚨 Breaking Changes
-
-**The backend is now API-only!** The template-based web interface has been completely removed.
-
-### What This Means:
-- **No more `/` route**: The root URL now redirects to API documentation
-- **No more form submission**: The `/process` endpoint is deprecated (returns 410 Gone)
-- **No more session management**: The `/clear` endpoint is deprecated (returns 410 Gone)
-- **API-only communication**: All interactions must use `/api/v2/` endpoints
-
-## Migration Notes
-
-This frontend was migrated from a monolithic Flask application. Key changes:
-
-1. **Removed Flask template dependencies**: No more Jinja2 templates
-2. **API-only communication**: All backend interactions via REST API
-3. **Independent build**: Vite builds to `dist/` instead of Flask static folder
-4. **CORS support**: Cross-origin requests to backend API
-5. **Modern tooling**: Updated to Vite, ESM modules, TypeScript
-6. **Breaking changes**: Backend routes removed, API-only architecture
-
-## Future Enhancements
-
-- Add proper SPA routing (React Router, Vue Router, etc.)
-- Implement state management
-- Add more comprehensive error handling
-- Improve UI/UX with modern components
-- Add authentication/authorization support

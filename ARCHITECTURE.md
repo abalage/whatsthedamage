@@ -8,9 +8,61 @@ This section provides a high-level overview of the project's directory and file 
 whatsthedamage/
 ├── config/                  # Configuration files
 │   └── gunicorn_conf.py     # Gunicorn production configuration
-├── docs/                    # Project documentation
-│   ├── calculator_pattern_example.py
-│   └── scripts/README.md    # ML documentation
+├── docs/                    # Project documentation built by Sphinx
+├── frontend/                # Vue 3 SPA Frontend (independent of backend)
+│   ├── src/
+│   │   ├── main.ts          # Application entry point
+│   │   ├── App.vue          # Root Vue component
+│   │   ├── router/
+│   │   │   └── index.ts     # Vue Router configuration
+│   │   ├── components/
+│   │   │   ├── Layout.vue
+│   │   │   ├── ErrorDisplay.vue
+│   │   │   └── ui/          # UI component library
+│   │   │       ├── ButtonComponent.vue
+│   │   │       ├── CardComponent.vue
+│   │   │       └── StatisticalControls.vue
+│   │   ├── config/
+│   │   |   └── highlight-config.ts
+│   │   ├── css/
+│   │   │   ├── components.css
+│   │   │   ├── main.css
+│   │   |   └── results.css
+│   │   ├── pages/           # Page-level components (routes)
+│   │   │   ├── About.vue
+│   │   │   ├── CategoryMonthsList.vue
+│   │   │   ├── CategoryMonthTransactions.vue
+│   │   │   ├── Details.vue
+│   │   │   ├── Index.vue
+│   │   │   ├── Legal.vue
+│   │   │   ├── MonthCategoriesList.vue
+│   │   │   ├── Privacy.vue
+│   │   │   ├── Results.vue
+│   │   │   └── Statistics.vue
+│   │   ├── stores/          # Pinia state management
+│   │   │   ├── feedback.ts
+│   │   │   ├── form.ts
+│   │   │   ├── locale.ts
+│   │   │   ├── statistical.ts
+│   │   │   └── translations.ts
+│   │   ├── translations/    # Language specific translations
+│   │   │   ├── hu.json
+│   │   │   └── en.json
+│   │   ├── js/              # Utility functions and API client
+│   │   │   ├── api.ts
+│   │   │   ├── index.ts
+│   │   │   ├── main.ts
+│   │   │   ├── statistical-analysis.ts
+│   │   │   └── utils.ts
+│   │   └── types/           # TypeScript type definitions
+│   │       ├── api.ts
+│   │       └── index.ts
+│   ├── public/              # Static content
+│   │   └── favicon.ico
+│   ├── dist/                # Production build output
+│   ├── package.json
+│   ├── vite.config.js
+│   └── tsconfig.json
 ├── src/whatsthedamage/      # Main source code
 │   ├── api/                 # REST API endpoints
 │   │   ├── v2/              # API v2 endpoints and schemas
@@ -30,7 +82,8 @@ whatsthedamage/
 │   │   ├── cli_controller.py # CLI argument parsing
 │   │   ├── ml_cli.py         # ML CLI interface
 │   │   ├── routes.py        # Web routes
-│   │   └── routes_helpers.py # Web route helpers
+│   │   ├── routes_helpers.py # Web route helpers
+│   │   └── frontend_routes.py # Frontend SPA routes (catch-all for Vue SPA)
 │   ├── models/              # Data models and processing
 │   │   ├── api_models.py       # API models
 │   │   ├── csv_file_handler.py # CSV file parsing
@@ -72,21 +125,11 @@ whatsthedamage/
 │   │   ├── logging.py          # Centralized logging utils
 │   │   ├── validation.py      # Validation utilities
 │   │   └── version.py         # Version management
-│   ├── view/                 # Presentation layer
-│   │   ├── frontend/         # TypeScript frontend
-│   │   │   ├── src/          # Frontend sources
-│   │   │   │   ├── main.ts   # Main entry point
-│   │   │   │   ├── js/       # TypeScript modules
-│   │   │   │   ├── css/      # CSS files
-│   │   │   │   └── types/    # Type definitions
-│   │   │   ├── package.json  # npm dependencies
-│   │   │   ├── vite.config.js # Vite configuration
-│   │   │   └── public/       # Public assets
+│   ├── view/                 # Presentation layer (legacy CLI output only)
 │   │   ├── static/           # Flask static files
-│   │   │   └── dist/         # Frontend build output
-│   │   ├── templates/        # Jinja2 templates
-│   │   ├── forms.py          # Flask forms
-│   │   └── row_printer.py    # Console output formatting
+│   │   │   └── dist/         # Frontend build output (when served from backend)
+│   │   ├── row_printer.py    # Console output formatting
+│   │   └── __init__.py
 │   └── uploads/              # File uploads
 ├── tests/                    # Backend tests
 │   ├── services/             # Service layer tests
@@ -110,15 +153,19 @@ whatsthedamage/
 Provide a simple block diagram (e.g., a C4 Model Level 1: System Context diagram, or a basic component diagram) or a clear text-based description of the major components and their interactions. Focus on how data flows, services communicate, and key architectural boundaries.
 
 ```
-[User] <--> [CLI Interface] <--> [ProcessingService] <--> [CSVProcessor] <--> [CsvFileHandler]
+[User] <--> [Frontend SPA (Vue 3)] <--> [REST API v2] <--> [ProcessingService] <--> [CSVProcessor] <--> [CsvFileHandler]
                                     |
-                                    +--> [Web Interface] <--> [Flask App] <--> [ProcessingService]
-                                    |
-                                    +--> [REST API v2] <--> [ProcessingService]
+                                    +--> [CLI Interface] <--> [ProcessingService]
 ```
 
+**Frontend Deployment Options**:
+1. **Integrated**: Backend serves the SPA via `frontend_routes.py` catch-all route
+2. **Standalone**: Frontend hosted separately
+3. **Development**: Vite dev server with API proxy to backend
+
 The system follows a layered architecture with clear separation of concerns:
-- **Presentation Layer**: CLI, Web, and REST API interfaces
+- **Presentation Layer**: CLI and independent Frontend SPA (Vue 3) only
+- **API Layer**: REST API v2 interfaces (Flask) - API-only, no web templates
 - **Service Layer**: Business logic services (ProcessingService, ValidationService, etc.)
 - **Model Layer**: Data processing and domain logic (CSVProcessor, RowsProcessor, etc.)
 - **Configuration Layer**: Centralized configuration management
@@ -128,13 +175,67 @@ The system follows a layered architecture with clear separation of concerns:
 
 ### 3.1. Frontend
 
-**Name**: Web Application
+**Name**: Frontend SPA (Vue 3 Single Page Application)
 
-**Description**: The main user interface for interacting with whatsthedamage, allowing users to upload CSV files, configure processing options, and view transaction analysis results. The web interface uses server-side rendering with Flask templates and progressive enhancement with TypeScript.
+**Description**: Completely independent frontend application for interacting with whatsthedamage. The frontend communicates with the backend exclusively through REST API v2 endpoints, enabling independent development, deployment, and scaling. Built with Vue 3, TypeScript, and modern frontend tooling.
 
-**Technologies**: Flask (Jinja2 templates), TypeScript, Vite, Bootstrap, DataTables
+**Technologies**:
+- **Framework**: Vue 3 with Composition API
+- **Type System**: TypeScript 5.x
+- **State Management**: Pinia (stores for form, locale, statistical analysis, translations, feedback)
+- **Routing**: Vue Router 4 for client-side navigation
+- **Build Tool**: Vite 8 with ESM modules and HMR
+- **UI Framework**: Bootstrap 5 with custom Vue components
+- **Data Grid**: DataTables.net 2.3.x with Bootstrap 5 integration
+- **Utilities**: jQuery 4.0.x (for DataTables integration)
 
-**Deployment**: Flask development server (make web), Gunicorn for production
+**Deployment**: Independent static hosting or integrated with backend via Flask static serving
+
+**Key Features**:
+- Complete decoupling from backend - no server-side templates
+- API-only communication via REST API v2 endpoints
+- Independent build and deployment pipeline
+- CORS-enabled communication with backend
+- Client-side routing with Vue Router
+- State management with Pinia stores
+- Type-safe development with TypeScript
+- Hot Module Replacement (HMR) in development
+
+**Frontend Architecture**:
+```
+Frontend SPA (Vue 3)
+├── App.vue              # Root component
+├── router/              # Vue Router configuration
+├── stores/              # Pinia state management
+│   ├── form.ts           # Form state
+│   ├── locale.ts         # Locale/language state
+│   ├── statistical.ts    # Statistical analysis state
+│   ├── translations.ts   # Translation state
+│   └── feedback.ts       # User feedback state
+├── components/           # Reusable Vue components
+│   ├── Layout.vue
+│   ├── ErrorDisplay.vue
+│   └── ui/               # UI component library
+├── pages/                # Page-level components (routes)
+│   ├── About.vue
+│   ├── Details.vue
+│   ├── Results.vue
+│   └── ...
+└── js/                   # Utility functions
+    ├── api.ts            # API client
+    ├── main.ts           # DataTables initialization
+    └── ...
+```
+
+**API Communication**:
+- Development: Vite proxies `/api` to `http://localhost:5000/api/v2`
+- Production: Uses `/api/v2` base URL or configurable via `VITE_API_BASE_URL`
+- CORS-enabled for cross-origin requests
+
+**Deployment Modes**:
+1. **Integrated**: Backend serves frontend from `view/static/dist/` via `frontend_routes.py`
+2. **Standalone**: Frontend hosted separately on static hosting
+3. **Development**: Vite dev server (port 3000) with API proxy
 
 ### 3.2. Backend Services
 
@@ -248,6 +349,27 @@ The system follows a layered architecture with clear separation of concerns:
 
 **Deployment**: Part of the Flask application
 
+#### 3.2.10. FrontendRoutes Service
+
+**Name**: Frontend Routes Service
+
+**Description**: Serves the Vue 3 frontend SPA for all non-API routes. Provides a catch-all route (`/` and `/<path:path>`) that delivers the frontend's `index.html`, enabling client-side routing via Vue Router, direct URL access, and bookmarking of drilldown pages. This service allows the backend to serve the frontend in integrated deployment scenarios.
+
+**Technologies**: Python, Flask, static file serving
+
+**Deployment**: Part of the Flask application (in `controllers/frontend_routes.py`)
+
+**Key Features**:
+- Catch-all route for all non-API paths
+- Serves pre-built frontend from `view/static/dist/`
+- Enables Vue Router client-side navigation
+- Supports direct URL access to drilldown pages (e.g., `/results/abc123/`)
+- Supports opening links in new tabs
+- Supports browser refresh on drilldown pages
+- Fallback to API error if frontend not built
+
+**Registration Note**: The catch-all route must be registered **AFTER** all API blueprints to ensure API routes take precedence.
+
 ## 4. Data Stores
 
 ### 4.1. File-based Storage
@@ -263,7 +385,20 @@ The system follows a layered architecture with clear separation of concerns:
 - `src/whatsthedamage/static/`: ML models and metadata
 - Session-based caching for processed results
 
-### 4.2. Session Storage
+### 4.2. Frontend Assets
+
+**Name**: Frontend Build Artifacts
+
+**Type**: Static file storage
+
+**Purpose**: Stores compiled frontend assets (JavaScript, CSS, HTML) for production deployment. The frontend is now completely decoupled from the backend and can be deployed independently.
+
+**Key Files/Directories**:
+- `frontend/dist/`: Production-ready frontend build (when deployed standalone)
+- `frontend/src/`: Frontend source code (TypeScript/Vue components)
+- Build artifacts are excluded from Git via `.gitignore`
+
+### 4.3. Session Storage
 
 **Name**: Web Session Management
 
@@ -308,14 +443,26 @@ The system follows a layered architecture with clear separation of concerns:
 
 **Key Services Used**:
 - Flask development server for local development
-- Gunicorn for production deployment
+- Gunicorn for production deployment (backend)
 - Vite for frontend bundling and optimization
+- npm for frontend dependency management
 
 **CI/CD Pipeline**: Makefile-based automation with commands like:
-- `make dev`: Set up development environment
+- `make dev`: Set up development environment (Python venv + npm dependencies)
 - `make test`: Run tests
-- `make web`: Run Flask development server
-- `make vite-build`: Build production frontend assets
+- `make backend`: Run Flask development server
+- `make frontend`: Start Vite development server
+- `make frontend-build:prod`: Build production frontend assets
+- `make build`: Full stack build (Python + JavaScript)
+
+**Frontend Deployment Options**:
+1. **Standalone Deployment**: Frontend built with `npm run build:prod` and `dist/` directory hosted on static hosting. Backend API must be accessible via CORS.
+2. **Development Mode**: Vite dev server runs on port 3000 with `/api` proxy to `http://localhost:5000/api/v2`. Backend Flask server runs separately on port 5000.
+
+**CORS Configuration**:
+- Development: CORS enabled for `http://localhost:3000` and `http://127.0.0.1:3000`
+- Production: Configurable via Flask-CORS settings in `app.py`
+- Required for standalone frontend deployment
 
 **Monitoring & Logging**:
 - **Structured Logging System**: Comprehensive logging with configurable levels (DEBUG, INFO, WARN, ERROR), output destinations (stdout or file), and formats (text or JSON)
@@ -361,11 +508,14 @@ The system follows a layered architecture with clear separation of concerns:
 - Makefile for workflow automation
 - Vite for frontend bundling
 - npm for frontend dependency management
+- Vue Router for client-side routing
+- Pinia for state management
+- TypeScript compiler for type checking
 
 ## 9. Future Considerations / Roadmap
 
 **Known Architectural Debts**:
-- Migrate from monolith to separate backend and frontend repositories.
+- Complete migration to separate backend and frontend repositories (completed: frontend decoupled at root level, can be split into separate repo)
 
 **Planned Major Changes**:
 - Migrate from memory-based caching to more robust solution
@@ -381,10 +531,14 @@ The system follows a layered architecture with clear separation of concerns:
 - Additional localization languages
 
 **Recent Architectural Improvements**:
-- Service consolidation: Merged DataFormattingService and ResponseBuilderService into unified ResponseFormattingService
+- **Frontend-Backend Decoupling**: Migrated from Jinja2 server-side templates to standalone Vue 3 SPA with complete API-only communication. Frontend moved from `src/whatsthedamage/view/frontend/` to project root `frontend/`. All web templates removed. Added `frontend_routes.py` for integrated deployment support.
+- **Frontend Modernization**: Adopted Vue 3 with Composition API, Vue Router 4, Pinia for state management, TypeScript 5.x, and Vite 8 for building
+- **Service consolidation**: Merged DataFormattingService and ResponseBuilderService into unified ResponseFormattingService
 - Improved dependency injection patterns with standardized service container
 - Enhanced IdMappingService to use CacheService for consistency
 - Simplified service registration and usage across CLI and web contexts
+- Added CORS support for frontend-backend communication
+- Added FrontendRoutes Service for serving Vue SPA in integrated deployment mode
 
 ## 10. Project Identification
 
@@ -394,7 +548,7 @@ The system follows a layered architecture with clear separation of concerns:
 
 **Primary Contact/Team**: Balage Abalage
 
-**Date of Last Update**: 2026-04-07
+**Date of Last Update**: 2026-05-06
 
 ## 11. Glossary / Acronyms
 
@@ -407,3 +561,17 @@ The system follows a layered architecture with clear separation of concerns:
 **DataTablesResponse**: Unified response format containing processed transaction data with aggregation by category and time period
 
 **Calculator Pattern**: Extensibility pattern allowing custom transaction calculations beyond built-in categorization
+
+**SPA**: Single Page Application - The Vue 3-based frontend that communicates with the backend via REST API
+
+**Vue**: Progressive JavaScript framework used for the frontend SPA
+
+**Pinia**: State management library for Vue applications, used for managing form state, locale, statistical analysis, translations, and feedback
+
+**Vite**: Modern build tool for frontend development with HMR (Hot Module Replacement)
+
+**Vue Router**: Client-side routing library for Vue applications, enabling navigation without page reloads
+
+**TypeScript**: Typed superset of JavaScript used for frontend development
+
+**CORS**: Cross-Origin Resource Sharing - Mechanism enabling frontend-backend communication across different origins

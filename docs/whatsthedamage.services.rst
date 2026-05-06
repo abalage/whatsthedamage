@@ -97,10 +97,18 @@ whatsthedamage.services.response\_builder\_service module
    :show-inheritance:
    :undoc-members:
 
-whatsthedamage.services.service\_factory module
------------------------------------------------
+whatsthedamage.services.response\_formatting\_service module
+------------------------------------------------------------
 
-.. automodule:: whatsthedamage.services.service_factory
+.. automodule:: whatsthedamage.services.response_formatting_service
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
+whatsthedamage.services.service\_container module
+-------------------------------------------------
+
+.. automodule:: whatsthedamage.services.service_container
    :members:
    :show-inheritance:
    :undoc-members:

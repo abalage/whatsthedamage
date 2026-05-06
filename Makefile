@@ -64,7 +64,7 @@ $(FRONTEND_DIR)/node_modules/.installed: $(FRONTEND_DIR)/package.json $(FRONTEND
 		echo "npm is not installed. Please install Node.js and npm first."; \
 		exit 1; \
 	fi
-	cd $(FRONTEND_DIR) && $(NPM) install --legacy-peer-deps
+	cd $(FRONTEND_DIR) && $(NPM) install
 	touch $@
 
 # Frontend build for production

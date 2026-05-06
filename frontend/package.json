@@ -11,7 +11,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "lint": "eslint . --ext .ts,.js",
+    "lint": "eslint . --ext .ts,.js,.vue",
     "type-check": "tsc --noEmit",
     "format": "prettier --write ."
   },
@@ -27,10 +27,12 @@
     "jquery": "^4.0.0",
     "jszip": "^3.10.1",
     "svelte-routing": "^2.13.0",
-    "vue": "^3.5.34"
+    "vue": "^3.5.34",
+    "vue-router": "^5.0.6"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.3",
+    "@eslint/js": "^9.39.4",
     "@types/bootstrap": "^5.2.10",
     "@types/datatables.net": "^1.10.28",
     "@types/jquery": "^4.0.0",
@@ -39,20 +41,21 @@
     "@vitest/ui": "^4.0.18",
     "@vue/compiler-sfc": "^3.5.12",
     "@vue/eslint-config-prettier": "^10.2.0",
-    "eslint": "^9.39.2",
+    "eslint": "^9.39.4",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-import": "^2.32.0",
     "eslint-plugin-node": "^11.1.0",
-    "eslint-plugin-promise": "^7.2.1",
-    "eslint-plugin-vue": "^10.7.0",
+    "eslint-plugin-pinia": "^0.4.2",
+    "eslint-plugin-promise": "^7.3.0",
+    "eslint-plugin-vue": "^9.28.0",
     "jsdom": "^27.4.0",
     "prettier": "^3.8.1",
     "terser": "^5.46.0",
     "typescript": "^5.9.3",
-    "typescript-eslint": "^8.59.0",
+    "typescript-eslint": "^8.59.2",
     "vite": "^8.0.10",
     "vitest": "^4.1.5",
-    "vue-eslint-parser": "^10.4.0",
-    "vue-router": "^5.0.6"
+    "vue-eslint-parser": "^10.4.0"
   }
 }
+

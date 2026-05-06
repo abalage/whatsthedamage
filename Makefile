@@ -88,6 +88,7 @@ test-backend: dev
 
 # Run frontend tests only
 test-frontend: $(FRONTEND_DIR)/node_modules/.installed
+	cd $(FRONTEND_DIR) && $(NPM_RUN) lint
 	cd $(FRONTEND_DIR) && $(NPM_RUN) test
 
 # Run linter/formatter

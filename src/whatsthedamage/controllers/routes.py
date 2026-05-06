@@ -1,5 +1,5 @@
 from flask import (
-    Blueprint, request, make_response, redirect, url_for,
+    Blueprint, request, make_response, redirect, url_for, flash,
     current_app, Response, jsonify
 )
 # from whatsthedamage.view.forms import UploadForm  # Deprecated - API-only backend
@@ -14,7 +14,7 @@ from whatsthedamage.controllers.routes_helpers import (
     show_detail_results_json,
     handle_recalculate_statistics_request
 )
-from typing import Union, Any
+from typing import Tuple, Union, Any
 import os
 import shutil
 from whatsthedamage.utils.flask_locale import get_languages
@@ -256,7 +256,7 @@ def show_month_categories(result_id: str, account_id: str, month_id: str) -> Uni
     )
 
 @bp.route('/results/<result_id>/accounts/<account_id>/categories/<category_id>/months/<month_id>/transactions')
-def show_category_month_transactions(result_id: str, account_id: str, category_id: str, month_id: str) -> Response:
+def show_category_month_transactions(result_id: str, account_id: str, category_id: str, month_id: str) -> Union[Response, Tuple[Response, int]]:
     """Show specific category and month transaction details using secure IDs.
 
     Returns JSON data for Vue frontend instead of rendering templates.

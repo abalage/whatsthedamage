@@ -553,7 +553,7 @@ class ResponseFormattingService(IDataFormattingService):
     def build_api_detailed_response(
         self,
         datatables_response: Dict[str, DataTablesResponse],
-        metadata: Dict[str, Any],
+        metadata: Dict[str, Any] | ProcessingMetadata,
         params: ProcessingRequest,
         processing_time: float,
         result_id: str
@@ -702,7 +702,7 @@ class ResponseFormattingService(IDataFormattingService):
 
     def format_processing_response_for_frontend(
         self,
-        cached_result: ProcessingResponse
+        cached_result: ProcessingResponse | None
     ) -> Dict[str, Any]:
         """Convert cached ProcessingResponse to frontend-expected format.
 
@@ -724,11 +724,6 @@ class ResponseFormattingService(IDataFormattingService):
         """
         if cached_result is None:
             return {'error': 'Result data not found or expired'}
-
-        # Convert ProcessingMetadata to dict if it's a Pydantic model
-        metadata_dict = (cached_result.metadata.model_dump()
-                        if hasattr(cached_result.metadata, 'model_dump')
-                        else cached_result.metadata)
 
         # Initialize response structure
         response_data: Dict[str, Any] = {

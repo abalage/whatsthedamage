@@ -24,14 +24,6 @@ from whatsthedamage.utils.logging import get_logger
 
 # Backwards compatibility aliases for tests
 # These point to the JSON-returning versions
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    # For type checking, we provide the old names as aliases
-    handle_entity_drilldown = handle_entity_drilldown_json
-    show_summary_results = show_summary_results_json
-    show_detail_results = show_detail_results_json
-    handle_category_month_transactions = handle_category_month_transactions_json
 
 logger = get_logger(__name__)
 
@@ -66,9 +58,8 @@ def handle_entity_drilldown_json(
     account_id: str,
     entity_id: str,
     entity_type: str,
-    template: str = None,
-    data_not_found_error: str = 'Data not found',
-    index_route: str = None
+    template: str | None = None,
+    data_not_found_error: str = 'Data not found'
 ) -> Union[Response, Tuple[Response, int]]:
     """Unified handler for category and month entity drilldown requests.
 
@@ -102,6 +93,10 @@ def handle_entity_drilldown_json(
         account_number = resolution['account_number']
         entity_name = resolution['entity_name']
         filter_value = resolution['filter_value']
+
+        # Type narrowing: after error check, these should be non-None
+        assert account_number is not None
+        assert filter_value is not None
 
         # Get cached data using service
         cache_result = drilldown_service.get_cached_data_for_account(result_id, account_number)
@@ -154,8 +149,7 @@ def handle_category_month_transactions_json(
     account_id: str,
     category_id: str,
     month_id: str,
-    data_not_found_error: str = 'Data not found',
-    index_route: str = None
+    data_not_found_error: str = 'Data not found'
 ) -> Union[Response, Tuple[Response, int]]:
     """Handler for category-month-transactions drilldown requests.
 
@@ -186,11 +180,18 @@ def handle_category_month_transactions_json(
         account_number = category_resolution['account_number']
         category_name = category_resolution['entity_name']
 
+        # Type narrowing: after error check, these should be non-None
+        assert account_number is not None
+        assert category_name is not None
+
         # Resolve month ID
         month_resolution = drilldown_service.resolve_entity_ids(result_id, account_id, month_id, 'month')
         if month_resolution.get('error'):
             return jsonify({'error': month_resolution['error']}), 404
         month_name = month_resolution['entity_name']
+        month_filter_value = month_resolution['filter_value']
+        assert month_name is not None
+        assert month_filter_value is not None
 
         # Get cached data
         cache_result = drilldown_service.get_cached_data_for_account(result_id, account_number)
@@ -199,9 +200,13 @@ def handle_category_month_transactions_json(
 
         dt_response = cache_result['dt_response']
 
+        # Convert month filter value (timestamp) to datetime for filtering
+        from datetime import datetime
+        month_start_dt = datetime.fromtimestamp(int(month_filter_value))
+
         # Filter for specific category and month
         filtered_data = drilldown_service.filter_data_for_category_month(
-            dt_response, category_name, month_name
+            dt_response, category_name, month_start_dt
         )
 
         if not filtered_data:
@@ -279,12 +284,18 @@ def show_summary_results_json(result_id: str) -> Union[Response, Tuple[Response,
                 result_id, account_id, dt_response
             )
 
+        # Convert highlights list to dict format for frontend
+        highlights_dict: Dict[str, List[str]] = {}
+        if hasattr(cached_result.statistical_metadata, 'highlights'):
+            for cell in cached_result.statistical_metadata.highlights:
+                highlights_dict[cell.row_id] = cell.highlight_types
+
         return jsonify({
             'status': 'success',
             'result_id': result_id,
             'accounts_data': accounts_data,
             'drilldown_urls_by_account': drilldown_urls_by_account,
-            'highlights': cached_result.statistical_metadata.get('highlights', {})
+            'highlights': highlights_dict
         })
 
     except Exception as e:
@@ -325,12 +336,18 @@ def show_detail_results_json(result_id: str) -> Union[Response, Tuple[Response, 
                 result_id, account_id, dt_response
             )
 
+        # Convert highlights list to dict format for frontend
+        highlights_dict: Dict[str, List[str]] = {}
+        if hasattr(cached_result.statistical_metadata, 'highlights'):
+            for cell in cached_result.statistical_metadata.highlights:
+                highlights_dict[cell.row_id] = cell.highlight_types
+
         return jsonify({
             'status': 'success',
             'result_id': result_id,
             'accounts_data': accounts_data,
             'drilldown_urls_by_account': drilldown_urls_by_account,
-            'highlights': cached_result.statistical_metadata.get('highlights', {})
+            'highlights': highlights_dict
         })
 
     except Exception as e:
@@ -374,7 +391,7 @@ def handle_recalculate_statistics_request(
 
         # Convert highlights list to dict format: {row_id: [highlight_types]}
         # Merge types for same row_id (when multiple algorithms highlight the same cell)
-        highlights_dict = {}
+        highlights_dict: Dict[str, List[str]] = {}
         for cell_highlight in updated_metadata.highlights:
             if cell_highlight.row_id in highlights_dict:
                 highlights_dict[cell_highlight.row_id].extend(cell_highlight.highlight_types)

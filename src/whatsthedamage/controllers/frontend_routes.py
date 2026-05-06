@@ -9,6 +9,8 @@ The catch-all route must be registered AFTER all API blueprints to ensure
 API routes take precedence.
 """
 
+from typing import Any
+
 from flask import Blueprint, current_app, make_response, jsonify, send_from_directory
 import os
 
@@ -18,7 +20,7 @@ frontend_bp = Blueprint('frontend', __name__)
 
 @frontend_bp.route('/', defaults={'path': ''})
 @frontend_bp.route('/<path:path>')
-def serve_frontend(path: str) -> any:
+def serve_frontend(path: str) -> Any:
     """Serve Vue frontend for all frontend routes.
 
     This catch-all route serves the frontend index.html for all routes

@@ -4,7 +4,7 @@ This module provides REST API endpoints for processing CSV transaction files
 with detailed transaction-level data for DataTables rendering.
 """
 from flask import Blueprint, jsonify, Response, request
-from typing import Tuple
+from typing import Any, Dict, List, Tuple
 import time
 
 from whatsthedamage.models.dt_models import ProcessingResponse
@@ -181,7 +181,7 @@ def get_results_details(result_id: str) -> tuple[Response, int]:
 
 # Drilldown endpoints for category, month, and cell-level navigation
 
-def _get_frontend_url(endpoint: str, **values) -> str:
+def _get_frontend_url(endpoint: str, **values: Any) -> str:
     """Generate URL for frontend Vue router routes.
 
     These are the routes that the Vue frontend router handles, not Flask routes.
@@ -198,13 +198,15 @@ def _get_frontend_url(endpoint: str, **values) -> str:
     return "#"
 
 
-def _find_account_data(cached_result, account_id: str, result_id: str = None):
+def _find_account_data(cached_result: ProcessingResponse | None, account_id: str, result_id: str | None = None) -> dict[str, Any] | None:
     """Find account data in cached result by account ID.
 
     Attempts to match account_id directly first, then tries to resolve
     secure mapped ID to original account number if result_id is provided.
     """
     try:
+        if cached_result is None:
+            return None
         if hasattr(cached_result, 'data') and isinstance(cached_result.data, dict):
             # First, try direct match
             for acc_id, account_data in cached_result.data.items():
@@ -239,13 +241,13 @@ def _find_account_data(cached_result, account_id: str, result_id: str = None):
         return None
 
 
-def _extract_month_key(date_obj) -> str:
+def _extract_month_key(date_obj: Any) -> str:
     """Extract month key from date object for grouping."""
     try:
         if hasattr(date_obj, 'timestamp'):
-            return str(date_obj.timestamp)
+            return str(date_obj.timestamp)  # type: ignore[return-value]
         elif hasattr(date_obj, 'display'):
-            return date_obj.display
+            return str(date_obj.display)  # type: ignore[return-value]
         else:
             return str(date_obj)
     except Exception as e:
@@ -291,7 +293,9 @@ def get_category_months(result_id: str, account_id: str, category_id: str) -> tu
         except Exception:
             original_category = category_id  # Fallback to direct use
 
-        category_months = {}
+        assert original_category is not None  # Should always have a value
+
+        category_months: Dict[str, Dict[str, Any]] = {}
 
         for row in account_data['data']:
             if hasattr(row, 'category') and row.category == original_category:
@@ -396,7 +400,7 @@ def get_month_categories(result_id: str, account_id: str, month_id: str) -> tupl
         except Exception:
             original_month_ts = month_id  # Fallback to direct use
 
-        month_categories = {}
+        month_categories: Dict[str, Dict[str, Any]] = {}
 
         for row in account_data['data']:
             row_month_key = _extract_month_key(row.date)
@@ -507,6 +511,9 @@ def get_category_month_transactions(result_id: str, account_id: str, category_id
         except Exception:
             original_month_ts = month_id  # Fallback to direct use
 
+        assert original_category is not None  # Should always have a value
+        assert original_month_ts is not None  # Should always have a value
+
         category_name = original_category.replace('_', ' ').title()
         month_name = original_month_ts.replace('-', ' ').title()
 
@@ -576,7 +583,7 @@ def get_category_month_transactions(result_id: str, account_id: str, category_id
 
 
 @v2_bp.route('/recalculate-statistics', methods=['POST'])
-def recalculate_statistics_v2() -> Tuple[Response, int]:
+def recalculate_statistics() -> Tuple[Response, int]:
     """Recalculate statistical highlights with custom algorithm and direction settings.
 
     Args:
@@ -630,7 +637,7 @@ def recalculate_statistics_v2() -> Tuple[Response, int]:
         )
 
         # Convert highlights list to dict format, merging types for same row_id
-        highlights_dict = {}
+        highlights_dict: Dict[str, List[str]] = {}
         for cell_highlight in updated_metadata.highlights:
             if cell_highlight.row_id in highlights_dict:
                 # Merge highlight types for existing row_id

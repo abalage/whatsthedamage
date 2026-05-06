@@ -44,7 +44,8 @@ class TestApiResponseBuilding:
             datatables_response=datatables_dict,
             metadata=metadata,
             params=params,
-            processing_time=1.2
+            processing_time=1.2,
+            result_id='test-result-id'
         )
 
         assert isinstance(response, DetailedResponse)

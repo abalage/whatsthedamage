@@ -41,7 +41,7 @@ class ResponseBuilderService:
     def build_api_detailed_response(
         self,
         datatables_response: Dict[str, DataTablesResponse],
-        metadata: Dict[str, Any],
+        metadata: Dict[str, Any] | ProcessingMetadata,
         params: ProcessingRequest,
         processing_time: float,
         result_id: str

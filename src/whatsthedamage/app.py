@@ -139,7 +139,7 @@ def create_app(
 
     # Add request logging middleware
     @app.before_request
-    def log_request_info():
+    def log_request_info() -> None:
         """Log basic request information for debugging purposes."""
         from flask import request
         if request.path.startswith('/api/'):

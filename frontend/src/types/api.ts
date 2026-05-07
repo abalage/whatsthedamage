@@ -1,7 +1,7 @@
 export interface ApiError {
   error: string
   status: number
-  details?: any
+  details?: Record<string, unknown>
 }
 
 export interface ProcessingResponse {
@@ -58,9 +58,9 @@ export interface ProcessingMetadata {
 }
 
 export interface StatisticalHighlights {
-  outliers: Record<string, any>
-  pareto: Record<string, any>
-  excluded: Record<string, any>
+  outliers: Record<string, string[]>
+  pareto: Record<string, string[]>
+  excluded: Record<string, string[]>
 }
 
 export interface ResultsResponse {

@@ -61,7 +61,7 @@ const closeAlert = () => {
 
 <template>
   <!-- Standard Card -->
-  <div v-if="type === 'standard'" :class="cardClasses" :id="id">
+  <div v-if="type === 'standard'" :id="id" :class="cardClasses">
     <div v-if="showHeader" :class="headerClasses">
       {{ title }}
     </div>
@@ -71,7 +71,7 @@ const closeAlert = () => {
   </div>
 
   <!-- Simple Card (no header) -->
-  <div v-else-if="type === 'simple'" :class="cardClasses" :id="id">
+  <div v-else-if="type === 'simple'" :id="id" :class="cardClasses">
     <div class="card-body">
       <slot></slot>
     </div>

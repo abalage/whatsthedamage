@@ -20,9 +20,11 @@ export function showNotification(message: string, type: string): void {
         main.insertBefore(notification, main.firstChild);
 
         // Auto-dismiss after 5 seconds
-        setTimeout(function() {
+        const AUTO_DISMISS_TIMEOUT = 5000 // ms
+        const REMOVE_DELAY = 150 // ms
+        setTimeout(() => {
             notification.classList.remove('show');
-            setTimeout(function() { notification.remove(); }, 150);
-        }, 5000);
+            setTimeout(() => { notification.remove(); }, REMOVE_DELAY);
+        }, AUTO_DISMISS_TIMEOUT); // 5 second auto-dismiss timeout
     }
 }

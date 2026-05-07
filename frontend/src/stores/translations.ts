@@ -2,9 +2,13 @@ import { ref } from 'vue'
 import enTranslations from '../translations/en.json'
 import huTranslations from '../translations/hu.json'
 
-export const translations = ref<Record<string, any>>({})
+interface Translations {
+  [key: string]: Record<string, string>
+}
 
-export const loadTranslations = async () => {
+export const translations = ref<Translations>({})
+
+export const loadTranslations = async (): Promise<void> => {
   translations.value = {
     en: enTranslations,
     hu: huTranslations
@@ -12,5 +16,5 @@ export const loadTranslations = async () => {
 }
 
 export const getTranslation = (key: string, locale: string = 'en'): string => {
-  return translations.value[locale]?.[key] || key
+  return translations.value[locale]?.[key] ?? key
 }

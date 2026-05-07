@@ -13,11 +13,11 @@ import { getCssClassesForHighlights } from '../config/highlight-config';
  */
 export function initStatisticalAnalysis(): void {
     // Apply initial highlights if available
-    const highlights = (globalThis as any).highlights;
-    if (highlights) {
+    const rawHighlights = (globalThis as Record<string, unknown>).highlights;
+    if (rawHighlights) {
         // Parse the JSON string into an object if it's a string
-        const parsedHighlights = typeof highlights === 'string' ? JSON.parse(highlights) : highlights;
-        updateCellHighlights(parsedHighlights);
+        const parsedHighlights = typeof rawHighlights === 'string' ? JSON.parse(rawHighlights) : rawHighlights;
+        updateCellHighlights(parsedHighlights as Record<string, string[]>);
     }
 
     const recalculateBtn = document.getElementById('recalculate-btn');
@@ -32,14 +32,14 @@ export function initStatisticalAnalysis(): void {
         const spinner = recalculateBtn.querySelector('.spinner-border');
 
         // Recalculate button click handler
-        recalculateBtn.addEventListener('click', function() {
+        recalculateBtn.addEventListener('click', () => {
             const algorithms = Array.prototype.slice.call(document.querySelectorAll('input[type="checkbox"][value]:checked'))
-                .map(function(el: HTMLInputElement) { return el.value; });
+                .map((el: HTMLInputElement) => { return el.value; });
             const directionInput = document.querySelector('input[name="direction"]:checked') as HTMLInputElement | null;
             const direction = directionInput?.value === 'rows' ? 'rows' : 'columns';
 
             const request: StatisticalAnalysisRequest = {
-                result_id: (globalThis as any).resultId,
+                result_id: (globalThis as Record<string, unknown>).resultId as string,
                 algorithms: algorithms,
                 direction: direction
             };
@@ -52,16 +52,16 @@ export function initStatisticalAnalysis(): void {
             (resetBtn as HTMLButtonElement).disabled = true;
 
             postData<StatisticalAnalysisResponse>('/recalculate-statistics', request)
-                .then(function(data) {
+                .then((data) => {
                     if (data.status === 'success') {
                         // Update all cell highlights
                         updateCellHighlights(data.highlights);
                         showNotification('Statistics recalculated successfully!', 'success');
                     } else {
-                        throw new AppError(data.error || 'Unknown error');
+                        throw new AppError(data.error ?? 'Unknown error');
                     }
                 })
-                .catch(function(error: unknown) {
+                .catch((error: unknown) => {
                     let appError: AppError;
                     if (error instanceof AppError) {
                         appError = error;
@@ -70,10 +70,9 @@ export function initStatisticalAnalysis(): void {
                     } else {
                         appError = new AppError(String(error));
                     }
-                    console.error('Error:', appError);
                     showNotification('Error recalculating statistics: ' + appError.message, 'danger');
                 })
-                .finally(function() {
+                .finally(() => {
                     // Hide loading spinner
                     if (spinner) spinner.classList.add('d-none');
                     const lastSpan = recalculateBtn.querySelector('span:last-child');
@@ -84,7 +83,7 @@ export function initStatisticalAnalysis(): void {
         });
 
         // Reset button click handler
-        resetBtn.addEventListener('click', function() {
+        resetBtn.addEventListener('click', () => {
             // Reset checkboxes to default (both checked)
             const iqrCheckbox = document.getElementById('algorithm-iqr') as HTMLInputElement | null;
             const paretoCheckbox = document.getElementById('algorithm-pareto') as HTMLInputElement | null;
@@ -104,23 +103,23 @@ export function initStatisticalAnalysis(): void {
 
             // Trigger recalculation with default settings using default directions
             const resetRequest: StatisticalAnalysisRequest = {
-                result_id: (globalThis as any).resultId,
+                result_id: (globalThis as Record<string, unknown>).resultId as string,
                 algorithms: ['iqr', 'pareto'],
                 direction: 'columns',
                 use_default_directions: true
             };
 
             postData<StatisticalAnalysisResponse>('/recalculate-statistics', resetRequest)
-                .then(function(data) {
+                .then((data) => {
                     if (data.status === 'success') {
                         // Update all cell highlights
                         updateCellHighlights(data.highlights);
                         showNotification('Defaults restored successfully!', 'success');
                     } else {
-                        throw new AppError(data.error || 'Unknown error');
+                        throw new AppError(data.error ?? 'Unknown error');
                     }
                 })
-                .catch(function(error: unknown) {
+                .catch((error: unknown) => {
                     let appError: AppError;
                     if (error instanceof AppError) {
                         appError = error;
@@ -128,10 +127,9 @@ export function initStatisticalAnalysis(): void {
                         const message = error instanceof Error ? error.message : String(error);
                         appError = new AppError(message);
                     }
-                    console.error('Error:', appError);
                     showNotification('Error restoring defaults: ' + appError.message, 'danger');
                 })
-            .finally(function() {
+            .finally(() => {
                 // Hide loading spinner
                 if (spinner) spinner.classList.add('d-none');
                 const lastSpan = recalculateBtn.querySelector('span:last-child');

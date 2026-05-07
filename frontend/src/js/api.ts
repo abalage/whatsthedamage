@@ -6,7 +6,7 @@
 import { AppError, ApiResponse } from '../types';
 
 // API base URL configuration
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api/v2';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '/api/v2';
 
 /**
  * Fetch with proper error handling and response wrapping
@@ -33,7 +33,7 @@ export async function fetchApi<T>(
       data,
       status: response.status,
       ok: response.ok,
-      error: response.ok ? undefined : (data as any)?.error || 'Request failed',
+      error: response.ok ? undefined : (data as Record<string, unknown>)?.error ?? 'Request failed',
     };
   } catch (error) {
     throw new AppError(
@@ -57,7 +57,7 @@ export async function fetchWithErrorHandling<T>(
   const response = await fetchApi<T>(url, options);
 
   if (!response.ok) {
-    throw new AppError(response.error || 'Request failed', {
+    throw new AppError(response.error ?? 'Request failed', {
       status: response.status,
       url,
     });
@@ -96,7 +96,7 @@ export function getApiUrl(endpoint: string): string {
  * @param formData - Form data containing CSV and config
  * @returns Promise with processing result
  */
-export async function processTransactions(formData: FormData): Promise<any> {
+export async function processTransactions(formData: FormData): Promise<Record<string, unknown>> {
   const response = await fetch(`${API_BASE_URL}/process`, {
     method: 'POST',
     body: formData,
@@ -104,9 +104,8 @@ export async function processTransactions(formData: FormData): Promise<any> {
   });
 
   if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    console.log('API Error Response:', errorData); // Debug log
-    throw new AppError(errorData.error || errorData.message || errorData.detail || 'Transaction processing failed', {
+    const errorData: Record<string, unknown> = await response.json().catch(() => ({}));
+    throw new AppError(errorData.error ?? errorData.message ?? errorData.detail ?? 'Transaction processing failed', {
       status: response.status,
     });
   }
@@ -125,7 +124,7 @@ export async function recalculateStatistics(
   resultId: string,
   algorithms: string[],
   direction: 'columns' | 'rows'
-): Promise<any> {
+): Promise<Record<string, unknown>> {
   return postData(`${API_BASE_URL}/recalculate-statistics`, {
     result_id: resultId,
     algorithms,

@@ -1,14 +1,12 @@
 import { expect, vi } from 'vitest';
-
-// Add global DOM elements for testing
-const { JSDOM } = require('jsdom');
+import { JSDOM } from 'jsdom';
 
 const dom = new JSDOM('<!DOCTYPE html><html><body></body></html>');
-// @ts-ignore - DOMWindow from JSDOM is not fully compatible with Window & globalThis
+// @ts-expect-error - DOMWindow from JSDOM is not fully compatible with Window & globalThis
 globalThis.window = dom.window;
-// @ts-ignore - DOMWindow.document is compatible
+// @ts-expect-error - DOMWindow.document is compatible
 globalThis.document = dom.window.document;
-// @ts-ignore - DOMWindow.HTMLElement is compatible
+// @ts-expect-error - DOMWindow.HTMLElement is compatible
 globalThis.HTMLElement = dom.window.HTMLElement;
 
 // Mock global functions that might be used in tests
@@ -22,6 +20,7 @@ globalThis.exportExcelText = 'Export Excel';
 expect.extend({
   /**
    * @param {Element | Document | null | undefined} container
+   * @returns {{ pass: boolean; message: () => string }}
    */
   toBeInDOM(container) {
     if (!container?.contains) {
@@ -38,7 +37,8 @@ expect.extend({
 });
 
 // Mock fetch for testing
-// @ts-ignore - Mocking fetch with simplified response object
+// @ts-expect-error - Mocking fetch with simplified response object
+const EMPTY_BUFFER_SIZE = 0
 globalThis.fetch = vi.fn(() =>
   Promise.resolve({
     ok: true,
@@ -50,7 +50,7 @@ globalThis.fetch = vi.fn(() =>
     type: 'basic',
     url: '',
     clone: () => this,
-    arrayBuffer: () => Promise.resolve(new ArrayBuffer(0)),
+    arrayBuffer: () => Promise.resolve(new ArrayBuffer(EMPTY_BUFFER_SIZE)),
     blob: () => Promise.resolve(new Blob()),
     formData: () => Promise.resolve(new FormData()),
     text: () => Promise.resolve(''),

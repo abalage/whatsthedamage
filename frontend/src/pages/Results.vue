@@ -66,31 +66,23 @@ const resultsData = ref<ResultsResponse | null>(null)
 const isLoading = ref(true)
 const error = ref<string | null>(null)
 
-const fetchResults = async () => {
-  // Debug: Log the route query parameters
-  console.log('Route query parameters:', route.query)
-  console.log('Result ID from query (resultId):', route.query.resultId)
-  console.log('Result ID from query (result_id):', route.query.result_id)
-  console.log('Final result ID:', resultId.value)
+const DEFERRED_TIMEOUT = 0
 
+const fetchResults = async () => {
   if (!resultId.value) {
     error.value = 'No result ID provided'
-    console.error('No result ID found in query parameters')
     isLoading.value = false
 
     // Fallback: Try to fetch some demo data or show a helpful message
-    console.log('Attempting fallback data fetch...')
-
     // For development/testing, we could fetch a hardcoded result
     // In production, this would redirect to the upload form
     try {
       const fallbackResponse = await fetchWithErrorHandling<ResultsResponse>(`${API_BASE_URL}/results/demo-result-id`)
       resultsData.value = fallbackResponse
-      console.log('Fallback data loaded successfully')
 
       // Initialize DataTables for fallback data
       await nextTick()
-      await new Promise(resolve => setTimeout(resolve, 0))
+      await new Promise(resolve => setTimeout(resolve, DEFERRED_TIMEOUT))
       window.exportCsvText = t('Export CSV')
       window.exportExcelText = t('Export Excel')
 
@@ -98,8 +90,8 @@ const fetchResults = async () => {
       window.highlights = fallbackResponse.accounts_data?.highlights || {}
 
       window.initMainPage()
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (fallbackError) {
-      console.error('Fallback fetch also failed:', fallbackError)
       // Don't set error here since we already have the original error
     }
 
@@ -117,7 +109,7 @@ const fetchResults = async () => {
 
     // Wait for Vue to render the tables with the new data
     await nextTick()
-    await new Promise(resolve => setTimeout(resolve, 0))
+    await new Promise(resolve => setTimeout(resolve, DEFERRED_TIMEOUT))
 
     // Set translation strings for DataTables export buttons
     window.exportCsvText = t('Export CSV')
@@ -129,7 +121,6 @@ const fetchResults = async () => {
     // Initialize DataTables now that tables exist in DOM
     window.initMainPage()
   } catch (err) {
-    console.error('Failed to fetch results:', err)
     error.value = err instanceof Error ? err.message : 'Failed to load results'
     feedback.showError('Failed to load results: ' + error.value)
     isLoading.value = false
@@ -137,12 +128,13 @@ const fetchResults = async () => {
 }
 
 const getMonthsForAccount = (account: AccountData) => {
+  const TIMESTAMP_INDEX = 1
   const monthMap = new Map<number, [string, number]>()
   for (const row of account.dt_response.data) {
     const monthField = row.date
     monthMap.set(monthField.timestamp, [monthField.display, monthField.timestamp])
   }
-  return Array.from(monthMap.values()).sort((a, b) => b[1] - a[1])
+  return Array.from(monthMap.values()).sort((a, b) => b[TIMESTAMP_INDEX] - a[TIMESTAMP_INDEX])
 }
 
 const buildCategoryMonthMap = (account: AccountData) => {
@@ -159,7 +151,7 @@ const buildCategoryMonthMap = (account: AccountData) => {
   return catMonthMap
 }
 
-const getDetailsString = (details: any[]) => {
+const getDetailsString = (details: Array<{ date: { display: string }, amount: { display: string }, merchant: string }>): string => {
   return details
     .map(detail => `${detail.date.display}: ${detail.amount.display} - ${detail.merchant}`)
     .join('<br>')
@@ -184,10 +176,6 @@ const getMonthId = (accountId: string, monthTs: number): string => {
 
 
 onMounted(() => {
-  console.log('Results component mounted')
-  console.log('Current route:', route)
-  console.log('Current route path:', route.path)
-  console.log('Current route query:', route.query)
   fetchResults()
 })
 </script>
@@ -201,7 +189,7 @@ onMounted(() => {
       </ol>
     </nav>
 
-    <StatisticalControls v-if="resultsData" :resultId="resultId" />
+    <StatisticalControls v-if="resultsData" :result-id="resultId" />
 
     <div v-if="isLoading" class="text-center my-5">
       <div class="spinner-border text-primary" role="status">
@@ -229,11 +217,12 @@ onMounted(() => {
           </div>
           <div class="card-body">
             <div class="table-responsive">
-              <table class="table table-bordered" :id="`datatable-${account.id}`" data-datatable="true">
+              <table :id="`datatable-${account.id}`" class="table table-bordered" data-datatable="true">
                 <thead>
                   <tr>
                     <th>{{ t('Categories') }}</th>
-                    <th v-for="[monthDisplay, monthTs] in getMonthsForAccount(account)"
+                    <th
+v-for="[monthDisplay, monthTs] in getMonthsForAccount(account)"
                         :key="monthTs"
                         :data-order="monthTs">
                       <router-link :to="{ name: 'month-categories', params: { resultId: resultId, accountId: account.id, monthId: getMonthId(account.id, monthTs) } }" class="clickable">{{ monthDisplay }}</router-link>
@@ -245,10 +234,10 @@ onMounted(() => {
                     <td>
                       <router-link :to="{ name: 'category-months', params: { resultId: resultId, accountId: account.id, categoryId: getCategoryId(account.id, category) } }" class="clickable">{{ category }}</router-link>
                     </td>
-                    <td v-for="[monthDisplay, monthTs] in getMonthsForAccount(account)"
-                        :key="monthTs"
-                        :data-order="buildCategoryMonthMap(account)[category][monthTs]?.total.raw || 0"
-                        :data-row-id="buildCategoryMonthMap(account)[category][monthTs]?.row_id || ''"
+                    <!-- eslint-disable-next-line vue/first-attribute-linebreak,vue/no-unused-vars -->
+                    <td v-for="[monthDisplay, monthTs] in getMonthsForAccount(account)" :key="monthTs"
+                        :data-order="buildCategoryMonthMap(account)[category][monthTs]?.total.raw ?? 0"
+                        :data-row-id="buildCategoryMonthMap(account)[category][monthTs]?.row_id ?? ''"
                         :tabindex="buildCategoryMonthMap(account)[category][monthTs]?.details ? 0 : undefined"
                         :data-bs-toggle="buildCategoryMonthMap(account)[category][monthTs]?.details ? 'popover' : undefined"
                         :data-bs-trigger="buildCategoryMonthMap(account)[category][monthTs]?.details ? 'hover focus' : undefined"

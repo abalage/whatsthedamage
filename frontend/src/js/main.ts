@@ -32,10 +32,10 @@ export function initMainPage(): void {
 
     // Initialize Bootstrap popovers with proper sanitization
     // Use window.bootstrap which is set by src/main.ts
-    const bootstrap = (window as any).bootstrap;
+    const bootstrap = window as Record<string, unknown>;
     if (bootstrap?.Popover) {
         const popoverTriggerList = Array.prototype.slice.call(document.querySelectorAll('[data-bs-toggle="popover"]'));
-        popoverTriggerList.map(function (popoverTriggerEl: Element) {
+        popoverTriggerList.map((popoverTriggerEl: Element) => {
             // Destroy existing popover if it exists
             const existingPopover = bootstrap.Popover.getInstance(popoverTriggerEl);
             if (existingPopover) {

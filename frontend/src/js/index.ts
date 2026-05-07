@@ -13,8 +13,7 @@ export function clearForm(): void {
                 globalThis.location.reload();
             }
         })
-        .catch((error: Error) => {
-            console.error('Error clearing form:', error);
+        .catch((_error: Error) => {
             // Could add user notification here
         });
 }

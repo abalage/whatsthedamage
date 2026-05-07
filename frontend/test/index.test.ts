@@ -62,9 +62,6 @@ describe('index.ts', () => {
     });
 
     it('should handle fetch errors gracefully', async () => {
-      // Spy on console.error
-      const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
-
       // Mock fetch to reject with an error
       globalThis.fetch = vi.fn(() => Promise.reject(new Error('Network error')));
 
@@ -73,9 +70,8 @@ describe('index.ts', () => {
       // Wait for the promise chain to complete
       await new Promise(setImmediate);
 
-      // Check the spy was called before restoring
-      expect(consoleError).toHaveBeenCalledWith('Error clearing form:', expect.any(Error));
-      consoleError.mockRestore();
+      // Error is caught and handled silently (no console.error)
+      expect(globalThis.fetch).toHaveBeenCalledWith('/clear', { method: 'POST' });
     });
   });
 });

@@ -1,11 +1,5 @@
 <script setup lang="ts">
-import { useLocaleStore } from '../stores/locale'
-import { getTranslation } from '../stores/translations'
 import { ref, onMounted } from 'vue'
-
-const localeStore = useLocaleStore()
-
-const t = (key: string) => getTranslation(key, localeStore.locale)
 
 // Email obfuscation
 const email = ref('<a href="mailto:balagetech@protonmail.com">balagetech@protonmail.com</a>')
@@ -13,8 +7,9 @@ const email = ref('<a href="mailto:balagetech@protonmail.com">balagetech@protonm
 onMounted(() => {
   // Simple obfuscation: use HTML entities
   const obfuscateEmail = (username: string, domain: string) => {
-    const userChars = username.split('').map(c => `&#${c.charCodeAt(0)};`).join('')
-    const domainChars = domain.split('').map(c => `&#${c.charCodeAt(0)};`).join('')
+    const CHAR_CODE_INDEX = 0
+    const userChars = username.split('').map(c => `&#${c.charCodeAt(CHAR_CODE_INDEX)};`).join('')
+    const domainChars = domain.split('').map(c => `&#${c.charCodeAt(CHAR_CODE_INDEX)};`).join('')
     return `<a href="mailto:${userChars}@${domainChars}">${userChars}@${domainChars}</a>`
   }
   email.value = obfuscateEmail('balagetech', 'protonmail.com')
@@ -38,6 +33,7 @@ onMounted(() => {
     <h2>6. Changes to the Legal Notice</h2>
     <p>We reserve the right to modify this Legal Notice at any time. Any changes will be effective immediately upon posting the revised notice on the App. Your continued use of the App after any changes constitutes your acceptance of the new terms.</p>
     <h2>7. Contact Information</h2>
+    <!-- eslint-disable-next-line vue/no-v-html -->
     <p>If you have any questions or concerns regarding this Legal Notice, please contact us at <span v-html="email"></span>.</p>
     <h2>8. Governing Law</h2>
     <p>This Legal Notice shall be governed by and construed in accordance with the laws of Hungary, without regard to its conflict of law principles.</p>

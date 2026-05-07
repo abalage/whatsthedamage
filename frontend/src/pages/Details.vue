@@ -95,7 +95,6 @@ const fetchResults = async () => {
     // Initialize DataTables now that tables exist in DOM
     window.initMainPage()
   } catch (err) {
-    console.error('Failed to fetch results:', err)
     error.value = err instanceof Error ? err.message : 'Failed to load results'
     isLoading.value = false
   }

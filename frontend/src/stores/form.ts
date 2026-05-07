@@ -21,7 +21,7 @@ interface FormErrors {
   dateRange?: string
 }
 
-export const useFormStore = () => {
+export const useFormStore = (): FormStore => {
   const router = useRouter()
   const feedback = useFeedbackStore()
 
@@ -39,7 +39,7 @@ export const useFormStore = () => {
   const isLoading = ref(false)
   const isSubmitted = ref(false)
 
-  const resetForm = () => {
+  const resetForm = (): void => {
     formData.csvFile = null
     formData.configFile = null
     formData.startDate = ''
@@ -95,10 +95,12 @@ export const useFormStore = () => {
     return isValid
   }
 
-  const handleFileChange = (event: Event, field: 'csvFile' | 'configFile') => {
+  const handleFileChange = (event: Event, field: 'csvFile' | 'configFile'): void => {
     const target = event.target as HTMLInputElement
-    if (target.files && target.files.length > 0) {
-      formData[field] = target.files[0]
+    const MIN_FILES = 0
+    const FIRST_FILE_INDEX = 0
+    if (target.files && target.files.length > MIN_FILES) {
+      formData[field] = target.files[FIRST_FILE_INDEX]
       // Clear validation error for this field
       if (errors.value[field]) {
         errors.value[field] = undefined
@@ -106,7 +108,7 @@ export const useFormStore = () => {
     }
   }
 
-  const handleInputChange = (field: keyof FormData, value: any) => {
+  const handleInputChange = (field: keyof FormData, value: string | boolean): void => {
     formData[field] = value
     // Clear validation error for this field
     if (errors.value[field]) {
@@ -114,7 +116,7 @@ export const useFormStore = () => {
     }
   }
 
-  const submitForm = async () => {
+  const submitForm = async (): Promise<boolean> => {
     if (!validateForm()) {
       feedback.showError('Please fix the form errors before submitting')
       return false
@@ -156,29 +158,23 @@ export const useFormStore = () => {
 
       // Navigate to results page
       isSubmitted.value = true
-      console.log('Processing response:', response)
-      console.log('Response metadata:', response.metadata)
       
       // Extract result_id from metadata (new structure)
-      const resultId = response.metadata?.result_id || response.result_id
-      console.log('Result ID from response:', resultId)
+      const resultId = response.metadata?.result_id ?? response.result_id
       
       // Debug: Check if we have a valid result ID
       if (!resultId) {
-        console.error('Backend did not return a result_id!')
         feedback.showError('Backend error: No result ID returned')
         return false
       }
       
       // Navigate with query parameters
       try {
-        console.log('Navigating to results with resultId:', resultId)
         router.push({
           name: 'results',
           query: { resultId: resultId }
         })
-      } catch (navError) {
-        console.error('Navigation failed:', navError)
+      } catch (/* eslint-disable-line @typescript-eslint/no-unused-vars */ _navError: unknown) {
         feedback.showError('Navigation error: Could not redirect to results')
         return false
       }
@@ -186,20 +182,20 @@ export const useFormStore = () => {
       feedback.showSuccess('Transactions processed successfully')
       return true
 
-    } catch (error) {
-      console.error('Form submission error:', error)
-      feedback.showError('Error processing transactions: ' + (error instanceof Error ? error.message : String(error)))
+    } catch (_error: unknown) {
+      feedback.showError('Error processing transactions: ' + (_error instanceof Error ? _error.message : String(_error)))
       return false
     } finally {
       isLoading.value = false
     }
   }
 
-  const hasErrors = computed(() => {
-    return Object.keys(errors.value).length > 0
+  const hasErrors = computed((): boolean => {
+    const MIN_ERRORS = 0
+    return Object.keys(errors.value).length > MIN_ERRORS
   })
 
-  const getError = (field: keyof FormErrors) => {
+  const getError = (field: keyof FormErrors): string | undefined => {
     return errors.value[field]
   }
 

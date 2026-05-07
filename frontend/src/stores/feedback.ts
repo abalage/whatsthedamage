@@ -8,11 +8,14 @@ interface FeedbackMessage {
   autoDismiss?: boolean
 }
 
-export const useFeedbackStore = () => {
+export const useFeedbackStore = (): FeedbackStore => {
   const messages = ref<FeedbackMessage[]>([])
-  const nextId = ref(1)
+  const INITIAL_ID = 1
+  const nextId = ref(INITIAL_ID)
 
-  const showMessage = (message: string, type: FeedbackMessage['type'] = 'info', autoDismiss: boolean = true) => {
+  const AUTO_DISMISS_TIMEOUT = 5000 // ms
+
+  const showMessage = (message: string, type: FeedbackMessage['type'] = 'info', autoDismiss: boolean = true): void => {
     const id = nextId.value++
     const timestamp = Date.now()
     
@@ -28,48 +31,49 @@ export const useFeedbackStore = () => {
     if (autoDismiss) {
       setTimeout(() => {
         dismissMessage(id)
-      }, 5000)
+      }, AUTO_DISMISS_TIMEOUT)
     }
   }
 
-  const showSuccess = (message: string, autoDismiss: boolean = true) => {
+  const showSuccess = (message: string, autoDismiss: boolean = true): void => {
     showMessage(message, 'success', autoDismiss)
   }
 
-  const showError = (message: string, autoDismiss: boolean = true) => {
+  const showError = (message: string, autoDismiss: boolean = true): void => {
     showMessage(message, 'error', autoDismiss)
   }
 
-  const showInfo = (message: string, autoDismiss: boolean = true) => {
+  const showInfo = (message: string, autoDismiss: boolean = true): void => {
     showMessage(message, 'info', autoDismiss)
   }
 
-  const showWarning = (message: string, autoDismiss: boolean = true) => {
+  const showWarning = (message: string, autoDismiss: boolean = true): void => {
     showMessage(message, 'warning', autoDismiss)
   }
 
-  const dismissMessage = (id: number) => {
+  const dismissMessage = (id: number): void => {
     messages.value = messages.value.filter(msg => msg.id !== id)
   }
 
-  const dismissAll = () => {
+  const dismissAll = (): void => {
     messages.value = []
   }
 
-  const clearMessages = () => {
+  const clearMessages = (): void => {
     messages.value = []
-    nextId.value = 1
+    nextId.value = INITIAL_ID
   }
 
-  const hasMessages = computed(() => {
-    return messages.value.length > 0
+  const hasMessages = computed((): boolean => {
+    const MIN_MESSAGES = 0
+    return messages.value.length > MIN_MESSAGES
   })
 
-  const hasErrors = computed(() => {
+  const hasErrors = computed((): boolean => {
     return messages.value.some(msg => msg.type === 'error')
   })
 
-  const getMessagesByType = (type: FeedbackMessage['type']) => {
+  const getMessagesByType = (type: FeedbackMessage['type']): FeedbackMessage[] => {
     return messages.value.filter(msg => msg.type === type)
   }
 

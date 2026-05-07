@@ -1,14 +1,14 @@
 import { ref } from 'vue'
 
-export const useLocaleStore = () => {
+export const useLocaleStore = (): LocaleStore => {
   const locale = ref<string>('en')
 
-  const setLocale = (newLocale: string) => {
+  const setLocale = (newLocale: string): void => {
     locale.value = newLocale
     localStorage.setItem('locale', locale.value)
   }
 
-  const loadLocale = () => {
+  const loadLocale = (): void => {
     const savedLocale = localStorage.getItem('locale')
     if (savedLocale) {
       locale.value = savedLocale

@@ -92,7 +92,6 @@ const fetchCategoryMonths = async () => {
     // Initialize DataTables now that tables exist in DOM
     window.initMainPage()
   } catch (err) {
-    console.error('Failed to fetch category months:', err)
     error.value = err instanceof Error ? err.message : 'Failed to load category months'
     isLoading.value = false
   }
@@ -103,10 +102,11 @@ const fetchCategoryMonths = async () => {
  */
 const extractMonthId = (month: MonthData): string => {
   // Try to extract from cell_url first
+  const MONTH_ID_CAPTURE_GROUP = 1
   if (month.cell_url) {
-    const match = month.cell_url.match(/months\/([^\/]+)\/transactions/)
+    const match = month.cell_url.match(/months\/([^/]+)\/transactions/)
     if (match) {
-      return match[1]
+      return match[MONTH_ID_CAPTURE_GROUP]
     }
   }
   // Fallback to month_timestamp as string
@@ -131,7 +131,7 @@ onMounted(() => {
       </ol>
     </nav>
 
-    <StatisticalControls v-if="categoryMonthsData" :resultId="resultId" />
+    <StatisticalControls v-if="categoryMonthsData" :result-id="resultId" />
 
     <!-- Loading State -->
     <div v-if="isLoading" class="text-center my-5">

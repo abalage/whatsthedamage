@@ -9,7 +9,7 @@ import { updateCellHighlights, initStatisticalAnalysis } from '../src/js/statist
 /**
  * Create a test DOM structure with tables using data-row-id attributes
  */
-function createTestDom() {
+function createTestDom(): void {
   document.body.innerHTML = `
     <main>
       <button id="recalculate-btn">
@@ -45,7 +45,7 @@ function createTestDom() {
 /**
  * Clean up DOM after tests
  */
-function cleanupDom() {
+function cleanupDom(): void {
   document.body.innerHTML = '';
 }
 
@@ -97,8 +97,9 @@ test('updateCellHighlights handles multiple highlights', () => {
 test('updateCellHighlights handles invalid row ID', () => {
   updateCellHighlights({ 'invalid-row-id': ['outlier'] });
 
+  const NO_HIGHLIGHTS = 0
   const cells = document.querySelectorAll('[class*="highlight-"]');
-  expect(cells.length).toBe(0);
+  expect(cells.length).toBe(NO_HIGHLIGHTS);
 });
 
 test('initStatisticalAnalysis marks buttons as initialized', () => {

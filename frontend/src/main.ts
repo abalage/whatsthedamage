@@ -1,4 +1,4 @@
-import { createApp, nextTick } from 'vue'
+import { createApp } from 'vue'
 import App from './App.vue'
 import router from './router'
 import './css/main.css'
@@ -17,8 +17,8 @@ import * as bootstrapNs from 'bootstrap'
 
 // Assign jQuery and Bootstrap to window BEFORE importing DataTables
 // This ensures DataTables can find jQuery as a global
-(window as any).$ = (window as any).jQuery = $;
-(window as any).bootstrap = bootstrapNs.default || bootstrapNs;
+window.$ = window.jQuery = $;
+window.bootstrap = bootstrapNs.default ?? bootstrapNs;
 
 // Import DataTables - these will use window.$ / window.jQuery
 import 'datatables.net'
@@ -31,7 +31,7 @@ import 'datatables.net-fixedheader-bs5'
 // Import JSZip and assign to window BEFORE importing buttons.html5
 // buttons.html5.js requires window.JSZip to be set when it executes
 import JSZip from 'jszip';
-(window as any).JSZip = JSZip;
+window.JSZip = JSZip;
 import 'datatables.net-buttons/js/buttons.html5';
 
 // Import DataTables initialization
@@ -43,8 +43,10 @@ declare global {
   interface Window {
     exportCsvText: string
     exportExcelText: string
-    bootstrap: any
-    JSZip: any
+    bootstrap: Record<string, unknown>
+    JSZip: unknown
+    $: typeof import('jquery')
+    jQuery: typeof import('jquery')
     initMainPage: () => void
     updateCellHighlights: (highlights: Record<string, string[]>) => void
   }

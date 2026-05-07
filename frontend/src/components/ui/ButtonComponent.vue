@@ -80,9 +80,9 @@ const isAnchor = computed(() => {
   <!-- Router Link -->
   <RouterLink
     v-if="isRouterLink"
+    :id="id"
     :to="to!"
     :class="buttonClasses"
-    :id="id"
     @click="handleClick"
   >
     <i v-if="icon" :class="icon" class="me-2"></i>
@@ -92,9 +92,9 @@ const isAnchor = computed(() => {
   <!-- Anchor Tag -->
   <a
     v-else-if="isAnchor"
+    :id="id"
     :href="url"
     :class="buttonClasses"
-    :id="id"
     @click="handleClick"
   >
     <i v-if="icon" :class="icon" class="me-2"></i>
@@ -104,9 +104,9 @@ const isAnchor = computed(() => {
   <!-- Button Tag -->
   <button
     v-else
+    :id="id"
     :type="type"
     :class="buttonClasses"
-    :id="id"
     :disabled="disabled"
     @click="handleClick"
   >

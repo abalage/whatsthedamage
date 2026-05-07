@@ -9,7 +9,7 @@ import { showNotification } from '../src/js/utils';
 /**
  * Create a test DOM structure
  */
-function createTestDom() {
+function createTestDom(): void {
   document.body.innerHTML = `
     <main>
       <div>Existing content</div>
@@ -20,7 +20,7 @@ function createTestDom() {
 /**
  * Clean up DOM after tests
  */
-function cleanupDom() {
+function cleanupDom(): void {
   document.body.innerHTML = '';
 }
 
@@ -72,8 +72,9 @@ test('showNotification auto-dismisses after timeout', () => {
   const alert = document.querySelector('.alert');
   expect(alert?.className).toContain('show');
 
+  const AUTO_DISMISS_TIMEOUT = 5000 // ms
   // Fast-forward time
-  vi.advanceTimersByTime(5000);
+  vi.advanceTimersByTime(AUTO_DISMISS_TIMEOUT);
 
   expect(alert?.className).not.toContain('show');
 

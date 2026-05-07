@@ -51,37 +51,37 @@ onMounted(() => {
   <div class="container">
     <!-- Error Display -->
     <ErrorDisplay />
-    
-    <form @submit.prevent="submitForm" enctype="multipart/form-data">
+
+    <form enctype="multipart/form-data" @submit.prevent="submitForm">
       <div class="row">
         <div class="col-md-6 mb-3">
           <CardComponent :title="t('fileUploads')" type="standard">
             <div class="mb-3">
               <label for="filename" class="form-label">{{ t('csvFile') }}:</label>
-              <input 
-                type="file" 
-                class="form-control" 
-                id="filename" 
+              <input
+                id="filename"
                 ref="fileInput"
-                @change="handleCsvChange"
+                type="file"
+                class="form-control"
                 :class="{ 'is-invalid': formStore.getError('csvFile') }"
+                @change="handleCsvChange"
               />
-              <div class="invalid-feedback" v-if="formStore.getError('csvFile')">
+              <div v-if="formStore.getError('csvFile')" class="invalid-feedback">
                 {{ formStore.getError('csvFile') }}
               </div>
               <div id="fileHelp" class="form-text">{{ t('fileHelp') }}</div>
             </div>
             <div class="mb-3">
               <label for="config" class="form-label">{{ t('configFile') }}:</label>
-              <input 
-                type="file" 
-                class="form-control"
-                id="config" 
+              <input
+                id="config"
                 ref="configInput"
-                @change="handleConfigChange"
+                type="file"
+                class="form-control"
                 :class="{ 'is-invalid': formStore.getError('configFile') }"
+                @change="handleConfigChange"
               />
-              <div class="invalid-feedback" v-if="formStore.getError('configFile')">
+              <div v-if="formStore.getError('configFile')" class="invalid-feedback">
                 {{ formStore.getError('configFile') }}
               </div>
               <div id="configHelp" class="form-text">{{ t('configHelp') }}</div>
@@ -92,46 +92,46 @@ onMounted(() => {
           <CardComponent :title="t('filters')" type="standard">
             <div class="mb-3">
               <label for="start_date" class="form-label">{{ t('startDate') }}:</label>
-              <input 
-                type="date" 
-                class="form-control" 
+              <input
                 id="start_date"
                 v-model="formStore.formData.startDate"
-                @change="handleInputChange('startDate', $event.target.value)"
+                type="date"
+                class="form-control"
                 :class="{ 'is-invalid': formStore.getError('startDate') }"
+                @change="handleInputChange('startDate', $event.target.value)"
               />
-              <div class="invalid-feedback" v-if="formStore.getError('startDate')">
+              <div v-if="formStore.getError('startDate')" class="invalid-feedback">
                 {{ formStore.getError('startDate') }}
               </div>
               <div id="dateStartHelp" class="form-text">{{ t('dateStartHelp') }}</div>
             </div>
             <div class="mb-3">
               <label for="end_date" class="form-label">{{ t('endDate') }}:</label>
-              <input 
-                type="date" 
-                class="form-control" 
+              <input
                 id="end_date"
                 v-model="formStore.formData.endDate"
-                @change="handleInputChange('endDate', $event.target.value)"
+                type="date"
+                class="form-control"
                 :class="{ 'is-invalid': formStore.getError('endDate') }"
+                @change="handleInputChange('endDate', $event.target.value)"
               />
-              <div class="invalid-feedback" v-if="formStore.getError('endDate')">
+              <div v-if="formStore.getError('endDate')" class="invalid-feedback">
                 {{ formStore.getError('endDate') }}
               </div>
               <div id="dateEndHelp" class="form-text">{{ t('dateEndHelp') }}</div>
             </div>
             <div class="mb-3">
               <label for="filter" class="form-label">{{ t('categoryFilter') }}:</label>
-              <input 
-                type="text" 
-                class="form-control" 
+              <input
                 id="filter"
                 v-model="formStore.formData.categoryFilter"
+                type="text"
+                class="form-control"
                 @input="handleInputChange('categoryFilter', $event.target.value)"
               />
               <div id="filterHelp" class="form-text">{{ t('filterHelp') }}</div>
             </div>
-            <div class="invalid-feedback" v-if="formStore.getError('dateRange')">
+            <div v-if="formStore.getError('dateRange')" class="invalid-feedback">
               {{ formStore.getError('dateRange') }}
             </div>
           </CardComponent>
@@ -141,22 +141,22 @@ onMounted(() => {
         <div class="col-md-12 mb-3">
           <CardComponent :title="t('advancedSettings')" type="standard">
             <div class="mb-3 form-check">
-              <input 
-                type="checkbox" 
-                class="form-check-input" 
+              <input
                 id="verbose"
                 v-model="formStore.formData.verbose"
+                type="checkbox"
+                class="form-check-input"
                 @change="handleInputChange('verbose', $event.target.checked)"
               />
               <label class="form-check-label" for="verbose">{{ t('verboseLogging') }}</label>
               <div id="verboseHelp" class="form-text">{{ t('verboseHelp') }}</div>
             </div>
             <div class="mb-3 form-check">
-              <input 
-                type="checkbox" 
-                class="form-check-input" 
+              <input
                 id="ml"
                 v-model="formStore.formData.mlEnabled"
+                type="checkbox"
+                class="form-check-input"
                 @change="handleInputChange('mlEnabled', $event.target.checked)"
               />
               <label class="form-check-label" for="ml">
@@ -173,7 +173,7 @@ onMounted(() => {
         <div class="col-md-6">
           <ButtonComponent
             :text="formStore.isLoading.value ? t('processing') : t('submit')"
-            buttonType="primary"
+            button-type="primary"
             type="submit"
             :disabled="formStore.isLoading.value"
             size="lg"
@@ -182,10 +182,10 @@ onMounted(() => {
         <div class="col-md-6 text-end">
           <ButtonComponent
             :text="t('clearForm')"
-            buttonType="secondary"
+            button-type="secondary"
             type="button"
-            @click="clearForm"
             size="lg"
+            @click="clearForm"
           />
         </div>
       </div>

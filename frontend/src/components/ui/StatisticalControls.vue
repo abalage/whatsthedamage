@@ -69,8 +69,8 @@ const handleRecalculate = async () => {
       window.updateCellHighlights(response.highlights || {})
     }
 
-  } catch (error) {
-    console.error('Error recalculating statistics:', error)
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  } catch (_error) {
     // Could show error message to user
   } finally {
     isRecalculating.value = false
@@ -101,8 +101,9 @@ const resetToDefaults = async () => {
     if (typeof window.updateCellHighlights === 'function') {
       window.updateCellHighlights(response.highlights || {})
     }
-  } catch (error) {
-    console.error('Error restoring defaults:', error)
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  } catch (_error) {
+    // Error restoring defaults
   } finally {
     isRecalculating.value = false
   }
@@ -132,7 +133,7 @@ const statsControlsClasses = computed(() => {
       >
         {{ t('legend') }}
       </button>
-      <div :class="legendClasses" id="legend">
+      <div id="legend" :class="legendClasses">
         <div class="card card-body">
           <p><span class="badge highlight-outlier">{{ t('outlier') }}</span> {{ t('outlierDescription') }}</p>
           <p><span class="badge highlight-pareto">{{ t('pareto') }}</span> {{ t('paretoDescription') }}</p>
@@ -154,18 +155,18 @@ const statsControlsClasses = computed(() => {
       >
         {{ t('statisticalAnalysisControls') }}
       </button>
-      <div :class="statsControlsClasses" id="stats-controls">
+      <div id="stats-controls" :class="statsControlsClasses">
         <div class="card card-body">
           <div class="mb-3">
             <h6>{{ t('algorithms') }}</h6>
             <div class="form-check">
-              <input class="form-check-input" type="checkbox" value="iqr" id="algorithm-iqr" v-model="algorithms.iqr">
+              <input id="algorithm-iqr" v-model="algorithms.iqr" class="form-check-input" type="checkbox" value="iqr">
               <label class="form-check-label" for="algorithm-iqr">
                 {{ t('iqrOutlierDetection') }}
               </label>
             </div>
             <div class="form-check">
-              <input class="form-check-input" type="checkbox" value="pareto" id="algorithm-pareto" v-model="algorithms.pareto">
+              <input id="algorithm-pareto" v-model="algorithms.pareto" class="form-check-input" type="checkbox" value="pareto">
               <label class="form-check-label" for="algorithm-pareto">
                 {{ t('paretoAnalysis') }}
               </label>
@@ -175,13 +176,13 @@ const statsControlsClasses = computed(() => {
           <div class="mb-3">
             <h6>{{ t('analysisDirection') }}</h6>
             <div class="form-check">
-              <input class="form-check-input" type="radio" name="direction" id="direction-rows" value="rows" v-model="direction">
+              <input id="direction-rows" v-model="direction" class="form-check-input" type="radio" name="direction" value="rows">
               <label class="form-check-label" for="direction-rows">
                 {{ t('rows') }}
               </label>
             </div>
             <div class="form-check">
-              <input class="form-check-input" type="radio" name="direction" id="direction-columns" value="columns" v-model="direction">
+              <input id="direction-columns" v-model="direction" class="form-check-input" type="radio" name="direction" value="columns">
               <label class="form-check-label" for="direction-columns">
                 {{ t('columns') }}
               </label>
@@ -191,7 +192,7 @@ const statsControlsClasses = computed(() => {
           <div class="d-flex gap-2">
             <ButtonComponent
               :text="t('recalculate')"
-              buttonType="primary"
+              button-type="primary"
               size="sm"
               :disabled="isRecalculating"
               @click="handleRecalculate"
@@ -206,7 +207,7 @@ const statsControlsClasses = computed(() => {
             </ButtonComponent>
             <ButtonComponent
               :text="t('resetToDefaults')"
-              buttonType="secondary"
+              button-type="secondary"
               size="sm"
               @click="resetToDefaults"
             />

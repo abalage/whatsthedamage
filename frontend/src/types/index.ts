@@ -52,7 +52,7 @@ export interface StatisticalAnalysisRequest {
 export interface WindowExtensions {
   exportCsvText?: string;
   exportExcelText?: string;
-  bootstrap: any;
+  bootstrap: Record<string, unknown>;
   resultId?: string;
 }
 

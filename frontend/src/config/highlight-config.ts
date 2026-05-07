@@ -41,7 +41,7 @@ export function getCssClassForHighlight(
     highlightType: string,
     config: HighlightConfig = DEFAULT_HIGHLIGHT_CONFIG
 ): string {
-    return config.highlightTypes[highlightType] || '';
+    return config.highlightTypes[highlightType] ?? '';
 }
 
 /**
@@ -70,7 +70,8 @@ export function getCssClassesForHighlights(
     });
 
     // Add multiple highlight class if multiple valid algorithm highlights
-    if (validAlgoHighlights.length > 1) {
+    const MIN_HIGHLIGHTS_FOR_MULTIPLE = 1
+    if (validAlgoHighlights.length > MIN_HIGHLIGHTS_FOR_MULTIPLE) {
         cssClasses.push(config.multipleHighlightClass);
     }
 

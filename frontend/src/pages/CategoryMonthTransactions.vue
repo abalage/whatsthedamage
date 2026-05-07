@@ -5,11 +5,10 @@ import { useLocaleStore } from '../stores/locale'
 import { getTranslation } from '../stores/translations'
 import { fetchWithErrorHandling } from '../js/api'
 import CardComponent from '../components/ui/CardComponent.vue'
-import ButtonComponent from '../components/ui/ButtonComponent.vue'
 import StatisticalControls from '../components/ui/StatisticalControls.vue'
 
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api/v2'
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '/api/v2'
 
 const localeStore = useLocaleStore()
 const route = useRoute()
@@ -82,7 +81,6 @@ const fetchTransactions = async () => {
     // Initialize DataTables now that tables exist in DOM
     window.initMainPage()
   } catch (err) {
-    console.error('Failed to fetch transactions:', err)
     error.value = err instanceof Error ? err.message : 'Failed to load transactions'
     isLoading.value = false
   }
@@ -113,7 +111,7 @@ onMounted(() => {
       </ol>
     </nav>
 
-    <StatisticalControls v-if="transactionsData" :resultId="resultId" />
+    <StatisticalControls v-if="transactionsData" :result-id="resultId" />
 
     <!-- Loading State -->
     <div v-if="isLoading" class="text-center my-5">

@@ -41,6 +41,7 @@
     "@vitest/ui": "^4.0.18",
     "@vue/compiler-sfc": "^3.5.12",
     "@vue/eslint-config-prettier": "^10.2.0",
+    "@vue/test-utils": "^2.4.10",
     "eslint": "^9.39.4",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-import": "^2.32.0",
@@ -58,4 +59,3 @@
     "vue-eslint-parser": "^10.4.0"
   }
 }
-

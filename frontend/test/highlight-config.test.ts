@@ -51,19 +51,24 @@ describe('Highlight Configuration', () => {
         expect(result).toEqual(['highlight-outlier']);
     });
 
-    it('should return multiple CSS classes for multiple highlights', () => {
+    it('should return only highlight-multiple for multiple algorithm highlights', () => {
         const result = getCssClassesForHighlights(['outlier', 'pareto']);
-        expect(result).toEqual(['highlight-outlier', 'highlight-pareto', 'highlight-multiple']);
+        expect(result).toEqual(['highlight-multiple']);
     });
 
-    it('should handle excluded highlight separately', () => {
+    it('should return only highlight-excluded when excluded is present alone', () => {
         const result = getCssClassesForHighlights(['outlier', 'excluded']);
-        expect(result).toEqual(['highlight-outlier', 'highlight-excluded']);
+        expect(result).toEqual(['highlight-excluded']);
     });
 
-    it('should handle multiple highlights with excluded', () => {
+    it('should return only highlight-excluded when excluded is present with algorithms', () => {
         const result = getCssClassesForHighlights(['outlier', 'pareto', 'excluded']);
-        expect(result).toEqual(['highlight-outlier', 'highlight-pareto', 'highlight-multiple', 'highlight-excluded']);
+        expect(result).toEqual(['highlight-excluded']);
+    });
+
+    it('should return only highlight-excluded for excluded only', () => {
+        const result = getCssClassesForHighlights(['excluded']);
+        expect(result).toEqual(['highlight-excluded']);
     });
 
     it('should return empty array for empty input', () => {
@@ -78,6 +83,13 @@ describe('Highlight Configuration', () => {
 
     it('should handle mixed known and unknown highlights', () => {
         const result = getCssClassesForHighlights(['outlier', 'unknown', 'pareto']);
-        expect(result).toEqual(['highlight-outlier', 'highlight-pareto', 'highlight-multiple']);
+        // unknown is filtered out, leaving outlier and pareto -> highlight-multiple
+        expect(result).toEqual(['highlight-multiple']);
+    });
+
+    it('should handle excluded with unknown highlights', () => {
+        const result = getCssClassesForHighlights(['outlier', 'unknown', 'excluded']);
+        // excluded takes precedence
+        expect(result).toEqual(['highlight-excluded']);
     });
 });

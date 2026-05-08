@@ -56,7 +56,16 @@ export function getCssClassesForHighlights(
 ): string[] {
     const cssClasses: string[] = [];
 
-    // Filter out 'excluded' to handle separately if needed
+    // If 'excluded' is present, it takes precedence - only apply highlight-excluded
+    if (highlightTypes.includes('excluded')) {
+        const excludedClass = getCssClassForHighlight('excluded', config);
+        if (excludedClass) {
+            cssClasses.push(excludedClass);
+        }
+        return cssClasses;
+    }
+
+    // Filter out 'excluded' (already handled above)
     const algoHighlights = highlightTypes.filter(t => t !== 'excluded');
 
     // Convert algorithm highlights to CSS classes
@@ -64,23 +73,23 @@ export function getCssClassesForHighlights(
     algoHighlights.forEach(hType => {
         const cssClass = getCssClassForHighlight(hType, config);
         if (cssClass) {
-            cssClasses.push(cssClass);
             validAlgoHighlights.push(hType);
         }
     });
 
     // Add multiple highlight class if multiple valid algorithm highlights
+    // When multiple algorithms mark the same cell, only apply highlight-multiple
     const MIN_HIGHLIGHTS_FOR_MULTIPLE = 1
     if (validAlgoHighlights.length > MIN_HIGHLIGHTS_FOR_MULTIPLE) {
         cssClasses.push(config.multipleHighlightClass);
-    }
-
-    // Add excluded class if present
-    if (highlightTypes.includes('excluded')) {
-        const excludedClass = getCssClassForHighlight('excluded', config);
-        if (excludedClass) {
-            cssClasses.push(excludedClass);
-        }
+    } else {
+        // For single algorithm, add its individual class
+        algoHighlights.forEach(hType => {
+            const cssClass = getCssClassForHighlight(hType, config);
+            if (cssClass) {
+                cssClasses.push(cssClass);
+            }
+        });
     }
 
     return cssClasses;

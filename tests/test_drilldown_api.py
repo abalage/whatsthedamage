@@ -16,8 +16,11 @@ def client():
     app = Flask(__name__)
     app.register_blueprint(v2_bp)
     
-    # Mock the cache service
-    with patch('whatsthedamage.api.v2.endpoints._get_cache_service') as mock_cache_service:
+    # Mock the cache service and drilldown response service
+    with patch('whatsthedamage.api.v2.endpoints._get_cache_service') as mock_cache_service, \
+         patch('whatsthedamage.api.v2.endpoints._get_drilldown_response_service') as mock_drilldown_response_service, \
+         patch('whatsthedamage.api.v2.endpoints._get_id_mapping_service') as mock_id_mapping_service:
+        
         # Create mock cache service
         mock_cache = MagicMock()
         mock_cache_service.return_value = mock_cache
@@ -25,6 +28,94 @@ def client():
         # Set up test data
         test_result = _create_test_processing_response()
         mock_cache.get.return_value = test_result
+        
+        # Create mock drilldown response service
+        mock_drilldown_service = MagicMock()
+        mock_drilldown_response_service.return_value = mock_drilldown_service
+        
+        # Configure mock responses for drilldown service
+        def get_category_months_side_effect(result_id, account_id, category_id):
+            return {
+                'result_id': result_id,
+                'account_id': account_id,
+                'account_name': 'Test Account',
+                'category_id': category_id,
+                'category_name': 'Food',
+                'data': [{
+                    'month': 'January 2023',
+                    'month_timestamp': 1672531200,
+                    'total': {'display': '$150.00', 'raw': 150.0},
+                    'row_id': 'row_1',
+                    'details': [],
+                    'cell_url': f'/results/{result_id}/accounts/{account_id}/categories/{category_id}/months/row_1/transactions'
+                }]
+            }
+        
+        def get_month_categories_side_effect(result_id, account_id, month_id):
+            return {
+                'result_id': result_id,
+                'account_id': account_id,
+                'account_name': 'Test Account',
+                'month_id': month_id,
+                'month_name': 'January 2023',
+                'data': [
+                    {
+                        'category': 'food',
+                        'total': {'display': '$150.00', 'raw': 150.0},
+                        'row_id': 'row_1',
+                        'details': [],
+                        'category_url': f'/results/{result_id}/accounts/{account_id}/categories/food/months/{month_id}/transactions'
+                    },
+                    {
+                        'category': 'entertainment',
+                        'total': {'display': '$75.00', 'raw': 75.0},
+                        'row_id': 'row_2',
+                        'details': [],
+                        'category_url': f'/results/{result_id}/accounts/{account_id}/categories/entertainment/months/{month_id}/transactions'
+                    }
+                ]
+            }
+
+        def get_category_month_transactions_side_effect(result_id, account_id, category_id, month_id):
+            # Return transaction data for the food category in January 2023
+            if category_id == 'food' and month_id == '1672531200':
+                return {
+                    'result_id': result_id,
+                    'account_id': account_id,
+                    'account_name': 'Test Account',
+                    'category_id': category_id,
+                    'category_name': 'Food',
+                    'month_id': month_id,
+                    'month_name': 'January 2023',
+                    'data': [
+                        {
+                            'date': {'display': '2023-01-01'},
+                            'amount': {'display': '$100.00'},
+                            'merchant': 'Test Merchant 1',
+                            'row_id': 'detail_1'
+                        },
+                        {
+                            'date': {'display': '2023-01-15'},
+                            'amount': {'display': '$50.00'},
+                            'merchant': 'Test Merchant 2',
+                            'row_id': 'detail_2'
+                        }
+                    ]
+                }
+            else:
+                # For non-existent category/month, raise ValueError
+                raise ValueError('No transactions found for the specified category and month')
+        
+        mock_drilldown_service.get_category_months_response.side_effect = get_category_months_side_effect
+        mock_drilldown_service.get_month_categories_response.side_effect = get_month_categories_side_effect
+        mock_drilldown_service.get_category_month_transactions_response.side_effect = get_category_month_transactions_side_effect
+        
+        # Create mock ID mapping service
+        mock_id_mapping = MagicMock()
+        mock_id_mapping.get_account_number.return_value = 'test_account_123'
+        mock_id_mapping.get_category_name.return_value = 'food'
+        mock_id_mapping.get_month_timestamp.return_value = '1672531200'
+        mock_id_mapping_service.return_value = mock_id_mapping
         
         with app.test_client() as client:
             yield client
@@ -127,11 +218,11 @@ def test_get_category_months_success(client):
 
 def test_get_category_months_not_found(client):
     """Test 404 response when result is not found."""
-    # Mock cache to return None
-    with patch('whatsthedamage.api.v2.endpoints._get_cache_service') as mock_cache_service:
-        mock_cache = MagicMock()
-        mock_cache_service.return_value = mock_cache
-        mock_cache.get.return_value = None
+    # Mock drilldown response service to raise ValueError (simulating not found)
+    with patch('whatsthedamage.api.v2.endpoints._get_drilldown_response_service') as mock_drilldown_response_service:
+        mock_drilldown_service = MagicMock()
+        mock_drilldown_response_service.return_value = mock_drilldown_service
+        mock_drilldown_service.get_category_months_response.side_effect = ValueError('Results not found')
         
         response = client.get('/api/v2/results/nonexistent/accounts/test_account/categories/food/months')
         
@@ -186,11 +277,22 @@ def test_get_category_month_transactions_success(client):
 def test_get_category_month_transactions_not_found(client):
     """Test 404 response when no transactions are found."""
     # Test with a category that doesn't exist in our test data
-    response = client.get('/api/v2/results/test_result_123/accounts/test_account_123/categories/nonexistent/months/1672531200/transactions')
-    
-    assert response.status_code == 404
-    data = response.get_json()
-    assert 'error' in data
+    # Need to patch id_mapping_service to return the unknown category name
+    # so that the filtering in get_category_month_transactions works correctly
+    with patch('whatsthedamage.api.v2.endpoints._get_id_mapping_service') as mock_id_mapping_service:
+        mock_id_mapping = MagicMock()
+        mock_id_mapping.get_account_number.return_value = 'test_account_123'
+        # Return the input category_id unchanged (simulating no mapping found)
+        mock_id_mapping.get_category_name.return_value = 'nonexistent'
+        mock_id_mapping.get_month_timestamp.return_value = '1672531200'
+        mock_id_mapping_service.return_value = mock_id_mapping
+        
+        response = client.get('/api/v2/results/test_result_123/accounts/test_account_123/categories/nonexistent/months/1672531200/transactions')
+        
+        # The old implementation returns 404 when no transactions found
+        assert response.status_code == 404
+        data = response.get_json()
+        assert 'error' in data
 
 
 if __name__ == '__main__':

@@ -25,6 +25,7 @@ export interface HighlightConfig {
 export const DEFAULT_HIGHLIGHT_CONFIG: HighlightConfig = {
     highlightTypes: {
         outlier: 'highlight-outlier',
+        iqr: 'highlight-outlier',
         pareto: 'highlight-pareto',
         excluded: 'highlight-excluded',
     },
@@ -41,7 +42,12 @@ export function getCssClassForHighlight(
     highlightType: string,
     config: HighlightConfig = DEFAULT_HIGHLIGHT_CONFIG
 ): string {
-    return config.highlightTypes[highlightType] ?? '';
+    const cssClass = config.highlightTypes[highlightType];
+    if (!cssClass) {
+        // Log warning for unknown highlight types to help debugging
+        console.warn(`Unknown highlight type: "${highlightType}". This may prevent highlight-multiple from being applied correctly.`);
+    }
+    return cssClass ?? '';
 }
 
 /**

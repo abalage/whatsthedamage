@@ -15,6 +15,7 @@ from whatsthedamage.services.processing_service import ProcessingService
 from whatsthedamage.services.cache_service import CacheService
 from whatsthedamage.services.id_mapping_service import IdMappingService
 from whatsthedamage.services.statistical_analysis_service import StatisticalAnalysisService
+from whatsthedamage.services.drilldown_response_service import DrilldownResponseService
 
 
 def _get_response_builder_service() -> ResponseFormattingService:
@@ -45,6 +46,11 @@ def _get_id_mapping_service() -> IdMappingService:
 def _get_statistical_service() -> StatisticalAnalysisService:
     """Get statistical analysis service from app extensions (dependency injection)."""
     return cast(StatisticalAnalysisService, current_app.extensions['statistical_analysis_service'])
+
+
+def _get_drilldown_response_service() -> DrilldownResponseService:
+    """Get drilldown response service from app extensions (dependency injection)."""
+    return cast(DrilldownResponseService, current_app.extensions['drilldown_response_service'])
 
 
 def validate_csv_file() -> FileStorage:

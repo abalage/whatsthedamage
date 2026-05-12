@@ -13,7 +13,6 @@ from whatsthedamage.utils.flask_locale import get_locale
 from whatsthedamage.utils.version import get_version
 from whatsthedamage.utils.logging import configure_logging, get_logger
 from whatsthedamage.services.service_container import ServiceContainer, create_service_container
-from whatsthedamage.services.id_mapping_service import IdMappingService
 
 def create_app(
     config_class: Optional[FlaskAppConfig] = None,
@@ -96,6 +95,7 @@ def create_app(
     app.extensions['file_upload_service'] = service_container.file_upload_service
     app.extensions['session_service'] = service_container.session_service
     app.extensions['drilldown_service'] = service_container.drilldown_service
+    app.extensions['drilldown_response_service'] = service_container.drilldown_response_service
 
     # --- BEGIN: Gettext integration for templates ---
     # Note: File cleanup should be done via background job or event-driven mechanism,
@@ -154,10 +154,6 @@ def create_app(
 
     return app
 
-def _get_id_mapping_service() -> IdMappingService:
-    """Get ID mapping service from app extensions (dependency injection)."""
-    from typing import cast
-    return cast(IdMappingService, current_app.extensions['id_mapping_service'])
 
 # Create the app instance for Gunicorn
 app = create_app()

@@ -11,7 +11,7 @@ from whatsthedamage.services.processing_service import ProcessingService
 from whatsthedamage.services.configuration_service import ConfigurationService
 from whatsthedamage.services.cache_service import CacheService
 from whatsthedamage.services.id_mapping_service import IdMappingService
-from whatsthedamage.services.drilldown_service import DrilldownService
+from whatsthedamage.services.drilldown_response_service import DrilldownResponseService
 from whatsthedamage.services.response_formatting_service import ResponseFormattingService
 
 
@@ -107,9 +107,9 @@ def test_web_services_require_flask_app() -> None:
     with pytest.raises(ValueError, match="IdMappingService requires Flask app"):
         _ = container.id_mapping_service
     
-    # DrilldownService will fail when trying to create IdMappingService dependency
+    # DrilldownResponseService will fail when trying to create IdMappingService dependency
     with pytest.raises(ValueError, match="IdMappingService requires Flask app"):
-        _ = container.drilldown_service
+        _ = container.drilldown_response_service
 
 
 def test_web_services_work_with_flask_app() -> None:
@@ -124,8 +124,8 @@ def test_web_services_work_with_flask_app() -> None:
     id_mapping_service = container.id_mapping_service
     assert isinstance(id_mapping_service, IdMappingService)
     
-    drilldown_service = container.drilldown_service
-    assert isinstance(drilldown_service, DrilldownService)
+    drilldown_response_service = container.drilldown_response_service
+    assert isinstance(drilldown_response_service, DrilldownResponseService)
 
 
 def test_get_service_method() -> None:

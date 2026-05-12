@@ -94,7 +94,6 @@ def create_app(
     app.extensions['statistical_analysis_service'] = service_container.statistical_analysis_service
     app.extensions['file_upload_service'] = service_container.file_upload_service
     app.extensions['session_service'] = service_container.session_service
-    app.extensions['drilldown_service'] = service_container.drilldown_service
     app.extensions['drilldown_response_service'] = service_container.drilldown_response_service
 
     # --- BEGIN: Gettext integration for templates ---

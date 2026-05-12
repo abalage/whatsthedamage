@@ -15,7 +15,7 @@ Backwards Compatibility:
 """
 from flask import current_app, Response, jsonify
 from whatsthedamage.services.cache_service import CacheService
-from whatsthedamage.services.drilldown_service import DrilldownService
+from whatsthedamage.services.drilldown_response_service import DrilldownResponseService
 from whatsthedamage.services.processing_service import ProcessingService
 from whatsthedamage.services.response_formatting_service import ResponseFormattingService
 from whatsthedamage.services.statistical_analysis_service import StatisticalAnalysisService
@@ -38,9 +38,9 @@ def _get_processing_service() -> ProcessingService:
     return cast(ProcessingService, current_app.extensions['processing_service'])
 
 
-def _get_drilldown_service() -> DrilldownService:
-    """Get drilldown service from app extensions (dependency injection)."""
-    return cast(DrilldownService, current_app.extensions['drilldown_service'])
+def _get_drilldown_response_service() -> DrilldownResponseService:
+    """Get drilldown response service from app extensions (dependency injection)."""
+    return cast(DrilldownResponseService, current_app.extensions['drilldown_response_service'])
 
 
 def _get_data_formatting_service() -> ResponseFormattingService:
@@ -81,11 +81,11 @@ def handle_entity_drilldown_json(
         JSON Response with drilldown data or error
     """
     try:
-        # Use DrilldownService for all business logic
-        drilldown_service = _get_drilldown_service()
+        # Use DrilldownResponseService for all business logic
+        drilldown_response_service = _get_drilldown_response_service()
 
         # Resolve IDs to original values using service
-        resolution = drilldown_service.resolve_entity_ids(result_id, account_id, entity_id, entity_type)
+        resolution = drilldown_response_service.resolve_entity_ids(result_id, account_id, entity_id, entity_type)
 
         if resolution.get('error'):
             return jsonify({'error': resolution['error']}), 404
@@ -99,7 +99,7 @@ def handle_entity_drilldown_json(
         assert filter_value is not None
 
         # Get cached data using service
-        cache_result = drilldown_service.get_cached_data_for_account(result_id, account_number)
+        cache_result = drilldown_response_service.get_cached_data_for_account(result_id, account_number)
 
         if cache_result.get('error'):
             return jsonify({'error': cache_result['error']}), 404
@@ -107,13 +107,13 @@ def handle_entity_drilldown_json(
         dt_response = cache_result['dt_response']
 
         # Filter data for the specific entity using service
-        filtered_data = drilldown_service.filter_data_for_entity(dt_response, entity_type, filter_value)
+        filtered_data = drilldown_response_service.filter_data_for_entity(dt_response, entity_type, filter_value)
 
         if not filtered_data:
             return jsonify({'error': data_not_found_error}), 404
 
         # Generate drilldown URLs using service
-        drilldown_urls = drilldown_service.generate_drilldown_urls(result_id, account_number, dt_response)
+        drilldown_urls = drilldown_response_service.generate_drilldown_urls(result_id, account_number, dt_response)
 
         # Build response context
         formatting_service = _get_data_formatting_service()
@@ -170,10 +170,10 @@ def handle_category_month_transactions_json(
         JSON Response with transaction data or error
     """
     try:
-        drilldown_service = _get_drilldown_service()
+        drilldown_response_service = _get_drilldown_response_service()
 
         # Resolve category ID
-        category_resolution = drilldown_service.resolve_entity_ids(result_id, account_id, category_id, 'category')
+        category_resolution = drilldown_response_service.resolve_entity_ids(result_id, account_id, category_id, 'category')
         if category_resolution.get('error'):
             return jsonify({'error': category_resolution['error']}), 404
 
@@ -185,7 +185,7 @@ def handle_category_month_transactions_json(
         assert category_name is not None
 
         # Resolve month ID
-        month_resolution = drilldown_service.resolve_entity_ids(result_id, account_id, month_id, 'month')
+        month_resolution = drilldown_response_service.resolve_entity_ids(result_id, account_id, month_id, 'month')
         if month_resolution.get('error'):
             return jsonify({'error': month_resolution['error']}), 404
         month_name = month_resolution['entity_name']
@@ -194,7 +194,7 @@ def handle_category_month_transactions_json(
         assert month_filter_value is not None
 
         # Get cached data
-        cache_result = drilldown_service.get_cached_data_for_account(result_id, account_number)
+        cache_result = drilldown_response_service.get_cached_data_for_account(result_id, account_number)
         if cache_result.get('error'):
             return jsonify({'error': cache_result['error']}), 404
 
@@ -205,7 +205,7 @@ def handle_category_month_transactions_json(
         month_start_dt = datetime.fromtimestamp(int(month_filter_value))
 
         # Filter for specific category and month
-        filtered_data = drilldown_service.filter_data_for_category_month(
+        filtered_data = drilldown_response_service.filter_data_for_category_month(
             dt_response, category_name, month_start_dt
         )
 
@@ -276,11 +276,11 @@ def show_summary_results_json(result_id: str) -> Union[Response, Tuple[Response,
             cached_result.statistical_metadata
         )
 
-        # Generate secure drill-down URLs for each account using DrilldownService
+        # Generate secure drill-down URLs for each account
         drilldown_urls_by_account = {}
-        drilldown_service = _get_drilldown_service()
+        drilldown_response_service = _get_drilldown_response_service()
         for account_id, dt_response in cached_result.data.items():
-            drilldown_urls_by_account[account_id] = drilldown_service.generate_drilldown_urls(
+            drilldown_urls_by_account[account_id] = drilldown_response_service.generate_drilldown_urls(
                 result_id, account_id, dt_response
             )
 
@@ -330,9 +330,9 @@ def show_detail_results_json(result_id: str) -> Union[Response, Tuple[Response, 
 
         # Generate drilldown URLs
         drilldown_urls_by_account = {}
-        drilldown_service = _get_drilldown_service()
+        drilldown_response_service = _get_drilldown_response_service()
         for account_id, dt_response in cached_result.data.items():
-            drilldown_urls_by_account[account_id] = drilldown_service.generate_drilldown_urls(
+            drilldown_urls_by_account[account_id] = drilldown_response_service.generate_drilldown_urls(
                 result_id, account_id, dt_response
             )
 

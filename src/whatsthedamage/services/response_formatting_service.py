@@ -793,21 +793,21 @@ class ResponseFormattingService(IDataFormattingService):
                 # Add account to response
                 response_data['accounts_data']['accounts'].append(account_info)
 
-                # Generate drilldown URLs for this account using DrilldownService
-                # We need to get the drilldown service from app extensions
+                # Generate drilldown URLs for this account
+                # We need to get the drilldown response service from app extensions
                 try:
                     from flask import current_app
                     if hasattr(current_app, 'extensions'):
-                        drilldown_service = current_app.extensions.get('drilldown_service')
-                        if drilldown_service:
-                            account_drilldown_urls = drilldown_service.generate_drilldown_urls(
+                        drilldown_response_service = current_app.extensions.get('drilldown_response_service')
+                        if drilldown_response_service:
+                            account_drilldown_urls = drilldown_response_service.generate_drilldown_urls(
                                 cached_result.result_id, account_id, account_data
                             )
                             response_data['drilldown_urls_by_account'][account_id] = account_drilldown_urls
                 except (RuntimeError, ImportError):
-                    # current_app not available (not in Flask context) or drilldown_service not registered
+                    # current_app not available (not in Flask context) or drilldown_response_service not registered
                     # Generate URLs without ID mapping for development/testing
-                    drilldown_service = None
+                    drilldown_response_service = None
 
         # If no drilldown URLs were generated (e.g., outside Flask context),
         # fall back to generating simple URLs

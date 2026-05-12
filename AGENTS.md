@@ -59,7 +59,7 @@ whatsthedamage/
 
 - **Layered Architecture**: Clear separation of concerns with Presentation (CLI/Frontend), API, Service, Model, Configuration, and Utility layers
 - **MVC Architecture**: Model-View-Controller pattern
-- **Service Layer**: Business logic isolated in services (ProcessingService, ValidationService, MLService, ResponseFormattingService, IdMappingService, DrilldownService, TextCorrectionService, SmoteService, etc.)
+- **Service Layer**: Business logic isolated in services (ProcessingService, ValidationService, MLService, ResponseFormattingService, IdMappingService, TextCorrectionService, SmoteService, etc.)
 - **Dependency Injection**: Services injected into controllers
   - **CLI**: Uses `ServiceContainer` from `service_factory.py`
   - **Flask**: Uses `app.extensions` dictionary

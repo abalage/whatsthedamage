@@ -103,7 +103,7 @@ whatsthedamage/
 │   │   ├── cache_service.py      # Caching service
 │   │   ├── configuration_service.py # Configuration loading
 │   │   ├── data_formatting_service.py # Output formatting (deprecated)
-│   │   ├── drilldown_service.py    # Drilldown functionality
+│   │   ├── drilldown_response_service.py    # Drilldown response building
 │   │   ├── exclusion_service.py     # Exclusion handling
 │   │   ├── file_upload_service.py   # File upload handling
 │   │   ├── id_mapping_service.py    # ID mapping for secure URLs
@@ -303,15 +303,18 @@ Frontend SPA (Vue 3)
 - Month timestamp/ID mapping for time-based drilldown
 - Cache-backed storage for performance
 
-#### 3.2.6. DrilldownService
+#### 3.2.6. DrilldownResponseService
 
-**Name**: Drilldown Service
+**Name**: Drilldown Response Service
 
-**Description**: Enables detailed transaction analysis by providing drilldown capabilities. This service allows users to explore specific transactions, categories, or time periods in greater detail through secure URL-based access.
+**Description**: Service for building consistent drilldown API responses (get_category_months, get_month_categories, category_month_transactions) with highlight handling. Replaced the legacy DrilldownService.
 
-**Technologies**: Python
-
-**Deployment**: Part of the Flask application
+**Responsibilities**:
+- Building drilldown responses for category months, month categories, and category month transactions
+- Aggregating highlights from parent processing results
+- Resolving entity IDs for drilldown operations
+- Generating drilldown URLs with ID mapping
+- Filtering and caching drilldown data
 
 #### 3.2.7. MLService
 

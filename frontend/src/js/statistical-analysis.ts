@@ -4,7 +4,7 @@
  */
 
 import { showNotification } from './utils';
-import { postData } from './api';
+import { postData, getApiUrl } from './api';
 import { AppError, StatisticalAnalysisRequest, StatisticalAnalysisResponse } from '../types';
 import { getCssClassesForHighlights } from '../config/highlight-config';
 
@@ -51,7 +51,7 @@ export function initStatisticalAnalysis(): void {
             (recalculateBtn as HTMLButtonElement).disabled = true;
             (resetBtn as HTMLButtonElement).disabled = true;
 
-            postData<StatisticalAnalysisResponse>('/recalculate-statistics', request)
+            postData<StatisticalAnalysisResponse>(getApiUrl('/recalculate-statistics'), request)
                 .then((data) => {
                     if (data.status === 'success') {
                         // Update all cell highlights
@@ -109,7 +109,7 @@ export function initStatisticalAnalysis(): void {
                 use_default_directions: true
             };
 
-            postData<StatisticalAnalysisResponse>('/recalculate-statistics', resetRequest)
+            postData<StatisticalAnalysisResponse>(getApiUrl('/recalculate-statistics'), resetRequest)
                 .then((data) => {
                     if (data.status === 'success') {
                         // Update all cell highlights

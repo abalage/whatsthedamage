@@ -128,9 +128,7 @@ class ServiceContainer:
         """Create DrilldownResponseService instance."""
         return DrilldownResponseService(
             id_mapping_service=self.get_service(IdMappingService),
-            cache_service=self.get_service(CacheService),
-            data_formatting_service=self.get_service(ResponseFormattingService),
-            statistical_analysis_service=self.get_service(StatisticalAnalysisService)
+            cache_service=self.get_service(CacheService)
         )
 
     # Convenience properties for common services

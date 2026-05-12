@@ -2,13 +2,12 @@
 
 This module contains tests for the main application routes that are still active
 in the API-only backend. Tests for deprecated routes (process, clear, legal, privacy,
-about, favicon, set_language) have been removed as those routes now return 410 Gone
-or 404 Not Found in the API-only backend.
+about, favicon, set_language, recalculate-statistics) have been removed as those
+routes now return 410 Gone or have been moved to API v2 endpoints.
 
 Active routes:
 - index - returns API information as JSON
 - health - returns health status
-- recalculate-statistics - recalculates statistical highlights
 """
 import pytest
 import os
@@ -67,52 +66,3 @@ class TestMainRoutes:
         assert response.status_code == 200
         response_data = response.get_json()
         assert response_data['status'] == 'healthy'
-
-
-class TestRecalculateStatisticsRoute:
-    """Test suite for recalculate-statistics route."""
-
-    @pytest.fixture
-    def factory(self) -> RouteTestFactory:
-        """Create route test factory."""
-        return RouteTestFactory()
-
-    @pytest.fixture
-    def client(self, factory: RouteTestFactory):
-        """Create test client with configured services."""
-        return factory.create_test_client()
-
-    def test_recalculate_statistics_route(self, client):
-        """Test recalculate_statistics route with valid and invalid data."""
-        # Test missing data
-        response = client.post('/recalculate-statistics', json={})
-        assert response.status_code == 400
-        response_data = response.get_json()
-        assert 'No data provided' in response_data['error']
-
-        # Test missing result_id
-        response = client.post('/recalculate-statistics', json={'algorithms': ['iqr']})
-        assert response.status_code == 400
-        response_data = response.get_json()
-        assert 'result_id is required' in response_data['error']
-
-        # Test invalid algorithms (not a list)
-        response = client.post('/recalculate-statistics', json={
-            'result_id': 'test123',
-            'algorithms': 'not-a-list'
-        })
-        assert response.status_code == 400
-        response_data = response.get_json()
-        assert 'algorithms must be a list' in response_data['error']
-
-        # Test invalid direction
-        response = client.post('/recalculate-statistics', json={
-            'result_id': 'test123',
-            'algorithms': ['iqr'],
-            'direction': 'invalid'
-        })
-        assert response.status_code == 400
-        response_data = response.get_json()
-        assert 'direction must be either' in response_data['error']
-        assert 'columns' in response_data['error']
-        assert 'rows' in response_data['error']

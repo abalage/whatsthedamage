@@ -214,3 +214,44 @@ class TestAPIv2DetailedResponseStructure:
         assert row['details'][0]['merchant'] == 'TESCO'
         assert 'display' in row['details'][0]['amount']
         assert 'raw' in row['details'][0]['amount']
+
+
+class TestAPIv2RecalculateStatistics:
+    """Test suite for /api/v2/recalculate-statistics endpoint."""
+
+    def test_recalculate_statistics_missing_data(self, api_client_with_mock):
+        """Test that missing data returns 400 error."""
+        response = api_client_with_mock.post('/api/v2/recalculate-statistics', json={})
+        assert response.status_code == 400
+        data = response.get_json()
+        assert 'No data provided' in data['error']
+
+    def test_recalculate_statistics_missing_result_id(self, api_client_with_mock):
+        """Test that missing result_id returns 400 error."""
+        response = api_client_with_mock.post('/api/v2/recalculate-statistics', json={'algorithms': ['iqr']})
+        assert response.status_code == 400
+        data = response.get_json()
+        assert 'result_id is required' in data['error']
+
+    def test_recalculate_statistics_invalid_algorithms(self, api_client_with_mock):
+        """Test that invalid algorithms (not a list) returns 400 error."""
+        response = api_client_with_mock.post('/api/v2/recalculate-statistics', json={
+            'result_id': 'test123',
+            'algorithms': 'not-a-list'
+        })
+        assert response.status_code == 400
+        data = response.get_json()
+        assert 'algorithms must be a list' in data['error']
+
+    def test_recalculate_statistics_invalid_direction(self, api_client_with_mock):
+        """Test that invalid direction returns 400 error."""
+        response = api_client_with_mock.post('/api/v2/recalculate-statistics', json={
+            'result_id': 'test123',
+            'algorithms': ['iqr'],
+            'direction': 'invalid'
+        })
+        assert response.status_code == 400
+        data = response.get_json()
+        assert 'direction must be either' in data['error']
+        assert 'columns' in data['error']
+        assert 'rows' in data['error']

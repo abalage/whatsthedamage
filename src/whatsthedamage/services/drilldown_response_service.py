@@ -12,8 +12,8 @@ Architecture Patterns:
 - DRY: Common highlight aggregation logic centralized
 """
 import datetime
-from typing import Any, Dict, List, Optional
-from whatsthedamage.models.dt_models import ProcessingResponse, AggregatedRow
+from typing import Any, Callable, Dict, List, Optional
+from whatsthedamage.models.dt_models import ProcessingResponse, AggregatedRow, DataTablesResponse
 from whatsthedamage.services.interfaces import (
     IIdMappingService,
     ICacheService,
@@ -92,9 +92,9 @@ class DrilldownResponseService:
             original_category = category_id
 
         # Filter rows by category and group by month
-        category_rows = self._filter_rows_by_category(account_data['data'], original_category)
+        category_rows = self._filter_rows(account_data['data'], 'category', original_category)
 
-        month_groups = self._group_rows_by_month(category_rows)
+        month_groups = self._group_rows(category_rows, lambda r: self._extract_month_key(r.date))
 
         if not month_groups:
             raise ValueError('Category not found or has no data')
@@ -105,7 +105,10 @@ class DrilldownResponseService:
         )
 
         # Get category display name
-        category_name = self._get_category_display_name(account_data['data'], original_category)
+        category_name = self._get_display_name(
+            account_data['data'], original_category, 'category', 'category_display',
+            lambda v: v.replace('_', ' ').title()
+        )
 
         response_data: Dict[str, Any] = {
             'result_id': result_id,
@@ -118,7 +121,7 @@ class DrilldownResponseService:
 
         # Aggregate highlights for drilldown rows
         highlights = self._aggregate_highlights_for_drilldown(
-            cached_result, month_groups, original_category
+            cached_result, month_groups, category_filter=original_category
         )
         if highlights:
             response_data['highlights'] = highlights
@@ -171,9 +174,9 @@ class DrilldownResponseService:
             original_month_ts = month_id
 
         # Filter rows by month and group by category
-        month_rows = self._filter_rows_by_month(account_data['data'], original_month_ts)
+        month_rows = self._filter_rows(account_data['data'], 'date', original_month_ts, self._extract_month_key)
 
-        category_groups = self._group_rows_by_category(month_rows)
+        category_groups = self._group_rows(month_rows, lambda r: getattr(r, 'category', 'uncategorized'))
 
         if not category_groups:
             raise ValueError('Month not found or has no data')
@@ -184,7 +187,10 @@ class DrilldownResponseService:
         )
 
         # Get month display name
-        month_name = self._get_month_display_name(account_data['data'], original_month_ts)
+        month_name = self._get_display_name(
+            account_data['data'], original_month_ts, 'date', 'display',
+            lambda v: datetime.datetime.fromtimestamp(int(v)).strftime('%Y-%m-%d')
+        )
 
         response_data: Dict[str, Any] = {
             'result_id': result_id,
@@ -197,7 +203,7 @@ class DrilldownResponseService:
 
         # Aggregate highlights for drilldown rows
         highlights = self._aggregate_highlights_for_drilldown(
-            cached_result, category_groups, None, original_month_ts
+            cached_result, category_groups, category_filter=None, month_filter=original_month_ts
         )
         if highlights:
             response_data['highlights'] = highlights
@@ -251,40 +257,7 @@ class DrilldownResponseService:
 
         return None
 
-    def _filter_rows_by_category(
-        self,
-        rows: List[AggregatedRow],
-        category: str,
-    ) -> List[AggregatedRow]:
-        """Filter rows by category.
 
-        Args:
-            rows: List of AggregatedRow objects
-            category: Category name to filter by
-
-        Returns:
-            Filtered list of rows matching the category
-        """
-        return [row for row in rows if hasattr(row, 'category') and row.category == category]
-
-    def _filter_rows_by_month(
-        self,
-        rows: List[AggregatedRow],
-        month_timestamp: str,
-    ) -> List[AggregatedRow]:
-        """Filter rows by month timestamp.
-
-        Args:
-            rows: List of AggregatedRow objects
-            month_timestamp: Month timestamp to filter by
-
-        Returns:
-            Filtered list of rows matching the month
-        """
-        return [
-            row for row in rows
-            if hasattr(row, 'date') and self._extract_month_key(row.date) == month_timestamp
-        ]
 
     def _extract_month_key(self, date_obj: Any) -> str:
         """Extract month key from date object for grouping.
@@ -305,45 +278,84 @@ class DrilldownResponseService:
         except Exception:
             return "unknown"
 
-    def _group_rows_by_month(
+    def _filter_rows(
         self,
         rows: List[AggregatedRow],
-    ) -> Dict[str, List[AggregatedRow]]:
-        """Group rows by month timestamp.
+        field: str,
+        value: str,
+        transform: Optional[Callable[[Any], str]] = None
+    ) -> List[AggregatedRow]:
+        """Filter rows by field value with optional transformation.
 
         Args:
             rows: List of AggregatedRow objects
+            field: Field name to check
+            value: Value to match
+            transform: Optional function to transform field value before comparison
 
         Returns:
-            Dictionary mapping month keys to lists of rows
+            Filtered list of rows matching the criteria
         """
-        groups: Dict[str, List[AggregatedRow]] = {}
+        result = []
         for row in rows:
-            month_key = self._extract_month_key(row.date)
-            if month_key not in groups:
-                groups[month_key] = []
-            groups[month_key].append(row)
-        return groups
+            row_value = getattr(row, field, None) if hasattr(row, field) else None
+            if row_value is not None and transform is not None:
+                row_value = transform(row_value)
+            if row_value == value:
+                result.append(row)
+        return result
 
-    def _group_rows_by_category(
+    def _group_rows(
         self,
         rows: List[AggregatedRow],
+        key_func: Callable[[AggregatedRow], str]
     ) -> Dict[str, List[AggregatedRow]]:
-        """Group rows by category.
+        """Group rows by key function.
 
         Args:
             rows: List of AggregatedRow objects
+            key_func: Function to extract grouping key from a row
 
         Returns:
-            Dictionary mapping category names to lists of rows
+            Dictionary mapping keys to lists of rows
         """
         groups: Dict[str, List[AggregatedRow]] = {}
         for row in rows:
-            category = row.category if hasattr(row, 'category') else 'uncategorized'
-            if category not in groups:
-                groups[category] = []
-            groups[category].append(row)
+            key = key_func(row)
+            if key not in groups:
+                groups[key] = []
+            groups[key].append(row)
         return groups
+
+    def _get_display_name(
+        self,
+        rows: List[AggregatedRow],
+        value: str,
+        match_field: str,
+        display_field: str,
+        fallback_formatter: Callable[[str], str]
+    ) -> str:
+        """Get display name for an entity by searching rows.
+
+        Args:
+            rows: List of AggregatedRow objects to search
+            value: Value to match in match_field
+            match_field: Field name to match against value
+            display_field: Field name containing display value
+            fallback_formatter: Function to format value if not found in rows
+
+        Returns:
+            Display name or formatted fallback
+        """
+        for row in rows:
+            if getattr(row, match_field, None) == value:
+                display = getattr(row, display_field, None)
+                if display:
+                    return str(display)
+                break
+        return fallback_formatter(value)
+
+
 
     def _build_months_list(
         self,
@@ -471,7 +483,7 @@ class DrilldownResponseService:
             Formatted detail dictionary
         """
         if hasattr(detail, 'model_dump'):
-            return detail.model_dump()
+            return dict(detail.model_dump())
         elif isinstance(detail, dict):
             return detail
         else:
@@ -483,54 +495,7 @@ class DrilldownResponseService:
                 'row_id': getattr(detail, 'row_id', '')
             }
 
-    def _get_category_display_name(
-        self,
-        rows: List[AggregatedRow],
-        category: str,
-    ) -> str:
-        """Get the display name for a category.
 
-        Args:
-            rows: List of AggregatedRow objects
-            category: Category name to find
-
-        Returns:
-            Formatted category display name
-        """
-        for row in rows:
-            if hasattr(row, 'category') and row.category == category:
-                if hasattr(row, 'category_display'):
-                    return row.category_display
-                break
-        # Format as title case with underscores replaced
-        return category.replace('_', ' ').title()
-
-    def _get_month_display_name(
-        self,
-        rows: List[AggregatedRow],
-        month_timestamp: str,
-    ) -> str:
-        """Get the display name for a month.
-
-        Args:
-            rows: List of AggregatedRow objects
-            month_timestamp: Month timestamp to find
-
-        Returns:
-            Formatted month display name
-        """
-        for row in rows:
-            row_month_key = self._extract_month_key(row.date)
-            if row_month_key == month_timestamp:
-                if hasattr(row.date, 'display'):
-                    return row.date.display
-                break
-        # Format timestamp as date
-        try:
-            dt = datetime.datetime.fromtimestamp(int(month_timestamp))
-            return dt.strftime('%Y-%m-%d')
-        except (ValueError, TypeError):
-            return month_timestamp.replace('-', ' ').title()
 
     def _build_frontend_url(
         self,
@@ -555,6 +520,79 @@ class DrilldownResponseService:
         if endpoint in frontend_routes:
             return frontend_routes[endpoint].format(**values)
         return "#"
+
+    def generate_drilldown_urls(
+        self,
+        result_id: str,
+        account_number: Optional[str],
+        dt_response: Optional[DataTablesResponse]
+    ) -> Dict[str, Any]:
+        """Generate all drill-down URLs for a result using ID mapping.
+
+        Encapsulates the URL generation logic that involves business rules
+        for mapping sensitive data to secure IDs.
+
+        Args:
+            result_id: Processing result ID
+            account_number: Original account number
+            dt_response: DataTablesResponse containing the data
+
+        Returns:
+            Dictionary containing pre-generated URLs for all drill-down levels
+        """
+        if not account_number or not dt_response:
+            return {
+                'account_id': None,
+                'category_urls': {},
+                'month_urls': {},
+                'cell_urls': {}
+            }
+
+        # Map account to secure ID
+        account_id = self._id_mapping_service.get_account_id(result_id, account_number)
+
+        # Generate category URLs
+        category_urls = {}
+        for row in dt_response.data:
+            category_name = row.category
+            if category_name and category_name not in category_urls:
+                category_id = self._id_mapping_service.get_category_id(result_id, category_name)
+                category_urls[category_name] = {
+                    'category_url': f"/results/{result_id}/accounts/{account_id}/categories/{category_id}/months",
+                    'category_id': category_id
+                }
+
+        # Generate month URLs
+        month_urls = {}
+        for row in dt_response.data:
+            month_ts = str(row.date.timestamp)
+            if month_ts and month_ts not in month_urls:
+                month_id = self._id_mapping_service.get_month_id(month_ts)
+                month_urls[month_ts] = {
+                    'month_url': f"/results/{result_id}/accounts/{account_id}/months/{month_id}/categories",
+                    'month_id': month_id
+                }
+
+        # Generate cell URLs
+        cell_urls = {}
+        for row in dt_response.data:
+            if row.category and row.date and row.row_id:
+                category_name = row.category
+                month_ts = str(row.date.timestamp)
+                category_id = self._id_mapping_service.get_category_id(result_id, category_name)
+                month_id = self._id_mapping_service.get_month_id(month_ts)
+                cell_urls[row.row_id] = {
+                    'cell_url': f"/results/{result_id}/accounts/{account_id}/categories/{category_id}/months/{month_id}/transactions",
+                    'category_id': category_id,
+                    'month_id': month_id
+                }
+
+        return {
+            'account_id': account_id,
+            'category_urls': category_urls,
+            'month_urls': month_urls,
+            'cell_urls': cell_urls
+        }
 
     def _aggregate_highlights_for_drilldown(
         self,
@@ -602,6 +640,14 @@ class DrilldownResponseService:
             contributing_row_ids: List[str] = []
             for row in rows:
                 if hasattr(row, 'row_id'):
+                    # Apply additional filters if provided
+                    if category_filter and hasattr(row, 'category'):
+                        if str(row.category) != category_filter:
+                            continue
+                    if month_filter and hasattr(row, 'date'):
+                        row_month = self._extract_month_key(row.date)
+                        if row_month != month_filter:
+                            continue
                     contributing_row_ids.append(row.row_id)
 
             # Aggregate highlights for these row_ids

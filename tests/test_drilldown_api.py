@@ -19,7 +19,7 @@ def client():
     # Mock the cache service and drilldown response service
     with patch('whatsthedamage.api.v2.endpoints._get_cache_service') as mock_cache_service, \
          patch('whatsthedamage.api.v2.endpoints._get_drilldown_response_service') as mock_drilldown_response_service, \
-         patch('whatsthedamage.api.v2.endpoints._get_id_mapping_service') as mock_id_mapping_service:
+         patch('whatsthedamage.api.helpers._get_id_mapping_service') as mock_id_mapping_service:
         
         # Create mock cache service
         mock_cache = MagicMock()
@@ -219,7 +219,8 @@ def test_get_category_months_success(client):
 def test_get_category_months_not_found(client):
     """Test 404 response when result is not found."""
     # Mock drilldown response service to raise ValueError (simulating not found)
-    with patch('whatsthedamage.api.v2.endpoints._get_drilldown_response_service') as mock_drilldown_response_service:
+    with patch('whatsthedamage.api.v2.endpoints._get_drilldown_response_service') as mock_drilldown_response_service, \
+         patch('whatsthedamage.api.helpers._get_id_mapping_service'):
         mock_drilldown_service = MagicMock()
         mock_drilldown_response_service.return_value = mock_drilldown_service
         mock_drilldown_service.get_category_months_response.side_effect = ValueError('Results not found')
@@ -279,7 +280,7 @@ def test_get_category_month_transactions_not_found(client):
     # Test with a category that doesn't exist in our test data
     # Need to patch id_mapping_service to return the unknown category name
     # so that the filtering in get_category_month_transactions works correctly
-    with patch('whatsthedamage.api.v2.endpoints._get_id_mapping_service') as mock_id_mapping_service:
+    with patch('whatsthedamage.api.helpers._get_id_mapping_service') as mock_id_mapping_service:
         mock_id_mapping = MagicMock()
         mock_id_mapping.get_account_number.return_value = 'test_account_123'
         # Return the input category_id unchanged (simulating no mapping found)

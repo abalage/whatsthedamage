@@ -4,8 +4,6 @@ import os
 import gettext
 from typing import Optional, Any
 from whatsthedamage.controllers.routes import bp as main_bp
-from whatsthedamage.controllers.frontend_routes import frontend_bp
-from whatsthedamage.api.docs import docs_bp
 from whatsthedamage.api.v2.endpoints import v2_bp
 from whatsthedamage.api.error_handlers import register_error_handlers
 from whatsthedamage.config.flask_config import FlaskAppConfig
@@ -126,12 +124,8 @@ def create_app(
     # --- END: Gettext integration for templates ---
 
     # Register blueprints
-    # IMPORTANT: Register API blueprints BEFORE frontend_bp
-    # The frontend_bp has a catch-all route and must be registered LAST
     app.register_blueprint(main_bp)
-    app.register_blueprint(docs_bp)
     app.register_blueprint(v2_bp)
-    app.register_blueprint(frontend_bp)
 
     # Register error handlers for API routes
     register_error_handlers(app)

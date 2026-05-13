@@ -20,7 +20,6 @@ def index() -> Response:
             'status': 'api-only',
             'message': 'This is an API-only backend. The web interface has been moved to a separate frontend application.',
             'frontend': 'See frontend/README.md for the decoupled frontend application',
-            'api_documentation': url_for('api_docs.v2_openapi_spec', _external=True),
             'available_endpoints': {
                 'api_v2': {
                     'process': url_for('api_v2.process_transactions', _external=True),

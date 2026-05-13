@@ -34,7 +34,6 @@ class TestMainRoutes:
         assert response_data['status'] == 'api-only'
         assert 'message' in response_data
         assert 'frontend' in response_data
-        assert 'api_documentation' in response_data
         assert 'available_endpoints' in response_data
 
     def test_health_route(self, client):

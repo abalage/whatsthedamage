@@ -10,10 +10,7 @@ Active routes:
 - health - returns health status
 """
 import pytest
-import os
-from flask import current_app
 from tests.utils.route_test_factory import RouteTestFactory
-from whatsthedamage.controllers.routes import clear_upload_folder
 
 
 class TestMainRoutes:
@@ -39,17 +36,6 @@ class TestMainRoutes:
         assert 'frontend' in response_data
         assert 'api_documentation' in response_data
         assert 'available_endpoints' in response_data
-
-    def test_clear_upload_folder(self, client):
-        """Test clear_upload_folder function removes files from upload directory."""
-        with client.application.app_context():
-            upload_folder = current_app.config['UPLOAD_FOLDER']
-            test_file_path = os.path.join(upload_folder, 'test.txt')
-            with open(test_file_path, 'w') as f:
-                f.write('test content')
-
-            clear_upload_folder()
-            assert not os.path.exists(test_file_path)
 
     def test_health_route(self, client):
         """Test health route returns healthy status."""

@@ -9,11 +9,13 @@ from werkzeug.datastructures import FileStorage
 from typing import Optional, cast
 
 from whatsthedamage.models.api_models import ProcessingRequest
+from whatsthedamage.services.configuration_service import ConfigurationService
 from whatsthedamage.services.response_formatting_service import ResponseFormattingService
 from whatsthedamage.services.file_upload_service import FileUploadService, FileUploadError
 from whatsthedamage.services.processing_service import ProcessingService
 from whatsthedamage.services.cache_service import CacheService
 from whatsthedamage.services.id_mapping_service import IdMappingService
+from whatsthedamage.services.session_service import SessionService
 from whatsthedamage.services.statistical_analysis_service import StatisticalAnalysisService
 from whatsthedamage.services.drilldown_response_service import DrilldownResponseService
 
@@ -51,6 +53,16 @@ def _get_statistical_service() -> StatisticalAnalysisService:
 def _get_drilldown_response_service() -> DrilldownResponseService:
     """Get drilldown response service from app extensions (dependency injection)."""
     return cast(DrilldownResponseService, current_app.extensions['drilldown_response_service'])
+
+
+def _get_session_service() -> SessionService:
+    """Get session service from app extensions (dependency injection)."""
+    return cast(SessionService, current_app.extensions['session_service'])
+
+
+def _get_configuration_service() -> ConfigurationService:
+    """Get ConfigurationService from app extensions (dependency injection)."""
+    return cast(ConfigurationService, current_app.extensions['configuration_service'])
 
 
 def validate_csv_file() -> FileStorage:

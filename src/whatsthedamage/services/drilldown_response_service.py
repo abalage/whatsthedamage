@@ -76,15 +76,8 @@ class DrilldownResponseService:
         Raises:
             ValueError: If result, account, or category not found
         """
-        # Get cached result
-        cached_result = self._cache_service.get(result_id)
-        if not cached_result:
-            raise ValueError('Results not found')
-
-        # Find account data
-        account_data = self._find_account_data(cached_result, account_id, result_id)
-        if not account_data:
-            raise ValueError('Account not found in results')
+        cached_result = self._get_cached_result(result_id)
+        account_data = self._get_account_data(cached_result, account_id, result_id)
 
         # Resolve category ID to original name
         original_category = self._id_mapping_service.get_category_name(result_id, category_id)
@@ -93,15 +86,16 @@ class DrilldownResponseService:
 
         # Filter rows by category and group by month
         category_rows = self._filter_rows(account_data['data'], 'category', original_category)
-
         month_groups = self._group_rows(category_rows, lambda r: self._extract_month_key(r.date))
 
         if not month_groups:
             raise ValueError('Category not found or has no data')
 
         # Build response data
-        months_list = self._build_months_list(
-            month_groups, result_id, account_id, category_id, original_category
+        months_list = self._build_grouped_list(
+            month_groups, result_id, account_id, category_id, '',
+            'category_month_transactions', 'month', 'date.display', 'date.timestamp',
+            'cell_url', use_row_id_as_month=True
         )
 
         # Get category display name
@@ -158,15 +152,8 @@ class DrilldownResponseService:
         Raises:
             ValueError: If result, account, or month not found
         """
-        # Get cached result
-        cached_result = self._cache_service.get(result_id)
-        if not cached_result:
-            raise ValueError('Results not found')
-
-        # Find account data
-        account_data = self._find_account_data(cached_result, account_id, result_id)
-        if not account_data:
-            raise ValueError('Account not found in results')
+        cached_result = self._get_cached_result(result_id)
+        account_data = self._get_account_data(cached_result, account_id, result_id)
 
         # Resolve month ID to original timestamp
         original_month_ts = self._id_mapping_service.get_month_timestamp(month_id)
@@ -175,15 +162,16 @@ class DrilldownResponseService:
 
         # Filter rows by month and group by category
         month_rows = self._filter_rows(account_data['data'], 'date', original_month_ts, self._extract_month_key)
-
         category_groups = self._group_rows(month_rows, lambda r: getattr(r, 'category', 'uncategorized'))
 
         if not category_groups:
             raise ValueError('Month not found or has no data')
 
         # Build response data
-        categories_list = self._build_categories_list(
-            category_groups, result_id, account_id, month_id, original_month_ts
+        categories_list = self._build_grouped_list(
+            category_groups, result_id, account_id, '', month_id,
+            'category_month_transactions', 'category', 'category',
+            url_field='category_url'
         )
 
         # Get month display name
@@ -210,6 +198,47 @@ class DrilldownResponseService:
 
         return response_data
 
+    def _get_cached_result(self, result_id: str) -> ProcessingResponse:
+        """Get and validate cached result.
+
+        Args:
+            result_id: UUID of the cached processing result
+
+        Returns:
+            The cached ProcessingResponse
+
+        Raises:
+            ValueError: If result not found
+        """
+        cached_result = self._cache_service.get(result_id)
+        if not cached_result:
+            raise ValueError('Results not found')
+        return cached_result
+
+    def _get_account_data(
+        self,
+        cached_result: ProcessingResponse,
+        account_id: str,
+        result_id: str
+    ) -> Dict[str, Any]:
+        """Get and validate account data with secure ID resolution.
+
+        Args:
+            cached_result: The cached processing result
+            account_id: Account ID to find
+            result_id: Result ID for ID mapping resolution
+
+        Returns:
+            Dictionary with 'id', 'name', and 'data' keys
+
+        Raises:
+            ValueError: If account not found in results
+        """
+        account_data = self._find_account_data(cached_result, account_id, result_id)
+        if not account_data:
+            raise ValueError('Account not found in results')
+        return account_data
+
     def _find_account_data(
         self,
         cached_result: ProcessingResponse,
@@ -232,28 +261,24 @@ class DrilldownResponseService:
         if not cached_result or not hasattr(cached_result, 'data'):
             return None
 
-        # Try direct match
-        for acc_id, account_data in cached_result.data.items():
-            if acc_id == account_id:
-                return {
-                    'id': acc_id,
-                    'name': getattr(account_data, 'name', None) or f'Account {account_id}',
-                    'data': account_data.data if hasattr(account_data, 'data') else []
-                }
+        account_ids_to_try = [account_id]
 
-        # Try resolving secure ID to original account number
+        # Add resolved secure ID if different from account_id
         try:
             original_account = self._id_mapping_service.get_account_number(result_id, account_id)
-            if original_account:
-                for acc_id, account_data in cached_result.data.items():
-                    if acc_id == original_account:
-                        return {
-                            'id': acc_id,
-                            'name': getattr(account_data, 'name', None) or f'Account {original_account}',
-                            'data': account_data.data if hasattr(account_data, 'data') else []
-                        }
+            if original_account and original_account != account_id:
+                account_ids_to_try.append(original_account)
         except Exception:
             pass
+
+        for acc_id in account_ids_to_try:
+            for existing_id, account_data in cached_result.data.items():
+                if acc_id == existing_id:
+                    return {
+                        'id': existing_id,
+                        'name': getattr(account_data, 'name', None) or f'Account {existing_id}',
+                        'data': getattr(account_data, 'data', [])
+                    }
 
         return None
 
@@ -357,121 +382,148 @@ class DrilldownResponseService:
 
 
 
-    def _build_months_list(
-        self,
-        month_groups: Dict[str, List[AggregatedRow]],
-        result_id: str,
-        account_id: str,
-        category_id: str,
-        category_name: str,
-    ) -> List[Dict[str, Any]]:
-        """Build the months list for category months response.
+    def _get_nested_attr(self, obj: Any, attr_path: str, fallback: Any) -> Any:
+        """Get nested attribute from object using dot-separated path.
 
         Args:
-            month_groups: Rows grouped by month
-            result_id: Processing result ID
-            account_id: Account ID
-            category_id: Category ID
-            category_name: Category name
+            obj: Object to get attribute from
+            attr_path: Dot-separated attribute path (e.g., 'date.display')
+            fallback: Value to return if attribute not found
 
         Returns:
-            List of month dictionaries with aggregated data
+            Attribute value or fallback
         """
-        months_list = []
+        if not obj or not attr_path:
+            return fallback
+        value = obj
+        for part in attr_path.split('.'):
+            if value is None:
+                return fallback
+            value = getattr(value, part, None)
+            if value is None:
+                return fallback
+        return value
 
-        for month_key in sorted(month_groups.keys(), key=lambda x: x or ''):
-            rows = month_groups[month_key]
-            first_row = rows[0]
-
-            month_data: Dict[str, Any] = {
-                'month': first_row.date.display if hasattr(first_row.date, 'display') else str(first_row.date),
-                'month_timestamp': first_row.date.timestamp if hasattr(first_row.date, 'timestamp') else month_key,
-                'total': {
-                    'display': first_row.total.display if hasattr(first_row.total, 'display') else str(first_row.total),
-                    'raw': first_row.total.raw if hasattr(first_row.total, 'raw') else 0.0
-                },
-                'row_id': first_row.row_id if hasattr(first_row, 'row_id') else '',
-                'details': [
-                    self._format_detail(detail) for detail in (first_row.details if hasattr(first_row, 'details') else [])
-                ]
-            }
-
-            # Aggregate totals for all rows in this month
-            if len(rows) > 1:
-                total_raw = sum(row.total.raw for row in rows if hasattr(row.total, 'raw'))
-                month_data['total']['raw'] = total_raw
-                month_data['total']['display'] = f"${total_raw:.2f}"
-
-            # Add drilldown URL
-            month_identifier = month_data.get('row_id', '')
-            month_data['cell_url'] = self._build_frontend_url(
-                'category_month_transactions',
-                result_id=result_id,
-                account_id=account_id,
-                category_id=category_id,
-                month_id=month_identifier
-            )
-
-            months_list.append(month_data)
-
-        return months_list
-
-    def _build_categories_list(
-        self,
-        category_groups: Dict[str, List[AggregatedRow]],
-        result_id: str,
-        account_id: str,
-        month_id: str,
-        month_timestamp: str,
-    ) -> List[Dict[str, Any]]:
-        """Build the categories list for month categories response.
+    def _build_item_total(self, first_row: AggregatedRow, rows: List[AggregatedRow]) -> Dict[str, Any]:
+        """Build total dictionary for an item, aggregating if multiple rows.
 
         Args:
-            category_groups: Rows grouped by category
-            result_id: Processing result ID
-            account_id: Account ID
-            month_id: Month ID
-            month_timestamp: Month timestamp
+            first_row: First row in the group
+            rows: All rows in the group
 
         Returns:
-            List of category dictionaries with aggregated data
+            Total dictionary with 'display' and 'raw' keys
         """
-        categories_list = []
+        if len(rows) > 1:
+            total_raw = sum(getattr(row.total, 'raw', 0.0) for row in rows)
+            return {'display': f"${total_raw:.2f}", 'raw': total_raw}
+        return {
+            'display': getattr(first_row.total, 'display', str(first_row.total)),
+            'raw': getattr(first_row.total, 'raw', 0.0)
+        }
 
-        for category in sorted(category_groups.keys(), key=lambda x: x or ''):
-            rows = category_groups[category]
+    def _build_drilldown_item_url(
+        self,
+        endpoint: str,
+        result_id: str,
+        account_id: str,
+        fixed_category_id: str,
+        fixed_month_id: str,
+        primary_field: str,
+        key: str,
+        row_id: str,
+        use_row_id_as_month: bool
+    ) -> str:
+        """Build drilldown URL for an item.
+
+        Args:
+            endpoint: URL endpoint name
+            result_id: Processing result ID
+            account_id: Account ID
+            fixed_category_id: Fixed category ID for months list
+            fixed_month_id: Fixed month ID for categories list
+            primary_field: 'month' or 'category'
+            key: Group key (month timestamp or category name)
+            row_id: Row ID from first row
+            use_row_id_as_month: Whether to use row_id as month_id
+
+        Returns:
+            Formatted frontend URL
+        """
+        if primary_field == 'month':
+            month_id = row_id if use_row_id_as_month else key
+            return self._build_frontend_url(
+                endpoint, result_id=result_id, account_id=account_id,
+                category_id=fixed_category_id, month_id=month_id
+            )
+        # category
+        return self._build_frontend_url(
+            endpoint, result_id=result_id, account_id=account_id,
+            category_id=key, month_id=fixed_month_id
+        )
+
+    def _build_grouped_list(
+        self,
+        groups: Dict[str, List[AggregatedRow]],
+        result_id: str,
+        account_id: str,
+        fixed_category_id: str,
+        fixed_month_id: str,
+        endpoint: str,
+        primary_field: str,
+        display_attr: str,
+        timestamp_attr: Optional[str] = None,
+        url_field: str = 'cell_url',
+        use_row_id_as_month: bool = False,
+    ) -> List[Dict[str, Any]]:
+        """Generic builder for grouped drilldown lists.
+
+        Builds a list of dictionaries from grouped rows, with aggregated totals
+        and drilldown URLs. This unifies the months and categories list building.
+
+        Args:
+            groups: Rows grouped by a key
+            result_id: Processing result ID
+            account_id: Account ID
+            fixed_category_id: Fixed category ID for URLs (or empty if using group key)
+            fixed_month_id: Fixed month ID for URLs (or empty if using group key)
+            endpoint: Frontend route endpoint name
+            primary_field: Field name for the group key ('month' or 'category')
+            display_attr: Attribute path for display value
+            timestamp_attr: Optional attribute path for timestamp
+            url_field: URL field name ('cell_url' or 'category_url')
+            use_row_id_as_month: If True, use row_id as month_id in URLs
+
+        Returns:
+            List of dictionaries with aggregated data and URLs
+        """
+        items_list = []
+
+        for key in sorted(groups.keys(), key=lambda x: x or ''):
+            rows = groups[key]
             first_row = rows[0]
+            row_id = getattr(first_row, 'row_id', '')
 
-            category_data: Dict[str, Any] = {
-                'category': category,
-                'total': {
-                    'display': first_row.total.display if hasattr(first_row.total, 'display') else str(first_row.total),
-                    'raw': first_row.total.raw if hasattr(first_row.total, 'raw') else 0.0
-                },
-                'row_id': first_row.row_id if hasattr(first_row, 'row_id') else '',
-                'details': [
-                    self._format_detail(detail) for detail in (first_row.details if hasattr(first_row, 'details') else [])
-                ]
+            item_data: Dict[str, Any] = {
+                primary_field: self._get_nested_attr(first_row, display_attr, str(key)),
+                'total': self._build_item_total(first_row, rows),
+                'row_id': row_id,
+                'details': [self._format_detail(d) for d in getattr(first_row, 'details', [])],
             }
 
-            # Aggregate totals for all rows in this category
-            if len(rows) > 1:
-                total_raw = sum(row.total.raw for row in rows if hasattr(row.total, 'raw'))
-                category_data['total']['raw'] = total_raw
-                category_data['total']['display'] = f"${total_raw:.2f}"
+            if timestamp_attr:
+                item_data[f'{primary_field}_timestamp'] = self._get_nested_attr(
+                    first_row, timestamp_attr, key
+                )
 
-            # Add drilldown URL
-            category_data['category_url'] = self._build_frontend_url(
-                'category_month_transactions',
-                result_id=result_id,
-                account_id=account_id,
-                category_id=category,
-                month_id=month_id
+            item_data[url_field] = self._build_drilldown_item_url(
+                endpoint, result_id, account_id, fixed_category_id, fixed_month_id,
+                primary_field, key, row_id, use_row_id_as_month
             )
 
-            categories_list.append(category_data)
+            items_list.append(item_data)
 
-        return categories_list
+        return items_list
 
     def _format_detail(self, detail: Any) -> Dict[str, Any]:
         """Format a detail row for response.
@@ -483,17 +535,18 @@ class DrilldownResponseService:
             Formatted detail dictionary
         """
         if hasattr(detail, 'model_dump'):
-            return dict(detail.model_dump())
-        elif isinstance(detail, dict):
+            return detail.model_dump()
+        if isinstance(detail, dict):
             return detail
-        else:
-            # Fallback for other types
-            return {
-                'date': getattr(detail, 'date', {}),
-                'amount': getattr(detail, 'amount', {}),
-                'merchant': getattr(detail, 'merchant', ''),
-                'row_id': getattr(detail, 'row_id', '')
-            }
+        # For Pydantic models without model_dump or dataclass instances
+        return {
+            'date': getattr(detail, 'date', {}),
+            'amount': getattr(detail, 'amount', {}),
+            'merchant': getattr(detail, 'merchant', ''),
+            'row_id': getattr(detail, 'row_id', '')
+        }
+
+
 
 
 
@@ -521,6 +574,101 @@ class DrilldownResponseService:
             return frontend_routes[endpoint].format(**values)
         return "#"
 
+    def _get_empty_url_response(self) -> Dict[str, Any]:
+        """Return empty URL response structure."""
+        return {
+            'account_id': None,
+            'category_urls': {},
+            'month_urls': {},
+            'cell_urls': {}
+        }
+
+    def _process_category_url(
+        self,
+        row: Any,
+        result_id: str,
+        account_id: str,
+        category_urls: Dict[str, Dict[str, str]]
+    ) -> None:
+        """Process category URL for a row if not already processed.
+
+        Args:
+            row: Data row containing category information
+            result_id: Processing result ID
+            account_id: Secure account ID
+            category_urls: Dictionary to store category URLs
+        """
+        if row.category and row.category not in category_urls:
+            category_id = self._id_mapping_service.get_category_id(result_id, row.category)
+            category_urls[row.category] = {
+                'category_url': self._build_frontend_url(
+                    'category_months',
+                    result_id=result_id,
+                    account_id=account_id,
+                    category_id=category_id
+                ),
+                'category_id': category_id
+            }
+
+    def _process_month_url(
+        self,
+        row: Any,
+        result_id: str,
+        account_id: str,
+        month_urls: Dict[str, Dict[str, str]]
+    ) -> None:
+        """Process month URL for a row if not already processed.
+
+        Args:
+            row: Data row containing date information
+            result_id: Processing result ID
+            account_id: Secure account ID
+            month_urls: Dictionary to store month URLs
+        """
+        if row.date and row.date.timestamp:
+            month_ts = str(row.date.timestamp)
+            if month_ts not in month_urls:
+                month_id = self._id_mapping_service.get_month_id(month_ts)
+                month_urls[month_ts] = {
+                    'month_url': self._build_frontend_url(
+                        'month_categories',
+                        result_id=result_id,
+                        account_id=account_id,
+                        month_id=month_id
+                    ),
+                    'month_id': month_id
+                }
+
+    def _process_cell_url(
+        self,
+        row: Any,
+        result_id: str,
+        account_id: str,
+        cell_urls: Dict[str, Dict[str, str]]
+    ) -> None:
+        """Process cell URL for a row.
+
+        Args:
+            row: Data row containing category, date, and row_id
+            result_id: Processing result ID
+            account_id: Secure account ID
+            cell_urls: Dictionary to store cell URLs
+        """
+        if row.category and row.date and row.row_id:
+            category_id = self._id_mapping_service.get_category_id(result_id, row.category)
+            month_id = self._id_mapping_service.get_month_id(str(row.date.timestamp))
+            cell_urls[row.row_id] = {
+                'cell_url': self._build_frontend_url(
+                    'category_month_transactions',
+                    result_id=result_id,
+                    account_id=account_id,
+                    category_id=category_id,
+                    month_id=month_id
+                ),
+                'category_id': category_id,
+                'month_id': month_id
+            }
+
     def generate_drilldown_urls(
         self,
         result_id: str,
@@ -541,51 +689,20 @@ class DrilldownResponseService:
             Dictionary containing pre-generated URLs for all drill-down levels
         """
         if not account_number or not dt_response:
-            return {
-                'account_id': None,
-                'category_urls': {},
-                'month_urls': {},
-                'cell_urls': {}
-            }
+            return self._get_empty_url_response()
 
-        # Map account to secure ID
         account_id = self._id_mapping_service.get_account_id(result_id, account_number)
+        if not account_id:
+            return self._get_empty_url_response()
 
-        # Generate category URLs
-        category_urls = {}
-        for row in dt_response.data:
-            category_name = row.category
-            if category_name and category_name not in category_urls:
-                category_id = self._id_mapping_service.get_category_id(result_id, category_name)
-                category_urls[category_name] = {
-                    'category_url': f"/results/{result_id}/accounts/{account_id}/categories/{category_id}/months",
-                    'category_id': category_id
-                }
+        category_urls: Dict[str, Dict[str, str]] = {}
+        month_urls: Dict[str, Dict[str, str]] = {}
+        cell_urls: Dict[str, Dict[str, str]] = {}
 
-        # Generate month URLs
-        month_urls = {}
         for row in dt_response.data:
-            month_ts = str(row.date.timestamp)
-            if month_ts and month_ts not in month_urls:
-                month_id = self._id_mapping_service.get_month_id(month_ts)
-                month_urls[month_ts] = {
-                    'month_url': f"/results/{result_id}/accounts/{account_id}/months/{month_id}/categories",
-                    'month_id': month_id
-                }
-
-        # Generate cell URLs
-        cell_urls = {}
-        for row in dt_response.data:
-            if row.category and row.date and row.row_id:
-                category_name = row.category
-                month_ts = str(row.date.timestamp)
-                category_id = self._id_mapping_service.get_category_id(result_id, category_name)
-                month_id = self._id_mapping_service.get_month_id(month_ts)
-                cell_urls[row.row_id] = {
-                    'cell_url': f"/results/{result_id}/accounts/{account_id}/categories/{category_id}/months/{month_id}/transactions",
-                    'category_id': category_id,
-                    'month_id': month_id
-                }
+            self._process_category_url(row, result_id, account_id, category_urls)
+            self._process_month_url(row, result_id, account_id, month_urls)
+            self._process_cell_url(row, result_id, account_id, cell_urls)
 
         return {
             'account_id': account_id,
@@ -593,6 +710,73 @@ class DrilldownResponseService:
             'month_urls': month_urls,
             'cell_urls': cell_urls
         }
+
+    def _get_highlights_lookup(self, cached_result: ProcessingResponse) -> Dict[str, List[str]]:
+        """Build a lookup dictionary for highlights from cached result.
+
+        Args:
+            cached_result: ProcessingResponse to extract highlights from
+
+        Returns:
+            Dictionary mapping row_ids to list of highlight types, or empty dict if not available
+        """
+        if not hasattr(cached_result, 'statistical_metadata'):
+            return {}
+        if not hasattr(cached_result.statistical_metadata, 'highlights'):
+            return {}
+        return {
+            cell_highlight.row_id: cell_highlight.highlight_types
+            for cell_highlight in cached_result.statistical_metadata.highlights
+        }
+
+    def _row_passes_filters(
+        self,
+        row: AggregatedRow,
+        category_filter: Optional[str],
+        month_filter: Optional[str]
+    ) -> bool:
+        """Check if a row passes the given category and month filters.
+
+        Args:
+            row: AggregatedRow to check
+            category_filter: Optional category to filter by
+            month_filter: Optional month timestamp to filter by
+
+        Returns:
+            True if row has a row_id and passes all provided filters
+        """
+        if not hasattr(row, 'row_id'):
+            return False
+        if category_filter and hasattr(row, 'category'):
+            if str(row.category) != category_filter:
+                return False
+        if month_filter and hasattr(row, 'date'):
+            if self._extract_month_key(row.date) != month_filter:
+                return False
+        return True
+
+    def _aggregate_unique_highlights(
+        self,
+        row_ids: List[str],
+        highlights_lookup: Dict[str, List[str]]
+    ) -> List[str]:
+        """Aggregate unique highlights from a list of row IDs.
+
+        Args:
+            row_ids: List of row IDs to aggregate highlights from
+            highlights_lookup: Dictionary mapping row_ids to highlight types
+
+        Returns:
+            List of unique highlight types in order of first appearance
+        """
+        seen = set()
+        unique_highlights = []
+        for row_id in row_ids:
+            for h in highlights_lookup.get(row_id, []):
+                if h not in seen:
+                    seen.add(h)
+                    unique_highlights.append(h)
+        return unique_highlights
 
     def _aggregate_highlights_for_drilldown(
         self,
@@ -619,58 +803,144 @@ class DrilldownResponseService:
         """
         aggregated_highlights: Dict[str, List[str]] = {}
 
-        # Check if we have statistical metadata with highlights
-        if not hasattr(cached_result, 'statistical_metadata'):
+        highlights_lookup = self._get_highlights_lookup(cached_result)
+        if not highlights_lookup:
             return aggregated_highlights
 
-        if not hasattr(cached_result.statistical_metadata, 'highlights'):
-            return aggregated_highlights
-
-        # Build lookup for original highlights from parent processing
-        original_highlights: Dict[str, List[str]] = {}
-        for cell_highlight in cached_result.statistical_metadata.highlights:
-            original_highlights[cell_highlight.row_id] = cell_highlight.highlight_types
-
-        if not original_highlights:
-            return aggregated_highlights
-
-        # For each drilldown group, aggregate highlights from contributing rows
         for group_key, rows in groups.items():
-            # Collect all original row_ids that contribute to this aggregation
-            contributing_row_ids: List[str] = []
-            for row in rows:
-                if hasattr(row, 'row_id'):
-                    # Apply additional filters if provided
-                    if category_filter and hasattr(row, 'category'):
-                        if str(row.category) != category_filter:
-                            continue
-                    if month_filter and hasattr(row, 'date'):
-                        row_month = self._extract_month_key(row.date)
-                        if row_month != month_filter:
-                            continue
-                    contributing_row_ids.append(row.row_id)
+            # Collect row_ids that pass filters
+            contributing_row_ids = [
+                row.row_id for row in rows
+                if self._row_passes_filters(row, category_filter, month_filter)
+            ]
 
-            # Aggregate highlights for these row_ids
-            combined_highlights: List[str] = []
-            for row_id in contributing_row_ids:
-                if row_id in original_highlights:
-                    combined_highlights.extend(original_highlights[row_id])
+            # Aggregate unique highlights
+            unique_highlights = self._aggregate_unique_highlights(
+                contributing_row_ids, highlights_lookup
+            )
 
-            # Remove duplicates while preserving order
-            seen = set()
-            unique_highlights = []
-            for h in combined_highlights:
-                if h not in seen:
-                    seen.add(h)
-                    unique_highlights.append(h)
-
-            if unique_highlights:
-                # Use the first row's row_id as the drilldown row identifier
-                if rows and hasattr(rows[0], 'row_id'):
-                    drilldown_row_id = rows[0].row_id
-                    aggregated_highlights[drilldown_row_id] = unique_highlights
+            if unique_highlights and rows and hasattr(rows[0], 'row_id'):
+                aggregated_highlights[rows[0].row_id] = unique_highlights
 
         return aggregated_highlights
+
+    def _resolve_category_and_month(
+        self,
+        result_id: str,
+        category_id: str,
+        month_id: str
+    ) -> tuple:
+        """Resolve secure category and month IDs to original values with fallback.
+
+        Args:
+            result_id: Processing result ID
+            category_id: Secure category ID
+            month_id: Secure month ID
+
+        Returns:
+            Tuple of (original_category, original_month_ts)
+        """
+        try:
+            original_category = self._id_mapping_service.get_category_name(result_id, category_id)
+        except Exception:
+            original_category = category_id
+        try:
+            original_month_ts = self._id_mapping_service.get_month_timestamp(month_id)
+        except Exception:
+            original_month_ts = month_id
+        return original_category, original_month_ts
+
+    def _row_matches_filters(
+        self,
+        row: AggregatedRow,
+        category: str,
+        month_ts: str
+    ) -> bool:
+        """Check if a row matches the given category and month filters.
+
+        Args:
+            row: AggregatedRow to check
+            category: Category to match
+            month_ts: Month timestamp to match
+
+        Returns:
+            True if row matches both filters
+        """
+        row_category = getattr(row, 'category', 'uncategorized')
+        row_month_key = self._extract_month_key(getattr(row, 'date', None))
+        return row_category == category and row_month_key == month_ts
+
+    def _format_transaction_detail(self, detail: Any) -> Dict[str, Any]:
+        """Format a detail object into transaction data structure.
+
+        Args:
+            detail: Detail object to format
+
+        Returns:
+            Formatted transaction dictionary
+        """
+        detail_dict = self._format_detail(detail)
+        return {
+            'date': {'display': self._get_display_value(detail_dict.get('date'))},
+            'amount': {'display': self._get_display_value(detail_dict.get('amount'))},
+            'merchant': detail_dict.get('merchant', ''),
+            'row_id': detail_dict.get('row_id', '')
+        }
+
+    def _get_display_value(self, value: Any) -> str:
+        """Get display value from a value that might be a dict or other type.
+
+        Args:
+            value: Value to get display from
+
+        Returns:
+            Display string value
+        """
+        if isinstance(value, dict):
+            return value.get('display', '')
+        return str(value)
+
+    def _extract_transactions(
+        self,
+        rows: List[AggregatedRow],
+        category: str,
+        month_ts: str
+    ) -> List[Dict[str, Any]]:
+        """Extract transaction data from rows matching category and month.
+
+        Args:
+            rows: List of AggregatedRow objects
+            category: Category to filter by
+            month_ts: Month timestamp to filter by
+
+        Returns:
+            List of formatted transaction dictionaries
+        """
+        transactions = []
+        for row in rows:
+            if not self._row_matches_filters(row, category, month_ts):
+                continue
+            for detail in getattr(row, 'details', []):
+                transactions.append(self._format_transaction_detail(detail))
+        return transactions
+
+    def _extract_highlights_dict(self, cached_result: ProcessingResponse) -> Optional[Dict[str, List[str]]]:
+        """Extract highlights dictionary from cached result.
+
+        Args:
+            cached_result: ProcessingResponse to extract from
+
+        Returns:
+            Dictionary mapping row_ids to highlight types, or None if not available
+        """
+        if not hasattr(cached_result, 'statistical_metadata'):
+            return None
+        if not hasattr(cached_result.statistical_metadata, 'highlights'):
+            return None
+        return {
+            cell_highlight.row_id: cell_highlight.highlight_types
+            for cell_highlight in cached_result.statistical_metadata.highlights
+        }
 
     def get_category_month_transactions_response(
         self,
@@ -705,63 +975,23 @@ class DrilldownResponseService:
         Raises:
             ValueError: If result, account, category, or month not found or no transactions
         """
-        # Get cached result
-        cached_result = self._cache_service.get(result_id)
-        if not cached_result:
-            raise ValueError('Results not found')
+        cached_result = self._get_cached_result(result_id)
+        account_data = self._get_account_data(cached_result, account_id, result_id)
 
-        # Find account data
-        account_data = self._find_account_data(cached_result, account_id, result_id)
-        if not account_data:
-            raise ValueError('Account not found in results')
-
-        # Resolve secure category_id and month_id to original values
-        try:
-            original_category = self._id_mapping_service.get_category_name(result_id, category_id)
-        except Exception:
-            original_category = category_id  # Fallback to direct use
-
-        try:
-            original_month_ts = self._id_mapping_service.get_month_timestamp(month_id)
-        except Exception:
-            original_month_ts = month_id  # Fallback to direct use
+        original_category, original_month_ts = self._resolve_category_and_month(
+            result_id, category_id, month_id
+        )
 
         if original_category is None or original_month_ts is None:
             raise ValueError('Category or month not found')
 
+        # Default display names
         category_name = original_category.replace('_', ' ').title()
         month_name = original_month_ts.replace('-', ' ').title()
 
-        transactions = []
-
-        for row in account_data['data']:
-            row_category = row.category if hasattr(row, 'category') else 'uncategorized'
-            row_month_key = self._extract_month_key(row.date)
-
-            if row_category == original_category and row_month_key == original_month_ts:
-                if hasattr(row, 'category_display'):
-                    category_name = row.category_display
-                if hasattr(row.date, 'display'):
-                    month_name = row.date.display
-
-                if hasattr(row, 'details') and row.details:
-                    for detail in row.details:
-                        detail_dict = self._format_detail(detail)
-
-                        date_obj = detail_dict.get('date', {})
-                        amount_obj = detail_dict.get('amount', {})
-
-                        transaction_data = {
-                            'date': {
-                                'display': date_obj.get('display', '') if isinstance(date_obj, dict) else str(date_obj)
-                            },
-                            'amount': {
-                                'display': amount_obj.get('display', '') if isinstance(amount_obj, dict) else str(amount_obj)
-                            },
-                            'merchant': detail_dict.get('merchant', ''),
-                            'row_id': detail_dict.get('row_id', '')
-                        }
-                        transactions.append(transaction_data)
+        transactions = self._extract_transactions(
+            account_data['data'], original_category, original_month_ts
+        )
 
         if not transactions:
             raise ValueError('No transactions found for the specified category and month')
@@ -777,12 +1007,8 @@ class DrilldownResponseService:
             'data': transactions
         }
 
-        # Extract highlights from statistical_metadata
-        if hasattr(cached_result, 'statistical_metadata') and hasattr(cached_result.statistical_metadata, 'highlights'):
-            highlights_dict: Dict[str, List[str]] = {}
-            for cell_highlight in cached_result.statistical_metadata.highlights:
-                highlights_dict[cell_highlight.row_id] = cell_highlight.highlight_types
-            if highlights_dict:
-                response_data['highlights'] = highlights_dict
+        highlights_dict = self._extract_highlights_dict(cached_result)
+        if highlights_dict:
+            response_data['highlights'] = highlights_dict
 
         return response_data

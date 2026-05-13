@@ -12,7 +12,7 @@ Architecture Patterns:
 - DRY: Common highlight aggregation logic centralized
 """
 import datetime
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional, Tuple, cast
 from whatsthedamage.models.dt_models import ProcessingResponse, AggregatedRow, DataTablesResponse
 from whatsthedamage.services.interfaces import (
     IIdMappingService,
@@ -213,7 +213,7 @@ class DrilldownResponseService:
         cached_result = self._cache_service.get(result_id)
         if not cached_result:
             raise ValueError('Results not found')
-        return cached_result
+        return cast(ProcessingResponse, cached_result)
 
     def _get_account_data(
         self,
@@ -535,7 +535,7 @@ class DrilldownResponseService:
             Formatted detail dictionary
         """
         if hasattr(detail, 'model_dump'):
-            return detail.model_dump()
+            return cast(Dict[str, Any], detail.model_dump())
         if isinstance(detail, dict):
             return detail
         # For Pydantic models without model_dump or dataclass instances
@@ -598,16 +598,19 @@ class DrilldownResponseService:
             account_id: Secure account ID
             category_urls: Dictionary to store category URLs
         """
-        if row.category and row.category not in category_urls:
-            category_id = self._id_mapping_service.get_category_id(result_id, row.category)
-            category_urls[row.category] = {
+        category = getattr(row, 'category', None)
+        if category and category not in category_urls:
+            category_id = self._id_mapping_service.get_category_id(result_id, category) or category
+            category_str = cast(str, category)
+            category_id_str = cast(str, category_id)
+            category_urls[category_str] = {
                 'category_url': self._build_frontend_url(
                     'category_months',
                     result_id=result_id,
                     account_id=account_id,
-                    category_id=category_id
+                    category_id=category_id_str
                 ),
-                'category_id': category_id
+                'category_id': category_id_str
             }
 
     def _process_month_url(
@@ -625,10 +628,11 @@ class DrilldownResponseService:
             account_id: Secure account ID
             month_urls: Dictionary to store month URLs
         """
-        if row.date and row.date.timestamp:
-            month_ts = str(row.date.timestamp)
+        date_obj = getattr(row, 'date', None)
+        if date_obj and hasattr(date_obj, 'timestamp') and date_obj.timestamp:
+            month_ts = str(date_obj.timestamp)
             if month_ts not in month_urls:
-                month_id = self._id_mapping_service.get_month_id(month_ts)
+                month_id = self._id_mapping_service.get_month_id(month_ts) or month_ts
                 month_urls[month_ts] = {
                     'month_url': self._build_frontend_url(
                         'month_categories',
@@ -654,10 +658,14 @@ class DrilldownResponseService:
             account_id: Secure account ID
             cell_urls: Dictionary to store cell URLs
         """
-        if row.category and row.date and row.row_id:
-            category_id = self._id_mapping_service.get_category_id(result_id, row.category)
-            month_id = self._id_mapping_service.get_month_id(str(row.date.timestamp))
-            cell_urls[row.row_id] = {
+        category = getattr(row, 'category', None)
+        date_obj = getattr(row, 'date', None)
+        row_id = getattr(row, 'row_id', None)
+        if category and date_obj and row_id and hasattr(date_obj, 'timestamp') and date_obj.timestamp:
+            category_id = self._id_mapping_service.get_category_id(result_id, category) or category
+            month_id = self._id_mapping_service.get_month_id(str(date_obj.timestamp)) or str(date_obj.timestamp)
+            row_id_str = cast(str, row_id)
+            cell_urls[row_id_str] = {
                 'cell_url': self._build_frontend_url(
                     'category_month_transactions',
                     result_id=result_id,
@@ -829,7 +837,7 @@ class DrilldownResponseService:
         result_id: str,
         category_id: str,
         month_id: str
-    ) -> tuple:
+    ) -> Tuple[str, str]:
         """Resolve secure category and month IDs to original values with fallback.
 
         Args:
@@ -844,9 +852,13 @@ class DrilldownResponseService:
             original_category = self._id_mapping_service.get_category_name(result_id, category_id)
         except Exception:
             original_category = category_id
+        if original_category is None:
+            original_category = category_id
         try:
             original_month_ts = self._id_mapping_service.get_month_timestamp(month_id)
         except Exception:
+            original_month_ts = month_id
+        if original_month_ts is None:
             original_month_ts = month_id
         return original_category, original_month_ts
 
@@ -897,7 +909,7 @@ class DrilldownResponseService:
             Display string value
         """
         if isinstance(value, dict):
-            return value.get('display', '')
+            return str(value.get('display', ''))
         return str(value)
 
     def _extract_transactions(

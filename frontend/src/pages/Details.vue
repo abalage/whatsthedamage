@@ -72,7 +72,7 @@ const fetchResults = async () => {
     error.value = null
 
     const response = await fetchWithErrorHandling<ResultsResponse>(
-      `${API_BASE_URL}/results/${resultId.value}/details`
+      `${API_BASE_URL}/results/${resultId.value}`
     )
 
     resultsData.value = response

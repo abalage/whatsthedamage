@@ -224,14 +224,14 @@ class TestAPIv2RecalculateStatistics:
         response = api_client_with_mock.post('/api/v2/recalculate-statistics', json={})
         assert response.status_code == 400
         data = response.get_json()
-        assert 'No data provided' in data['error']
+        assert 'No data provided' in data['message']
 
     def test_recalculate_statistics_missing_result_id(self, api_client_with_mock):
         """Test that missing result_id returns 400 error."""
         response = api_client_with_mock.post('/api/v2/recalculate-statistics', json={'algorithms': ['iqr']})
         assert response.status_code == 400
         data = response.get_json()
-        assert 'result_id is required' in data['error']
+        assert 'result_id is required' in data['message']
 
     def test_recalculate_statistics_invalid_algorithms(self, api_client_with_mock):
         """Test that invalid algorithms (not a list) returns 400 error."""
@@ -241,7 +241,7 @@ class TestAPIv2RecalculateStatistics:
         })
         assert response.status_code == 400
         data = response.get_json()
-        assert 'algorithms must be a list' in data['error']
+        assert 'algorithms must be a list' in data['message']
 
     def test_recalculate_statistics_invalid_direction(self, api_client_with_mock):
         """Test that invalid direction returns 400 error."""
@@ -252,6 +252,6 @@ class TestAPIv2RecalculateStatistics:
         })
         assert response.status_code == 400
         data = response.get_json()
-        assert 'direction must be either' in data['error']
-        assert 'columns' in data['error']
-        assert 'rows' in data['error']
+        assert 'direction must be either' in data['message']
+        assert 'columns' in data['message']
+        assert 'rows' in data['message']

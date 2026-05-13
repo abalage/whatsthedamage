@@ -4,6 +4,7 @@ This module provides REST API endpoints for processing CSV transaction files
 with detailed transaction-level data for DataTables rendering.
 """
 from flask import Blueprint, jsonify, Response, request
+from werkzeug.exceptions import BadRequest
 from typing import Dict, List, Tuple
 import time
 
@@ -115,68 +116,22 @@ def get_results(result_id: str) -> tuple[Response, int]:
         cached_result = cache_service.get(result_id)
 
         if not cached_result:
-            return jsonify({'error': 'Results not found'}), 404
+            return handle_error(ValueError('Results not found'), 'get_results')
 
         # Use ResponseFormattingService to format the response
         response_data = _get_response_builder_service().format_processing_response_for_frontend(cached_result)
 
         # Check if the service returned an error
         if 'error' in response_data:
-            return jsonify(response_data), 404
+            return handle_error(ValueError(response_data['error']), 'get_results')
 
         return jsonify(response_data), 200
 
     except Exception as e:
-        from whatsthedamage.utils.logging import get_logger
-        logger = get_logger(__name__)
-        logger.error(f"Error in get_results: {e}")
-        return jsonify({'error': str(e)}), 500
+        return handle_error(e, 'get_results')
 
 
-@v2_bp.route('/results/<result_id>/details', methods=['GET'])
-def get_results_details(result_id: str) -> tuple[Response, int]:
-    """Get all transaction details for a result in a flattened format.
 
-    This endpoint returns the same data structure as /results/<result_id> but
-    is specifically for the Details view which displays all transactions in a
-    single flattened table.
-
-    Args:
-        result_id: UUID of the cached processing result
-
-    Returns:
-        JSON response with all transaction details including accounts, highlights, and drilldown URLs
-
-    Status Codes:
-        200: Successfully retrieved results
-        404: Results not found
-        500: Internal server error
-    """
-    try:
-        # Get the cache service to retrieve cached results
-        cache_service = _get_cache_service()
-
-        # Retrieve the cached processing result
-        cached_result = cache_service.get(result_id)
-
-        if not cached_result:
-            return jsonify({'error': 'Results not found'}), 404
-
-        # Use ResponseFormattingService to format the response
-        # Same format as get_results - includes all details for each aggregated row
-        response_data = _get_response_builder_service().format_processing_response_for_frontend(cached_result)
-
-        # Check if the service returned an error
-        if 'error' in response_data:
-            return jsonify(response_data), 404
-
-        return jsonify(response_data), 200
-
-    except Exception as e:
-        from whatsthedamage.utils.logging import get_logger
-        logger = get_logger(__name__)
-        logger.error(f"Error in get_results_details: {e}")
-        return jsonify({'error': str(e)}), 500
 
 
 # Drilldown endpoints for category, month, and cell-level navigation
@@ -210,13 +165,8 @@ def get_category_months(result_id: str, account_id: str, category_id: str) -> tu
         )
         return jsonify(response_data), 200
 
-    except ValueError as e:
-        return jsonify({'error': str(e)}), 404
     except Exception as e:
-        from whatsthedamage.utils.logging import get_logger
-        logger = get_logger(__name__)
-        logger.error(f"Error in get_category_months: {e}")
-        return jsonify({'error': str(e)}), 500
+        return handle_error(e, 'get_category_months')
 
 
 @v2_bp.route('/results/<result_id>/accounts/<account_id>/months/<month_id>/categories', methods=['GET'])
@@ -247,13 +197,8 @@ def get_month_categories(result_id: str, account_id: str, month_id: str) -> tupl
         )
         return jsonify(response_data), 200
 
-    except ValueError as e:
-        return jsonify({'error': str(e)}), 404
     except Exception as e:
-        from whatsthedamage.utils.logging import get_logger
-        logger = get_logger(__name__)
-        logger.error(f"Error in get_month_categories: {e}")
-        return jsonify({'error': str(e)}), 500
+        return handle_error(e, 'get_month_categories')
 
 
 @v2_bp.route('/results/<result_id>/accounts/<account_id>/categories/<category_id>/months/<month_id>/transactions', methods=['GET'])
@@ -286,13 +231,8 @@ def get_category_month_transactions(result_id: str, account_id: str, category_id
         )
         return jsonify(response_data), 200
 
-    except ValueError as e:
-        return jsonify({'error': str(e)}), 404
     except Exception as e:
-        from whatsthedamage.utils.logging import get_logger
-        logger = get_logger(__name__)
-        logger.error(f"Error in get_category_month_transactions: {e}")
-        return jsonify({'error': str(e)}), 500
+        return handle_error(e, 'get_category_month_transactions')
 
 
 @v2_bp.route('/recalculate-statistics', methods=['POST'])
@@ -317,27 +257,27 @@ def recalculate_statistics() -> Tuple[Response, int]:
     try:
         data = request.get_json()
         if not data:
-            return jsonify({'error': 'No data provided'}), 400
+            return handle_error(BadRequest('No data provided'), 'recalculate_statistics')
 
         result_id = data.get('result_id')
         algorithms = data.get('algorithms', [])
         direction = data.get('direction', 'columns')
 
         if not result_id:
-            return jsonify({'error': 'result_id is required'}), 400
+            return handle_error(BadRequest('result_id is required'), 'recalculate_statistics')
 
         if not isinstance(algorithms, list):
-            return jsonify({'error': 'algorithms must be a list'}), 400
+            return handle_error(BadRequest('algorithms must be a list'), 'recalculate_statistics')
 
         if direction not in ['columns', 'rows']:
-            return jsonify({'error': 'direction must be either "columns" or "rows"'}), 400
+            return handle_error(BadRequest('direction must be either "columns" or "rows"'), 'recalculate_statistics')
 
         # Get cached result
         cache_service = _get_cache_service()
         cached_result = cache_service.get(result_id)
 
         if cached_result is None:
-            return jsonify({'error': 'Result data not found or expired'}), 404
+            return handle_error(ValueError('Result data not found or expired'), 'recalculate_statistics')
 
         # Get statistical service
         statistical_service = _get_statistical_service()
@@ -371,7 +311,4 @@ def recalculate_statistics() -> Tuple[Response, int]:
         }), 200
 
     except Exception as e:
-        from whatsthedamage.utils.logging import get_logger
-        logger = get_logger(__name__)
-        logger.error(f'Error recalculating statistics: {e}')
-        return jsonify({'error': str(e)}), 500
+        return handle_error(e, 'recalculate_statistics')

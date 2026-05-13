@@ -54,7 +54,7 @@ export const router = createRouter({
       component: CategoryMonthTransactions
     },
     {
-      path: '/results/:resultId/details',
+      path: '/results/:resultId',
       name: 'details',
       component: Details
     },

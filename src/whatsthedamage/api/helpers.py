@@ -161,22 +161,53 @@ def cleanup_files(csv_path: str, config_path: str | None) -> None:
     file_upload_service.cleanup_files(csv_path, config_path)
 
 
-def handle_error(error: Exception) -> tuple[Response, int]:
+def handle_error(error: Exception, endpoint_name: Optional[str] = None) -> tuple[Response, int]:
     """Handle exceptions and return appropriate error response.
 
     Delegates to ResponseBuilderService for consistent error handling
-    across API and web endpoints.
+    across API and web endpoints. Automatically logs errors and handles
+    ValueError as 404, BadRequest as 400, and others as 500.
+
+    Falls back to simple error response if services are not available
+    (e.g., during testing or initialization).
 
     Args:
         error: The exception to handle
+        endpoint_name: Optional name of the endpoint for logging context
 
     Returns:
         tuple: (jsonified error response, status code)
     """
-    # Delegate to ResponseBuilderService for centralized error handling
-    return _get_response_builder_service().build_error_response(
-        error=error,
-        default_code=500,
-        default_message="Internal server error",
-        context={'field': 'csv_file'} if isinstance(error, BadRequest) else None
-    )
+    from flask import jsonify
+    from whatsthedamage.utils.logging import get_logger
+    logger = get_logger(__name__)
+
+    # Log the error with context
+    if endpoint_name:
+        logger.error(f"Error in {endpoint_name}: {error}")
+    else:
+        logger.error(f"API error: {error}")
+
+    # Determine status code and message based on exception type
+    if isinstance(error, ValueError):
+        status_code = 404
+        message = str(error)
+    elif isinstance(error, BadRequest):
+        status_code = 400
+        message = str(error)
+    else:
+        status_code = 500
+        message = "Internal server error"
+
+    # Try to use the response builder service if available
+    try:
+        response_builder = _get_response_builder_service()
+        return response_builder.build_error_response(
+            error=error,
+            default_code=status_code,
+            default_message=message,
+            context={'field': 'csv_file'} if isinstance(error, BadRequest) else None
+        )
+    except (KeyError, RuntimeError):
+        # Service not available (e.g., during testing), fall back to simple response
+        return jsonify({'code': status_code, 'message': message}), status_code

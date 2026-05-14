@@ -26,7 +26,7 @@
     "datatables.net-fixedheader-bs5": "^4.0.6",
     "jquery": "^4.0.0",
     "jszip": "^3.10.1",
-    "svelte-routing": "^2.13.0",
+    "pinia": "^3.0.0",
     "vue": "^3.5.34",
     "vue-router": "^5.0.6"
   },

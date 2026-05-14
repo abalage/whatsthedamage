@@ -85,8 +85,7 @@ export function getCssClassesForHighlights(
 
     // Add multiple highlight class if multiple valid algorithm highlights
     // When multiple algorithms mark the same cell, only apply highlight-multiple
-    const MIN_HIGHLIGHTS_FOR_MULTIPLE = 1
-    if (validAlgoHighlights.length > MIN_HIGHLIGHTS_FOR_MULTIPLE) {
+    if (validAlgoHighlights.length > 1) {
         cssClasses.push(config.multipleHighlightClass);
     } else {
         // For single algorithm, add its individual class

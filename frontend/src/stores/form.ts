@@ -3,6 +3,10 @@ import { useRouter } from 'vue-router'
 import { processTransactions } from '../js/api'
 import { useFeedbackStore } from './feedback'
 
+// Note: This is intentionally a composable (not a Pinia store) because it needs
+// access to useRouter() which can only be called inside <script setup> or setup()
+// Pinia stores cannot use composition API functions that require the current component context
+
 interface FormData {
   csvFile: File | null
   configFile: File | null
@@ -97,10 +101,8 @@ export const useFormStore = (): FormStore => {
 
   const handleFileChange = (event: Event, field: 'csvFile' | 'configFile'): void => {
     const target = event.target as HTMLInputElement
-    const MIN_FILES = 0
-    const FIRST_FILE_INDEX = 0
-    if (target.files && target.files.length > MIN_FILES) {
-      formData[field] = target.files[FIRST_FILE_INDEX]
+    if (target.files?.length) {
+      formData[field] = target.files[0]
       // Clear validation error for this field
       if (errors.value[field]) {
         errors.value[field] = undefined
@@ -191,8 +193,7 @@ export const useFormStore = (): FormStore => {
   }
 
   const hasErrors = computed((): boolean => {
-    const MIN_ERRORS = 0
-    return Object.keys(errors.value).length > MIN_ERRORS
+    return Object.keys(errors.value).length > 0
   })
 
   const getError = (field: keyof FormErrors): string | undefined => {

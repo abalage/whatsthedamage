@@ -3,12 +3,10 @@ import { ref, onMounted, computed, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
 import { useLocaleStore } from '../stores/locale'
 import { getTranslation } from '../stores/translations'
-import { fetchWithErrorHandling } from '../js/api'
+import { fetchWithErrorHandling, API_BASE_URL } from '../js/api'
 import { useFeedbackStore } from '../stores/feedback'
 import StatisticalControls from '../components/ui/StatisticalControls.vue'
 
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api/v2'
 
 const localeStore = useLocaleStore()
 const feedback = useFeedbackStore()
@@ -61,7 +59,10 @@ interface ResultsResponse {
 }
 
 // Try both camelCase and snake_case for the query parameter
-const resultId = computed(() => route.query.resultId as string || route.query.result_id as string)
+const resultId = computed(() => {
+  const id = route.query.resultId ?? route.query.result_id
+  return typeof id === 'string' ? id : null
+})
 const resultsData = ref<ResultsResponse | null>(null)
 const isLoading = ref(true)
 const error = ref<string | null>(null)
@@ -128,13 +129,12 @@ const fetchResults = async () => {
 }
 
 const getMonthsForAccount = (account: AccountData) => {
-  const TIMESTAMP_INDEX = 1
   const monthMap = new Map<number, [string, number]>()
   for (const row of account.dt_response.data) {
     const monthField = row.date
     monthMap.set(monthField.timestamp, [monthField.display, monthField.timestamp])
   }
-  return Array.from(monthMap.values()).sort((a, b) => b[TIMESTAMP_INDEX] - a[TIMESTAMP_INDEX])
+  return Array.from(monthMap.values()).sort((a, b) => b[1] - a[1])
 }
 
 const buildCategoryMonthMap = (account: AccountData) => {

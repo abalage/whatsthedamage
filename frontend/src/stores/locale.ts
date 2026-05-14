@@ -1,6 +1,7 @@
+import { defineStore } from 'pinia'
 import { ref } from 'vue'
 
-export const useLocaleStore = (): LocaleStore => {
+export const useLocaleStore = defineStore('locale', () => {
   const locale = ref<string>('en')
 
   const setLocale = (newLocale: string): void => {
@@ -20,6 +21,6 @@ export const useLocaleStore = (): LocaleStore => {
     setLocale,
     loadLocale
   }
-}
+})
 
 export type LocaleStore = ReturnType<typeof useLocaleStore>

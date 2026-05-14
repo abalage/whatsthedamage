@@ -2,6 +2,7 @@
 import { ref, reactive, computed } from 'vue'
 import { useStatisticalStore } from '../../stores/statistical'
 import { useLocaleStore } from '../../stores/locale'
+import { useFeedbackStore } from '../../stores/feedback'
 import { getTranslation } from '../../stores/translations'
 import { recalculateStatistics } from '../../js/api'
 import ButtonComponent from './ButtonComponent.vue'
@@ -14,6 +15,7 @@ const props = defineProps<StatisticalControlsProps>()
 
 const localeStore = useLocaleStore()
 const statisticalStore = useStatisticalStore()
+const feedback = useFeedbackStore()
 
 const t = (key: string) => getTranslation(key, localeStore.locale)
 
@@ -69,9 +71,9 @@ const handleRecalculate = async () => {
       window.updateCellHighlights(response.highlights || {})
     }
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  } catch (_error) {
-    // Could show error message to user
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    feedback.showError(`${t('recalculateError')}: ${message}`)
   } finally {
     isRecalculating.value = false
   }
@@ -101,9 +103,9 @@ const resetToDefaults = async () => {
     if (typeof window.updateCellHighlights === 'function') {
       window.updateCellHighlights(response.highlights || {})
     }
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  } catch (_error) {
-    // Error restoring defaults
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    feedback.showError(`${t('restoreDefaultsError')}: ${message}`)
   } finally {
     isRecalculating.value = false
   }

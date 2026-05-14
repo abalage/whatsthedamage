@@ -42,7 +42,7 @@ export default defineConfig({
     globals: true,
     environment: 'jsdom',
     include: ['../test/**/*.{test,spec}.?(c|m)[jt]s?(x)'],
-    setupFiles: '../test/setup.js',
+    setupFiles: '../test/setup.ts',
     coverage: {
       reporter: ['text', 'json', 'html'],
       exclude: ['node_modules/', 'dist/', 'coverage/']

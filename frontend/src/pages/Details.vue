@@ -3,11 +3,9 @@ import { ref, onMounted, computed, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
 import { useLocaleStore } from '../stores/locale'
 import { getTranslation } from '../stores/translations'
-import { fetchWithErrorHandling } from '../js/api'
+import { fetchWithErrorHandling, API_BASE_URL } from '../js/api'
 import ButtonComponent from '../components/ui/ButtonComponent.vue'
 
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api/v2'
 
 const localeStore = useLocaleStore()
 const route = useRoute()
@@ -54,7 +52,10 @@ interface ResultsResponse {
   }
 }
 
-const resultId = computed(() => route.params.resultId as string)
+const resultId = computed(() => {
+  const id = route.params.resultId
+  return typeof id === 'string' ? id : null
+})
 
 const resultsData = ref<ResultsResponse | null>(null)
 const isLoading = ref(true)

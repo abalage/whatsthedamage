@@ -1,12 +1,11 @@
-import { expect, vi } from 'vitest';
+import { expect, vi, type Assertion, type AsymmetricMatcher } from 'vitest';
 import { JSDOM } from 'jsdom';
 
 const dom = new JSDOM('<!DOCTYPE html><html><body></body></html>');
-// @ts-expect-error - DOMWindow from JSDOM is not fully compatible with Window & globalThis
-globalThis.window = dom.window;
-// @ts-expect-error - DOMWindow.document is compatible
+
+// Set up global DOM environment
+globalThis.window = dom.window as unknown as Window & typeof globalThis;
 globalThis.document = dom.window.document;
-// @ts-expect-error - DOMWindow.HTMLElement is compatible
 globalThis.HTMLElement = dom.window.HTMLElement;
 
 // Mock global functions that might be used in tests
@@ -19,11 +18,12 @@ globalThis.exportExcelText = 'Export Excel';
 // Add Vitest matchers
 expect.extend({
   /**
-   * @param {Element | Document | null | undefined} container
-   * @returns {{ pass: boolean; message: () => string }}
+   * Check if an element is in the DOM
+   * @param received - Element or container to check
+   * @returns Assertion result
    */
-  toBeInDOM(container) {
-    if (!container?.contains) {
+  toBeInDOM(received: Element | Document | null | undefined): { pass: boolean; message: () => string } {
+    if (!received?.contains) {
       return {
         pass: false,
         message: () => 'Container is not a valid DOM element',
@@ -37,8 +37,6 @@ expect.extend({
 });
 
 // Mock fetch for testing
-// @ts-expect-error - Mocking fetch with simplified response object
-const EMPTY_BUFFER_SIZE = 0
 globalThis.fetch = vi.fn(() =>
   Promise.resolve({
     ok: true,
@@ -47,12 +45,12 @@ globalThis.fetch = vi.fn(() =>
     status: 200,
     statusText: 'OK',
     redirected: false,
-    type: 'basic',
+    type: 'basic' as const,
     url: '',
-    clone: () => this,
-    arrayBuffer: () => Promise.resolve(new ArrayBuffer(EMPTY_BUFFER_SIZE)),
+    clone: () => (globalThis.fetch as ReturnType<typeof fetch>)(),
+    arrayBuffer: () => Promise.resolve(new ArrayBuffer(0)),
     blob: () => Promise.resolve(new Blob()),
     formData: () => Promise.resolve(new FormData()),
     text: () => Promise.resolve(''),
-  }),
+  } as Response)
 );

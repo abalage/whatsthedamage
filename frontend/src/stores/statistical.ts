@@ -1,6 +1,7 @@
+import { defineStore } from 'pinia'
 import { ref } from 'vue'
 
-export const useStatisticalStore = (): StatisticalStore => {
+export const useStatisticalStore = defineStore('statistical', () => {
   const algorithms = ref<string[]>(['iqr', 'pareto'])
   const direction = ref<'rows' | 'columns'>('columns')
   const highlights = ref<Record<string, string[]>>({})
@@ -53,6 +54,6 @@ export const useStatisticalStore = (): StatisticalStore => {
     resetToDefaults,
     loadFromStorage
   }
-}
+})
 
 export type StatisticalStore = ReturnType<typeof useStatisticalStore>

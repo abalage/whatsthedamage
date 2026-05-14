@@ -1,4 +1,5 @@
 import { createApp } from 'vue'
+import { createPinia } from 'pinia'
 import App from './App.vue'
 import router from './router'
 import './css/main.css'
@@ -59,11 +60,12 @@ window.updateCellHighlights = updateCellHighlights;
 // Create Vue app
 const app = createApp(App)
 
+// Install Pinia
+const pinia = createPinia()
+app.use(pinia)
+
 // Use router
 app.use(router)
 
 // Mount the app
 app.mount('#app')
-
-// Note: DataTables initialization is now handled per-component
-// to support dynamic content loading (e.g., Results.vue after API fetch)

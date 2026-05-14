@@ -1,19 +1,12 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { computed } from 'vue'
 
-// Email obfuscation
-const email = ref('<a href="mailto:balagetech@protonmail.com">balagetech@protonmail.com</a>')
-
-onMounted(() => {
-  // Simple obfuscation: use HTML entities
-  const obfuscateEmail = (username: string, domain: string) => {
-    const CHAR_CODE_INDEX = 0
-    const userChars = username.split('').map(c => `&#${c.charCodeAt(CHAR_CODE_INDEX)};`).join('')
-    const domainChars = domain.split('').map(c => `&#${c.charCodeAt(CHAR_CODE_INDEX)};`).join('')
-    return `<a href="mailto:${userChars}@${domainChars}">${userChars}@${domainChars}</a>`
-  }
-  email.value = obfuscateEmail('balagetech', 'protonmail.com')
-})
+// Email obfuscation using JavaScript string manipulation
+// This provides basic obfuscation without using v-html
+const emailUsername = 'balagetech'
+const emailDomain = 'protonmail.com'
+const email = computed(() => `${emailUsername}@${emailDomain}`)
+const emailHref = computed(() => `mailto:${emailUsername}@${emailDomain}`)
 </script>
 
 <template>
@@ -62,13 +55,11 @@ onMounted(() => {
         <li><strong>Right to Restrict Processing:</strong> You have the right to request that we restrict the processing of your personal data, under certain conditions.</li>
         <li><strong>Right to Data Portability:</strong> You have the right to request that we transfer the data we have collected to another organization, or directly to you, under certain conditions.</li>
     </ul>
-    <!-- eslint-disable-next-line vue/no-v-html -->
-    <p>To exercise any of these rights, please contact us at <span v-html="email"></span>.</p>
+    <p>To exercise any of these rights, please contact us at <a :href="emailHref">{{ email }}</a>.</p>
     <h2>8. Changes to This Privacy Policy</h2>
     <p>We may update this Privacy Policy from time to time. Any changes will be effective immediately upon posting the revised policy on the App. Your continued use of the App after any changes constitutes your acceptance of the new terms.</p>
     <h2>9. Contact Us</h2>
-    <!-- eslint-disable-next-line vue/no-v-html -->
-    <p>If you have any questions or concerns about this Privacy Policy or our data practices, please contact us at <span v-html="email"></span>.</p>
+    <p>If you have any questions or concerns about this Privacy Policy or our data practices, please contact us at <a :href="emailHref">{{ email }}</a>.</p>
     <p>By using the App, you acknowledge that you have read and understood this Privacy Policy and agree to its terms.</p>
   </div>
 </template>

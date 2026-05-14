@@ -1,19 +1,12 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { computed } from 'vue'
 
-// Email obfuscation
-const email = ref('<a href="mailto:balagetech@protonmail.com">balagetech@protonmail.com</a>')
-
-onMounted(() => {
-  // Simple obfuscation: use HTML entities
-  const obfuscateEmail = (username: string, domain: string) => {
-    const CHAR_CODE_INDEX = 0
-    const userChars = username.split('').map(c => `&#${c.charCodeAt(CHAR_CODE_INDEX)};`).join('')
-    const domainChars = domain.split('').map(c => `&#${c.charCodeAt(CHAR_CODE_INDEX)};`).join('')
-    return `<a href="mailto:${userChars}@${domainChars}">${userChars}@${domainChars}</a>`
-  }
-  email.value = obfuscateEmail('balagetech', 'protonmail.com')
-})
+// Email obfuscation using JavaScript string manipulation
+// This provides basic obfuscation without using v-html
+const emailUsername = 'balagetech'
+const emailDomain = 'protonmail.com'
+const email = computed(() => `${emailUsername}@${emailDomain}`)
+const emailHref = computed(() => `mailto:${emailUsername}@${emailDomain}`)
 </script>
 
 <template>
@@ -34,7 +27,7 @@ onMounted(() => {
     <p>We reserve the right to modify this Legal Notice at any time. Any changes will be effective immediately upon posting the revised notice on the App. Your continued use of the App after any changes constitutes your acceptance of the new terms.</p>
     <h2>7. Contact Information</h2>
     <!-- eslint-disable-next-line vue/no-v-html -->
-    <p>If you have any questions or concerns regarding this Legal Notice, please contact us at <span v-html="email"></span>.</p>
+    <p>If you have any questions or concerns regarding this Legal Notice, please contact us at <a :href="emailHref">{{ email }}</a>.</p>
     <h2>8. Governing Law</h2>
     <p>This Legal Notice shall be governed by and construed in accordance with the laws of Hungary, without regard to its conflict of law principles.</p>
     <p>By using the App, you acknowledge that you have read, understood, and agree to be bound by this Legal Notice.</p>

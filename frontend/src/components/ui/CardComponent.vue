@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import type { AccountData } from '../../types/api'
 
 interface CardProps {
   title?: string
   classes?: string
   id?: string
   type?: 'standard' | 'simple' | 'account' | 'info'
-  account?: any
+  account?: AccountData
 }
 
 const props = withDefaults(defineProps<CardProps>(), {

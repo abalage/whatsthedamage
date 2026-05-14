@@ -3,13 +3,11 @@ import { ref, onMounted, computed, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
 import { useLocaleStore } from '../stores/locale'
 import { getTranslation } from '../stores/translations'
-import { fetchWithErrorHandling } from '../js/api'
+import { fetchWithErrorHandling, API_BASE_URL } from '../js/api'
 import CardComponent from '../components/ui/CardComponent.vue'
 import ButtonComponent from '../components/ui/ButtonComponent.vue'
 import StatisticalControls from '../components/ui/StatisticalControls.vue'
 
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api/v2'
 
 const localeStore = useLocaleStore()
 const route = useRoute()
@@ -50,9 +48,18 @@ interface CategoryMonthsResponse {
   highlights?: Record<string, string[]>
 }
 
-const resultId = computed(() => route.params.resultId as string)
-const accountId = computed(() => route.params.accountId as string)
-const categoryId = computed(() => route.params.categoryId as string)
+const resultId = computed(() => {
+  const id = route.params.resultId
+  return typeof id === 'string' ? id : null
+})
+const accountId = computed(() => {
+  const id = route.params.accountId
+  return typeof id === 'string' ? id : null
+})
+const categoryId = computed(() => {
+  const id = route.params.categoryId
+  return typeof id === 'string' ? id : null
+})
 
 const categoryMonthsData = ref<CategoryMonthsResponse | null>(null)
 const isLoading = ref(true)
@@ -102,11 +109,10 @@ const fetchCategoryMonths = async () => {
  */
 const extractMonthId = (month: MonthData): string => {
   // Try to extract from cell_url first
-  const MONTH_ID_CAPTURE_GROUP = 1
   if (month.cell_url) {
     const match = month.cell_url.match(/months\/([^/]+)\/transactions/)
     if (match) {
-      return match[MONTH_ID_CAPTURE_GROUP]
+      return match[1]
     }
   }
   // Fallback to month_timestamp as string

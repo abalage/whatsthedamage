@@ -1,3 +1,4 @@
+import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 
 interface FeedbackMessage {
@@ -8,10 +9,9 @@ interface FeedbackMessage {
   autoDismiss?: boolean
 }
 
-export const useFeedbackStore = (): FeedbackStore => {
+export const useFeedbackStore = defineStore('feedback', () => {
   const messages = ref<FeedbackMessage[]>([])
-  const INITIAL_ID = 1
-  const nextId = ref(INITIAL_ID)
+  const nextId = ref(1)
 
   const AUTO_DISMISS_TIMEOUT = 5000 // ms
 
@@ -61,12 +61,11 @@ export const useFeedbackStore = (): FeedbackStore => {
 
   const clearMessages = (): void => {
     messages.value = []
-    nextId.value = INITIAL_ID
+    nextId.value = 1
   }
 
   const hasMessages = computed((): boolean => {
-    const MIN_MESSAGES = 0
-    return messages.value.length > MIN_MESSAGES
+    return messages.value.length > 0
   })
 
   const hasErrors = computed((): boolean => {
@@ -91,6 +90,6 @@ export const useFeedbackStore = (): FeedbackStore => {
     clearMessages,
     getMessagesByType
   }
-}
+})
 
 export type FeedbackStore = ReturnType<typeof useFeedbackStore>

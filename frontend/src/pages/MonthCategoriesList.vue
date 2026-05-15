@@ -1,18 +1,17 @@
 <script setup lang="ts">
-import { ref, onMounted, computed, nextTick } from 'vue'
+import { onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useLocaleStore } from '../stores/locale'
 import { getTranslation } from '../stores/translations'
-import { fetchWithErrorHandling, API_BASE_URL } from '../js/api'
+import {
+  useDrilldownData,
+  drilldownEndpoints,
+  extractIdFromUrl,
+  type BreadcrumbItem
+} from '../composables/useDrilldownData'
 import CardComponent from '../components/ui/CardComponent.vue'
 import ButtonComponent from '../components/ui/ButtonComponent.vue'
 import StatisticalControls from '../components/ui/StatisticalControls.vue'
-
-
-const localeStore = useLocaleStore()
-const route = useRoute()
-
-const t = (key: string) => getTranslation(key, localeStore.locale)
 
 interface DrilldownUrlInfo {
   category_url: string
@@ -47,92 +46,89 @@ interface MonthCategoriesResponse {
   highlights?: Record<string, string[]>
 }
 
-const resultId = computed(() => {
-  const id = route.params.resultId
-  return typeof id === 'string' ? id : null
-})
-const accountId = computed(() => {
-  const id = route.params.accountId
-  return typeof id === 'string' ? id : null
-})
-const monthId = computed(() => {
-  const id = route.params.monthId
-  return typeof id === 'string' ? id : null
-})
+const localeStore = useLocaleStore()
+const route = useRoute()
 
-const monthCategoriesData = ref<MonthCategoriesResponse | null>(null)
-const isLoading = ref(true)
-const error = ref<string | null>(null)
+const t = (key: string) => getTranslation(key, localeStore.locale)
 
-const fetchMonthCategories = async () => {
-  if (!resultId.value || !accountId.value || !monthId.value) {
-    error.value = 'Missing required parameters'
-    isLoading.value = false
-    return
-  }
+// Helper to safely get route params
+const getRouteParam = (param: string): string | null => {
+  const value = route.params[param]
+  return typeof value === 'string' ? value : null
+}
 
-  try {
-    isLoading.value = true
-    error.value = null
-
-    const response = await fetchWithErrorHandling<MonthCategoriesResponse>(
-      `${API_BASE_URL}/results/${resultId.value}/accounts/${accountId.value}/months/${monthId.value}/categories`
-    )
-
-    monthCategoriesData.value = response
-    error.value = null
-
-    // Set isLoading to false BEFORE initializing DataTables so the results block renders
-    isLoading.value = false
-
-    // Wait for Vue to render the tables with the new data
-    await nextTick()
-
+const {
+  data: monthCategoriesData,
+  isLoading,
+  error,
+  fetchData,
+  resultId,
+  accountId,
+  monthId,
+  pageTitle,
+  breadcrumbItems,
+  navButtons
+} = useDrilldownData<MonthCategoriesResponse>({
+  buildEndpoint: drilldownEndpoints.monthCategories,
+  getPageTitle: (data) => `${t('Details for Month')}: ${data.month_name}`,
+  breadcrumbItems: (): BreadcrumbItem[] => [
+    { name: t('Home'), to: '/' },
+    { name: t('Results'), to: { name: 'results', query: { resultId: getRouteParam('resultId') } } },
+    { name: t('Month Details'), active: true }
+  ],
+  navButtons: [
+    {
+      text: t('Back to Results'),
+      to: { name: 'results', query: { resultId: getRouteParam('resultId') } },
+      variant: 'secondary'
+    }
+  ],
+  onDataLoaded: (data) => {
     // Set translation strings for DataTables export buttons
     window.exportCsvText = t('Export CSV')
     window.exportExcelText = t('Export Excel')
 
     // Set highlights for statistical cell highlighting
-    window.highlights = monthCategoriesData.value?.highlights || {}
+    window.highlights = data.highlights || {}
 
     // Initialize DataTables now that tables exist in DOM
     window.initMainPage()
-  } catch (err) {
-    error.value = err instanceof Error ? err.message : 'Failed to load month categories'
-    isLoading.value = false
-  }
-}
+  },
+  errorMessageKey: 'monthCategoriesLoadError'
+})
 
 /**
  * Extract category_id from category data (from category_url or category name)
  */
 const extractCategoryId = (category: CategoryData): string => {
   // Try to extract from category_url first
-  if (category.category_url) {
-    const match = category.category_url.match(/categories\/([^/]+)\/months/)
-    if (match) {
-      return match[1]
-    }
-  }
-  // Fallback to category name as string
-  return category.category
+  return extractIdFromUrl(
+    category.category_url,
+    /categories\/([^/]+)\/months/,
+    category.category
+  )
 }
 
-
-
 onMounted(() => {
-  fetchMonthCategories()
+  fetchData()
 })
 </script>
 
 <template>
   <div class="container">
     <!-- Breadcrumb Navigation -->
-    <nav aria-label="breadcrumb">
+    <nav v-if="breadcrumbItems.length" aria-label="breadcrumb">
       <ol class="breadcrumb">
-        <li class="breadcrumb-item"><router-link to="/">{{ t('Home') }}</router-link></li>
-        <li class="breadcrumb-item"><router-link :to="{ name: 'results', query: { resultId: resultId } }">{{ t('Results') }}</router-link></li>
-        <li class="breadcrumb-item active" aria-current="page">{{ t('Month Details') }}</li>
+        <li
+          v-for="(item, index) in breadcrumbItems"
+          :key="index"
+          class="breadcrumb-item"
+          :class="{ 'active': item.active }"
+          :aria-current="item.active ? 'page' : undefined"
+        >
+          <router-link v-if="item.to && !item.active" :to="item.to">{{ item.name }}</router-link>
+          <span v-else>{{ item.name }}</span>
+        </li>
       </ol>
     </nav>
 
@@ -154,7 +150,7 @@ onMounted(() => {
     <!-- Main Content -->
     <div v-else-if="monthCategoriesData">
       <div class="d-flex justify-content-between align-items-center mb-3">
-        <h1 class="mb-0">{{ t('Details for Month') }}: {{ monthCategoriesData.month_name }}</h1>
+        <h1 class="mb-0">{{ pageTitle }}</h1>
       </div>
 
       <!-- Account Card -->
@@ -172,7 +168,18 @@ onMounted(() => {
                 <tbody>
                   <tr v-for="category in monthCategoriesData.data" :key="category.row_id">
                     <td>
-                      <router-link :to="{ name: 'category-month-transactions', params: { resultId: resultId, accountId: accountId, categoryId: extractCategoryId(category), monthId: monthId } }" class="clickable">{{ category.category }}</router-link>
+                      <router-link
+                        :to="{
+                          name: 'category-month-transactions',
+                          params: {
+                            resultId: resultId,
+                            accountId: accountId,
+                            categoryId: extractCategoryId(category),
+                            monthId: monthId
+                          }
+                        }"
+                        class="clickable"
+                      >{{ category.category }}</router-link>
                     </td>
                     <td :data-row-id="category.row_id" class="">
                       {{ category.total.display }}
@@ -186,13 +193,16 @@ onMounted(() => {
       </CardComponent>
 
       <!-- Navigation -->
-      <div class="row">
+      <div v-if="navButtons && navButtons.length" class="row">
         <div class="col-md-6">
           <ButtonComponent
-            :text="t('Back to Results')"
-            variant="secondary"
-            :to="{ name: 'results', query: { resultId: resultId } }"
-            class="mt-3 mb-3"
+            v-for="(button, index) in navButtons"
+            :key="index"
+            :text="button.text"
+            :variant="button.variant"
+            :to="button.to"
+            :size="button.size"
+            class="mt-3 mb-3 me-2"
           />
         </div>
       </div>

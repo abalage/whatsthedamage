@@ -102,7 +102,7 @@ export const useFormStore = (): FormStore => {
   const handleFileChange = (event: Event, field: 'csvFile' | 'configFile'): void => {
     const target = event.target as HTMLInputElement
     if (target.files?.length) {
-      formData[field] = target.files[0]
+      formData[field] = target.files[0] // eslint-disable-line no-magic-numbers
       // Clear validation error for this field
       if (errors.value[field]) {
         errors.value[field] = undefined
@@ -193,7 +193,7 @@ export const useFormStore = (): FormStore => {
   }
 
   const hasErrors = computed((): boolean => {
-    return Object.keys(errors.value).length > 0
+    return Object.keys(errors.value).length > 0 // eslint-disable-line no-magic-numbers
   })
 
   const getError = (field: keyof FormErrors): string | undefined => {

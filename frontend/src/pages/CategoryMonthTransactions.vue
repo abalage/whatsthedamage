@@ -1,17 +1,16 @@
 <script setup lang="ts">
-import { ref, onMounted, computed, nextTick } from 'vue'
+import { onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useLocaleStore } from '../stores/locale'
 import { getTranslation } from '../stores/translations'
-import { fetchWithErrorHandling, API_BASE_URL } from '../js/api'
+import {
+  useDrilldownData,
+  drilldownEndpoints,
+  type BreadcrumbItem
+} from '../composables/useDrilldownData'
 import CardComponent from '../components/ui/CardComponent.vue'
+import ButtonComponent from '../components/ui/ButtonComponent.vue'
 import StatisticalControls from '../components/ui/StatisticalControls.vue'
-
-
-const localeStore = useLocaleStore()
-const route = useRoute()
-
-const t = (key: string) => getTranslation(key, localeStore.locale)
 
 interface TransactionData {
   date: {
@@ -36,88 +35,84 @@ interface CategoryMonthTransactionsResponse {
   highlights?: Record<string, string[]>
 }
 
-const resultId = computed(() => {
-  const id = route.params.resultId
-  return typeof id === 'string' ? id : null
-})
-const accountId = computed(() => {
-  const id = route.params.accountId
-  return typeof id === 'string' ? id : null
-})
-const categoryId = computed(() => {
-  const id = route.params.categoryId
-  return typeof id === 'string' ? id : null
-})
-const monthId = computed(() => {
-  const id = route.params.monthId
-  return typeof id === 'string' ? id : null
-})
+const localeStore = useLocaleStore()
+const route = useRoute()
 
-const transactionsData = ref<CategoryMonthTransactionsResponse | null>(null)
-const isLoading = ref(true)
-const error = ref<string | null>(null)
+const t = (key: string) => getTranslation(key, localeStore.locale)
 
-const fetchTransactions = async () => {
-  if (!resultId.value || !accountId.value || !categoryId.value || !monthId.value) {
-    error.value = 'Missing required parameters'
-    isLoading.value = false
-    return
-  }
+// Helper to safely get route params
+const getRouteParam = (param: string): string | null => {
+  const value = route.params[param]
+  return typeof value === 'string' ? value : null
+}
 
-  try {
-    isLoading.value = true
-    error.value = null
-
-    const response = await fetchWithErrorHandling<CategoryMonthTransactionsResponse>(
-      `${API_BASE_URL}/results/${resultId.value}/accounts/${accountId.value}/categories/${categoryId.value}/months/${monthId.value}/transactions`
-    )
-
-    transactionsData.value = response
-    error.value = null
-
-    // Set isLoading to false BEFORE initializing DataTables so the results block renders
-    isLoading.value = false
-
-    // Wait for Vue to render the tables with the new data
-    await nextTick()
-
+const {
+  data: transactionsData,
+  isLoading,
+  error,
+  fetchData,
+  resultId,
+  pageTitle,
+  breadcrumbItems,
+  navButtons
+} = useDrilldownData<CategoryMonthTransactionsResponse>({
+  buildEndpoint: drilldownEndpoints.categoryMonthTransactions,
+  getPageTitle: (data) => `${t('Transaction Details')}: ${data.category_name} - ${data.month_name}`,
+  breadcrumbItems: (): BreadcrumbItem[] => [
+    { name: t('Home'), to: '/' },
+    { name: t('Results'), to: { name: 'results', query: { resultId: getRouteParam('resultId') } } },
+    {
+      name: t('Category Months'),
+      to: { name: 'category-months', params: { resultId: getRouteParam('resultId'), accountId: getRouteParam('accountId'), categoryId: getRouteParam('categoryId') } }
+    },
+    { name: t('Transaction Details'), active: true }
+  ],
+  navButtons: [
+    {
+      text: t('Back to Category Months'),
+      to: { name: 'category-months', params: { resultId: getRouteParam('resultId'), accountId: getRouteParam('accountId'), categoryId: getRouteParam('categoryId') } },
+      variant: 'secondary'
+    },
+    {
+      text: t('Back to Results'),
+      to: { name: 'results', query: { resultId: getRouteParam('resultId') } },
+      variant: 'outline-secondary'
+    }
+  ],
+  onDataLoaded: (data) => {
     // Set translation strings for DataTables export buttons
     window.exportCsvText = t('Export CSV')
     window.exportExcelText = t('Export Excel')
 
     // Set highlights for statistical cell highlighting
-    window.highlights = transactionsData.value?.highlights || {}
+    window.highlights = data.highlights || {}
 
     // Initialize DataTables now that tables exist in DOM
     window.initMainPage()
-  } catch (err) {
-    error.value = err instanceof Error ? err.message : 'Failed to load transactions'
-    isLoading.value = false
-  }
-}
-
-
+  },
+  errorMessageKey: 'transactionsLoadError'
+})
 
 onMounted(() => {
-  fetchTransactions()
+  fetchData()
 })
 </script>
 
 <template>
   <div class="container">
     <!-- Breadcrumb Navigation -->
-    <nav aria-label="breadcrumb">
+    <nav v-if="breadcrumbItems.length" aria-label="breadcrumb">
       <ol class="breadcrumb">
-        <li class="breadcrumb-item"><router-link to="/">{{ t('Home') }}</router-link></li>
-        <li class="breadcrumb-item"><router-link :to="{ name: 'results', query: { resultId: resultId } }">{{ t('Results') }}</router-link></li>
-        <li class="breadcrumb-item">
-          <router-link
-            :to="{ name: 'category-months', params: { resultId: resultId, accountId: accountId, categoryId: categoryId } }"
-          >
-            {{ t('Category Months') }}
-          </router-link>
+        <li
+          v-for="(item, index) in breadcrumbItems"
+          :key="index"
+          class="breadcrumb-item"
+          :class="{ 'active': item.active }"
+          :aria-current="item.active ? 'page' : undefined"
+        >
+          <router-link v-if="item.to && !item.active" :to="item.to">{{ item.name }}</router-link>
+          <span v-else>{{ item.name }}</span>
         </li>
-        <li class="breadcrumb-item active" aria-current="page">{{ t('Transaction Details') }}</li>
       </ol>
     </nav>
 
@@ -139,7 +134,7 @@ onMounted(() => {
     <!-- Main Content -->
     <div v-else-if="transactionsData">
       <div class="d-flex justify-content-between align-items-center mb-3">
-        <h1 class="mb-0">{{ t('Transaction Details') }}: {{ transactionsData.category_name }} - {{ transactionsData.month_name }}</h1>
+        <h1 class="mb-0">{{ pageTitle }}</h1>
       </div>
 
       <!-- Account Card -->
@@ -171,10 +166,17 @@ onMounted(() => {
       </CardComponent>
 
       <!-- Navigation -->
-      <div class="row">
+      <div v-if="navButtons && navButtons.length" class="row">
         <div class="col-md-6">
-          <router-link :to="{ name: 'category-months', params: { resultId: resultId, accountId: accountId, categoryId: categoryId } }" class="btn btn-secondary me-2 mt-3 mb-3">{{ t('Back to Category Months') }}</router-link>
-          <router-link :to="{ name: 'results', query: { resultId: resultId } }" class="btn btn-outline-secondary mt-3 mb-3">{{ t('Back to Results') }}</router-link>
+          <ButtonComponent
+            v-for="(button, index) in navButtons"
+            :key="index"
+            :text="button.text"
+            :variant="button.variant"
+            :to="button.to"
+            :size="button.size"
+            class="mt-3 mb-3 me-2"
+          />
         </div>
       </div>
     </div>

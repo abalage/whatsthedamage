@@ -90,5 +90,10 @@
   "loadingData": "Adatok betöltése",
   "Details": "Részletek",
   "Category Months": "Kategória hónapok",
-  "View All Details": "Összes részlet megtekintése"
+  "View All Details": "Összes részlet megtekintése",
+  "loadError": "Az adatok betöltése sikertelen",
+  "missingRequiredParameters": "Hiányzó kötelező paraméterek",
+  "categoryMonthsLoadError": "A kategória hónapok betöltése sikertelen",
+  "monthCategoriesLoadError": "A hónap kategóriák betöltése sikertelen",
+  "transactionsLoadError": "A tranzakciók betöltése sikertelen"
 }

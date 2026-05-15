@@ -90,5 +90,10 @@
   "loadingData": "Loading data",
   "Details": "Details",
   "Category Months": "Category Months",
-  "View All Details": "View All Details"
+  "View All Details": "View All Details",
+  "loadError": "Failed to load data",
+  "missingRequiredParameters": "Missing required parameters",
+  "categoryMonthsLoadError": "Failed to load category months",
+  "monthCategoriesLoadError": "Failed to load month categories",
+  "transactionsLoadError": "Failed to load transactions"
 }

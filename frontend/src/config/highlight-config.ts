@@ -45,6 +45,7 @@ export function getCssClassForHighlight(
     const cssClass = config.highlightTypes[highlightType];
     if (!cssClass) {
         // Log warning for unknown highlight types to help debugging
+        // eslint-disable-next-line no-console
         console.warn(`Unknown highlight type: "${highlightType}". This may prevent highlight-multiple from being applied correctly.`);
     }
     return cssClass ?? '';
@@ -85,7 +86,7 @@ export function getCssClassesForHighlights(
 
     // Add multiple highlight class if multiple valid algorithm highlights
     // When multiple algorithms mark the same cell, only apply highlight-multiple
-    if (validAlgoHighlights.length > 1) {
+    if (validAlgoHighlights.length > 1) { // eslint-disable-line no-magic-numbers
         cssClasses.push(config.multipleHighlightClass);
     } else {
         // For single algorithm, add its individual class

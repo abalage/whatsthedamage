@@ -1,4 +1,4 @@
-import { expect, vi, type Assertion, type AsymmetricMatcher } from 'vitest';
+import { expect, vi } from 'vitest';
 import { JSDOM } from 'jsdom';
 
 const dom = new JSDOM('<!DOCTYPE html><html><body></body></html>');

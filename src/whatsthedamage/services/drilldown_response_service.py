@@ -732,10 +732,16 @@ class DrilldownResponseService:
             return {}
         if not hasattr(cached_result.statistical_metadata, 'highlights'):
             return {}
-        return {
-            cell_highlight.row_id: cell_highlight.highlight_types
-            for cell_highlight in cached_result.statistical_metadata.highlights
-        }
+
+        # Merge highlight types for same row_id to match recalculate endpoint behavior
+        # A row can have multiple CellHighlight entries (one per algorithm)
+        highlights_dict: Dict[str, List[str]] = {}
+        for cell_highlight in cached_result.statistical_metadata.highlights:
+            if cell_highlight.row_id in highlights_dict:
+                highlights_dict[cell_highlight.row_id].extend(cell_highlight.highlight_types)
+            else:
+                highlights_dict[cell_highlight.row_id] = cell_highlight.highlight_types.copy()
+        return highlights_dict
 
     def _row_passes_filters(
         self,

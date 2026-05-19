@@ -1,13 +1,14 @@
+import { defineStore } from 'pinia'
 import { ref, reactive, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { processTransactions } from '../js/api'
 import { useFeedbackStore } from './feedback'
+import type { ProcessResponse } from '../types/api'
 
-// Note: This is intentionally a composable (not a Pinia store) because it needs
-// access to useRouter() which can only be called inside <script setup> or setup()
-// Pinia stores cannot use composition API functions that require the current component context
-
-interface FormData {
+/**
+ * Form data interface for transaction processing
+ */
+export interface FormData {
   csvFile: File | null
   configFile: File | null
   startDate: string
@@ -17,7 +18,10 @@ interface FormData {
   mlEnabled: boolean
 }
 
-interface FormErrors {
+/**
+ * Form validation errors interface
+ */
+export interface FormErrors {
   csvFile?: string
   configFile?: string
   startDate?: string
@@ -25,10 +29,27 @@ interface FormErrors {
   dateRange?: string
 }
 
-export const useFormStore = (): FormStore => {
-  const router = useRouter()
+/**
+ * Result of form submission
+ */
+export interface SubmitResult {
+  success: boolean
+  resultId?: string
+  error?: string
+}
+
+/**
+ * Form store using Pinia for state management
+ *
+ * Note: Navigation is handled separately via a composable to avoid
+ * the limitation of useRouter() not being available in Pinia stores.
+ */
+export const useFormStore = defineStore('form', () => {
   const feedback = useFeedbackStore()
 
+  /**
+   * Reactive form data
+   */
   const formData = reactive<FormData>({
     csvFile: null,
     configFile: null,
@@ -39,10 +60,29 @@ export const useFormStore = (): FormStore => {
     mlEnabled: false
   })
 
+  /**
+   * Validation errors
+   */
   const errors = ref<FormErrors>({})
+
+  /**
+   * Loading state
+   */
   const isLoading = ref(false)
+
+  /**
+   * Whether form has been submitted
+   */
   const isSubmitted = ref(false)
 
+  /**
+   * Magic number for array index access (eslint)
+   */
+  const ARRAY_INDEX = 0
+
+  /**
+   * Reset form to initial state
+   */
   const resetForm = (): void => {
     formData.csvFile = null
     formData.configFile = null
@@ -55,6 +95,10 @@ export const useFormStore = (): FormStore => {
     isSubmitted.value = false
   }
 
+  /**
+   * Validate form data
+   * @returns Whether the form is valid
+   */
   const validateForm = (): boolean => {
     const newErrors: FormErrors = {}
     let isValid = true
@@ -99,10 +143,15 @@ export const useFormStore = (): FormStore => {
     return isValid
   }
 
+  /**
+   * Handle file input change
+   * @param event - Input change event
+   * @param field - Field name (csvFile or configFile)
+   */
   const handleFileChange = (event: Event, field: 'csvFile' | 'configFile'): void => {
     const target = event.target as HTMLInputElement
     if (target.files?.length) {
-      formData[field] = target.files[0] // eslint-disable-line no-magic-numbers
+      formData[field] = target.files[ARRAY_INDEX]
       // Clear validation error for this field
       if (errors.value[field]) {
         errors.value[field] = undefined
@@ -110,18 +159,27 @@ export const useFormStore = (): FormStore => {
     }
   }
 
-  const handleInputChange = (field: keyof FormData, value: string | boolean): void => {
-    formData[field] = value
-    // Clear validation error for this field
-    if (errors.value[field]) {
-      errors.value[field] = undefined
+  /**
+   * Handle generic input change
+   * @param field - Field name (for non-file fields)
+   * @param value - New value
+   */
+  const handleInputChange = (field: Exclude<keyof FormData, 'csvFile' | 'configFile'>, value: string | boolean): void => {
+    formData[field] = value as never
+    // Clear validation error for this field (only for fields that can have errors)
+    if (field in errors.value) {
+      errors.value[field as keyof FormErrors] = undefined
     }
   }
 
-  const submitForm = async (): Promise<boolean> => {
+  /**
+   * Prepare form data for submission (without navigation)
+   * @returns Promise with result containing resultId or error
+   */
+  const prepareSubmit = async (): Promise<SubmitResult> => {
     if (!validateForm()) {
       feedback.showError('Please fix the form errors before submitting')
-      return false
+      return { success: false, error: 'Validation failed' }
     }
 
     isLoading.value = true
@@ -129,12 +187,12 @@ export const useFormStore = (): FormStore => {
 
     try {
       const formDataObj = new FormData()
-      
+
       // Append files
       if (formData.csvFile) {
         formDataObj.append('csv_file', formData.csvFile)
       }
-      
+
       if (formData.configFile) {
         formDataObj.append('config_file', formData.configFile)
       }
@@ -143,7 +201,7 @@ export const useFormStore = (): FormStore => {
       if (formData.startDate) {
         formDataObj.append('start_date', formData.startDate)
       }
-      
+
       if (formData.endDate) {
         formDataObj.append('end_date', formData.endDate)
       }
@@ -156,46 +214,43 @@ export const useFormStore = (): FormStore => {
       formDataObj.append('ml_enabled', formData.mlEnabled.toString())
 
       // Call API
-      const response = await processTransactions(formDataObj)
+      const response: ProcessResponse = await processTransactions(formDataObj)
 
-      // Navigate to results page
-      isSubmitted.value = true
-      
       // Extract result_id from metadata (new structure)
       const resultId = response.metadata?.result_id ?? response.result_id
-      
+
       // Debug: Check if we have a valid result ID
       if (!resultId) {
         feedback.showError('Backend error: No result ID returned')
-        return false
-      }
-      
-      // Navigate with query parameters
-      try {
-        router.push({
-          name: 'results',
-          query: { resultId: resultId }
-        })
-      } catch (/* eslint-disable-line @typescript-eslint/no-unused-vars */ _navError: unknown) {
-        feedback.showError('Navigation error: Could not redirect to results')
-        return false
+        return { success: false, error: 'No result ID returned' }
       }
 
+      isSubmitted.value = true
       feedback.showSuccess('Transactions processed successfully')
-      return true
 
-    } catch (_error: unknown) {
-      feedback.showError('Error processing transactions: ' + (_error instanceof Error ? _error.message : String(_error)))
-      return false
+      return { success: true, resultId }
+
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error)
+      feedback.showError(`Error processing transactions: ${message}`)
+      return { success: false, error: message }
     } finally {
       isLoading.value = false
     }
   }
 
+  /**
+   * Check if form has errors
+   */
   const hasErrors = computed((): boolean => {
-    return Object.keys(errors.value).length > 0 // eslint-disable-line no-magic-numbers
+    return Object.keys(errors.value).length > ARRAY_INDEX
   })
 
+  /**
+   * Get error for a specific field
+   * @param field - Field name
+   * @returns Error message or undefined
+   */
   const getError = (field: keyof FormErrors): string | undefined => {
     return errors.value[field]
   }
@@ -209,9 +264,51 @@ export const useFormStore = (): FormStore => {
     validateForm,
     handleFileChange,
     handleInputChange,
-    submitForm,
+    prepareSubmit,
     resetForm,
     getError
+  }
+})
+
+/**
+ * Composable for form submission with navigation
+ * This separates the navigation logic from the form state
+ *
+ * @returns Form store with navigation-capable submit function
+ */
+export const useFormWithNavigation = (): FormStore & { submitForm: () => Promise<boolean> } => {
+  const formStore = useFormStore()
+  const router = useRouter()
+
+  /**
+   * Submit form with navigation to results page
+   * @returns Promise with success status
+   */
+  const submitForm = async (): Promise<boolean> => {
+    const result = await formStore.prepareSubmit()
+
+    if (!result.success || !result.resultId) {
+      return false
+    }
+
+    // Navigate to results page with the result ID
+    try {
+      await router.push({
+        name: 'results',
+        query: { resultId: result.resultId }
+      })
+      return true
+    } catch (navError: unknown) {
+      const message = navError instanceof Error ? navError.message : String(navError)
+      formStore.$patch({ isLoading: false })
+      useFeedbackStore().showError(`Navigation error: ${message}`)
+      return false
+    }
+  }
+
+  return {
+    ...formStore,
+    submitForm
   }
 }
 

@@ -2,14 +2,14 @@
 import { ref, onMounted } from 'vue'
 import { useLocaleStore } from '../stores/locale'
 import { getTranslation } from '../stores/translations'
-import { useFormStore } from '../stores/form'
+import { useFormWithNavigation } from '../stores/form'
 import { useFeedbackStore } from '../stores/feedback'
 import CardComponent from '../components/ui/CardComponent.vue'
 import ButtonComponent from '../components/ui/ButtonComponent.vue'
 import ErrorDisplay from '../components/ErrorDisplay.vue'
 
 const localeStore = useLocaleStore()
-const formStore = useFormStore()
+const formStore = useFormWithNavigation()
 const feedback = useFeedbackStore()
 
 const t = (key: string) => getTranslation(key, localeStore.locale.value)
@@ -25,7 +25,7 @@ const handleConfigChange = (event: Event) => {
   formStore.handleFileChange(event, 'configFile')
 }
 
-const handleInputChange = (field: any, value: any) => {
+const handleInputChange = (field: string, value: string | boolean) => {
   formStore.handleInputChange(field, value)
 }
 

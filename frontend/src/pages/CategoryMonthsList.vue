@@ -5,47 +5,14 @@ import { useLocaleStore } from '../stores/locale'
 import { getTranslation } from '../stores/translations'
 import {
   useDrilldownData,
-  drilldownEndpoints,
   extractIdFromUrl,
   type BreadcrumbItem
 } from '../composables/useDrilldownData'
 import StatisticalControls from '../components/ui/StatisticalControls.vue'
 import CardComponent from '../components/ui/CardComponent.vue'
 import ButtonComponent from '../components/ui/ButtonComponent.vue'
-
-interface DrilldownUrlInfo {
-  category_url: string
-  category_id: string
-}
-
-interface DrilldownUrls {
-  account_id: string | null
-  category_urls: Record<string, DrilldownUrlInfo>
-  month_urls: Record<string, { month_url: string; month_id: string }>
-  cell_urls: Record<string, { cell_url: string; category_id: string; month_id: string }>
-}
-
-interface MonthData {
-  month: string
-  month_timestamp: number
-  total: {
-    display: string
-    raw: number
-  }
-  row_id: string
-  cell_url: string
-}
-
-interface CategoryMonthsResponse {
-  result_id: string
-  account_id: string
-  account_name: string
-  category_id: string
-  category_name: string
-  data: MonthData[]
-  drilldown_urls?: Record<string, DrilldownUrls>
-  highlights?: Record<string, string[]>
-}
+import { fetchCategoryMonths } from '../js/api'
+import type { CategoryMonthsResponse, MonthData } from '../types/api'
 
 const localeStore = useLocaleStore()
 const route = useRoute()
@@ -70,7 +37,12 @@ const {
   breadcrumbItems,
   navButtons
 } = useDrilldownData<CategoryMonthsResponse>({
-  buildEndpoint: drilldownEndpoints.categoryMonths,
+  fetchData: async (params) => {
+    if (!params.resultId || !params.accountId || !params.categoryId) {
+      throw new Error('Missing required parameters for category months fetch')
+    }
+    return fetchCategoryMonths(params)
+  },
   getPageTitle: (data) => `${t('Details for Category')}: ${data.category_name}`,
   breadcrumbItems: (): BreadcrumbItem[] => [
     { name: t('Home'), to: '/' },

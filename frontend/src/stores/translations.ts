@@ -1,12 +1,8 @@
+import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import enTranslations from '../translations/en.json'
 import huTranslations from '../translations/hu.json'
-
-// Note: This module uses plain reactive refs instead of Pinia because:
-// 1. Translations need to be accessed at module load time (before Pinia is installed)
-// 2. The getTranslation function is imported directly in many components
-// 3. Pinia stores cannot be accessed outside of component setup
-// This is an intentional architectural decision for backward compatibility.
+import { useLocaleStore } from './locale'
 
 /**
  * Type representing all available locales
@@ -27,39 +23,92 @@ export interface Translations {
   hu: typeof huTranslations
 }
 
-// Internal state - can be accessed at module level since it's not a Pinia store
-const translations = ref<Translations>({})
-
-const loadTranslations = async (): Promise<void> => {
-  translations.value = {
+/**
+ * Translations store using Pinia
+ *
+ * This store manages translation data and provides type-safe access to translations.
+ * It loads translations for all locales and provides a function to get translations
+ * based on the current locale.
+ */
+export const useTranslationsStore = defineStore('translations', () => {
+  // Internal state for translations
+  const translations = ref<Translations>({
     en: enTranslations,
     hu: huTranslations
+  })
+
+  /**
+   * Load translations (they're already loaded at module level via imports)
+   * This function is kept for backward compatibility
+   */
+  const loadTranslations = (): void => {
+    // Translations are loaded via static imports above
+    translations.value = {
+      en: enTranslations,
+      hu: huTranslations
+    }
   }
-}
 
-/**
- * Get translation with type-safe key
- * @param key - Translation key (must exist in translation files)
- * @param locale - Locale (defaults to 'en')
- * @returns Translated string or the key if not found
- */
-const getTranslation = (key: TranslationKeys, locale: Locale = 'en'): string => {
-  return translations.value[locale]?.[key] ?? key
-}
+  /**
+   * Get translation with type-safe key
+   * @param key - Translation key (must exist in translation files)
+   * @param localeParam - Locale (defaults to current locale from locale store)
+   * @returns Translated string or the key if not found
+   */
+  const getTranslation = (key: TranslationKeys, localeParam?: Locale): string => {
+    const localeStore = useLocaleStore()
+    // Pinia automatically unwraps refs, so localeStore.locale is already a string
+    const targetLocale: Locale = localeParam ?? (localeStore.locale as Locale)
+    return translations.value[targetLocale]?.[key] ?? key
+  }
 
-// Export as factory function for consistency with other stores
-export const useTranslationsStore = (): {
-  translations: typeof translations
-  loadTranslations: () => Promise<void>
-  getTranslation: (key: TranslationKeys, locale?: Locale) => string
-} => {
+  /**
+   * Check if a translation key exists
+   * @param key - Translation key to check
+   * @param targetLocale - Locale to check in (defaults to 'en')
+   * @returns Whether the key exists
+   */
+  const hasTranslation = (key: string, targetLocale: Locale = 'en'): boolean => {
+    return key in translations.value[targetLocale]
+  }
+
+  /**
+   * Get all translations for a specific locale
+   * @param targetLocale - Locale to get translations for
+   * @returns Translation object for the locale
+   */
+  const getLocaleTranslations = (targetLocale: Locale): Record<string, string> => {
+    return translations.value[targetLocale]
+  }
+
   return {
     translations,
     loadTranslations,
-    getTranslation
+    getTranslation,
+    hasTranslation,
+    getLocaleTranslations
   }
+})
+
+/**
+ * Standalone getTranslation function for backward compatibility
+ * Uses the translations store internally
+ * @param key - Translation key
+ * @param locale - Locale (optional, defaults to current locale)
+ * @returns Translated string or the key if not found
+ */
+export const getTranslation = (key: TranslationKeys, locale?: Locale): string => {
+  const store = useTranslationsStore()
+  return store.getTranslation(key, locale)
 }
 
-// Export individual properties for backward compatibility
-// These can be accessed at module level (not Pinia stores)
-export { translations, loadTranslations, getTranslation }
+/**
+ * Standalone loadTranslations function for backward compatibility
+ */
+export const loadTranslations = (): void => {
+  const store = useTranslationsStore()
+  store.loadTranslations()
+}
+
+// Export type
+export type TranslationsStore = ReturnType<typeof useTranslationsStore>

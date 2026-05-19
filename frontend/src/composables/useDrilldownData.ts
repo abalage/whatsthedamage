@@ -48,8 +48,15 @@ export interface NavButton {
 export interface DrilldownPageConfig<T> {
   /**
    * Function to build the API endpoint URL from route parameters
+   * (deprecated: use fetchData instead for type-safe API calls)
+   * Note: params may contain string arrays from route.params
    */
-  buildEndpoint: (params: Record<string, string | null>) => string
+  buildEndpoint?: (params: Record<string, string | string[] | null>) => string
+  /**
+   * Custom fetch function that takes route params and returns data
+   * Use this for type-safe API calls instead of buildEndpoint
+   */
+  fetchData?: (params: Record<string, string | null>) => Promise<T>
   /**
    * Optional data transformation function
    */
@@ -197,13 +204,35 @@ export function useDrilldownData<T>(
 
     try {
       // Extract all route params
-      const params: Record<string, string | null> = { ...route.params }
+      const params: Record<string, string | string[] | null> = { ...route.params }
 
-      // Build the endpoint URL
-      const endpoint = config.buildEndpoint(params)
+      let response: T
 
-      // Fetch data
-      const response = await fetchWithErrorHandling<T>(`${API_BASE_URL}${endpoint}`)
+      // Use custom fetch function if provided, otherwise fall back to buildEndpoint
+      if (config.fetchData) {
+        // Extract string values from params (handle arrays by taking first element)
+        const stringParams: Record<string, string | null> = {}
+        for (const [key, value] of Object.entries(params)) {
+          if (value === null) {
+            stringParams[key] = null
+          } else if (Array.isArray(value)) {
+            stringParams[key] = value.length > 0 ? value[0] : null // eslint-disable-line no-magic-numbers
+          } else if (typeof value === 'string') {
+            stringParams[key] = value
+          } else {
+            stringParams[key] = null
+          }
+        }
+        response = await config.fetchData(stringParams as Record<string, string | null>)
+      } else if (config.buildEndpoint) {
+        // Build the endpoint URL (buildEndpoint handles array params)
+        const endpoint = config.buildEndpoint(params)
+        // Fetch data using the old method
+        const rawResponse = await fetchWithErrorHandling<T>(`${API_BASE_URL}${endpoint}`)
+        response = rawResponse
+      } else {
+        throw new Error('Either fetchData or buildEndpoint must be provided in config')
+      }
 
       // Apply transformation if provided
       data.value = config.transformData ? config.transformData(response) : response
@@ -229,7 +258,7 @@ export function useDrilldownData<T>(
   }
 
   return {
-    data,
+    data: data as Ref<T | null>,
     isLoading,
     error,
     fetchData,
@@ -264,10 +293,25 @@ export function extractIdFromUrl(
  * Pre-built endpoint builders for common drilldown patterns
  */
 export const drilldownEndpoints = {
-  categoryMonths: (params: Record<string, string | null>): string =>
-    `/results/${params.resultId}/accounts/${params.accountId}/categories/${params.categoryId}/months`,
-  monthCategories: (params: Record<string, string | null>): string =>
-    `/results/${params.resultId}/accounts/${params.accountId}/months/${params.monthId}/categories`,
-  categoryMonthTransactions: (params: Record<string, string | null>): string =>
-    `/results/${params.resultId}/accounts/${params.accountId}/categories/${params.categoryId}/months/${params.monthId}/transactions`
+  categoryMonths: (params: Record<string, string | string[] | null>): string => {
+    const getParam = (key: string): string => {
+      const value = params[key]
+      return Array.isArray(value) ? value[0] ?? '' : value ?? '' // eslint-disable-line no-magic-numbers
+    }
+    return `/results/${getParam('resultId')}/accounts/${getParam('accountId')}/categories/${getParam('categoryId')}/months`
+  },
+  monthCategories: (params: Record<string, string | string[] | null>): string => {
+    const getParam = (key: string): string => {
+      const value = params[key]
+      return Array.isArray(value) ? value[0] ?? '' : value ?? '' // eslint-disable-line no-magic-numbers
+    }
+    return `/results/${getParam('resultId')}/accounts/${getParam('accountId')}/months/${getParam('monthId')}/categories`
+  },
+  categoryMonthTransactions: (params: Record<string, string | string[] | null>): string => {
+    const getParam = (key: string): string => {
+      const value = params[key]
+      return Array.isArray(value) ? value[0] ?? '' : value ?? '' // eslint-disable-line no-magic-numbers
+    }
+    return `/results/${getParam('resultId')}/accounts/${getParam('accountId')}/categories/${getParam('categoryId')}/months/${getParam('monthId')}/transactions`
+  }
 }

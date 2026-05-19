@@ -3,17 +3,12 @@ import { ref, onMounted, computed, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
 import { useLocaleStore } from '../stores/locale'
 import { getTranslation } from '../stores/translations'
-import { fetchWithErrorHandling, API_BASE_URL } from '../js/api'
+import { fetchResults as fetchResultsApi } from '../js/api'
 import { useFeedbackStore } from '../stores/feedback'
 import StatisticalControls from '../components/ui/StatisticalControls.vue'
+import type { ResultsResponseV2 } from '../types/api'
 
-
-const localeStore = useLocaleStore()
-const feedback = useFeedbackStore()
-const route = useRoute()
-
-const t = (key: string) => getTranslation(key, localeStore.locale)
-
+// Local type for the account data structure used in this component
 interface AccountData {
   id: string
   name: string
@@ -29,12 +24,8 @@ interface AccountData {
         raw: number
       }
       details: Array<{
-        date: {
-          display: string
-        }
-        amount: {
-          display: string
-        }
+        date: { display: string }
+        amount: { display: string }
         merchant: string
       }>
       row_id: string
@@ -42,34 +33,24 @@ interface AccountData {
   }
 }
 
-interface DrilldownUrls {
-  account_id: string | null
-  category_urls: Record<string, { category_url: string; category_id: string }>
-  month_urls: Record<string, { month_url: string; month_id: string }>
-  cell_urls: Record<string, { cell_url: string; category_id: string; month_id: string }>
-}
+const localeStore = useLocaleStore()
+const feedback = useFeedbackStore()
+const route = useRoute()
 
-interface ResultsResponse {
-  result_id: string
-  accounts_data: {
-    accounts: AccountData[]
-    highlights: Record<string, string[]>
-  }
-  drilldown_urls_by_account: Record<string, DrilldownUrls>
-}
+const t = (key: string) => getTranslation(key, localeStore.locale)
 
 // Try both camelCase and snake_case for the query parameter
 const resultId = computed(() => {
   const id = route.query.resultId ?? route.query.result_id
   return typeof id === 'string' ? id : null
 })
-const resultsData = ref<ResultsResponse | null>(null)
+const resultsData = ref<ResultsResponseV2 | null>(null)
 const isLoading = ref(true)
 const error = ref<string | null>(null)
 
 const DEFERRED_TIMEOUT = 0
 
-const fetchResults = async () => {
+const loadResults = async () => {
   if (!resultId.value) {
     error.value = 'No result ID provided'
     isLoading.value = false
@@ -78,7 +59,7 @@ const fetchResults = async () => {
     // For development/testing, we could fetch a hardcoded result
     // In production, this would redirect to the upload form
     try {
-      const fallbackResponse = await fetchWithErrorHandling<ResultsResponse>(`${API_BASE_URL}/results/demo-result-id`)
+      const fallbackResponse = await fetchResultsApi('demo-result-id')
       resultsData.value = fallbackResponse
 
       // Initialize DataTables for fallback data
@@ -91,9 +72,9 @@ const fetchResults = async () => {
       window.highlights = fallbackResponse.accounts_data?.highlights || {}
 
       window.initMainPage()
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (fallbackError) {
-      // Don't set error here since we already have the original error
+      const message = fallbackError instanceof Error ? fallbackError.message : String(fallbackError)
+      feedback.showError(`Failed to load fallback data: ${message}`)
     }
 
     return
@@ -101,7 +82,7 @@ const fetchResults = async () => {
 
   try {
     // Fetch results data from the API endpoint we created
-    const response = await fetchWithErrorHandling<ResultsResponse>(`${API_BASE_URL}/results/${resultId.value}`)
+    const response = await fetchResultsApi(resultId.value)
     resultsData.value = response
     error.value = null
 
@@ -154,7 +135,7 @@ const buildCategoryMonthMap = (account: AccountData) => {
 const getDetailsString = (details: Array<{ date: { display: string }, amount: { display: string }, merchant: string }>): string => {
   return details
     .map(detail => `${detail.date.display}: ${detail.amount.display} - ${detail.merchant}`)
-    .join('<br>')
+    .join('\n')
 }
 
 /**
@@ -176,7 +157,7 @@ const getMonthId = (accountId: string, monthTs: number): string => {
 
 
 onMounted(() => {
-  fetchResults()
+  loadResults()
 })
 </script>
 
@@ -241,7 +222,7 @@ v-for="[monthDisplay, monthTs] in getMonthsForAccount(account)"
                         :tabindex="buildCategoryMonthMap(account)[category][monthTs]?.details ? 0 : undefined"
                         :data-bs-toggle="buildCategoryMonthMap(account)[category][monthTs]?.details ? 'popover' : undefined"
                         :data-bs-trigger="buildCategoryMonthMap(account)[category][monthTs]?.details ? 'hover focus' : undefined"
-                        :data-bs-html="buildCategoryMonthMap(account)[category][monthTs]?.details ? 'true' : undefined"
+                        data-bs-html="false"
                         :data-bs-content="buildCategoryMonthMap(account)[category][monthTs]?.details ? getDetailsString(buildCategoryMonthMap(account)[category][monthTs].details) : undefined"
                         data-bs-placement="top"
                         data-bs-custom-class="popover-wide">

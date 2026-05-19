@@ -142,7 +142,7 @@ export default [
     },
   },
   {
-    files: ['test/setup.js'],
+    files: ['test/setup.ts'],
     languageOptions: {
       globals: {
         ...globals.browser,

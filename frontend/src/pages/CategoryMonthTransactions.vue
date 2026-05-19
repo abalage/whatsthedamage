@@ -5,35 +5,13 @@ import { useLocaleStore } from '../stores/locale'
 import { getTranslation } from '../stores/translations'
 import {
   useDrilldownData,
-  drilldownEndpoints,
   type BreadcrumbItem
 } from '../composables/useDrilldownData'
 import CardComponent from '../components/ui/CardComponent.vue'
 import ButtonComponent from '../components/ui/ButtonComponent.vue'
 import StatisticalControls from '../components/ui/StatisticalControls.vue'
-
-interface TransactionData {
-  date: {
-    display: string
-  }
-  amount: {
-    display: string
-  }
-  merchant: string
-  row_id: string
-}
-
-interface CategoryMonthTransactionsResponse {
-  result_id: string
-  account_id: string
-  account_name: string
-  category_id: string
-  category_name: string
-  month_id: string
-  month_name: string
-  data: TransactionData[]
-  highlights?: Record<string, string[]>
-}
+import { fetchCategoryMonthTransactions } from '../js/api'
+import type { CategoryMonthTransactionsResponse } from '../types/api'
 
 const localeStore = useLocaleStore()
 const route = useRoute()
@@ -56,7 +34,12 @@ const {
   breadcrumbItems,
   navButtons
 } = useDrilldownData<CategoryMonthTransactionsResponse>({
-  buildEndpoint: drilldownEndpoints.categoryMonthTransactions,
+  fetchData: async (params) => {
+    if (!params.resultId || !params.accountId || !params.categoryId || !params.monthId) {
+      throw new Error('Missing required parameters for category month transactions fetch')
+    }
+    return fetchCategoryMonthTransactions(params)
+  },
   getPageTitle: (data) => `${t('Transaction Details')}: ${data.category_name} - ${data.month_name}`,
   breadcrumbItems: (): BreadcrumbItem[] => [
     { name: t('Home'), to: '/' },

@@ -3,8 +3,9 @@ import { ref, onMounted, computed, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
 import { useLocaleStore } from '../stores/locale'
 import { getTranslation } from '../stores/translations'
-import { fetchWithErrorHandling, API_BASE_URL } from '../js/api'
+import { fetchAccountResults } from '../js/api'
 import ButtonComponent from '../components/ui/ButtonComponent.vue'
+import type { AccountResultsResponse } from '../types/api'
 
 
 const localeStore = useLocaleStore()
@@ -12,56 +13,16 @@ const route = useRoute()
 
 const t = (key: string) => getTranslation(key, localeStore.locale)
 
-interface AccountData {
-  id: string
-  name: string
-  dt_response: {
-    data: Array<{
-      category: string
-      date: {
-        display: string
-        timestamp: number
-      }
-      total: {
-        display: string
-        raw: number
-      }
-      details: Array<{
-        date: {
-          display: string
-        }
-        amount: {
-          display: string
-        }
-        merchant: string
-        currency: string
-        type: string
-        confidence: number | null
-        row_id: string
-      }>
-      row_id: string
-    }>
-  }
-}
-
-interface ResultsResponse {
-  result_id: string
-  accounts_data: {
-    accounts: AccountData[]
-    highlights: Record<string, string[]>
-  }
-}
-
 const resultId = computed(() => {
   const id = route.params.resultId
   return typeof id === 'string' ? id : null
 })
 
-const resultsData = ref<ResultsResponse | null>(null)
+const resultsData = ref<AccountResultsResponse | null>(null)
 const isLoading = ref(true)
 const error = ref<string | null>(null)
 
-const fetchResults = async () => {
+const loadResults = async () => {
   if (!resultId.value) {
     error.value = 'No result ID provided'
     isLoading.value = false
@@ -72,16 +33,11 @@ const fetchResults = async () => {
     isLoading.value = true
     error.value = null
 
-    const response = await fetchWithErrorHandling<ResultsResponse>(
-      `${API_BASE_URL}/results/${resultId.value}`
-    )
+    const response = await fetchAccountResults(resultId.value)
 
     resultsData.value = response
     // Set highlights for statistical cell highlighting
     window.highlights = resultsData.value?.accounts_data.highlights || {}
-    // Set highlights for statistical cell highlighting
-    window.highlights = resultsData.value?.accounts_data.highlights || {}
-    error.value = null
 
     // Set isLoading to false BEFORE initializing DataTables so the results block renders
     isLoading.value = false
@@ -129,7 +85,7 @@ const allTransactions = computed(() => {
 })
 
 onMounted(() => {
-  fetchResults()
+  loadResults()
 })
 </script>
 

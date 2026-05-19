@@ -4,6 +4,14 @@
  */
 
 import { AppError, ApiResponse } from '../types';
+import {
+  ResultsResponseV2,
+  AccountResultsResponse,
+  CategoryMonthsResponse,
+  MonthCategoriesResponse,
+  CategoryMonthTransactionsResponse,
+  ProcessResponse
+} from '../types/api';
 
 // API base URL configuration
 export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '/api/v2';
@@ -33,7 +41,7 @@ export async function fetchApi<T>(
       data,
       status: response.status,
       ok: response.ok,
-      error: response.ok ? undefined : (data as Record<string, unknown>)?.error ?? 'Request failed',
+      error: response.ok ? undefined : ((data as Record<string, unknown>)?.error as string | undefined) ?? 'Request failed',
     };
   } catch (error) {
     throw new AppError(
@@ -93,24 +101,47 @@ export function getApiUrl(endpoint: string): string {
 
 /**
  * Process transactions via API
- * @param formData - Form data containing CSV and config
+ * Note: This uses direct fetch (not fetchWithErrorHandling) because:
+ * 1. It's a multipart form upload (FormData)
+ * 2. Content-Type must be set by the browser with boundary
+ * 3. We need to handle the response differently (no JSON in body for multipart)
+ *
+ * @param formData - Form data containing CSV and config files
  * @returns Promise with processing result
+ * @throws AppError if processing fails
  */
-export async function processTransactions(formData: FormData): Promise<Record<string, unknown>> {
-  const response = await fetch(`${API_BASE_URL}/process`, {
-    method: 'POST',
-    body: formData,
-    // Don't set Content-Type header - let browser set it with boundary for multipart
-  });
-
-  if (!response.ok) {
-    const errorData: Record<string, unknown> = await response.json().catch(() => ({}));
-    throw new AppError(errorData.error ?? errorData.message ?? errorData.detail ?? 'Transaction processing failed', {
-      status: response.status,
+export async function processTransactions(formData: FormData): Promise<ProcessResponse> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/process`, {
+      method: 'POST',
+      body: formData,
+      // Don't set Content-Type header - let browser set it with boundary for multipart
     });
-  }
 
-  return response.json();
+    if (!response.ok) {
+      let errorMessage = 'Transaction processing failed'
+      try {
+        const errorData: Record<string, unknown> = await response.json()
+        errorMessage = (errorData.error ?? errorData.message ?? errorData.detail ?? errorMessage) as string
+      } catch (/* jsonError */ _error: unknown) { // eslint-disable-line @typescript-eslint/no-unused-vars
+        // If we can't parse JSON, use the status text
+        errorMessage = response.statusText || errorMessage
+      }
+      throw new AppError(errorMessage, {
+        status: response.status,
+      })
+    }
+
+    return await response.json()
+  } catch (error: unknown) {
+    if (error instanceof AppError) {
+      throw error
+    }
+    throw new AppError(
+      `Transaction processing failed: ${error instanceof Error ? error.message : String(error)}`,
+      { originalError: error }
+    )
+  }
 }
 
 /**
@@ -130,4 +161,71 @@ export async function recalculateStatistics(
     algorithms,
     direction,
   });
+}
+
+/**
+ * Fetch results data
+ * @param resultId - Result ID
+ * @returns Promise with results data
+ */
+export async function fetchResults(resultId: string): Promise<ResultsResponseV2> {
+  return fetchWithErrorHandling<ResultsResponseV2>(getApiUrl(`/results/${resultId}`));
+}
+
+/**
+ * Fetch account results data (for details page)
+ * @param resultId - Result ID
+ * @returns Promise with account results data
+ */
+export async function fetchAccountResults(resultId: string): Promise<AccountResultsResponse> {
+  return fetchWithErrorHandling<AccountResultsResponse>(getApiUrl(`/results/${resultId}`));
+}
+
+/**
+ * Fetch category months data (drilldown)
+ * @param params - Route parameters containing resultId, accountId, categoryId
+ * @returns Promise with category months data
+ */
+export async function fetchCategoryMonths(
+  params: Record<string, string | null>
+): Promise<CategoryMonthsResponse> {
+  const resultId = params.resultId ?? ''
+  const accountId = params.accountId ?? ''
+  const categoryId = params.categoryId ?? ''
+  return fetchWithErrorHandling<CategoryMonthsResponse>(
+    getApiUrl(`/results/${resultId}/accounts/${accountId}/categories/${categoryId}/months`)
+  );
+}
+
+/**
+ * Fetch month categories data (drilldown)
+ * @param params - Route parameters containing resultId, accountId, monthId
+ * @returns Promise with month categories data
+ */
+export async function fetchMonthCategories(
+  params: Record<string, string | null>
+): Promise<MonthCategoriesResponse> {
+  const resultId = params.resultId ?? ''
+  const accountId = params.accountId ?? ''
+  const monthId = params.monthId ?? ''
+  return fetchWithErrorHandling<MonthCategoriesResponse>(
+    getApiUrl(`/results/${resultId}/accounts/${accountId}/months/${monthId}/categories`)
+  );
+}
+
+/**
+ * Fetch category month transactions data (drilldown)
+ * @param params - Route parameters containing resultId, accountId, categoryId, monthId
+ * @returns Promise with category month transactions data
+ */
+export async function fetchCategoryMonthTransactions(
+  params: Record<string, string | null>
+): Promise<CategoryMonthTransactionsResponse> {
+  const resultId = params.resultId ?? ''
+  const accountId = params.accountId ?? ''
+  const categoryId = params.categoryId ?? ''
+  const monthId = params.monthId ?? ''
+  return fetchWithErrorHandling<CategoryMonthTransactionsResponse>(
+    getApiUrl(`/results/${resultId}/accounts/${accountId}/categories/${categoryId}/months/${monthId}/transactions`)
+  );
 }

@@ -1,5 +1,34 @@
 # Changelog
 
+## 0.30 - 2026-05-XX
+
+This is a big upgrade which decouples the frontend from Flask + jinja2 to Vue3.
+
+### BREAKING CHANGES
+- **Frontend decoupling** from server-side rendered jinja2 templates to Vue3 based SPA.
+- **API Response Standardization**: All API v2 endpoints now return strongly-typed Pydantic models instead of inconsistent dict structures.
+- **Contracts**: Introduce standardized contracts
+- **API**: most of the code which were required by Flask to render contenst on server-side is now deleted.
+
+### Added
+- **API Response DTOs**: New `src/whatsthedamage/models/api_responses.py` module containing Pydantic models for all API v2 endpoints:
+- **Frontend Type Definitions**: Complete rewrite of `frontend/src/types/api.ts` with:
+- **API Documentation**: Updated and expanded documentation:
+  - `docs/api-first-architecture.md` - Per-endpoint response format table, error format documentation, standard response envelope examples
+  - `docs/api-style-guide.md` - New comprehensive style guide for API development
+  - `ARCHITECTURE.md` - New REST API v2 section documenting the contract standardization
+- **Integration tests for cell highlighting**: Increase stability.
+
+### Changed
+- **Frontend API Client**: Updated `frontend/src/js/api.ts`.
+- **Documentation**: Updated `docs/api-first-architecture.md`.
+- **Dependency upgrades**: updated frontend libraries.
+
+### Known issues:
+- **Localization is broken**: Current solution does not use gettext at all. It's an AI slop. Will be fixed in next release.
+- **Lack of reproducible dependencies**: Makefile inconsistently invokes 'npm install' which frequently overwrites packages.json.
+- **Docker Install**: Existing image does not work anymore. Needs significant changes to support running frontend separately.
+
 ## [0.20.0] - 2026-03-26
 
 ### BREAKING CHANGES

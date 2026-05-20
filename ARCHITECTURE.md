@@ -440,6 +440,54 @@ Frontend SPA (Vue 3)
 
 **Integration Method**: Python gettext module with locale files
 
+### 5.3. REST API v2
+
+**Service Name**: What's the Damage REST API v2
+
+**Purpose**: Provides HTTP API for CSV transaction processing, results retrieval, drilldown navigation, and statistical analysis.
+
+**Integration Method**: Flask REST API with Pydantic models
+
+**Architecture:**
+- **API-First Design**: Contract defined via Pydantic models in `src/whatsthedamage/models/api_responses.py`
+- **Type Safety**: Backend Pydantic models mirror frontend TypeScript interfaces exactly
+- **Validation**: All responses validated using Pydantic; all requests validated before processing
+- **Service Layer**: Business logic delegated to services (ProcessingService, CacheService, StatisticalService, DrilldownResponseService)
+- **Dependency Injection**: Services injected via Flask extensions
+
+**Key Components:**
+- `src/whatsthedamage/api/v2/endpoints.py`: REST API route handlers
+- `src/whatsthedamage/models/api_responses.py`: Pydantic response DTOs
+- `src/whatsthedamage/api/helpers.py`: Request validation and error handling utilities
+- `frontend/src/js/api.ts`: TypeScript API client with typed functions
+- `frontend/src/types/api.ts`: TypeScript response interfaces
+
+**Endpoints:**
+| Method | Endpoint | Purpose | Response Type |
+|--------|----------|---------|---------------|
+| POST | `/api/v2/process` | Process CSV transactions | `ProcessApiResponse` |
+| GET | `/api/v2/results/<result_id>` | Retrieve processed results | `ResultsApiResponse` |
+| GET | `/api/v2/results/<r>/accounts/<a>/categories/<c>/months` | Category-by-month drilldown | `CategoryMonthsApiResponse` |
+| GET | `/api/v2/results/<r>/accounts/<a>/months/<m>/categories` | Month-by-category drilldown | `MonthCategoriesApiResponse` |
+| GET | `/api/v2/results/<r>/accounts/<a>/categories/<c>/months/<m>/transactions` | Transaction details | `CategoryMonthTransactionsApiResponse` |
+| POST | `/api/v2/recalculate-statistics` | Recalculate statistical highlights | `RecalculateApiResponse` |
+
+**API Contract Standardization:**
+- All endpoints return validated Pydantic models
+- Frontend TypeScript interfaces match backend models 1:1
+- Contract tests verify response schema compliance
+- Standard response envelope (`ApiEnvelope<T>`) available for new endpoints
+- Error responses use consistent `{code, message, details?}` format
+
+**Contract Testing:**
+- 18 contract tests in `tests/api/v2/test_contract.py`
+- Tests verify Pydantic model validation for all endpoints
+- Tests verify response structure, field types, and required fields
+
+**Documentation:**
+- [API-First Architecture](docs/api-first-architecture.md)
+- [API Style Guide](docs/api-style-guide.md)
+
 ## 6. Deployment & Infrastructure
 
 **Cloud Provider**: Self-hosted or any cloud provider

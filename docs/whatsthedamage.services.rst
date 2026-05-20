@@ -25,18 +25,10 @@ whatsthedamage.services.configuration\_service module
    :show-inheritance:
    :undoc-members:
 
-whatsthedamage.services.data\_formatting\_service module
---------------------------------------------------------
+whatsthedamage.services.drilldown\_response\_service module
+-----------------------------------------------------------
 
-.. automodule:: whatsthedamage.services.data_formatting_service
-   :members:
-   :show-inheritance:
-   :undoc-members:
-
-whatsthedamage.services.drilldown\_service module
--------------------------------------------------
-
-.. automodule:: whatsthedamage.services.drilldown_service
+.. automodule:: whatsthedamage.services.drilldown_response_service
    :members:
    :show-inheritance:
    :undoc-members:
@@ -85,14 +77,6 @@ whatsthedamage.services.processing\_service module
 --------------------------------------------------
 
 .. automodule:: whatsthedamage.services.processing_service
-   :members:
-   :show-inheritance:
-   :undoc-members:
-
-whatsthedamage.services.response\_builder\_service module
----------------------------------------------------------
-
-.. automodule:: whatsthedamage.services.response_builder_service
    :members:
    :show-inheritance:
    :undoc-members:

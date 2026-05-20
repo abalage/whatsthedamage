@@ -17,6 +17,14 @@ whatsthedamage.models.api\_models module
    :show-inheritance:
    :undoc-members:
 
+whatsthedamage.models.api\_responses module
+-------------------------------------------
+
+.. automodule:: whatsthedamage.models.api_responses
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
 whatsthedamage.models.csv\_file\_handler module
 -----------------------------------------------
 

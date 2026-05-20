@@ -35,12 +35,14 @@ class ApiEnvelope(BaseModel, Generic[T]):
     response formats for backward compatibility.
 
     Attributes:
-        status: Operation status ('success' or 'error')
-        data: The endpoint-specific response payload
-        meta: Response metadata (timestamp, request_id, version, etc.)
-        links: Hypermedia navigation links (self, related resources)
+        status (str): Operation status ('success' or 'error')
+        data (T): The endpoint-specific response payload
+        meta (Dict[str, Any]): Response metadata (timestamp, request_id, version, etc.)
+        links (Dict[str, str]): Hypermedia navigation links (self, related resources)
+        timestamp (datetime): Response generation timestamp in UTC
 
-    Example usage:
+    Example usage::
+
         @v2_bp.route('/new-endpoint')
         def new_endpoint():
             payload = SomeDataModel(...)
@@ -105,9 +107,8 @@ class ProcessApiResponse(BaseModel):
     Returns processed transaction data with metadata.
 
     Attributes:
-        data: List of aggregated rows containing transaction data grouped by
-            category and date
-        metadata: Processing metadata including result_id, timing, and configuration
+        data (List[AggregatedRow]): List of aggregated rows containing transaction data grouped by category and date
+        metadata (ProcessingMetadata): Processing metadata including result_id, timing, and configuration
     """
     data: List[AggregatedRow] = Field(
         description="Aggregated transaction data grouped by category and month"

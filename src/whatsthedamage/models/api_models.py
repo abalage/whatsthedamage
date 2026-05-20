@@ -86,6 +86,7 @@ class ProcessingMetadata(BaseModel):
     row_count: int = Field(description="Number of rows processed")
     processing_time: float = Field(description="Processing time in seconds")
     ml_enabled: bool = Field(description="Whether ML categorization was used")
+    result_id: str = Field(description="Unique identifier for this processing result")
     date_range: Optional[Dict[str, str]] = Field(
         default=None,
         description="Date range filter applied (start and end dates)"

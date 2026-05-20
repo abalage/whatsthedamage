@@ -7,7 +7,7 @@ through statistical analysis to template data preparation.
 import pytest
 from whatsthedamage.services.statistical_analysis_service import StatisticalAnalysisService
 
-from whatsthedamage.services.data_formatting_service import DataFormattingService
+from whatsthedamage.services.response_formatting_service import ResponseFormattingService
 from whatsthedamage.models.dt_models import DataTablesResponse, AggregatedRow, DisplayRawField, DateField, DetailRow
 import uuid
 
@@ -130,8 +130,8 @@ def test_end_to_end_excluded_highlights_pipeline(complete_dt_response):
     assert metadata is not None
     assert len(metadata.highlights) > 0
 
-    # Step 5: Create data formatting service
-    formatting_service = DataFormattingService(statistical_analysis_service=statistical_service)
+    # Step 5: Create response formatting service
+    formatting_service = ResponseFormattingService(statistical_analysis_service=statistical_service)
 
     # Step 6: Prepare data for template
     template_data = formatting_service.prepare_accounts_for_template({
@@ -178,7 +178,7 @@ def test_template_highlight_application():
 
     # Create services
     statistical_service = StatisticalAnalysisService()
-    formatting_service = DataFormattingService(
+    formatting_service = ResponseFormattingService(
         statistical_analysis_service=statistical_service
     )
 

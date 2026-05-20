@@ -11,16 +11,16 @@ An experimental Machine Learning model is also available to help reducing the bu
 _The slang phrase "what's the damage?" is often used to ask about the cost or price of something, typically in a casual or informal context. The phrase is commonly used in social settings, especially when discussing expenses or the results of an event._
 
 ## Features
- - **Multi-account support**: Process CSV exports containing multiple accounts, each with separate currency metadata.
+ - Process CSV exports containing multiple accounts, each with separate currency metadata.
  - Categorizes transactions into well known [accounting categories](#transaction-categories).
- - Categorizes transactions into custom categories by using regular expressions.
+ - Categorizes transactions into custom categories by using regular expressions or machine learning model.
  - Calculator pattern for extensible custom transaction calculations.
  - Transactions can be filtered by start and end dates. If no filter is set, grouping is based on the number of months.
- - Shows a report about the summarized amounts grouped by transaction categories, including Total Spendings.
- - Reports can be saved into CSV or HTML files with interactive DataTable visualization (sorting, searching).
+ - Shows a report about the summarized amounts grouped by transaction categories, including Total Spendings, Balance.
+ - Reports can be saved into CSV, XLS files with interactive DataTable visualization (sorting, searching).
  - Localization support. Currently English (default) and Hungarian languages are supported.
- - Web interface for easier use.
- - REST API for programmatic access and integrations.
+ - Frontend is a standalone Vue 3 SPA for easier use with API-only backend communication.
+ - REST API v2 for programmatic access and integrations.
 
 Example output on console. The values in the following example are arbitrary.
 ```
@@ -73,10 +73,12 @@ Try experimenting with it by providing the `--ml` command line argument to `what
 `whatsthedamage` provides **three interfaces** for different use cases:
 
 1. **Command-Line Interface (CLI)** - For local, interactive use and automation scripts
-2. **Web Interface** - Browser-based UI for users who prefer forms over terminal commands
+2. **Web Interface (SPA)** - Standalone Vue 3 Single Page Application for users who prefer browser-based UI
 3. **REST API** - Programmatic access for integrations, CI/CD pipelines, and external applications
 
-All three interfaces share the same **core business logic** through a well-defined **service layer** (including `ProcessingService`, `ValidationService`, `ConfigurationService`, and others), ensuring consistent transaction processing regardless of how you access the tool. The architecture was introduced in version 0.8.0 and further enhanced in 0.9.0 with v2 processing pipeline, multi-account support, and performance optimizations. The unified data format (`DataTablesResponse`) ensures consistency across all clients: CLI, Web, and API.
+All three interfaces share the same **core business logic** through a well-defined **service layer** (including `ProcessingService`, `ValidationService`, `ConfigurationService`, and others), ensuring consistent transaction processing regardless of how you access the tool. The architecture was introduced in version 0.8.0 and further enhanced in 0.9.0 with v2 processing pipeline, multi-account support, and performance optimizations.
+
+The unified data format (`DataTablesResponse`) ensures consistency across all clients: CLI, Web SPA, and API.
 
 ### Caching Strategy
 
@@ -86,15 +88,18 @@ The web interface implements a **10-minute caching strategy** to improve perform
 
 ### Interface Comparison
 
-| Feature | CLI | Web UI | REST API |
-|---------|-----|--------|----------|
-| **Access Method** | Terminal commands | Browser forms | HTTP requests |
+| Feature | CLI | Web UI (SPA) | REST API |
+|---------|-----|--------------|----------|
+| **Access Method** | Terminal commands | Browser (Vue SPA) | HTTP requests |
 | **Authentication** | None | None | None |
-| **Input** | File paths | File upload | Multipart form data |
-| **Output** | Console/CSV/HTML | HTML page | JSON |
+| **Input** | File paths | File upload via API | Multipart form data |
+| **Output** | Console/CSV/HTML | Dynamic HTML via Vue | JSON |
 | **Use Case** | Local analysis, scripts | Ad-hoc exploration | Automation, integrations |
-| **Requires Server** | ❌ No | ✅ Yes | ✅ Yes |
+| **Requires Server** | ❌ No | ✅ Yes (backend API) | ✅ Yes |
 | **Interactive** | ✅ Yes | ✅ Yes | ❌ No (stateless) |
+| **Backend Dependency** | ❌ No | ✅ Yes (API) | ✅ Yes |
+
+**Note**: The Web UI now uses the same REST API v2 endpoints as external API clients, ensuring consistent behavior across all interfaces.
 
 ### When to Use What?
 
@@ -123,6 +128,8 @@ For complete REST API documentation, see [API.md](API.md).
 ## Install
 
 This chapter describes how to install `whatsthedamage` in production. For development purposes check out the [Development](#development) chapter.
+
+**Note**: The CLI tool works independently without the frontend. For web interface usage, see the [Frontend Development](#frontend-development) section for additional requirements (Node.js 24+, npm 10+).
 
 ### Manual install
 
@@ -247,20 +254,30 @@ The repository comes with a Makefile using 'GNU make' to automatize recurring ac
 ```shell
 $ make help
 Development workflow:
-  dev            - Create venv, install pip-tools, sync all requirementsm, install frontend dependencies
-  web            - Run Flask development server
-  test           - Run tests using tox
-  ruff           - Run ruff linter/formatter
-  mypy           - Run mypy type checker
-  image          - Build Podman image with version tag
-  lang           - Extract translatable strings to English .pot file
-  docs           - Build Sphinx documentation
-  frontend ARG=script - Run any npm script (e.g., 'frontend ARG=dev', 'frontend ARG=build')
+  dev            - Create venv, install pip-tools, sync all requirements, install frontend dependencies
+
+Development servers:
+  backend        - Run API-only Flask backend development server
+  frontend       - Run frontend development server (Vite)
+
+Testing:
+  test           - Run all tests (backend + frontend)
+  test-backend   - Run backend tests only (pytest via tox)
+  test-frontend  - Run frontend tests only (vitest)
+
+Frontend scripts:
+  frontend-build  - Build frontend for production
+  frontend-test   - Run frontend tests (same as test-frontend)
+  frontend-lint   - Run frontend linter
+  frontend-%      - Run any npm script (e.g., 'frontend-build', 'frontend-test')
+
+Build:
   build          - Full stack build (Python + JS)
 
 Dependency management for Python:
   compile-deps   - Compile requirements files from pyproject.toml
   update-deps    - Update requirements to latest versions
+  compile-deps-secure - Compile requirements with security hashes
 
 Cleanup for Python and JavaScript:
   clean          - Clean up build files
@@ -269,46 +286,99 @@ Cleanup for Python and JavaScript:
 
 ### Frontend Development
 
-The project uses a modern frontend build system with npm and Vite, replacing the previous CDN-based approach. The frontend source code is located in `src/whatsthedamage/view/frontend/`.
+The frontend has been completely decoupled from the backend and is now a standalone **Vue 3 Single Page Application (SPA)** with TypeScript. The frontend communicates with the backend exclusively through REST API endpoints, enabling independent development, deployment, and scaling.
 
-#### JavaScript Architecture
+**Frontend Location**: `frontend/` (project root directory)
 
-**Build System**:
-- **npm + Vite**: Modern build toolchain with fast Hot Module Replacement (HMR) and optimized production builds
-- **TypeScript**: Type-safe JavaScript development with modern ES module syntax
-- **ES Modules**: Native ES module system for better code organization and tree-shaking
+**Architecture**:
+- **Framework**: Vue 3 with Composition API
+- **Type System**: TypeScript 5.x
+- **State Management**: Pinia stores
+- **Routing**: Vue Router 4
+- **Build Tool**: Vite 8
+- **UI Framework**: Bootstrap 5
+- **Data Grid**: DataTables.net with Bootstrap 5 integration
 
 **Frontend Structure**:
 ```
-src/whatsthedamage/view/frontend/
+frontend/
 ├── src/
-│   ├── main.ts              # Main entry point, imports and initializes all modules
-│   ├── js/
-│   │   ├── index.ts         # Index page functionality (form clearing)
-│   │   ├── main.ts          # DataTables initialization and Bootstrap components
-│   │   ├── statistical-analysis.ts  # Statistical controls
-│   │   ├── utils.ts         # Utility functions
-│   │   └── api-docs.ts      # API documentation page
-│   └── css/                 # CSS source files (future)
-├── package.json             # npm dependencies and scripts
-├── vite.config.js           # Vite configuration
-└── public/                  # Public assets
+│   ├── main.ts                  # Application entry point
+│   ├── App.vue                  # Root Vue component
+│   ├── router/
+│   │   └── index.ts             # Vue Router configuration
+│   ├── components/
+│   │   ├── Layout.vue           # Main layout component
+│   │   ├── ErrorDisplay.vue      # Error display component
+│   │   └── ui/                  # UI component library
+│   │       ├── ButtonComponent.vue
+│   │       ├── CardComponent.vue
+│   │       └── StatisticalControls.vue
+│   ├── pages/                   # Page-level components (routes)
+│   │   ├── About.vue
+│   │   ├── Details.vue
+│   │   ├── Legal.vue
+│   │   ├── Privacy.vue
+│   │   ├── Results.vue
+│   │   ├── Statistics.vue
+│   │   ├── CategoryMonthTransactions.vue
+│   │   └── MonthCategoriesList.vue
+│   ├── stores/                  # Pinia state management
+│   │   ├── form.ts              # Form state
+│   │   ├── locale.ts            # Locale/language state
+│   │   ├── statistical.ts       # Statistical analysis state
+│   │   ├── translations.ts      # Translation state
+│   │   └── feedback.ts          # User feedback state
+│   ├── js/                      # Utility functions and API client
+│   │   ├── api.ts               # API client for backend communication
+│   │   ├── main.ts              # DataTables initialization
+│   │   ├── statistical-analysis.ts
+│   │   ├── utils.ts
+│   │   └── index.ts
+│   ├── types/                   # TypeScript type definitions
+│   │   ├── api.ts
+│   │   └── index.ts
+│   └── config/                  # Frontend configuration
+│       └── highlight-config.ts
+├── public/                     # Static assets
+│   └── favicon.ico
+├── dist/                        # Production build output
+├── package.json
+├── vite.config.js
+├── tsconfig.json
+└── README.md
 ```
 
+**API Communication**:
+- All frontend-backend communication happens via **REST API v2** endpoints
+- Development: Vite proxies `/api` requests to `http://localhost:5000/api/v2`
+- Production: Frontend uses relative `/api/v2` paths or configurable base URL via `VITE_API_BASE_URL`
+- CORS-enabled for cross-origin requests
+
+**Build Process**:
+- Development: `npm run dev` (Vite dev server with HMR on port 3000)
+- Production: `npm run build:prod` (builds to `dist/` with `/api/v2` base URL)
+- For integrated deployment: Build output must be copied to `src/whatsthedamage/view/static/dist/`
+
+**Deployment Options**:
+1. **Standalone**: Host `dist/` on any static hosting.
+2. **Development**: Run Vite dev server separately with backend API
+
 **Frontend Dependencies**:
-- All frontend dependencies are managed via npm in `package.json`
-- Run `make dev` to install dependencies (includes both Python and JavaScript dependencies)
-- Run `make frontend ARG=build` to build production assets
+- Vue 3.5.x, Vue Router 4.x, Pinia
+- Bootstrap 5.3.x, DataTables.net 2.3.x, jQuery 4.0.x
+- Vite 8.0.x, TypeScript 5.x
+- All dependencies managed via npm in `frontend/package.json`
 
-**Frontend Build Output**:
-- Build assets are output to `src/whatsthedamage/view/static/dist/`
-- Backend static assets (ML models, favicon) remain in `src/whatsthedamage/static/` (committed to Git)
-- The Dockerfile automatically installs npm dependencies and builds assets
-
-**Static Assets Management**:
-- **Backend static assets**: `src/whatsthedamage/static/` - ML models, configuration files (committed to Git)
-- **Frontend build artifacts**: `src/whatsthedamage/view/static/dist/` - Vite build output (NOT committed to Git, excluded via .gitignore)
-- **Flask static files**: `src/whatsthedamage/view/static/` - favicon.ico and other web assets (committed to Git)
+**Makefile Commands**:
+- `make dev` - Installs both Python and JavaScript dependencies
+- `make backend` - Start Flask API backend development server
+- `make frontend` - Start Vite frontend development server
+- `make frontend-build` - Build frontend for development
+- `make frontend-build:prod` - Build frontend for production with `/api/v2` base URL
+- `make test-backend` - Run backend tests (pytest)
+- `make test-frontend` - Run frontend tests (Vitest)
+- `make test` - Run all tests (backend + frontend)
 
 ### Localization
 

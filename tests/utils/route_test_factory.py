@@ -6,7 +6,7 @@ configured services and test data for route testing.
 from flask import Flask
 from typing import Dict, Any
 from whatsthedamage.app import create_app
-from whatsthedamage.services.data_formatting_service import DataFormattingService
+from whatsthedamage.services.response_formatting_service import ResponseFormattingService
 from whatsthedamage.services.statistical_analysis_service import StatisticalAnalysisService
 from whatsthedamage.services.configuration_service import ConfigurationService
 from tests.utils.drilldown_test_data_builder import DrilldownTestDataBuilder
@@ -101,14 +101,14 @@ class RouteTestFactory:
         service_container._services[StatisticalAnalysisService] = StatisticalAnalysisService(
             enabled_algorithms=config_service.get_default_config().enabled_statistical_algorithms
         )
-        service_container._services[DataFormattingService] = DataFormattingService(
+        service_container._services[ResponseFormattingService] = ResponseFormattingService(
             statistical_analysis_service=service_container.get_service(StatisticalAnalysisService)
         )
 
         # Update Flask extensions with our test services
         app.extensions['configuration_service'] = config_service
         app.extensions['statistical_analysis_service'] = service_container.get_service(StatisticalAnalysisService)
-        app.extensions['data_formatting_service'] = service_container.get_service(DataFormattingService)
+        app.extensions['response_formatting_service'] = service_container.get_service(ResponseFormattingService)
 
         app.config['TESTING'] = True
         app.config['WTF_CSRF_ENABLED'] = False

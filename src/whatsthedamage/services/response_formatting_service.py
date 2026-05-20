@@ -16,11 +16,21 @@ Architecture Patterns:
 import pandas as pd
 import json
 from typing import Dict, Optional, Any, List, TYPE_CHECKING
-from whatsthedamage.models.dt_models import DataTablesResponse, StatisticalMetadata, SummaryData, DetailedResponse
+from whatsthedamage.models.dt_models import DataTablesResponse, StatisticalMetadata, SummaryData, DetailedResponse, ProcessingResponse
 from whatsthedamage.models.api_models import ProcessingMetadata, ErrorResponse, ProcessingRequest
+from whatsthedamage.models.api_responses import (
+    ResultsApiResponse,
+    AccountsDataResponse,
+    AccountDataResponse,
+    DrilldownUrls,
+    DrilldownUrlInfo,
+    MonthUrlInfo,
+    CellUrlInfo,
+)
 from gettext import gettext as _
 from whatsthedamage.services.statistical_analysis_service import StatisticalAnalysisService
 from whatsthedamage.services.interfaces import IDataFormattingService
+from whatsthedamage.utils.logging import get_logger
 
 if TYPE_CHECKING:
     from flask import Response
@@ -45,6 +55,7 @@ class ResponseFormattingService(IDataFormattingService):
         """Initialize the response formatting service."""
         self.statistical_analysis_service = statistical_analysis_service
         self._categories_header = _("Categories")
+        self.logger = get_logger(__name__)
 
     # Data Formatting Methods (from DataFormattingService)
 
@@ -551,9 +562,10 @@ class ResponseFormattingService(IDataFormattingService):
     def build_api_detailed_response(
         self,
         datatables_response: Dict[str, DataTablesResponse],
-        metadata: Dict[str, Any],
+        metadata: Dict[str, Any] | ProcessingMetadata,
         params: ProcessingRequest,
-        processing_time: float
+        processing_time: float,
+        result_id: str
     ) -> DetailedResponse:
         """Build standardized API detailed response.
 
@@ -581,12 +593,20 @@ class ResponseFormattingService(IDataFormattingService):
             # Add all aggregated rows from this account
             aggregated_rows.extend(dt_response.data)
 
+        # Handle both ProcessingMetadata object and dict for backward compatibility
+        if isinstance(metadata, dict):
+            row_count = metadata.get('row_count', 0)
+        else:
+            # Assume it's a ProcessingMetadata object
+            row_count = metadata.row_count
+
         return DetailedResponse(
             data=aggregated_rows,  # List[AggregatedRow] from all accounts
             metadata=ProcessingMetadata(
-                row_count=metadata['row_count'],
+                row_count=row_count,
                 processing_time=processing_time,
                 ml_enabled=params.ml_enabled,
+                result_id=result_id,
                 date_range=self._build_date_range(params)
             )
         )
@@ -623,6 +643,17 @@ class ResponseFormattingService(IDataFormattingService):
         from werkzeug.exceptions import BadRequest
         from pydantic import ValidationError as PydanticValidationError
         from whatsthedamage.utils.validation import ValidationError
+
+        # Log the error with context before building response
+        error_context = {
+            "error_type": type(error).__name__,
+            "error_message": str(error),
+            "status_code": default_code
+        }
+        if context:
+            error_context.update(context)
+
+        self.logger.error("Building error response", extra={"context": error_context})
 
         # Determine status code and message based on exception type
         if isinstance(error, BadRequest):
@@ -677,6 +708,154 @@ class ResponseFormattingService(IDataFormattingService):
             status_code = default_code
 
         return jsonify(error_response.model_dump()), status_code
+
+    def format_processing_response_for_frontend(
+        self,
+        cached_result: ProcessingResponse | None
+    ) -> ResultsApiResponse:
+        """Convert cached ProcessingResponse to frontend-expected format.
+
+        Extracts account data, highlights, and drilldown URLs from a cached
+        ProcessingResponse and formats it for the Vue frontend.
+
+        Args:
+            cached_result: Cached ProcessingResponse from cache service
+
+        Returns:
+            ResultsApiResponse: Typed response for /api/v2/results/<id> endpoint
+
+        Raises:
+            ValueError: If cached_result is None
+
+        Note:
+            This consolidates the data transformation logic that was previously
+            duplicated in api/v2/endpoints.py get_results() endpoint.
+        """
+        if cached_result is None:
+            raise ValueError('Result data not found or expired')
+
+        # Build accounts list
+        accounts_list = []
+
+        # Convert highlights from metadata
+        highlights_dict = self._convert_metadata_to_highlights_dict(cached_result.statistical_metadata) if hasattr(cached_result, 'statistical_metadata') else {}
+
+        # Build drilldown URLs by account
+        drilldown_urls_dict: Dict[str, DrilldownUrls] = {}
+
+        # Convert the cached ProcessingResponse to frontend format
+        if hasattr(cached_result, 'data') and isinstance(cached_result.data, dict):
+            for account_id, account_data in cached_result.data.items():
+                # Get account name with fallback
+                account_name = getattr(account_data, 'name', None)
+                if not account_name and hasattr(account_data, 'account'):
+                    account_name = account_data.account or f'Account {account_id}'
+                if not account_name:
+                    account_name = f'Account {account_id}'
+
+                # Convert each aggregated row to frontend format
+                dt_response_data: List[Dict[str, Any]] = []
+                if hasattr(account_data, 'data'):
+                    for row in account_data.data:
+                        # Build details array if present
+                        details_array = []
+                        if hasattr(row, 'details') and row.details:
+                            for detail in row.details:
+                                details_array.append({
+                                    'date': {'display': detail.date.display},
+                                    'amount': {'display': detail.amount.display},
+                                    'merchant': detail.merchant,
+                                    'currency': detail.currency if hasattr(detail, 'currency') else '',
+                                    'type': detail.type if hasattr(detail, 'type') else '',
+                                    'confidence': detail.confidence if hasattr(detail, 'confidence') else None,
+                                    'row_id': detail.row_id if hasattr(detail, 'row_id') else ''
+                                })
+
+                        # Add the row to account data
+                        dt_response_data.append({
+                            'category': row.category,
+                            'date': {'display': row.date.display, 'timestamp': row.date.timestamp},
+                            'total': {'display': row.total.display, 'raw': row.total.raw},
+                            'details': details_array,
+                            'row_id': row.row_id
+                        })
+
+                # Create account info and add to list
+                accounts_list.append(AccountDataResponse(
+                    id=account_id,
+                    name=account_name,
+                    dt_response={'data': dt_response_data}
+                ))
+
+                # Generate drilldown URLs for this account
+                category_urls: Dict[str, DrilldownUrlInfo] = {}
+                month_urls: Dict[str, MonthUrlInfo] = {}
+                cell_urls: Dict[str, CellUrlInfo] = {}
+
+                # Try to use DrilldownResponseService for URL generation with ID mapping
+                drilldown_urls_generated = False
+                try:
+                    from flask import current_app
+                    if hasattr(current_app, 'extensions'):
+                        drilldown_response_service = current_app.extensions.get('drilldown_response_service')
+                        if drilldown_response_service:
+                            account_drilldown_urls = drilldown_response_service.generate_drilldown_urls(
+                                cached_result.result_id, account_id, account_data
+                            )
+                            # Convert dict URLs to DTOs
+                            for cat, cat_info in account_drilldown_urls.get('category_urls', {}).items():
+                                category_urls[cat] = DrilldownUrlInfo(**cat_info)
+                            for month, month_info in account_drilldown_urls.get('month_urls', {}).items():
+                                month_urls[month] = MonthUrlInfo(**month_info)
+                            for cell, cell_info in account_drilldown_urls.get('cell_urls', {}).items():
+                                cell_urls[cell] = CellUrlInfo(**cell_info)
+                            drilldown_urls_generated = True
+                except (RuntimeError, ImportError):
+                    # current_app not available or service not registered - will use fallback
+                    pass
+
+                # If no URLs from service, use fallback simple URL generation
+                if not drilldown_urls_generated:
+                    for row_data in dt_response_data:
+                        category = str(row_data.get('category', ''))
+                        month_ts = str(row_data.get('date', {}).get('timestamp', ''))
+                        row_id = str(row_data.get('row_id', ''))
+
+                        if category and category not in category_urls:
+                            category_urls[category] = DrilldownUrlInfo(
+                                category_url=f"/results/{cached_result.result_id}/accounts/{account_id}/categories/{category}/months",
+                                category_id=category
+                            )
+
+                        if month_ts and month_ts not in month_urls:
+                            month_urls[month_ts] = MonthUrlInfo(
+                                month_url=f"/results/{cached_result.result_id}/accounts/{account_id}/months/{month_ts}/categories",
+                                month_id=month_ts
+                            )
+
+                        if row_id and category and month_ts:
+                            cell_urls[row_id] = CellUrlInfo(
+                                cell_url=f"/results/{cached_result.result_id}/accounts/{account_id}/categories/{category}/months/{month_ts}/transactions",
+                                category_id=category,
+                                month_id=month_ts
+                            )
+
+                drilldown_urls_dict[account_id] = DrilldownUrls(
+                    account_id=account_id,
+                    category_urls=category_urls,
+                    month_urls=month_urls,
+                    cell_urls=cell_urls
+                )
+
+        # Build final response
+        return ResultsApiResponse(
+            result_id=cached_result.result_id,
+            accounts_data=AccountsDataResponse(
+                accounts=accounts_list,
+                highlights=highlights_dict
+            ),
+            drilldown_urls_by_account=drilldown_urls_dict
+        )
 
     # Private helper methods
 

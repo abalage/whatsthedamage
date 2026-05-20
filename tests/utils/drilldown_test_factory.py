@@ -1,10 +1,10 @@
-"""Test factory for creating DrilldownService with test doubles.
+"""Test factory for creating DrilldownResponseService with test doubles.
 
-This module provides utilities for creating DrilldownService instances
+This module provides utilities for creating DrilldownResponseService instances
 with mock dependencies for unit testing.
 """
 from typing import Dict, Optional, Any, List
-from whatsthedamage.services.drilldown_service import DrilldownService
+from whatsthedamage.services.drilldown_response_service import DrilldownResponseService
 from whatsthedamage.services.interfaces import (
     IIdMappingService, ICacheService,
     IDataFormattingService, IStatisticalAnalysisService
@@ -102,15 +102,15 @@ class MockStatisticalAnalysisService(IStatisticalAnalysisService):
         return StatisticalMetadata(highlights=[])
 
 class DrilldownTestFactory:
-    """Factory for creating DrilldownService with test doubles."""
+    """Factory for creating DrilldownResponseService with test doubles."""
 
     @staticmethod
-    def create_drilldown_service(
+    def create_drilldown_response_service(
         id_mappings: Optional[Dict] = None,
         cache_data: Optional[Dict] = None,
         formatting_results: Optional[Dict] = None
-    ) -> DrilldownService:
-        """Create DrilldownService with mock dependencies.
+    ) -> DrilldownResponseService:
+        """Create DrilldownResponseService with mock dependencies.
 
         Args:
             id_mappings: Dictionary containing ID mappings
@@ -118,9 +118,9 @@ class DrilldownTestFactory:
             formatting_results: Dictionary containing formatting results
 
         Returns:
-            DrilldownService instance with mock dependencies
+            DrilldownResponseService instance with mock dependencies
         """
-        return DrilldownService(
+        return DrilldownResponseService(
             id_mapping_service=MockIdMappingService(id_mappings),
             cache_service=MockCacheService(cache_data),
             data_formatting_service=MockDataFormattingService(formatting_results),
@@ -128,11 +128,11 @@ class DrilldownTestFactory:
         )
 
     @staticmethod
-    def create_with_real_dependencies() -> DrilldownService:
-        """Create DrilldownService with real dependencies for integration testing.
+    def create_with_real_dependencies() -> DrilldownResponseService:
+        """Create DrilldownResponseService with real dependencies for integration testing.
 
         Returns:
-            DrilldownService instance with real dependencies
+            DrilldownResponseService instance with real dependencies
         """
         from whatsthedamage.services.id_mapping_service import IdMappingService
         from whatsthedamage.services.cache_service import CacheService
@@ -176,7 +176,7 @@ class DrilldownTestFactory:
             enabled_algorithms=['iqr', 'pareto']
         )
 
-        return DrilldownService(
+        return DrilldownResponseService(
             id_mapping_service=id_mapping_service,
             cache_service=cache_service,
             data_formatting_service=data_formatting_service,

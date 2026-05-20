@@ -174,9 +174,13 @@ src/whatsthedamage/view/static/dist/
 src/whatsthedamage/view/frontend/node_modules/
 src/whatsthedamage/view/frontend/src/node_modules/
 src/whatsthedamage/view/frontend/test/node_modules/
+frontend/node_modules/
+frontend/src/node_modules/
+frontend/test/node_modules/
 
 # Vite cache
 src/whatsthedamage/view/frontend/.vite/
+frontend/.vite/
 
 # Cline memory-bank
 memory-bank/

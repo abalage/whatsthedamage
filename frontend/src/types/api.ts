@@ -1,0 +1,542 @@
+/**
+ * API Response Type Definitions for What's the Damage Frontend
+ *
+ * These TypeScript interfaces define the exact contract for each API endpoint response,
+ * ensuring type safety and consistency with backend Pydantic models.
+ *
+ * Backend counterparts are defined in:
+ * - src/whatsthedamage/models/api_responses.py (API v2 Response DTOs)
+ * - src/whatsthedamage/models/dt_models.py (Data models)
+ */
+
+// ============================================================================
+// Common Types
+// ============================================================================
+
+/**
+ * Display and raw value pair (e.g., formatted currency with numeric value)
+ */
+export interface DisplayRawField {
+  display: string;
+  raw: number | string;
+}
+
+/**
+ * Date with display format and timestamp
+ */
+export interface DateField {
+  display: string;
+  timestamp: number;
+}
+
+/**
+ * Standard error response format for all API v2 endpoints
+ *
+ * Returned for non-200 status codes.
+ */
+export interface ErrorApiResponse {
+  code: number;
+  message: string;
+  details?: Record<string, unknown>;
+}
+
+/**
+ * Standard API response envelope for new endpoints (recommended)
+ *
+ * Provides a consistent structure for all API responses:
+ * - status: Operation status ('success' or 'error')
+ * - data: The endpoint-specific response payload
+ * - meta: Response metadata (timestamp, request_id, version, etc.)
+ * - links: Hypermedia navigation links (self, related resources)
+ * - timestamp: Response generation timestamp in UTC
+ *
+ * Backend counterpart: ApiEnvelope<T> in models/api_responses.py
+ *
+ * @example
+ * ```typescript
+ * const response = await fetch('/api/v2/new-endpoint');
+ * const envelope: ApiEnvelope<SomeData> = await response.json();
+ * console.log(envelope.status); // 'success'
+ * console.log(envelope.data); // SomeData payload
+ * console.log(envelope.meta.request_id); // request identifier
+ * ```
+ */
+export type ApiEnvelope<T = unknown> = {
+  status: 'success' | 'error';
+  data: T;
+  meta: Record<string, unknown>;
+  links: Record<string, string>;
+  timestamp: string; // ISO 8601 datetime string
+};
+
+// ============================================================================
+// Data Models (from dt_models.py)
+// ============================================================================
+
+/**
+ * A single detailed transaction row
+ */
+export interface DetailRow {
+  row_id: string;
+  date: DateField;
+  amount: DisplayRawField;
+  merchant: string;
+  currency: string;
+  account: string;
+  type?: string | null;
+  confidence?: number | null;
+}
+
+/**
+ * Aggregated row: transactions grouped by category and date
+ */
+export interface AggregatedRow {
+  row_id: string;
+  category: string;
+  total: DisplayRawField;
+  date: DateField;
+  details: DetailRow[];
+  is_calculated?: boolean;
+}
+
+/**
+ * Processing metadata
+ */
+export interface ProcessingMetadata {
+  result_id: string;
+  row_count: number;
+  processing_time: number;
+  ml_enabled: boolean;
+  date_range?: string;
+}
+
+/**
+ * Statistical highlights for a single cell/row
+ * Maps row_id to list of highlight types (e.g., ['outlier', 'pareto'])
+ */
+export type StatisticalHighlights = Record<string, string[]>;
+
+// ============================================================================
+// Account/Results Types
+// ============================================================================
+
+/**
+ * Account data structure for results
+ */
+export interface AccountData {
+  id: string;
+  formatted_id: string;
+  currency: string;
+  transactions: TransactionData[];
+  summary: AccountSummary;
+}
+
+/**
+ * Individual transaction data
+ */
+export interface TransactionData {
+  id: string;
+  date: string;
+  amount: number;
+  currency: string;
+  description: string;
+  merchant: string;
+  category: string;
+  category_confidence: number;
+  type: string;
+  account_id: string;
+}
+
+/**
+ * Account summary statistics
+ */
+export interface AccountSummary {
+  total_transactions: number;
+  total_amount: number;
+  categories: CategorySummary[];
+}
+
+/**
+ * Category-level summary
+ */
+export interface CategorySummary {
+  category: string;
+  count: number;
+  total_amount: number;
+  percentage: number;
+}
+
+// ============================================================================
+// API Response Types (matching backend Pydantic models from api_responses.py)
+// ============================================================================
+
+// -----------------------------------------------------------------------------
+// Process Endpoint: POST /api/v2/process
+// -----------------------------------------------------------------------------
+
+/**
+ * Response from POST /api/v2/process
+ *
+ * Contains processed transaction data grouped by category and month,
+ * plus processing metadata.
+ */
+export interface ProcessApiResponse {
+  data: AggregatedRow[];
+  metadata: ProcessingMetadata;
+}
+
+// -----------------------------------------------------------------------------
+// Results Endpoint: GET /api/v2/results/<result_id>
+// -----------------------------------------------------------------------------
+
+/**
+ * Data for a single account in results response
+ */
+export interface AccountDataResponse {
+  id: string;
+  name: string;
+  dt_response: {
+    data: AggregatedRow[];
+  };
+}
+
+/**
+ * Container for all accounts data
+ */
+export interface AccountsDataResponse {
+  accounts: AccountDataResponse[];
+  highlights: StatisticalHighlights;
+}
+
+/**
+ * URL info for category drilldown
+ */
+export interface DrilldownUrlInfo {
+  category_url: string;
+  category_id: string;
+}
+
+/**
+ * URL info for month drilldown
+ */
+export interface MonthUrlInfo {
+  month_url: string;
+  month_id: string;
+}
+
+/**
+ * URL info for cell/transaction drilldown
+ */
+export interface CellUrlInfo {
+  cell_url: string;
+  category_id: string;
+  month_id: string;
+}
+
+/**
+ * All drilldown URLs for a single account
+ */
+export interface DrilldownUrls {
+  account_id: string | null;
+  category_urls: Record<string, DrilldownUrlInfo>;
+  month_urls: Record<string, MonthUrlInfo>;
+  cell_urls: Record<string, CellUrlInfo>;
+}
+
+/**
+ * Response from GET /api/v2/results/<result_id>
+ *
+ * Contains cached processing results with accounts data and drilldown URLs.
+ */
+export interface ResultsApiResponse {
+  result_id: string;
+  accounts_data: AccountsDataResponse;
+  drilldown_urls_by_account: Record<string, DrilldownUrls>;
+}
+
+// -----------------------------------------------------------------------------
+// Drilldown Endpoints
+// -----------------------------------------------------------------------------
+
+/**
+ * Data for a single month in category months response
+ */
+export interface MonthData {
+  month: string;
+  month_timestamp: number;
+  total: DisplayRawField;
+  row_id: string;
+  cell_url: string;
+}
+
+/**
+ * Response from GET /api/v2/results/<r>/accounts/<a>/categories/<c>/months
+ *
+ * Returns month-by-month aggregation for a specific category.
+ */
+export interface CategoryMonthsApiResponse {
+  result_id: string;
+  account_id: string;
+  account_name: string;
+  category_id: string;
+  category_name: string;
+  data: MonthData[];
+  highlights?: StatisticalHighlights;
+}
+
+/**
+ * Data for a single category in month categories response
+ */
+export interface CategoryData {
+  category: string;
+  total: DisplayRawField;
+  row_id: string;
+  category_url: string;
+}
+
+/**
+ * Response from GET /api/v2/results/<r>/accounts/<a>/months/<m>/categories
+ *
+ * Returns category-by-category aggregation for a specific month.
+ */
+export interface MonthCategoriesApiResponse {
+  result_id: string;
+  account_id: string;
+  account_name: string;
+  month_id: string;
+  month_name: string;
+  data: CategoryData[];
+  highlights?: StatisticalHighlights;
+}
+
+/**
+ * Data for a single transaction in drilldown response
+ */
+export interface TransactionDetailResponse {
+  date: { display: string };
+  amount: DisplayRawField;
+  merchant: string;
+  row_id: string;
+}
+
+/**
+ * Response from GET /api/v2/results/<r>/accounts/<a>/categories/<c>/months/<m>/transactions
+ *
+ * Returns individual transaction details for a specific category and month.
+ */
+export interface CategoryMonthTransactionsApiResponse {
+  result_id: string;
+  account_id: string;
+  account_name: string;
+  category_id: string;
+  category_name: string;
+  month_id: string;
+  month_name: string;
+  data: TransactionDetailResponse[];
+  highlights?: StatisticalHighlights;
+}
+
+// -----------------------------------------------------------------------------
+// Recalculate Statistics Endpoint: POST /api/v2/recalculate-statistics
+// -----------------------------------------------------------------------------
+
+/**
+ * Response from POST /api/v2/recalculate-statistics
+ *
+ * Returns updated statistical highlights with new algorithm settings.
+ */
+export interface RecalculateApiResponse {
+  status: string;
+  result_id: string;
+  highlights: StatisticalHighlights;
+  algorithms: string[];
+  direction: 'columns' | 'rows';
+}
+
+// ============================================================================
+// Legacy Types (for backward compatibility during transition)
+// ============================================================================
+
+/**
+ * Legacy response from transaction processing endpoint
+ * This can be either the old format (result_id at root) or new format (result_id in metadata)
+ *
+ * @deprecated Use ProcessApiResponse instead for new code
+ */
+export interface ProcessingResponse {
+  result_id?: string;
+  status?: string;
+  message?: string;
+  accounts?: AccountData[];
+  metadata?: {
+    result_id: string;
+    processing_time?: number;
+    file_name?: string;
+    file_size?: number;
+    start_date?: string;
+    end_date?: string;
+    category_filter?: string;
+    ml_enabled?: boolean;
+  };
+  highlights?: StatisticalHighlights;
+}
+
+/**
+ * Legacy results response
+ *
+ * @deprecated Use ResultsApiResponse instead for new code
+ */
+export interface ResultsResponse {
+  result_id: string;
+  accounts: AccountData[];
+  metadata: ProcessingMetadata;
+  highlights: StatisticalHighlights;
+  statistical_analysis: StatisticalAnalysis;
+}
+
+/**
+ * Legacy statistical analysis data
+ *
+ * @deprecated Use RecalculateApiResponse instead for new code
+ */
+export interface StatisticalAnalysis {
+  algorithms: string[];
+  direction: 'rows' | 'columns';
+  outliers_detected: number;
+  pareto_items: number;
+}
+
+/**
+ * Legacy detail results response
+ *
+ * @deprecated Use ResultsApiResponse or drilldown types instead
+ */
+export interface DetailResultsResponse {
+  result_id: string;
+  transactions: TransactionData[];
+  metadata: ProcessingMetadata;
+  highlights: StatisticalHighlights;
+}
+
+/**
+ * Legacy recalculate response
+ *
+ * @deprecated Use RecalculateApiResponse instead
+ */
+export interface RecalculateResponse {
+  result_id: string;
+  updated_highlights: StatisticalHighlights;
+  statistical_analysis: StatisticalAnalysis;
+}
+
+// ============================================================================
+// Drilldown URL Types (for legacy ResultsResponseV2)
+// ============================================================================
+
+/**
+ * Legacy drilldown URL info
+ *
+ * @deprecated Use DrilldownUrlInfo, MonthUrlInfo, CellUrlInfo instead
+ */
+export interface DrilldownUrlInfoLegacy {
+  category_url: string;
+  category_id: string;
+}
+
+/**
+ * Legacy drilldown URLs container
+ *
+ * @deprecated Use DrilldownUrls instead
+ */
+export interface DrilldownUrlsLegacy {
+  account_id: string | null;
+  category_urls: Record<string, DrilldownUrlInfoLegacy>;
+  month_urls: Record<string, { month_url: string; month_id: string }>;
+  cell_urls: Record<string, { cell_url: string; category_id: string; month_id: string }>;
+}
+
+/**
+ * Legacy results response with drilldown URLs
+ *
+ * @deprecated Use ResultsApiResponse instead
+ */
+export interface ResultsResponseV2 {
+  result_id: string;
+  accounts_data: {
+    accounts: Array<{
+      id: string;
+      name: string;
+      dt_response: {
+        data: Array<{
+          category: string;
+          date: {
+            display: string;
+            timestamp: number;
+          };
+          total: {
+            display: string;
+            raw: number;
+          };
+          details: Array<{
+            date: { display: string };
+            amount: { display: string };
+            merchant: string;
+          }>;
+          row_id: string;
+        }>;
+      };
+    }>;
+    highlights: StatisticalHighlights;
+  };
+  drilldown_urls_by_account: Record<string, DrilldownUrlsLegacy>;
+}
+
+/**
+ * Legacy account results response
+ *
+ * @deprecated Use ResultsApiResponse instead
+ */
+export interface AccountResultsResponse {
+  result_id: string;
+  accounts_data: {
+    accounts: Array<{
+      id: string;
+      name: string;
+      dt_response: {
+        data: Array<{
+          category: string;
+          date: {
+            display: string;
+            timestamp: number;
+          };
+          total: {
+            display: string;
+            raw: number;
+          };
+          details: Array<{
+            date: { display: string };
+            amount: { display: string };
+            merchant: string;
+            currency: string;
+            type: string;
+            confidence: number | null;
+            row_id: string;
+          }>;
+          row_id: string;
+        }>;
+      };
+    }>;
+    highlights: StatisticalHighlights;
+  };
+}
+
+// ============================================================================
+// Type Aliases for backward compatibility
+// ============================================================================
+
+// Aliases for legacy code that uses different naming conventions
+export type ProcessResponse = ProcessingResponse;
+export type ResultsResponseV2 = ResultsApiResponse;
+export type CategoryMonthsResponse = CategoryMonthsApiResponse;
+export type MonthCategoriesResponse = MonthCategoriesApiResponse;
+export type CategoryMonthTransactionsResponse = CategoryMonthTransactionsApiResponse;

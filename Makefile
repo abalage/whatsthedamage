@@ -10,7 +10,7 @@ MYPY := $(VENV)/bin/mypy
 PODMAN := /usr/bin/podman
 
 # Frontend paths and commands
-FRONTEND_DIR := src/whatsthedamage/view/frontend
+FRONTEND_DIR := frontend
 NPM := npm
 NPM_RUN := $(NPM) run
 
@@ -19,25 +19,29 @@ DOCKER_TAG ?= $(shell set -o pipefail; python3 -m setuptools_scm 2>/dev/null | s
 VERSION ?= $(shell set -o pipefail; python3 -m setuptools_scm 2>/dev/null || echo "v0.0.0")
 
 
-.PHONY: web test lint lang clean mrproper image compile-deps update-deps compile-deps-secure help docs build frontend
+.PHONY: test lint lang clean mrproper image compile-deps update-deps compile-deps-secure help docs build frontend frontend-build test-backend test-frontend
 
 # =============================================================================
 # DEVELOPMENT TARGETS
 # =============================================================================
 
-# Frontend development
-# Unified frontend interface - runs any npm script
-# Usage: make frontend ARG=script-name
-frontend:
+# Frontend development server
+frontend: $(FRONTEND_DIR)/node_modules/.installed
+	@echo "Starting frontend development server..."
+	cd $(FRONTEND_DIR) && $(NPM_RUN) dev
+
+# Generic npm script runner
+# Usage: make frontend-build, make frontend-test, make frontend-lint, etc.
+frontend-%:
 	@if ! command -v $(NPM) >/dev/null 2>&1; then \
 		echo "npm is not installed. Please install Node.js and npm first."; \
 		exit 1; \
 	fi
-	cd $(FRONTEND_DIR) && $(NPM_RUN) $(ARG)
+	cd $(FRONTEND_DIR) && $(NPM_RUN) $*
 
 # Combined build
 build: dev
-	$(MAKE) frontend ARG=build
+	$(MAKE) frontend-build
 
 # Ensure build depends on dev being up to date
 build: $(VENV)/.deps-synced $(FRONTEND_DIR)/node_modules/.installed
@@ -63,18 +67,29 @@ $(FRONTEND_DIR)/node_modules/.installed: $(FRONTEND_DIR)/package.json $(FRONTEND
 	cd $(FRONTEND_DIR) && $(NPM) install
 	touch $@
 
+# Frontend build for production
+frontend-build:
+	cd $(FRONTEND_DIR) && $(NPM_RUN) build
+
 # Set up development environment
 dev: $(VENV)/.deps-synced $(FRONTEND_DIR)/node_modules/.installed
 
-# Run Flask development server
-web: dev $(FRONTEND_DIR)/node_modules/.installed
-	$(MAKE) frontend ARG=build
+# Run Flask development server (API-only backend)
+backend: dev
+	@echo "Starting API-only backend server..."
 	FLASK_APP=src.whatsthedamage.app $(PYTHON) -m flask run
 
-# Run tests using tox
-test: dev
+# Run all tests
+test: test-backend test-frontend
+
+# Run backend tests only
+test-backend: dev
 	$(TOX)
-	$(MAKE) frontend ARG=test
+
+# Run frontend tests only
+test-frontend: $(FRONTEND_DIR)/node_modules/.installed
+	cd $(FRONTEND_DIR) && $(NPM_RUN) lint
+	cd $(FRONTEND_DIR) && $(NPM_RUN) test
 
 # Run linter/formatter
 lint: dev
@@ -104,23 +119,23 @@ image:
 
 # Compile all requirements files from pyproject.toml
 compile-deps: $(VENV)/pyvenv.cfg
-	$(PIP_COMPILE) pyproject.toml
-	$(PIP_COMPILE) --extra=dev pyproject.toml -o requirements-dev.txt
-	$(PIP_COMPILE) --extra=web pyproject.toml -o requirements-web.txt
+	$(PIP_COMPILE) --output-file=requirements.txt pyproject.toml
+	$(PIP_COMPILE) --output-file=requirements-dev.txt pyproject.toml --extra=dev
+	$(PIP_COMPILE) --output-file=requirements-web.txt pyproject.toml --extra=web
 	rm -f $(VENV)/.deps-synced
 
 # Update all requirements (allow upgrades)
 update-deps: $(VENV)/pyvenv.cfg
-	$(PIP_COMPILE) --upgrade pyproject.toml
-	$(PIP_COMPILE) --upgrade --extra=dev pyproject.toml -o requirements-dev.txt
-	$(PIP_COMPILE) --upgrade --extra=web pyproject.toml -o requirements-web.txt
+	$(PIP_COMPILE) --upgrade --output-file=requirements.txt pyproject.toml
+	$(PIP_COMPILE) --upgrade --output-file=requirements-dev.txt pyproject.toml --extra=dev
+	$(PIP_COMPILE) --upgrade --output-file=requirements-web.txt pyproject.toml --extra=web
 	rm -f $(VENV)/.deps-synced
 
 # Generate with hashes for security
 compile-deps-secure: $(VENV)/pyvenv.cfg
-	$(PIP_COMPILE) --generate-hashes pyproject.toml
-	$(PIP_COMPILE) --generate-hashes --extra=dev pyproject.toml -o requirements-dev.txt
-	$(PIP_COMPILE) --generate-hashes --extra=web pyproject.toml -o requirements-web.txt
+	$(PIP_COMPILE) --generate-hashes --output-file=requirements.txt pyproject.toml
+	$(PIP_COMPILE) --generate-hashes --output-file=requirements-dev.txt pyproject.toml --extra=dev
+	$(PIP_COMPILE) --generate-hashes --output-file=requirements-web.txt pyproject.toml --extra=web
 	rm -f $(VENV)/.deps-synced
 
 # =============================================================================
@@ -139,12 +154,14 @@ clean:
 	rm -rf .coverage*
 	find . -type f -name "*.pyc" -delete
 	find . -type d -name __pycache__ -delete
-	rm -rf $(FRONTEND_DIR)/../static/dist/
+	rm -rf $(FRONTEND_DIR)/dist/
 
 # Deep clean including virtual environment
 mrproper: clean
 	rm -rf $(VENV)
 	rm -rf $(FRONTEND_DIR)/node_modules/
+	rm -rf $(FRONTEND_DIR)/src/node_modules/
+	rm -rf $(FRONTEND_DIR)/test/node_modules/
 
 # =============================================================================
 # HELP
@@ -154,13 +171,23 @@ mrproper: clean
 help:
 	@echo "Development workflow:"
 	@echo "  dev            - Create venv, install pip-tools, sync all requirements, install frontend dependencies"
-	@echo "  web            - Run Flask development server (requires frontend build)"
-	@echo "  test           - Run tests using tox"
-	@echo "  lint           - Run linter/formatter on Python code"
-	@echo "  image          - Build Podman image with version tag"
-	@echo "  lang           - Extract translatable strings to English .pot file"
-	@echo "  docs           - Build Sphinx documentation"
-	@echo "  frontend ARG=script - Run any npm script (e.g., 'frontend ARG=dev', 'frontend ARG=build')"
+	@echo ""
+	@echo "Development servers:"
+	@echo "  backend        - Run API-only Flask backend development server"
+	@echo "  frontend       - Run frontend development server (Vite)"
+	@echo ""
+	@echo "Testing:"
+	@echo "  test           - Run all tests (backend + frontend)"
+	@echo "  test-backend   - Run backend tests only (pytest via tox)"
+	@echo "  test-frontend  - Run frontend tests only (vitest)"
+	@echo ""
+	@echo "Frontend scripts:"
+	@echo "  frontend-build  - Build frontend for production"
+	@echo "  frontend-test   - Run frontend tests (same as test-frontend)"
+	@echo "  frontend-lint   - Run frontend linter"
+	@echo "  frontend-%      - Run any npm script (e.g., 'frontend-build', 'frontend-test')"
+	@echo ""
+	@echo "Build:"
 	@echo "  build          - Full stack build (Python + JS)"
 	@echo ""
 	@echo "Dependency management for Python:"

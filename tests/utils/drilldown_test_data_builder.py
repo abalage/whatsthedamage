@@ -1,4 +1,4 @@
-"""Test data builder for creating realistic test data for DrilldownService.
+"""Test data builder for creating realistic test data for DrilldownResponseService.
 
 This module provides utilities for creating test data structures
 that mimic real processing results.
@@ -9,7 +9,7 @@ from datetime import datetime
 import uuid
 
 class DrilldownTestDataBuilder:
-    """Builder for creating test data for DrilldownService testing."""
+    """Builder for creating test data for DrilldownResponseService testing."""
 
     @staticmethod
     def create_aggregated_row(

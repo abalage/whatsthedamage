@@ -6,6 +6,11 @@ to enable better testability through dependency injection and mocking.
 from abc import ABC, abstractmethod
 from typing import Dict, List, Optional, Any
 from whatsthedamage.models.dt_models import DataTablesResponse, StatisticalMetadata
+from whatsthedamage.models.api_responses import (
+    CategoryMonthsApiResponse,
+    MonthCategoriesApiResponse,
+    CategoryMonthTransactionsApiResponse
+)
 
 class ICacheService(ABC):
     """Interface for cache service operations."""
@@ -158,5 +163,77 @@ class IStatisticalAnalysisService(ABC):
 
         Returns:
             Statistical metadata object
+        """
+        pass
+
+
+class IDrilldownResponseService(ABC):
+    """Interface for drilldown response service operations."""
+
+    @abstractmethod
+    def get_category_months_response(
+        self,
+        result_id: str,
+        account_id: str,
+        category_id: str
+    ) -> CategoryMonthsApiResponse:
+        """Build response for category months drilldown endpoint.
+
+        Args:
+            result_id: UUID of the cached processing result
+            account_id: Secure account ID to filter by
+            category_id: Secure category ID to get months for
+
+        Returns:
+            CategoryMonthsApiResponse: Pydantic model with months data, highlights, and drilldown URLs
+
+        Raises:
+            ValueError: If result, account, or category not found
+        """
+        pass
+
+    @abstractmethod
+    def get_month_categories_response(
+        self,
+        result_id: str,
+        account_id: str,
+        month_id: str
+    ) -> MonthCategoriesApiResponse:
+        """Build response for month categories drilldown endpoint.
+
+        Args:
+            result_id: UUID of the cached processing result
+            account_id: Secure account ID to filter by
+            month_id: Secure month ID to get categories for
+
+        Returns:
+            MonthCategoriesApiResponse: Pydantic model with categories data, highlights, and drilldown URLs
+
+        Raises:
+            ValueError: If result, account, or month not found
+        """
+        pass
+
+    @abstractmethod
+    def get_category_month_transactions_response(
+        self,
+        result_id: str,
+        account_id: str,
+        category_id: str,
+        month_id: str
+    ) -> CategoryMonthTransactionsApiResponse:
+        """Build response for category month transactions drilldown endpoint.
+
+        Args:
+            result_id: UUID of the cached processing result
+            account_id: Secure account ID to filter by
+            category_id: Secure category ID to filter by
+            month_id: Secure month ID to filter by
+
+        Returns:
+            CategoryMonthTransactionsApiResponse: Pydantic model with transaction details, highlights, and metadata
+
+        Raises:
+            ValueError: If result, account, category, month, or transactions not found
         """
         pass

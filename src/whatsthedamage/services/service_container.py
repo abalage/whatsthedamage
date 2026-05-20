@@ -13,7 +13,7 @@ from whatsthedamage.services.file_upload_service import FileUploadService
 from whatsthedamage.services.session_service import SessionService
 from whatsthedamage.services.id_mapping_service import IdMappingService
 from whatsthedamage.services.cache_service import CacheService
-from whatsthedamage.services.drilldown_service import DrilldownService
+from whatsthedamage.services.drilldown_response_service import DrilldownResponseService
 from whatsthedamage.services.ml_service import MLService
 from whatsthedamage.services.text_correction_service import TextCorrectionService
 from whatsthedamage.services.smote_service import SmoteService
@@ -92,7 +92,7 @@ class ServiceContainer:
         web_service_creators = {
             CacheService: lambda: self._create_cache_service(),
             IdMappingService: lambda: self._create_id_mapping_service(),
-            DrilldownService: lambda: self._create_drilldown_service(),
+            DrilldownResponseService: lambda: self._create_drilldown_response_service(),
         }
 
         # Try to create service using appropriate registry
@@ -124,13 +124,11 @@ class ServiceContainer:
         cache_service = self.get_service(CacheService)
         return IdMappingService(cache_service)
 
-    def _create_drilldown_service(self) -> DrilldownService:
-        """Create DrilldownService instance."""
-        return DrilldownService(
+    def _create_drilldown_response_service(self) -> DrilldownResponseService:
+        """Create DrilldownResponseService instance."""
+        return DrilldownResponseService(
             id_mapping_service=self.get_service(IdMappingService),
-            cache_service=self.get_service(CacheService),
-            data_formatting_service=self.get_service(ResponseFormattingService),
-            statistical_analysis_service=self.get_service(StatisticalAnalysisService)
+            cache_service=self.get_service(CacheService)
         )
 
     # Convenience properties for common services
@@ -175,9 +173,9 @@ class ServiceContainer:
         return self.get_service(IdMappingService)
 
     @property
-    def drilldown_service(self) -> DrilldownService:
-        """Get DrilldownService instance (web context only)."""
-        return self.get_service(DrilldownService)
+    def drilldown_response_service(self) -> DrilldownResponseService:
+        """Get DrilldownResponseService instance (web context only)."""
+        return self.get_service(DrilldownResponseService)
 
     @property
     def ml_service(self) -> MLService:

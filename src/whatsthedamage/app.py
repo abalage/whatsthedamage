@@ -1,9 +1,9 @@
 from flask import Flask, current_app
+from flask_cors import CORS
 import os
 import gettext
 from typing import Optional, Any
 from whatsthedamage.controllers.routes import bp as main_bp
-from whatsthedamage.api.docs import docs_bp
 from whatsthedamage.api.v2.endpoints import v2_bp
 from whatsthedamage.api.error_handlers import register_error_handlers
 from whatsthedamage.config.flask_config import FlaskAppConfig
@@ -11,15 +11,14 @@ from whatsthedamage.utils.flask_locale import get_locale
 from whatsthedamage.utils.version import get_version
 from whatsthedamage.utils.logging import configure_logging, get_logger
 from whatsthedamage.services.service_container import ServiceContainer, create_service_container
-from whatsthedamage.services.id_mapping_service import IdMappingService
 
 def create_app(
     config_class: Optional[FlaskAppConfig] = None,
     service_container: Optional[ServiceContainer] = None
 ) -> Flask:
     # Configure logging before creating Flask app
-    # Use default WARN level, stdout output, and text format for web interface
-    configure_logging(log_level="WARN", log_output="stdout", log_format="text")
+    # Use INFO level to capture more details, stdout output, and text format for web interface
+    configure_logging(log_level="INFO", log_output="stdout", log_format="text")
     logger = get_logger(__name__)
     logger.info("Starting Flask application initialization")
 
@@ -30,6 +29,11 @@ def create_app(
 
     if config_class:
         app.config.from_object(config_class)
+
+    # Enable CORS for API endpoints
+    CORS(app, resources={
+        r"/api/*": {"origins": ["http://localhost:3000", "http://127.0.0.1:3000"]}
+    })
 
     logger.info("Flask application configured successfully")
 
@@ -88,7 +92,7 @@ def create_app(
     app.extensions['statistical_analysis_service'] = service_container.statistical_analysis_service
     app.extensions['file_upload_service'] = service_container.file_upload_service
     app.extensions['session_service'] = service_container.session_service
-    app.extensions['drilldown_service'] = service_container.drilldown_service
+    app.extensions['drilldown_response_service'] = service_container.drilldown_response_service
 
     # --- BEGIN: Gettext integration for templates ---
     # Note: File cleanup should be done via background job or event-driven mechanism,
@@ -121,18 +125,28 @@ def create_app(
 
     # Register blueprints
     app.register_blueprint(main_bp)
-    app.register_blueprint(docs_bp)
     app.register_blueprint(v2_bp)
 
     # Register error handlers for API routes
     register_error_handlers(app)
 
+    # Add request logging middleware
+    @app.before_request
+    def log_request_info() -> None:
+        """Log basic request information for debugging purposes."""
+        from flask import request
+        if request.path.startswith('/api/'):
+            logger.debug(f"API Request: {request.method} {request.path}", extra={
+                "context": {
+                    "user_agent": request.user_agent.string if request.user_agent else "unknown",
+                    "remote_addr": request.remote_addr,
+                    "content_type": request.content_type,
+                    "content_length": request.content_length
+                }
+            })
+
     return app
 
-def _get_id_mapping_service() -> IdMappingService:
-    """Get ID mapping service from app extensions (dependency injection)."""
-    from typing import cast
-    return cast(IdMappingService, current_app.extensions['id_mapping_service'])
 
 # Create the app instance for Gunicorn
 app = create_app()

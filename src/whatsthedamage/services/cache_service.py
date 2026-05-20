@@ -73,7 +73,6 @@ class CacheService(ICacheService):
     def set(self, key: str, value: ProcessingResponse, timeout: Optional[int] = None) -> None:
         """Cache the result."""
         actual_timeout = timeout if timeout is not None else self._ttl
-        logger.info(f"Caching result {key} with TTL {actual_timeout} seconds")
         self._cache.set(key, value, timeout=actual_timeout)
 
     def get(self, key: str) -> Optional[ProcessingResponse]:

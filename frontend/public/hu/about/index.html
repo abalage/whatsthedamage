@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+    <link rel="icon" href="/favicon.ico" type="image/x-icon">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Névjegy - What's the Damage</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        header {
+            background-color: #28a745;
+            color: white;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        h1, h2 {
+            color: #28a745;
+        }
+        .bg-warning {
+            background-color: #ffc107;
+            padding: 15px;
+            border-radius: 5px;
+        }
+        footer {
+            background-color: #28a745;
+            color: white;
+            text-align: center;
+            padding: 20px;
+            margin-top: 30px;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>What's the Damage</h1>
+        <nav>
+            <a href="/hu/" style="color: white; margin-right: 20px;">Kezdőlap</a>
+            <a href="/hu/about" style="color: white; margin-right: 20px;">Névjegy</a>
+            <a href="/hu/legal" style="color: white; margin-right: 20px;">Jogi</a>
+            <a href="/hu/privacy" style="color: white;">Adatvédelmi</a>
+        </nav>
+    </header>
+    <main>
+        <h1>What's the Damage</h1>
+        <p>Ez az alkalmazás CSV fájlok feldolgozására és jelentések generálására szolgál. A bankszámlák exportált adatait használja.</p>
+        <p>Az alkalmazás rugalmasan testreszabható, és különböző CSV formátumokat tud kezelni.</p>
+        <p>GPL-3.0 licenc alatt publikálták.</p>
+        <h2>A megoldott problema</h2>
+        <p>A bankom által biztosított pénzügyi jelentések nem voltak elég részletesek, ezért saját megoldást hoztam létre.</p>
+        <p>A pénzügyi adataim privát ügyek, ezért olyan megoldásra volt szükségem, amely biztosítja, hogy csak én férhetek hozzá az adatokhoz.</p>
+
+        <p class="bg-warning">Ez az alkalmazás nem tárolja vagy adja el az Ön adatait. A feltöltött tartalom automatikusan törlődik a jelentés generálása után.</p>
+        <h2>Főbb jellemzők</h2>
+        <ul>
+            <li><strong>Automatizált kategóriázás:</strong> A tranzakciókat ismert számlákra és kategóriákra osztja reguláris kifejezések segítségével.</li>
+            <li><strong>Szűrés:</strong> Tranzakciók szűrése dátumok vagy hónapok szerint.</li>
+            <li><strong>Részletes jelentések:</strong> Összegzett jelentések generálása kategóriák szerint.</li>
+            <li><strong>CSV export:</strong> Jelentések mentése CSV formátumban.</li>
+            <li><strong>Testreszabható konfiguráció:</strong> Saját reguláris kifejezések használata.</li>
+        </ul>
+
+        <h2>Erőforrások</h2>
+        <ul>
+            <li>A forráskód és dokumentáció a <a href="https://github.com/abalage/whatsthedamage">whatsthedamage</a> GitHub repository-ban található.</li>
+            <li>A fejlesztésről a <a href="https://balagetech.com/introducing-whatsthedamage-to-process-your-bank-account-exports/">Introducing whatsthedamage</a> blogposztban olvashat.</li>
+        </ul>
+
+    </main>
+    <footer>
+        <p>&copy; 2024 What's the Damage. Minden jog fenntartva.</p>
+    </footer>
+</body>
+</html>

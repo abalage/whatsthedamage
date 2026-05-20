@@ -121,8 +121,17 @@ def handle_generic_exception(error: Exception) -> tuple[Response, int]:
     Returns:
         tuple: JSON response and status code 500
     """
-    # Log the full exception for debugging
-    logger.exception("Unhandled exception in API endpoint", extra={"context": {"error_type": type(error).__name__}})
+    # Extract request context for logging
+    request_context = {
+        "error_type": type(error).__name__,
+        "path": request.path if request else "unknown",
+        "method": request.method if request else "unknown",
+        "user_agent": request.user_agent.string if request and request.user_agent else "unknown",
+        "remote_addr": request.remote_addr if request else "unknown"
+    }
+
+    # Log the full exception for debugging with detailed context
+    logger.exception("Unhandled exception in API endpoint", extra={"context": request_context})
     
     error_response = ErrorResponse(
         code=500,

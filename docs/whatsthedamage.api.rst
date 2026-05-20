@@ -17,14 +17,6 @@ Subpackages
 Submodules
 ----------
 
-whatsthedamage.api.docs module
-------------------------------
-
-.. automodule:: whatsthedamage.api.docs
-   :members:
-   :show-inheritance:
-   :undoc-members:
-
 whatsthedamage.api.error\_handlers module
 -----------------------------------------
 

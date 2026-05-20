@@ -9,8 +9,15 @@ from werkzeug.datastructures import FileStorage
 from typing import Optional, cast
 
 from whatsthedamage.models.api_models import ProcessingRequest
+from whatsthedamage.services.configuration_service import ConfigurationService
 from whatsthedamage.services.response_formatting_service import ResponseFormattingService
 from whatsthedamage.services.file_upload_service import FileUploadService, FileUploadError
+from whatsthedamage.services.processing_service import ProcessingService
+from whatsthedamage.services.cache_service import CacheService
+from whatsthedamage.services.id_mapping_service import IdMappingService
+from whatsthedamage.services.session_service import SessionService
+from whatsthedamage.services.statistical_analysis_service import StatisticalAnalysisService
+from whatsthedamage.services.drilldown_response_service import DrilldownResponseService
 
 
 def _get_response_builder_service() -> ResponseFormattingService:
@@ -21,6 +28,41 @@ def _get_response_builder_service() -> ResponseFormattingService:
 def _get_file_upload_service() -> FileUploadService:
     """Get file upload service from app extensions (dependency injection)."""
     return cast(FileUploadService, current_app.extensions['file_upload_service'])
+
+
+def _get_processing_service() -> ProcessingService:
+    """Get processing service from app extensions (dependency injection)."""
+    return cast(ProcessingService, current_app.extensions['processing_service'])
+
+
+def _get_cache_service() -> CacheService:
+    """Get cache service from app extensions (dependency injection)."""
+    return cast(CacheService, current_app.extensions['cache_service'])
+
+
+def _get_id_mapping_service() -> IdMappingService:
+    """Get ID mapping service from app extensions (dependency injection)."""
+    return cast(IdMappingService, current_app.extensions['id_mapping_service'])
+
+
+def _get_statistical_service() -> StatisticalAnalysisService:
+    """Get statistical analysis service from app extensions (dependency injection)."""
+    return cast(StatisticalAnalysisService, current_app.extensions['statistical_analysis_service'])
+
+
+def _get_drilldown_response_service() -> DrilldownResponseService:
+    """Get drilldown response service from app extensions (dependency injection)."""
+    return cast(DrilldownResponseService, current_app.extensions['drilldown_response_service'])
+
+
+def _get_session_service() -> SessionService:
+    """Get session service from app extensions (dependency injection)."""
+    return cast(SessionService, current_app.extensions['session_service'])
+
+
+def _get_configuration_service() -> ConfigurationService:
+    """Get ConfigurationService from app extensions (dependency injection)."""
+    return cast(ConfigurationService, current_app.extensions['configuration_service'])
 
 
 def validate_csv_file() -> FileStorage:
@@ -119,22 +161,53 @@ def cleanup_files(csv_path: str, config_path: str | None) -> None:
     file_upload_service.cleanup_files(csv_path, config_path)
 
 
-def handle_error(error: Exception) -> tuple[Response, int]:
+def handle_error(error: Exception, endpoint_name: Optional[str] = None) -> tuple[Response, int]:
     """Handle exceptions and return appropriate error response.
 
     Delegates to ResponseBuilderService for consistent error handling
-    across API and web endpoints.
+    across API and web endpoints. Automatically logs errors and handles
+    ValueError as 404, BadRequest as 400, and others as 500.
+
+    Falls back to simple error response if services are not available
+    (e.g., during testing or initialization).
 
     Args:
         error: The exception to handle
+        endpoint_name: Optional name of the endpoint for logging context
 
     Returns:
         tuple: (jsonified error response, status code)
     """
-    # Delegate to ResponseBuilderService for centralized error handling
-    return _get_response_builder_service().build_error_response(
-        error=error,
-        default_code=500,
-        default_message="Internal server error",
-        context={'field': 'csv_file'} if isinstance(error, BadRequest) else None
-    )
+    from flask import jsonify
+    from whatsthedamage.utils.logging import get_logger
+    logger = get_logger(__name__)
+
+    # Log the error with context
+    if endpoint_name:
+        logger.error(f"Error in {endpoint_name}: {error}")
+    else:
+        logger.error(f"API error: {error}")
+
+    # Determine status code and message based on exception type
+    if isinstance(error, ValueError):
+        status_code = 404
+        message = str(error)
+    elif isinstance(error, BadRequest):
+        status_code = 400
+        message = str(error)
+    else:
+        status_code = 500
+        message = "Internal server error"
+
+    # Try to use the response builder service if available
+    try:
+        response_builder = _get_response_builder_service()
+        return response_builder.build_error_response(
+            error=error,
+            default_code=status_code,
+            default_message=message,
+            context={'field': 'csv_file'} if isinstance(error, BadRequest) else None
+        )
+    except (KeyError, RuntimeError):
+        # Service not available (e.g., during testing), fall back to simple response
+        return jsonify({'code': status_code, 'message': message}), status_code

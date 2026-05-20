@@ -9,14 +9,6 @@ whatsthedamage.view package
 Submodules
 ----------
 
-whatsthedamage.view.forms module
---------------------------------
-
-.. automodule:: whatsthedamage.view.forms
-   :members:
-   :show-inheritance:
-   :undoc-members:
-
 whatsthedamage.view.row\_printer module
 ---------------------------------------
 

@@ -8,6 +8,14 @@ from unittest.mock import MagicMock, patch
 from flask import Flask
 from whatsthedamage.api.v2.endpoints import v2_bp
 from whatsthedamage.models.dt_models import ProcessingResponse, DataTablesResponse, AggregatedRow, DetailRow, ProcessingMetadata
+from whatsthedamage.models.api_responses import (
+    CategoryMonthsApiResponse,
+    MonthCategoriesApiResponse,
+    CategoryMonthTransactionsApiResponse,
+    MonthData,
+    CategoryData,
+    TransactionDetail,
+)
 
 
 @pytest.fixture
@@ -35,73 +43,93 @@ def client():
         
         # Configure mock responses for drilldown service
         def get_category_months_side_effect(result_id, account_id, category_id):
-            return {
-                'result_id': result_id,
-                'account_id': account_id,
-                'account_name': 'Test Account',
-                'category_id': category_id,
-                'category_name': 'Food',
-                'data': [{
-                    'month': 'January 2023',
-                    'month_timestamp': 1672531200,
-                    'total': {'display': '$150.00', 'raw': 150.0},
-                    'row_id': 'row_1',
-                    'details': [],
-                    'cell_url': f'/results/{result_id}/accounts/{account_id}/categories/{category_id}/months/row_1/transactions'
-                }]
-            }
+            months_list = [
+                MonthData(
+                    month='January 2023',
+                    month_timestamp=1672531200,
+                    total={'display': '$150.00', 'raw': 150.0},
+                    row_id='row_1',
+                    details=[],
+                    cell_url=f'/results/{result_id}/accounts/{account_id}/categories/{category_id}/months/1672531200/transactions'
+                )
+            ]
+            return CategoryMonthsApiResponse(
+                result_id=result_id,
+                account_id=account_id,
+                account_name='Test Account',
+                category_id=category_id,
+                category_name='Food',
+                data=months_list,
+                highlights=None
+            )
         
         def get_month_categories_side_effect(result_id, account_id, month_id):
-            return {
-                'result_id': result_id,
-                'account_id': account_id,
-                'account_name': 'Test Account',
-                'month_id': month_id,
-                'month_name': 'January 2023',
-                'data': [
-                    {
-                        'category': 'food',
-                        'total': {'display': '$150.00', 'raw': 150.0},
-                        'row_id': 'row_1',
-                        'details': [],
-                        'category_url': f'/results/{result_id}/accounts/{account_id}/categories/food/months/{month_id}/transactions'
-                    },
-                    {
-                        'category': 'entertainment',
-                        'total': {'display': '$75.00', 'raw': 75.0},
-                        'row_id': 'row_2',
-                        'details': [],
-                        'category_url': f'/results/{result_id}/accounts/{account_id}/categories/entertainment/months/{month_id}/transactions'
-                    }
-                ]
-            }
+            categories_list = [
+                CategoryData(
+                    category='food',
+                    total={'display': '$150.00', 'raw': 150.0},
+                    row_id='row_1',
+                    details=[],
+                    category_url=f'/results/{result_id}/accounts/{account_id}/categories/food/months/{month_id}/transactions'
+                ),
+                CategoryData(
+                    category='entertainment',
+                    total={'display': '$75.00', 'raw': 75.0},
+                    row_id='row_2',
+                    details=[],
+                    category_url=f'/results/{result_id}/accounts/{account_id}/categories/entertainment/months/{month_id}/transactions'
+                )
+            ]
+            return MonthCategoriesApiResponse(
+                result_id=result_id,
+                account_id=account_id,
+                account_name='Test Account',
+                month_id=month_id,
+                month_name='January 2023',
+                data=categories_list,
+                highlights=None
+            )
 
         def get_category_month_transactions_side_effect(result_id, account_id, category_id, month_id):
             # Return transaction data for the food category in January 2023
             if category_id == 'food' and month_id == '1672531200':
-                return {
-                    'result_id': result_id,
-                    'account_id': account_id,
-                    'account_name': 'Test Account',
-                    'category_id': category_id,
-                    'category_name': 'Food',
-                    'month_id': month_id,
-                    'month_name': 'January 2023',
-                    'data': [
-                        {
-                            'date': {'display': '2023-01-01'},
-                            'amount': {'display': '$100.00'},
-                            'merchant': 'Test Merchant 1',
-                            'row_id': 'detail_1'
-                        },
-                        {
-                            'date': {'display': '2023-01-15'},
-                            'amount': {'display': '$50.00'},
-                            'merchant': 'Test Merchant 2',
-                            'row_id': 'detail_2'
-                        }
-                    ]
-                }
+                transactions_list = [
+                    TransactionDetail(
+                        date={'display': '2023-01-01', 'timestamp': ''},
+                        amount={'display': '$100.00', 'raw': 100.0},
+                        merchant='Test Merchant 1',
+                        currency='',
+                        type='',
+                        confidence=None,
+                        row_id='detail_1',
+                        category='Food',
+                        category_id=category_id,
+                        month_id=month_id
+                    ),
+                    TransactionDetail(
+                        date={'display': '2023-01-15', 'timestamp': ''},
+                        amount={'display': '$50.00', 'raw': 50.0},
+                        merchant='Test Merchant 2',
+                        currency='',
+                        type='',
+                        confidence=None,
+                        row_id='detail_2',
+                        category='Food',
+                        category_id=category_id,
+                        month_id=month_id
+                    )
+                ]
+                return CategoryMonthTransactionsApiResponse(
+                    result_id=result_id,
+                    account_id=account_id,
+                    account_name='Test Account',
+                    category_id=category_id,
+                    category_name='Food',
+                    month_id=month_id,
+                    month_name='January 2023',
+                    data=transactions_list,
+                    highlights=None
+                )
             else:
                 # For non-existent category/month, raise ValueError
                 raise ValueError('No transactions found for the specified category and month')

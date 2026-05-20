@@ -1,17 +1,17 @@
-"""Tests for DataFormattingService.
+"""Tests for ResponseFormattingService.
 
 Comprehensive test suite using parametrized tests for maintainability.
 """
 import pytest
 import json
 import pandas as pd
-from whatsthedamage.services.data_formatting_service import DataFormattingService
+from whatsthedamage.services.response_formatting_service import ResponseFormattingService
 
 
 @pytest.fixture
 def service():
-    """Create a DataFormattingService instance for testing."""
-    return DataFormattingService()
+    """Create a ResponseFormattingService instance for testing."""
+    return ResponseFormattingService()
 
 
 @pytest.fixture

@@ -5,7 +5,7 @@ with detailed transaction-level data for DataTables rendering.
 """
 from flask import Blueprint, jsonify, Response, request
 from werkzeug.exceptions import BadRequest
-from typing import Dict, List, Tuple
+from typing import Tuple
 import time
 
 from whatsthedamage.models.dt_models import ProcessingResponse
@@ -20,7 +20,7 @@ from whatsthedamage.api.helpers import (
     _get_response_builder_service,
     _get_processing_service,
     _get_statistical_service,
-    _get_drilldown_response_service
+    _get_drilldown_response_service,
 )
 
 
@@ -43,7 +43,7 @@ def process_transactions() -> tuple[Response, int]:
     - language (optional): Output language (default: en)
 
     Returns:
-        JSON response with DetailedResponse structure containing transaction details
+        ProcessApiResponse: Typed response with processed transaction data
 
     Status Codes:
         200: Successfully processed
@@ -76,6 +76,8 @@ def process_transactions() -> tuple[Response, int]:
             cache_service.set(result.result_id, result)
 
             processing_time = time.time() - start_time
+
+            # Delegate to service for response construction
             response = _get_response_builder_service().build_api_detailed_response(
                 datatables_response=result.data,
                 metadata=result.metadata,
@@ -101,7 +103,7 @@ def get_results(result_id: str) -> tuple[Response, int]:
         result_id: UUID of the cached processing result
 
     Returns:
-        JSON response with results data including accounts, highlights, and drilldown URLs
+        ResultsApiResponse: Typed response with accounts data, highlights, and drilldown URLs
 
     Status Codes:
         200: Successfully retrieved results
@@ -118,14 +120,10 @@ def get_results(result_id: str) -> tuple[Response, int]:
         if not cached_result:
             return handle_error(ValueError('Results not found'), 'get_results')
 
-        # Use ResponseFormattingService to format the response
-        response_data = _get_response_builder_service().format_processing_response_for_frontend(cached_result)
+        # Delegate to service for response construction
+        response = _get_response_builder_service().format_processing_response_for_frontend(cached_result)
 
-        # Check if the service returned an error
-        if 'error' in response_data:
-            return handle_error(ValueError(response_data['error']), 'get_results')
-
-        return jsonify(response_data), 200
+        return jsonify(response.model_dump()), 200
 
     except Exception as e:
         return handle_error(e, 'get_results')
@@ -149,7 +147,7 @@ def get_category_months(result_id: str, account_id: str, category_id: str) -> tu
         category_id: Category ID to get months for
 
     Returns:
-        JSON response with months data for the category
+        CategoryMonthsApiResponse: Typed response with months data for the category
 
     Status Codes:
         200: Successfully retrieved category months
@@ -158,12 +156,12 @@ def get_category_months(result_id: str, account_id: str, category_id: str) -> tu
     """
     try:
         drilldown_response_service = _get_drilldown_response_service()
-        response_data = drilldown_response_service.get_category_months_response(
+        response = drilldown_response_service.get_category_months_response(
             result_id=result_id,
             account_id=account_id,
             category_id=category_id
         )
-        return jsonify(response_data), 200
+        return jsonify(response.model_dump()), 200
 
     except Exception as e:
         return handle_error(e, 'get_category_months')
@@ -181,7 +179,7 @@ def get_month_categories(result_id: str, account_id: str, month_id: str) -> tupl
         month_id: Month ID to get categories for
 
     Returns:
-        JSON response with categories data for the month
+        MonthCategoriesApiResponse: Typed response with categories data for the month
 
     Status Codes:
         200: Successfully retrieved month categories
@@ -190,12 +188,12 @@ def get_month_categories(result_id: str, account_id: str, month_id: str) -> tupl
     """
     try:
         drilldown_response_service = _get_drilldown_response_service()
-        response_data = drilldown_response_service.get_month_categories_response(
+        response = drilldown_response_service.get_month_categories_response(
             result_id=result_id,
             account_id=account_id,
             month_id=month_id
         )
-        return jsonify(response_data), 200
+        return jsonify(response.model_dump()), 200
 
     except Exception as e:
         return handle_error(e, 'get_month_categories')
@@ -214,7 +212,7 @@ def get_category_month_transactions(result_id: str, account_id: str, category_id
         month_id: Month ID to filter by
 
     Returns:
-        JSON response with transaction details
+        CategoryMonthTransactionsApiResponse: Typed response with transaction details
 
     Status Codes:
         200: Successfully retrieved transactions
@@ -223,13 +221,13 @@ def get_category_month_transactions(result_id: str, account_id: str, category_id
     """
     try:
         drilldown_response_service = _get_drilldown_response_service()
-        response_data = drilldown_response_service.get_category_month_transactions_response(
+        response = drilldown_response_service.get_category_month_transactions_response(
             result_id=result_id,
             account_id=account_id,
             category_id=category_id,
             month_id=month_id
         )
-        return jsonify(response_data), 200
+        return jsonify(response.model_dump()), 200
 
     except Exception as e:
         return handle_error(e, 'get_category_month_transactions')
@@ -246,7 +244,7 @@ def recalculate_statistics() -> Tuple[Response, int]:
         - direction (required): Direction for analysis ('rows' or 'columns')
 
     Returns:
-        JSON response with updated statistical metadata
+        RecalculateApiResponse: Typed response with updated statistical metadata
 
     Status Codes:
         200: Successfully recalculated statistics
@@ -279,36 +277,16 @@ def recalculate_statistics() -> Tuple[Response, int]:
         if cached_result is None:
             return handle_error(ValueError('Result data not found or expired'), 'recalculate_statistics')
 
-        # Get statistical service
-        statistical_service = _get_statistical_service()
-
-        # Recalculate statistics
-        updated_metadata = statistical_service.compute_statistical_metadata(
-            cached_result.data,
-            algorithms=algorithms,
-            direction=direction
+        # Delegate to service for response construction
+        response, updated_metadata = _get_statistical_service().compute_and_format_statistics(
+            cached_result, algorithms, direction
         )
 
-        # Convert highlights list to dict format, merging types for same row_id
-        highlights_dict: Dict[str, List[str]] = {}
-        for cell_highlight in updated_metadata.highlights:
-            if cell_highlight.row_id in highlights_dict:
-                # Merge highlight types for existing row_id
-                highlights_dict[cell_highlight.row_id].extend(cell_highlight.highlight_types)
-            else:
-                highlights_dict[cell_highlight.row_id] = cell_highlight.highlight_types.copy()
-
-        # Update cache
+        # Update cache with new metadata
         cached_result.statistical_metadata = updated_metadata
         cache_service.set(result_id, cached_result)
 
-        return jsonify({
-            'status': 'success',
-            'result_id': result_id,
-            'highlights': highlights_dict,
-            'algorithms': algorithms,
-            'direction': direction
-        }), 200
+        return jsonify(response.model_dump()), 200
 
     except Exception as e:
         return handle_error(e, 'recalculate_statistics')

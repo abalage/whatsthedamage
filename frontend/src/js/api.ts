@@ -5,12 +5,13 @@
 
 import { AppError, ApiResponse } from '../types';
 import {
+  // Legacy type aliases for backward compatibility
+  ProcessResponse,
   ResultsResponseV2,
   AccountResultsResponse,
   CategoryMonthsResponse,
   MonthCategoriesResponse,
   CategoryMonthTransactionsResponse,
-  ProcessResponse
 } from '../types/api';
 
 // API base URL configuration

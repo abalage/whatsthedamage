@@ -6,6 +6,11 @@ to enable better testability through dependency injection and mocking.
 from abc import ABC, abstractmethod
 from typing import Dict, List, Optional, Any
 from whatsthedamage.models.dt_models import DataTablesResponse, StatisticalMetadata
+from whatsthedamage.models.api_responses import (
+    CategoryMonthsApiResponse,
+    MonthCategoriesApiResponse,
+    CategoryMonthTransactionsApiResponse
+)
 
 class ICacheService(ABC):
     """Interface for cache service operations."""
@@ -171,7 +176,7 @@ class IDrilldownResponseService(ABC):
         result_id: str,
         account_id: str,
         category_id: str
-    ) -> Dict[str, Any]:
+    ) -> CategoryMonthsApiResponse:
         """Build response for category months drilldown endpoint.
 
         Args:
@@ -180,7 +185,7 @@ class IDrilldownResponseService(ABC):
             category_id: Secure category ID to get months for
 
         Returns:
-            Dictionary with months data, highlights, and drilldown URLs
+            CategoryMonthsApiResponse: Pydantic model with months data, highlights, and drilldown URLs
 
         Raises:
             ValueError: If result, account, or category not found
@@ -193,7 +198,7 @@ class IDrilldownResponseService(ABC):
         result_id: str,
         account_id: str,
         month_id: str
-    ) -> Dict[str, Any]:
+    ) -> MonthCategoriesApiResponse:
         """Build response for month categories drilldown endpoint.
 
         Args:
@@ -202,7 +207,7 @@ class IDrilldownResponseService(ABC):
             month_id: Secure month ID to get categories for
 
         Returns:
-            Dictionary with categories data, highlights, and drilldown URLs
+            MonthCategoriesApiResponse: Pydantic model with categories data, highlights, and drilldown URLs
 
         Raises:
             ValueError: If result, account, or month not found
@@ -216,7 +221,7 @@ class IDrilldownResponseService(ABC):
         account_id: str,
         category_id: str,
         month_id: str
-    ) -> Dict[str, Any]:
+    ) -> CategoryMonthTransactionsApiResponse:
         """Build response for category month transactions drilldown endpoint.
 
         Args:
@@ -226,7 +231,7 @@ class IDrilldownResponseService(ABC):
             month_id: Secure month ID to filter by
 
         Returns:
-            Dictionary with transaction details, highlights, and metadata
+            CategoryMonthTransactionsApiResponse: Pydantic model with transaction details, highlights, and metadata
 
         Raises:
             ValueError: If result, account, category, month, or transactions not found

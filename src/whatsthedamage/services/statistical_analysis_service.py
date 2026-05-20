@@ -9,7 +9,8 @@ import json
 from typing import Dict, List, Tuple, Optional, Any
 from enum import Enum
 from pathlib import Path
-from whatsthedamage.models.dt_models import CellHighlight, StatisticalMetadata, DataTablesResponse, AggregatedRow, SummaryData
+from whatsthedamage.models.dt_models import CellHighlight, StatisticalMetadata, DataTablesResponse, AggregatedRow, SummaryData, ProcessingResponse
+from whatsthedamage.models.api_responses import RecalculateApiResponse
 from whatsthedamage.models.statistical_algorithms import (
     StatisticalAlgorithm,
     IQROutlierDetection,
@@ -510,3 +511,45 @@ class StatisticalAnalysisService(IStatisticalAnalysisService):
             highlights.extend(excluded_highlights)
 
         return StatisticalMetadata(highlights=highlights)
+
+    def compute_and_format_statistics(
+        self,
+        cached_result: ProcessingResponse,
+        algorithms: List[str],
+        direction: str
+    ) -> tuple[RecalculateApiResponse, StatisticalMetadata]:
+        """Compute statistics and return formatted API response with metadata.
+
+        Args:
+            cached_result: The cached processing result
+            algorithms: List of algorithm names to apply
+            direction: Direction for analysis ('rows' or 'columns')
+
+        Returns:
+            Tuple of (RecalculateApiResponse, StatisticalMetadata):
+            - RecalculateApiResponse: Typed response for /api/v2/recalculate-statistics endpoint
+            - StatisticalMetadata: The computed metadata for cache update
+        """
+        updated_metadata = self.compute_statistical_metadata(
+            cached_result.data,
+            algorithms=algorithms,
+            direction=direction
+        )
+
+        # Convert highlights list to dict format, merging types for same row_id
+        highlights_dict: Dict[str, List[str]] = {}
+        for cell_highlight in updated_metadata.highlights:
+            if cell_highlight.row_id in highlights_dict:
+                highlights_dict[cell_highlight.row_id].extend(cell_highlight.highlight_types)
+            else:
+                highlights_dict[cell_highlight.row_id] = cell_highlight.highlight_types.copy()
+
+        response = RecalculateApiResponse(
+            status='success',
+            result_id=cached_result.result_id,
+            highlights=highlights_dict,
+            algorithms=algorithms,
+            direction=direction
+        )
+
+        return response, updated_metadata

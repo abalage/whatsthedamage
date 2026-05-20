@@ -14,6 +14,14 @@ Architecture Patterns:
 import datetime
 from typing import Any, Callable, Dict, List, Optional, Tuple, cast
 from whatsthedamage.models.dt_models import ProcessingResponse, AggregatedRow, DataTablesResponse
+from whatsthedamage.models.api_responses import (
+    CategoryMonthsApiResponse,
+    MonthCategoriesApiResponse,
+    CategoryMonthTransactionsApiResponse,
+    MonthData,
+    CategoryData,
+    TransactionDetail,
+)
 from whatsthedamage.services.interfaces import (
     IIdMappingService,
     ICacheService,
@@ -51,7 +59,7 @@ class DrilldownResponseService:
         result_id: str,
         account_id: str,
         category_id: str,
-    ) -> Dict[str, Any]:
+    ) -> CategoryMonthsApiResponse:
         """Build response for category months drilldown endpoint.
 
         Retrieves cached processing result, filters by account and category,
@@ -64,14 +72,7 @@ class DrilldownResponseService:
             category_id: Secure category ID to get months for
 
         Returns:
-            Dictionary with structure:
-            - result_id: Processing result ID
-            - account_id: Account ID
-            - account_name: Account name
-            - category_id: Category ID
-            - category_name: Resolved category name
-            - data: List of month entries with totals and URLs
-            - highlights: Aggregated highlights for drilldown rows
+            CategoryMonthsApiResponse: Typed response for /results/<id>/accounts/<acct>/categories/<cat>/months
 
         Raises:
             ValueError: If result, account, or category not found
@@ -91,12 +92,31 @@ class DrilldownResponseService:
         if not month_groups:
             raise ValueError('Category not found or has no data')
 
-        # Build response data
-        months_list = self._build_grouped_list(
-            month_groups, result_id, account_id, category_id, '',
-            'category_month_transactions', 'month', 'date.display', 'date.timestamp',
-            'cell_url', use_row_id_as_month=True
-        )
+        # Build response data - convert to MonthData DTOs
+        months_list: List[MonthData] = []
+        for month_ts, rows in month_groups.items():
+            first_row = rows[0]
+            row_id = getattr(first_row, 'row_id', '')
+
+            # Build total dict
+            total_dict = self._build_item_total(first_row, rows)
+
+            # Build cell_url (drilldown to transactions for this month)
+            cell_url = self._build_frontend_url(
+                'category_month_transactions',
+                result_id=result_id,
+                account_id=account_id,
+                category_id=category_id,
+                month_id=month_ts
+            )
+
+            months_list.append(MonthData(
+                month=month_ts,
+                month_timestamp=int(month_ts) if month_ts else 0,
+                total=total_dict,
+                row_id=row_id,
+                cell_url=cell_url
+            ))
 
         # Get category display name
         category_name = self._get_display_name(
@@ -104,30 +124,27 @@ class DrilldownResponseService:
             lambda v: v.replace('_', ' ').title()
         )
 
-        response_data: Dict[str, Any] = {
-            'result_id': result_id,
-            'account_id': account_id,
-            'account_name': account_data['name'],
-            'category_id': category_id,
-            'category_name': category_name,
-            'data': months_list,
-        }
-
         # Aggregate highlights for drilldown rows
         highlights = self._aggregate_highlights_for_drilldown(
             cached_result, month_groups, category_filter=original_category
         )
-        if highlights:
-            response_data['highlights'] = highlights
 
-        return response_data
+        return CategoryMonthsApiResponse(
+            result_id=result_id,
+            account_id=account_id,
+            account_name=account_data['name'],
+            category_id=category_id,
+            category_name=category_name,
+            data=months_list,
+            highlights=highlights
+        )
 
     def get_month_categories_response(
         self,
         result_id: str,
         account_id: str,
         month_id: str,
-    ) -> Dict[str, Any]:
+    ) -> MonthCategoriesApiResponse:
         """Build response for month categories drilldown endpoint.
 
         Retrieves cached processing result, filters by account and month,
@@ -140,14 +157,7 @@ class DrilldownResponseService:
             month_id: Secure month ID to get categories for
 
         Returns:
-            Dictionary with structure:
-            - result_id: Processing result ID
-            - account_id: Account ID
-            - account_name: Account name
-            - month_id: Month ID
-            - month_name: Resolved month name
-            - data: List of category entries with totals and URLs
-            - highlights: Aggregated highlights for drilldown rows
+            MonthCategoriesApiResponse: Typed response for /results/<id>/accounts/<acct>/months/<month>/categories
 
         Raises:
             ValueError: If result, account, or month not found
@@ -167,12 +177,30 @@ class DrilldownResponseService:
         if not category_groups:
             raise ValueError('Month not found or has no data')
 
-        # Build response data
-        categories_list = self._build_grouped_list(
-            category_groups, result_id, account_id, '', month_id,
-            'category_month_transactions', 'category', 'category',
-            url_field='category_url'
-        )
+        # Build response data - convert to CategoryData DTOs
+        categories_list: List[CategoryData] = []
+        for category, rows in category_groups.items():
+            first_row = rows[0]
+            row_id = getattr(first_row, 'row_id', '')
+
+            # Build total dict
+            total_dict = self._build_item_total(first_row, rows)
+
+            # Build category_url (drilldown to transactions for this category)
+            category_url = self._build_frontend_url(
+                'category_month_transactions',
+                result_id=result_id,
+                account_id=account_id,
+                category_id=category,
+                month_id=original_month_ts
+            )
+
+            categories_list.append(CategoryData(
+                category=category,
+                total=total_dict,
+                row_id=row_id,
+                category_url=category_url
+            ))
 
         # Get month display name
         month_name = self._get_display_name(
@@ -180,23 +208,20 @@ class DrilldownResponseService:
             lambda v: datetime.datetime.fromtimestamp(int(v)).strftime('%Y-%m-%d')
         )
 
-        response_data: Dict[str, Any] = {
-            'result_id': result_id,
-            'account_id': account_id,
-            'account_name': account_data['name'],
-            'month_id': month_id,
-            'month_name': month_name,
-            'data': categories_list,
-        }
-
         # Aggregate highlights for drilldown rows
         highlights = self._aggregate_highlights_for_drilldown(
             cached_result, category_groups, category_filter=None, month_filter=original_month_ts
         )
-        if highlights:
-            response_data['highlights'] = highlights
 
-        return response_data
+        return MonthCategoriesApiResponse(
+            result_id=result_id,
+            account_id=account_id,
+            account_name=account_data['name'],
+            month_id=month_id,
+            month_name=month_name,
+            data=categories_list,
+            highlights=highlights
+        )
 
     def _get_cached_result(self, result_id: str) -> ProcessingResponse:
         """Get and validate cached result.
@@ -966,7 +991,7 @@ class DrilldownResponseService:
         account_id: str,
         category_id: str,
         month_id: str,
-    ) -> Dict[str, Any]:
+    ) -> CategoryMonthTransactionsApiResponse:
         """Build response for category month transactions drilldown endpoint.
 
         Retrieves cached processing result, filters by account, category, and month,
@@ -979,16 +1004,7 @@ class DrilldownResponseService:
             month_id: Secure month ID to filter by
 
         Returns:
-            Dictionary with structure:
-            - result_id: Processing result ID
-            - account_id: Account ID
-            - account_name: Account name
-            - category_id: Category ID
-            - category_name: Resolved category name
-            - month_id: Month ID
-            - month_name: Resolved month name
-            - data: List of transaction details
-            - highlights: Highlights for the transactions
+            CategoryMonthTransactionsApiResponse: Typed response for /results/<id>/accounts/<acct>/categories/<cat>/months/<month>/transactions
 
         Raises:
             ValueError: If result, account, category, or month not found or no transactions
@@ -1003,30 +1019,51 @@ class DrilldownResponseService:
         if original_category is None or original_month_ts is None:
             raise ValueError('Category or month not found')
 
-        # Default display names
-        category_name = original_category.replace('_', ' ').title()
-        month_name = original_month_ts.replace('-', ' ').title()
+        # Get display names with better fallback
+        category_name = self._get_display_name(
+            account_data['data'], original_category, 'category', 'category_display',
+            lambda v: v.replace('_', ' ').title()
+        )
+        month_name = self._get_display_name(
+            account_data['data'], original_month_ts, 'date', 'display',
+            lambda v: datetime.datetime.fromtimestamp(int(v)).strftime('%Y-%m-%d') if v.isdigit() else v.replace('-', ' ').title()
+        )
 
-        transactions = self._extract_transactions(
+        # Extract transactions and convert to TransactionDetail DTOs
+        transactions_dicts = self._extract_transactions(
             account_data['data'], original_category, original_month_ts
         )
 
-        if not transactions:
+        if not transactions_dicts:
             raise ValueError('No transactions found for the specified category and month')
 
-        response_data: Dict[str, Any] = {
-            'result_id': result_id,
-            'account_id': account_id,
-            'account_name': account_data['name'],
-            'category_id': category_id,
-            'category_name': category_name,
-            'month_id': month_id,
-            'month_name': month_name,
-            'data': transactions
-        }
+        transactions: List[TransactionDetail] = []
+        for tx_dict in transactions_dicts:
+            # _format_transaction_detail returns a dict with date, amount, merchant, row_id
+            # We need to convert it to TransactionDetail format
+            transactions.append(TransactionDetail(
+                date={'display': tx_dict.get('date', {}).get('display', ''), 'timestamp': ''},
+                amount={'display': tx_dict.get('amount', {}).get('display', ''), 'raw': 0.0},
+                merchant=tx_dict.get('merchant', ''),
+                currency='',
+                type='',
+                confidence=None,
+                row_id=tx_dict.get('row_id', ''),
+                category=original_category,
+                category_id=category_id,
+                month_id=month_id
+            ))
 
         highlights_dict = self._extract_highlights_dict(cached_result)
-        if highlights_dict:
-            response_data['highlights'] = highlights_dict
 
-        return response_data
+        return CategoryMonthTransactionsApiResponse(
+            result_id=result_id,
+            account_id=account_id,
+            account_name=account_data['name'],
+            category_id=category_id,
+            category_name=category_name,
+            month_id=month_id,
+            month_name=month_name,
+            data=transactions,
+            highlights=highlights_dict
+        )

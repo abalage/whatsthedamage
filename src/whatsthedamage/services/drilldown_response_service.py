@@ -14,6 +14,7 @@ Architecture Patterns:
 import datetime
 from typing import Any, Callable, Dict, List, Optional, Tuple, cast
 from whatsthedamage.models.dt_models import ProcessingResponse, AggregatedRow, DataTablesResponse
+from whatsthedamage.utils.date_converter import DateConverter
 from whatsthedamage.models.api_responses import (
     CategoryMonthsApiResponse,
     MonthCategoriesApiResponse,
@@ -110,8 +111,15 @@ class DrilldownResponseService:
                 month_id=month_ts
             )
 
+            # Convert timestamp to human-readable month format (e.g., "January 2024")
+            if month_ts:
+                dt = datetime.datetime.fromtimestamp(int(month_ts))
+                month_name = DateConverter.convert_month_number_to_name(dt.month)
+                month_display = f"{month_name} {dt.year}"
+            else:
+                month_display = "Unknown"
             months_list.append(MonthData(
-                month=month_ts,
+                month=month_display,
                 month_timestamp=int(month_ts) if month_ts else 0,
                 total=total_dict,
                 row_id=row_id,
@@ -203,9 +211,14 @@ class DrilldownResponseService:
             ))
 
         # Get month display name
+        def format_month_name(v: str) -> str:
+            dt = datetime.datetime.fromtimestamp(int(v))
+            month_name_loc = DateConverter.convert_month_number_to_name(dt.month)
+            return f"{month_name_loc} {dt.year}"
+        
         month_name = self._get_display_name(
             account_data['data'], original_month_ts, 'date', 'display',
-            lambda v: datetime.datetime.fromtimestamp(int(v)).strftime('%Y-%m-%d')
+            format_month_name
         )
 
         # Aggregate highlights for drilldown rows
@@ -1024,9 +1037,17 @@ class DrilldownResponseService:
             account_data['data'], original_category, 'category', 'category_display',
             lambda v: v.replace('_', ' ').title()
         )
+        
+        def format_month_name(v: str) -> str:
+            if v.isdigit():
+                dt = datetime.datetime.fromtimestamp(int(v))
+                month_name_loc = DateConverter.convert_month_number_to_name(dt.month)
+                return f"{month_name_loc} {dt.year}"
+            return v.replace('-', ' ').title()
+        
         month_name = self._get_display_name(
             account_data['data'], original_month_ts, 'date', 'display',
-            lambda v: datetime.datetime.fromtimestamp(int(v)).strftime('%Y-%m-%d') if v.isdigit() else v.replace('-', ' ').title()
+            format_month_name
         )
 
         # Extract transactions and convert to TransactionDetail DTOs

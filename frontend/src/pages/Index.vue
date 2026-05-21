@@ -1,18 +1,16 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { useLocaleStore } from '../stores/locale'
-import { getTranslation } from '../stores/translations'
 import { useFormWithNavigation } from '../stores/form'
 import { useFeedbackStore } from '../stores/feedback'
+import { useGettext } from 'vue3-gettext'
 import CardComponent from '../components/ui/CardComponent.vue'
 import ButtonComponent from '../components/ui/ButtonComponent.vue'
 import ErrorDisplay from '../components/ErrorDisplay.vue'
 
-const localeStore = useLocaleStore()
+const { $gettext } = useGettext()
 const formStore = useFormWithNavigation()
 const feedback = useFeedbackStore()
 
-const t = (key: string) => getTranslation(key, localeStore.locale.value)
 
 const fileInput = ref<HTMLInputElement | null>(null)
 const configInput = ref<HTMLInputElement | null>(null)
@@ -34,9 +32,9 @@ const submitForm = async () => {
 }
 
 const clearForm = () => {
-  if (confirm(t('clearFormConfirmation'))) {
+  if (confirm($gettext('Are you sure you want to clear the form?'))) {
     formStore.resetForm()
-    feedback.showInfo(t('formCleared'))
+    feedback.showInfo($gettext('Form cleared'))
     if (fileInput.value) fileInput.value.value = ''
     if (configInput.value) configInput.value.value = ''
   }
@@ -55,9 +53,9 @@ onMounted(() => {
     <form enctype="multipart/form-data" @submit.prevent="submitForm">
       <div class="row">
         <div class="col-md-6 mb-3">
-          <CardComponent :title="t('fileUploads')" type="standard">
+          <CardComponent :title="$gettext('File uploads')" type="standard">
             <div class="mb-3">
-              <label for="filename" class="form-label">{{ t('csvFile') }}:</label>
+              <label for="filename" class="form-label">{{ $gettext('CSV file') }}:</label>
               <input
                 id="filename"
                 ref="fileInput"
@@ -69,10 +67,10 @@ onMounted(() => {
               <div v-if="formStore.getError('csvFile')" class="invalid-feedback">
                 {{ formStore.getError('csvFile') }}
               </div>
-              <div id="fileHelp" class="form-text">{{ t('fileHelp') }}</div>
+              <div id="fileHelp" class="form-text">{{ $gettext('Upload your CSV file containing the exported bank account history') }}</div>
             </div>
             <div class="mb-3">
-              <label for="config" class="form-label">{{ t('configFile') }}:</label>
+              <label for="config" class="form-label">{{ $gettext('Configuration file') }}:</label>
               <input
                 id="config"
                 ref="configInput"
@@ -84,14 +82,14 @@ onMounted(() => {
               <div v-if="formStore.getError('configFile')" class="invalid-feedback">
                 {{ formStore.getError('configFile') }}
               </div>
-              <div id="configHelp" class="form-text">{{ t('configHelp') }}</div>
+              <div id="configHelp" class="form-text">{{ $gettext('Upload your configuration file here, or the default configuration will be used') }}</div>
             </div>
           </CardComponent>
         </div>
         <div class="col-md-6 mb-3">
-          <CardComponent :title="t('filters')" type="standard">
+          <CardComponent :title="$gettext('Filters')" type="standard">
             <div class="mb-3">
-              <label for="start_date" class="form-label">{{ t('startDate') }}:</label>
+              <label for="start_date" class="form-label">{{ $gettext('Start date') }}:</label>
               <input
                 id="start_date"
                 v-model="formStore.formData.startDate"
@@ -103,10 +101,10 @@ onMounted(() => {
               <div v-if="formStore.getError('startDate')" class="invalid-feedback">
                 {{ formStore.getError('startDate') }}
               </div>
-              <div id="dateStartHelp" class="form-text">{{ t('dateStartHelp') }}</div>
+              <div id="dateStartHelp" class="form-text">{{ $gettext('Filter results starting from this date') }}</div>
             </div>
             <div class="mb-3">
-              <label for="end_date" class="form-label">{{ t('endDate') }}:</label>
+              <label for="end_date" class="form-label">{{ $gettext('End date') }}:</label>
               <input
                 id="end_date"
                 v-model="formStore.formData.endDate"
@@ -118,10 +116,10 @@ onMounted(() => {
               <div v-if="formStore.getError('endDate')" class="invalid-feedback">
                 {{ formStore.getError('endDate') }}
               </div>
-              <div id="dateEndHelp" class="form-text">{{ t('dateEndHelp') }}</div>
+              <div id="dateEndHelp" class="form-text">{{ $gettext('Filter results up until this date') }}</div>
             </div>
             <div class="mb-3">
-              <label for="filter" class="form-label">{{ t('categoryFilter') }}:</label>
+              <label for="filter" class="form-label">{{ $gettext('Category filter') }}:</label>
               <input
                 id="filter"
                 v-model="formStore.formData.categoryFilter"
@@ -129,7 +127,7 @@ onMounted(() => {
                 class="form-control"
                 @input="handleInputChange('categoryFilter', $event.target.value)"
               />
-              <div id="filterHelp" class="form-text">{{ t('filterHelp') }}</div>
+              <div id="filterHelp" class="form-text">{{ $gettext('Filter by category. (default = "category")') }}</div>
             </div>
             <div v-if="formStore.getError('dateRange')" class="invalid-feedback">
               {{ formStore.getError('dateRange') }}
@@ -139,7 +137,7 @@ onMounted(() => {
       </div>
       <div class="row">
         <div class="col-md-12 mb-3">
-          <CardComponent :title="t('advancedSettings')" type="standard">
+          <CardComponent :title="$gettext('Advanced settings')" type="standard">
             <div class="mb-3 form-check">
               <input
                 id="verbose"
@@ -148,8 +146,8 @@ onMounted(() => {
                 class="form-check-input"
                 @change="handleInputChange('verbose', $event.target.checked)"
               />
-              <label class="form-check-label" for="verbose">{{ t('verboseLogging') }}</label>
-              <div id="verboseHelp" class="form-text">{{ t('verboseHelp') }}</div>
+              <label class="form-check-label" for="verbose">{{ $gettext('Enable verbose logging') }}</label>
+              <div id="verboseHelp" class="form-text">{{ $gettext('Enable detailed logging in the backend') }}</div>
             </div>
             <div class="mb-3 form-check">
               <input
@@ -160,10 +158,10 @@ onMounted(() => {
                 @change="handleInputChange('mlEnabled', $event.target.checked)"
               />
               <label class="form-check-label" for="ml">
-                {{ t('useML') }}
+                {{ $gettext('Use Machine Learning model for categorization') }}
               </label>
               <div id="mlHelp" class="form-text">
-                {{ t('mlHelp') }}
+                {{ $gettext('Uncheck to use regular expressions instead of the ML model') }}
               </div>
             </div>
           </CardComponent>
@@ -172,7 +170,7 @@ onMounted(() => {
       <div class="row">
         <div class="col-md-6">
           <ButtonComponent
-            :text="formStore.isLoading.value ? t('processing') : t('submit')"
+            :text="formStore.isLoading.value ? $gettext('Processing your transactions...') : $gettext('Submit')"
             button-type="primary"
             type="submit"
             :disabled="formStore.isLoading.value"
@@ -181,7 +179,7 @@ onMounted(() => {
         </div>
         <div class="col-md-6 text-end">
           <ButtonComponent
-            :text="t('clearForm')"
+            :text="$gettext('Clear form')"
             button-type="secondary"
             type="button"
             size="lg"

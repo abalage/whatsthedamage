@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import { onMounted } from 'vue'
 import { useRoute } from 'vue-router'
-import { useLocaleStore } from '../stores/locale'
-import { getTranslation } from '../stores/translations'
+import { useGettext } from 'vue3-gettext'
 import {
   useDrilldownData,
   extractIdFromUrl,
@@ -14,10 +13,9 @@ import ButtonComponent from '../components/ui/ButtonComponent.vue'
 import { fetchCategoryMonths } from '../js/api'
 import type { CategoryMonthsResponse, MonthData } from '../types/api'
 
-const localeStore = useLocaleStore()
-const route = useRoute()
+const { $gettext } = useGettext()
 
-const t = (key: string) => getTranslation(key, localeStore.locale)
+const route = useRoute()
 
 // Helper to safely get route params
 const getRouteParam = (param: string): string | null => {
@@ -43,23 +41,23 @@ const {
     }
     return fetchCategoryMonths(params)
   },
-  getPageTitle: (data) => `${t('Details for Category')}: ${data.category_name}`,
+  getPageTitle: (data) => `${$gettext('Details for Category')}: ${data.category_name}`,
   breadcrumbItems: (): BreadcrumbItem[] => [
-    { name: t('Home'), to: '/' },
-    { name: t('Results'), to: { name: 'results', query: { resultId: getRouteParam('resultId') } } },
-    { name: t('Category Details'), active: true }
+    { name: $gettext('Home'), to: '/' },
+    { name: $gettext('Results'), to: { name: 'results', query: { resultId: getRouteParam('resultId') } } },
+    { name: $gettext('Category Details'), active: true }
   ],
   navButtons: [
     {
-      text: t('Back to Results'),
+      text: $gettext('Back to Results'),
       to: { name: 'results', query: { resultId: getRouteParam('resultId') } },
       variant: 'secondary'
     }
   ],
   onDataLoaded: (data) => {
     // Set translation strings for DataTables export buttons
-    window.exportCsvText = t('Export CSV')
-    window.exportExcelText = t('Export Excel')
+    window.exportCsvText = $gettext('Export CSV')
+    window.exportExcelText = $gettext('Export Excel')
 
     // Set highlights for statistical cell highlighting
     window.highlights = data.highlights || {}
@@ -110,9 +108,9 @@ onMounted(() => {
     <!-- Loading State -->
     <div v-if="isLoading" class="text-center my-5">
       <div class="spinner-border text-primary" role="status">
-        <span class="visually-hidden">{{ t('loading') }}...</span>
+        <span class="visually-hidden">{{ $gettext('loading') }}...</span>
       </div>
-      <p class="mt-2">{{ t('loadingData') }}...</p>
+      <p class="mt-2">{{ $gettext('Loading data') }}...</p>
     </div>
 
     <!-- Error State -->
@@ -134,8 +132,8 @@ onMounted(() => {
               <table id="datatable-category" class="table table-bordered" data-datatable="true">
                 <thead>
                   <tr>
-                    <th>{{ t('Month') }}</th>
-                    <th>{{ t('Total') }}</th>
+                    <th>{{ $gettext('Month') }}</th>
+                    <th>{{ $gettext('Total') }}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -183,7 +181,7 @@ onMounted(() => {
 
     <!-- No Data State -->
     <div v-else class="alert alert-info">
-      {{ t('noDataFound') }}
+      {{ $gettext('No data found') }}
     </div>
   </div>
 </template>

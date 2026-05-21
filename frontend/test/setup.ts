@@ -48,7 +48,7 @@ globalThis.fetch = vi.fn(() =>
     type: 'basic' as const,
     url: '',
     clone: () => (globalThis.fetch as ReturnType<typeof fetch>)(),
-    arrayBuffer: () => Promise.resolve(new ArrayBuffer(0)),
+    arrayBuffer: () => Promise.resolve(new ArrayBuffer(0)), // eslint-disable-line no-magic-numbers
     blob: () => Promise.resolve(new Blob()),
     formData: () => Promise.resolve(new FormData()),
     text: () => Promise.resolve(''),

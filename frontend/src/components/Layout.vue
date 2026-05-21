@@ -1,11 +1,10 @@
 <script setup lang="ts">
 import { useLocaleStore } from '../stores/locale'
-import { getTranslation } from '../stores/translations'
 import { RouterLink } from 'vue-router'
+import { useGettext } from 'vue3-gettext'
+const { $gettext } = useGettext()
 
 const localeStore = useLocaleStore()
-
-const t = (key: string) => getTranslation(key, localeStore.locale)
 
 const setLocale = (locale: string) => {
   localeStore.setLocale(locale)
@@ -17,28 +16,28 @@ const setLocale = (locale: string) => {
     <header>
       <nav class="navbar navbar-expand-lg navbar-dark bg-success mb-3">
         <div class="container-fluid">
-          <RouterLink to="/" class="navbar-brand">"What's the Damage?"</RouterLink>
-          <span class="text-white align-middle">{{ t('generateReports') }}</span>
+          <RouterLink to="/" class="navbar-brand">What's the Damage?</RouterLink>
+          <span class="text-white align-middle">{{ $gettext('Generate reports from your bank account CSV history') }}</span>
           <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>
           </button>
           <div id="navbarNav" class="collapse navbar-collapse">
             <ul class="navbar-nav ms-auto">
               <li class="nav-item">
-                <RouterLink to="/" class="nav-link">{{ t('home') }}</RouterLink>
+                <RouterLink to="/" class="nav-link">{{ $gettext('Home') }}</RouterLink>
               </li>
               <li class="nav-item">
-                <RouterLink to="/privacy" class="nav-link">{{ t('privacy') }}</RouterLink>
+                <RouterLink to="/privacy" class="nav-link">{{ $gettext('Privacy') }}</RouterLink>
               </li>
               <li class="nav-item">
-                <RouterLink to="/legal" class="nav-link">{{ t('legal') }}</RouterLink>
+                <RouterLink to="/legal" class="nav-link">{{ $gettext('Legal') }}</RouterLink>
               </li>
               <li class="nav-item">
-                <RouterLink to="/about" class="nav-link">{{ t('about') }}</RouterLink>
+                <RouterLink to="/about" class="nav-link">{{ $gettext('About') }}</RouterLink>
               </li>
               <li class="nav-item dropdown">
                 <a id="langDropdown" class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                  {{ t('language') }}
+                  {{ $gettext('Languages') }}
                 </a>
                 <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="langDropdown">
                   <li>
@@ -56,7 +55,7 @@ const setLocale = (locale: string) => {
     </header>
 
     <main id="main-content" class="container-fluid" tabindex="-1">
-      <a class="sr-only sr-only-focusable" href="#main-content">{{ t('skipToContent') }}</a>
+      <a class="sr-only sr-only-focusable" href="#main-content">{{ $gettext('Skip to main content') }}</a>
       <slot></slot>
     </main>
 

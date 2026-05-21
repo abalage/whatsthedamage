@@ -57,12 +57,18 @@ declare global {
 window.initMainPage = initMainPage;
 window.updateCellHighlights = updateCellHighlights;
 
+// Import and install gettext
+import gettext from './js/gettext'
+
 // Create Vue app
 const app = createApp(App)
 
 // Install Pinia
 const pinia = createPinia()
 app.use(pinia)
+
+// Install vue3-gettext
+app.use(gettext)
 
 // Use router
 app.use(router)

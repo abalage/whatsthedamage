@@ -1,17 +1,14 @@
 <script setup lang="ts">
 import { ref, onMounted, computed, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
-import { useLocaleStore } from '../stores/locale'
-import { getTranslation } from '../stores/translations'
+import { useGettext } from 'vue3-gettext'
 import { fetchAccountResults } from '../js/api'
 import ButtonComponent from '../components/ui/ButtonComponent.vue'
 import type { AccountResultsResponse } from '../types/api'
 
-
-const localeStore = useLocaleStore()
+const { $gettext } = useGettext()
 const route = useRoute()
 
-const t = (key: string) => getTranslation(key, localeStore.locale)
 
 const resultId = computed(() => {
   const id = route.params.resultId
@@ -46,8 +43,8 @@ const loadResults = async () => {
     await nextTick()
 
     // Set translation strings for DataTables export buttons
-    window.exportCsvText = t('Export CSV')
-    window.exportExcelText = t('Export Excel')
+    window.exportCsvText = $gettext('Export CSV')
+    window.exportExcelText = $gettext('Export Excel')
 
     // Initialize DataTables now that tables exist in DOM
     window.initMainPage()
@@ -94,18 +91,18 @@ onMounted(() => {
     <!-- Breadcrumb Navigation -->
     <nav aria-label="breadcrumb">
       <ol class="breadcrumb">
-        <li class="breadcrumb-item"><router-link to="/">{{ t('Home') }}</router-link></li>
-        <li class="breadcrumb-item"><router-link :to="{ name: 'results', query: { resultId: resultId } }">{{ t('Results') }}</router-link></li>
-        <li class="breadcrumb-item active" aria-current="page">{{ t('Details') }}</li>
+        <li class="breadcrumb-item"><router-link to="/">{{ $gettext('Home') }}</router-link></li>
+        <li class="breadcrumb-item"><router-link :to="{ name: 'results', query: { resultId: resultId } }">{{ $gettext('Results') }}</router-link></li>
+        <li class="breadcrumb-item active" aria-current="page">{{ $gettext('Details') }}</li>
       </ol>
     </nav>
 
     <!-- Loading State -->
     <div v-if="isLoading" class="text-center my-5">
       <div class="spinner-border text-primary" role="status">
-        <span class="visually-hidden">{{ t('loading') }}...</span>
+        <span class="visually-hidden">{{ $gettext('loading') }}...</span>
       </div>
-      <p class="mt-2">{{ t('loadingResults') }}...</p>
+      <p class="mt-2">{{ $gettext('Loading results') }}...</p>
     </div>
 
     <!-- Error State -->
@@ -116,7 +113,7 @@ onMounted(() => {
     <!-- Main Content -->
     <div v-else-if="resultsData">
       <div class="d-flex justify-content-between align-items-center mb-3">
-        <h1 class="mb-0">{{ t('Transaction Details') }}</h1>
+        <h1 class="mb-0">{{ $gettext('Transaction Details') }}</h1>
         <div class="view-toggle">
           <!-- View toggle would go here -->
         </div>
@@ -128,14 +125,14 @@ onMounted(() => {
             <table id="detail-datatable" class="table table-bordered" data-datatable="true">
               <thead>
                 <tr>
-                  <th>{{ t('Date') }}</th>
-                  <th>{{ t('Category') }}</th>
-                  <th>{{ t('Merchant') }}</th>
-                  <th>{{ t('Amount') }}</th>
-                  <th>{{ t('Currency') }}</th>
-                  <th>{{ t('Account') }}</th>
-                  <th>{{ t('Type') }}</th>
-                  <th>{{ t('Confidence') }}</th>
+                  <th>{{ $gettext('Date') }}</th>
+                  <th>{{ $gettext('Category') }}</th>
+                  <th>{{ $gettext('Merchant') }}</th>
+                  <th>{{ $gettext('Amount') }}</th>
+                  <th>{{ $gettext('Currency') }}</th>
+                  <th>{{ $gettext('Account') }}</th>
+                  <th>{{ $gettext('Type') }}</th>
+                  <th>{{ $gettext('Confidence') }}</th>
                 </tr>
               </thead>
               <tbody>
@@ -159,7 +156,7 @@ onMounted(() => {
       <div class="row">
         <div class="col-md-6">
           <ButtonComponent
-            :text="t('Back to Results')"
+            :text="$gettext('Back to Results')"
             variant="secondary"
             :to="{ name: 'results', query: { resultId: resultId } }"
             class="mt-3 mb-3"
@@ -170,7 +167,7 @@ onMounted(() => {
 
     <!-- No Data State -->
     <div v-else class="alert alert-info">
-      {{ t('noResultsFound') }}
+      {{ $gettext('No results found') }}
     </div>
   </div>
 </template>

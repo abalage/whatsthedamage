@@ -2,16 +2,17 @@
 import { RouterView } from 'vue-router'
 import Layout from './components/Layout.vue'
 import { useLocaleStore } from './stores/locale'
-import { loadTranslations } from './stores/translations'
 
 // Initialize locale store
 const localeStore = useLocaleStore()
 
-// Load translations on app initialization
-loadTranslations()
+// Load locale from localStorage
+localeStore.loadLocale()
 
-// Set default locale (could be detected from browser or URL)
-localeStore.setLocale('en')
+// Set default locale if not loaded (could be detected from browser or URL)
+if (!localeStore.locale) {
+  localeStore.setLocale('en')
+}
 </script>
 
 <template>

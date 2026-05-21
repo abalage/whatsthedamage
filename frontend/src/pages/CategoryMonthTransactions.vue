@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import { onMounted } from 'vue'
 import { useRoute } from 'vue-router'
-import { useLocaleStore } from '../stores/locale'
-import { getTranslation } from '../stores/translations'
+import { useGettext } from 'vue3-gettext'
 import {
   useDrilldownData,
   type BreadcrumbItem
@@ -13,10 +12,9 @@ import StatisticalControls from '../components/ui/StatisticalControls.vue'
 import { fetchCategoryMonthTransactions } from '../js/api'
 import type { CategoryMonthTransactionsResponse } from '../types/api'
 
-const localeStore = useLocaleStore()
+const { $gettext } = useGettext()
 const route = useRoute()
 
-const t = (key: string) => getTranslation(key, localeStore.locale)
 
 // Helper to safely get route params
 const getRouteParam = (param: string): string | null => {
@@ -40,32 +38,32 @@ const {
     }
     return fetchCategoryMonthTransactions(params)
   },
-  getPageTitle: (data) => `${t('Transaction Details')}: ${data.category_name} - ${data.month_name}`,
+  getPageTitle: (data) => `${$gettext('Transaction Details')}: ${data.category_name} - ${data.month_name}`,
   breadcrumbItems: (): BreadcrumbItem[] => [
-    { name: t('Home'), to: '/' },
-    { name: t('Results'), to: { name: 'results', query: { resultId: getRouteParam('resultId') } } },
+    { name: $gettext('Home'), to: '/' },
+    { name: $gettext('Results'), to: { name: 'results', query: { resultId: getRouteParam('resultId') } } },
     {
-      name: t('Category Months'),
+      name: $gettext('Category Months'),
       to: { name: 'category-months', params: { resultId: getRouteParam('resultId'), accountId: getRouteParam('accountId'), categoryId: getRouteParam('categoryId') } }
     },
-    { name: t('Transaction Details'), active: true }
+    { name: $gettext('Transaction Details'), active: true }
   ],
   navButtons: [
     {
-      text: t('Back to Category Months'),
+      text: $gettext('Back to Category Months'),
       to: { name: 'category-months', params: { resultId: getRouteParam('resultId'), accountId: getRouteParam('accountId'), categoryId: getRouteParam('categoryId') } },
       variant: 'secondary'
     },
     {
-      text: t('Back to Results'),
+      text: $gettext('Back to Results'),
       to: { name: 'results', query: { resultId: getRouteParam('resultId') } },
       variant: 'outline-secondary'
     }
   ],
   onDataLoaded: (data) => {
     // Set translation strings for DataTables export buttons
-    window.exportCsvText = t('Export CSV')
-    window.exportExcelText = t('Export Excel')
+    window.exportCsvText = $gettext('Export CSV')
+    window.exportExcelText = $gettext('Export Excel')
 
     // Set highlights for statistical cell highlighting
     window.highlights = data.highlights || {}
@@ -104,9 +102,9 @@ onMounted(() => {
     <!-- Loading State -->
     <div v-if="isLoading" class="text-center my-5">
       <div class="spinner-border text-primary" role="status">
-        <span class="visually-hidden">{{ t('loading') }}...</span>
+        <span class="visually-hidden">{{ $gettext('loading') }}...</span>
       </div>
-      <p class="mt-2">{{ t('loadingData') }}...</p>
+      <p class="mt-2">{{ $gettext('Loading data') }}...</p>
     </div>
 
     <!-- Error State -->
@@ -128,9 +126,9 @@ onMounted(() => {
               <table id="transaction-details-table" class="table table-bordered" data-datatable="true">
                 <thead>
                   <tr>
-                    <th>{{ t('Date') }}</th>
-                    <th>{{ t('Amount') }}</th>
-                    <th>{{ t('Merchant') }}</th>
+                    <th>{{ $gettext('Date') }}</th>
+                    <th>{{ $gettext('Amount') }}</th>
+                    <th>{{ $gettext('Merchant') }}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -166,7 +164,7 @@ onMounted(() => {
 
     <!-- No Data State -->
     <div v-else class="alert alert-info">
-      {{ t('noTransactionsFound') }}
+      {{ $gettext('No transactions found') }}
     </div>
   </div>
 </template>

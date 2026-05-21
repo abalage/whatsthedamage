@@ -6,8 +6,7 @@
 import { ref, computed, nextTick, type ComputedRef, type Ref } from 'vue'
 import { useRoute, type RouteLocationRaw } from 'vue-router'
 import { useFeedbackStore } from '../stores/feedback'
-import { useLocaleStore } from '../stores/locale'
-import { getTranslation, type TranslationKeys } from '../stores/translations'
+import { useGettext } from 'vue3-gettext'
 import { fetchWithErrorHandling, API_BASE_URL } from '../js/api'
 
 /**
@@ -160,9 +159,9 @@ export function useDrilldownData<T>(
 ): DrilldownResult<T> {
   const route = useRoute()
   const feedback = useFeedbackStore()
-  const localeStore = useLocaleStore()
+  const { $gettext } = useGettext()
 
-  const t = (key: TranslationKeys): string => getTranslation(key, localeStore.locale as 'en' | 'hu')
+  const t = (key: string): string => $gettext(key)
 
   // Extract route parameters with type safety
   const resultId = useRouteParam('resultId')

@@ -1,15 +1,11 @@
 <script setup lang="ts">
-import { useLocaleStore } from '../stores/locale'
-import { getTranslation } from '../stores/translations'
-
-const localeStore = useLocaleStore()
-
-const t = (key: string) => getTranslation(key, localeStore.locale)
+import { useGettext } from 'vue3-gettext'
+const { $gettext } = useGettext()
 </script>
 
 <template>
   <div class="container">
-    <h1>{{ t('appTitle') }}</h1>
+    <h1>{{ $gettext('What\'s the Damage') }}</h1>
     <p>This tool is designed to process CSV files and generate insightful reports. It relies on your bank's export functionality to save your historical data into CSV format.</p>
     <p>Efforts were made to be able to customize the behavior and potentially work with any CSV format finance companies may produce.</p>
     <p>It is published under GPL-3.0 license.</p>

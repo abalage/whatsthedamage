@@ -1,11 +1,14 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
+import { useGettext } from 'vue3-gettext'
 
 export const useLocaleStore = defineStore('locale', () => {
   const locale = ref<string>('en')
+  const gettext = useGettext()
 
   const setLocale = (newLocale: string): void => {
     locale.value = newLocale
+    gettext.current = newLocale
     localStorage.setItem('locale', locale.value)
   }
 
@@ -13,6 +16,7 @@ export const useLocaleStore = defineStore('locale', () => {
     const savedLocale = localStorage.getItem('locale')
     if (savedLocale) {
       locale.value = savedLocale
+      gettext.current = savedLocale
     }
   }
 

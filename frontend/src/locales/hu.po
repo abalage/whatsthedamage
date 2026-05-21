@@ -1,0 +1,508 @@
+# English translations for PACKAGE package.
+# Copyright (C) 2025 THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# Németh Balázs <balagetech@protonmail.com>, 2025.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: whatsthedamage-1.0\n"
+"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"POT-Creation-Date: \n"
+"PO-Revision-Date: 2026-05-21 21:01+0200\n"
+"Last-Translator: Balázs Németh <balagetech@protonmail.com>\n"
+"Language-Team: Hungarian\n"
+"Language: hu\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Generator: Poedit 3.6\n"
+
+#: src/components/Layout.vue:23
+msgid "About"
+msgstr "A programról"
+
+#: src/pages/Details.vue:45
+msgid "Account"
+msgstr "Számla"
+
+#: src/pages/Index.vue:93
+msgid "Advanced settings"
+msgstr "Fejlett beállítások"
+
+#: src/components/ui/StatisticalControls.vue:41
+msgid "Algorithms"
+msgstr "Algoritmusok"
+
+#: src/pages/CategoryMonthTransactions.vue:49 src/pages/Details.vue:43
+msgid "Amount"
+msgstr "Összeg"
+
+#: src/components/ui/StatisticalControls.vue:57
+msgid "Analysis direction"
+msgstr "Vizsgálat iránya"
+
+#: src/pages/Index.vue:38
+msgid "Are you sure you want to clear the form?"
+msgstr "Biztos törölni akarod az űrlapot?"
+
+#: src/pages/CategoryMonthTransactions.vue:56
+msgid "Back to Category Months"
+msgstr "Vissza a kategória hónapokhoz"
+
+#: src/pages/Results.vue:80
+msgid "Back to Form"
+msgstr "Vissza az űrlapra"
+
+#: src/pages/CategoryMonthsList.vue:52
+#: src/pages/CategoryMonthTransactions.vue:61 src/pages/Details.vue:71
+#: src/pages/MonthCategoriesList.vue:54
+msgid "Back to Results"
+msgstr "Vissza a részletekhez"
+
+#: src/pages/Results.vue:41
+msgid "Categories"
+msgstr "Kategóriák"
+
+#: src/pages/Details.vue:41 src/pages/MonthCategoriesList.vue:48
+msgid "Category"
+msgstr "Kategória"
+
+#: src/pages/CategoryMonthsList.vue:48
+msgid "Category Details"
+msgstr "Kategória részletei"
+
+#: src/pages/Index.vue:75
+msgid "Category filter"
+msgstr "Kategória szűrő"
+
+#: src/pages/CategoryMonthTransactions.vue:49
+msgid "Category Months"
+msgstr "Kategória hónapok"
+
+#: src/components/ui/StatisticalControls.vue:19
+msgid ""
+"Cells highlighted in green indicate top contributors per Pareto principle."
+msgstr ""
+
+#: src/components/ui/StatisticalControls.vue:20
+msgid ""
+"Cells highlighted in light grey are excluded from statistical analysis "
+"(calculated rows or excluded categories)."
+msgstr ""
+
+#: src/components/ui/StatisticalControls.vue:18
+msgid "Cells highlighted in red indicate outliers detected by IQR method."
+msgstr ""
+
+#: src/pages/Index.vue:135
+msgid "Clear form"
+msgstr "Űrlap törlése"
+
+#: src/components/ui/StatisticalControls.vue:67
+msgid "columns"
+msgstr "oszlopok"
+
+#: src/pages/Details.vue:47
+msgid "Confidence"
+msgstr "Bizonyosság"
+
+#: src/pages/Index.vue:26
+msgid "Configuration file"
+msgstr "Beállítások fájl"
+
+#: src/pages/Details.vue:44
+msgid "Currency"
+msgstr "Deviza"
+
+#: src/pages/Index.vue:11
+msgid "CSV file"
+msgstr "CSV fájl"
+
+#: src/pages/CategoryMonthTransactions.vue:48 src/pages/Details.vue:40
+msgid "Date"
+msgstr "Dátum"
+
+#: src/pages/Details.vue:8
+msgid "Details"
+msgstr "Részletek"
+
+#: src/pages/CategoryMonthsList.vue:44
+msgid "Details for Category"
+msgstr "Kategória részletei"
+
+#: src/pages/MonthCategoriesList.vue:46
+msgid "Details for Month"
+msgstr "Hónap részletei"
+
+#: src/pages/Index.vue:103
+msgid "Enable detailed logging in the backend"
+msgstr "Részletes naplózást engedélyez a backend oldalon"
+
+#: src/pages/Index.vue:102
+msgid "Enable verbose logging"
+msgstr "Részletes naplózás engedélyezése"
+
+#: src/pages/Index.vue:60
+msgid "End date"
+msgstr "Vég dátum"
+
+#: src/components/ui/StatisticalControls.vue:20
+msgid "Excluded"
+msgstr ""
+
+#: src/pages/CategoryMonthsList.vue:59
+#: src/pages/CategoryMonthTransactions.vue:68 src/pages/Details.vue:50
+#: src/pages/MonthCategoriesList.vue:61 src/pages/Results.vue:69
+#: src/pages/Results.vue:98
+msgid "Export CSV"
+msgstr ""
+
+#: src/pages/CategoryMonthsList.vue:60
+#: src/pages/CategoryMonthTransactions.vue:69 src/pages/Details.vue:51
+#: src/pages/MonthCategoriesList.vue:62 src/pages/Results.vue:70
+#: src/pages/Results.vue:99
+msgid "Export Excel"
+msgstr ""
+
+#: src/pages/Index.vue:9
+msgid "File uploads"
+msgstr "Fájl feltöltések"
+
+#: src/pages/Index.vue:83
+msgid "Filter by category. (default = \"category\")"
+msgstr "Szűrje kategóriánként. (alapértelmezett = 'category')"
+
+#: src/pages/Index.vue:57
+msgid "Filter results starting from this date"
+msgstr "Szűrje az eredményeket ettől a dátumtól kezdve"
+
+#: src/pages/Index.vue:72
+msgid "Filter results up until this date"
+msgstr "Szűrje az eredményeket eddig a dátumig"
+
+#: src/pages/Index.vue:43
+msgid "Filters"
+msgstr "Szűrők"
+
+#: src/pages/Index.vue:40
+msgid "Form cleared"
+msgstr ""
+
+#: src/components/Layout.vue:7
+msgid "Generate reports from your bank account CSV history"
+msgstr "Generáljon jelentéseket a bankszámlája CSV előzményeiből"
+
+#: src/components/Layout.vue:14 src/pages/CategoryMonthsList.vue:46
+#: src/pages/CategoryMonthTransactions.vue:46 src/pages/Details.vue:6
+#: src/pages/MonthCategoriesList.vue:48 src/pages/Results.vue:5
+msgid "Home"
+msgstr "Kezdőlap"
+
+#: src/components/ui/StatisticalControls.vue:45
+msgid "IQR Outlier Detection"
+msgstr ""
+
+#: src/components/Layout.vue:27
+msgid "Languages"
+msgstr "Nyelvek"
+
+#: src/components/Layout.vue:20
+msgid "Legal"
+msgstr "Jognyilatkozat"
+
+#: src/components/ui/StatisticalControls.vue:6
+msgid "Legend"
+msgstr "Színjegyzék"
+
+#: src/pages/CategoryMonthsList.vue:24
+#: src/pages/CategoryMonthTransactions.vue:24 src/pages/Details.vue:15
+#: src/pages/MonthCategoriesList.vue:24 src/pages/Results.vue:14
+msgid "loading"
+msgstr "betöltés"
+
+#: src/pages/CategoryMonthsList.vue:26
+#: src/pages/CategoryMonthTransactions.vue:26
+#: src/pages/MonthCategoriesList.vue:26
+msgid "Loading data"
+msgstr "Adatok betöltése"
+
+#: src/pages/Details.vue:17 src/pages/Results.vue:16
+msgid "Loading results"
+msgstr "Eredmények betöltése"
+
+#: src/pages/CategoryMonthTransactions.vue:50 src/pages/Details.vue:42
+msgid "Merchant"
+msgstr "Kereskedő"
+
+#: src/pages/CategoryMonthsList.vue:48
+msgid "Month"
+msgstr "Hónap"
+
+#: src/pages/MonthCategoriesList.vue:50
+msgid "Month Details"
+msgstr "Hónap részletei"
+
+#: src/pages/CategoryMonthsList.vue:97 src/pages/MonthCategoriesList.vue:97
+msgid "No data found"
+msgstr "Nincs adat"
+
+#: src/pages/Results.vue:89
+msgid "No result ID was provided."
+msgstr "Eredmény ID nem található."
+
+#: src/pages/Details.vue:82 src/pages/Results.vue:87
+msgid "No results found"
+msgstr "Eredmény nem található"
+
+#: src/pages/CategoryMonthTransactions.vue:86
+msgid "No transactions found"
+msgstr "Nem találtam tranzakciót"
+
+#: src/components/ui/StatisticalControls.vue:18
+msgid "Outlier"
+msgstr ""
+
+#: src/components/ui/StatisticalControls.vue:19
+msgid "Pareto"
+msgstr ""
+
+#: src/components/ui/StatisticalControls.vue:51
+msgid "Pareto analysis"
+msgstr ""
+
+#: src/pages/Results.vue:90
+msgid "Please upload a CSV file first."
+msgstr ""
+
+#: src/components/Layout.vue:17
+msgid "Privacy"
+msgstr "Adatvédelem"
+
+#: src/pages/Results.vue:25
+msgid "Processed results"
+msgstr "Feldolgozott eredmények"
+
+#: src/pages/Index.vue:126
+msgid "Processing your transactions..."
+msgstr "Tranzakciók feldolgozása..."
+
+#: src/components/ui/StatisticalControls.vue:74
+#: src/components/ui/StatisticalControls.vue:85
+msgid "Recalculate"
+msgstr "Újraszámítás"
+
+#: src/components/ui/StatisticalControls.vue:74
+msgid "Recalculate error"
+msgstr ""
+
+#: src/components/ui/StatisticalControls.vue:82
+msgid "recalculating"
+msgstr "ujraszámítás"
+
+#: src/components/ui/StatisticalControls.vue:89
+msgid "Reset to defaults"
+msgstr "Alapértelmezés helyreállítása"
+
+#: src/components/ui/StatisticalControls.vue:106
+msgid "Restore defaults error"
+msgstr ""
+
+#: src/pages/CategoryMonthsList.vue:47
+#: src/pages/CategoryMonthTransactions.vue:47 src/pages/Details.vue:7
+#: src/pages/MonthCategoriesList.vue:49 src/pages/Results.vue:6
+msgid "Results"
+msgstr "Eredmények"
+
+#: src/components/ui/StatisticalControls.vue:61
+msgid "rows"
+msgstr "sorok"
+
+#: src/components/Layout.vue:45
+msgid "Skip to main content"
+msgstr "Ugrás a tartalomhoz"
+
+#: src/pages/Index.vue:45
+msgid "Start date"
+msgstr "Kezdő dátum"
+
+#: src/components/ui/StatisticalControls.vue:28
+msgid "Statistical Analysis Controls"
+msgstr "Statisztikai elemzés beállítások"
+
+#: src/pages/Index.vue:126
+msgid "Submit"
+msgstr "Beküldés"
+
+#: src/pages/CategoryMonthsList.vue:49 src/pages/MonthCategoriesList.vue:49
+msgid "Total"
+msgstr "Összeg"
+
+#: src/pages/CategoryMonthTransactions.vue:44
+#: src/pages/CategoryMonthTransactions.vue:52 src/pages/Details.vue:28
+msgid "Transaction Details"
+msgstr "Tranzakció részletek"
+
+#: src/pages/Details.vue:46
+msgid "Type"
+msgstr "Típus"
+
+#: src/pages/Index.vue:117
+msgid "Uncheck to use regular expressions instead of the ML model"
+msgstr ""
+"Tiltása esetén reguláris kifejezések lesznek használva a gépi tanulási "
+"modell helyett"
+
+#: src/pages/Index.vue:38
+msgid ""
+"Upload your configuration file here, or the default configuration will be "
+"used"
+msgstr ""
+"Töltse fel a konfigurációs fájlt ide, vagy az alapértelmezett konfiguráció "
+"lesz használva"
+
+#: src/pages/Index.vue:23
+msgid "Upload your CSV file containing the exported bank account history"
+msgstr "Töltse fel a bankszámlája exportált előzményeit tartalmazó CSV fájlt"
+
+#: src/pages/Index.vue:114
+msgid "Use Machine Learning model for categorization"
+msgstr "ML modell használata a kategorizáláshoz"
+
+#: src/pages/Results.vue:81
+msgid "View All Details"
+msgstr "Részletek mutatása"
+
+#: src/pages/About.vue:3 src/pages/Statistics.vue:3
+msgid "What's the Damage"
+msgstr "What's the Damage"
+
+#, fuzzy
+#~ msgid "endDate"
+#~ msgstr "Date"
+
+#~ msgid "Grocery"
+#~ msgstr "Bevásárlás"
+
+#~ msgid "Clothes"
+#~ msgstr "Ruházat"
+
+#~ msgid "Dining Out"
+#~ msgstr "Vendéglátás"
+
+#~ msgid "Health"
+#~ msgstr "Egészség"
+
+#~ msgid "Payment"
+#~ msgstr "Kifizetés"
+
+#~ msgid "Utility"
+#~ msgstr "Rezsi"
+
+#~ msgid "Home Maintenance"
+#~ msgstr "Otthon karbantartás"
+
+#~ msgid "Entertainment and Leisure"
+#~ msgstr "Szórakozás és szabadidő"
+
+#~ msgid "Insurance"
+#~ msgstr "Biztosítás"
+
+#~ msgid "Loan"
+#~ msgstr "Hitel"
+
+#~ msgid "Withdrawal"
+#~ msgstr "Pénzfelvétel"
+
+#~ msgid "Fee"
+#~ msgstr "Díj"
+
+#~ msgid "Deposit"
+#~ msgstr "Bevétel"
+
+#~ msgid "Refund"
+#~ msgstr "Visszatérítés"
+
+#~ msgid "Interest"
+#~ msgstr "Kamat"
+
+#~ msgid "Electronics and Digital Services"
+#~ msgstr "Elektronika és digitális szolgáltatások"
+
+#~ msgid "Transfer"
+#~ msgstr "Átvezetés"
+
+#~ msgid "Other"
+#~ msgstr "Egyéb"
+
+#~ msgid "Balance"
+#~ msgstr "Egyenleg"
+
+#~ msgid "Total Spendings"
+#~ msgstr "Teljes költés"
+
+#~ msgid "January"
+#~ msgstr "Január"
+
+#~ msgid "February"
+#~ msgstr "Február"
+
+#~ msgid "March"
+#~ msgstr "Március"
+
+#~ msgid "April"
+#~ msgstr "Április"
+
+#~ msgid "May"
+#~ msgstr "Május"
+
+#~ msgid "June"
+#~ msgstr "Június"
+
+#~ msgid "July"
+#~ msgstr "Július"
+
+#~ msgid "August"
+#~ msgstr "Augusztus"
+
+#~ msgid "September"
+#~ msgstr "Szeptember"
+
+#~ msgid "October"
+#~ msgstr "Október"
+
+#~ msgid "November"
+#~ msgstr "November"
+
+#~ msgid "December"
+#~ msgstr "December"
+
+#~ msgid "Invalid month number. Please enter a number between 1 and 12."
+#~ msgstr "Érvénytelen hónap. A hónap száma 1 és 12 között kell hogy legyen."
+
+#~ msgid "Vehicle"
+#~ msgstr "Vehicle"
+
+#~ msgid "Sports Recreation"
+#~ msgstr "Sports Recreation"
+
+#~ msgid "Cars"
+#~ msgstr "Cars"
+
+#~ msgid "cars"
+#~ msgstr "cars"
+
+#~ msgid "loan"
+#~ msgstr "loan"
+
+#~ msgid "Grocery Stores"
+#~ msgstr "Grocery Stores"
+
+#~ msgid "Clothing Stores"
+#~ msgstr "Clothing Stores"
+
+#~ msgid "Health & Pharmacy"
+#~ msgstr "Health & Pharmacy"
+
+#~ msgid "Cars & Fuel"
+#~ msgstr "Cars & Fuel"

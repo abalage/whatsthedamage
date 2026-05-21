@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { ref, onMounted, computed, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
-import { useLocaleStore } from '../stores/locale'
-import { getTranslation } from '../stores/translations'
 import { fetchResults as fetchResultsApi } from '../js/api'
 import { useFeedbackStore } from '../stores/feedback'
+import { useGettext } from 'vue3-gettext'
 import StatisticalControls from '../components/ui/StatisticalControls.vue'
 import type { ResultsResponseV2 } from '../types/api'
+
+const { $gettext } = useGettext()
 
 // Local type for the account data structure used in this component
 interface AccountData {
@@ -33,11 +34,9 @@ interface AccountData {
   }
 }
 
-const localeStore = useLocaleStore()
 const feedback = useFeedbackStore()
 const route = useRoute()
 
-const t = (key: string) => getTranslation(key, localeStore.locale)
 
 // Try both camelCase and snake_case for the query parameter
 const resultId = computed(() => {
@@ -65,8 +64,8 @@ const loadResults = async () => {
       // Initialize DataTables for fallback data
       await nextTick()
       await new Promise(resolve => setTimeout(resolve, DEFERRED_TIMEOUT))
-      window.exportCsvText = t('Export CSV')
-      window.exportExcelText = t('Export Excel')
+      window.exportCsvText = $gettext('Export CSV')
+      window.exportExcelText = $gettext('Export Excel')
 
       // Set highlights for statistical cell highlighting
       window.highlights = fallbackResponse.accounts_data?.highlights || {}
@@ -94,8 +93,8 @@ const loadResults = async () => {
     await new Promise(resolve => setTimeout(resolve, DEFERRED_TIMEOUT))
 
     // Set translation strings for DataTables export buttons
-    window.exportCsvText = t('Export CSV')
-    window.exportExcelText = t('Export Excel')
+    window.exportCsvText = $gettext('Export CSV')
+    window.exportExcelText = $gettext('Export Excel')
 
     // Set highlights for statistical cell highlighting
     window.highlights = resultsData.value?.accounts_data.highlights || {}
@@ -165,8 +164,8 @@ onMounted(() => {
   <div class="container">
     <nav aria-label="breadcrumb">
       <ol class="breadcrumb">
-        <li class="breadcrumb-item"><router-link to="/">{{ t('Home') }}</router-link></li>
-        <li class="breadcrumb-item active" aria-current="page">{{ t('Results') }}</li>
+        <li class="breadcrumb-item"><router-link to="/">{{ $gettext('Home') }}</router-link></li>
+        <li class="breadcrumb-item active" aria-current="page">{{ $gettext('Results') }}</li>
       </ol>
     </nav>
 
@@ -174,9 +173,9 @@ onMounted(() => {
 
     <div v-if="isLoading" class="text-center my-5">
       <div class="spinner-border text-primary" role="status">
-        <span class="visually-hidden">{{ t('loading') }}...</span>
+        <span class="visually-hidden">{{ $gettext('loading') }}...</span>
       </div>
-      <p class="mt-2">{{ t('loadingResults') }}...</p>
+      <p class="mt-2">{{ $gettext('Loading results') }}...</p>
     </div>
 
     <div v-else-if="error" class="alert alert-danger">
@@ -185,7 +184,7 @@ onMounted(() => {
 
     <div v-else-if="resultsData">
       <div class="d-flex justify-content-between align-items-center mb-3">
-        <h1 class="mb-0">{{ t('Processed results') }}</h1>
+        <h1 class="mb-0">{{ $gettext('Processed results') }}</h1>
         <div class="view-toggle">
           <!-- View toggle would go here -->
         </div>
@@ -201,7 +200,7 @@ onMounted(() => {
               <table :id="`datatable-${account.id}`" class="table table-bordered" data-datatable="true">
                 <thead>
                   <tr>
-                    <th>{{ t('Categories') }}</th>
+                    <th>{{ $gettext('Categories') }}</th>
                     <th
 v-for="[monthDisplay, monthTs] in getMonthsForAccount(account)"
                         :key="monthTs"
@@ -240,17 +239,17 @@ v-for="[monthDisplay, monthTs] in getMonthsForAccount(account)"
 
       <div class="row">
         <div class="col-md-6">
-          <router-link to="/" class="btn btn-secondary mt-3 mb-3">{{ t('Back to Form') }}</router-link>
-          <router-link :to="{ name: 'details', params: { resultId: resultId } }" class="btn btn-outline-secondary mt-3 mb-3 ms-2">{{ t('View All Details') }}</router-link>
+          <router-link to="/" class="btn btn-secondary mt-3 mb-3">{{ $gettext('Back to Form') }}</router-link>
+          <router-link :to="{ name: 'details', params: { resultId: resultId } }" class="btn btn-outline-secondary mt-3 mb-3 ms-2">{{ $gettext('View All Details') }}</router-link>
         </div>
       </div>
     </div>
 
     <div v-else class="alert alert-info">
-      <p>{{ t('noResultsFound') }}</p>
+      <p>{{ $gettext('No results found') }}</p>
       <p v-if="!resultId">
-        {{ t('noResultIdMessage') }}
-        <router-link to="/" class="alert-link">{{ t('uploadFilePrompt') }}</router-link>
+        {{ $gettext('No result ID was provided.') }}
+        <router-link to="/" class="alert-link">{{ $gettext('Please upload a CSV file first.') }}</router-link>
       </p>
     </div>
   </div>

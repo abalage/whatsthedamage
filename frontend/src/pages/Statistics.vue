@@ -1,15 +1,13 @@
 <script setup lang="ts">
-import { useLocaleStore } from '../stores/locale'
-import { getTranslation } from '../stores/translations'
+import { useGettext } from 'vue3-gettext'
 
-const localeStore = useLocaleStore()
+const { $gettext } = useGettext()
 
-const t = (key: string) => getTranslation(key, localeStore.locale)
 </script>
 
 <template>
   <div class="container">
-    <h1>{{ t('appTitle') }} - Statistical Analysis</h1>
+    <h1>{{ $gettext('What\'s the Damage') }} - Statistical Analysis</h1>
     <p>This page will display statistical analysis of your transactions.</p>
     <div class="alert alert-info">
       Statistical analysis will be shown here after processing your data.

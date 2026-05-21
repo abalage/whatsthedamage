@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { ref, reactive, computed } from 'vue'
 import { useStatisticalStore } from '../../stores/statistical'
-import { useLocaleStore } from '../../stores/locale'
 import { useFeedbackStore } from '../../stores/feedback'
-import { getTranslation } from '../../stores/translations'
+import { useGettext } from 'vue3-gettext'
 import { recalculateStatistics } from '../../js/api'
 import ButtonComponent from './ButtonComponent.vue'
+
+const { $gettext } = useGettext()
 
 interface StatisticalControlsProps {
   resultId: string
@@ -13,11 +14,8 @@ interface StatisticalControlsProps {
 
 const props = defineProps<StatisticalControlsProps>()
 
-const localeStore = useLocaleStore()
 const statisticalStore = useStatisticalStore()
 const feedback = useFeedbackStore()
-
-const t = (key: string) => getTranslation(key, localeStore.locale)
 
 // Legend visibility
 const legendVisible = ref(false)
@@ -73,7 +71,7 @@ const handleRecalculate = async () => {
 
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error)
-    feedback.showError(`${t('recalculateError')}: ${message}`)
+    feedback.showError(`${$gettext('Recalculate error')}: ${message}`)
   } finally {
     isRecalculating.value = false
   }
@@ -105,7 +103,7 @@ const resetToDefaults = async () => {
     }
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error)
-    feedback.showError(`${t('restoreDefaultsError')}: ${message}`)
+    feedback.showError(`${$gettext('Restore defaults error')}: ${message}`)
   } finally {
     isRecalculating.value = false
   }
@@ -133,13 +131,13 @@ const statsControlsClasses = computed(() => {
         aria-controls="legend"
         @click="toggleLegend"
       >
-        {{ t('legend') }}
+        {{ $gettext('Legend') }}
       </button>
       <div id="legend" :class="legendClasses">
         <div class="card card-body">
-          <p><span class="badge highlight-outlier">{{ t('outlier') }}</span> {{ t('outlierDescription') }}</p>
-          <p><span class="badge highlight-pareto">{{ t('pareto') }}</span> {{ t('paretoDescription') }}</p>
-          <p><span class="badge highlight-excluded">{{ t('excluded') }}</span> {{ t('excludedDescription') }}</p>
+          <p><span class="badge highlight-outlier">{{ $gettext('Outlier') }}</span> {{ $gettext('Cells highlighted in red indicate outliers detected by IQR method.') }}</p>
+          <p><span class="badge highlight-pareto">{{ $gettext('Pareto') }}</span> {{ $gettext('Cells highlighted in green indicate top contributors per Pareto principle.') }}</p>
+          <p><span class="badge highlight-excluded">{{ $gettext('Excluded') }}</span> {{ $gettext('Cells highlighted in light grey are excluded from statistical analysis (calculated rows or excluded categories).') }}</p>
         </div>
       </div>
     </div>
@@ -155,45 +153,45 @@ const statsControlsClasses = computed(() => {
         aria-controls="stats-controls"
         @click="toggleStatsControls"
       >
-        {{ t('statisticalAnalysisControls') }}
+        {{ $gettext('Statistical Analysis Controls') }}
       </button>
       <div id="stats-controls" :class="statsControlsClasses">
         <div class="card card-body">
           <div class="mb-3">
-            <h6>{{ t('algorithms') }}</h6>
+            <h6>{{ $gettext('Algorithms') }}</h6>
             <div class="form-check">
               <input id="algorithm-iqr" v-model="algorithms.iqr" class="form-check-input" type="checkbox" value="iqr">
               <label class="form-check-label" for="algorithm-iqr">
-                {{ t('iqrOutlierDetection') }}
+                {{ $gettext('IQR Outlier Detection') }}
               </label>
             </div>
             <div class="form-check">
               <input id="algorithm-pareto" v-model="algorithms.pareto" class="form-check-input" type="checkbox" value="pareto">
               <label class="form-check-label" for="algorithm-pareto">
-                {{ t('paretoAnalysis') }}
+                {{ $gettext('Pareto analysis') }}
               </label>
             </div>
           </div>
 
           <div class="mb-3">
-            <h6>{{ t('analysisDirection') }}</h6>
+            <h6>{{ $gettext('Analysis direction') }}</h6>
             <div class="form-check">
               <input id="direction-rows" v-model="direction" class="form-check-input" type="radio" name="direction" value="rows">
               <label class="form-check-label" for="direction-rows">
-                {{ t('rows') }}
+                {{ $gettext('rows') }}
               </label>
             </div>
             <div class="form-check">
               <input id="direction-columns" v-model="direction" class="form-check-input" type="radio" name="direction" value="columns">
               <label class="form-check-label" for="direction-columns">
-                {{ t('columns') }}
+                {{ $gettext('columns') }}
               </label>
             </div>
           </div>
 
           <div class="d-flex gap-2">
             <ButtonComponent
-              :text="t('recalculate')"
+              :text="$gettext('Recalculate')"
               button-type="primary"
               size="sm"
               :disabled="isRecalculating"
@@ -201,14 +199,14 @@ const statsControlsClasses = computed(() => {
             >
               <template v-if="isRecalculating">
                 <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-                <span>{{ t('recalculating') }}...</span>
+                <span>{{ $gettext('recalculating') }}...</span>
               </template>
               <template v-else>
-                <span>{{ t('recalculate') }}</span>
+                <span>{{ $gettext('Recalculate') }}</span>
               </template>
             </ButtonComponent>
             <ButtonComponent
-              :text="t('resetToDefaults')"
+              :text="$gettext('Reset to defaults')"
               button-type="secondary"
               size="sm"
               @click="resetToDefaults"

@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: whatsthedamage-1.0\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-03-05 20:44+0100\n"
-"PO-Revision-Date: 2026-03-05 20:45+0100\n"
+"POT-Creation-Date: 2026-05-21 10:35+0200\n"
+"PO-Revision-Date: 2026-05-21 10:47+0200\n"
 "Last-Translator: Balázs Németh <balagetech@protonmail.com>\n"
 "Language-Team: Hungarian\n"
 "Language: hu_HU\n"
@@ -18,104 +18,99 @@ msgstr ""
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 "X-Generator: Poedit 3.6\n"
 
-#: src/whatsthedamage/config/config.py:60
+#: src/whatsthedamage/config/config.py:61
 msgid "Grocery"
 msgstr "Bevásárlás"
 
-#: src/whatsthedamage/config/config.py:61
+#: src/whatsthedamage/config/config.py:62
 msgid "Clothes"
 msgstr "Ruházat"
 
-#: src/whatsthedamage/config/config.py:62
+#: src/whatsthedamage/config/config.py:63
 msgid "Dining Out"
 msgstr "Vendéglátás"
 
-#: src/whatsthedamage/config/config.py:63
+#: src/whatsthedamage/config/config.py:64
 msgid "Health"
 msgstr "Egészség"
 
-#: src/whatsthedamage/config/config.py:64
+#: src/whatsthedamage/config/config.py:65
 msgid "Payment"
 msgstr "Kifizetés"
 
-#: src/whatsthedamage/config/config.py:65
+#: src/whatsthedamage/config/config.py:66
 msgid "Transportation"
 msgstr "Közlekedés"
 
-#: src/whatsthedamage/config/config.py:66
+#: src/whatsthedamage/config/config.py:67
 msgid "Utility"
 msgstr "Rezsi"
 
-#: src/whatsthedamage/config/config.py:67
+#: src/whatsthedamage/config/config.py:68
 msgid "Home Maintenance"
 msgstr "Otthon karbantartás"
 
-#: src/whatsthedamage/config/config.py:68
+#: src/whatsthedamage/config/config.py:69
 msgid "Entertainment and Leisure"
 msgstr "Szórakozás és szabadidő"
 
-#: src/whatsthedamage/config/config.py:69
+#: src/whatsthedamage/config/config.py:70
 msgid "Insurance"
 msgstr "Biztosítás"
 
-#: src/whatsthedamage/config/config.py:70
+#: src/whatsthedamage/config/config.py:71
 msgid "Loan"
 msgstr "Hitel"
 
-#: src/whatsthedamage/config/config.py:71
+#: src/whatsthedamage/config/config.py:72
 msgid "Withdrawal"
 msgstr "Pénzfelvétel"
 
-#: src/whatsthedamage/config/config.py:72
+#: src/whatsthedamage/config/config.py:73
 msgid "Fee"
 msgstr "Díj"
 
-#: src/whatsthedamage/config/config.py:73
+#: src/whatsthedamage/config/config.py:74
 msgid "Deposit"
 msgstr "Bevétel"
 
-#: src/whatsthedamage/config/config.py:74
+#: src/whatsthedamage/config/config.py:75
 msgid "Refund"
 msgstr "Visszatérítés"
 
-#: src/whatsthedamage/config/config.py:75
+#: src/whatsthedamage/config/config.py:76
 msgid "Interest"
 msgstr "Kamat"
 
-#: src/whatsthedamage/config/config.py:76
+#: src/whatsthedamage/config/config.py:77
 msgid "Electronics and Digital Services"
 msgstr "Elektronika és digitális szolgáltatások"
 
-#: src/whatsthedamage/config/config.py:77
+#: src/whatsthedamage/config/config.py:78
 msgid "Transfer"
 msgstr "Átvezetés"
 
-#: src/whatsthedamage/config/config.py:78
+#: src/whatsthedamage/config/config.py:79
 msgid "Other"
 msgstr "Egyéb"
 
-#: src/whatsthedamage/config/config.py:79
+#: src/whatsthedamage/config/config.py:80
 #: src/whatsthedamage/models/dt_calculators.py:36
 #: src/whatsthedamage/models/dt_calculators.py:68
 msgid "Balance"
 msgstr "Egyenleg"
 
-#: src/whatsthedamage/config/config.py:80
+#: src/whatsthedamage/config/config.py:81
 #: src/whatsthedamage/models/dt_calculators.py:68
 #: src/whatsthedamage/models/dt_calculators.py:85
 msgid "Total Spendings"
 msgstr "Teljes költés"
 
-#: src/whatsthedamage/services/data_formatting_service.py:38
-#: src/whatsthedamage/view/templates/results.html:45
+#: src/whatsthedamage/services/response_formatting_service.py:57
 msgid "Categories"
 msgstr "Kategóriák"
 
-#: src/whatsthedamage/services/data_formatting_service.py:419
-#: src/whatsthedamage/view/templates/category_month_transactions.html:20
-#: src/whatsthedamage/view/templates/category_months_list.html:20
-#: src/whatsthedamage/view/templates/month_categories_list.html:20
-#: src/whatsthedamage/view/templates/results.html:32
+#: src/whatsthedamage/services/response_formatting_service.py:436
 msgid "Account"
 msgstr "Számla"
 
@@ -171,390 +166,104 @@ msgstr "December"
 msgid "Invalid month number. Please enter a number between 1 and 12."
 msgstr "Érvénytelen hónap. A hónap száma 1 és 12 között kell hogy legyen."
 
-#: src/whatsthedamage/view/templates/category_month_transactions.html:5
-#: src/whatsthedamage/view/templates/category_month_transactions.html:19
-msgid "Transaction Details"
-msgstr "Tranzakció részletei"
-
-#: src/whatsthedamage/view/templates/category_month_transactions.html:25
-msgid "Date"
-msgstr "Dátum"
-
-#: src/whatsthedamage/view/templates/category_month_transactions.html:26
-msgid "Amount"
-msgstr "Összeg"
-
-#: src/whatsthedamage/view/templates/category_month_transactions.html:27
-msgid "Merchant"
-msgstr "Kereskedő"
-
-#: src/whatsthedamage/view/templates/category_month_transactions.html:43
-#: src/whatsthedamage/view/templates/category_months_list.html:43
-#: src/whatsthedamage/view/templates/month_categories_list.html:43
-#: src/whatsthedamage/view/templates/results.html:110
-msgid "Back"
-msgstr "Vissza"
-
-#: src/whatsthedamage/view/templates/results.html:115
-msgid "View All Transactions"
-msgstr "Összes tranzakció megtekintése"
-
-#: src/whatsthedamage/view/templates/detail_results.html:5
-msgid "Detail Results"
-msgstr "Részletes eredmények"
-
-#: src/whatsthedamage/view/templates/detail_results.html:11
-msgid "Transaction Details"
-msgstr "Tranzakció részletek"
-
-#: src/whatsthedamage/view/templates/detail_results.html:18
-msgid "Date"
-msgstr "Dátum"
-
-#: src/whatsthedamage/view/templates/detail_results.html:19
-msgid "Category"
-msgstr "Kategória"
-
-#: src/whatsthedamage/view/templates/detail_results.html:20
-msgid "Merchant"
-msgstr "Kereskedő"
-
-#: src/whatsthedamage/view/templates/detail_results.html:21
-msgid "Amount"
-msgstr "Összeg"
-
-#: src/whatsthedamage/view/templates/detail_results.html:22
-msgid "Currency"
-msgstr "Pénznem"
-
-#: src/whatsthedamage/view/templates/detail_results.html:23
-msgid "Account"
-msgstr "Számlaszám"
-
-#: src/whatsthedamage/view/templates/detail_results.html:24
-msgid "Type"
-msgstr "Típus"
-
-#: src/whatsthedamage/view/templates/detail_results.html:25
-msgid "Confidence"
-msgstr "Biztosság"
-
-#: src/whatsthedamage/view/templates/detail_results.html:55
-msgid "Back to Summary"
-msgstr "Vissza az összefoglalóhoz"
-
-#: src/whatsthedamage/view/templates/category_months_list.html:5
-#: src/whatsthedamage/view/templates/category_months_list.html:19
-msgid "Details for Category"
-msgstr "Kategória részletek"
-
-#: src/whatsthedamage/view/templates/category_months_list.html:29
-msgid "Month"
-msgstr "Hónap"
-
-#: src/whatsthedamage/view/templates/category_months_list.html:30
-#: src/whatsthedamage/view/templates/month_categories_list.html:30
-msgid "Total"
-msgstr "Teljes"
-
-#: src/whatsthedamage/view/templates/header.html:4
-msgid "Generate reports from your bank account CSV history."
-msgstr "Kimutatások készítése CSV fájlba mentett bankszámla tranzakciókból."
-
-#: src/whatsthedamage/view/templates/header.html:11
-msgid "Home"
-msgstr "Kezdőlap"
-
-#: src/whatsthedamage/view/templates/header.html:14
-msgid "Privacy"
-msgstr "Adatvédelem"
-
-#: src/whatsthedamage/view/templates/header.html:17
-msgid "Legal"
-msgstr "Felhasználási feltételek"
-
-#: src/whatsthedamage/view/templates/header.html:20
-msgid "About"
-msgstr "Névjegy"
-
-#: src/whatsthedamage/view/templates/header.html:24
-msgid "Language"
-msgstr "Nyelv"
-
-#: src/whatsthedamage/view/templates/index.html:33
-msgid "File Uploads"
-msgstr "Fájl feltöltések"
-
-#: src/whatsthedamage/view/templates/index.html:37
-msgid "CSV file"
-msgstr "CSV fájl"
-
-#: src/whatsthedamage/view/templates/index.html:39
-msgid "Upload your CSV file containing the exported bank account history here."
-msgstr "Töltsd ide fel a CSV fájlba elmentett bankszámla történetedet."
-
-#: src/whatsthedamage/view/templates/index.html:42
-msgid "Configuration file"
-msgstr "Beállítások fájl"
-
-#: src/whatsthedamage/view/templates/index.html:44
-msgid ""
-"Upload your configuration file here, or the default configuration will be "
-"used."
-msgstr ""
-"Töltsd fel ide a beállításokat tartalmazó fájlt, ellenkező esetben az "
-"alapértelmezett lesz használva."
-
-#: src/whatsthedamage/view/templates/index.html:52
-msgid "Filters"
-msgstr "Szűrők"
-
-#: src/whatsthedamage/view/templates/index.html:56
-msgid "Start date"
-msgstr "Kezdő dátum"
-
-#: src/whatsthedamage/view/templates/index.html:58
-msgid "Filter results starting from this date."
-msgstr "Eredmények szűrése ettől a dátumtól kezdve."
-
-#: src/whatsthedamage/view/templates/index.html:61
-msgid "End date"
-msgstr "Vége dátum"
-
-#: src/whatsthedamage/view/templates/index.html:63
-msgid "Filter results up until this date."
-msgstr "Eredmények szűrése eddig a dátumig."
-
-#: src/whatsthedamage/view/templates/index.html:66
-msgid "Category filter"
-msgstr "Kategória szűrő"
-
-#: src/whatsthedamage/view/templates/index.html:68
-msgid "Filter by category. (default = 'category')"
-msgstr "Kategória szerinti szűrés. (alapértelmezett = 'category')"
-
-#: src/whatsthedamage/view/templates/index.html:78
-msgid "Advanced settings"
-msgstr "Haladó beállítások"
-
-#: src/whatsthedamage/view/templates/index.html:83
-msgid "Enable verbose logging"
-msgstr "Részletes naplózás"
-
-#: src/whatsthedamage/view/templates/index.html:84
-msgid "Enable detailed logging in the backend service's console."
-msgstr "Részletes naplózás engedélyezése a backend konzolon."
-
-#: src/whatsthedamage/view/templates/index.html:89
-msgid "Use Machine Learning model for categorization"
-msgstr "Gépi tanulási modell használata a kategorizáláshoz"
-
-#: src/whatsthedamage/view/templates/index.html:93
-msgid "Uncheck to use regular expressions instead of the ML model."
-msgstr ""
-"Töröld ki a jelölést, hogy reguláris kifejezéseket használj a gépi tanulási "
-"modell helyett."
-
-#: src/whatsthedamage/view/templates/index.html:102
-msgid "Submit"
-msgstr "Beküldés"
-
-#: src/whatsthedamage/view/templates/index.html:105
-msgid "Clear Form"
-msgstr "Űrlap törlése"
-
-#: src/whatsthedamage/view/templates/month_categories_list.html:5
-#: src/whatsthedamage/view/templates/month_categories_list.html:19
-msgid "Details for Month"
-msgstr "Hónap részletei"
-
-#: src/whatsthedamage/view/templates/month_categories_list.html:29
-msgid "Category"
-msgstr "Kategória"
-
-#: src/whatsthedamage/view/templates/results.html:5
-msgid "Result"
-msgstr "Eredmény"
-
-#: src/whatsthedamage/view/templates/results.html:11
-msgid "Export CSV"
-msgstr "Mentés CSV-be"
-
-#: src/whatsthedamage/view/templates/results.html:12
-msgid "Export Excel"
-msgstr "Mentés Excel-be"
-
-#: src/whatsthedamage/view/templates/results.html:21
-msgid "Processed results"
-msgstr "Feldolgozott eredmények"
-
 #~ msgid "Vehicle"
-#~ msgstr "Jármű"
+#~ msgstr "Vehicle"
 
 #~ msgid "Sports Recreation"
-#~ msgstr "Sport Rekreáció"
+#~ msgstr "Sports Recreation"
 
-#~ msgid "Month Details"
-#~ msgstr "Hónap részletei"
+#~ msgid "Generate reports from your bank account CSV history."
+#~ msgstr "Generate reports from your bank account CSV history."
 
-#~ msgid "Category Details"
-#~ msgstr "Kategória részletei"
+#~ msgid "Home"
+#~ msgstr "Home"
 
-#~ msgid "No currency formatting"
-#~ msgstr "Nincs valuta formázás"
+#~ msgid "Privacy"
+#~ msgstr "Privacy"
 
-#~ msgid ""
-#~ "Select this option to exclude currency symbols in the exported CSV. You "
-#~ "can format the cells in your spreadsheet application instead."
-#~ msgstr ""
-#~ "Jelöld be ha nem szeretnél valuta szimbólumokat látni a kimentett CSV "
-#~ "fájlban. A formázást utólag is elvégezheted egy táblázatkezelő "
-#~ "alkalmazásban."
+#~ msgid "Legal"
+#~ msgstr "Legal"
 
-#~ msgid "Download CSV"
-#~ msgstr "CSV letöltése"
+#~ msgid "About"
+#~ msgstr "About"
 
-#~ msgid ""
-#~ "Note: Should you want to have better results in importing the generated "
-#~ "CSV file, please make sure to check \"No Currenty Format\" on the "
-#~ "previous form."
-#~ msgstr ""
-#~ "Megjegyzés: A generált CSV jobb importálhatósága érdekében érdemes lehet "
-#~ "a \"Nincs valuta formázás\" opciót bekapcsolni."
+#~ msgid "Language"
+#~ msgstr "Language"
+
+#~ msgid "File Uploads"
+#~ msgstr "File Uploads"
+
+#~ msgid "CSV file:"
+#~ msgstr "CSV file:"
+
+#~ msgid "Upload your CSV file containing the exported bank account history here."
+#~ msgstr "Upload your CSV file containing the exported bank account history here."
+
+#~ msgid "Configuration file:"
+#~ msgstr "Configuration file:"
+
+#~ msgid "Upload your configuration file here, or the default configuration will be used."
+#~ msgstr "Upload your configuration file here, or the default configuration will be used."
+
+#~ msgid "Filters"
+#~ msgstr "Filters"
+
+#~ msgid "Start date:"
+#~ msgstr "Start date:"
+
+#~ msgid "Filter results starting from this date."
+#~ msgstr "Filter results starting from this date."
+
+#~ msgid "End date:"
+#~ msgstr "End date:"
+
+#~ msgid "View All Transactions"
+#~ msgstr "View All Transactions"
+
+#~ msgid "Detail Results"
+#~ msgstr "Detail Results"
+
+#~ msgid "Date"
+#~ msgstr "Date"
+
+#~ msgid "Merchant"
+#~ msgstr "Merchant"
+
+#~ msgid "Amount"
+#~ msgstr "Amount"
+
+#~ msgid "Currency"
+#~ msgstr "Currency"
+
+#~ msgid "Type"
+#~ msgstr "Type"
+
+#~ msgid "Confidence"
+#~ msgstr "Confidence"
+
+#~ msgid "Back to Summary"
+#~ msgstr "Back to Summary"
 
 #~ msgid "What's the Damage?"
-#~ msgstr "Hogy mennyi?!"
-
-#~ msgid "What's the Damage"
-#~ msgstr "Hogy mennyi?!"
-
-#~ msgid ""
-#~ "This tool is designed to process CSV files and generate insightful "
-#~ "reports. It relies on your bank's export functionality to save your "
-#~ "historical data into CSV format."
-#~ msgstr ""
-#~ "Ez az eszköz CSV fájlok feldolgozására és átlátható jelentések "
-#~ "készítésére szolgál. A CSV fájlokat a netbankod export funkciójával "
-#~ "készítheted el amennyiben támogat ilyen funkciót."
-
-#~ msgid "It is published under GPL-3.0 license."
-#~ msgstr "GPL-3.0 licenc alatt érhető el."
-
-#~ msgid "The problem it solves"
-#~ msgstr "Milyen problémát old meg"
-
-#~ msgid ""
-#~ "My bank service provider gives me reports about my finances but they are "
-#~ "not detailed enough, so I created my own."
-#~ msgstr ""
-#~ "A bankom nyújt ugyan jelentéseket a pénzügyeimről, de ezek nem elég "
-#~ "részletesek számomra, így inkább sajátot készítettem."
-
-#~ msgid ""
-#~ "Also my financial details are a private matter between myself and my "
-#~ "chosen bank. To process my bank account exports, I need a solution that "
-#~ "ensures only I have access to the data."
-#~ msgstr ""
-#~ "A pénzügyeim magánügyek, amelyek csak rám és a választott bankomra "
-#~ "tartoznak. A számlakivonatok feldolgozásához olyan megoldásra van "
-#~ "szükségem, amely biztosítja, hogy csak én férjek hozzá az adataimhoz."
-
-#~ msgid ""
-#~ "This application does not keep or sell any of your data. All uploaded "
-#~ "content is removed as soon as the report is created."
-#~ msgstr ""
-#~ "Ez az alkalmazás nem tárolja és nem értékesíti az adataidat. Minden "
-#~ "feltöltött tartalom törlődik, amint a jelentés elkészül."
-
-#~ msgid "Main Features"
-#~ msgstr "Főbb funkciók"
-
-#~ msgid "Automated Categorization:"
-#~ msgstr "Automatikus kategorizálás:"
-
-#~ msgid ""
-#~ "Categorizes transactions into well-known accounting categories such as "
-#~ "deposits and payments, as well as custom categories using regular "
-#~ "expressions."
-#~ msgstr ""
-#~ "A tranzakciókat ismert könyvelési kategóriákba (például jóváírások, "
-#~ "kifizetések) és egyedi kategóriákba sorolja reguláris kifejezések "
-#~ "segítségével."
-
-#~ msgid "Filtering:"
-#~ msgstr "Szűrők:"
-
-#~ msgid ""
-#~ "Filter transactions by start and end dates, or group them by month for a "
-#~ "comprehensive overview of your finances."
-#~ msgstr ""
-#~ "A tranzakciók szűrése kezdő- és záródátum alapján, vagy havi bontásban "
-#~ "csoportosítva a pénzügyeid átláthatóbbá tételéhez."
-
-#~ msgid "Detailed Reporting:"
-#~ msgstr "Részletes kimutatás:"
-
-#~ msgid ""
-#~ "Generate summarized reports that provide insights into your spending "
-#~ "habits, grouped by transaction categories."
-#~ msgstr ""
-#~ "Összesített jelentéseket készít, amelyek betekintést nyújtanak a költési "
-#~ "szokásaidba, tranzakciós kategóriák szerint csoportosítva."
-
-#~ msgid "CSV Export:"
-#~ msgstr "CSV Export:"
-
-#~ msgid ""
-#~ "Save your reports as CSV files for easy sharing and further analysis."
-#~ msgstr ""
-#~ "A jelentéseket CSV fájlként mentheted el, így könnyen megoszthatod vagy "
-#~ "tovább elemezheted őket."
-
-#~ msgid "Custom configuration:"
-#~ msgstr "Egyedi beállítások:"
-
-#~ msgid "Use custom configuration to use your own regular expressions."
-#~ msgstr ""
-#~ "Egyedi beállításokkal saját reguláris kifejezéseket is használhatsz."
-
-#~ msgid "Resources"
-#~ msgstr "Források"
-
-#~ msgid "For the source code and documentation visit the GitHub repository of"
-#~ msgstr "A forráskódért és a dokumentációért látogass meg a GitHub repót"
-
-#~ msgid "To read about how this tool was made, please visit the"
-#~ msgstr ""
-#~ "Ha szeretnél olvasni arról, hogyan készült ez az eszköz, látogasd meg a"
-
-#~ msgid "post"
-#~ msgstr "bejegyzést"
-
-#~ msgid "Introducing whatsthedamage to process your bank account exports"
-#~ msgstr ""
-#~ "Bemutatkozik a \"Hogy mennyi?!\" (másnéven \"whatsthedamage\"), a "
-#~ "bankszámlakivonatok feldolgozására"
-
-#~ msgid "Verbose logs"
-#~ msgstr "Részletes naplózás"
+#~ msgstr "What's the Damage?"
 
 #~ msgid "Cars"
-#~ msgstr "Autók"
+#~ msgstr "Cars"
 
 #~ msgid "cars"
-#~ msgstr "autó"
+#~ msgstr "cars"
 
 #~ msgid "loan"
-#~ msgstr "hitel"
+#~ msgstr "loan"
 
 #~ msgid "Grocery Stores"
-#~ msgstr "Bevásárlás"
+#~ msgstr "Grocery Stores"
 
 #~ msgid "Clothing Stores"
-#~ msgstr "Ruházat"
+#~ msgstr "Clothing Stores"
 
 #~ msgid "Health & Pharmacy"
-#~ msgstr "Egészség"
+#~ msgstr "Health & Pharmacy"
 
 #~ msgid "Cars & Fuel"
-#~ msgstr "Autó fenntartás"
+#~ msgstr "Cars & Fuel"

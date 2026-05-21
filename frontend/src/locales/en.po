@@ -1,0 +1,378 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Last-Translator: Automatically generated\n"
+"Language-Team: none\n"
+"Language: en\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: src/components/Layout.vue:23
+msgid "About"
+msgstr "About"
+
+#: src/pages/Details.vue:45
+msgid "Account"
+msgstr "Account"
+
+#: src/pages/Index.vue:93
+msgid "Advanced settings"
+msgstr "Advanced settings"
+
+#: src/components/ui/StatisticalControls.vue:41
+msgid "Algorithms"
+msgstr "Algorithms"
+
+#: src/pages/CategoryMonthTransactions.vue:49 src/pages/Details.vue:43
+msgid "Amount"
+msgstr "Amount"
+
+#: src/components/ui/StatisticalControls.vue:57
+msgid "Analysis direction"
+msgstr "Analysis direction"
+
+#: src/pages/Index.vue:38
+msgid "Are you sure you want to clear the form?"
+msgstr "Are you sure you want to clear the form?"
+
+#: src/pages/CategoryMonthTransactions.vue:56
+msgid "Back to Category Months"
+msgstr "Back to Category Months"
+
+#: src/pages/Results.vue:80
+msgid "Back to Form"
+msgstr "Back to Form"
+
+#: src/pages/CategoryMonthsList.vue:52
+#: src/pages/CategoryMonthTransactions.vue:61 src/pages/Details.vue:71
+#: src/pages/MonthCategoriesList.vue:54
+msgid "Back to Results"
+msgstr "Back to Results"
+
+#: src/pages/Results.vue:41
+msgid "Categories"
+msgstr "Categories"
+
+#: src/pages/Details.vue:41 src/pages/MonthCategoriesList.vue:48
+msgid "Category"
+msgstr "Category"
+
+#: src/pages/CategoryMonthsList.vue:48
+msgid "Category Details"
+msgstr "Category Details"
+
+#: src/pages/Index.vue:75
+msgid "Category filter"
+msgstr "Category filter"
+
+#: src/pages/CategoryMonthTransactions.vue:49
+msgid "Category Months"
+msgstr "Category Months"
+
+#: src/components/ui/StatisticalControls.vue:19
+msgid ""
+"Cells highlighted in green indicate top contributors per Pareto principle."
+msgstr ""
+"Cells highlighted in green indicate top contributors per Pareto principle."
+
+#: src/components/ui/StatisticalControls.vue:20
+msgid ""
+"Cells highlighted in light grey are excluded from statistical analysis "
+"(calculated rows or excluded categories)."
+msgstr ""
+"Cells highlighted in light grey are excluded from statistical analysis "
+"(calculated rows or excluded categories)."
+
+#: src/components/ui/StatisticalControls.vue:18
+msgid "Cells highlighted in red indicate outliers detected by IQR method."
+msgstr "Cells highlighted in red indicate outliers detected by IQR method."
+
+#: src/pages/Index.vue:135
+msgid "Clear form"
+msgstr "Clear form"
+
+#: src/components/ui/StatisticalControls.vue:67
+msgid "columns"
+msgstr "columns"
+
+#: src/pages/Details.vue:47
+msgid "Confidence"
+msgstr "Confidence"
+
+#: src/pages/Index.vue:26
+msgid "Configuration file"
+msgstr "Configuration file"
+
+#: src/pages/Details.vue:44
+msgid "Currency"
+msgstr "Currency"
+
+#: src/pages/Index.vue:11
+msgid "CSV file"
+msgstr "CSV file"
+
+#: src/pages/CategoryMonthTransactions.vue:48 src/pages/Details.vue:40
+msgid "Date"
+msgstr "Date"
+
+#: src/pages/Details.vue:8
+msgid "Details"
+msgstr "Details"
+
+#: src/pages/CategoryMonthsList.vue:44
+msgid "Details for Category"
+msgstr "Details for Category"
+
+#: src/pages/MonthCategoriesList.vue:46
+msgid "Details for Month"
+msgstr "Details for Month"
+
+#: src/pages/Index.vue:103
+#, fuzzy
+msgid "Enable detailed logging in the backend"
+msgstr "Enable detailed logging in the backend console."
+
+#: src/pages/Index.vue:102
+msgid "Enable verbose logging"
+msgstr "Enable verbose logging"
+
+#: src/pages/Index.vue:60
+msgid "End date"
+msgstr "End date"
+
+#: src/components/ui/StatisticalControls.vue:20
+msgid "Excluded"
+msgstr "Excluded"
+
+#: src/pages/CategoryMonthsList.vue:59
+#: src/pages/CategoryMonthTransactions.vue:68 src/pages/Details.vue:50
+#: src/pages/MonthCategoriesList.vue:61 src/pages/Results.vue:69
+#: src/pages/Results.vue:98
+msgid "Export CSV"
+msgstr "Export CSV"
+
+#: src/pages/CategoryMonthsList.vue:60
+#: src/pages/CategoryMonthTransactions.vue:69 src/pages/Details.vue:51
+#: src/pages/MonthCategoriesList.vue:62 src/pages/Results.vue:70
+#: src/pages/Results.vue:99
+msgid "Export Excel"
+msgstr "Export Excel"
+
+#: src/pages/Index.vue:9
+msgid "File uploads"
+msgstr "File uploads"
+
+#: src/pages/Index.vue:83
+msgid "Filter by category. (default = \"category\")"
+msgstr "Filter by category. (default = \"category\")"
+
+#: src/pages/Index.vue:57
+#, fuzzy
+msgid "Filter results starting from this date"
+msgstr "Filter results starting from this date."
+
+#: src/pages/Index.vue:72
+#, fuzzy
+msgid "Filter results up until this date"
+msgstr "Filter results up until this date."
+
+#: src/pages/Index.vue:43
+msgid "Filters"
+msgstr "Filters"
+
+#: src/pages/Index.vue:40
+msgid "Form cleared"
+msgstr "Form cleared"
+
+#: src/components/Layout.vue:7
+#, fuzzy
+msgid "Generate reports from your bank account CSV history"
+msgstr "Generate reports from your bank account CSV history."
+
+#: src/components/Layout.vue:14 src/pages/CategoryMonthsList.vue:46
+#: src/pages/CategoryMonthTransactions.vue:46 src/pages/Details.vue:6
+#: src/pages/MonthCategoriesList.vue:48 src/pages/Results.vue:5
+msgid "Home"
+msgstr "Home"
+
+#: src/components/ui/StatisticalControls.vue:45
+msgid "IQR Outlier Detection"
+msgstr "IQR Outlier Detection"
+
+#: src/components/Layout.vue:27
+msgid "Languages"
+msgstr "Languages"
+
+#: src/components/Layout.vue:20
+msgid "Legal"
+msgstr "Legal"
+
+#: src/components/ui/StatisticalControls.vue:6
+msgid "Legend"
+msgstr "Legend"
+
+#: src/pages/CategoryMonthsList.vue:24
+#: src/pages/CategoryMonthTransactions.vue:24 src/pages/Details.vue:15
+#: src/pages/MonthCategoriesList.vue:24 src/pages/Results.vue:14
+msgid "loading"
+msgstr "loading"
+
+#: src/pages/CategoryMonthsList.vue:26
+#: src/pages/CategoryMonthTransactions.vue:26
+#: src/pages/MonthCategoriesList.vue:26
+msgid "Loading data"
+msgstr "Loading data"
+
+#: src/pages/Details.vue:17 src/pages/Results.vue:16
+msgid "Loading results"
+msgstr "Loading results"
+
+#: src/pages/CategoryMonthTransactions.vue:50 src/pages/Details.vue:42
+msgid "Merchant"
+msgstr "Merchant"
+
+#: src/pages/CategoryMonthsList.vue:48
+msgid "Month"
+msgstr "Month"
+
+#: src/pages/MonthCategoriesList.vue:50
+msgid "Month Details"
+msgstr "Month Details"
+
+#: src/pages/CategoryMonthsList.vue:97 src/pages/MonthCategoriesList.vue:97
+msgid "No data found"
+msgstr "No data found"
+
+#: src/pages/Results.vue:89
+msgid "No result ID was provided."
+msgstr "No result ID was provided."
+
+#: src/pages/Details.vue:82 src/pages/Results.vue:87
+msgid "No results found"
+msgstr "No results found"
+
+#: src/pages/CategoryMonthTransactions.vue:86
+msgid "No transactions found"
+msgstr "No transactions found"
+
+#: src/components/ui/StatisticalControls.vue:18
+msgid "Outlier"
+msgstr "Outlier"
+
+#: src/components/ui/StatisticalControls.vue:19
+msgid "Pareto"
+msgstr "Pareto"
+
+#: src/components/ui/StatisticalControls.vue:51
+msgid "Pareto analysis"
+msgstr "Pareto analysis"
+
+#: src/pages/Results.vue:90
+msgid "Please upload a CSV file first."
+msgstr "Please upload a CSV file first."
+
+#: src/components/Layout.vue:17
+msgid "Privacy"
+msgstr "Privacy"
+
+#: src/pages/Results.vue:25
+msgid "Processed results"
+msgstr "Processed results"
+
+#: src/pages/Index.vue:126
+msgid "Processing your transactions..."
+msgstr "Processing your transactions..."
+
+#: src/components/ui/StatisticalControls.vue:74
+#: src/components/ui/StatisticalControls.vue:85
+msgid "Recalculate"
+msgstr "Recalculate"
+
+#: src/components/ui/StatisticalControls.vue:74
+msgid "Recalculate error"
+msgstr "Recalculate error"
+
+#: src/components/ui/StatisticalControls.vue:82
+msgid "recalculating"
+msgstr "recalculating"
+
+#: src/components/ui/StatisticalControls.vue:89
+msgid "Reset to defaults"
+msgstr "Reset to defaults"
+
+#: src/components/ui/StatisticalControls.vue:106
+msgid "Restore defaults error"
+msgstr "Restore defaults error"
+
+#: src/pages/CategoryMonthsList.vue:47
+#: src/pages/CategoryMonthTransactions.vue:47 src/pages/Details.vue:7
+#: src/pages/MonthCategoriesList.vue:49 src/pages/Results.vue:6
+msgid "Results"
+msgstr "Results"
+
+#: src/components/ui/StatisticalControls.vue:61
+msgid "rows"
+msgstr "rows"
+
+#: src/components/Layout.vue:45
+msgid "Skip to main content"
+msgstr "Skip to main content"
+
+#: src/pages/Index.vue:45
+msgid "Start date"
+msgstr "Start date"
+
+#: src/components/ui/StatisticalControls.vue:28
+msgid "Statistical Analysis Controls"
+msgstr "Statistical Analysis Controls"
+
+#: src/pages/Index.vue:126
+msgid "Submit"
+msgstr "Submit"
+
+#: src/pages/CategoryMonthsList.vue:49 src/pages/MonthCategoriesList.vue:49
+msgid "Total"
+msgstr "Total"
+
+#: src/pages/CategoryMonthTransactions.vue:44
+#: src/pages/CategoryMonthTransactions.vue:52 src/pages/Details.vue:28
+msgid "Transaction Details"
+msgstr "Transaction Details"
+
+#: src/pages/Details.vue:46
+msgid "Type"
+msgstr "Type"
+
+#: src/pages/Index.vue:117
+#, fuzzy
+msgid "Uncheck to use regular expressions instead of the ML model"
+msgstr "Uncheck to use regular expressions instead of the ML model."
+
+#: src/pages/Index.vue:38
+#, fuzzy
+msgid ""
+"Upload your configuration file here, or the default configuration will be "
+"used"
+msgstr ""
+"Upload your configuration file here, or the default configuration will be "
+"used."
+
+#: src/pages/Index.vue:23
+#, fuzzy
+msgid "Upload your CSV file containing the exported bank account history"
+msgstr ""
+"Upload your CSV file containing the exported bank account history here."
+
+#: src/pages/Index.vue:114
+msgid "Use Machine Learning model for categorization"
+msgstr "Use Machine Learning model for categorization"
+
+#: src/pages/Results.vue:81
+msgid "View All Details"
+msgstr "View All Details"
+
+#: src/pages/About.vue:3 src/pages/Statistics.vue:3
+msgid "What's the Damage"
+msgstr "What's the Damage"

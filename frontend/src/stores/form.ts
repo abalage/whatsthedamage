@@ -8,7 +8,7 @@ import type { ProcessResponse } from '../types/api'
 /**
  * Form data interface for transaction processing
  */
-export interface FormData {
+interface FormData {
   csvFile: File | null
   configFile: File | null
   startDate: string
@@ -21,7 +21,7 @@ export interface FormData {
 /**
  * Form validation errors interface
  */
-export interface FormErrors {
+interface FormErrors {
   csvFile?: string
   configFile?: string
   startDate?: string
@@ -32,7 +32,7 @@ export interface FormErrors {
 /**
  * Result of form submission
  */
-export interface SubmitResult {
+interface SubmitResult {
   success: boolean
   resultId?: string
   error?: string
@@ -44,7 +44,7 @@ export interface SubmitResult {
  * Note: Navigation is handled separately via a composable to avoid
  * the limitation of useRouter() not being available in Pinia stores.
  */
-export const useFormStore = defineStore('form', () => {
+const useFormStore = defineStore('form', () => {
   const feedback = useFeedbackStore()
 
   /**
@@ -276,7 +276,7 @@ export const useFormStore = defineStore('form', () => {
  *
  * @returns Form store with navigation-capable submit function
  */
-export const useFormWithNavigation = (): FormStore & { submitForm: () => Promise<boolean> } => {
+export const useFormWithNavigation = (): ReturnType<typeof useFormStore> & { submitForm: () => Promise<boolean> } => {
   const formStore = useFormStore()
   const router = useRouter()
 
@@ -312,4 +312,4 @@ export const useFormWithNavigation = (): FormStore & { submitForm: () => Promise
   }
 }
 
-export type FormStore = ReturnType<typeof useFormStore>
+

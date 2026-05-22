@@ -92,5 +92,3 @@ export const useFeedbackStore = defineStore('feedback', () => {
     getMessagesByType
   }
 })
-
-export type FeedbackStore = ReturnType<typeof useFeedbackStore>

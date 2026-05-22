@@ -16,7 +16,7 @@
 /**
  * Display and raw value pair (e.g., formatted currency with numeric value)
  */
-export interface DisplayRawField {
+interface _DisplayRawField {
   display: string;
   raw: number | string;
 }
@@ -24,7 +24,7 @@ export interface DisplayRawField {
 /**
  * Date with display format and timestamp
  */
-export interface DateField {
+interface _DateField {
   display: string;
   timestamp: number;
 }
@@ -34,7 +34,7 @@ export interface DateField {
  *
  * Returned for non-200 status codes.
  */
-export interface ErrorApiResponse {
+interface _ErrorApiResponse {
   code: number;
   message: string;
   details?: Record<string, unknown>;
@@ -61,7 +61,7 @@ export interface ErrorApiResponse {
  * console.log(envelope.meta.request_id); // request identifier
  * ```
  */
-export type ApiEnvelope<T = unknown> = {
+type _ApiEnvelope<T = unknown> = {
   status: 'success' | 'error';
   data: T;
   meta: Record<string, unknown>;
@@ -76,7 +76,7 @@ export type ApiEnvelope<T = unknown> = {
 /**
  * A single detailed transaction row
  */
-export interface DetailRow {
+interface _DetailRow {
   row_id: string;
   date: DateField;
   amount: DisplayRawField;
@@ -90,7 +90,7 @@ export interface DetailRow {
 /**
  * Aggregated row: transactions grouped by category and date
  */
-export interface AggregatedRow {
+interface _AggregatedRow {
   row_id: string;
   category: string;
   total: DisplayRawField;
@@ -102,7 +102,7 @@ export interface AggregatedRow {
 /**
  * Processing metadata
  */
-export interface ProcessingMetadata {
+interface _ProcessingMetadata {
   result_id: string;
   row_count: number;
   processing_time: number;
@@ -114,7 +114,7 @@ export interface ProcessingMetadata {
  * Statistical highlights for a single cell/row
  * Maps row_id to list of highlight types (e.g., ['outlier', 'pareto'])
  */
-export type StatisticalHighlights = Record<string, string[]>;
+type _StatisticalHighlights = Record<string, string[]>;
 
 // ============================================================================
 // Account/Results Types
@@ -134,7 +134,7 @@ export interface AccountData {
 /**
  * Individual transaction data
  */
-export interface TransactionData {
+interface _TransactionData {
   id: string;
   date: string;
   amount: number;
@@ -150,7 +150,7 @@ export interface TransactionData {
 /**
  * Account summary statistics
  */
-export interface AccountSummary {
+interface _AccountSummary {
   total_transactions: number;
   total_amount: number;
   categories: CategorySummary[];
@@ -159,7 +159,7 @@ export interface AccountSummary {
 /**
  * Category-level summary
  */
-export interface CategorySummary {
+interface _CategorySummary {
   category: string;
   count: number;
   total_amount: number;
@@ -180,7 +180,7 @@ export interface CategorySummary {
  * Contains processed transaction data grouped by category and month,
  * plus processing metadata.
  */
-export interface ProcessApiResponse {
+interface _ProcessApiResponse {
   data: AggregatedRow[];
   metadata: ProcessingMetadata;
 }
@@ -192,7 +192,7 @@ export interface ProcessApiResponse {
 /**
  * Data for a single account in results response
  */
-export interface AccountDataResponse {
+interface _AccountDataResponse {
   id: string;
   name: string;
   dt_response: {
@@ -203,7 +203,7 @@ export interface AccountDataResponse {
 /**
  * Container for all accounts data
  */
-export interface AccountsDataResponse {
+interface _AccountsDataResponse {
   accounts: AccountDataResponse[];
   highlights: StatisticalHighlights;
 }
@@ -211,7 +211,7 @@ export interface AccountsDataResponse {
 /**
  * URL info for category drilldown
  */
-export interface DrilldownUrlInfo {
+interface _DrilldownUrlInfo {
   category_url: string;
   category_id: string;
 }
@@ -219,7 +219,7 @@ export interface DrilldownUrlInfo {
 /**
  * URL info for month drilldown
  */
-export interface MonthUrlInfo {
+interface _MonthUrlInfo {
   month_url: string;
   month_id: string;
 }
@@ -227,7 +227,7 @@ export interface MonthUrlInfo {
 /**
  * URL info for cell/transaction drilldown
  */
-export interface CellUrlInfo {
+interface _CellUrlInfo {
   cell_url: string;
   category_id: string;
   month_id: string;
@@ -236,7 +236,7 @@ export interface CellUrlInfo {
 /**
  * All drilldown URLs for a single account
  */
-export interface DrilldownUrls {
+interface _DrilldownUrls {
   account_id: string | null;
   category_urls: Record<string, DrilldownUrlInfo>;
   month_urls: Record<string, MonthUrlInfo>;
@@ -248,7 +248,7 @@ export interface DrilldownUrls {
  *
  * Contains cached processing results with accounts data and drilldown URLs.
  */
-export interface ResultsApiResponse {
+interface _ResultsApiResponse {
   result_id: string;
   accounts_data: AccountsDataResponse;
   drilldown_urls_by_account: Record<string, DrilldownUrls>;
@@ -274,7 +274,7 @@ export interface MonthData {
  *
  * Returns month-by-month aggregation for a specific category.
  */
-export interface CategoryMonthsApiResponse {
+interface _CategoryMonthsApiResponse {
   result_id: string;
   account_id: string;
   account_name: string;
@@ -299,7 +299,7 @@ export interface CategoryData {
  *
  * Returns category-by-category aggregation for a specific month.
  */
-export interface MonthCategoriesApiResponse {
+interface _MonthCategoriesApiResponse {
   result_id: string;
   account_id: string;
   account_name: string;
@@ -312,7 +312,7 @@ export interface MonthCategoriesApiResponse {
 /**
  * Data for a single transaction in drilldown response
  */
-export interface TransactionDetailResponse {
+interface _TransactionDetailResponse {
   date: { display: string };
   amount: DisplayRawField;
   merchant: string;
@@ -324,7 +324,7 @@ export interface TransactionDetailResponse {
  *
  * Returns individual transaction details for a specific category and month.
  */
-export interface CategoryMonthTransactionsApiResponse {
+interface _CategoryMonthTransactionsApiResponse {
   result_id: string;
   account_id: string;
   account_name: string;
@@ -345,7 +345,7 @@ export interface CategoryMonthTransactionsApiResponse {
  *
  * Returns updated statistical highlights with new algorithm settings.
  */
-export interface RecalculateApiResponse {
+interface _RecalculateApiResponse {
   status: string;
   result_id: string;
   highlights: StatisticalHighlights;
@@ -363,7 +363,7 @@ export interface RecalculateApiResponse {
  *
  * @deprecated Use ProcessApiResponse instead for new code
  */
-export interface ProcessingResponse {
+interface _ProcessingResponse {
   result_id?: string;
   status?: string;
   message?: string;
@@ -386,7 +386,7 @@ export interface ProcessingResponse {
  *
  * @deprecated Use ResultsApiResponse instead for new code
  */
-export interface ResultsResponse {
+interface _ResultsResponse {
   result_id: string;
   accounts: AccountData[];
   metadata: ProcessingMetadata;
@@ -399,7 +399,7 @@ export interface ResultsResponse {
  *
  * @deprecated Use RecalculateApiResponse instead for new code
  */
-export interface StatisticalAnalysis {
+interface _StatisticalAnalysis {
   algorithms: string[];
   direction: 'rows' | 'columns';
   outliers_detected: number;
@@ -411,7 +411,7 @@ export interface StatisticalAnalysis {
  *
  * @deprecated Use ResultsApiResponse or drilldown types instead
  */
-export interface DetailResultsResponse {
+interface _DetailResultsResponse {
   result_id: string;
   transactions: TransactionData[];
   metadata: ProcessingMetadata;
@@ -423,7 +423,7 @@ export interface DetailResultsResponse {
  *
  * @deprecated Use RecalculateApiResponse instead
  */
-export interface RecalculateResponse {
+interface _RecalculateResponse {
   result_id: string;
   updated_highlights: StatisticalHighlights;
   statistical_analysis: StatisticalAnalysis;
@@ -438,7 +438,7 @@ export interface RecalculateResponse {
  *
  * @deprecated Use DrilldownUrlInfo, MonthUrlInfo, CellUrlInfo instead
  */
-export interface DrilldownUrlInfoLegacy {
+interface _DrilldownUrlInfoLegacy {
   category_url: string;
   category_id: string;
 }
@@ -448,7 +448,7 @@ export interface DrilldownUrlInfoLegacy {
  *
  * @deprecated Use DrilldownUrls instead
  */
-export interface DrilldownUrlsLegacy {
+interface _DrilldownUrlsLegacy {
   account_id: string | null;
   category_urls: Record<string, DrilldownUrlInfoLegacy>;
   month_urls: Record<string, { month_url: string; month_id: string }>;
@@ -460,7 +460,7 @@ export interface DrilldownUrlsLegacy {
  *
  * @deprecated Use ResultsApiResponse instead
  */
-export interface ResultsResponseV2 {
+interface _ResultsResponseV2 {
   result_id: string;
   accounts_data: {
     accounts: Array<{
@@ -536,7 +536,7 @@ export interface AccountResultsResponse {
 
 // Aliases for legacy code that uses different naming conventions
 export type ProcessResponse = ProcessingResponse;
-export type ResultsResponseV2 = ResultsApiResponse;
+type _ResultsResponseV2 = ResultsApiResponse;
 export type CategoryMonthsResponse = CategoryMonthsApiResponse;
 export type MonthCategoriesResponse = MonthCategoriesApiResponse;
 export type CategoryMonthTransactionsResponse = CategoryMonthTransactionsApiResponse;

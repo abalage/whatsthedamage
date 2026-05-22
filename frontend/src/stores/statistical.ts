@@ -55,5 +55,3 @@ export const useStatisticalStore = defineStore('statistical', () => {
     loadFromStorage
   }
 })
-
-export type StatisticalStore = ReturnType<typeof useStatisticalStore>

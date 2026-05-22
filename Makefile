@@ -89,6 +89,7 @@ test-backend: dev
 # Run frontend tests only
 test-frontend: $(FRONTEND_DIR)/node_modules/.installed
 	cd $(FRONTEND_DIR) && $(NPM_RUN) lint
+	cd $(FRONTEND_DIR) && $(NPM_RUN) knip
 	cd $(FRONTEND_DIR) && $(NPM_RUN) test
 
 # Run linter/formatter
@@ -199,6 +200,7 @@ help:
 	@echo "  frontend-build  - Build frontend for production"
 	@echo "  frontend-test   - Run frontend tests (same as test-frontend)"
 	@echo "  frontend-lint   - Run frontend linter"
+	@echo "  frontend-knip   - Find unused code with knip"
 	@echo "  frontend-%      - Run any npm script (e.g., 'frontend-build', 'frontend-test')"
 	@echo ""
 	@echo "Build:"

@@ -34,7 +34,7 @@ export interface BreadcrumbItem {
 /**
  * Navigation button configuration
  */
-export interface NavButton {
+interface NavButton {
   text: string
   to: RouteLocationRaw
   variant?: string
@@ -286,31 +286,4 @@ export function extractIdFromUrl(
   if (!url) return fallback
   const match = url.match(pattern)
   return match ? match[1] : fallback // eslint-disable-line no-magic-numbers
-}
-
-/**
- * Pre-built endpoint builders for common drilldown patterns
- */
-export const drilldownEndpoints = {
-  categoryMonths: (params: Record<string, string | string[] | null>): string => {
-    const getParam = (key: string): string => {
-      const value = params[key]
-      return Array.isArray(value) ? value[0] ?? '' : value ?? '' // eslint-disable-line no-magic-numbers
-    }
-    return `/results/${getParam('resultId')}/accounts/${getParam('accountId')}/categories/${getParam('categoryId')}/months`
-  },
-  monthCategories: (params: Record<string, string | string[] | null>): string => {
-    const getParam = (key: string): string => {
-      const value = params[key]
-      return Array.isArray(value) ? value[0] ?? '' : value ?? '' // eslint-disable-line no-magic-numbers
-    }
-    return `/results/${getParam('resultId')}/accounts/${getParam('accountId')}/months/${getParam('monthId')}/categories`
-  },
-  categoryMonthTransactions: (params: Record<string, string | string[] | null>): string => {
-    const getParam = (key: string): string => {
-      const value = params[key]
-      return Array.isArray(value) ? value[0] ?? '' : value ?? '' // eslint-disable-line no-magic-numbers
-    }
-    return `/results/${getParam('resultId')}/accounts/${getParam('accountId')}/categories/${getParam('categoryId')}/months/${getParam('monthId')}/transactions`
-  }
 }

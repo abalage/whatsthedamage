@@ -26,5 +26,3 @@ export const useLocaleStore = defineStore('locale', () => {
     loadLocale
   }
 })
-
-export type LocaleStore = ReturnType<typeof useLocaleStore>

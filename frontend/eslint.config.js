@@ -47,7 +47,7 @@ export default [
     rules: {
       // Base rules
       'no-unused-vars': 'off', // Disabled in favor of @typescript-eslint/no-unused-vars
-      '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
+      '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
       'no-console': 'warn',
       'no-debugger': 'warn',
       'no-var': 'error',
@@ -102,7 +102,7 @@ export default [
     rules: {
       // Base rules for test files
       'no-unused-vars': 'off',
-      '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
+      '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
       'no-console': 'warn',
       'no-debugger': 'warn',
       'no-var': 'error',

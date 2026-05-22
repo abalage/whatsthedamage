@@ -23,7 +23,7 @@ export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '/api/v2';
  * @param options - Fetch options
  * @returns Promise with wrapped API response
  */
-export async function fetchApi<T>(
+async function fetchApi<T>(
   url: string,
   options: RequestInit = {}
 ): Promise<ApiResponse<T>> {

@@ -10,7 +10,7 @@ import CategoryMonthsList from '../pages/CategoryMonthsList.vue'
 import MonthCategoriesList from '../pages/MonthCategoriesList.vue'
 import CategoryMonthTransactions from '../pages/CategoryMonthTransactions.vue'
 
-export const router = createRouter({
+const router = createRouter({
   history: createWebHistory(),
   routes: [
     {

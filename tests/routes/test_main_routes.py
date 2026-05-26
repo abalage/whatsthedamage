@@ -2,11 +2,13 @@
 
 This module contains tests for the main application routes that are still active
 in the API-only backend. Tests for deprecated routes (process, clear, legal, privacy,
-about, favicon, set_language, recalculate-statistics) have been removed as those
+about, set_language, recalculate-statistics) have been removed as those
 routes now return 410 Gone or have been moved to API v2 endpoints.
 
+Note: The index route (/) is now handled by frontend_bp which serves the Vue SPA
+static files. Without frontend files present, it returns 404.
+
 Active routes:
-- index - returns API information as JSON
 - health - returns health status
 """
 import pytest
@@ -27,14 +29,11 @@ class TestMainRoutes:
         return factory.create_test_client()
 
     def test_index_route(self, client):
-        """Test index route returns API information as JSON."""
+        """Test index route is handled by frontend_bp and returns 404 without frontend files."""
         response = client.get('/')
-        assert response.status_code == 200
-        response_data = response.get_json()
-        assert response_data['status'] == 'api-only'
-        assert 'message' in response_data
-        assert 'frontend' in response_data
-        assert 'available_endpoints' in response_data
+        # The root route is now handled by frontend_bp which serves Vue SPA static files
+        # Without the frontend dist directory, it returns 404 Not Found
+        assert response.status_code == 404
 
     def test_health_route(self, client):
         """Test health route returns healthy status."""

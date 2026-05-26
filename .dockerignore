@@ -4,6 +4,15 @@
 .github
 .gitattributes
 
+# Frontend build artifacts and dependencies
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+frontend/.cache/
+
+# Static files (will be built and copied during Docker build)
+src/whatsthedamage/static/
+
 # Development and IDE files
 .vscode/
 .idea/

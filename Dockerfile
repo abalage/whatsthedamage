@@ -1,4 +1,24 @@
-FROM python:3.13-slim-trixie
+# Multi-stage Docker build for whatsthedamage
+# Stage 1: Build frontend production assets
+FROM node:24-alpine AS frontend-builder
+
+WORKDIR /app/frontend
+
+# Copy frontend dependency files
+COPY frontend/package.json frontend/package-lock.json ./
+
+# Install frontend dependencies
+RUN npm ci
+
+# Copy frontend source files
+COPY frontend/ ./
+
+# Build frontend for production (sets VITE_API_BASE_URL=/api/v2)
+RUN npm run build:prod
+
+# =============================================================================
+# Stage 2: Build backend Python dependencies
+FROM python:3.13-slim-trixie AS backend-builder
 
 # Accept version as build argument
 ARG VERSION=dev
@@ -9,13 +29,11 @@ ENV USER=appuser
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
-# Install system dependencies (including curl for health checks and nodejs for frontend)
+# Install system dependencies (including curl for health checks)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     file \
     git \
     curl \
-    nodejs \
-    npm \
     && rm -rf /var/lib/apt/lists/*
 
 # Create a non-root user with home directory
@@ -48,8 +66,49 @@ ENV PATH="/home/${USER}/.local/bin:${PATH}"
 # Install the package in editable mode
 RUN pip install --no-cache-dir --no-deps --user -e .
 
-# Install frontend dependencies and build assets
-RUN cd /app/frontend && npm ci && npm run build
+# =============================================================================
+# Stage 3: Production image (runtime only)
+FROM python:3.13-slim-trixie
+
+# Set environment variables for Python
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+ENV USER=appuser
+
+# Install runtime system dependencies (file for MIME type detection)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    file \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create a non-root user with home directory
+RUN groupadd -r ${USER} && useradd -r -g ${USER} -m ${USER}
+
+# Create app directory and set ownership
+RUN mkdir /app && chown -R ${USER}:${USER} /app
+
+# Set working directory
+WORKDIR /app
+
+# Copy Python dependencies from backend-builder
+COPY --from=backend-builder /usr/local/lib/python3.13/site-packages /usr/local/lib/python3.13/site-packages
+COPY --from=backend-builder /usr/local/bin /usr/local/bin
+COPY --from=backend-builder /home/appuser/.local /home/appuser/.local
+
+# Copy backend code from backend-builder
+COPY --from=backend-builder /app /app
+
+# Copy frontend build output to Flask static directory
+COPY --from=frontend-builder /app/frontend/dist /app/src/whatsthedamage/view/static/dist
+
+# Ensure proper ownership
+RUN chown -R ${USER}:${USER} /app
+
+# Switch to non-root user
+USER ${USER}
+
+# Add local bin and python bin to PATH for appuser
+ENV PATH="/home/${USER}/.local/bin:/usr/local/bin:${PATH}"
 
 # Expose port 5000
 EXPOSE 5000

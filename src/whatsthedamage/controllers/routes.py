@@ -1,4 +1,4 @@
-from flask import Blueprint, make_response, url_for, current_app, Response, jsonify
+from flask import Blueprint, make_response, current_app, Response
 import os
 from whatsthedamage.utils.logging import get_logger
 
@@ -9,32 +9,13 @@ INDEX_ROUTE = 'main.index'
 DATA_NOT_FOUND_ERROR = 'Data not found'
 
 
-@bp.route('/')
-def index() -> Response:
-    """
-    API-only backend information.
-    The web interface has been moved to a separate frontend application.
-    """
-    return make_response(
-        jsonify({
-            'status': 'api-only',
-            'message': 'This is an API-only backend. The web interface has been moved to a separate frontend application.',
-            'frontend': 'See frontend/README.md for the decoupled frontend application',
-            'available_endpoints': {
-                'api_v2': {
-                    'process': url_for('api_v2.process_transactions', _external=True),
-                    'recalculate_statistics': url_for('api_v2.recalculate_statistics', _external=True)
-                }
-            }
-        }),
-        200
-    )
+
 
 
 @bp.route('/favicon.ico')
 def favicon() -> Response:
     """Serve favicon.ico to prevent 404 errors in browser console."""
-    return current_app.send_static_file('favicon.ico')
+    return current_app.send_static_file('dist/favicon.ico')
 
 
 @bp.route('/health')

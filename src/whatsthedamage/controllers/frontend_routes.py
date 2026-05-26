@@ -5,7 +5,7 @@ This module provides a catch-all route that serves the index.html
 for all non-API paths, enabling the Vue SPA to handle client-side routing.
 """
 
-from flask import Blueprint, send_from_directory, current_app
+from flask import Blueprint, Response, send_from_directory, current_app
 from pathlib import Path
 
 frontend_bp = Blueprint('frontend', __name__)
@@ -13,7 +13,7 @@ frontend_bp = Blueprint('frontend', __name__)
 
 @frontend_bp.route('/')
 @frontend_bp.route('/<path:path>')
-def serve_frontend(path: str = '') -> str:
+def serve_frontend(path: str = '') -> Response:
     """
     Catch-all route to serve the Vue SPA.
 

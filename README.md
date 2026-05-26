@@ -1,20 +1,32 @@
 # whatsthedamage
 
-An opinionated open source tool written in Python to process bank account transaction exports in CSV files.
-
-Efforts were made to be able to customize the behavior and potentially work with any CSV format finance companies may produce.
-
-The project contains a command line tool as well as a web interface for easier usage.
-
-An experimental Machine Learning model is also available to help reducing the burden of writing regular expressions.
+This tool is designed to process CSV files and generate insightful reports. It relies on your bank's export functionality to save your historical data into CSV format.
 
 _The slang phrase "what's the damage?" is often used to ask about the cost or price of something, typically in a casual or informal context. The phrase is commonly used in social settings, especially when discussing expenses or the results of an event._
 
+## Why
+
+My bank service provider gives me reports about my finances but they are not detailed enough, so I created `whatsthedamage` to provide the reports with details I found useful.
+
+`whatsthedamage` provides **three interfaces** for different use cases:
+
+1. **Command-Line Interface (CLI)** - For local, interactive use and automation scripts
+2. **Web Interface (SPA)** - Standalone Vue 3 Single Page Application for users who prefer browser-based UI
+3. **REST API** - Programmatic access for integrations, CI/CD pipelines, and external applications. For complete REST API documentation, see [API.md](API.md).
+
+## Privacy
+
+My financial details are considered a private matter between myself and my chosen bank. To process my bank account exports, I need a solution that ensures only I have access to the data.
+
+- Support for Open Banking (PSD2) is out of the scope currently.
+- Nothing is persisted on local storage. The web interface implements a **30-minute caching strategy** to improve performance and user experience. After that users need to re-upload and process their files.
+- A Machine Learning models can be built to help reducing the burden of writing regular expressions to categorize your transactions. Your data, your model.
+
 ## Features
- - Process CSV exports containing multiple accounts, each with separate currency metadata.
+ - Process CSV exports. Multi-account, multi-currency support.
  - Categorizes transactions into well known [accounting categories](#transaction-categories).
  - Categorizes transactions into custom categories by using regular expressions or machine learning model.
- - Calculator pattern for extensible custom transaction calculations.
+ - Custom calculators for creating custom transaction calculations.
  - Transactions can be filtered by start and end dates. If no filter is set, grouping is based on the number of months.
  - Shows a report about the summarized amounts grouped by transaction categories, including Total Spendings, Balance.
  - Reports can be saved into CSV, XLS files with interactive DataTable visualization (sorting, searching).
@@ -41,89 +53,26 @@ Refund                890.00 HUF        890.00 HUF
 Transfer                0.00 HUF          0.00 HUF
 Utility            -68125.00 HUF     -78038.00 HUF
 Withdrawal         -50000.00 HUF    -150000.00 HUF
-
 ```
 
-### Calculator Pattern for Extensibility
+## Tested Bank providers
+- K&H Bank
 
-`whatsthedamage` now supports a **calculator pattern** that allows you to define custom transaction calculations beyond the built-in categorization. This makes the tool extensible for specific business logic or custom reporting needs.
+### Custom Calculators
+
+`whatsthedamage` provides an internal API for creating custom transaction calculations beyond the built-in categorization. This makes the tool extensible for specific business logic or custom reporting needs.
 
 For implementation examples, see [calculator_pattern_example.py](docs/calculator_pattern_example.py) in the documentation.
 
-### Machine Learning categorization (experimental)
+### Machine Learning categorization
 
 Writing regular expressions might be easy for IT professionals, but it is definitely hard or even impossible for others. Maintaining them can also be challenging, even for professionals.
 
 Using a machine learning model can automatically learn patterns from a given transaction history, making categorization faster and probably more accurate without manual rule creation.
 
-If you want to read more about the ML model used by `whatsthedamage`, check out its own [README.md](src/whatsthedamage/scripts/README.md) file.
+The repository does not provide any pre-built model on purpose because of the risk of model inversion. Model inversion may reveal transaction data used for training the model to possible third parties which would defeat the purpose of the tool.  
 
-The repository has an experimental pre-built model.  
-
-The model currently relies on the English language. Language-agnostic models are planned for the future.
-
-**Warning**
- - The model is expected to be opinionated. Predicted categories could be completely wrong.
- - The model is currently persisted using 'joblib', which may pose a security risk of executing arbitrary code upon loading. __Use the model you trust; use it at your own risk.__
-
-Try experimenting with it by providing the `--ml` command line argument to `whatsthedamage`.
-
-## Architecture Overview
-
-`whatsthedamage` provides **three interfaces** for different use cases:
-
-1. **Command-Line Interface (CLI)** - For local, interactive use and automation scripts
-2. **Web Interface (SPA)** - Standalone Vue 3 Single Page Application for users who prefer browser-based UI
-3. **REST API** - Programmatic access for integrations, CI/CD pipelines, and external applications
-
-All three interfaces share the same **core business logic** through a well-defined **service layer** (including `ProcessingService`, `ValidationService`, `ConfigurationService`, and others), ensuring consistent transaction processing regardless of how you access the tool. The architecture was introduced in version 0.8.0 and further enhanced in 0.9.0 with v2 processing pipeline, multi-account support, and performance optimizations.
-
-The unified data format (`DataTablesResponse`) ensures consistency across all clients: CLI, Web SPA, and API.
-
-### Caching Strategy
-
-The web interface implements a **10-minute caching strategy** to improve performance and user experience:
-
-**Note**: The current implementation does not automatically reprocess files on cache miss. Users need to re-upload and process their files if the cache expires. The file references are stored for a later automatic reprocessing. It is not decided yet.
-
-### Interface Comparison
-
-| Feature | CLI | Web UI (SPA) | REST API |
-|---------|-----|--------------|----------|
-| **Access Method** | Terminal commands | Browser (Vue SPA) | HTTP requests |
-| **Authentication** | None | None | None |
-| **Input** | File paths | File upload via API | Multipart form data |
-| **Output** | Console/CSV/HTML | Dynamic HTML via Vue | JSON |
-| **Use Case** | Local analysis, scripts | Ad-hoc exploration | Automation, integrations |
-| **Requires Server** | ❌ No | ✅ Yes (backend API) | ✅ Yes |
-| **Interactive** | ✅ Yes | ✅ Yes | ❌ No (stateless) |
-| **Backend Dependency** | ❌ No | ✅ Yes (API) | ✅ Yes |
-
-**Note**: The Web UI now uses the same REST API v2 endpoints as external API clients, ensuring consistent behavior across all interfaces.
-
-### When to Use What?
-
-**Use the CLI when:**
-- Running locally on your machine
-- Automating with shell scripts
-- Processing files in batch
-- Integrating with terminal workflows
-- You prefer command-line tools
-
-**Use the Web UI when:**
-- You prefer graphical interfaces
-- Sharing access with non-technical users
-- Quick ad-hoc analysis without installing anything
-- You want interactive table features (sorting, searching)
-
-**Use the REST API when:**
-- Integrating with other applications
-- Building custom frontends
-- Automating in CI/CD pipelines
-- Processing transactions from external systems
-- Need programmatic access with JSON responses
-
-For complete REST API documentation, see [API.md](API.md).
+If you want to read about how you can make a model for yourself check out its own [README_ML.md](src/whatsthedamage/README_ML.md) file.
 
 ## Install
 
@@ -152,7 +101,7 @@ $ gunicorn --config gunicorn_conf.py whatsthedamage.app:app
 
 ### Docker image
 
-There is also an experimental Docker image you can use hosted on GitHub.
+There is also a Docker image you can use hosted on GitHub.
 
 ```shell
 $ docker run --rm -ti --publish 5000:5000/tcp ghcr.io/abalage/whatsthedamage:latest
@@ -163,7 +112,7 @@ You can access the web interface on [http://localhost:5000](http://localhost:500
 ## Usage:
 ```
 usage: whatsthedamage [-h] [--start-date START_DATE] [--end-date END_DATE] [--verbose] [--version] [--config CONFIG] [--category CATEGORY] [--output OUTPUT] [--output-format OUTPUT_FORMAT] [--nowrap]
-                      [--filter FILTER] [--lang LANG] [--training-data] [--ml]
+                      [--filter FILTER] [--lang LANG] [--training-data] [--ml] [--log-level LOG_LEVEL] [--log-output LOG_OUTPUT] [--log-format LOG_FORMAT]
                       filename
 
 A CLI tool to process bank account transaction exports in CSV files.
@@ -188,20 +137,23 @@ options:
   --lang, -l LANG       Language for localization.
   --training-data       Print training data in JSON format to STDERR. Use 2> redirection to save it to a file.
   --ml                  Use machine learning for categorization instead of regular expressions. (experimental)
+  --log-level LOG_LEVEL
+                        Set the logging level (DEBUG, INFO, WARN, ERROR). Default: WARN
+  --log-output LOG_OUTPUT
+                        Set the logging output (stdout or filename). Default: stdout
+  --log-format LOG_FORMAT
+                        Set the logging format (text or json). Default: text
 ```
 
 ### Configuration File
 
-The config file format and syntax has considerably changed in v0.6.0 (JSON to YAML). Please refer to the default config file for details.
+Please refer to the default config file for details.
 
 A default configuration file is provided as [config.yml.default](config/config.yml.default).
-
-If you do not want to create a configuration file then you can try the experimental [Machine Learning](#machine-learning-categorization-experimental) mode to categorize transactions.
 
 ### Troubleshooting
 
 To troubleshoot why a transaction was assigned to a particular category, enable verbose mode using the `-v` or `--verbose` command line option.  
-By default, only the attributes (columns) specified by `selected_attributes` in the configuration file are displayed. The `category` attribute is generated by the tool.
 
 Should you want to check your regular expressions then you can use a handy online tool like https://regex101.com/.
 
@@ -214,19 +166,23 @@ This is the list of transaction categories `whatsthedamage` uses by default.
 - **Balance**: Your total balance per time period. Basically the sum of all deposits minus the sum of all your purchases.
 - **Clothes**: Clothing related purchases.
 - **Deposit**: Money added to the account, such as direct deposits from employers, cash deposits, or transfers from other accounts.
+- **Dining Out**: Restaurants, takeaway food, etc.
+- **Electronics and Digital Services**: Purchases of electronics, software, digital subscriptions, streaming services, etc.
+- **Entertainment and Leisure**: Spending related to entertainment, leisure activities, sports, recreation, massage, going to a bar or cinema.
 - **Fee**: Charges applied by the bank, such as monthly maintenance fees, overdraft fees, or ATM fees.
 - **Grocery**: Everything considered to sustain your life. Mostly food and other basic things required by your household.
-- **Health**: Medicines, vising a doctor, etc.
-- **Home Maintenance**: Spendings on your housing, maintencance, reconstruction, etc.
+- **Health**: Medicines, visiting a doctor, etc.
+- **Home Maintenance**: Spendings on your housing, maintenance, reconstruction, etc.
+- **Insurance**: Insurance premiums for health, vehicle, property, etc.
 - **Interest**: Earnings on the account balance, typically seen in savings accounts or interest-bearing checking accounts.
 - **Loan**: Any type of loans, mortgage.
 - **Other**: Any transactions which do not fit into any of the other categories.
 - **Payment**: Scheduled payments for bills or loans, which can be set up as automatic payments.
 - **Refund**: Money returned to the account, often from returned purchases or corrections of previous transactions.
-- **Sports Recreation**: Spending related to sports and recreations like massage, going into a bar or cinema.
+- **Total Spendings**: The sum of all spending transactions in a given period.
+- **Transportation**: Public transport, taxi, fuel, parking, tolls, etc.
 - **Transfer**: Movements of money between accounts, either within the same bank or to different banks.
 - **Utility**: Regular, monthly recurring payments for stuff like Rent, Electricity, Gas, Water, Phone bills, etc.
-- **Vehicle**: All purchases - except Insurance - related to owning a vehicle.
 - **Withdrawal**: Money taken out of the account, including ATM withdrawals, cash withdrawals at the bank, and electronic transfers.
 
 Custom categories can be user-defined via config. Feel free to add your own categories into config.yml.
@@ -236,23 +192,18 @@ Note: the Machine Learning model was trained on the categories listed here.
 ## Limitations
 
 - The categorization process may fail to categorize transactions because of the quality of the regular expressions / ML model. The transaction might be categorized as 'other'.
-- The tool assumes that an account only use a single currency.
-- The Machine Learning model is currently English-centric; language-agnostic models are planned for future releases.
+- The tool assumes that an account only uses a single currency.
 - No authentication.
 
 ## Development
 
-The git project contains static files tracked with git-lfs. To checkout the contents follow these steps:
-
-1. Use your package manager to install `git-lfs`
-2. Install git lfs extension: `git lfs install`
-3. Clone the project repository
-4. Change directory to checked out directory: `git lfs fetch`
+1. Clone the project repository: `git clone https://github.com/abalage/whatsthedamage.git`
+2. Change directory containing the clone.
+3. Issue `make dev`
 
 The repository comes with a Makefile using 'GNU make' to automatize recurring actions. Here is the usage of the Makefile.
 
 ```shell
-$ make help
 Development workflow:
   dev            - Create venv, install pip-tools, sync all requirements, install frontend dependencies
 
@@ -269,6 +220,7 @@ Frontend scripts:
   frontend-build  - Build frontend for production
   frontend-test   - Run frontend tests (same as test-frontend)
   frontend-lint   - Run frontend linter
+  frontend-knip   - Find unused code with knip
   frontend-%      - Run any npm script (e.g., 'frontend-build', 'frontend-test')
 
 Build:
@@ -286,7 +238,7 @@ Cleanup for Python and JavaScript:
 
 ### Frontend Development
 
-The frontend has been completely decoupled from the backend and is now a standalone **Vue 3 Single Page Application (SPA)** with TypeScript. The frontend communicates with the backend exclusively through REST API endpoints, enabling independent development, deployment, and scaling.
+The frontend is a standalone **Vue 3 Single Page Application (SPA)** with TypeScript. The frontend communicates with the backend exclusively through REST API endpoints, enabling independent development, deployment, and scaling.
 
 **Frontend Location**: `frontend/` (project root directory)
 
@@ -327,7 +279,6 @@ frontend/
 │   │   ├── form.ts              # Form state
 │   │   ├── locale.ts            # Locale/language state
 │   │   ├── statistical.ts       # Statistical analysis state
-│   │   ├── translations.ts      # Translation state
 │   │   └── feedback.ts          # User feedback state
 │   ├── js/                      # Utility functions and API client
 │   │   ├── api.ts               # API client for backend communication
@@ -360,31 +311,11 @@ frontend/
 - Production: `npm run build:prod` (builds to `dist/` with `/api/v2` base URL)
 - For integrated deployment: Build output must be copied to `src/whatsthedamage/view/static/dist/`
 
-**Deployment Options**:
-1. **Standalone**: Host `dist/` on any static hosting.
-2. **Development**: Run Vite dev server separately with backend API
-
-**Frontend Dependencies**:
-- Vue 3.5.x, Vue Router 4.x, Pinia
-- Bootstrap 5.3.x, DataTables.net 2.3.x, jQuery 4.0.x
-- Vite 8.0.x, TypeScript 5.x
-- All dependencies managed via npm in `frontend/package.json`
-
-**Makefile Commands**:
-- `make dev` - Installs both Python and JavaScript dependencies
-- `make backend` - Start Flask API backend development server
-- `make frontend` - Start Vite frontend development server
-- `make frontend-build` - Build frontend for development
-- `make frontend-build:prod` - Build frontend for production with `/api/v2` base URL
-- `make test-backend` - Run backend tests (pytest)
-- `make test-frontend` - Run frontend tests (Vitest)
-- `make test` - Run all tests (backend + frontend)
-
 ### Localization
 
 The application by default uses the English language, however it also supports Hungarian language.
 
-For translation support the tool uses Python's [gettext](https://docs.python.org/3/library/gettext.html) library.
+For translation support [gettext](https://docs.python.org/3/library/gettext.html) is used.
 
 1. To update the English .pot file with new translatable strings use `make lang`.
 ```shell

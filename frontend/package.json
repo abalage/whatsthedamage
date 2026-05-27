@@ -9,6 +9,7 @@
     "build:prod": "VITE_API_BASE_URL=/api/v2 vite build",
     "preview": "vite preview",
     "test": "vitest run",
+    "test:all": "npm run lint && npm run type-check && npm run knip && npm run test",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "lint": "eslint . --ext .ts,.js,.vue",

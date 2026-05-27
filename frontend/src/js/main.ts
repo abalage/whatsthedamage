@@ -6,6 +6,18 @@ import $ from 'jquery';
 import { initStatisticalAnalysis } from './statistical-analysis';
 
 /**
+ * DataTables configuration type extension
+ * The DataTables types don't include all options, so we extend them
+ */
+interface DataTablesConfig {
+    dom?: string;
+    buttons?: string[];
+    responsive?: boolean;
+    pageLength?: number;
+    [key: string]: unknown;
+}
+
+/**
  * Initialize DataTables on a specific table element
  */
 function initDataTable(table: Element): void {
@@ -19,7 +31,23 @@ function initDataTable(table: Element): void {
         buttons: ['csv', 'excel'],
         responsive: true,
         pageLength: 25
-    });
+    } as DataTablesConfig);
+}
+
+/**
+ * Type for Bootstrap Popover from window.bootstrap
+ */
+interface BootstrapPopoverStatic {
+    getInstance(element: Element): unknown;
+    new (element: Element, options?: unknown): unknown;
+}
+
+/**
+ * Type for window.bootstrap
+ */
+interface WindowBootstrap {
+    Popover?: BootstrapPopoverStatic;
+    [key: string]: unknown;
 }
 
 /**
@@ -32,16 +60,17 @@ export function initMainPage(): void {
 
     // Initialize Bootstrap popovers with proper sanitization
     // Use window.bootstrap which is set by src/main.ts
-    const bootstrap = window as Record<string, unknown>;
+    const bootstrap = window.bootstrap as WindowBootstrap | undefined;
     if (bootstrap?.Popover) {
+        const Popover = bootstrap.Popover;
         const popoverTriggerList = Array.prototype.slice.call(document.querySelectorAll('[data-bs-toggle="popover"]'));
         popoverTriggerList.map((popoverTriggerEl: Element) => {
             // Destroy existing popover if it exists
-            const existingPopover = bootstrap.Popover.getInstance(popoverTriggerEl);
+            const existingPopover = Popover.getInstance(popoverTriggerEl);
             if (existingPopover) {
-                existingPopover.dispose();
+                (existingPopover as { dispose?: () => void }).dispose?.();
             }
-            return new bootstrap.Popover(popoverTriggerEl, {
+            return new Popover(popoverTriggerEl, {
                 html: true,
                 sanitize: true
             });

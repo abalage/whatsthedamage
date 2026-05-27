@@ -16,10 +16,24 @@ import 'datatables.net-buttons-bs5/css/buttons.bootstrap5.min.css'
 import $ from 'jquery'
 import * as bootstrapNs from 'bootstrap'
 
+// Declare global window types BEFORE assigning to them
+declare global {
+  interface Window {
+    exportCsvText: string
+    exportExcelText: string
+    bootstrap: unknown
+    JSZip: unknown
+    $: unknown
+    jQuery: unknown
+    initMainPage: () => void
+    updateCellHighlights: (highlights: Record<string, string[]>) => void
+  }
+}
+
 // Assign jQuery and Bootstrap to window BEFORE importing DataTables
 // This ensures DataTables can find jQuery as a global
 window.$ = window.jQuery = $;
-window.bootstrap = bootstrapNs.default ?? bootstrapNs;
+window.bootstrap = bootstrapNs;
 
 // Import DataTables - these will use window.$ / window.jQuery
 import 'datatables.net'
@@ -38,20 +52,6 @@ import 'datatables.net-buttons/js/buttons.html5';
 // Import DataTables initialization
 import { initMainPage } from './js/main'
 import { updateCellHighlights } from './js/statistical-analysis'
-
-// Declare global window types
-declare global {
-  interface Window {
-    exportCsvText: string
-    exportExcelText: string
-    bootstrap: Record<string, unknown>
-    JSZip: unknown
-    $: typeof import('jquery')
-    jQuery: typeof import('jquery')
-    initMainPage: () => void
-    updateCellHighlights: (highlights: Record<string, string[]>) => void
-  }
-}
 
 // Make initMainPage available globally for components
 window.initMainPage = initMainPage;

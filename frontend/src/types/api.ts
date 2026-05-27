@@ -78,8 +78,8 @@ type _ApiEnvelope<T = unknown> = {
  */
 interface _DetailRow {
   row_id: string;
-  date: DateField;
-  amount: DisplayRawField;
+  date: _DateField;
+  amount: _DisplayRawField;
   merchant: string;
   currency: string;
   account: string;
@@ -93,9 +93,9 @@ interface _DetailRow {
 interface _AggregatedRow {
   row_id: string;
   category: string;
-  total: DisplayRawField;
-  date: DateField;
-  details: DetailRow[];
+  total: _DisplayRawField;
+  date: _DateField;
+  details: _DetailRow[];
   is_calculated?: boolean;
 }
 
@@ -127,8 +127,8 @@ export interface AccountData {
   id: string;
   formatted_id: string;
   currency: string;
-  transactions: TransactionData[];
-  summary: AccountSummary;
+  transactions: _TransactionData[];
+  summary: _AccountSummary;
 }
 
 /**
@@ -153,7 +153,7 @@ interface _TransactionData {
 interface _AccountSummary {
   total_transactions: number;
   total_amount: number;
-  categories: CategorySummary[];
+  categories: _CategorySummary[];
 }
 
 /**
@@ -181,8 +181,8 @@ interface _CategorySummary {
  * plus processing metadata.
  */
 interface _ProcessApiResponse {
-  data: AggregatedRow[];
-  metadata: ProcessingMetadata;
+  data: _AggregatedRow[];
+  metadata: _ProcessingMetadata;
 }
 
 // -----------------------------------------------------------------------------
@@ -196,7 +196,7 @@ interface _AccountDataResponse {
   id: string;
   name: string;
   dt_response: {
-    data: AggregatedRow[];
+    data: _AggregatedRow[];
   };
 }
 
@@ -204,8 +204,8 @@ interface _AccountDataResponse {
  * Container for all accounts data
  */
 interface _AccountsDataResponse {
-  accounts: AccountDataResponse[];
-  highlights: StatisticalHighlights;
+  accounts: _AccountDataResponse[];
+  highlights: _StatisticalHighlights;
 }
 
 /**
@@ -238,9 +238,9 @@ interface _CellUrlInfo {
  */
 interface _DrilldownUrls {
   account_id: string | null;
-  category_urls: Record<string, DrilldownUrlInfo>;
-  month_urls: Record<string, MonthUrlInfo>;
-  cell_urls: Record<string, CellUrlInfo>;
+  category_urls: Record<string, _DrilldownUrlInfo>;
+  month_urls: Record<string, _MonthUrlInfo>;
+  cell_urls: Record<string, _CellUrlInfo>;
 }
 
 /**
@@ -250,8 +250,8 @@ interface _DrilldownUrls {
  */
 interface _ResultsApiResponse {
   result_id: string;
-  accounts_data: AccountsDataResponse;
-  drilldown_urls_by_account: Record<string, DrilldownUrls>;
+  accounts_data: _AccountsDataResponse;
+  drilldown_urls_by_account: Record<string, _DrilldownUrls>;
 }
 
 // -----------------------------------------------------------------------------
@@ -264,7 +264,7 @@ interface _ResultsApiResponse {
 export interface MonthData {
   month: string;
   month_timestamp: number;
-  total: DisplayRawField;
+  total: _DisplayRawField;
   row_id: string;
   cell_url: string;
 }
@@ -281,7 +281,7 @@ interface _CategoryMonthsApiResponse {
   category_id: string;
   category_name: string;
   data: MonthData[];
-  highlights?: StatisticalHighlights;
+  highlights?: _StatisticalHighlights;
 }
 
 /**
@@ -289,7 +289,7 @@ interface _CategoryMonthsApiResponse {
  */
 export interface CategoryData {
   category: string;
-  total: DisplayRawField;
+  total: _DisplayRawField;
   row_id: string;
   category_url: string;
 }
@@ -306,7 +306,7 @@ interface _MonthCategoriesApiResponse {
   month_id: string;
   month_name: string;
   data: CategoryData[];
-  highlights?: StatisticalHighlights;
+  highlights?: _StatisticalHighlights;
 }
 
 /**
@@ -314,7 +314,7 @@ interface _MonthCategoriesApiResponse {
  */
 interface _TransactionDetailResponse {
   date: { display: string };
-  amount: DisplayRawField;
+  amount: _DisplayRawField;
   merchant: string;
   row_id: string;
 }
@@ -332,8 +332,8 @@ interface _CategoryMonthTransactionsApiResponse {
   category_name: string;
   month_id: string;
   month_name: string;
-  data: TransactionDetailResponse[];
-  highlights?: StatisticalHighlights;
+  data: _TransactionDetailResponse[];
+  highlights?: _StatisticalHighlights;
 }
 
 // -----------------------------------------------------------------------------
@@ -348,7 +348,7 @@ interface _CategoryMonthTransactionsApiResponse {
 interface _RecalculateApiResponse {
   status: string;
   result_id: string;
-  highlights: StatisticalHighlights;
+  highlights: _StatisticalHighlights;
   algorithms: string[];
   direction: 'columns' | 'rows';
 }
@@ -378,7 +378,7 @@ interface _ProcessingResponse {
     category_filter?: string;
     ml_enabled?: boolean;
   };
-  highlights?: StatisticalHighlights;
+  highlights?: _StatisticalHighlights;
 }
 
 /**
@@ -389,9 +389,9 @@ interface _ProcessingResponse {
 interface _ResultsResponse {
   result_id: string;
   accounts: AccountData[];
-  metadata: ProcessingMetadata;
-  highlights: StatisticalHighlights;
-  statistical_analysis: StatisticalAnalysis;
+  metadata: _ProcessingMetadata;
+  highlights: _StatisticalHighlights;
+  statistical_analysis: _StatisticalAnalysis;
 }
 
 /**
@@ -413,9 +413,9 @@ interface _StatisticalAnalysis {
  */
 interface _DetailResultsResponse {
   result_id: string;
-  transactions: TransactionData[];
-  metadata: ProcessingMetadata;
-  highlights: StatisticalHighlights;
+  transactions: _TransactionData[];
+  metadata: _ProcessingMetadata;
+  highlights: _StatisticalHighlights;
 }
 
 /**
@@ -425,8 +425,8 @@ interface _DetailResultsResponse {
  */
 interface _RecalculateResponse {
   result_id: string;
-  updated_highlights: StatisticalHighlights;
-  statistical_analysis: StatisticalAnalysis;
+  updated_highlights: _StatisticalHighlights;
+  statistical_analysis: _StatisticalAnalysis;
 }
 
 // ============================================================================
@@ -436,7 +436,7 @@ interface _RecalculateResponse {
 /**
  * Legacy drilldown URL info
  *
- * @deprecated Use DrilldownUrlInfo, MonthUrlInfo, CellUrlInfo instead
+ * @deprecated Use _DrilldownUrlInfo, _MonthUrlInfo, _CellUrlInfo instead
  */
 interface _DrilldownUrlInfoLegacy {
   category_url: string;
@@ -446,11 +446,11 @@ interface _DrilldownUrlInfoLegacy {
 /**
  * Legacy drilldown URLs container
  *
- * @deprecated Use DrilldownUrls instead
+ * @deprecated Use _DrilldownUrls instead
  */
 interface _DrilldownUrlsLegacy {
   account_id: string | null;
-  category_urls: Record<string, DrilldownUrlInfoLegacy>;
+  category_urls: Record<string, _DrilldownUrlInfoLegacy>;
   month_urls: Record<string, { month_url: string; month_id: string }>;
   cell_urls: Record<string, { cell_url: string; category_id: string; month_id: string }>;
 }
@@ -486,9 +486,9 @@ interface _ResultsResponseV2 {
         }>;
       };
     }>;
-    highlights: StatisticalHighlights;
+    highlights: _StatisticalHighlights;
   };
-  drilldown_urls_by_account: Record<string, DrilldownUrlsLegacy>;
+  drilldown_urls_by_account: Record<string, _DrilldownUrlsLegacy>;
 }
 
 /**
@@ -526,7 +526,7 @@ export interface AccountResultsResponse {
         }>;
       };
     }>;
-    highlights: StatisticalHighlights;
+    highlights: _StatisticalHighlights;
   };
 }
 
@@ -535,8 +535,8 @@ export interface AccountResultsResponse {
 // ============================================================================
 
 // Aliases for legacy code that uses different naming conventions
-export type ProcessResponse = ProcessingResponse;
-type _ResultsResponseV2 = ResultsApiResponse;
-export type CategoryMonthsResponse = CategoryMonthsApiResponse;
-export type MonthCategoriesResponse = MonthCategoriesApiResponse;
-export type CategoryMonthTransactionsResponse = CategoryMonthTransactionsApiResponse;
+export type ProcessResponse = _ProcessingResponse;
+export type ResultsResponseV2 = _ResultsResponseV2;
+export type CategoryMonthsResponse = _CategoryMonthsApiResponse;
+export type MonthCategoriesResponse = _MonthCategoriesApiResponse;
+export type CategoryMonthTransactionsResponse = _CategoryMonthTransactionsApiResponse;

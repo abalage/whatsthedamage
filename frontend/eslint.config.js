@@ -14,6 +14,10 @@ export default [
   {
     files: ['**/*.vue'],
     languageOptions: {
+      globals: {
+        ...globals.browser,
+        ...globals.node,
+      },
       parser: vueParser,
       parserOptions: {
         ecmaVersion: 'latest',
@@ -66,6 +70,12 @@ export default [
   },
   {
     files: ['**/*.vue'],
+    languageOptions: {
+      globals: {
+        ...globals.browser,
+        ...globals.node,
+      },
+    },
     rules: {
       // Vue-specific rules
       'vue/multi-word-component-names': 'off',
@@ -73,7 +83,6 @@ export default [
       'vue/require-explicit-emits': 'error',
       'vue/no-v-html': 'warn',
       'vue/prefer-import-from-vue': 'error',
-      'vue/no-ref-object-destructure': 'warn',
       // Base rules for Vue files
       'no-console': 'warn',
       'no-debugger': 'warn',

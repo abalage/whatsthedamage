@@ -102,7 +102,7 @@ interface _AggregatedRow {
 /**
  * Processing metadata
  */
-export interface _ProcessingMetadata {
+interface _ProcessingMetadata {
   result_id: string;
   row_count: number;
   processing_time: number;
@@ -192,7 +192,7 @@ export interface _ProcessApiResponse {
 /**
  * Data for a single account in results response
  */
-export interface _AccountDataResponse {
+interface _AccountDataResponse {
   id: string;
   name: string;
   dt_response: {
@@ -203,7 +203,7 @@ export interface _AccountDataResponse {
 /**
  * Container for all accounts data
  */
-export interface _AccountsDataResponse {
+interface _AccountsDataResponse {
   accounts: _AccountDataResponse[];
   highlights: _StatisticalHighlights;
 }
@@ -211,7 +211,7 @@ export interface _AccountsDataResponse {
 /**
  * URL info for category drilldown
  */
-export interface _DrilldownUrlInfo {
+interface _DrilldownUrlInfo {
   category_url: string;
   category_id: string;
 }
@@ -219,7 +219,7 @@ export interface _DrilldownUrlInfo {
 /**
  * URL info for month drilldown
  */
-export interface _MonthUrlInfo {
+interface _MonthUrlInfo {
   month_url: string;
   month_id: string;
 }
@@ -227,7 +227,7 @@ export interface _MonthUrlInfo {
 /**
  * URL info for cell/transaction drilldown
  */
-export interface _CellUrlInfo {
+interface _CellUrlInfo {
   cell_url: string;
   category_id: string;
   month_id: string;
@@ -236,7 +236,7 @@ export interface _CellUrlInfo {
 /**
  * All drilldown URLs for a single account
  */
-export interface _DrilldownUrls {
+interface _DrilldownUrls {
   account_id: string | null;
   category_urls: Record<string, _DrilldownUrlInfo>;
   month_urls: Record<string, _MonthUrlInfo>;
@@ -345,7 +345,7 @@ export interface _CategoryMonthTransactionsApiResponse {
  *
  * Returns updated statistical highlights with new algorithm settings.
  */
-export interface _RecalculateApiResponse {
+interface _RecalculateApiResponse {
   status: string;
   result_id: string;
   highlights: _StatisticalHighlights;

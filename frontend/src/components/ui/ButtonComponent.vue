@@ -3,7 +3,7 @@ import { computed } from 'vue'
 import { RouterLink, type RouteLocationRaw } from 'vue-router'
 
 interface ButtonProps {
-  text: string
+  text?: string
   url?: string
   to?: RouteLocationRaw
   icon?: string

@@ -4,13 +4,13 @@ import { JSDOM } from 'jsdom';
 const dom = new JSDOM('<!DOCTYPE html><html><body></body></html>');
 
 // Set up global DOM environment
-globalThis.window = dom.window as unknown as Window & typeof globalThis;
-globalThis.document = dom.window.document;
-globalThis.HTMLElement = dom.window.HTMLElement;
+(globalThis as Record<string, unknown>).window = dom.window as unknown as Window & typeof globalThis;
+(globalThis as Record<string, unknown>).document = dom.window.document;
+(globalThis as Record<string, unknown>).HTMLElement = dom.window.HTMLElement;
 
 // Mock global functions that might be used in tests
-globalThis.exportCsvText = 'Export CSV';
-globalThis.exportExcelText = 'Export Excel';
+(globalThis as Record<string, unknown>).exportCsvText = 'Export CSV';
+(globalThis as Record<string, unknown>).exportExcelText = 'Export Excel';
 
 // Note: window.location.reload cannot be mocked in setup due to JSDOM restrictions.
 // Tests will mock it individually as needed.
@@ -37,7 +37,7 @@ expect.extend({
 });
 
 // Mock fetch for testing
-globalThis.fetch = vi.fn(() =>
+globalThis.fetch = vi.fn((): Promise<Response> =>
   Promise.resolve({
     ok: true,
     json: () => Promise.resolve({}),
@@ -45,9 +45,9 @@ globalThis.fetch = vi.fn(() =>
     status: 200,
     statusText: 'OK',
     redirected: false,
-    type: 'basic' as const,
+    type: 'basic',
     url: '',
-    clone: () => (globalThis.fetch as ReturnType<typeof fetch>)(),
+    clone: function() { return this; },
     arrayBuffer: () => Promise.resolve(new ArrayBuffer(0)), // eslint-disable-line no-magic-numbers
     blob: () => Promise.resolve(new Blob()),
     formData: () => Promise.resolve(new FormData()),

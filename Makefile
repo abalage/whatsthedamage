@@ -19,7 +19,7 @@ DOCKER_TAG ?= $(shell set -o pipefail; python3 -m setuptools_scm 2>/dev/null | s
 VERSION ?= $(shell set -o pipefail; python3 -m setuptools_scm 2>/dev/null || echo "v0.0.0")
 
 
-.PHONY: test lint lang clean mrproper image compile-deps update-deps compile-deps-secure help docs build frontend frontend-build test-backend test-frontend
+.PHONY: test lint lang clean mrproper image compile-deps update-deps compile-deps-secure help docs build backend frontend frontend-build backend-test frontend-test
 
 # =============================================================================
 # DEVELOPMENT TARGETS
@@ -29,15 +29,6 @@ VERSION ?= $(shell set -o pipefail; python3 -m setuptools_scm 2>/dev/null || ech
 frontend: $(FRONTEND_DIR)/node_modules/.installed
 	@echo "Starting frontend development server..."
 	cd $(FRONTEND_DIR) && $(NPM_RUN) dev
-
-# Generic npm script runner
-# Usage: make frontend-build, make frontend-test, make frontend-lint, etc.
-frontend-%:
-	@if ! command -v $(NPM) >/dev/null 2>&1; then \
-		echo "npm is not installed. Please install Node.js and npm first."; \
-		exit 1; \
-	fi
-	cd $(FRONTEND_DIR) && $(NPM_RUN) $*
 
 # Combined build
 build: dev
@@ -64,12 +55,16 @@ $(FRONTEND_DIR)/node_modules/.installed: $(FRONTEND_DIR)/package.json $(FRONTEND
 		echo "npm is not installed. Please install Node.js and npm first."; \
 		exit 1; \
 	fi
-	cd $(FRONTEND_DIR) && $(NPM) install
+	cd $(FRONTEND_DIR) && $(NPM) ci
 	touch $@
 
 # Frontend build for production
-frontend-build:
+frontend-build: $(FRONTEND_DIR)/node_modules/.installed
 	cd $(FRONTEND_DIR) && $(NPM_RUN) build
+
+# Frontend test - runs all frontend tests (lint, knip, type-check, test)
+frontend-test: $(FRONTEND_DIR)/node_modules/.installed
+	cd $(FRONTEND_DIR) && $(NPM_RUN) test:all
 
 # Set up development environment
 dev: $(VENV)/.deps-synced $(FRONTEND_DIR)/node_modules/.installed
@@ -79,18 +74,12 @@ backend: dev
 	@echo "Starting API-only backend server..."
 	FLASK_APP=src.whatsthedamage.app $(PYTHON) -m flask run
 
-# Run all tests
-test: test-backend test-frontend
+# Run all tests (backend + frontend)
+test: backend-test frontend-test
 
 # Run backend tests only
-test-backend: dev
+backend-test: dev
 	$(TOX)
-
-# Run frontend tests only
-test-frontend: $(FRONTEND_DIR)/node_modules/.installed
-	cd $(FRONTEND_DIR) && $(NPM_RUN) lint
-	cd $(FRONTEND_DIR) && $(NPM_RUN) knip
-	cd $(FRONTEND_DIR) && $(NPM_RUN) test
 
 # Run linter/formatter
 lint: dev
@@ -194,14 +183,13 @@ help:
 	@echo "Testing:"
 	@echo "  test           - Run all tests (backend + frontend)"
 	@echo "  test-backend   - Run backend tests only (pytest via tox)"
-	@echo "  test-frontend  - Run frontend tests only (vitest)"
+	@echo "  frontend-test  - Run all frontend tests (lint + knip + type-check + test)"
 	@echo ""
 	@echo "Frontend scripts:"
-	@echo "  frontend-build  - Build frontend for production"
-	@echo "  frontend-test   - Run frontend tests (same as test-frontend)"
-	@echo "  frontend-lint   - Run frontend linter"
-	@echo "  frontend-knip   - Find unused code with knip"
-	@echo "  frontend-%      - Run any npm script (e.g., 'frontend-build', 'frontend-test')"
+	@echo "  frontend      - Run frontend development server (Vite)"
+	@echo "  frontend-test - Run all frontend tests"
+	@echo "  frontend-build - Build frontend for development (vite build)"
+	@echo "  frontend-%    - Run any npm script (e.g., 'frontend-dev', 'frontend-preview')"
 	@echo ""
 	@echo "Build:"
 	@echo "  build          - Full stack build (Python + JS)"

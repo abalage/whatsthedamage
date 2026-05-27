@@ -8,6 +8,7 @@ import { useRoute, type RouteLocationRaw } from 'vue-router'
 import { useFeedbackStore } from '../stores/feedback'
 import { useGettext } from 'vue3-gettext'
 import { fetchWithErrorHandling, API_BASE_URL } from '../js/api'
+import type { TranslationKeys } from '../vue-shim'
 
 /**
  * Extract route parameter with type safety

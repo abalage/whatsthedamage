@@ -5,7 +5,7 @@ import { fetchResults as fetchResultsApi } from '../js/api'
 import { useFeedbackStore } from '../stores/feedback'
 import { useGettext } from 'vue3-gettext'
 import StatisticalControls from '../components/ui/StatisticalControls.vue'
-import type { ResultsResponseV2 } from '../types/api'
+import type { _ResultsApiResponse } from '../types/api'
 
 const { $gettext } = useGettext()
 
@@ -43,7 +43,7 @@ const resultId = computed(() => {
   const id = route.query.resultId ?? route.query.result_id
   return typeof id === 'string' ? id : null
 })
-const resultsData = ref<ResultsResponseV2 | null>(null)
+const resultsData = ref<_ResultsApiResponse | null>(null)
 const isLoading = ref(true)
 const error = ref<string | null>(null)
 

@@ -2,9 +2,9 @@
 import { ref, onMounted, computed, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
 import { useGettext } from 'vue3-gettext'
-import { fetchAccountResults } from '../js/api'
+import { fetchResults } from '../js/api'
 import ButtonComponent from '../components/ui/ButtonComponent.vue'
-import type { AccountResultsResponse } from '../types/api'
+import type { _ResultsApiResponse } from '../types/api'
 
 const { $gettext } = useGettext()
 const route = useRoute()
@@ -15,7 +15,7 @@ const resultId = computed(() => {
   return typeof id === 'string' ? id : null
 })
 
-const resultsData = ref<AccountResultsResponse | null>(null)
+const resultsData = ref<_ResultsApiResponse | null>(null)
 const isLoading = ref(true)
 const error = ref<string | null>(null)
 
@@ -30,7 +30,7 @@ const loadResults = async () => {
     isLoading.value = true
     error.value = null
 
-    const response = await fetchAccountResults(resultId.value)
+    const response = await fetchResults(resultId.value)
 
     resultsData.value = response
     // Set highlights for statistical cell highlighting

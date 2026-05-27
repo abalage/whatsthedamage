@@ -10,7 +10,7 @@ import CardComponent from '../components/ui/CardComponent.vue'
 import ButtonComponent from '../components/ui/ButtonComponent.vue'
 import StatisticalControls from '../components/ui/StatisticalControls.vue'
 import { fetchCategoryMonthTransactions } from '../js/api'
-import type { CategoryMonthTransactionsResponse } from '../types/api'
+import type { _CategoryMonthTransactionsApiResponse } from '../types/api'
 
 const { $gettext } = useGettext()
 const route = useRoute()
@@ -31,7 +31,7 @@ const {
   pageTitle,
   breadcrumbItems,
   navButtons
-} = useDrilldownData<CategoryMonthTransactionsResponse>({
+} = useDrilldownData<_CategoryMonthTransactionsApiResponse>({
   fetchData: async (params) => {
     if (!params.resultId || !params.accountId || !params.categoryId || !params.monthId) {
       throw new Error('Missing required parameters for category month transactions fetch')

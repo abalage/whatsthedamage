@@ -4,14 +4,12 @@
  */
 
 import { AppError, ApiResponse } from '../types';
-import {
-  // Legacy type aliases for backward compatibility
-  ProcessResponse,
-  ResultsResponseV2,
-  AccountResultsResponse,
-  CategoryMonthsResponse,
-  MonthCategoriesResponse,
-  CategoryMonthTransactionsResponse,
+import type {
+  _ProcessApiResponse,
+  _ResultsApiResponse,
+  _CategoryMonthsApiResponse,
+  _MonthCategoriesApiResponse,
+  _CategoryMonthTransactionsApiResponse,
 } from '../types/api';
 
 // API base URL configuration
@@ -111,7 +109,7 @@ export function getApiUrl(endpoint: string): string {
  * @returns Promise with processing result
  * @throws AppError if processing fails
  */
-export async function processTransactions(formData: FormData): Promise<ProcessResponse> {
+export async function processTransactions(formData: FormData): Promise<_ProcessApiResponse> {
   try {
     const response = await fetch(`${API_BASE_URL}/process`, {
       method: 'POST',
@@ -169,17 +167,8 @@ export async function recalculateStatistics(
  * @param resultId - Result ID
  * @returns Promise with results data
  */
-export async function fetchResults(resultId: string): Promise<ResultsResponseV2> {
-  return fetchWithErrorHandling<ResultsResponseV2>(getApiUrl(`/results/${resultId}`));
-}
-
-/**
- * Fetch account results data (for details page)
- * @param resultId - Result ID
- * @returns Promise with account results data
- */
-export async function fetchAccountResults(resultId: string): Promise<AccountResultsResponse> {
-  return fetchWithErrorHandling<AccountResultsResponse>(getApiUrl(`/results/${resultId}`));
+export async function fetchResults(resultId: string): Promise<_ResultsApiResponse> {
+  return fetchWithErrorHandling<_ResultsApiResponse>(getApiUrl(`/results/${resultId}`));
 }
 
 /**
@@ -189,11 +178,11 @@ export async function fetchAccountResults(resultId: string): Promise<AccountResu
  */
 export async function fetchCategoryMonths(
   params: Record<string, string | null>
-): Promise<CategoryMonthsResponse> {
+): Promise<_CategoryMonthsApiResponse> {
   const resultId = params.resultId ?? ''
   const accountId = params.accountId ?? ''
   const categoryId = params.categoryId ?? ''
-  return fetchWithErrorHandling<CategoryMonthsResponse>(
+  return fetchWithErrorHandling<_CategoryMonthsApiResponse>(
     getApiUrl(`/results/${resultId}/accounts/${accountId}/categories/${categoryId}/months`)
   );
 }
@@ -205,11 +194,11 @@ export async function fetchCategoryMonths(
  */
 export async function fetchMonthCategories(
   params: Record<string, string | null>
-): Promise<MonthCategoriesResponse> {
+): Promise<_MonthCategoriesApiResponse> {
   const resultId = params.resultId ?? ''
   const accountId = params.accountId ?? ''
   const monthId = params.monthId ?? ''
-  return fetchWithErrorHandling<MonthCategoriesResponse>(
+  return fetchWithErrorHandling<_MonthCategoriesApiResponse>(
     getApiUrl(`/results/${resultId}/accounts/${accountId}/months/${monthId}/categories`)
   );
 }
@@ -221,12 +210,12 @@ export async function fetchMonthCategories(
  */
 export async function fetchCategoryMonthTransactions(
   params: Record<string, string | null>
-): Promise<CategoryMonthTransactionsResponse> {
+): Promise<_CategoryMonthTransactionsApiResponse> {
   const resultId = params.resultId ?? ''
   const accountId = params.accountId ?? ''
   const categoryId = params.categoryId ?? ''
   const monthId = params.monthId ?? ''
-  return fetchWithErrorHandling<CategoryMonthTransactionsResponse>(
+  return fetchWithErrorHandling<_CategoryMonthTransactionsApiResponse>(
     getApiUrl(`/results/${resultId}/accounts/${accountId}/categories/${categoryId}/months/${monthId}/transactions`)
   );
 }

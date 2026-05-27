@@ -102,7 +102,7 @@ interface _AggregatedRow {
 /**
  * Processing metadata
  */
-interface _ProcessingMetadata {
+export interface _ProcessingMetadata {
   result_id: string;
   row_count: number;
   processing_time: number;
@@ -180,7 +180,7 @@ interface _CategorySummary {
  * Contains processed transaction data grouped by category and month,
  * plus processing metadata.
  */
-interface _ProcessApiResponse {
+export interface _ProcessApiResponse {
   data: _AggregatedRow[];
   metadata: _ProcessingMetadata;
 }
@@ -192,7 +192,7 @@ interface _ProcessApiResponse {
 /**
  * Data for a single account in results response
  */
-interface _AccountDataResponse {
+export interface _AccountDataResponse {
   id: string;
   name: string;
   dt_response: {
@@ -203,7 +203,7 @@ interface _AccountDataResponse {
 /**
  * Container for all accounts data
  */
-interface _AccountsDataResponse {
+export interface _AccountsDataResponse {
   accounts: _AccountDataResponse[];
   highlights: _StatisticalHighlights;
 }
@@ -211,7 +211,7 @@ interface _AccountsDataResponse {
 /**
  * URL info for category drilldown
  */
-interface _DrilldownUrlInfo {
+export interface _DrilldownUrlInfo {
   category_url: string;
   category_id: string;
 }
@@ -219,7 +219,7 @@ interface _DrilldownUrlInfo {
 /**
  * URL info for month drilldown
  */
-interface _MonthUrlInfo {
+export interface _MonthUrlInfo {
   month_url: string;
   month_id: string;
 }
@@ -227,7 +227,7 @@ interface _MonthUrlInfo {
 /**
  * URL info for cell/transaction drilldown
  */
-interface _CellUrlInfo {
+export interface _CellUrlInfo {
   cell_url: string;
   category_id: string;
   month_id: string;
@@ -236,7 +236,7 @@ interface _CellUrlInfo {
 /**
  * All drilldown URLs for a single account
  */
-interface _DrilldownUrls {
+export interface _DrilldownUrls {
   account_id: string | null;
   category_urls: Record<string, _DrilldownUrlInfo>;
   month_urls: Record<string, _MonthUrlInfo>;
@@ -248,7 +248,7 @@ interface _DrilldownUrls {
  *
  * Contains cached processing results with accounts data and drilldown URLs.
  */
-interface _ResultsApiResponse {
+export interface _ResultsApiResponse {
   result_id: string;
   accounts_data: _AccountsDataResponse;
   drilldown_urls_by_account: Record<string, _DrilldownUrls>;
@@ -274,7 +274,7 @@ export interface MonthData {
  *
  * Returns month-by-month aggregation for a specific category.
  */
-interface _CategoryMonthsApiResponse {
+export interface _CategoryMonthsApiResponse {
   result_id: string;
   account_id: string;
   account_name: string;
@@ -299,7 +299,7 @@ export interface CategoryData {
  *
  * Returns category-by-category aggregation for a specific month.
  */
-interface _MonthCategoriesApiResponse {
+export interface _MonthCategoriesApiResponse {
   result_id: string;
   account_id: string;
   account_name: string;
@@ -324,7 +324,7 @@ interface _TransactionDetailResponse {
  *
  * Returns individual transaction details for a specific category and month.
  */
-interface _CategoryMonthTransactionsApiResponse {
+export interface _CategoryMonthTransactionsApiResponse {
   result_id: string;
   account_id: string;
   account_name: string;
@@ -345,7 +345,7 @@ interface _CategoryMonthTransactionsApiResponse {
  *
  * Returns updated statistical highlights with new algorithm settings.
  */
-interface _RecalculateApiResponse {
+export interface _RecalculateApiResponse {
   status: string;
   result_id: string;
   highlights: _StatisticalHighlights;
@@ -353,190 +353,3 @@ interface _RecalculateApiResponse {
   direction: 'columns' | 'rows';
 }
 
-// ============================================================================
-// Legacy Types (for backward compatibility during transition)
-// ============================================================================
-
-/**
- * Legacy response from transaction processing endpoint
- * This can be either the old format (result_id at root) or new format (result_id in metadata)
- *
- * @deprecated Use ProcessApiResponse instead for new code
- */
-interface _ProcessingResponse {
-  result_id?: string;
-  status?: string;
-  message?: string;
-  accounts?: AccountData[];
-  metadata?: {
-    result_id: string;
-    processing_time?: number;
-    file_name?: string;
-    file_size?: number;
-    start_date?: string;
-    end_date?: string;
-    category_filter?: string;
-    ml_enabled?: boolean;
-  };
-  highlights?: _StatisticalHighlights;
-}
-
-/**
- * Legacy results response
- *
- * @deprecated Use ResultsApiResponse instead for new code
- */
-interface _ResultsResponse {
-  result_id: string;
-  accounts: AccountData[];
-  metadata: _ProcessingMetadata;
-  highlights: _StatisticalHighlights;
-  statistical_analysis: _StatisticalAnalysis;
-}
-
-/**
- * Legacy statistical analysis data
- *
- * @deprecated Use RecalculateApiResponse instead for new code
- */
-interface _StatisticalAnalysis {
-  algorithms: string[];
-  direction: 'rows' | 'columns';
-  outliers_detected: number;
-  pareto_items: number;
-}
-
-/**
- * Legacy detail results response
- *
- * @deprecated Use ResultsApiResponse or drilldown types instead
- */
-interface _DetailResultsResponse {
-  result_id: string;
-  transactions: _TransactionData[];
-  metadata: _ProcessingMetadata;
-  highlights: _StatisticalHighlights;
-}
-
-/**
- * Legacy recalculate response
- *
- * @deprecated Use RecalculateApiResponse instead
- */
-interface _RecalculateResponse {
-  result_id: string;
-  updated_highlights: _StatisticalHighlights;
-  statistical_analysis: _StatisticalAnalysis;
-}
-
-// ============================================================================
-// Drilldown URL Types (for legacy ResultsResponseV2)
-// ============================================================================
-
-/**
- * Legacy drilldown URL info
- *
- * @deprecated Use _DrilldownUrlInfo, _MonthUrlInfo, _CellUrlInfo instead
- */
-interface _DrilldownUrlInfoLegacy {
-  category_url: string;
-  category_id: string;
-}
-
-/**
- * Legacy drilldown URLs container
- *
- * @deprecated Use _DrilldownUrls instead
- */
-interface _DrilldownUrlsLegacy {
-  account_id: string | null;
-  category_urls: Record<string, _DrilldownUrlInfoLegacy>;
-  month_urls: Record<string, { month_url: string; month_id: string }>;
-  cell_urls: Record<string, { cell_url: string; category_id: string; month_id: string }>;
-}
-
-/**
- * Legacy results response with drilldown URLs
- *
- * @deprecated Use ResultsApiResponse instead
- */
-interface _ResultsResponseV2 {
-  result_id: string;
-  accounts_data: {
-    accounts: Array<{
-      id: string;
-      name: string;
-      dt_response: {
-        data: Array<{
-          category: string;
-          date: {
-            display: string;
-            timestamp: number;
-          };
-          total: {
-            display: string;
-            raw: number;
-          };
-          details: Array<{
-            date: { display: string };
-            amount: { display: string };
-            merchant: string;
-          }>;
-          row_id: string;
-        }>;
-      };
-    }>;
-    highlights: _StatisticalHighlights;
-  };
-  drilldown_urls_by_account: Record<string, _DrilldownUrlsLegacy>;
-}
-
-/**
- * Legacy account results response
- *
- * @deprecated Use ResultsApiResponse instead
- */
-export interface AccountResultsResponse {
-  result_id: string;
-  accounts_data: {
-    accounts: Array<{
-      id: string;
-      name: string;
-      dt_response: {
-        data: Array<{
-          category: string;
-          date: {
-            display: string;
-            timestamp: number;
-          };
-          total: {
-            display: string;
-            raw: number;
-          };
-          details: Array<{
-            date: { display: string };
-            amount: { display: string };
-            merchant: string;
-            currency: string;
-            type: string;
-            confidence: number | null;
-            row_id: string;
-          }>;
-          row_id: string;
-        }>;
-      };
-    }>;
-    highlights: _StatisticalHighlights;
-  };
-}
-
-// ============================================================================
-// Type Aliases for backward compatibility
-// ============================================================================
-
-// Aliases for legacy code that uses different naming conventions
-export type ProcessResponse = _ProcessingResponse;
-export type ResultsResponseV2 = _ResultsResponseV2;
-export type CategoryMonthsResponse = _CategoryMonthsApiResponse;
-export type MonthCategoriesResponse = _MonthCategoriesApiResponse;
-export type CategoryMonthTransactionsResponse = _CategoryMonthTransactionsApiResponse;

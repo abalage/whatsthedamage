@@ -3,7 +3,7 @@ import { ref, reactive, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { processTransactions } from '../js/api'
 import { useFeedbackStore } from './feedback'
-import type { ProcessResponse } from '../types/api'
+import type { _ProcessApiResponse } from '../types/api'
 
 /**
  * Form data interface for transaction processing
@@ -214,10 +214,10 @@ const useFormStore = defineStore('form', () => {
       formDataObj.append('ml_enabled', formData.mlEnabled.toString())
 
       // Call API
-      const response: ProcessResponse = await processTransactions(formDataObj)
+      const response: _ProcessApiResponse = await processTransactions(formDataObj)
 
-      // Extract result_id from metadata (new structure)
-      const resultId = response.metadata?.result_id ?? response.result_id
+      // Extract result_id from metadata
+      const resultId = response.metadata.result_id
 
       // Debug: Check if we have a valid result ID
       if (!resultId) {

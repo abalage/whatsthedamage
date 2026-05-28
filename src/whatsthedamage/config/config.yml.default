@@ -9,6 +9,7 @@ csv:
     amount: "összeg"
     currency: "összeg devizaneme"
     account: "könyvelési számla"
+    notice: "közlemény"
 
 enricher_pattern_sets:
   partner:

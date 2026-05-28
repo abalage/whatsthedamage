@@ -85,6 +85,7 @@ interface _DetailRow {
   account: string;
   type?: string | null;
   confidence?: number | null;
+  notice?: string | null;
 }
 
 /**

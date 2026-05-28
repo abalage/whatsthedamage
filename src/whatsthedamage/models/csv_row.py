@@ -10,6 +10,7 @@ class CsvRow:
     currency: str
     category: str
     account: str
+    notice: str
     confidence: Optional[float] = None
 
     def __init__(self, row: dict[str, str], mapping: dict[str, str]) -> None:
@@ -26,4 +27,5 @@ class CsvRow:
         self.currency = row.get(mapping.get('currency', ''), '').strip()
         self.category = row.get(mapping.get('category', ''), '').strip()
         self.account = row.get(mapping.get('account', ''), '').strip()
+        self.notice = row.get(mapping.get('notice', ''), '').strip()
         self.confidence = None

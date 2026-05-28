@@ -349,6 +349,7 @@ class TransactionDetail(BaseModel):
     currency: str = Field(default="", description="Currency code")
     type: str = Field(default="", description="Transaction type")
     confidence: Optional[float] = Field(default=None, description="ML confidence score if applicable")
+    notice: Optional[str] = Field(default=None, description="Transaction notice or memo")
     category: str = Field(default="", description="Category name")
     category_id: str = Field(default="", description="Category identifier")
     month_id: str = Field(default="", description="Month identifier")

@@ -768,6 +768,7 @@ class ResponseFormattingService(IDataFormattingService):
                                     'currency': detail.currency if hasattr(detail, 'currency') else '',
                                     'type': detail.type if hasattr(detail, 'type') else '',
                                     'confidence': detail.confidence if hasattr(detail, 'confidence') else None,
+                                    'notice': detail.notice if hasattr(detail, 'notice') else None,
                                     'row_id': detail.row_id if hasattr(detail, 'row_id') else ''
                                 })
 

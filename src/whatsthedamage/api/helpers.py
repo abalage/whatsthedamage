@@ -20,7 +20,7 @@ from whatsthedamage.services.statistical_analysis_service import StatisticalAnal
 from whatsthedamage.services.drilldown_response_service import DrilldownResponseService
 
 
-def _get_response_builder_service() -> ResponseFormattingService:
+def _get_response_formatting_service() -> ResponseFormattingService:
     """Get response builder service from app extensions (dependency injection)."""
     return cast(ResponseFormattingService, current_app.extensions['response_formatting_service'])
 
@@ -164,7 +164,7 @@ def cleanup_files(csv_path: str, config_path: str | None) -> None:
 def handle_error(error: Exception, endpoint_name: Optional[str] = None) -> tuple[Response, int]:
     """Handle exceptions and return appropriate error response.
 
-    Delegates to ResponseBuilderService for consistent error handling
+    Delegates to ResponseFormattingService for consistent error handling
     across API and web endpoints. Automatically logs errors and handles
     ValueError as 404, BadRequest as 400, and others as 500.
 
@@ -201,7 +201,7 @@ def handle_error(error: Exception, endpoint_name: Optional[str] = None) -> tuple
 
     # Try to use the response builder service if available
     try:
-        response_builder = _get_response_builder_service()
+        response_builder = _get_response_formatting_service()
         return response_builder.build_error_response(
             error=error,
             default_code=status_code,

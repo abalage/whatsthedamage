@@ -9,9 +9,6 @@ INDEX_ROUTE = 'main.index'
 DATA_NOT_FOUND_ERROR = 'Data not found'
 
 
-
-
-
 @bp.route('/favicon.ico')
 def favicon() -> Response:
     """Serve favicon.ico to prevent 404 errors in browser console."""

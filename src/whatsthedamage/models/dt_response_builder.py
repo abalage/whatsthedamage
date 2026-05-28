@@ -138,6 +138,7 @@ class DataTablesResponseBuilder:
             account = getattr(row, 'account', '')
             transaction_type = getattr(row, 'type', '')
             confidence = getattr(row, 'confidence', None)
+            notice = getattr(row, 'notice', '')
 
             details.append(
                 DetailRow(
@@ -148,7 +149,8 @@ class DataTablesResponseBuilder:
                     currency=row_currency,
                     account=account,
                     type=transaction_type,
-                    confidence=confidence
+                    confidence=confidence,
+                    notice=notice
                 )
             )
         return details

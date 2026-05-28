@@ -291,6 +291,12 @@ def get_openapi_schema() -> dict[str, Any]:
                             "nullable": True,
                             "description": "ML prediction confidence score (0-1), null if not using ML categorization",
                             "example": 0.95
+                        },
+                        "notice": {
+                            "type": "string",
+                            "nullable": True,
+                            "description": "Transaction notice or memo (Hungarian: közlemény)",
+                            "example": "Payment for invoice #1234"
                         }
                     }
                 },

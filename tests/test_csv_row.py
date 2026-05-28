@@ -19,7 +19,7 @@ def test_csv_row_empty(mapping):
     row_data = {}
     csv_row = CsvRow(row_data, mapping)
 
-    assert repr(csv_row) == "CsvRow(date='', type='', partner='', amount=0.0, currency='', category='', account='', confidence=None)"
+    assert repr(csv_row) == "CsvRow(date='', type='', partner='', amount=0.0, currency='', category='', account='', notice='', confidence=None)"
 
 
 def test_csv_row_initialization(setup_data, mapping):
@@ -36,7 +36,7 @@ def test_csv_row_initialization(setup_data, mapping):
 def test_csv_row_repr(setup_data, mapping):
     csv_row = CsvRow(setup_data, mapping)
 
-    expected_repr = "CsvRow(date='1990-01-01', type='deposit', partner='Foo Bar', amount=1000.0, currency='EUR', category='', account='', confidence=None)"
+    expected_repr = "CsvRow(date='1990-01-01', type='deposit', partner='Foo Bar', amount=1000.0, currency='EUR', category='', account='', notice='', confidence=None)"
     assert repr(csv_row) == expected_repr
 
 
@@ -55,3 +55,32 @@ def test_csv_row_inequality(setup_data, mapping):
     csv_row2 = CsvRow(different_data, mapping)
 
     assert csv_row1 != csv_row2
+
+
+def test_csv_row_notice_field(mapping):
+    """Test that notice field is correctly parsed from CSV row."""
+    row_data = {
+        'date': '1990-01-01',
+        'type': 'deposit',
+        'partner': 'Foo Bar',
+        'amount': '1000',
+        'currency': 'EUR',
+        'category': '',
+        'notice': 'Payment for invoice #1234'
+    }
+    csv_row = CsvRow(row_data, mapping)
+    assert csv_row.notice == 'Payment for invoice #1234'
+
+
+def test_csv_row_notice_empty(mapping):
+    """Test that notice field defaults to empty string when not present."""
+    row_data = {
+        'date': '1990-01-01',
+        'type': 'deposit',
+        'partner': 'Foo Bar',
+        'amount': '1000',
+        'currency': 'EUR',
+        'category': ''
+    }
+    csv_row = CsvRow(row_data, mapping)
+    assert csv_row.notice == ''

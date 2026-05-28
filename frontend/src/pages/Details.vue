@@ -72,6 +72,7 @@ const allTransactions = computed(() => {
           account: account.name,
           type: detail.type || '',
           confidence: detail.confidence !== null ? detail.confidence.toString() : '',
+          notice: detail.notice || '',
           row_id: detail.row_id
         })
       }
@@ -133,6 +134,7 @@ onMounted(() => {
                   <th>{{ $gettext('Account') }}</th>
                   <th>{{ $gettext('Type') }}</th>
                   <th>{{ $gettext('Confidence') }}</th>
+                  <th>{{ $gettext('Notice') }}</th>
                 </tr>
               </thead>
               <tbody>
@@ -145,6 +147,7 @@ onMounted(() => {
                   <td>{{ transaction.account }}</td>
                   <td>{{ transaction.type }}</td>
                   <td>{{ transaction.confidence }}</td>
+                  <td>{{ transaction.notice }}</td>
                 </tr>
               </tbody>
             </table>

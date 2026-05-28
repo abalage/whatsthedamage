@@ -108,6 +108,7 @@ def mapping():
         'currency': 'currency',
         'category': 'category',
         'account': 'account',
+        'notice': 'notice',
     }
 
 

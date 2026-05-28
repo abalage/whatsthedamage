@@ -47,7 +47,8 @@ class CsvConfig(BaseModel):
         "partner": "partner elnevezése",
         "amount": "összeg",
         "currency": "összeg devizaneme",
-        "account": "könyvelési számla"
+        "account": "könyvelési számla",
+        "notice": "közlemény"
     })
 
 

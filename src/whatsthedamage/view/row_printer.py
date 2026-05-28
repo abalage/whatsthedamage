@@ -35,7 +35,7 @@ def print_categorized_rows(responses_by_account: Dict[str, DataTablesResponse]) 
             for detail_row in sorted(category_rows[category], key=lambda r: f"{getattr(r.date, 'timestamp', 0)}_{r.merchant}_{r.amount.raw}"):
                 # Format similar to CsvRow repr output
                 print(f"DetailRow(date={detail_row.date.display}, amount={detail_row.amount.raw}, "
-                      f"merchant={detail_row.merchant}, currency={detail_row.currency})", file=sys.stderr)
+                      f"merchant={detail_row.merchant}, currency={detail_row.currency}), notice={detail_row.notice})", file=sys.stderr)
 
 
 def print_training_data(responses_by_account: Dict[str, DataTablesResponse]) -> None:

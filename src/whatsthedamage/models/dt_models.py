@@ -20,6 +20,7 @@ class DetailRow(BaseModel):
     account: str
     type: Optional[str] = None
     confidence: Optional[float] = None
+    notice: Optional[str] = None
 
 class AggregatedRow(BaseModel):
     row_id: str

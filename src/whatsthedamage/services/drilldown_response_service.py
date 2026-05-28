@@ -581,6 +581,7 @@ class DrilldownResponseService:
             'date': getattr(detail, 'date', {}),
             'amount': getattr(detail, 'amount', {}),
             'merchant': getattr(detail, 'merchant', ''),
+            'notice': getattr(detail, 'notice', None),
             'row_id': getattr(detail, 'row_id', '')
         }
 
@@ -940,6 +941,7 @@ class DrilldownResponseService:
             'date': {'display': self._get_display_value(detail_dict.get('date'))},
             'amount': {'display': self._get_display_value(detail_dict.get('amount'))},
             'merchant': detail_dict.get('merchant', ''),
+            'notice': detail_dict.get('notice', None),
             'row_id': detail_dict.get('row_id', '')
         }
 
@@ -1066,6 +1068,7 @@ class DrilldownResponseService:
                 date={'display': tx_dict.get('date', {}).get('display', ''), 'timestamp': ''},
                 amount={'display': tx_dict.get('amount', {}).get('display', ''), 'raw': 0.0},
                 merchant=tx_dict.get('merchant', ''),
+                notice=tx_dict.get('notice', None),
                 currency='',
                 type='',
                 confidence=None,

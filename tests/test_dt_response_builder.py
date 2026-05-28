@@ -20,6 +20,7 @@ def mapping():
         'amount': 'amount',
         'currency': 'currency',
         'category': 'category',
+        'notice': 'notice',
     }
 
 
@@ -358,3 +359,23 @@ def test_full_pipeline_with_confidence(builder, sample_csv_rows):
     assert groceries_row.details[2].confidence == 0.92
     assert groceries_row.details[0].merchant == "Grocery Store"
     assert groceries_row.details[0].amount.raw == -50.0
+
+
+def test_build_detail_rows_with_notice(builder, mapping):
+    """Test that detail rows include notice when available."""
+    rows = [
+        CsvRow(
+            {"date": "2025-01-15", "amount": "-50.0", "currency": "USD", "partner": "Grocery Store", "type": "purchase", "notice": "Invoice payment"},
+            mapping
+        ),
+        CsvRow(
+            {"date": "2025-01-16", "amount": "-30.0", "currency": "USD", "partner": "Gas Station", "type": "purchase"},
+            mapping
+        ),
+    ]
+    details = builder._build_detail_rows(rows)
+
+    assert len(details) == 2
+    assert details[0].notice == "Invoice payment"
+    assert details[1].notice == ""  # No notice provided, defaults to empty string
+    assert details[0].merchant == "Grocery Store"

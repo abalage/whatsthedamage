@@ -116,7 +116,7 @@ const setLocale = (locale: string) => {
       <nav class="navbar navbar-expand-lg navbar-dark bg-success mb-3">
         <div class="container-fluid">
           <RouterLink to="/" class="navbar-brand">What's the Damage?</RouterLink>
-          <span class="text-white align-middle">{{ $gettext('Generate reports from your bank account CSV history') }}</span>
+          <span class="text-white align-middle">{{ $gettext("Tell me I didn't spend that much…") }}</span>
           <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>
           </button>
@@ -125,14 +125,21 @@ const setLocale = (locale: string) => {
               <li class="nav-item">
                 <RouterLink to="/" class="nav-link">{{ $gettext('Home') }}</RouterLink>
               </li>
-              <li class="nav-item">
-                <RouterLink to="/privacy" class="nav-link">{{ $gettext('Privacy') }}</RouterLink>
-              </li>
-              <li class="nav-item">
-                <RouterLink to="/legal" class="nav-link">{{ $gettext('Legal') }}</RouterLink>
-              </li>
-              <li class="nav-item">
-                <RouterLink to="/about" class="nav-link">{{ $gettext('About') }}</RouterLink>
+              <li class="nav-item dropdown">
+                <a id="aboutDropdown" class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                  {{ $gettext('About') }}
+                </a>
+                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="aboutDropdown">
+                  <li>
+                    <RouterLink to="privacy" class="dropdown-item">{{ $gettext('Privacy') }}</RouterLink>
+                  </li>
+                  <li>
+                     <RouterLink to="legal" class="dropdown-item">{{ $gettext('Legal') }}</RouterLink>
+                  </li>
+                  <li>
+                     <RouterLink to="about" class="dropdown-item">{{ $gettext('About') }}</RouterLink>
+                  </li>
+                </ul>
               </li>
               <li v-if="showAnalytics" class="nav-item dropdown">
                 <a id="analyticsDropdown" class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">

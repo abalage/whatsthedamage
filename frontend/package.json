@@ -15,8 +15,8 @@
     "lint": "eslint . --ext .ts,.js,.vue",
     "type-check": "tsc --noEmit",
     "format": "prettier --write .",
-    "gettext-extract": "node node_modules/vue3-gettext/dist/bin/gettext_extract.js",
-    "gettext-compile": "node node_modules/vue3-gettext/dist/bin/gettext_compile.js",
+    "gettext-extract": "node node_modules/vue3-gettext/dist/gettext_extract.js",
+    "gettext-compile": "node node_modules/vue3-gettext/dist/gettext_compile.js",
     "knip": "knip",
     "check-updates": "npm-check-updates -u --upgradeInterval never"
   },

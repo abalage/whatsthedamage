@@ -1,10 +1,109 @@
 <script setup lang="ts">
+import { ref, computed } from 'vue'
+import { useRoute } from 'vue-router'
 import { useLocaleStore } from '../stores/locale'
-import { RouterLink } from 'vue-router'
+import { useStatisticalStore } from '../stores/statistical'
+import { useFeedbackStore } from '../stores/feedback'
 import { useGettext } from 'vue3-gettext'
-const { $gettext } = useGettext()
+import { recalculateStatistics } from '../js/api'
+import { RouterLink } from 'vue-router'
 
+const { $gettext } = useGettext()
+const route = useRoute()
 const localeStore = useLocaleStore()
+const statisticalStore = useStatisticalStore()
+const feedback = useFeedbackStore()
+
+const isRecalculating = ref(false)
+
+// Get current resultId from route
+const resultId = computed(() => {
+  const id = route.query.resultId ?? route.query.result_id
+  return typeof id === 'string' ? id : null
+})
+
+// Show Analytics dropdown only when there's a resultId
+const showAnalytics = computed(() => resultId.value !== null)
+
+// Sync with store
+const algorithms = computed({
+  get: () => statisticalStore.algorithms,
+  set: (value: string[]) => statisticalStore.setAlgorithms(value)
+})
+
+const direction = computed({
+  get: () => statisticalStore.direction,
+  set: (value: 'rows' | 'columns') => statisticalStore.setDirection(value)
+})
+
+const handleDirectionChange = (event: Event) => {
+  const target = event.target as HTMLSelectElement
+  direction.value = target.value as 'rows' | 'columns'
+  if (resultId.value) {
+    triggerRecalculate()
+  }
+}
+
+const handleAlgorithmChange = (event: Event) => {
+  const target = event.target as HTMLSelectElement
+  const selected = Array.from(target.selectedOptions).map(opt => opt.value)
+  algorithms.value = selected
+  if (resultId.value) {
+    triggerRecalculate()
+  }
+}
+
+const triggerRecalculate = async () => {
+  if (!resultId.value) return
+  
+  try {
+    isRecalculating.value = true
+    const response = await recalculateStatistics(
+      resultId.value,
+      algorithms.value,
+      direction.value
+    )
+    
+    // Update window highlights
+    if (response?.highlights) {
+      window.highlights = response.highlights
+      if (typeof window.updateCellHighlights === 'function') {
+        window.updateCellHighlights(response.highlights)
+      }
+    }
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    feedback.showError(`${$gettext('Recalculate error')}: ${message}`)
+  } finally {
+    isRecalculating.value = false
+  }
+}
+
+const resetToDefaults = async () => {
+  statisticalStore.resetToDefaults()
+  if (resultId.value) {
+    try {
+      isRecalculating.value = true
+      const response = await recalculateStatistics(
+        resultId.value,
+        ['iqr', 'pareto'],
+        'columns'
+      )
+      
+      if (response?.highlights) {
+        window.highlights = response.highlights
+        if (typeof window.updateCellHighlights === 'function') {
+          window.updateCellHighlights(response.highlights)
+        }
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+      feedback.showError(`${$gettext('Restore defaults error')}: ${message}`)
+    } finally {
+      isRecalculating.value = false
+    }
+  }
+}
 
 const setLocale = (locale: string) => {
   localeStore.setLocale(locale)
@@ -34,6 +133,67 @@ const setLocale = (locale: string) => {
               </li>
               <li class="nav-item">
                 <RouterLink to="/about" class="nav-link">{{ $gettext('About') }}</RouterLink>
+              </li>
+              <li v-if="showAnalytics" class="nav-item dropdown">
+                <a id="analyticsDropdown" class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                  {{ $gettext('Analytics') }}
+                </a>
+                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="analyticsDropdown">
+                  <li>
+                    <div class="dropdown-item-text">{{ $gettext('Analysis direction') }}</div>
+                  </li>
+                  <li>
+                    <select 
+                      v-model="direction" 
+                      class="form-select form-select-sm mx-2 mb-1"
+                      :disabled="isRecalculating"
+                      @change="handleDirectionChange"
+                    >
+                      <option value="columns">{{ $gettext('columns') }}</option>
+                      <option value="rows">{{ $gettext('rows') }}</option>
+                    </select>
+                  </li>
+                  <li>
+                    <div class="dropdown-item-text">{{ $gettext('Algorithms') }}</div>
+                  </li>
+                  <li>
+                    <select 
+                      v-model="algorithms" 
+                      class="form-select form-select-sm mx-2 mb-1"
+                      multiple
+                      size="2"
+                      :disabled="isRecalculating"
+                      @change="handleAlgorithmChange"
+                    >
+                      <option value="iqr">{{ $gettext('IQR Outlier Detection') }}</option>
+                      <option value="pareto">{{ $gettext('Pareto analysis') }}</option>
+                    </select>
+                  </li>
+                  <li>
+                    <div class="dropdown-item-text">{{ $gettext('Legend') }}</div>
+                  </li>
+                  <li>
+                    <div class="dropdown-item">
+                      <div class="d-flex flex-wrap gap-2 justify-content-center">
+                        <span class="badge highlight-outlier">{{ $gettext('Marked outlier by IQR') }}</span>
+                        <span class="badge highlight-pareto">{{ $gettext('Marked outlier by Pareto principle') }}</span>
+                        <span class="badge highlight-excluded">{{ $gettext('Excluded from statistics') }}</span>
+                        <span class="badge highlight-multiple">{{ $gettext('Matched by multiple algorithms') }}</span>
+                      </div>
+                    </div>
+                  </li>
+                  <li><hr class="dropdown-divider"></li>
+                  <li>
+                    <a 
+                      class="dropdown-item" 
+                      href="#" 
+                      :class="{ disabled: isRecalculating }"
+                      @click.prevent="resetToDefaults"
+                    >
+                      {{ $gettext('Reset to defaults') }}
+                    </a>
+                  </li>
+                </ul>
               </li>
               <li class="nav-item dropdown">
                 <a id="langDropdown" class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">

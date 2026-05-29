@@ -9,7 +9,6 @@ import {
 } from '../composables/useDrilldownData'
 import CardComponent from '../components/ui/CardComponent.vue'
 import ButtonComponent from '../components/ui/ButtonComponent.vue'
-import StatisticalControls from '../components/ui/StatisticalControls.vue'
 import { fetchMonthCategories } from '../js/api'
 import type { _MonthCategoriesApiResponse, CategoryData } from '../types/api'
 
@@ -101,8 +100,6 @@ onMounted(() => {
         </li>
       </ol>
     </nav>
-
-    <StatisticalControls v-if="monthCategoriesData" :result-id="resultId" />
 
     <!-- Loading State -->
     <div v-if="isLoading" class="text-center my-5">

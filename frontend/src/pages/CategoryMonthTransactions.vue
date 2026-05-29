@@ -8,7 +8,6 @@ import {
 } from '../composables/useDrilldownData'
 import CardComponent from '../components/ui/CardComponent.vue'
 import ButtonComponent from '../components/ui/ButtonComponent.vue'
-import StatisticalControls from '../components/ui/StatisticalControls.vue'
 import { fetchCategoryMonthTransactions } from '../js/api'
 import type { _CategoryMonthTransactionsApiResponse } from '../types/api'
 
@@ -27,7 +26,6 @@ const {
   isLoading,
   error,
   fetchData,
-  resultId,
   pageTitle,
   breadcrumbItems,
   navButtons
@@ -96,8 +94,6 @@ onMounted(() => {
         </li>
       </ol>
     </nav>
-
-    <StatisticalControls v-if="transactionsData" :result-id="resultId" />
 
     <!-- Loading State -->
     <div v-if="isLoading" class="text-center my-5">

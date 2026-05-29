@@ -140,12 +140,12 @@ const setLocale = (locale: string) => {
                 </a>
                 <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="analyticsDropdown">
                   <li>
-                    <div class="dropdown-item-text">{{ $gettext('Analysis direction') }}</div>
+                    <div class="dropdown-item-text">{{ $gettext('Analysis direction') }}:</div>
                   </li>
                   <li>
                     <select 
                       v-model="direction" 
-                      class="form-select form-select-sm mx-2 mb-1"
+                      class="form-select form-select-sm mx-4 mb-1 w-75"
                       :disabled="isRecalculating"
                       @change="handleDirectionChange"
                     >
@@ -154,12 +154,12 @@ const setLocale = (locale: string) => {
                     </select>
                   </li>
                   <li>
-                    <div class="dropdown-item-text">{{ $gettext('Algorithms') }}</div>
+                    <div class="dropdown-item-text">{{ $gettext('Algorithms') }}:</div>
                   </li>
                   <li>
                     <select 
                       v-model="algorithms" 
-                      class="form-select form-select-sm mx-2 mb-1"
+                      class="form-select form-select-sm mx-4 mb-1 w-75"
                       multiple
                       size="2"
                       :disabled="isRecalculating"
@@ -170,11 +170,11 @@ const setLocale = (locale: string) => {
                     </select>
                   </li>
                   <li>
-                    <div class="dropdown-item-text">{{ $gettext('Legend') }}</div>
+                    <div class="dropdown-item-text">{{ $gettext('Legend') }}:</div>
                   </li>
                   <li>
                     <div class="dropdown-item">
-                      <div class="d-flex flex-wrap gap-2 justify-content-center">
+                      <div class="legend-display d-flex flex-wrap gap-2 justify-content-left">
                         <span class="badge highlight-outlier">{{ $gettext('Marked outlier by IQR') }}</span>
                         <span class="badge highlight-pareto">{{ $gettext('Marked outlier by Pareto principle') }}</span>
                         <span class="badge highlight-excluded">{{ $gettext('Excluded from statistics') }}</span>

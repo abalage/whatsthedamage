@@ -4,7 +4,6 @@ import { useRoute } from 'vue-router'
 import { fetchResults as fetchResultsApi } from '../js/api'
 import { useFeedbackStore } from '../stores/feedback'
 import { useGettext } from 'vue3-gettext'
-import StatisticalControls from '../components/ui/StatisticalControls.vue'
 import type { _ResultsApiResponse } from '../types/api'
 
 const { $gettext } = useGettext()
@@ -168,8 +167,6 @@ onMounted(() => {
         <li class="breadcrumb-item active" aria-current="page">{{ $gettext('Results') }}</li>
       </ol>
     </nav>
-
-    <StatisticalControls v-if="resultsData" :result-id="resultId" />
 
     <div v-if="isLoading" class="text-center my-5">
       <div class="spinner-border text-primary" role="status">

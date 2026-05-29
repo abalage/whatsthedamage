@@ -17,7 +17,7 @@ from whatsthedamage.api.helpers import (
     cleanup_files,
     handle_error,
     _get_cache_service,
-    _get_response_builder_service,
+    _get_response_formatting_service,
     _get_processing_service,
     _get_statistical_service,
     _get_drilldown_response_service,
@@ -78,7 +78,7 @@ def process_transactions() -> tuple[Response, int]:
             processing_time = time.time() - start_time
 
             # Delegate to service for response construction
-            response = _get_response_builder_service().build_api_detailed_response(
+            response = _get_response_formatting_service().build_api_detailed_response(
                 datatables_response=result.data,
                 metadata=result.metadata,
                 params=params,
@@ -121,7 +121,7 @@ def get_results(result_id: str) -> tuple[Response, int]:
             return handle_error(ValueError('Results not found'), 'get_results')
 
         # Delegate to service for response construction
-        response = _get_response_builder_service().format_processing_response_for_frontend(cached_result)
+        response = _get_response_formatting_service().format_processing_response_for_frontend(cached_result)
 
         return jsonify(response.model_dump()), 200
 

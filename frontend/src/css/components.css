@@ -285,21 +285,26 @@ footer {
     border-color: var(--primary-color);
 }
 
-/* Highlight badge styling */
+/* Highlight badge styling - matches the cell highlight colors */
 .badge.highlight-outlier {
-    background-color: #ffe6e6;
-    color: #dc3545;
-    border: 1px solid #f5c2c7;
+    background-color: #ffe6e6 !important;
+    color: black !important;
+    border: 1px solid #f5c2c7 !important;
 }
 
 .badge.highlight-pareto {
-    background-color: #d1e7dd;
-    color: #198754;
-    border: 1px solid #badbcc;
+    background-color: #e6ffe6 !important;
+    color: black !important;
+    border: 1px solid #badbcc !important;
 }
 
 .badge.highlight-excluded {
-    background-color: #f8f9fa;
-    color: #6c757d;
-    border: 1px solid #dee2e6;
+    background-color: #f0f0f0 !important;
+    color: black !important;
+    border: 1px solid #dee2e6 !important;
+}
+
+/* Legend display styling */
+.legend-display {
+    padding: 0.5rem;
 }

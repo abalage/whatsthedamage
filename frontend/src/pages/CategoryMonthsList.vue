@@ -7,7 +7,6 @@ import {
   extractIdFromUrl,
   type BreadcrumbItem
 } from '../composables/useDrilldownData'
-import StatisticalControls from '../components/ui/StatisticalControls.vue'
 import CardComponent from '../components/ui/CardComponent.vue'
 import ButtonComponent from '../components/ui/ButtonComponent.vue'
 import { fetchCategoryMonths } from '../js/api'
@@ -102,8 +101,6 @@ onMounted(() => {
         </li>
       </ol>
     </nav>
-
-    <StatisticalControls v-if="categoryMonthsData" :result-id="resultId" />
 
     <!-- Loading State -->
     <div v-if="isLoading" class="text-center my-5">

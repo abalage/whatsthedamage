@@ -120,7 +120,7 @@ _get_processing_service()        # ProcessingService - handles CSV processing
 _get_cache_service()             # CacheService - manages cached results
 _get_statistical_service()       # StatisticalService - computes IQR/Pareto highlights
 _get_drilldown_response_service() # DrilldownResponseService - formats drilldown data
-_get_response_builder_service()   # ResponseFormattingService - builds API responses
+_get_response_formatting_service()   # ResponseFormattingService - builds API responses
 _get_file_upload_service()       # FileUploadService - validates and saves uploaded files
 _get_id_mapping_service()        # IdMappingService - maps internal IDs to display names
 _get_session_service()           # SessionService - manages user session data
@@ -641,7 +641,7 @@ const envelope = await fetchEnvelope<MyData>('/api/v2/new-endpoint');
 │  ┌───────────────────────────────────────────────────────────────┐  │
 │  │                    Service Layer                                │  │
 │  │  ProcessingService │ CacheService │ StatisticalService       │  │
-│  │  ResponseBuilderService │ DrilldownResponseService            │  │
+│  │  ResponseFormattingService │ DrilldownResponseService            │  │
 │  └───────────────────────────────────────────────────────────────┘  │
 │                              │                                      │
 │                              ▼                                      │

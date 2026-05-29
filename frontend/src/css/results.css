@@ -28,7 +28,7 @@
 .highlight-multiple {
     /* Override individual backgrounds with a distinct multi-highlight color */
     background-color: #ffff99 !important;  /* Bright yellow */
-
+    color: black !important;
     /* Add visual indicators */
     border: 2px solid #ff9800 !important;  /* Orange border */
     position: relative;

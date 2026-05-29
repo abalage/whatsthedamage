@@ -2,12 +2,16 @@ import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import App from './App.vue'
 import router from './router'
+
+// Import Bootstrap CSS
+import 'bootstrap/dist/css/bootstrap.min.css'
+
+// Import custom CSS (after Bootstrap to ensure proper override)
 import './css/main.css'
 import './css/components.css'
 import './css/results.css'
 
-// Import Bootstrap CSS
-import 'bootstrap/dist/css/bootstrap.min.css'
+// Import DataTables CSS
 import 'datatables.net-bs5/css/dataTables.bootstrap5.min.css'
 import 'datatables.net-fixedheader-bs5/css/fixedHeader.bootstrap5.min.css'
 import 'datatables.net-buttons-bs5/css/buttons.bootstrap5.min.css'

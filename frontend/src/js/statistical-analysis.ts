@@ -164,9 +164,14 @@ function applyHighlightClasses(cell: HTMLElement, types: string[]): void {
  */
 export function updateCellHighlights(highlights: Record<string, string[]>): void {
     // Remove all current highlights from all tables
+    // Exclude legend badges by checking if element is inside a legend-display container
     const highlightElements = document.querySelectorAll('[class*="highlight-"]');
     highlightElements.forEach(el => {
-        // Remove all highlight classes
+        // Skip legend badges - they should keep their highlight classes
+        if (el.closest('.legend-display')) {
+            return;
+        }
+        // Remove all highlight classes from table cells
         Array.from(el.classList).forEach(cls => {
             if (cls.startsWith('highlight-')) {
                 el.classList.remove(cls);

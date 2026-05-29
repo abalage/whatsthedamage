@@ -17,10 +17,6 @@ const props = defineProps<StatisticalControlsProps>()
 const statisticalStore = useStatisticalStore()
 const feedback = useFeedbackStore()
 
-// Legend visibility
-const legendVisible = ref(false)
-const statsControlsVisible = ref(false)
-
 // Algorithm selections - use reactive for proper nested property reactivity
 const algorithms = reactive({
   iqr: true,
@@ -33,9 +29,8 @@ const direction = ref<'rows' | 'columns'>('columns')
 // Loading state
 const isRecalculating = ref(false)
 
-const toggleLegend = () => {
-  legendVisible.value = !legendVisible.value
-}
+// Stats Controls visibility
+const statsControlsVisible = ref(false)
 
 const toggleStatsControls = () => {
   statsControlsVisible.value = !statsControlsVisible.value
@@ -109,10 +104,6 @@ const resetToDefaults = async () => {
   }
 }
 
-const legendClasses = computed(() => {
-  return legendVisible.value ? 'collapse show' : 'collapse'
-})
-
 const statsControlsClasses = computed(() => {
   return statsControlsVisible.value ? 'collapse show' : 'collapse'
 })
@@ -120,25 +111,12 @@ const statsControlsClasses = computed(() => {
 
 <template>
   <div class="row row-cols-auto mb-3">
-    <!-- Legend Section -->
+    <!-- Legend Display (always visible) -->
     <div class="col">
-      <button 
-        class="btn btn-outline-info" 
-        type="button" 
-        data-bs-toggle="collapse" 
-        data-bs-target="#legend" 
-        aria-expanded="false" 
-        aria-controls="legend"
-        @click="toggleLegend"
-      >
-        {{ $gettext('Legend') }}
-      </button>
-      <div id="legend" :class="legendClasses">
-        <div class="card card-body">
-          <p><span class="badge highlight-outlier">{{ $gettext('Outlier') }}</span> {{ $gettext('Cells highlighted in red indicate outliers detected by IQR method.') }}</p>
-          <p><span class="badge highlight-pareto">{{ $gettext('Pareto') }}</span> {{ $gettext('Cells highlighted in green indicate top contributors per Pareto principle.') }}</p>
-          <p><span class="badge highlight-excluded">{{ $gettext('Excluded') }}</span> {{ $gettext('Cells highlighted in light grey are excluded from statistical analysis (calculated rows or excluded categories).') }}</p>
-        </div>
+      <div class="legend-display d-flex gap-2 align-items-center">
+        <span class="badge highlight-outlier">{{ $gettext('Outlier') }}</span>
+        <span class="badge highlight-pareto">{{ $gettext('Pareto') }}</span>
+        <span class="badge highlight-excluded">{{ $gettext('Excluded') }}</span>
       </div>
     </div>
 
@@ -146,10 +124,8 @@ const statsControlsClasses = computed(() => {
     <div class="col">
       <button 
         class="btn btn-outline-primary" 
-        type="button" 
-        data-bs-toggle="collapse" 
-        data-bs-target="#stats-controls" 
-        aria-expanded="false" 
+        type="button"
+        :aria-expanded="statsControlsVisible"
         aria-controls="stats-controls"
         @click="toggleStatsControls"
       >
@@ -217,20 +193,3 @@ const statsControlsClasses = computed(() => {
     </div>
   </div>
 </template>
-
-<style scoped>
-.highlight-outlier {
-  background-color: #ffe6e6 !important;
-  color: black !important;
-}
-
-.highlight-pareto {
-  background-color: #e6ffe6 !important;
-  color: black !important;
-}
-
-.highlight-excluded {
-  background-color: #f0f0f0 !important;
-  color: black !important;
-}
-</style>

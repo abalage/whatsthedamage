@@ -1,12 +1,11 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, RouterLink } from 'vue-router'
 import { useLocaleStore } from '../stores/locale'
 import { useStatisticalStore } from '../stores/statistical'
 import { useFeedbackStore } from '../stores/feedback'
 import { useGettext } from 'vue3-gettext'
 import { recalculateStatistics } from '../js/api'
-import { RouterLink } from 'vue-router'
 
 const { $gettext } = useGettext()
 const route = useRoute()
@@ -55,7 +54,7 @@ const handleAlgorithmChange = (event: Event) => {
 
 const triggerRecalculate = async () => {
   if (!resultId.value) return
-  
+
   try {
     isRecalculating.value = true
     const response = await recalculateStatistics(
@@ -63,12 +62,13 @@ const triggerRecalculate = async () => {
       algorithms.value,
       direction.value
     )
-    
-    // Update window highlights
+
+    // Update global highlights
     if (response?.highlights) {
-      window.highlights = response.highlights
-      if (typeof window.updateCellHighlights === 'function') {
-        window.updateCellHighlights(response.highlights)
+      const w3 = globalThis as unknown as Window
+      w3.highlights = response.highlights
+      if (typeof w3.updateCellHighlights === 'function') {
+        w3.updateCellHighlights(response.highlights)
       }
     }
   } catch (error) {
@@ -89,11 +89,12 @@ const resetToDefaults = async () => {
         ['iqr', 'pareto'],
         'columns'
       )
-      
+
       if (response?.highlights) {
-        window.highlights = response.highlights
-        if (typeof window.updateCellHighlights === 'function') {
-          window.updateCellHighlights(response.highlights)
+        const w4 = globalThis as unknown as Window
+        w4.highlights = response.highlights
+        if (typeof w4.updateCellHighlights === 'function') {
+          w4.updateCellHighlights(response.highlights)
         }
       }
     } catch (error) {
@@ -126,9 +127,9 @@ const setLocale = (locale: string) => {
                 <RouterLink to="/" class="nav-link">{{ $gettext('Home') }}</RouterLink>
               </li>
               <li class="nav-item dropdown">
-                <a id="aboutDropdown" class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                <button id="aboutDropdown" class="nav-link dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" @keydown.enter.prevent="($event.currentTarget as HTMLButtonElement).click()" @keydown.space.prevent="($event.currentTarget as HTMLButtonElement).click()">
                   {{ $gettext('About') }}
-                </a>
+                </button>
                 <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="aboutDropdown">
                   <li>
                     <RouterLink to="privacy" class="dropdown-item">{{ $gettext('Privacy') }}</RouterLink>
@@ -142,16 +143,16 @@ const setLocale = (locale: string) => {
                 </ul>
               </li>
               <li v-if="showAnalytics" class="nav-item dropdown">
-                <a id="analyticsDropdown" class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                <button id="analyticsDropdown" class="nav-link dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" @keydown.enter.prevent="($event.currentTarget as HTMLButtonElement).click()" @keydown.space.prevent="($event.currentTarget as HTMLButtonElement).click()">
                   {{ $gettext('Analytics') }}
-                </a>
+                </button>
                 <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="analyticsDropdown">
                   <li>
                     <div class="dropdown-item-text">{{ $gettext('Analysis direction') }}:</div>
                   </li>
                   <li>
-                    <select 
-                      v-model="direction" 
+                    <select
+                      v-model="direction"
                       class="form-select form-select-sm mx-4 mb-1 w-75"
                       :disabled="isRecalculating"
                       @change="handleDirectionChange"
@@ -164,8 +165,8 @@ const setLocale = (locale: string) => {
                     <div class="dropdown-item-text">{{ $gettext('Algorithms') }}:</div>
                   </li>
                   <li>
-                    <select 
-                      v-model="algorithms" 
+                    <select
+                      v-model="algorithms"
                       class="form-select form-select-sm mx-4 mb-1 w-75"
                       multiple
                       size="2"
@@ -191,27 +192,29 @@ const setLocale = (locale: string) => {
                   </li>
                   <li><hr class="dropdown-divider"></li>
                   <li>
-                    <a 
-                      class="dropdown-item" 
-                      href="#" 
+                    <button
+                      class="dropdown-item"
+                      type="button"
                       :class="{ disabled: isRecalculating }"
                       @click.prevent="resetToDefaults"
+                      @keydown.enter.prevent="resetToDefaults"
+                      @keydown.space.prevent="resetToDefaults"
                     >
                       {{ $gettext('Reset to defaults') }}
-                    </a>
+                    </button>
                   </li>
                 </ul>
               </li>
               <li class="nav-item dropdown">
-                <a id="langDropdown" class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                <button id="langDropdown" class="nav-link dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" @keydown.enter.prevent="($event.currentTarget as HTMLButtonElement).click()" @keydown.space.prevent="($event.currentTarget as HTMLButtonElement).click()">
                   {{ $gettext('Languages') }}
-                </a>
+                </button>
                 <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="langDropdown">
                   <li>
-                    <a class="dropdown-item" href="#" @click.prevent="setLocale('en')">🇬🇧 English</a>
+                    <button class="dropdown-item" type="button" @click.prevent="setLocale('en')" @keydown.enter.prevent="setLocale('en')" @keydown.space.prevent="setLocale('en')">🇬🇧 English</button>
                   </li>
                   <li>
-                    <a class="dropdown-item" href="#" @click.prevent="setLocale('hu')">🇭🇺 Magyar</a>
+                    <button class="dropdown-item" type="button" @click.prevent="setLocale('hu')" @keydown.enter.prevent="setLocale('hu')" @keydown.space.prevent="setLocale('hu')">🇭🇺 Magyar</button>
                   </li>
                 </ul>
               </li>

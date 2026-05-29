@@ -55,14 +55,15 @@ const {
   ],
   onDataLoaded: (data) => {
     // Set translation strings for DataTables export buttons
-    window.exportCsvText = $gettext('Export CSV')
-    window.exportExcelText = $gettext('Export Excel')
+    const w5 = globalThis as unknown as Window
+    w5.exportCsvText = $gettext('Export CSV')
+    w5.exportExcelText = $gettext('Export Excel')
 
     // Set highlights for statistical cell highlighting
-    window.highlights = data.highlights || {}
+    w5.highlights = data.highlights || {}
 
     // Initialize DataTables now that tables exist in DOM
-    window.initMainPage()
+    w5.initMainPage()
   },
   errorMessageKey: 'categoryMonthsLoadError'
 })

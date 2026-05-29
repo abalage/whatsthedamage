@@ -10,6 +10,7 @@ import type {
   _CategoryMonthsApiResponse,
   _MonthCategoriesApiResponse,
   _CategoryMonthTransactionsApiResponse,
+  _RecalculateApiResponse,
 } from '../types/api';
 
 // API base URL configuration
@@ -154,8 +155,8 @@ export async function recalculateStatistics(
   resultId: string,
   algorithms: string[],
   direction: 'columns' | 'rows'
-): Promise<Record<string, unknown>> {
-  return postData(`${API_BASE_URL}/recalculate-statistics`, {
+): Promise<_RecalculateApiResponse> {
+  return postData<_RecalculateApiResponse>(`${API_BASE_URL}/recalculate-statistics`, {
     result_id: resultId,
     algorithms,
     direction,

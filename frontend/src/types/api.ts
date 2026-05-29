@@ -115,7 +115,7 @@ interface _ProcessingMetadata {
  * Statistical highlights for a single cell/row
  * Maps row_id to list of highlight types (e.g., ['outlier', 'pareto'])
  */
-type _StatisticalHighlights = Record<string, string[]>;
+type _StatisticalHighlights = Record<string, string[]> | {};
 
 // ============================================================================
 // Account/Results Types
@@ -346,7 +346,7 @@ export interface _CategoryMonthTransactionsApiResponse {
  *
  * Returns updated statistical highlights with new algorithm settings.
  */
-interface _RecalculateApiResponse {
+export interface _RecalculateApiResponse {
   status: string;
   result_id: string;
   highlights: _StatisticalHighlights;

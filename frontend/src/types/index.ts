@@ -26,7 +26,7 @@ interface _DataTableConfig {
  */
 export interface StatisticalAnalysisResponse {
   status: 'success' | 'error';
-  highlights: Record<string, string[]>;  // row_id -> array of highlight types
+  highlights: Record<string, string[]> | {};  // row_id -> array of highlight types
   error?: string;
 }
 
@@ -34,7 +34,7 @@ export interface StatisticalAnalysisResponse {
  * Type for cell highlights in templates
  * Always an array of strings, never a string that needs parsing
  */
-type _CellHighlights = Record<string, string[]>;
+type _CellHighlights = Record<string, string[]> | {};
 
 /**
  * Request payload for statistical analysis

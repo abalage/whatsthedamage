@@ -35,7 +35,7 @@ function initDataTable(table: Element): void {
 }
 
 /**
- * Type for Bootstrap Popover from window.bootstrap
+ * Type for Bootstrap Popover from globalThis.bootstrap
  */
 interface BootstrapPopoverStatic {
     getInstance(element: Element): unknown;
@@ -43,7 +43,7 @@ interface BootstrapPopoverStatic {
 }
 
 /**
- * Type for window.bootstrap
+ * Type for globalThis.bootstrap
  */
 interface WindowBootstrap {
     Popover?: BootstrapPopoverStatic;
@@ -59,8 +59,8 @@ export function initMainPage(): void {
     tables.forEach(initDataTable);
 
     // Initialize Bootstrap popovers with proper sanitization
-    // Use window.bootstrap which is set by src/main.ts
-    const bootstrap = window.bootstrap as WindowBootstrap | undefined;
+    // Use globalThis.bootstrap which is set by src/main.ts
+    const bootstrap = (globalThis as unknown as Window).bootstrap as WindowBootstrap | undefined;
     if (bootstrap?.Popover) {
         const Popover = bootstrap.Popover;
         const popoverTriggerList = Array.prototype.slice.call(document.querySelectorAll('[data-bs-toggle="popover"]'));

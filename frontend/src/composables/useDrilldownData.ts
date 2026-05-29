@@ -146,9 +146,9 @@ export interface DrilldownResult<T> extends FetchState<T> {
  *       { text: 'Back to Results', to: { name: 'results', query: { resultId } }, variant: 'secondary' }
  *     ],
  *     onDataLoaded: (data) => {
- *       window.exportCsvText = t('Export CSV')
- *       window.highlights = data.highlights || {}
- *       window.initMainPage()
+ *       globalThis.exportCsvText = t('Export CSV')
+ *       globalThis.highlights = data.highlights || {}
+ *       globalThis.initMainPage()
  *     }
  *   })
  *

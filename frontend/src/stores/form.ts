@@ -119,12 +119,12 @@ const useFormStore = defineStore('form', () => {
     }
 
     // Date validation
-    if (formData.startDate && isNaN(new Date(formData.startDate).getTime())) {
+    if (formData.startDate && Number.isNaN(new Date(formData.startDate).getTime())) {
       newErrors.startDate = 'Please enter a valid start date'
       isValid = false
     }
 
-    if (formData.endDate && isNaN(new Date(formData.endDate).getTime())) {
+    if (formData.endDate && Number.isNaN(new Date(formData.endDate).getTime())) {
       newErrors.endDate = 'Please enter a valid end date'
       isValid = false
     }

@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useGettext } from 'vue3-gettext'
 import type { AccountData } from '../../types/api'
+
+const { $gettext } = useGettext()
 
 interface CardProps {
   title?: string
@@ -82,7 +85,7 @@ const closeAlert = () => {
   <div v-else-if="type === 'account'" class="account-section mb-4">
     <div :class="headerClasses">
       <h2 class="mb-0">
-        {{ $t('account') }}: {{ formattedAccountId }}
+        {{ $gettext('account') }}: {{ formattedAccountId }}
         <span v-if="accountCurrency" class="badge bg-info">({{ accountCurrency }})</span>
       </h2>
     </div>
@@ -97,17 +100,3 @@ const closeAlert = () => {
     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close" @click="closeAlert"></button>
   </div>
 </template>
-
-<style scoped>
-.account-section {
-  /* Account-specific styling */
-}
-
-.account-header {
-  /* Account header styling */
-}
-
-.account-content {
-  /* Account content styling */
-}
-</style>

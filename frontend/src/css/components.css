@@ -1,19 +1,13 @@
 /**
  * Modern Component Styles
  * Enhances Bootstrap with custom component styling
+ *
+ * Uses CSS variables defined in main.css for consistency.
+ * Do not redefine color variables here - use those from main.css.
  */
 
 /* Base styles and variables */
 :root {
-    --primary-color: #28a745;
-    --secondary-color: #6c757d;
-    --success-color: #28a745;
-    --info-color: #17a2b8;
-    --warning-color: #ffc107;
-    --danger-color: #dc3545;
-    --light-color: #f8f9fa;
-    --dark-color: #343a40;
-
     --border-radius: 0.5rem;
     --box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
     --transition: all 0.3s ease;

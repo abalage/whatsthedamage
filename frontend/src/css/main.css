@@ -42,11 +42,6 @@ footer {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
-.card-header {
-  background-color: var(--light-color);
-  font-weight: bold;
-}
-
 /* Button styles */
 .btn-primary {
   background-color: var(--primary-color);

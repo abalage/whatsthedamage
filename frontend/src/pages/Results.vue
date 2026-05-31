@@ -135,7 +135,7 @@ const buildCategoryMonthMap = (account: AccountData) => {
 const getDetailsString = (details: Array<{ date: { display: string }, amount: { display: string }, merchant: string }>): string => {
   return details
     .map(detail => `${detail.date.display}: ${detail.amount.display} - ${detail.merchant}`)
-    .join('\n')
+    .join('<br>')
 }
 
 /**

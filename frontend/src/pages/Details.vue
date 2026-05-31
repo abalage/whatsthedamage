@@ -33,8 +33,9 @@ const loadResults = async () => {
     const response = await fetchResults(resultId.value)
 
     resultsData.value = response
-    // Set highlights for statistical cell highlighting
-    window.highlights = resultsData.value?.accounts_data.highlights || {}
+    // Set translation strings for DataTables export buttons and highlights
+    const w = globalThis as unknown as Window
+    w.highlights = resultsData.value?.accounts_data.highlights || {}
 
     // Set isLoading to false BEFORE initializing DataTables so the results block renders
     isLoading.value = false
@@ -42,12 +43,11 @@ const loadResults = async () => {
     // Wait for Vue to render the tables with the new data
     await nextTick()
 
-    // Set translation strings for DataTables export buttons
-    window.exportCsvText = $gettext('Export CSV')
-    window.exportExcelText = $gettext('Export Excel')
+    w.exportCsvText = $gettext('Export CSV')
+    w.exportExcelText = $gettext('Export Excel')
 
     // Initialize DataTables now that tables exist in DOM
-    window.initMainPage()
+    w.initMainPage()
   } catch (err) {
     error.value = err instanceof Error ? err.message : 'Failed to load results'
     isLoading.value = false
@@ -71,7 +71,7 @@ const allTransactions = computed(() => {
           currency: detail.currency,
           account: account.name,
           type: detail.type || '',
-          confidence: detail.confidence !== null ? detail.confidence.toString() : '',
+          confidence: detail.confidence?.toString() ?? '',
           notice: detail.notice || '',
           row_id: detail.row_id
         })
@@ -100,9 +100,9 @@ onMounted(() => {
 
     <!-- Loading State -->
     <div v-if="isLoading" class="text-center my-5">
-      <div class="spinner-border text-primary" role="status">
+      <output class="spinner-border text-primary">
         <span class="visually-hidden">{{ $gettext('loading') }}...</span>
-      </div>
+      </output>
       <p class="mt-2">{{ $gettext('Loading results') }}...</p>
     </div>
 

@@ -23,8 +23,25 @@ const handleConfigChange = (event: Event) => {
   formStore.handleFileChange(event, 'configFile')
 }
 
-const handleInputChange = (field: string, value: string | boolean) => {
+type InputField = 'startDate' | 'endDate' | 'categoryFilter' | 'verbose' | 'mlEnabled'
+
+const handleInputChange = (field: InputField, value: string | boolean) => {
   formStore.handleInputChange(field, value)
+}
+
+const handleDateChange = (field: InputField, event: Event) => {
+  const target = event.target as HTMLInputElement
+  handleInputChange(field, target.value)
+}
+
+const handleCheckboxChange = (field: InputField, event: Event) => {
+  const target = event.target as HTMLInputElement
+  handleInputChange(field, target.checked)
+}
+
+const handleTextInput = (field: InputField, event: Event) => {
+  const target = event.target as HTMLInputElement
+  handleInputChange(field, target.value)
 }
 
 const submitForm = async () => {
@@ -96,7 +113,7 @@ onMounted(() => {
                 type="date"
                 class="form-control"
                 :class="{ 'is-invalid': formStore.getError('startDate') }"
-                @change="handleInputChange('startDate', $event.target.value)"
+                @change="handleDateChange('startDate', $event)"
               />
               <div v-if="formStore.getError('startDate')" class="invalid-feedback">
                 {{ formStore.getError('startDate') }}
@@ -111,7 +128,7 @@ onMounted(() => {
                 type="date"
                 class="form-control"
                 :class="{ 'is-invalid': formStore.getError('endDate') }"
-                @change="handleInputChange('endDate', $event.target.value)"
+                @change="handleDateChange('endDate', $event)"
               />
               <div v-if="formStore.getError('endDate')" class="invalid-feedback">
                 {{ formStore.getError('endDate') }}
@@ -125,7 +142,7 @@ onMounted(() => {
                 v-model="formStore.formData.categoryFilter"
                 type="text"
                 class="form-control"
-                @input="handleInputChange('categoryFilter', $event.target.value)"
+                @input="handleTextInput('categoryFilter', $event)"
               />
               <div id="filterHelp" class="form-text">{{ $gettext('Filter by category. (default = "category")') }}</div>
             </div>
@@ -144,7 +161,7 @@ onMounted(() => {
                 v-model="formStore.formData.verbose"
                 type="checkbox"
                 class="form-check-input"
-                @change="handleInputChange('verbose', $event.target.checked)"
+                @change="handleCheckboxChange('verbose', $event)"
               />
               <label class="form-check-label" for="verbose">{{ $gettext('Enable verbose logging') }}</label>
               <div id="verboseHelp" class="form-text">{{ $gettext('Enable detailed logging in the backend') }}</div>
@@ -155,7 +172,7 @@ onMounted(() => {
                 v-model="formStore.formData.mlEnabled"
                 type="checkbox"
                 class="form-check-input"
-                @change="handleInputChange('mlEnabled', $event.target.checked)"
+                @change="handleCheckboxChange('mlEnabled', $event)"
               />
               <label class="form-check-label" for="ml">
                 {{ $gettext('Use Machine Learning model for categorization') }}
@@ -170,10 +187,10 @@ onMounted(() => {
       <div class="row">
         <div class="col-md-6">
           <ButtonComponent
-            :text="formStore.isLoading.value ? $gettext('Processing your transactions...') : $gettext('Submit')"
+            :text="formStore.isLoading ? $gettext('Processing your transactions...') : $gettext('Submit')"
             button-type="primary"
             type="submit"
-            :disabled="formStore.isLoading.value"
+            :disabled="formStore.isLoading"
             size="lg"
           />
         </div>

@@ -4,7 +4,7 @@ import { ref } from 'vue'
 export const useStatisticalStore = defineStore('statistical', () => {
   const algorithms = ref<string[]>(['iqr', 'pareto'])
   const direction = ref<'rows' | 'columns'>('columns')
-  const highlights = ref<Record<string, string[]>>({})
+  const highlights = ref<Record<string, string[]> | {}>({})
 
   const setAlgorithms = (newAlgorithms: string[]): void => {
     algorithms.value = newAlgorithms
@@ -16,7 +16,7 @@ export const useStatisticalStore = defineStore('statistical', () => {
     localStorage.setItem('statisticalDirection', newDirection)
   }
 
-  const setHighlights = (newHighlights: Record<string, string[]>): void => {
+  const setHighlights = (newHighlights: Record<string, string[]> | {}): void => {
     highlights.value = newHighlights
   }
 

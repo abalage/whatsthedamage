@@ -20,7 +20,7 @@ import 'datatables.net-buttons-bs5/css/buttons.bootstrap5.min.css'
 import $ from 'jquery'
 import * as bootstrapNs from 'bootstrap'
 
-// Declare global window types BEFORE assigning to them
+// Declare global types BEFORE assigning to them
 declare global {
   interface Window {
     exportCsvText: string
@@ -30,14 +30,15 @@ declare global {
     $: unknown
     jQuery: unknown
     initMainPage: () => void
-    updateCellHighlights: (highlights: Record<string, string[]>) => void
+    updateCellHighlights: (highlights: Record<string, string[]> | {}) => void
+    highlights: Record<string, string[]> | {}
   }
 }
 
-// Assign jQuery and Bootstrap to window BEFORE importing DataTables
+// Assign jQuery and Bootstrap to globalThis BEFORE importing DataTables
 // This ensures DataTables can find jQuery as a global
-window.$ = window.jQuery = $;
-window.bootstrap = bootstrapNs;
+(globalThis as unknown as Window).$ = (globalThis as unknown as Window).jQuery = $;
+(globalThis as unknown as Window).bootstrap = bootstrapNs;
 
 // Import DataTables - these will use window.$ / window.jQuery
 import 'datatables.net'
@@ -47,10 +48,10 @@ import 'datatables.net-buttons-bs5'
 import 'datatables.net-fixedheader'
 import 'datatables.net-fixedheader-bs5'
 
-// Import JSZip and assign to window BEFORE importing buttons.html5
-// buttons.html5.js requires window.JSZip to be set when it executes
+// Import JSZip and assign to globalThis BEFORE importing buttons.html5
+// buttons.html5.js requires globalThis.JSZip to be set when it executes
 import JSZip from 'jszip';
-window.JSZip = JSZip;
+(globalThis as unknown as Window).JSZip = JSZip;
 import 'datatables.net-buttons/js/buttons.html5';
 
 // Import DataTables initialization
@@ -58,8 +59,8 @@ import { initMainPage } from './js/main'
 import { updateCellHighlights } from './js/statistical-analysis'
 
 // Make initMainPage available globally for components
-window.initMainPage = initMainPage;
-window.updateCellHighlights = updateCellHighlights;
+(globalThis as unknown as Window).initMainPage = initMainPage;
+(globalThis as unknown as Window).updateCellHighlights = updateCellHighlights;
 
 // Import and install gettext
 import gettext from './js/gettext'

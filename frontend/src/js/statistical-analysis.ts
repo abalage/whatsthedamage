@@ -17,7 +17,7 @@ export function initStatisticalAnalysis(): void {
     if (rawHighlights) {
         // Parse the JSON string into an object if it's a string
         const parsedHighlights = typeof rawHighlights === 'string' ? JSON.parse(rawHighlights) : rawHighlights;
-        updateCellHighlights(parsedHighlights as Record<string, string[]>);
+        updateCellHighlights(parsedHighlights as Record<string, string[]> | {});
     }
 
     const recalculateBtn = document.getElementById('recalculate-btn');
@@ -162,7 +162,7 @@ function applyHighlightClasses(cell: HTMLElement, types: string[]): void {
  * @param highlights - Object containing highlight information with row_id as key
  *                     Each value is an array of highlight types (e.g., ['outlier', 'pareto'])
  */
-export function updateCellHighlights(highlights: Record<string, string[]>): void {
+export function updateCellHighlights(highlights: Record<string, string[]> | {}): void {
     // Remove all current highlights from all tables
     // Exclude legend badges by checking if element is inside a legend-display container
     const highlightElements = document.querySelectorAll('[class*="highlight-"]');

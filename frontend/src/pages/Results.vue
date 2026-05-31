@@ -21,7 +21,7 @@ interface AccountData {
       }
       total: {
         display: string
-        raw: number
+        raw: number | string
       }
       details: Array<{
         date: { display: string }
@@ -63,13 +63,14 @@ const loadResults = async () => {
       // Initialize DataTables for fallback data
       await nextTick()
       await new Promise(resolve => setTimeout(resolve, DEFERRED_TIMEOUT))
-      window.exportCsvText = $gettext('Export CSV')
-      window.exportExcelText = $gettext('Export Excel')
+      const w1 = globalThis as unknown as Window
+      w1.exportCsvText = $gettext('Export CSV')
+      w1.exportExcelText = $gettext('Export Excel')
 
       // Set highlights for statistical cell highlighting
-      window.highlights = fallbackResponse.accounts_data?.highlights || {}
+      w1.highlights = fallbackResponse.accounts_data?.highlights || {}
 
-      window.initMainPage()
+      w1.initMainPage()
     } catch (fallbackError) {
       const message = fallbackError instanceof Error ? fallbackError.message : String(fallbackError)
       feedback.showError(`Failed to load fallback data: ${message}`)
@@ -92,14 +93,15 @@ const loadResults = async () => {
     await new Promise(resolve => setTimeout(resolve, DEFERRED_TIMEOUT))
 
     // Set translation strings for DataTables export buttons
-    window.exportCsvText = $gettext('Export CSV')
-    window.exportExcelText = $gettext('Export Excel')
+    const w2 = globalThis as unknown as Window
+    w2.exportCsvText = $gettext('Export CSV')
+    w2.exportExcelText = $gettext('Export Excel')
 
     // Set highlights for statistical cell highlighting
-    window.highlights = resultsData.value?.accounts_data.highlights || {}
+    w2.highlights = resultsData.value?.accounts_data.highlights || {}
 
     // Initialize DataTables now that tables exist in DOM
-    window.initMainPage()
+    w2.initMainPage()
   } catch (err) {
     error.value = err instanceof Error ? err.message : 'Failed to load results'
     feedback.showError('Failed to load results: ' + error.value)
@@ -133,7 +135,7 @@ const buildCategoryMonthMap = (account: AccountData) => {
 const getDetailsString = (details: Array<{ date: { display: string }, amount: { display: string }, merchant: string }>): string => {
   return details
     .map(detail => `${detail.date.display}: ${detail.amount.display} - ${detail.merchant}`)
-    .join('\n')
+    .join('<br>')
 }
 
 /**
@@ -169,9 +171,9 @@ onMounted(() => {
     </nav>
 
     <div v-if="isLoading" class="text-center my-5">
-      <div class="spinner-border text-primary" role="status">
+      <output class="spinner-border text-primary">
         <span class="visually-hidden">{{ $gettext('loading') }}...</span>
-      </div>
+      </output>
       <p class="mt-2">{{ $gettext('Loading results') }}...</p>
     </div>
 

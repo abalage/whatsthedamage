@@ -191,6 +191,6 @@ onMounted(() => {
 }
 
 .clickable:hover {
-  color: #0d6efd;
+  color: var(--primary-color);
 }
 </style>

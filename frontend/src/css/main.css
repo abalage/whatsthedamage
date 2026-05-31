@@ -53,6 +53,15 @@ footer {
   border-color: var(--secondary-color);
 }
 
+/* Text color overrides for Bootstrap utility classes */
+.text-primary {
+  color: var(--primary-color) !important;
+}
+
+.text-secondary {
+  color: var(--secondary-color) !important;
+}
+
 /* Form styles */
 .form-control {
   margin-bottom: 10px;

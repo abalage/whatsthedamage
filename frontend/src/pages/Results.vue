@@ -261,7 +261,7 @@ v-for="[monthDisplay, monthTs] in getMonthsForAccount(account)"
 }
 
 .clickable:hover {
-  color: #0d6efd;
+  color: var(--primary-color);
 }
 
 .popover-wide {

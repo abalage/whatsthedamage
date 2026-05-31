@@ -51,6 +51,11 @@ interface WindowBootstrap {
 }
 
 /**
+ * Global storage for popover instances - allows bulk operations if needed
+ */
+let popoverInstances: unknown[] = [];
+
+/**
  * Initialize DataTables and Bootstrap components
  */
 export function initMainPage(): void {
@@ -64,19 +69,34 @@ export function initMainPage(): void {
     if (bootstrap?.Popover) {
         const Popover = bootstrap.Popover;
         const popoverTriggerList = Array.prototype.slice.call(document.querySelectorAll('[data-bs-toggle="popover"]'));
-        popoverTriggerList.map((popoverTriggerEl: Element) => {
+        popoverInstances = [];
+        popoverTriggerList.forEach((popoverTriggerEl: Element) => {
             // Destroy existing popover if it exists
             const existingPopover = Popover.getInstance(popoverTriggerEl);
             if (existingPopover) {
                 (existingPopover as { dispose?: () => void }).dispose?.();
             }
-            return new Popover(popoverTriggerEl, {
+            // Initialize new popover
+            const popoverInstance = new Popover(popoverTriggerEl, {
                 html: true,
                 sanitize: true
             });
+            popoverInstances.push(popoverInstance);
         });
     }
 
     // Initialize statistical analysis if controls are present
     initStatisticalAnalysis();
+}
+
+/**
+ * Dispose all initialized popovers
+ */
+export function disposePopovers(): void {
+    popoverInstances.forEach((instance: unknown) => {
+        if (instance && typeof instance === 'object' && 'dispose' in instance) {
+            (instance as { dispose: () => void }).dispose();
+        }
+    });
+    popoverInstances = [];
 }

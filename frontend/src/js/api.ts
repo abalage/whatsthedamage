@@ -123,7 +123,7 @@ export async function processTransactions(formData: FormData): Promise<_ProcessA
       try {
         const errorData: Record<string, unknown> = await response.json()
         errorMessage = (errorData.error ?? errorData.message ?? errorData.detail ?? errorMessage) as string
-      } catch (/* jsonError */ _error: unknown) { // eslint-disable-line @typescript-eslint/no-unused-vars
+      } catch {
         // If we can't parse JSON, use the status text
         errorMessage = response.statusText || errorMessage
       }

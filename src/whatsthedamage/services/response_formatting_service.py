@@ -734,119 +734,10 @@ class ResponseFormattingService(IDataFormattingService):
         if cached_result is None:
             raise ValueError('Result data not found or expired')
 
-        # Build accounts list
-        accounts_list = []
-
-        # Convert highlights from metadata
-        highlights_dict = self._convert_metadata_to_highlights_dict(cached_result.statistical_metadata) if hasattr(cached_result, 'statistical_metadata') else {}
-
-        # Build drilldown URLs by account
-        drilldown_urls_dict: Dict[str, DrilldownUrls] = {}
-
-        # Convert the cached ProcessingResponse to frontend format
-        if hasattr(cached_result, 'data') and isinstance(cached_result.data, dict):
-            for account_id, account_data in cached_result.data.items():
-                # Get account name with fallback
-                account_name = getattr(account_data, 'name', None)
-                if not account_name and hasattr(account_data, 'account'):
-                    account_name = account_data.account or f'Account {account_id}'
-                if not account_name:
-                    account_name = f'Account {account_id}'
-
-                # Convert each aggregated row to frontend format
-                dt_response_data: List[Dict[str, Any]] = []
-                if hasattr(account_data, 'data'):
-                    for row in account_data.data:
-                        # Build details array if present
-                        details_array = []
-                        if hasattr(row, 'details') and row.details:
-                            for detail in row.details:
-                                details_array.append({
-                                    'date': {'display': detail.date.display},
-                                    'amount': {'display': detail.amount.display},
-                                    'merchant': detail.merchant,
-                                    'currency': detail.currency if hasattr(detail, 'currency') else '',
-                                    'type': detail.type if hasattr(detail, 'type') else '',
-                                    'confidence': detail.confidence if hasattr(detail, 'confidence') else None,
-                                    'notice': detail.notice if hasattr(detail, 'notice') else None,
-                                    'row_id': detail.row_id if hasattr(detail, 'row_id') else ''
-                                })
-
-                        # Add the row to account data
-                        dt_response_data.append({
-                            'category': row.category,
-                            'date': {'display': row.date.display, 'timestamp': row.date.timestamp},
-                            'total': {'display': row.total.display, 'raw': row.total.raw},
-                            'details': details_array,
-                            'row_id': row.row_id
-                        })
-
-                # Create account info and add to list
-                accounts_list.append(AccountDataResponse(
-                    id=account_id,
-                    name=account_name,
-                    dt_response={'data': dt_response_data}
-                ))
-
-                # Generate drilldown URLs for this account
-                category_urls: Dict[str, DrilldownUrlInfo] = {}
-                month_urls: Dict[str, MonthUrlInfo] = {}
-                cell_urls: Dict[str, CellUrlInfo] = {}
-
-                # Try to use DrilldownResponseService for URL generation with ID mapping
-                drilldown_urls_generated = False
-                try:
-                    from flask import current_app
-                    if hasattr(current_app, 'extensions'):
-                        drilldown_response_service = current_app.extensions.get('drilldown_response_service')
-                        if drilldown_response_service:
-                            account_drilldown_urls = drilldown_response_service.generate_drilldown_urls(
-                                cached_result.result_id, account_id, account_data
-                            )
-                            # Convert dict URLs to DTOs
-                            for cat, cat_info in account_drilldown_urls.get('category_urls', {}).items():
-                                category_urls[cat] = DrilldownUrlInfo(**cat_info)
-                            for month, month_info in account_drilldown_urls.get('month_urls', {}).items():
-                                month_urls[month] = MonthUrlInfo(**month_info)
-                            for cell, cell_info in account_drilldown_urls.get('cell_urls', {}).items():
-                                cell_urls[cell] = CellUrlInfo(**cell_info)
-                            drilldown_urls_generated = True
-                except (RuntimeError, ImportError):
-                    # current_app not available or service not registered - will use fallback
-                    pass
-
-                # If no URLs from service, use fallback simple URL generation
-                if not drilldown_urls_generated:
-                    for row_data in dt_response_data:
-                        category = str(row_data.get('category', ''))
-                        month_ts = str(row_data.get('date', {}).get('timestamp', ''))
-                        row_id = str(row_data.get('row_id', ''))
-
-                        if category and category not in category_urls:
-                            category_urls[category] = DrilldownUrlInfo(
-                                category_url=f"/results/{cached_result.result_id}/accounts/{account_id}/categories/{category}/months",
-                                category_id=category
-                            )
-
-                        if month_ts and month_ts not in month_urls:
-                            month_urls[month_ts] = MonthUrlInfo(
-                                month_url=f"/results/{cached_result.result_id}/accounts/{account_id}/months/{month_ts}/categories",
-                                month_id=month_ts
-                            )
-
-                        if row_id and category and month_ts:
-                            cell_urls[row_id] = CellUrlInfo(
-                                cell_url=f"/results/{cached_result.result_id}/accounts/{account_id}/categories/{category}/months/{month_ts}/transactions",
-                                category_id=category,
-                                month_id=month_ts
-                            )
-
-                drilldown_urls_dict[account_id] = DrilldownUrls(
-                    account_id=account_id,
-                    category_urls=category_urls,
-                    month_urls=month_urls,
-                    cell_urls=cell_urls
-                )
+        highlights_dict = self._convert_highlights(cached_result)
+        accounts_list, drilldown_urls_dict = self._build_accounts_and_drilldowns(
+            cached_result
+        )
 
         # Build final response
         return ResultsApiResponse(
@@ -857,6 +748,188 @@ class ResponseFormattingService(IDataFormattingService):
             ),
             drilldown_urls_by_account=drilldown_urls_dict
         )
+
+    def _convert_highlights(
+        self, cached_result: ProcessingResponse
+    ) -> Dict[str, Any]:
+        """Convert highlights from cached result metadata."""
+        if hasattr(cached_result, 'statistical_metadata'):
+            return self._convert_metadata_to_highlights_dict(cached_result.statistical_metadata)
+        return {}
+
+    def _build_accounts_and_drilldowns(
+        self, cached_result: ProcessingResponse
+    ) -> tuple[List[AccountDataResponse], Dict[str, DrilldownUrls]]:
+        """Build accounts list and drilldown URLs from cached result data."""
+        accounts_list: List[AccountDataResponse] = []
+        drilldown_urls_dict: Dict[str, DrilldownUrls] = {}
+
+        if not hasattr(cached_result, 'data') or not isinstance(cached_result.data, dict):
+            return accounts_list, drilldown_urls_dict
+
+        for account_id, account_data in cached_result.data.items():
+            account_name = self._get_account_name(account_id, account_data)
+            dt_response_data = self._convert_account_data_to_frontend(account_data)
+
+            accounts_list.append(AccountDataResponse(
+                id=account_id,
+                name=account_name,
+                dt_response={'data': dt_response_data}
+            ))
+
+            drilldown_urls = self._generate_drilldown_urls(
+                cached_result.result_id, account_id, account_data, dt_response_data
+            )
+            drilldown_urls_dict[account_id] = drilldown_urls
+
+        return accounts_list, drilldown_urls_dict
+
+    def _get_account_name(self, account_id: str, account_data: Any) -> str:
+        """Get account name with fallback logic."""
+        account_name = getattr(account_data, 'name', None)
+        if not account_name and hasattr(account_data, 'account'):
+            account_name = account_data.account or f'Account {account_id}'
+        if not account_name:
+            account_name = f'Account {account_id}'
+        return account_name
+
+    def _convert_account_data_to_frontend(self, account_data: Any) -> List[Dict[str, Any]]:
+        """Convert account data rows to frontend format."""
+        dt_response_data: List[Dict[str, Any]] = []
+
+        if not hasattr(account_data, 'data'):
+            return dt_response_data
+
+        for row in account_data.data:
+            details_array = self._convert_row_details(row)
+
+            dt_response_data.append({
+                'category': row.category,
+                'date': {'display': row.date.display, 'timestamp': row.date.timestamp},
+                'total': {'display': row.total.display, 'raw': row.total.raw},
+                'details': details_array,
+                'row_id': row.row_id
+            })
+
+        return dt_response_data
+
+    def _convert_row_details(self, row: Any) -> List[Dict[str, Any]]:
+        """Convert row details to frontend format."""
+        details_array: List[Dict[str, Any]] = []
+
+        if hasattr(row, 'details') and row.details:
+            for detail in row.details:
+                details_array.append({
+                    'date': {'display': detail.date.display},
+                    'amount': {'display': detail.amount.display},
+                    'merchant': detail.merchant,
+                    'currency': detail.currency if hasattr(detail, 'currency') else '',
+                    'type': detail.type if hasattr(detail, 'type') else '',
+                    'confidence': detail.confidence if hasattr(detail, 'confidence') else None,
+                    'notice': detail.notice if hasattr(detail, 'notice') else None,
+                    'row_id': detail.row_id if hasattr(detail, 'row_id') else ''
+                })
+
+        return details_array
+
+    def _generate_drilldown_urls(
+        self,
+        result_id: str,
+        account_id: str,
+        account_data: Any,
+        dt_response_data: List[Dict[str, Any]]
+    ) -> DrilldownUrls:
+        """Generate drilldown URLs for an account, using service if available."""
+        category_urls: Dict[str, DrilldownUrlInfo] = {}
+        month_urls: Dict[str, MonthUrlInfo] = {}
+        cell_urls: Dict[str, CellUrlInfo] = {}
+
+        drilldown_urls_generated = self._generate_drilldown_urls_with_service(
+            result_id, account_id, account_data, category_urls, month_urls, cell_urls
+        )
+
+        if not drilldown_urls_generated:
+            self._generate_drilldown_urls_fallback(
+                result_id, account_id, dt_response_data,
+                category_urls, month_urls, cell_urls
+            )
+
+        return DrilldownUrls(
+            account_id=account_id,
+            category_urls=category_urls,
+            month_urls=month_urls,
+            cell_urls=cell_urls
+        )
+
+    def _generate_drilldown_urls_with_service(
+        self,
+        result_id: str,
+        account_id: str,
+        account_data: Any,
+        category_urls: Dict[str, DrilldownUrlInfo],
+        month_urls: Dict[str, MonthUrlInfo],
+        cell_urls: Dict[str, CellUrlInfo]
+    ) -> bool:
+        """Try to generate drilldown URLs using DrilldownResponseService."""
+        try:
+            from flask import current_app
+            if not hasattr(current_app, 'extensions'):
+                return False
+
+            drilldown_response_service = current_app.extensions.get('drilldown_response_service')
+            if not drilldown_response_service:
+                return False
+
+            account_drilldown_urls = drilldown_response_service.generate_drilldown_urls(
+                result_id, account_id, account_data
+            )
+
+            # Convert dict URLs to DTOs
+            for cat, cat_info in account_drilldown_urls.get('category_urls', {}).items():
+                category_urls[cat] = DrilldownUrlInfo(**cat_info)
+            for month, month_info in account_drilldown_urls.get('month_urls', {}).items():
+                month_urls[month] = MonthUrlInfo(**month_info)
+            for cell, cell_info in account_drilldown_urls.get('cell_urls', {}).items():
+                cell_urls[cell] = CellUrlInfo(**cell_info)
+
+            return True
+        except (RuntimeError, ImportError):
+            # current_app not available or service not registered - will use fallback
+            return False
+
+    def _generate_drilldown_urls_fallback(
+        self,
+        result_id: str,
+        account_id: str,
+        dt_response_data: List[Dict[str, Any]],
+        category_urls: Dict[str, DrilldownUrlInfo],
+        month_urls: Dict[str, MonthUrlInfo],
+        cell_urls: Dict[str, CellUrlInfo]
+    ) -> None:
+        """Generate fallback drilldown URLs when service is not available."""
+        for row_data in dt_response_data:
+            category = str(row_data.get('category', ''))
+            month_ts = str(row_data.get('date', {}).get('timestamp', ''))
+            row_id = str(row_data.get('row_id', ''))
+
+            if category and category not in category_urls:
+                category_urls[category] = DrilldownUrlInfo(
+                    category_url=f"/results/{result_id}/accounts/{account_id}/categories/{category}/months",
+                    category_id=category
+                )
+
+            if month_ts and month_ts not in month_urls:
+                month_urls[month_ts] = MonthUrlInfo(
+                    month_url=f"/results/{result_id}/accounts/{account_id}/months/{month_ts}/categories",
+                    month_id=month_ts
+                )
+
+            if row_id and category and month_ts:
+                cell_urls[row_id] = CellUrlInfo(
+                    cell_url=f"/results/{result_id}/accounts/{account_id}/categories/{category}/months/{month_ts}/transactions",
+                    category_id=category,
+                    month_id=month_ts
+                )
 
     # Private helper methods
 

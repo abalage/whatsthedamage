@@ -14,7 +14,3 @@ const { $gettext } = useGettext()
     </div>
   </div>
 </template>
-
-<style scoped>
-/* Add component-specific styles here */
-</style>

@@ -165,7 +165,3 @@ onMounted(() => {
     </div>
   </div>
 </template>
-
-<style scoped>
-/* Component-specific styles can be added here */
-</style>

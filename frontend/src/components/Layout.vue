@@ -230,43 +230,10 @@ const setLocale = (locale: string) => {
     </main>
 
     <footer class="bg-success text-white text-center py-3 mt-3">
-      <div class="container">
+      <div class="container-fluid">
         <a href="https://balagetech.com" class="text-white me-3">@ 2025 Balagetech</a>
         <span class="text-white me-3">v1.0.0</span>
       </div>
     </footer>
   </div>
 </template>
-
-<style scoped>
-header, footer {
-  padding: 15px 0;
-}
-
-.navbar {
-  padding: 0;
-}
-
-.sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
-}
-
-.sr-only-focusable:focus {
-  position: static;
-  width: auto;
-  height: auto;
-  padding: 0.5rem;
-  margin: 0;
-  overflow: visible;
-  clip: auto;
-  white-space: normal;
-}
-</style>

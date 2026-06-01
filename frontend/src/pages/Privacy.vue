@@ -63,7 +63,3 @@ const emailHref = computed(() => `mailto:${emailUsername}@${emailDomain}`)
     <p>By using the App, you acknowledge that you have read and understood this Privacy Policy and agree to its terms.</p>
   </div>
 </template>
-
-<style scoped>
-/* Add component-specific styles here */
-</style>

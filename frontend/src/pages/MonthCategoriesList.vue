@@ -182,14 +182,3 @@ onMounted(() => {
     </div>
   </div>
 </template>
-
-<style scoped>
-.clickable {
-  cursor: pointer;
-  text-decoration: underline;
-}
-
-.clickable:hover {
-  color: var(--primary-color);
-}
-</style>

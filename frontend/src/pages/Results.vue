@@ -5,6 +5,7 @@ import { fetchResults as fetchResultsApi } from '../js/api'
 import { useFeedbackStore } from '../stores/feedback'
 import { useGettext } from 'vue3-gettext'
 import type { _ResultsApiResponse } from '../types/api'
+import ButtonComponent from '../components/ui/ButtonComponent.vue'
 
 const { $gettext } = useGettext()
 
@@ -238,8 +239,18 @@ v-for="[monthDisplay, monthTs] in getMonthsForAccount(account)"
 
       <div class="row">
         <div class="col-md-6">
-          <router-link to="/" class="btn btn-secondary mt-3 mb-3">{{ $gettext('Back to Form') }}</router-link>
-          <router-link :to="{ name: 'details', params: { resultId: resultId } }" class="btn btn-outline-secondary mt-3 mb-3 ms-2">{{ $gettext('View All Details') }}</router-link>
+          <ButtonComponent
+            :text="$gettext('Back to Form')"
+            to="/"
+            variant="secondary"
+            class="mt-3 mb-3 me-2"
+          />
+          <ButtonComponent
+            :text="$gettext('View All Details')"
+            :to="{ name: 'details', params: { resultId: resultId } }"
+            variant="outline-secondary"
+            class="mt-3 mb-3"
+          />
         </div>
       </div>
     </div>
@@ -253,18 +264,3 @@ v-for="[monthDisplay, monthTs] in getMonthsForAccount(account)"
     </div>
   </div>
 </template>
-
-<style scoped>
-.clickable {
-  cursor: pointer;
-  text-decoration: underline;
-}
-
-.clickable:hover {
-  color: var(--primary-color);
-}
-
-.popover-wide {
-  max-width: 500px;
-}
-</style>

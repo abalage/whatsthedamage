@@ -33,7 +33,3 @@ const emailHref = computed(() => `mailto:${emailUsername}@${emailDomain}`)
     <p>By using the App, you acknowledge that you have read, understood, and agree to be bound by this Legal Notice.</p>
   </div>
 </template>
-
-<style scoped>
-/* Add component-specific styles here */
-</style>

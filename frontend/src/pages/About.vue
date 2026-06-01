@@ -30,7 +30,3 @@ const { $gettext } = useGettext()
     </ul>
   </div>
 </template>
-
-<style scoped>
-/* Add component-specific styles here */
-</style>

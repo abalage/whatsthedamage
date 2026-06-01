@@ -188,7 +188,7 @@ onMounted(() => {
         <div class="col-md-6">
           <ButtonComponent
             :text="formStore.isLoading ? $gettext('Processing your transactions...') : $gettext('Submit')"
-            button-type="primary"
+            variant="primary"
             type="submit"
             :disabled="formStore.isLoading"
             size="lg"
@@ -197,7 +197,7 @@ onMounted(() => {
         <div class="col-md-6 text-end">
           <ButtonComponent
             :text="$gettext('Clear form')"
-            button-type="secondary"
+            variant="secondary"
             type="button"
             size="lg"
             @click="clearForm"
@@ -207,7 +207,3 @@ onMounted(() => {
     </form>
   </div>
 </template>
-
-<style scoped>
-/* Add component-specific styles here */
-</style>

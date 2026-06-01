@@ -38,7 +38,7 @@ export interface BreadcrumbItem {
 interface NavButton {
   text: string
   to: RouteLocationRaw
-  variant?: string
+  variant?: 'primary' | 'secondary' | 'outline-primary' | 'outline-secondary' | 'back'
   size?: 'sm' | 'lg'
 }
 

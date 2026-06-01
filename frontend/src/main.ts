@@ -8,8 +8,6 @@ import 'bootstrap/dist/css/bootstrap.min.css'
 
 // Import custom CSS (after Bootstrap to ensure proper override)
 import './css/main.css'
-import './css/components.css'
-import './css/results.css'
 
 // Import DataTables CSS
 import 'datatables.net-bs5/css/dataTables.bootstrap5.min.css'

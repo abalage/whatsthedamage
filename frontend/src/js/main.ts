@@ -89,14 +89,4 @@ export function initMainPage(): void {
     initStatisticalAnalysis();
 }
 
-/**
- * Dispose all initialized popovers
- */
-export function disposePopovers(): void {
-    popoverInstances.forEach((instance: unknown) => {
-        if (instance && typeof instance === 'object' && 'dispose' in instance) {
-            (instance as { dispose: () => void }).dispose();
-        }
-    });
-    popoverInstances = [];
-}
+

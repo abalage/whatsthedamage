@@ -43,6 +43,16 @@ interface NavButton {
 }
 
 /**
+ * Route parameters type that may contain string arrays from route.params
+ */
+type RouteParams = Record<string, string | string[] | null>
+
+/**
+ * String-only route parameters type
+ */
+type StringRouteParams = Record<string, string | null>
+
+/**
  * Page configuration for drilldown pages
  */
 export interface DrilldownPageConfig<T> {
@@ -51,12 +61,12 @@ export interface DrilldownPageConfig<T> {
    * (deprecated: use fetchData instead for type-safe API calls)
    * Note: params may contain string arrays from route.params
    */
-  buildEndpoint?: (params: Record<string, string | string[] | null>) => string
+  buildEndpoint?: (params: RouteParams) => string
   /**
    * Custom fetch function that takes route params and returns data
    * Use this for type-safe API calls instead of buildEndpoint
    */
-  fetchData?: (params: Record<string, string | null>) => Promise<T>
+  fetchData?: (params: StringRouteParams) => Promise<T>
   /**
    * Optional data transformation function
    */
@@ -191,8 +201,54 @@ export function useDrilldownData<T>(
     return config.breadcrumbItems ?? []
   })
 
+  const convertParamsToString = (
+    params: RouteParams
+  ): StringRouteParams => {
+    const stringParams: StringRouteParams = {}
+    for (const [key, value] of Object.entries(params)) {
+      if (value === null) {
+        stringParams[key] = null
+      } else if (Array.isArray(value)) {
+        stringParams[key] = value.length > 0 ? value[0] : null // eslint-disable-line no-magic-numbers
+      } else if (typeof value === 'string') {
+        stringParams[key] = value
+      } else {
+        stringParams[key] = null
+      }
+    }
+    return stringParams
+  }
+
+  const fetchWithConfig = async (
+    params: RouteParams
+  ): Promise<T> => {
+    if (config.fetchData) {
+      const stringParams = convertParamsToString(params)
+      return config.fetchData(stringParams)
+    }
+    if (config.buildEndpoint) {
+      const endpoint = config.buildEndpoint(params)
+      const rawResponse = await fetchWithErrorHandling<T>(`${API_BASE_URL}${endpoint}`)
+      return rawResponse
+    }
+    throw new Error('Either fetchData or buildEndpoint must be provided in config')
+  }
+
+  const processResponse = (response: T): void => {
+    data.value = config.transformData ? config.transformData(response) : response
+    error.value = null
+    isLoading.value = false
+  }
+
+  const handleError = (err: unknown): void => {
+    const message = err instanceof Error ? err.message : String(err)
+    error.value = message
+    const errorKey = config.errorMessageKey ?? 'loadError'
+    feedback.showError(`${t(errorKey)}: ${message}`)
+    isLoading.value = false
+  }
+
   const fetchData = async (): Promise<void> => {
-    // Check for required parameters based on the endpoint
     if (!resultId.value) {
       error.value = t('missingRequiredParameters')
       isLoading.value = false
@@ -203,57 +259,15 @@ export function useDrilldownData<T>(
     error.value = null
 
     try {
-      // Extract all route params
-      const params: Record<string, string | string[] | null> = { ...route.params }
-
-      let response: T
-
-      // Use custom fetch function if provided, otherwise fall back to buildEndpoint
-      if (config.fetchData) {
-        // Extract string values from params (handle arrays by taking first element)
-        const stringParams: Record<string, string | null> = {}
-        for (const [key, value] of Object.entries(params)) {
-          if (value === null) {
-            stringParams[key] = null
-          } else if (Array.isArray(value)) {
-            stringParams[key] = value.length > 0 ? value[0] : null // eslint-disable-line no-magic-numbers
-          } else if (typeof value === 'string') {
-            stringParams[key] = value
-          } else {
-            stringParams[key] = null
-          }
-        }
-        response = await config.fetchData(stringParams as Record<string, string | null>)
-      } else if (config.buildEndpoint) {
-        // Build the endpoint URL (buildEndpoint handles array params)
-        const endpoint = config.buildEndpoint(params)
-        // Fetch data using the old method
-        const rawResponse = await fetchWithErrorHandling<T>(`${API_BASE_URL}${endpoint}`)
-        response = rawResponse
-      } else {
-        throw new Error('Either fetchData or buildEndpoint must be provided in config')
-      }
-
-      // Apply transformation if provided
-      data.value = config.transformData ? config.transformData(response) : response
-      error.value = null
-
-      // Set isLoading to false BEFORE calling onDataLoaded so the template renders
-      isLoading.value = false
-
-      // Wait for Vue to render the tables with the new data
+      const params: RouteParams = { ...route.params }
+      const response = await fetchWithConfig(params)
+      processResponse(response)
       await nextTick()
-
-      // Call custom initialization hook if provided
       if (config.onDataLoaded && data.value) {
         await config.onDataLoaded(data.value)
       }
     } catch (err) {
-      const message = err instanceof Error ? err.message : String(err)
-      error.value = message
-      const errorKey = config.errorMessageKey ?? 'loadError'
-      feedback.showError(`${t(errorKey)}: ${message}`)
-      isLoading.value = false
+      handleError(err)
     }
   }
 
@@ -285,6 +299,6 @@ export function extractIdFromUrl(
   fallback: string
 ): string {
   if (!url) return fallback
-  const match = url.match(pattern)
+  const match = pattern.exec(url)
   return match ? match[1] : fallback // eslint-disable-line no-magic-numbers
 }

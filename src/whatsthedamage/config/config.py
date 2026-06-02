@@ -80,8 +80,20 @@ AVAILABLE_CATEGORIES = [
     CategoryDefinition(id="other", default_name=_("Other"), patterns=[]),
     CategoryDefinition(id="balance", default_name=_("Balance"), patterns=[]),
     CategoryDefinition(id="total_spendings", default_name=_("Total Spendings"), patterns=[]),
+    CategoryDefinition(id="cost_of_living", default_name=_("Cost of Living"), patterns=[]),
 ]
 
+# Default categories that constitute Cost of Living
+# These are category IDs (lowercase, underscores)
+COST_OF_LIVING_CATEGORY_IDS = [
+    "grocery",
+    "loan",
+    "transportation",
+    "utility",
+    "payment",
+    "fee",
+    "health"
+]
 
 class EnricherPatternSets(BaseModel):
     type: Dict[str, List[str]] = Field(default_factory=dict)

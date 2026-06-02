@@ -4,35 +4,13 @@ import { useRoute } from 'vue-router'
 import { fetchResults as fetchResultsApi } from '../js/api'
 import { useFeedbackStore } from '../stores/feedback'
 import { useGettext } from 'vue3-gettext'
-import type { _ResultsApiResponse } from '../types/api'
+import type { _ResultsApiResponse, AccountDataResponse } from '../types/api'
 import ButtonComponent from '../components/ui/ButtonComponent.vue'
 
 const { $gettext } = useGettext()
 
-// Local type for the account data structure used in this component
-interface AccountData {
-  id: string
-  name: string
-  dt_response: {
-    data: Array<{
-      category: string
-      date: {
-        display: string
-        timestamp: number
-      }
-      total: {
-        display: string
-        raw: number | string
-      }
-      details: Array<{
-        date: { display: string }
-        amount: { display: string }
-        merchant: string
-      }>
-      row_id: string
-    }>
-  }
-}
+// Import AccountData type from API types
+type AccountData = AccountDataResponse
 
 const feedback = useFeedbackStore()
 const route = useRoute()
@@ -65,12 +43,13 @@ const loadResults = async () => {
       await nextTick()
       await new Promise(resolve => setTimeout(resolve, DEFERRED_TIMEOUT))
       const w1 = globalThis as unknown as Window
-      w1.exportCsvText = $gettext('Export CSV')
-      w1.exportExcelText = $gettext('Export Excel')
 
       // Set highlights for statistical cell highlighting
       w1.highlights = fallbackResponse.accounts_data?.highlights || {}
 
+      // Set export button translations for DataTables
+      w1.exportCsvText = $gettext('Export CSV')
+      w1.exportExcelText = $gettext('Export Excel')
       w1.initMainPage()
     } catch (fallbackError) {
       const message = fallbackError instanceof Error ? fallbackError.message : String(fallbackError)
@@ -248,6 +227,12 @@ v-for="[monthDisplay, monthTs] in getMonthsForAccount(account)"
           <ButtonComponent
             :text="$gettext('View All Details')"
             :to="{ name: 'details', params: { resultId: resultId } }"
+            variant="outline-secondary"
+            class="mt-3 mb-3 me-2"
+          />
+          <ButtonComponent
+            :text="$gettext('Cost of Living')"
+            :to="{ name: 'cost-of-living', params: { resultId: resultId } }"
             variant="outline-secondary"
             class="mt-3 mb-3"
           />

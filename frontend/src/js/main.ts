@@ -11,27 +11,51 @@ import { initStatisticalAnalysis } from './statistical-analysis';
  */
 interface DataTablesConfig {
     dom?: string;
-    buttons?: string[];
+    buttons?: Array<{
+        extend: string;
+        text?: string;
+        className?: string;
+        [key: string]: unknown;
+    }>;
     responsive?: boolean;
     pageLength?: number;
+    language?: {
+        buttons?: {
+            csv?: string;
+            excel?: string;
+        };
+    };
     [key: string]: unknown;
 }
 
 /**
  * Initialize DataTables on a specific table element
  */
-function initDataTable(table: Element): void {
+function initDataTable(table: Element, csvText?: string, excelText?: string): void {
     // Check if DataTable is already initialized on this table
     if ($(table).hasClass('dataTable')) {
         $(table).DataTable().destroy();
     }
 
-    $(table).DataTable({
-        dom: 'Bfrtip',
-        buttons: ['csv', 'excel'],
+    const config: DataTablesConfig = {
+        dom: '<"dt-buttons"B><"clear">frtip',
+        buttons: [
+            {
+                extend: 'csvHtml5',
+                text: csvText || 'CSV',
+                className: 'btn'
+            },
+            {
+                extend: 'excelHtml5',
+                text: excelText || 'Excel',
+                className: 'btn'
+            }
+        ],
         responsive: true,
         pageLength: 25
-    } as DataTablesConfig);
+    };
+
+    $(table).DataTable(config);
 }
 
 /**
@@ -59,9 +83,14 @@ let popoverInstances: unknown[] = [];
  * Initialize DataTables and Bootstrap components
  */
 export function initMainPage(): void {
+    // Get export button text from global variables (set by Vue components)
+    const windowObj = globalThis as unknown as Window;
+    const csvText = windowObj.exportCsvText;
+    const excelText = windowObj.exportExcelText;
+
     // Initialize DataTables for all tables with data-datatable attribute
     const tables = document.querySelectorAll('table[data-datatable="true"]');
-    tables.forEach(initDataTable);
+    tables.forEach(table => initDataTable(table, csvText, excelText));
 
     // Initialize Bootstrap popovers with proper sanitization
     // Use globalThis.bootstrap which is set by src/main.ts

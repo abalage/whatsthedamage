@@ -50,8 +50,6 @@ export interface StatisticalAnalysisRequest {
  * Extended Window interface for global variables
  */
 interface _WindowExtensions {
-  exportCsvText?: string;
-  exportExcelText?: string;
   bootstrap: Record<string, unknown>;
   resultId?: string;
 }

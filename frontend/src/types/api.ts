@@ -209,6 +209,9 @@ interface _AccountsDataResponse {
   highlights: _StatisticalHighlights;
 }
 
+// Export for use in components
+export type { _AccountDataResponse as AccountDataResponse };
+
 /**
  * URL info for category drilldown
  */

@@ -21,8 +21,8 @@ import * as bootstrapNs from 'bootstrap'
 // Declare global types BEFORE assigning to them
 declare global {
   interface Window {
-    exportCsvText: string
-    exportExcelText: string
+    exportCsvText?: string
+    exportExcelText?: string
     bootstrap: unknown
     JSZip: unknown
     $: unknown

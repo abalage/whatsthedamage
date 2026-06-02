@@ -265,9 +265,9 @@ onMounted(() => loadData());
               <table :id="`datatable-${selectedAccountId}`" class="table table-bordered table-hover mb-0 small" data-datatable="true">
                 <thead class="table-light">
                   <tr>
-                    <th class="text-nowrap" data-order="month">{{ $gettext('Month') }}</th>
-                    <th class="text-nowrap" data-order="total">{{ $gettext('Cost of Living') }}</th>
-                    <th v-for="catId in selectedCategories" :key="catId" class="text-nowrap" :data-order="catId">{{ getCategoryDisplayName(catId) }}</th>
+                    <th scope="col" class="text-nowrap" data-order="month">{{ $gettext('Month') }}</th>
+                    <th scope="col" class="text-nowrap" data-order="total">{{ $gettext('Cost of Living') }}</th>
+                    <th v-for="catId in selectedCategories" :key="catId" scope="col" class="text-nowrap" :data-order="catId">{{ getCategoryDisplayName(catId) }}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -281,9 +281,9 @@ onMounted(() => loadData());
                 </tbody>
                 <tfoot class="table-light">
                   <tr>
-                    <th>{{ $gettext('Average') }}</th>
-                    <th class="fw-bold text-end">{{ trendlineValue }} {{ costOfLivingData.currency }}</th>
-                    <th v-for="catId in selectedCategories" :key="catId" class="text-end">
+                    <th scope="col">{{ $gettext('Average') }}</th>
+                    <th scope="col" class="fw-bold text-end">{{ trendlineValue }} {{ costOfLivingData.currency }}</th>
+                    <th v-for="catId in selectedCategories" :key="catId" scope="col" class="text-end">
                       {{ costOfLivingData.months.length > 0 ? Math.abs(costOfLivingData.months.reduce((sum, m) => sum + (m.categories[catId]?.amount || 0), 0) / costOfLivingData.months.length) : '0.00' }}
                     </th>
                   </tr>

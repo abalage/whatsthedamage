@@ -6,7 +6,7 @@
 /**
  * Configuration for DataTables
  */
-interface _DataTableConfig {
+export interface DataTableConfig {
   responsive: boolean;
   fixedHeader: boolean;
   ordering: boolean;
@@ -34,7 +34,7 @@ export interface StatisticalAnalysisResponse {
  * Type for cell highlights in templates
  * Always an array of strings, never a string that needs parsing
  */
-type _CellHighlights = Record<string, string[]> | {};
+export type CellHighlights = Record<string, string[]> | {};
 
 /**
  * Request payload for statistical analysis
@@ -49,7 +49,7 @@ export interface StatisticalAnalysisRequest {
 /**
  * Extended Window interface for global variables
  */
-interface _WindowExtensions {
+export interface WindowExtensions {
   bootstrap: Record<string, unknown>;
   resultId?: string;
 }
@@ -57,7 +57,7 @@ interface _WindowExtensions {
 /**
  * Notification type
  */
-type _NotificationType = 'success' | 'danger' | 'warning' | 'info';
+export type NotificationType = 'success' | 'danger' | 'warning' | 'info';
 
 /**
  * Error with additional context

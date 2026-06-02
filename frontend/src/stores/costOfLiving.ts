@@ -10,11 +10,11 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import { DEFAULT_COST_OF_LIVING_CATEGORY_IDS, type CostOfLivingSettings } from '../types/costOfLiving';
-import type { _ResultsApiResponse } from '../types/api';
+import type { ResultsApiResponse } from '../types/api';
 
 export const useCostOfLivingStore = defineStore('costOfLiving', () => {
   // Results data from backend (via fetchResults)
-  const resultsData = ref<_ResultsApiResponse | null>(null);
+  const resultsData = ref<ResultsApiResponse | null>(null);
   
   // Selected account ID (for multi-account support)
   const selectedAccountId = ref<string>('');
@@ -130,7 +130,7 @@ export const useCostOfLivingStore = defineStore('costOfLiving', () => {
   
   // ========== Actions ==========
   
-  const setResultsData = (data: _ResultsApiResponse) => {
+  const setResultsData = (data: ResultsApiResponse) => {
     resultsData.value = data;
     // Select first account by default
     if (data.accounts_data.accounts.length > 0) {

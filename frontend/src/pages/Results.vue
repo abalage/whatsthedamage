@@ -4,7 +4,7 @@ import { useRoute } from 'vue-router'
 import { fetchResults as fetchResultsApi } from '../js/api'
 import { useFeedbackStore } from '../stores/feedback'
 import { useGettext } from 'vue3-gettext'
-import type { _ResultsApiResponse, AccountDataResponse } from '../types/api'
+import type { ResultsApiResponse, AccountDataResponse } from '../types/api'
 import ButtonComponent from '../components/ui/ButtonComponent.vue'
 
 const { $gettext } = useGettext()
@@ -21,7 +21,7 @@ const resultId = computed(() => {
   const id = route.query.resultId ?? route.query.result_id
   return typeof id === 'string' ? id : null
 })
-const resultsData = ref<_ResultsApiResponse | null>(null)
+const resultsData = ref<ResultsApiResponse | null>(null)
 const isLoading = ref(true)
 const error = ref<string | null>(null)
 

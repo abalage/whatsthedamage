@@ -53,7 +53,7 @@ const chartOptions = computed(() => ({
         label: (context: any) => {
           const value = context.raw as number;
           const label = context.dataset.label || '';
-          return `${label}: ${formatCurrency(Math.abs(value), props.currency)}`;
+          return `${label}: ${Math.abs(value)}`;
         }
       }
     }
@@ -64,7 +64,7 @@ const chartOptions = computed(() => ({
       ticks: {
         callback: (value: number | string) => {
           if (typeof value === 'number') {
-            return formatCurrency(Math.abs(value), props.currency);
+            return Math.abs(value);
           }
           return value;
         }
@@ -72,12 +72,6 @@ const chartOptions = computed(() => ({
     }
   }
 }));
-
-function formatCurrency(value: number, currency?: string): string {
-  return new Intl.NumberFormat('en-US', {
-    minimumFractionDigits: 2
-  }).format(value) + (currency ? ` ${currency}` : '');
-}
 </script>
 
 <template>
@@ -88,7 +82,7 @@ function formatCurrency(value: number, currency?: string): string {
     <div v-if="showTrendline && trendlineValue !== undefined" class="trendline-indicator">
       <span class="trendline-label">
         <i class="bi bi-graph-up me-1"></i>
-        Mean: {{ formatCurrency(Math.abs(trendlineValue), currency) }}
+        Mean: {{ Math.abs(trendlineValue) }}
       </span>
     </div>
   </div>

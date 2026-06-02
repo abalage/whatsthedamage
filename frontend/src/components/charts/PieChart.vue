@@ -76,24 +76,18 @@ const chartOptions = computed(() => ({
           const value = context.raw as number;
           const total = context.dataset.data.reduce((a: number, b: number) => a + b, 0);
           const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
-          return `${label}: ${formatCurrency(value, props.currency)} (${percentage}%)`;
+          return `${label}: ${value} (${percentage}%)`;
         }
       }
     }
   }
 }));
-
-function formatCurrency(value: number, currency?: string): string {
-  return new Intl.NumberFormat('en-US', {
-    minimumFractionDigits: 2
-  }).format(Math.abs(value)) + (currency ? ` ${currency}` : '');
-}
 </script>
 
 <template>
   <div class="pie-chart-container">
     <div v-if="total !== undefined" class="pie-chart-total">
-      <strong>Total:</strong> {{ formatCurrency(total, currency) }}
+      <strong>Total:</strong> {{ total }}
     </div>
     <Pie :data="chartData" :options="chartOptions" />
   </div>

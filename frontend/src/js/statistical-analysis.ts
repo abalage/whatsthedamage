@@ -3,10 +3,10 @@
  * Handles statistical analysis controls, AJAX calls, and result visualization
  */
 
-import { showNotification } from './utils';
-import { postData, getApiUrl } from './api';
-import { AppError, StatisticalAnalysisRequest, StatisticalAnalysisResponse } from '../types';
-import { getCssClassesForHighlights } from '../config/highlight-config';
+import { showNotification } from './utils.js';
+import { postData, getApiUrl } from './api.js';
+import { AppError, StatisticalAnalysisRequest, StatisticalAnalysisResponse } from '../types/index.js';
+import { getCssClassesForHighlights } from '../config/highlight-config.js';
 
 /**
  * Initialize statistical analysis controls
@@ -20,8 +20,8 @@ export function initStatisticalAnalysis(): void {
         updateCellHighlights(parsedHighlights as Record<string, string[]> | {});
     }
 
-    const recalculateBtn = document.getElementById('recalculate-btn');
-    const resetBtn = document.getElementById('reset-btn');
+    const recalculateBtn = document.getElementById('recalculate-btn') as HTMLButtonElement | null;
+    const resetBtn = document.getElementById('reset-btn') as HTMLButtonElement | null;
 
     // Only initialize if controls exist and haven't been initialized yet
     if (recalculateBtn && resetBtn && !recalculateBtn.dataset.initialized) {
@@ -34,7 +34,7 @@ export function initStatisticalAnalysis(): void {
         // Recalculate button click handler
         recalculateBtn.addEventListener('click', () => {
             const algorithms = Array.prototype.slice.call(document.querySelectorAll('input[type="checkbox"][value]:checked'))
-                .map((el: HTMLInputElement) => { return el.value; });
+                .map((el: HTMLInputElement) => el.value);
             const directionInput = document.querySelector('input[name="direction"]:checked') as HTMLInputElement | null;
             const direction = directionInput?.value === 'rows' ? 'rows' : 'columns';
 
@@ -152,7 +152,7 @@ function applyHighlightClasses(cell: HTMLElement, types: string[]): void {
     const cssClasses = getCssClassesForHighlights(types);
 
     // Apply each CSS class to the cell
-    cssClasses.forEach(cssClass => {
+    cssClasses.forEach((cssClass: string) => {
         cell.classList.add(cssClass);
     });
 }
@@ -180,7 +180,7 @@ export function updateCellHighlights(highlights: Record<string, string[]> | {}):
     });
 
     // Process each highlight entry using UUID-based addressing
-    Object.entries(highlights).forEach(([rowId, highlightTypes]) => {
+    Object.entries(highlights).forEach(([rowId, highlightTypes]: [string, string[]]) => {
         // Find all cells with matching data-row-id attribute
         const cells = document.querySelectorAll(`[data-row-id="${rowId}"]`);
         cells.forEach(cell => {

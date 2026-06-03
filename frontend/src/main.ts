@@ -1,7 +1,7 @@
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import App from './App.vue'
-import router from './router'
+import router from './router/index.js'
 
 // Import Bootstrap CSS
 import 'bootstrap/dist/css/bootstrap.min.css'
@@ -53,15 +53,15 @@ import JSZip from 'jszip';
 import 'datatables.net-buttons/js/buttons.html5';
 
 // Import DataTables initialization
-import { initMainPage } from './js/main'
-import { updateCellHighlights } from './js/statistical-analysis'
+import { initMainPage } from './js/main.js'
+import { updateCellHighlights } from './js/statistical-analysis.js'
 
 // Make initMainPage available globally for components
 (globalThis as unknown as Window).initMainPage = initMainPage;
 (globalThis as unknown as Window).updateCellHighlights = updateCellHighlights;
 
 // Import and install gettext
-import gettext from './js/gettext'
+import gettext from './js/gettext.js'
 
 // Create Vue app
 const app = createApp(App)

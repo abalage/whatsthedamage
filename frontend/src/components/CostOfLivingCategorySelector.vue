@@ -1,11 +1,14 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { useGettext } from 'vue3-gettext';
-import { useCostOfLivingStore } from '../stores/costOfLiving';
-import { DEFAULT_COST_OF_LIVING_CATEGORY_IDS } from '../types/costOfLiving';
+import { useCostOfLivingStore } from '../stores/costOfLiving.js';
+import { DEFAULT_COST_OF_LIVING_CATEGORY_IDS } from '../types/costOfLiving.js';
 
 const { $gettext } = useGettext();
 const costOfLivingStore = useCostOfLivingStore();
+
+// Constants
+const ZERO = 0;
 
 const allCategories = computed(() => costOfLivingStore.availableCategoryNames);
 const selectedCategories = computed(() => costOfLivingStore.selectedCategoryIds);
@@ -19,7 +22,8 @@ const clearAll = () => costOfLivingStore.clearAll();
 const resetToDefaults = () => costOfLivingStore.resetToDefaults();
 
 const selectedCount = computed(() => selectedCategories.value.length);
-const allSelected = computed(() => selectedCategories.value.length === allCategories.value.length && allCategories.value.length > 0);
+const hasNoAllCategories = computed(() => allCategories.value.length === ZERO);
+const allSelected = computed(() => selectedCategories.value.length === allCategories.value.length && !hasNoAllCategories.value);
 
 // Use gettext directly on category IDs - translations are already configured
 // The category IDs (e.g., "grocery") will be translated to display names (e.g., "Grocery")
@@ -40,13 +44,13 @@ const getCategoryDisplayName = (categoryId: string): string => $gettext(category
       </p>
       
       <div class="d-flex gap-2 mb-3 flex-wrap">
-        <button @click="selectAll" class="btn btn-sm btn-outline-success" :disabled="allSelected">
+        <button class="btn btn-sm btn-outline-success" :disabled="allSelected" @click="selectAll">
           <i class="bi bi-check-square me-1"></i> {{ $gettext('Select All') }}
         </button>
-        <button @click="clearAll" class="btn btn-sm btn-outline-danger" :disabled="selectedCount === 0">
+        <button class="btn btn-sm btn-outline-danger" :disabled="selectedCount === 0" @click="clearAll">
           <i class="bi bi-x-square me-1"></i> {{ $gettext('Clear All') }}
         </button>
-        <button @click="resetToDefaults" class="btn btn-sm btn-outline-secondary">
+        <button class="btn btn-sm btn-outline-secondary" @click="resetToDefaults">
           <i class="bi bi-arrow-clockwise me-1"></i> {{ $gettext('Reset to Defaults') }}
         </button>
       </div>

@@ -3,7 +3,7 @@
  * @module utils/api
  */
 
-import { AppError, ApiResponse } from '../types';
+import { AppError, ApiResponse } from '../types/index.js';
 import type {
   ProcessApiResponse,
   ResultsApiResponse,
@@ -11,7 +11,7 @@ import type {
   MonthCategoriesApiResponse,
   CategoryMonthTransactionsApiResponse,
   RecalculateApiResponse,
-} from '../types/api';
+} from '../types/api.js';
 
 // API base URL configuration
 export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '/api/v2';

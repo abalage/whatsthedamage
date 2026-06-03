@@ -9,8 +9,13 @@
  */
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
-import { DEFAULT_COST_OF_LIVING_CATEGORY_IDS, type CostOfLivingSettings } from '../types/costOfLiving';
-import type { ResultsApiResponse } from '../types/api';
+import { DEFAULT_COST_OF_LIVING_CATEGORY_IDS, type CostOfLivingSettings } from '../types/costOfLiving.js';
+import type { ResultsApiResponse, AggregatedRow } from '../types/api.js';
+
+// Constants
+const ZERO = 0;
+const ONE = 1;
+const NEGATIVE_ONE = -1;
 
 export const useCostOfLivingStore = defineStore('costOfLiving', () => {
   // Results data from backend (via fetchResults)
@@ -26,11 +31,11 @@ export const useCostOfLivingStore = defineStore('costOfLiving', () => {
   const showTrendline = ref<boolean>(true);
   
   // Computed: Get all available category names from results data
-  const availableCategoryNames = computed(() => {
+  const availableCategoryNames = computed<string[]>(() => {
     if (!resultsData.value || !selectedAccountId.value) return [];
     
     const account = resultsData.value.accounts_data.accounts.find(
-      a => a.id === selectedAccountId.value
+      (a) => a.id === selectedAccountId.value
     );
     
     if (!account) return [];
@@ -45,11 +50,11 @@ export const useCostOfLivingStore = defineStore('costOfLiving', () => {
   });
   
   // Computed: Get all months for selected account
-  const months = computed(() => {
+  const months = computed<{ display: string; timestamp: number }[]>(() => {
     if (!resultsData.value || !selectedAccountId.value) return [];
     
     const account = resultsData.value.accounts_data.accounts.find(
-      a => a.id === selectedAccountId.value
+      (a) => a.id === selectedAccountId.value
     );
     
     if (!account) return [];
@@ -69,18 +74,28 @@ export const useCostOfLivingStore = defineStore('costOfLiving', () => {
   });
   
   // Computed: Calculate Cost of Living data from selected categories
-  const costOfLivingData = computed(() => {
+  const costOfLivingData = computed<{
+    months: Array<{
+      month: string;
+      month_timestamp: number;
+      total: number;
+      categories: Record<string, { amount: number; display: string }>;
+    }>;
+    mean: number;
+    currency: string;
+    accountName: string;
+  } | null>(() => {
     if (!resultsData.value || !selectedAccountId.value) return null;
     
     const account = resultsData.value.accounts_data.accounts.find(
-      a => a.id === selectedAccountId.value
-    );
+      (a) => a.id === selectedAccountId.value
+    ) as { id: string; name: string; dt_response: { data: AggregatedRow[]; currency: string } } | undefined;
     
-    if (!account || account.dt_response.data.length === 0) return null;
+    if (!account || account.dt_response.data.length === ZERO) return null;
     
     // Create data for each month
     const monthsData = months.value.map(month => {
-      let total = 0;
+      let total = ZERO;
       const categories: Record<string, { amount: number; display: string }> = {};
       
       // Find all rows for this month
@@ -113,12 +128,12 @@ export const useCostOfLivingStore = defineStore('costOfLiving', () => {
     
     // Calculate mean (use absolute values)
     const totals = monthsData.map(m => Math.abs(m.total));
-    const mean = totals.length > 0
-      ? totals.reduce((a, b) => a + b, 0) / totals.length
-      : 0;
+    const mean = totals.length > ZERO
+      ? totals.reduce((a, b) => a + b, ZERO) / totals.length
+      : ZERO;
     
     // Get currency from account's dt_response
-    const currency = account.dt_response.currency || '';
+    const currency = account.dt_response.currency ?? '';
     
     return {
       months: monthsData,
@@ -130,57 +145,57 @@ export const useCostOfLivingStore = defineStore('costOfLiving', () => {
   
   // ========== Actions ==========
   
-  const setResultsData = (data: ResultsApiResponse) => {
+  const setResultsData = (data: ResultsApiResponse): void => {
     resultsData.value = data;
     // Select first account by default
-    if (data.accounts_data.accounts.length > 0) {
-      selectedAccountId.value = data.accounts_data.accounts[0].id;
+    if (data.accounts_data.accounts.length > ZERO) {
+      selectedAccountId.value = data.accounts_data.accounts[ZERO].id;
     }
   };
   
-  const setSelectedAccountId = (accountId: string) => {
+  const setSelectedAccountId = (accountId: string): void => {
     selectedAccountId.value = accountId;
   };
   
-  const toggleCategory = (categoryId: string) => {
+  const toggleCategory = (categoryId: string): void => {
     const index = selectedCategoryIds.value.indexOf(categoryId);
-    if (index > -1) {
-      selectedCategoryIds.value.splice(index, 1);
+    if (index > NEGATIVE_ONE) {
+      selectedCategoryIds.value.splice(index, ONE);
     } else {
       selectedCategoryIds.value.push(categoryId);
     }
   };
   
-  const addCategory = (categoryId: string) => {
+  const addCategory = (categoryId: string): void => {
     if (!selectedCategoryIds.value.includes(categoryId)) {
       selectedCategoryIds.value.push(categoryId);
     }
   };
   
-  const removeCategory = (categoryId: string) => {
+  const removeCategory = (categoryId: string): void => {
     const index = selectedCategoryIds.value.indexOf(categoryId);
-    if (index > -1) {
-      selectedCategoryIds.value.splice(index, 1);
+    if (index > NEGATIVE_ONE) {
+      selectedCategoryIds.value.splice(index, ONE);
     }
   };
   
-  const setSelectedCategories = (categories: string[]) => {
+  const setSelectedCategories = (categories: string[]): void => {
     selectedCategoryIds.value = [...categories];
   };
   
-  const setShowTrendline = (show: boolean) => {
+  const setShowTrendline = (show: boolean): void => {
     showTrendline.value = show;
   };
   
-  const selectAll = () => {
+  const selectAll = (): void => {
     selectedCategoryIds.value = [...availableCategoryNames.value];
   };
   
-  const clearAll = () => {
+  const clearAll = (): void => {
     selectedCategoryIds.value = [];
   };
   
-  const resetToDefaults = () => {
+  const resetToDefaults = (): void => {
     selectedCategoryIds.value = [...DEFAULT_COST_OF_LIVING_CATEGORY_IDS];
   };
   
@@ -188,7 +203,7 @@ export const useCostOfLivingStore = defineStore('costOfLiving', () => {
   
   const STORAGE_KEY = 'costOfLivingSettings';
   
-  const saveSettings = () => {
+  const saveSettings = (): void => {
     const settings: CostOfLivingSettings = {
       selectedCategoryIds: selectedCategoryIds.value,
       showTrendline: showTrendline.value,
@@ -197,15 +212,15 @@ export const useCostOfLivingStore = defineStore('costOfLiving', () => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
   };
   
-  const loadSettings = () => {
+  const loadSettings = (): void => {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) {
       try {
         const settings: CostOfLivingSettings = JSON.parse(saved);
-        selectedCategoryIds.value = settings.selectedCategoryIds || [...DEFAULT_COST_OF_LIVING_CATEGORY_IDS];
+        selectedCategoryIds.value = settings.selectedCategoryIds ?? [...DEFAULT_COST_OF_LIVING_CATEGORY_IDS];
         showTrendline.value = settings.showTrendline ?? true;
       } catch {
-        console.warn('Failed to load Cost of Living settings');
+        // Failed to load Cost of Living settings - silently ignore
       }
     }
   };

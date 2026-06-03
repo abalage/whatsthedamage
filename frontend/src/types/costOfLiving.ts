@@ -19,6 +19,3 @@ export const DEFAULT_COST_OF_LIVING_CATEGORY_IDS = [
   'fee',
   'health'
 ] as const;
-
-// Type for category ID
-export type CategoryId = typeof DEFAULT_COST_OF_LIVING_CATEGORY_IDS[number];

@@ -29,6 +29,11 @@ const colors = [
   '#20c997', '#0dcaf0', '#6c757d', '#17a2b8'
 ];
 
+// Constants
+const ZERO = 0;
+const ONE = 1;
+const PERCENTAGE_MULTIPLIER = 100;
+
 const chartData = computed(() => {
   const labels = props.data.map(item => item.label);
   const values = props.data.map(item => item.value);
@@ -74,8 +79,8 @@ const chartOptions = computed(() => ({
         label: (context: any) => {
           const label = context.label || '';
           const value = context.raw as number;
-          const total = context.dataset.data.reduce((a: number, b: number) => a + b, 0);
-          const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
+          const total = context.dataset.data.reduce((a: number, b: number) => a + b, ZERO);
+          const percentage = total > ZERO ? ((value / total) * PERCENTAGE_MULTIPLIER).toFixed(ONE) : ZERO;
           return `${label}: ${value} (${percentage}%)`;
         }
       }

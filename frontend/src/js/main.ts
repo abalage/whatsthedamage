@@ -3,30 +3,7 @@
  */
 
 import $ from 'jquery';
-import { initStatisticalAnalysis } from './statistical-analysis';
-
-/**
- * DataTables configuration type extension
- * The DataTables types don't include all options, so we extend them
- */
-interface DataTablesConfig {
-    dom?: string;
-    buttons?: Array<{
-        extend: string;
-        text?: string;
-        className?: string;
-        [key: string]: unknown;
-    }>;
-    responsive?: boolean;
-    pageLength?: number;
-    language?: {
-        buttons?: {
-            csv?: string;
-            excel?: string;
-        };
-    };
-    [key: string]: unknown;
-}
+import { initStatisticalAnalysis } from './statistical-analysis.js';
 
 /**
  * Initialize DataTables on a specific table element
@@ -37,17 +14,17 @@ function initDataTable(table: Element, csvText?: string, excelText?: string): vo
         $(table).DataTable().destroy();
     }
 
-    const config: DataTablesConfig = {
+    const config = {
         dom: '<"dt-buttons"B><"clear">frtip',
         buttons: [
             {
                 extend: 'csvHtml5',
-                text: csvText || 'CSV',
+                text: csvText ?? 'CSV',
                 className: 'btn'
             },
             {
                 extend: 'excelHtml5',
-                text: excelText || 'Excel',
+                text: excelText ?? 'Excel',
                 className: 'btn'
             }
         ],

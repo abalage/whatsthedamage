@@ -19,6 +19,9 @@ const resultId = computed(() => route.params.resultId as string);
 const isLoading = ref(true);
 const error = ref<string | null>(null);
 
+// Constants
+const ZERO = 0;
+
 const loadData = async () => {
   if (!resultId.value) {
     error.value = 'Missing result ID';
@@ -32,8 +35,8 @@ const loadData = async () => {
     costOfLivingStore.loadSettings();
     
     // If no account is selected, select the first one
-    if (!selectedAccountId.value && response.accounts_data.accounts.length > 0) {
-      costOfLivingStore.setSelectedAccountId(response.accounts_data.accounts[0].id);
+    if (!selectedAccountId.value && response.accounts_data.accounts.length > ZERO) {
+      costOfLivingStore.setSelectedAccountId(response.accounts_data.accounts[ZERO].id);
     }
     
     isLoading.value = false;
@@ -66,7 +69,7 @@ const monthlyBreakdown = computed(() => {
   }));
 });
 
-const trendlineValue = computed(() => costOfLivingData.value?.mean || 0);
+const trendlineValue = computed(() => costOfLivingData.value?.mean ?? ZERO);
 
 // Use gettext directly on category IDs - translations are already configured
 const getCategoryDisplayName = (categoryId: string): string => $gettext(categoryId);
@@ -85,7 +88,7 @@ watch(() => [costOfLivingStore.selectedCategoryIds, costOfLivingStore.showTrendl
 
 // Initialize and reinitialize DataTables when data is ready
 const initDataTablesIfReady = async () => {
-  if (costOfLivingData.value && selectedCategories.value.length > 0) {
+  if (costOfLivingData.value && selectedCategories.value.length > ZERO) {
     await nextTick()
     
     // Set translation strings for DataTables export buttons
@@ -155,7 +158,7 @@ onMounted(() => loadData());
       </div>
 
       <!-- Account Info -->
-      <div class="card mb-4" v-if="costOfLivingData">
+      <div v-if="costOfLivingData" class="card mb-4">
         <div class="card-header">
           <h3><i class="bi bi-bank me-2"></i> {{ costOfLivingData.accountName }}</h3>
           <p class="text-muted mb-0"><i class="bi bi-currency-exchange me-1"></i> {{ $gettext('Currency') }}: {{ costOfLivingData.currency }}</p>
@@ -215,7 +218,7 @@ onMounted(() => loadData());
           <div class="card-header d-flex justify-content-between align-items-center">
             <h4 class="mb-0"><i class="bi bi-bar-chart me-2"></i> {{ $gettext('Monthly Cost of Living') }}</h4>
             <div class="form-check form-switch mb-0">
-              <input class="form-check-input" type="checkbox" id="showTrendline" v-model="costOfLivingStore.showTrendline" />
+              <input id="showTrendline" v-model="costOfLivingStore.showTrendline" class="form-check-input" type="checkbox" />
               <label class="form-check-label" for="showTrendline">{{ $gettext('Show trendline') }}</label>
             </div>
           </div>

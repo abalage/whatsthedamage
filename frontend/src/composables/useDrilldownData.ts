@@ -5,10 +5,10 @@
 
 import { ref, computed, nextTick, type ComputedRef, type Ref } from 'vue'
 import { useRoute, type RouteLocationRaw } from 'vue-router'
-import { useFeedbackStore } from '../stores/feedback'
+import { useFeedbackStore } from '../stores/feedback.js'
 import { useGettext } from 'vue3-gettext'
-import { fetchWithErrorHandling, API_BASE_URL } from '../js/api'
-import type { TranslationKeys } from '../vue-shim'
+import { fetchWithErrorHandling, API_BASE_URL } from '../js/api.js'
+import type { TranslationKeys } from '../vue-shim.js'
 
 /**
  * Extract route parameter with type safety

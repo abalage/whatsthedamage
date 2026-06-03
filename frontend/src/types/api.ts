@@ -16,7 +16,7 @@
 /**
  * Display and raw value pair (e.g., formatted currency with numeric value)
  */
-export interface DisplayRawField {
+interface DisplayRawField {
   display: string;
   raw: number | string;
 }
@@ -24,50 +24,12 @@ export interface DisplayRawField {
 /**
  * Date with display format and timestamp
  */
-export interface DateField {
+interface DateField {
   display: string;
   timestamp: number;
 }
 
-/**
- * Standard error response format for all API v2 endpoints
- *
- * Returned for non-200 status codes.
- */
-export interface ErrorApiResponse {
-  code: number;
-  message: string;
-  details?: Record<string, unknown>;
-}
 
-/**
- * Standard API response envelope for new endpoints (recommended)
- *
- * Provides a consistent structure for all API responses:
- * - status: Operation status ('success' or 'error')
- * - data: The endpoint-specific response payload
- * - meta: Response metadata (timestamp, request_id, version, etc.)
- * - links: Hypermedia navigation links (self, related resources)
- * - timestamp: Response generation timestamp in UTC
- *
- * Backend counterpart: ApiEnvelope<T> in models/api_responses.py
- *
- * @example
- * ```typescript
- * const response = await fetch('/api/v2/new-endpoint');
- * const envelope: ApiEnvelope<SomeData> = await response.json();
- * console.log(envelope.status); // 'success'
- * console.log(envelope.data); // SomeData payload
- * console.log(envelope.meta.request_id); // request identifier
- * ```
- */
-export type ApiEnvelope<T = unknown> = {
-  status: 'success' | 'error';
-  data: T;
-  meta: Record<string, unknown>;
-  links: Record<string, string>;
-  timestamp: string; // ISO 8601 datetime string
-};
 
 // ============================================================================
 // Data Models (from dt_models.py)
@@ -76,7 +38,7 @@ export type ApiEnvelope<T = unknown> = {
 /**
  * A single detailed transaction row
  */
-export interface DetailRow {
+interface DetailRow {
   row_id: string;
   date: DateField;
   amount: DisplayRawField;
@@ -103,7 +65,7 @@ export interface AggregatedRow {
 /**
  * Processing metadata
  */
-export interface ProcessingMetadata {
+interface ProcessingMetadata {
   result_id: string;
   row_count: number;
   processing_time: number;
@@ -115,7 +77,7 @@ export interface ProcessingMetadata {
  * Statistical highlights for a single cell/row
  * Maps row_id to list of highlight types (e.g., ['outlier', 'pareto'])
  */
-export type StatisticalHighlights = Record<string, string[]> | {};
+type StatisticalHighlights = Record<string, string[]> | {};
 
 // ============================================================================
 // Account/Results Types
@@ -135,7 +97,7 @@ export interface AccountData {
 /**
  * Individual transaction data
  */
-export interface TransactionData {
+interface TransactionData {
   id: string;
   date: string;
   amount: number;
@@ -151,7 +113,7 @@ export interface TransactionData {
 /**
  * Account summary statistics
  */
-export interface AccountSummary {
+interface AccountSummary {
   total_transactions: number;
   total_amount: number;
   categories: CategorySummary[];
@@ -160,7 +122,7 @@ export interface AccountSummary {
 /**
  * Category-level summary
  */
-export interface CategorySummary {
+interface CategorySummary {
   category: string;
   count: number;
   total_amount: number;
@@ -204,7 +166,7 @@ export interface AccountDataResponse {
 /**
  * Container for all accounts data
  */
-export interface AccountsDataResponse {
+interface AccountsDataResponse {
   accounts: AccountDataResponse[];
   highlights: StatisticalHighlights;
 }
@@ -212,7 +174,7 @@ export interface AccountsDataResponse {
 /**
  * URL info for category drilldown
  */
-export interface DrilldownUrlInfo {
+interface DrilldownUrlInfo {
   category_url: string;
   category_id: string;
 }
@@ -220,7 +182,7 @@ export interface DrilldownUrlInfo {
 /**
  * URL info for month drilldown
  */
-export interface MonthUrlInfo {
+interface MonthUrlInfo {
   month_url: string;
   month_id: string;
 }
@@ -228,7 +190,7 @@ export interface MonthUrlInfo {
 /**
  * URL info for cell/transaction drilldown
  */
-export interface CellUrlInfo {
+interface CellUrlInfo {
   cell_url: string;
   category_id: string;
   month_id: string;
@@ -237,7 +199,7 @@ export interface CellUrlInfo {
 /**
  * All drilldown URLs for a single account
  */
-export interface DrilldownUrls {
+interface DrilldownUrls {
   account_id: string | null;
   category_urls: Record<string, DrilldownUrlInfo>;
   month_urls: Record<string, MonthUrlInfo>;
@@ -253,6 +215,49 @@ export interface ResultsApiResponse {
   result_id: string;
   accounts_data: AccountsDataResponse;
   drilldown_urls_by_account: Record<string, DrilldownUrls>;
+}
+
+/**
+ * Container for all accounts data
+ */
+interface AccountsDataResponse {
+  accounts: AccountDataResponse[];
+  highlights: StatisticalHighlights;
+}
+
+/**
+ * URL info for category drilldown
+ */
+interface DrilldownUrlInfo {
+  category_url: string;
+  category_id: string;
+}
+
+/**
+ * URL info for month drilldown
+ */
+interface MonthUrlInfo {
+  month_url: string;
+  month_id: string;
+}
+
+/**
+ * URL info for cell/transaction drilldown
+ */
+interface CellUrlInfo {
+  cell_url: string;
+  category_id: string;
+  month_id: string;
+}
+
+/**
+ * All drilldown URLs for a single account
+ */
+interface DrilldownUrls {
+  account_id: string | null;
+  category_urls: Record<string, DrilldownUrlInfo>;
+  month_urls: Record<string, MonthUrlInfo>;
+  cell_urls: Record<string, CellUrlInfo>;
 }
 
 // -----------------------------------------------------------------------------
@@ -313,7 +318,7 @@ export interface MonthCategoriesApiResponse {
 /**
  * Data for a single transaction in drilldown response
  */
-export interface TransactionDetailResponse {
+interface TransactionDetailResponse {
   date: { display: string };
   amount: DisplayRawField;
   merchant: string;

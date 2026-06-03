@@ -4,7 +4,7 @@
  */
 
 import { expect, test, beforeEach, afterEach } from 'vitest';
-import { updateCellHighlights, initStatisticalAnalysis } from '../src/js/statistical-analysis';
+import { updateCellHighlights, initStatisticalAnalysis } from '../src/js/statistical-analysis.js';
 
 /**
  * Create a test DOM structure with tables using data-row-id attributes
@@ -97,7 +97,7 @@ test('updateCellHighlights handles multiple highlights', () => {
 test('updateCellHighlights handles invalid row ID', () => {
   updateCellHighlights({ 'invalid-row-id': ['outlier'] });
 
-  const NO_HIGHLIGHTS = 0
+  const NO_HIGHLIGHTS = 0;
   const cells = document.querySelectorAll('[class*="highlight-"]');
   expect(cells.length).toBe(NO_HIGHLIGHTS);
 });

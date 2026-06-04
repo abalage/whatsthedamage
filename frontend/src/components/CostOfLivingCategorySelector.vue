@@ -61,7 +61,7 @@ const getCategoryDisplayName = (categoryId: string): string => $gettext(category
         </span>
       </p>
 
-      <div class="category-grid" role="group" aria-label="Cost of Living Categories">
+      <fieldset class="category-grid" aria-label="Cost of Living Categories">
         <div
           v-for="category in allCategories.filter(c => c)"
           :key="category"
@@ -76,7 +76,6 @@ const getCategoryDisplayName = (categoryId: string): string => $gettext(category
             type="button"
             :aria-pressed="isSelected(category)"
             :aria-label="`${getCategoryDisplayName(category)}, ${isSelected(category) ? $gettext('selected, press to deselect') : $gettext('not selected, press to select')}`"
-            role="button"
             tabindex="0"
             @click.stop="toggleCategory(category)"
             @keydown.enter.stop="toggleCategory(category)"
@@ -92,14 +91,13 @@ const getCategoryDisplayName = (categoryId: string): string => $gettext(category
             </span>
           </button>
         </div>
-      </div>
+      </fieldset>
     </div>
   </div>
 </template>
 
 <style scoped>
 .category-selector {
-  max-width: 800px;
   margin-left: auto;
   margin-right: auto;
 }

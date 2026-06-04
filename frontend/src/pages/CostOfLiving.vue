@@ -16,7 +16,16 @@ import DataTablesLib from 'datatables.net-bs5';
 import 'datatables.net-buttons-bs5';
 import 'datatables.net-fixedheader-bs5';
 import 'datatables.net-buttons/js/buttons.html5';
-import type { ColumnSettings, Settings } from 'datatables.net';
+import type { Config } from 'datatables.net';
+
+// DataTables column type - ConfigColumns is not exported from datatables.net
+interface DataTableColumn {
+  title: string;
+  data: string | number;
+  className?: string;
+  orderable?: boolean;
+  render?: (data: any, type: string) => any;
+}
 
 // Register DataTables library with the Vue component
 DataTable.use(DataTablesLib);
@@ -87,8 +96,8 @@ const safeCurrency = computed(() => costOfLivingData.value?.currency || '');
 const getCategoryDisplayName = (categoryId: string): string => $gettext(categoryId);
 
 // NEW: Table column definitions for DataTable
-const tableColumns = computed<ColumnSettings[]>(() => {
-  const columns: ColumnSettings[] = [
+const tableColumns = computed<DataTableColumn[]>(() => {
+  const columns: DataTableColumn[] = [
     {
       title: $gettext('Month'),
       data: 'month',
@@ -149,7 +158,7 @@ const tableData = computed<Record<string, unknown>[]>(() => {
 });
 
 // NEW: Table options for DataTable
-const tableOptions = computed<Settings>(() => ({
+const tableOptions = computed<Config>(() => ({
   responsive: true,
   pageLength: 25,
   dom: '<"dt-buttons"B><"clear">frtip',
@@ -165,7 +174,7 @@ const tableOptions = computed<Settings>(() => ({
       className: 'btn'
     }
   ],
-  order: [[0, 'desc']], // Sort by month descending by default
+  order: [[ZERO, 'desc']], // Sort by month descending by default
   language: {
     search: $gettext('Search:') + ' ',
     lengthMenu: $gettext('Show _MENU_ entries'),

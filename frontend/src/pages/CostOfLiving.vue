@@ -82,7 +82,8 @@ const monthlyBreakdown = computed(() => {
   if (!costOfLivingData.value) return [];
   return costOfLivingData.value.months.map(month => ({
     label: month.month,
-    value: month.total
+    value: month.total,
+    timestamp: month.month_timestamp
   }));
 });
 
@@ -314,7 +315,7 @@ onMounted(() => loadData());
           </div>
         </div>
         <div class="card-body">
-          <div class="chart-wrapper"><BarChart :data="monthlyBreakdown" :show-trendline="costOfLivingStore.showTrendline" :trendline-value="trendlineValue" :currency="safeCurrency" /></div>
+          <div class="chart-wrapper"><BarChart :data="monthlyBreakdown" :show-trendline="costOfLivingStore.showTrendline" :currency="safeCurrency" /></div>
         </div>
       </div>
 

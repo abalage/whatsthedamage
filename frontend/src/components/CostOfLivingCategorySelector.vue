@@ -32,7 +32,7 @@ const getCategoryDisplayName = (categoryId: string): string => $gettext(category
     <div class="card-header">
       <h5 class="mb-0">
         <i class="bi bi-gear me-2"></i>
-        {{ $gettext('Customize Cost of Living Categories') }}
+        {{ $gettext('Customize Categories') }}
       </h5>
     </div>
     <div class="card-body">

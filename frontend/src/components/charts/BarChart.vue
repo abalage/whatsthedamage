@@ -74,7 +74,7 @@ const chartData = computed(() => {
       backgroundColor: 'transparent',
       type: 'line',
       tension: ZERO, // Straight line for regression
-      pointRadius: 1, // No points on trendline
+      pointRadius: 5, // No points on trendline
       borderDash: TRENDLINE_DASH_PATTERN // Dashed line for trendline
     });
   }
@@ -106,7 +106,7 @@ const chartOptions = computed<ChartOptions<'bar'>>(() => ({
         label: (context: any) => {
           const value = context.raw as number;
           const label = context.dataset.label || '';
-          return `${label}: ${Math.abs(value)}`.trim();
+          return `${label}: ${value}`.trim();
         }
       }
     }
@@ -116,9 +116,6 @@ const chartOptions = computed<ChartOptions<'bar'>>(() => ({
       beginAtZero: true,
       ticks: {
         callback: (value: number | string) => {
-          if (typeof value === 'number') {
-            return Math.abs(value);
-          }
           return value;
         }
       }

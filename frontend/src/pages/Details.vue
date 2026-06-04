@@ -2,9 +2,9 @@
 import { ref, onMounted, computed, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
 import { useGettext } from 'vue3-gettext'
-import { fetchResults } from '../js/api'
+import { fetchResults } from '../js/api.js'
 import ButtonComponent from '../components/ui/ButtonComponent.vue'
-import type { ResultsApiResponse } from '../types/api'
+import type { ResultsApiResponse } from '../types/api.js'
 
 const { $gettext } = useGettext()
 const route = useRoute()

@@ -15,7 +15,6 @@ interface PieChartDataItem {
 interface PieChartProps {
   data: PieChartDataItem[];
   title?: string;
-  currency?: string;
   total?: number;
   showLegend?: boolean;
 }

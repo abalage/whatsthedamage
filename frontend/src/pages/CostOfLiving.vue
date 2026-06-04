@@ -221,7 +221,7 @@ onMounted(() => loadData());
     <nav aria-label="breadcrumb">
       <ol class="breadcrumb">
         <li class="breadcrumb-item"><router-link to="/">{{ $gettext('Home') }}</router-link></li>
-        <li class="breadcrumb-item"><router-link :to="{ name: 'results' }">{{ $gettext('Results') }}</router-link></li>
+        <li class="breadcrumb-item"><router-link :to="{ name: 'results', query: { resultId: resultId } }">{{ $gettext('Results') }}</router-link></li>
         <li class="breadcrumb-item active" aria-current="page">{{ $gettext('Cost of Living') }}</li>
       </ol>
     </nav>
@@ -245,7 +245,7 @@ onMounted(() => loadData());
       <div class="d-flex justify-content-between align-items-center mb-4">
         <h1><i class="bi bi-house-heart me-2"></i> {{ $gettext('Cost of Living Analysis') }}</h1>
         <div class="d-flex gap-2">
-          <router-link :to="{ name: 'results' }" class="btn btn-secondary">
+          <router-link :to="{ name: 'results', query: { resultId: resultId } }" class="btn btn-secondary">
             <i class="bi bi-arrow-left me-1"></i> {{ $gettext('Back to Results') }}
           </router-link>
         </div>
@@ -338,7 +338,7 @@ onMounted(() => loadData());
                   </div>
                   <div class="card-footer p-2">
                     <div class="d-flex flex-wrap gap-1">
-                      <router-link v-for="catId in selectedCategories.slice(0, 3)" :key="catId" :to="getCategoryUrl(catId)" class="btn btn-sm btn-outline-primary" :title="$gettext('View details for') + ' ' + getCategoryDisplayName(catId)">
+                      <router-link v-for="catId in selectedCategories.slice(0, 3)" :key="catId" :to="getCategoryUrl(catId)" class="btn btn-sm btn-outline-primary" :title="$gettext('Details') + ': ' + getCategoryDisplayName(catId)">
                         <i class="bi bi-box-arrow-up-right me-1"></i>{{ getCategoryDisplayName(catId).substring(0, 8) }}
                       </router-link>
                       <span v-if="selectedCategories.length > 3" class="small text-muted ms-2">+{{ selectedCategories.length - 3 }} {{ $gettext('more') }}</span>

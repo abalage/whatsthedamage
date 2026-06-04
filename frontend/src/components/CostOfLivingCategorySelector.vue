@@ -104,7 +104,8 @@ const getCategoryDisplayName = (categoryId: string): string => $gettext(category
 
 .category-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  /*grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));*/
+  grid-template-columns: repeat(5, auto);
   gap: 8px;
 }
 
@@ -129,10 +130,10 @@ const getCategoryDisplayName = (categoryId: string): string => $gettext(category
 }
 
 .category-label {
-  display: flex;
+  /* display: flex; */
   align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
+  /* gap: 4px; */
+  padding: 8px;
   border: 1px solid #dee2e6;
   border-radius: 6px;
   transition: all 0.2s ease;
@@ -168,6 +169,7 @@ const getCategoryDisplayName = (categoryId: string): string => $gettext(category
 
 .category-name {
   flex: 1;
+  padding: 8px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -176,6 +178,5 @@ const getCategoryDisplayName = (categoryId: string): string => $gettext(category
 .default-badge {
   color: #ffc107;
   font-size: 0.75rem;
-  margin-left: 4px;
 }
 </style>

@@ -7,14 +7,11 @@ import { DEFAULT_COST_OF_LIVING_CATEGORY_IDS } from '../types/costOfLiving.js';
 const { $gettext } = useGettext();
 const costOfLivingStore = useCostOfLivingStore();
 
-// Constants
-const ZERO = 0;
-
 const allCategories = computed(() => costOfLivingStore.availableCategoryNames);
 const selectedCategories = computed(() => costOfLivingStore.selectedCategoryIds);
 
-const isSelected = (categoryId: string) => selectedCategories.value.includes(categoryId);
-const isDefaultCategory = (categoryId: string) => DEFAULT_COST_OF_LIVING_CATEGORY_IDS.includes(categoryId as any);
+const isSelected = (categoryId: string): boolean => selectedCategories.value.includes(categoryId);
+const isDefaultCategory = (categoryId: string): boolean => (DEFAULT_COST_OF_LIVING_CATEGORY_IDS as readonly string[]).includes(categoryId);
 
 const toggleCategory = (categoryId: string) => costOfLivingStore.toggleCategory(categoryId);
 const selectAll = () => costOfLivingStore.selectAll();
@@ -22,7 +19,7 @@ const clearAll = () => costOfLivingStore.clearAll();
 const resetToDefaults = () => costOfLivingStore.resetToDefaults();
 
 const selectedCount = computed(() => selectedCategories.value.length);
-const hasNoAllCategories = computed(() => allCategories.value.length === ZERO);
+const hasNoAllCategories = computed(() => allCategories.value.length === 0);
 const allSelected = computed(() => selectedCategories.value.length === allCategories.value.length && !hasNoAllCategories.value);
 
 // Use gettext directly on category IDs - translations are already configured
@@ -42,7 +39,7 @@ const getCategoryDisplayName = (categoryId: string): string => $gettext(category
       <p class="text-muted small mb-3">
         {{ $gettext('Select which categories to include in your Cost of Living calculation. Your selection is saved automatically.') }}
       </p>
-      
+
       <div class="d-flex gap-2 mb-3 flex-wrap">
         <button class="btn btn-sm btn-outline-success" :disabled="allSelected" @click="selectAll">
           <i class="bi bi-check-square me-1"></i> {{ $gettext('Select All') }}
@@ -54,7 +51,7 @@ const getCategoryDisplayName = (categoryId: string): string => $gettext(category
           <i class="bi bi-arrow-clockwise me-1"></i> {{ $gettext('Reset to Defaults') }}
         </button>
       </div>
-      
+
       <p class="small text-muted mb-2">
         <i class="bi bi-info-circle me-1"></i>
         {{ $gettext('Selected') }}: <strong>{{ selectedCount }}</strong> / {{ allCategories.length }}
@@ -63,19 +60,23 @@ const getCategoryDisplayName = (categoryId: string): string => $gettext(category
           <span class="badge bg-primary ms-1">{{ DEFAULT_COST_OF_LIVING_CATEGORY_IDS.length }}</span>
         </span>
       </p>
-      
+
       <div class="category-grid">
-        <div 
-          v-for="category in allCategories" 
+        <div
+          v-for="category in allCategories.filter(c => c)"
           :key="category"
           class="category-item"
           :class="{
             selected: isSelected(category),
-            default: isDefaultCategory(category) && !isSelected(category)
+            default: isDefaultCategory(category)
           }"
-          @click="toggleCategory(category)"
         >
-          <div class="category-label">
+          <button
+            class="category-label"
+            type="button"
+            :aria-pressed="isSelected(category)"
+            @click.stop="toggleCategory(category)"
+          >
             <span class="category-checkbox">
               <i v-if="isSelected(category)" class="bi bi-check-square-fill"></i>
               <i v-else class="bi bi-square"></i>
@@ -84,7 +85,7 @@ const getCategoryDisplayName = (categoryId: string): string => $gettext(category
             <span v-if="isDefaultCategory(category)" class="default-badge" :title="$gettext('Default category')">
               <i class="bi bi-star-fill"></i>
             </span>
-          </div>
+          </button>
         </div>
       </div>
     </div>
@@ -119,6 +120,11 @@ const getCategoryDisplayName = (categoryId: string): string => $gettext(category
   background-color: #fff3cd;
 }
 
+.category-item.selected.default .category-label {
+  border-style: dashed;
+  background-color: #d0ebff;
+}
+
 .category-label {
   display: flex;
   align-items: center;
@@ -129,6 +135,7 @@ const getCategoryDisplayName = (categoryId: string): string => $gettext(category
   transition: all 0.2s ease;
   background-color: white;
   font-size: 0.875rem;
+  cursor: pointer;
 }
 
 .category-label:hover {
@@ -136,11 +143,24 @@ const getCategoryDisplayName = (categoryId: string): string => $gettext(category
   border-color: #adb5bd;
 }
 
+.category-label:focus {
+  outline: 2px solid #0d6efd;
+  outline-offset: 2px;
+}
+
 .category-checkbox {
   color: #0d6efd;
   font-size: 1.1rem;
   min-width: 20px;
   text-align: center;
+}
+
+.category-checkbox i {
+  pointer-events: none;
+}
+
+.default-badge i {
+  pointer-events: none;
 }
 
 .category-name {

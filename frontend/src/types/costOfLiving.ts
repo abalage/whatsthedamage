@@ -11,11 +11,11 @@ export interface CostOfLivingSettings {
 
 // Default categories (MUST match backend config.py COST_OF_LIVING_CATEGORY_IDS)
 export const DEFAULT_COST_OF_LIVING_CATEGORY_IDS = [
-  'grocery',
-  'loan',
-  'transportation',
-  'utility',
-  'payment',
-  'fee',
-  'health'
+  'Grocery',
+  'Loan',
+  'Transportation',
+  'Utility',
+  'Payment',
+  'Fee',
+  'Health'
 ] as const;

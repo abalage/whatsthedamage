@@ -6,9 +6,9 @@ and return a list of AggregatedRow objects. They are invoked sequentially
 after all category data has been added to the builder.
 """
 
-from typing import List, Dict, TYPE_CHECKING
+from typing import List, Dict, Tuple, TYPE_CHECKING
 from gettext import gettext as _
-from whatsthedamage.models.dt_models import AggregatedRow
+from whatsthedamage.models.dt_models import AggregatedRow, DateField
 
 if TYPE_CHECKING:
     from whatsthedamage.models.dt_response_builder import DataTablesResponseBuilder
@@ -120,7 +120,7 @@ def create_cost_of_living_rows(builder: "DataTablesResponseBuilder") -> List[Agg
     }
 
     # Track totals per month
-    month_totals: Dict[int, tuple] = {}
+    month_totals: Dict[int, Tuple[DateField, float]] = {}
 
     # Iterate through all aggregated rows
     for row in builder._aggregated_rows:

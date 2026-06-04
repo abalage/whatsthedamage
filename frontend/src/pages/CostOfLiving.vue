@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, computed, watch, nextTick } from 'vue';
+import { ref, onMounted, computed, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import { fetchResults } from '../js/api.js';
 import { useFeedbackStore } from '../stores/feedback.js';
@@ -10,6 +10,17 @@ import BarChart from '../components/charts/BarChart.vue';
 import PieChart from '../components/charts/PieChart.vue';
 import CostOfLivingCategorySelector from '../components/CostOfLivingCategorySelector.vue';
 
+// DataTable Vue3 component imports
+import DataTable from 'datatables.net-vue3';
+import DataTablesLib from 'datatables.net-bs5';
+import 'datatables.net-buttons-bs5';
+import 'datatables.net-fixedheader-bs5';
+import 'datatables.net-buttons/js/buttons.html5';
+import type { ColumnSettings, Settings } from 'datatables.net';
+
+// Register DataTables library with the Vue component
+DataTable.use(DataTablesLib);
+
 const { $gettext } = useGettext();
 const feedback = useFeedbackStore();
 const route = useRoute();
@@ -18,7 +29,6 @@ const costOfLivingStore = useCostOfLivingStore();
 const resultId = computed(() => route.params.resultId as string);
 const isLoading = ref(true);
 const error = ref<string | null>(null);
-const dataTableRef = ref<HTMLElement | null>(null);
 
 // Constants
 const ZERO = 0;
@@ -41,10 +51,6 @@ const loadData = async () => {
     }
     
     isLoading.value = false;
-    
-    // Initialize DataTable after data is loaded
-    await initDataTable();
-    
   } catch (err) {
     error.value = err instanceof Error ? err.message : 'Failed to load data';
     feedback.showError('Failed to load Cost of Living data: ' + error.value);
@@ -80,6 +86,111 @@ const safeCurrency = computed(() => costOfLivingData.value?.currency || '');
 // Use gettext directly on category IDs - translations are already configured
 const getCategoryDisplayName = (categoryId: string): string => $gettext(categoryId);
 
+// NEW: Table column definitions for DataTable
+const tableColumns = computed<ColumnSettings[]>(() => {
+  const columns: ColumnSettings[] = [
+    {
+      title: $gettext('Month'),
+      data: 'month',
+      className: 'text-nowrap',
+      orderable: true
+    },
+    {
+      title: $gettext('Cost of Living'),
+      data: 'total',
+      className: 'text-nowrap text-end',
+      orderable: true,
+      render: (data: number, type: string) => {
+        if (type === 'display') {
+          return `${Math.abs(data)} ${safeCurrency.value}`;
+        }
+        return Math.abs(data);
+      }
+    }
+  ];
+
+  // Add columns for each selected category
+  selectedCategories.value.forEach(catId => {
+    columns.push({
+      title: getCategoryDisplayName(catId),
+      data: catId,
+      className: 'text-nowrap text-end',
+      orderable: true,
+      render: (data: { amount: number } | null, type: string) => {
+        const amount = data?.amount ?? ZERO;
+        if (type === 'display') {
+          return `${Math.abs(amount)}`;
+        }
+        return Math.abs(amount);
+      }
+    });
+  });
+
+  return columns;
+});
+
+// NEW: Table data for DataTable
+const tableData = computed<Record<string, unknown>[]>(() => {
+  if (!costOfLivingData.value) return [];
+
+  return costOfLivingData.value.months.map(month => {
+    const row: Record<string, unknown> = {
+      month: month.month,
+      total: month.total
+    };
+
+    // Add category data for each selected category
+    selectedCategories.value.forEach(catId => {
+      row[catId] = month.categories[catId] ?? { amount: ZERO };
+    });
+
+    return row;
+  });
+});
+
+// NEW: Table options for DataTable
+const tableOptions = computed<Settings>(() => ({
+  responsive: true,
+  pageLength: 25,
+  dom: '<"dt-buttons"B><"clear">frtip',
+  buttons: [
+    {
+      extend: 'csvHtml5',
+      text: $gettext('Export CSV'),
+      className: 'btn'
+    },
+    {
+      extend: 'excelHtml5',
+      text: $gettext('Export Excel'),
+      className: 'btn'
+    }
+  ],
+  order: [[0, 'desc']], // Sort by month descending by default
+  language: {
+    search: $gettext('Search:') + ' ',
+    lengthMenu: $gettext('Show _MENU_ entries'),
+    info: $gettext('Showing _START_ to _END_ of _TOTAL_ entries'),
+    infoEmpty: $gettext('Showing 0 to 0 of 0 entries'),
+    infoFiltered: $gettext('(filtered from _MAX_ total entries)'),
+    paginate: {
+      first: $gettext('First'),
+      last: $gettext('Last'),
+      next: $gettext('Next'),
+      previous: $gettext('Previous')
+    }
+  }
+}));
+
+// NEW: Helper function to calculate category average
+const calculateCategoryAverage = (catId: string): string => {
+  if (safeMonths.value.length === ZERO) return '0.00';
+  const sum = safeMonths.value.reduce(
+    (acc, m) => acc + Math.abs(m.categories[catId]?.amount || ZERO),
+    ZERO
+  );
+  return (sum / safeMonths.value.length).toFixed(2);
+};
+
 const getCategoryUrl = (categoryId: string) => ({
   name: 'category-months',
   params: { resultId: resultId.value, accountId: selectedAccountId.value, categoryId }
@@ -90,50 +201,6 @@ const getCategoryUrl = (categoryId: string) => ({
 // Auto-save settings
 watch(() => [costOfLivingStore.selectedCategoryIds, costOfLivingStore.showTrendline], () => {
   costOfLivingStore.saveSettings();
-}, { deep: true });
-
-// Initialize or reinitialize DataTable
-const initDataTable = async () => {
-  if (!dataTableRef.value) return;
-  
-  // Access jQuery and window safely
-  const w = globalThis as unknown as Window & {
-    $?: (arg0: string | HTMLElement) => { hasClass: (className: string) => boolean; DataTable: () => { destroy: () => void } };
-    initMainPage?: () => void;
-    exportCsvText?: string;
-    exportExcelText?: string;
-  };
-  
-  if (!w.$ || !w.initMainPage) return;
-  
-  // Set translation strings for DataTables export buttons
-  if (w.exportCsvText !== undefined) {
-    w.exportCsvText = $gettext('Export CSV');
-  }
-  if (w.exportExcelText !== undefined) {
-    w.exportExcelText = $gettext('Export Excel');
-  }
-  
-  // Destroy existing DataTable on our specific table if it exists
-  const table = dataTableRef.value;
-  const dataTable = w.$(table);
-  if (dataTable && typeof dataTable.hasClass === 'function' && dataTable.hasClass('dataTable')) {
-    const dtInstance = dataTable.DataTable();
-    if (dtInstance && typeof dtInstance.destroy === 'function') {
-      dtInstance.destroy();
-    }
-  }
-  
-  // Initialize DataTables for all tables (including ours)
-  w.initMainPage();
-};
-
-// Reinitialize DataTable when selected categories or data changes
-watch(() => [selectedCategories.value, costOfLivingData.value], async () => {
-  await nextTick();
-  if (costOfLivingData.value && selectedCategories.value.length > ZERO) {
-    await initDataTable();
-  }
 }, { deep: true });
 
 onMounted(() => loadData());
@@ -275,38 +342,40 @@ onMounted(() => loadData());
         </div>
       </div>
 
-      <!-- Data Table - Always keep table element in DOM, use v-show for visibility -->
-      <div class="card">
+      <!-- Data Table - Vue3-native DataTable component -->
+      <div v-if="costOfLivingData && selectedCategories.length > 0" class="card">
         <div class="card-header"><h4 class="mb-0"><i class="bi bi-table me-2"></i> {{ $gettext('Detailed Monthly Data') }}</h4></div>
         <div class="card-body p-0">
           <div class="table-responsive">
-            <table  id="datatable-cost-of-living" ref="dataTableRef" class="table table-bordered table-hover mb-0 small" data-datatable="true">
+            <DataTable
+              :key="`columns-${selectedCategories.join(',')}-${costOfLivingData?.months.length}`"
+              :columns="tableColumns"
+              :data="tableData"
+              :options="tableOptions"
+              class="display table table-bordered table-hover mb-0 small"
+            >
               <thead class="table-light">
                 <tr>
-                  <th scope="col" class="text-nowrap" data-order="month">{{ $gettext('Month') }}</th>
-                  <th scope="col" class="text-nowrap" data-order="total">{{ $gettext('Cost of Living') }}</th>
-                  <th v-for="catId in selectedCategories" :key="catId" scope="col" class="text-nowrap" :data-order="catId">{{ getCategoryDisplayName(catId) }}</th>
+                  <th
+                    v-for="col in tableColumns"
+                    :key="col.data ?? col.title"
+                    :class="col.className"
+                    scope="col"
+                  >
+                    {{ col.title }}
+                  </th>
                 </tr>
               </thead>
-              <tbody>
-                <tr v-for="month in safeMonths" :key="month.month_timestamp">
-                  <td>{{ month.month || '' }}</td>
-                  <td class="fw-bold text-end" :data-order="month.total ? Math.abs(month.total) : 0">{{ month.total ? Math.abs(month.total) : '0.00' }} {{ safeCurrency }}</td>
-                  <td v-for="catId in selectedCategories" :key="catId" class="text-end" :data-order="month.categories?.[catId] ? Math.abs(month.categories[catId].amount) : 0">
-                    {{ month.categories?.[catId] ? Math.abs(month.categories[catId].amount) : '0.00' }}
-                  </td>
-                </tr>
-              </tbody>
               <tfoot class="table-light">
                 <tr>
                   <th scope="col">{{ $gettext('Average') }}</th>
                   <th scope="col" class="fw-bold text-end">{{ trendlineValue }} {{ safeCurrency }}</th>
                   <th v-for="catId in selectedCategories" :key="catId" scope="col" class="text-end">
-                    {{ safeMonths.length > 0 ? Math.abs(safeMonths.reduce((sum, m) => sum + (m.categories[catId]?.amount || 0), 0) / safeMonths.length) : '0.00' }}
+                    {{ calculateCategoryAverage(catId) }}
                   </th>
                 </tr>
               </tfoot>
-            </table>
+            </DataTable>
           </div>
         </div>
       </div>

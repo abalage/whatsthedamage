@@ -91,7 +91,6 @@ const trendlineValue = computed(() => costOfLivingData.value?.mean ?? ZERO);
 
 // Safe access to months for DataTable footer calculations
 const safeMonths = computed(() => costOfLivingData.value?.months || []);
-const safeCurrency = computed(() => costOfLivingData.value?.currency || '');
 
 // Use gettext directly on category IDs - translations are already configured
 const getCategoryDisplayName = (categoryId: string): string => $gettext(categoryId);
@@ -112,7 +111,7 @@ const tableColumns = computed<DataTableColumn[]>(() => {
       orderable: true,
       render: (data: number, type: string) => {
         if (type === 'display') {
-          return `${Math.abs(data)} ${safeCurrency.value}`;
+          return `${Math.abs(data)}`;
         }
         return Math.abs(data);
       }
@@ -315,7 +314,7 @@ onMounted(() => loadData());
           </div>
         </div>
         <div class="card-body">
-          <div class="chart-wrapper"><BarChart :data="monthlyBreakdown" :show-trendline="costOfLivingStore.showTrendline" :currency="safeCurrency" /></div>
+          <div class="chart-wrapper"><BarChart :data="monthlyBreakdown" :show-trendline="costOfLivingStore.showTrendline"/></div>
         </div>
       </div>
 
@@ -335,7 +334,7 @@ onMounted(() => loadData());
                     <span class="badge bg-primary">{{ month.total }}</span>
                   </div>
                   <div class="card-body p-2">
-                    <PieChart :data="Object.entries(month.categories).filter(([id]) => selectedCategories.includes(id)).map(([id, d]) => ({ label: getCategoryDisplayName(id), value: d.amount, categoryId: id }))" :total="month.total" :currency="safeCurrency" />
+                    <PieChart :data="Object.entries(month.categories).filter(([id]) => selectedCategories.includes(id)).map(([id, d]) => ({ label: getCategoryDisplayName(id), value: d.amount, categoryId: id }))" :total="month.total" />
                   </div>
                   <div class="card-footer p-2">
                     <div class="d-flex flex-wrap gap-1">
@@ -379,7 +378,7 @@ onMounted(() => loadData());
               <tfoot class="table-light">
                 <tr>
                   <th scope="col">{{ $gettext('Average') }}</th>
-                  <th scope="col" class="fw-bold text-end">{{ trendlineValue }} {{ safeCurrency }}</th>
+                  <th scope="col" class="fw-bold text-end">{{ trendlineValue }}</th>
                   <th v-for="catId in selectedCategories" :key="catId" scope="col" class="text-end">
                     {{ calculateCategoryAverage(catId) }}
                   </th>

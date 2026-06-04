@@ -57,7 +57,7 @@ export default [
       'no-var': 'error',
       'prefer-const': 'error',
       'prefer-arrow-callback': 'error',
-      'no-magic-numbers': 'warn',
+      "no-magic-numbers": ["warn", { "ignoreArrayIndexes": true }],
       'no-dupe-keys': 'error',
 
       // TypeScript-specific rules

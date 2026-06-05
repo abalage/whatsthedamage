@@ -174,6 +174,12 @@ const useFormStore = defineStore('form', () => {
 
   /**
    * Prepare form data for submission (without navigation)
+   *
+   * NOTE: This method does NOT manage the isLoading state.
+   * The caller (typically submitForm in useFormWithNavigation) is responsible
+   * for setting isLoading to true before calling this and false after handling
+   * the result (including navigation).
+   *
    * @returns Promise with result containing resultId or error
    */
   const prepareSubmit = async (): Promise<SubmitResult> => {
@@ -182,7 +188,6 @@ const useFormStore = defineStore('form', () => {
       return { success: false, error: 'Validation failed' }
     }
 
-    isLoading.value = true
     feedback.clearMessages()
 
     try {
@@ -234,8 +239,6 @@ const useFormStore = defineStore('form', () => {
       const message = error instanceof Error ? error.message : String(error)
       feedback.showError(`Error processing transactions: ${message}`)
       return { success: false, error: message }
-    } finally {
-      isLoading.value = false
     }
   }
 
@@ -274,9 +277,9 @@ const useFormStore = defineStore('form', () => {
  * Composable for form submission with navigation
  * This separates the navigation logic from the form state
  *
- * @returns Form store with navigation-capable submit function
+ * @returns Object containing the form store instance and navigation-capable submit function
  */
-export const useFormWithNavigation = (): ReturnType<typeof useFormStore> & { submitForm: () => Promise<boolean> } => {
+export const useFormWithNavigation = () => {
   const formStore = useFormStore()
   const router = useRouter()
 
@@ -285,14 +288,16 @@ export const useFormWithNavigation = (): ReturnType<typeof useFormStore> & { sub
    * @returns Promise with success status
    */
   const submitForm = async (): Promise<boolean> => {
-    const result = await formStore.prepareSubmit()
+    formStore.isLoading = true
 
-    if (!result.success || !result.resultId) {
-      return false
-    }
-
-    // Navigate to results page with the result ID
     try {
+      const result = await formStore.prepareSubmit()
+
+      if (!result.success || !result.resultId) {
+        return false
+      }
+
+      // Navigate to results page with the result ID
       await router.push({
         name: 'results',
         query: { resultId: result.resultId }
@@ -300,14 +305,15 @@ export const useFormWithNavigation = (): ReturnType<typeof useFormStore> & { sub
       return true
     } catch (navError: unknown) {
       const message = navError instanceof Error ? navError.message : String(navError)
-      formStore.$patch({ isLoading: false })
       useFeedbackStore().showError(`Navigation error: ${message}`)
       return false
+    } finally {
+      formStore.isLoading = false
     }
   }
 
   return {
-    ...formStore,
+    formStore,
     submitForm
   }
 }

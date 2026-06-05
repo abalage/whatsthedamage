@@ -8,7 +8,7 @@ import ButtonComponent from '../components/ui/ButtonComponent.vue'
 import ErrorDisplay from '../components/ErrorDisplay.vue'
 
 const { $gettext } = useGettext()
-const formStore = useFormWithNavigation()
+const { formStore, submitForm: submitFormFn } = useFormWithNavigation()
 const feedback = useFeedbackStore()
 
 
@@ -45,7 +45,7 @@ const handleTextInput = (field: InputField, event: Event) => {
 }
 
 const submitForm = async () => {
-  await formStore.submitForm()
+  await submitFormFn()
 }
 
 const clearForm = () => {

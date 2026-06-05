@@ -37,7 +37,9 @@
     "vue": "^3.5.34",
     "vue-chartjs": "^5.3.3",
     "vue-router": "^5.0.7",
-    "vue3-gettext": "^4.0.0-beta.1"
+    "vue3-gettext": "^4.0.0-beta.1",
+    "@emnapi/core": "^1.10.0",
+    "@emnapi/runtime": "^1.10.0"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

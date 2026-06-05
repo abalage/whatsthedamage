@@ -6,11 +6,11 @@ import {
   useDrilldownData,
   extractIdFromUrl,
   type BreadcrumbItem
-} from '../composables/useDrilldownData'
+} from '../composables/useDrilldownData.js'
 import CardComponent from '../components/ui/CardComponent.vue'
 import ButtonComponent from '../components/ui/ButtonComponent.vue'
-import { fetchMonthCategories } from '../js/api'
-import type { MonthCategoriesApiResponse, CategoryData } from '../types/api'
+import { fetchMonthCategories } from '../js/api.js'
+import type { MonthCategoriesApiResponse, CategoryData } from '../types/api.js'
 
 const { $gettext } = useGettext()
 const route = useRoute()

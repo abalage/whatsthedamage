@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useGettext } from 'vue3-gettext'
-import type { AccountData } from '../../types/api'
+import type { AccountData } from '../../types/api.js'
 
 const { $gettext } = useGettext()
 

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useFeedbackStore } from '../stores/feedback'
+import { useFeedbackStore } from '../stores/feedback.js'
 
 const feedback = useFeedbackStore()
 

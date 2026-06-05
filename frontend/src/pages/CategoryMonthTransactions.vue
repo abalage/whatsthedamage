@@ -5,11 +5,11 @@ import { useGettext } from 'vue3-gettext'
 import {
   useDrilldownData,
   type BreadcrumbItem
-} from '../composables/useDrilldownData'
+} from '../composables/useDrilldownData.js'
 import CardComponent from '../components/ui/CardComponent.vue'
 import ButtonComponent from '../components/ui/ButtonComponent.vue'
-import { fetchCategoryMonthTransactions } from '../js/api'
-import type { CategoryMonthTransactionsApiResponse } from '../types/api'
+import { fetchCategoryMonthTransactions } from '../js/api.js'
+import type { CategoryMonthTransactionsApiResponse } from '../types/api.js'
 
 const { $gettext } = useGettext()
 const route = useRoute()

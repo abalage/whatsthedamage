@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { useFormWithNavigation } from '../stores/form'
-import { useFeedbackStore } from '../stores/feedback'
+import { useFormWithNavigation } from '../stores/form.js'
+import { useFeedbackStore } from '../stores/feedback.js'
 import { useGettext } from 'vue3-gettext'
 import CardComponent from '../components/ui/CardComponent.vue'
 import ButtonComponent from '../components/ui/ButtonComponent.vue'

@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useRoute, RouterLink } from 'vue-router'
-import { useLocaleStore } from '../stores/locale'
-import { useStatisticalStore } from '../stores/statistical'
-import { useFeedbackStore } from '../stores/feedback'
+import { useLocaleStore } from '../stores/locale.js'
+import { useStatisticalStore } from '../stores/statistical.js'
+import { useFeedbackStore } from '../stores/feedback.js'
 import { useGettext } from 'vue3-gettext'
-import { recalculateStatistics } from '../js/api'
+import { recalculateStatistics } from '../js/api.js'
 
 const { $gettext } = useGettext()
 const route = useRoute()

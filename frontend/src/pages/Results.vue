@@ -1,38 +1,16 @@
 <script setup lang="ts">
 import { ref, onMounted, computed, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
-import { fetchResults as fetchResultsApi } from '../js/api'
-import { useFeedbackStore } from '../stores/feedback'
+import { fetchResults as fetchResultsApi } from '../js/api.js'
+import { useFeedbackStore } from '../stores/feedback.js'
 import { useGettext } from 'vue3-gettext'
-import type { _ResultsApiResponse } from '../types/api'
+import type { ResultsApiResponse, AccountDataResponse } from '../types/api.js'
 import ButtonComponent from '../components/ui/ButtonComponent.vue'
 
 const { $gettext } = useGettext()
 
-// Local type for the account data structure used in this component
-interface AccountData {
-  id: string
-  name: string
-  dt_response: {
-    data: Array<{
-      category: string
-      date: {
-        display: string
-        timestamp: number
-      }
-      total: {
-        display: string
-        raw: number | string
-      }
-      details: Array<{
-        date: { display: string }
-        amount: { display: string }
-        merchant: string
-      }>
-      row_id: string
-    }>
-  }
-}
+// Import AccountData type from API types
+type AccountData = AccountDataResponse
 
 const feedback = useFeedbackStore()
 const route = useRoute()
@@ -43,7 +21,7 @@ const resultId = computed(() => {
   const id = route.query.resultId ?? route.query.result_id
   return typeof id === 'string' ? id : null
 })
-const resultsData = ref<_ResultsApiResponse | null>(null)
+const resultsData = ref<ResultsApiResponse | null>(null)
 const isLoading = ref(true)
 const error = ref<string | null>(null)
 
@@ -65,12 +43,13 @@ const loadResults = async () => {
       await nextTick()
       await new Promise(resolve => setTimeout(resolve, DEFERRED_TIMEOUT))
       const w1 = globalThis as unknown as Window
-      w1.exportCsvText = $gettext('Export CSV')
-      w1.exportExcelText = $gettext('Export Excel')
 
       // Set highlights for statistical cell highlighting
       w1.highlights = fallbackResponse.accounts_data?.highlights || {}
 
+      // Set export button translations for DataTables
+      w1.exportCsvText = $gettext('Export CSV')
+      w1.exportExcelText = $gettext('Export Excel')
       w1.initMainPage()
     } catch (fallbackError) {
       const message = fallbackError instanceof Error ? fallbackError.message : String(fallbackError)
@@ -167,7 +146,7 @@ onMounted(() => {
     <nav aria-label="breadcrumb">
       <ol class="breadcrumb">
         <li class="breadcrumb-item"><router-link to="/">{{ $gettext('Home') }}</router-link></li>
-        <li class="breadcrumb-item active" aria-current="page">{{ $gettext('Results') }}</li>
+        <li class="breadcrumb-item active" aria-current="page">{{ $gettext('Categories') }}</li>
       </ol>
     </nav>
 
@@ -184,9 +163,26 @@ onMounted(() => {
 
     <div v-else-if="resultsData">
       <div class="d-flex justify-content-between align-items-center mb-3">
-        <h1 class="mb-0">{{ $gettext('Processed results') }}</h1>
-        <div class="view-toggle">
-          <!-- View toggle would go here -->
+        <h1 class="mb-0">{{ $gettext('Transaction Categories') }}</h1>
+        <div class="d-flex gap-2">
+          <ButtonComponent
+            :text="$gettext('Back to Form')"
+            to="/"
+            variant="secondary"
+            class="mt-3 mb-3 me-2"
+          />
+          <ButtonComponent
+            :text="$gettext('Transactions')"
+            :to="{ name: 'details', params: { resultId: resultId } }"
+            variant="outline-secondary"
+            class="mt-3 mb-3 me-2"
+          />
+          <ButtonComponent
+            :text="$gettext('Cost of Living')"
+            :to="{ name: 'cost-of-living', params: { resultId: resultId } }"
+            variant="outline-secondary"
+            class="mt-3 mb-3"
+          />
         </div>
       </div>
 
@@ -234,23 +230,6 @@ v-for="[monthDisplay, monthTs] in getMonthsForAccount(account)"
               </table>
             </div>
           </div>
-        </div>
-      </div>
-
-      <div class="row">
-        <div class="col-md-6">
-          <ButtonComponent
-            :text="$gettext('Back to Form')"
-            to="/"
-            variant="secondary"
-            class="mt-3 mb-3 me-2"
-          />
-          <ButtonComponent
-            :text="$gettext('View All Details')"
-            :to="{ name: 'details', params: { resultId: resultId } }"
-            variant="outline-secondary"
-            class="mt-3 mb-3"
-          />
         </div>
       </div>
     </div>

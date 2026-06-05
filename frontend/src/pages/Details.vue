@@ -2,9 +2,9 @@
 import { ref, onMounted, computed, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
 import { useGettext } from 'vue3-gettext'
-import { fetchResults } from '../js/api'
+import { fetchResults } from '../js/api.js'
 import ButtonComponent from '../components/ui/ButtonComponent.vue'
-import type { _ResultsApiResponse } from '../types/api'
+import type { ResultsApiResponse } from '../types/api.js'
 
 const { $gettext } = useGettext()
 const route = useRoute()
@@ -15,7 +15,7 @@ const resultId = computed(() => {
   return typeof id === 'string' ? id : null
 })
 
-const resultsData = ref<_ResultsApiResponse | null>(null)
+const resultsData = ref<ResultsApiResponse | null>(null)
 const isLoading = ref(true)
 const error = ref<string | null>(null)
 
@@ -93,8 +93,8 @@ onMounted(() => {
     <nav aria-label="breadcrumb">
       <ol class="breadcrumb">
         <li class="breadcrumb-item"><router-link to="/">{{ $gettext('Home') }}</router-link></li>
-        <li class="breadcrumb-item"><router-link :to="{ name: 'results', query: { resultId: resultId } }">{{ $gettext('Results') }}</router-link></li>
-        <li class="breadcrumb-item active" aria-current="page">{{ $gettext('Details') }}</li>
+        <li class="breadcrumb-item"><router-link :to="{ name: 'results', query: { resultId: resultId } }">{{ $gettext('Categories') }}</router-link></li>
+        <li class="breadcrumb-item active" aria-current="page">{{ $gettext('Transactions') }}</li>
       </ol>
     </nav>
 
@@ -115,8 +115,13 @@ onMounted(() => {
     <div v-else-if="resultsData">
       <div class="d-flex justify-content-between align-items-center mb-3">
         <h1 class="mb-0">{{ $gettext('Transaction Details') }}</h1>
-        <div class="view-toggle">
-          <!-- View toggle would go here -->
+        <div class="d-flex gap-2">
+          <ButtonComponent
+            :text="$gettext('Back to Categories')"
+            variant="secondary"
+            :to="{ name: 'results', query: { resultId: resultId } }"
+            class="mt-3 mb-3"
+          />
         </div>
       </div>
 
@@ -152,18 +157,6 @@ onMounted(() => {
               </tbody>
             </table>
           </div>
-        </div>
-      </div>
-
-      <!-- Navigation -->
-      <div class="row">
-        <div class="col-md-6">
-          <ButtonComponent
-            :text="$gettext('Back to Results')"
-            variant="secondary"
-            :to="{ name: 'results', query: { resultId: resultId } }"
-            class="mt-3 mb-3"
-          />
         </div>
       </div>
     </div>

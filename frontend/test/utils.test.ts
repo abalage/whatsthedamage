@@ -4,7 +4,7 @@
  */
 
 import { expect, test, vi, beforeEach, afterEach } from 'vitest';
-import { showNotification } from '../src/js/utils';
+import { showNotification } from '../src/js/utils.js';
 
 /**
  * Create a test DOM structure

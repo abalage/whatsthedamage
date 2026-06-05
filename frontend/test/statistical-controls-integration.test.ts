@@ -11,7 +11,7 @@
  */
 
 import { describe, expect, test, beforeEach, afterEach, vi } from 'vitest';
-import { updateCellHighlights } from '../src/js/statistical-analysis';
+import { updateCellHighlights } from '../src/js/statistical-analysis.js';
 
 /**
  * Create a test DOM structure matching Results.vue DataTable structure

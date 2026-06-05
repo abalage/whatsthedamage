@@ -3,15 +3,15 @@
  * @module utils/api
  */
 
-import { AppError, ApiResponse } from '../types';
+import { AppError, ApiResponse } from '../types/index.js';
 import type {
-  _ProcessApiResponse,
-  _ResultsApiResponse,
-  _CategoryMonthsApiResponse,
-  _MonthCategoriesApiResponse,
-  _CategoryMonthTransactionsApiResponse,
-  _RecalculateApiResponse,
-} from '../types/api';
+  ProcessApiResponse,
+  ResultsApiResponse,
+  CategoryMonthsApiResponse,
+  MonthCategoriesApiResponse,
+  CategoryMonthTransactionsApiResponse,
+  RecalculateApiResponse,
+} from '../types/api.js';
 
 // API base URL configuration
 export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '/api/v2';
@@ -110,7 +110,7 @@ export function getApiUrl(endpoint: string): string {
  * @returns Promise with processing result
  * @throws AppError if processing fails
  */
-export async function processTransactions(formData: FormData): Promise<_ProcessApiResponse> {
+export async function processTransactions(formData: FormData): Promise<ProcessApiResponse> {
   try {
     const response = await fetch(`${API_BASE_URL}/process`, {
       method: 'POST',
@@ -155,8 +155,8 @@ export async function recalculateStatistics(
   resultId: string,
   algorithms: string[],
   direction: 'columns' | 'rows'
-): Promise<_RecalculateApiResponse> {
-  return postData<_RecalculateApiResponse>(`${API_BASE_URL}/recalculate-statistics`, {
+): Promise<RecalculateApiResponse> {
+  return postData<RecalculateApiResponse>(`${API_BASE_URL}/recalculate-statistics`, {
     result_id: resultId,
     algorithms,
     direction,
@@ -168,8 +168,8 @@ export async function recalculateStatistics(
  * @param resultId - Result ID
  * @returns Promise with results data
  */
-export async function fetchResults(resultId: string): Promise<_ResultsApiResponse> {
-  return fetchWithErrorHandling<_ResultsApiResponse>(getApiUrl(`/results/${resultId}`));
+export async function fetchResults(resultId: string): Promise<ResultsApiResponse> {
+  return fetchWithErrorHandling<ResultsApiResponse>(getApiUrl(`/results/${resultId}`));
 }
 
 /**
@@ -179,11 +179,11 @@ export async function fetchResults(resultId: string): Promise<_ResultsApiRespons
  */
 export async function fetchCategoryMonths(
   params: Record<string, string | null>
-): Promise<_CategoryMonthsApiResponse> {
+): Promise<CategoryMonthsApiResponse> {
   const resultId = params.resultId ?? ''
   const accountId = params.accountId ?? ''
   const categoryId = params.categoryId ?? ''
-  return fetchWithErrorHandling<_CategoryMonthsApiResponse>(
+  return fetchWithErrorHandling<CategoryMonthsApiResponse>(
     getApiUrl(`/results/${resultId}/accounts/${accountId}/categories/${categoryId}/months`)
   );
 }
@@ -195,11 +195,11 @@ export async function fetchCategoryMonths(
  */
 export async function fetchMonthCategories(
   params: Record<string, string | null>
-): Promise<_MonthCategoriesApiResponse> {
+): Promise<MonthCategoriesApiResponse> {
   const resultId = params.resultId ?? ''
   const accountId = params.accountId ?? ''
   const monthId = params.monthId ?? ''
-  return fetchWithErrorHandling<_MonthCategoriesApiResponse>(
+  return fetchWithErrorHandling<MonthCategoriesApiResponse>(
     getApiUrl(`/results/${resultId}/accounts/${accountId}/months/${monthId}/categories`)
   );
 }
@@ -211,12 +211,12 @@ export async function fetchMonthCategories(
  */
 export async function fetchCategoryMonthTransactions(
   params: Record<string, string | null>
-): Promise<_CategoryMonthTransactionsApiResponse> {
+): Promise<CategoryMonthTransactionsApiResponse> {
   const resultId = params.resultId ?? ''
   const accountId = params.accountId ?? ''
   const categoryId = params.categoryId ?? ''
   const monthId = params.monthId ?? ''
-  return fetchWithErrorHandling<_CategoryMonthTransactionsApiResponse>(
+  return fetchWithErrorHandling<CategoryMonthTransactionsApiResponse>(
     getApiUrl(`/results/${resultId}/accounts/${accountId}/categories/${categoryId}/months/${monthId}/transactions`)
   );
 }

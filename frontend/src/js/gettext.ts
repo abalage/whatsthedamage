@@ -1,5 +1,5 @@
 import { createGettext } from 'vue3-gettext'
-import translations from '../locales/translations.json'
+import translations from '../locales/translations.json' with { type: 'json' }
 
 export default createGettext({
   defaultLanguage: 'en',

@@ -43,12 +43,12 @@ class DataTablesResponseBuilder:
             metadata (Optional[Any]): Optional detailed metadata.
             statistical_metadata (Optional[Any]): Optional statistical metadata.
         """
-        from whatsthedamage.models.dt_calculators import create_balance_rows, create_total_spendings
+        from whatsthedamage.models.dt_calculators import create_balance_rows, create_total_spendings, create_cost_of_living_rows
 
         self._date_format = date_format
         self._aggregated_rows: List[AggregatedRow] = []
         self._month_totals: Dict[int, tuple[DateField, float]] = {}
-        self._calculators = calculators if calculators is not None else [create_balance_rows, create_total_spendings]
+        self._calculators = calculators if calculators is not None else [create_balance_rows, create_total_spendings, create_cost_of_living_rows]
         self._account = account
         self._currency = currency
         self._metadata = metadata

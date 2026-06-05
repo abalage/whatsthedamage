@@ -7,7 +7,7 @@ import {
     getCssClassForHighlight,
     getCssClassesForHighlights,
     HighlightConfig
-} from '../src/config/highlight-config';
+} from '../src/config/highlight-config.js';
 
 describe('Highlight Configuration', () => {
     it('should export default configuration', () => {

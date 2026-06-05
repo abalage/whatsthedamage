@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: whatsthedamage-1.0\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
 "POT-Creation-Date: \n"
-"PO-Revision-Date: 2026-05-29 15:58+0200\n"
+"PO-Revision-Date: 2026-06-05 10:19+0200\n"
 "Last-Translator: Balázs Németh <balagetech@protonmail.com>\n"
 "Language-Team: Hungarian\n"
 "Language: hu\n"
@@ -18,87 +18,136 @@ msgstr ""
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 "X-Generator: Poedit 3.6\n"
 
-#: src/components/Layout.vue:119
+#: src/components/CostOfLivingCategorySelector.vue:35
+msgid "Customize Categories"
+msgstr "Kategóriák testreszabása"
+
+#: src/components/CostOfLivingCategorySelector.vue:40
+msgid ""
+"Select which categories to include in your Cost of Living calculation. Your "
+"selection is saved automatically."
+msgstr ""
+"Válaszd ki mely kategóriákat vegyük figyelembe a megélhetési költések "
+"kiszámításakor."
+
+#: src/components/CostOfLivingCategorySelector.vue:45
+msgid "Select All"
+msgstr "Összes kijelölése"
+
+#: src/components/CostOfLivingCategorySelector.vue:48
+msgid "Clear All"
+msgstr "Kijelölések törlése"
+
+#: src/components/CostOfLivingCategorySelector.vue:51
+msgid "Reset to Defaults"
+msgstr "Alapértelmezett helyreállítása"
+
+#: src/components/CostOfLivingCategorySelector.vue:57
+msgid "Selected"
+msgstr "Kiválasztva"
+
+#: src/components/CostOfLivingCategorySelector.vue:59
+msgid "Default categories"
+msgstr "Alapértelmezett kategóriák"
+
+#: src/components/CostOfLivingCategorySelector.vue:78
+msgid "selected, press to deselect"
+msgstr "kiválasztva, kattints a kiválasztás törléséhez"
+
+#: src/components/CostOfLivingCategorySelector.vue:78
+msgid "not selected, press to select"
+msgstr "nincs kiválasztva, kattints a kiválasztáshoz"
+
+#: src/components/CostOfLivingCategorySelector.vue:89
+msgid "Default category"
+msgstr "Alapértelmezett kategória"
+
+#: src/components/Layout.vue:120
 msgid "Tell me I didn't spend that much…"
 msgstr "Mondd hogy nem költöttem sokat..."
 
-#: src/components/Layout.vue:126 src/pages/CategoryMonthsList.vue:45
-#: src/pages/CategoryMonthTransactions.vue:41 src/pages/Details.vue:95
-#: src/pages/MonthCategoriesList.vue:44 src/pages/Results.vue:166
+#: src/components/Layout.vue:127 src/pages/CategoryMonthsList.vue:45
+#: src/pages/CategoryMonthTransactions.vue:41 src/pages/CostOfLiving.vue:221
+#: src/pages/Details.vue:95 src/pages/MonthCategoriesList.vue:44
+#: src/pages/Results.vue:148
 msgid "Home"
 msgstr "Kezdőlap"
 
-#: src/components/Layout.vue:130 src/components/Layout.vue:140
+#: src/components/Layout.vue:131 src/components/Layout.vue:141
 msgid "About"
 msgstr "A programról"
 
-#: src/components/Layout.vue:134
+#: src/components/Layout.vue:135
 msgid "Privacy"
 msgstr "Adatvédelem"
 
-#: src/components/Layout.vue:137
+#: src/components/Layout.vue:138
 msgid "Legal"
 msgstr "Jognyilatkozat"
 
-#: src/components/Layout.vue:146
+#: src/components/Layout.vue:147
 msgid "Analytics"
 msgstr "Analitika"
 
-#: src/components/Layout.vue:150
+#: src/components/Layout.vue:151
 msgid "Analysis direction"
 msgstr "Vizsgálat iránya"
 
-#: src/components/Layout.vue:159
+#: src/components/Layout.vue:160
 msgid "columns"
 msgstr "oszlopok"
 
-#: src/components/Layout.vue:160
+#: src/components/Layout.vue:161
 msgid "rows"
 msgstr "sorok"
 
-#: src/components/Layout.vue:164
+#: src/components/Layout.vue:165
 msgid "Algorithms"
 msgstr "Algoritmusok"
 
-#: src/components/Layout.vue:175
+#: src/components/Layout.vue:176
 msgid "IQR Outlier Detection"
 msgstr "Interkvartilis terjedelem (IQR)"
 
-#: src/components/Layout.vue:176
+#: src/components/Layout.vue:177
 msgid "Pareto analysis"
 msgstr "Pareto-elv"
 
-#: src/components/Layout.vue:180
+#: src/components/Layout.vue:181
 msgid "Legend"
 msgstr "Színjegyzék"
 
-#: src/components/Layout.vue:185
+#: src/components/Layout.vue:186
 msgid "Marked outlier by IQR"
 msgstr "IQR által kívülállónak jelölt érték"
 
-#: src/components/Layout.vue:186
+#: src/components/Layout.vue:187
 msgid "Marked outlier by Pareto principle"
 msgstr "Pareto-elv által megjelölt érték"
 
-#: src/components/Layout.vue:187
+#: src/components/Layout.vue:188
 msgid "Excluded from statistics"
 msgstr "Statisztikából kihagyott értékek"
 
-#: src/components/Layout.vue:188
+#: src/components/Layout.vue:189
 msgid "Matched by multiple algorithms"
 msgstr "Több algoritmus is megjelölte"
 
-#: src/components/Layout.vue:200
+#: src/components/Layout.vue:203
 msgid "Reset to defaults"
 msgstr "Alapértelmezés helyreállítása"
 
-#: src/components/Layout.vue:207
+#: src/components/Layout.vue:210
 msgid "Languages"
 msgstr "Nyelvek"
 
-#: src/components/Layout.vue:225
+#: src/components/Layout.vue:228
 msgid "Skip to main content"
 msgstr "Ugrás a tartalomhoz"
+
+#: src/components/ui/CardComponent.vue:88
+msgid "account"
+msgstr "számla"
 
 #: src/pages/About.vue:8 src/pages/Statistics.vue:10
 msgid "What's the Damage"
@@ -109,8 +158,8 @@ msgid "Details for Category"
 msgstr "Kategória részletei"
 
 #: src/pages/CategoryMonthsList.vue:46
-#: src/pages/CategoryMonthTransactions.vue:42 src/pages/Details.vue:96
-#: src/pages/MonthCategoriesList.vue:45 src/pages/Results.vue:167
+#: src/pages/CategoryMonthTransactions.vue:42
+#: src/pages/MonthCategoriesList.vue:45
 msgid "Results"
 msgstr "Eredmények"
 
@@ -119,46 +168,47 @@ msgid "Category Details"
 msgstr "Kategória részletei"
 
 #: src/pages/CategoryMonthsList.vue:51
-#: src/pages/CategoryMonthTransactions.vue:56 src/pages/Details.vue:162
+#: src/pages/CategoryMonthTransactions.vue:56
 #: src/pages/MonthCategoriesList.vue:50
 msgid "Back to Results"
 msgstr "Vissza a részletekhez"
 
-#: src/pages/CategoryMonthsList.vue:58
-#: src/pages/CategoryMonthTransactions.vue:63 src/pages/Details.vue:46
-#: src/pages/MonthCategoriesList.vue:57 src/pages/Results.vue:66
-#: src/pages/Results.vue:95
+#: src/pages/CategoryMonthsList.vue:59
+#: src/pages/CategoryMonthTransactions.vue:64 src/pages/CostOfLiving.vue:168
+#: src/pages/Details.vue:46 src/pages/MonthCategoriesList.vue:58
+#: src/pages/Results.vue:51 src/pages/Results.vue:77
 msgid "Export CSV"
 msgstr "Mentés CSV-be"
 
-#: src/pages/CategoryMonthsList.vue:59
-#: src/pages/CategoryMonthTransactions.vue:64 src/pages/Details.vue:47
-#: src/pages/MonthCategoriesList.vue:58 src/pages/Results.vue:67
-#: src/pages/Results.vue:96
+#: src/pages/CategoryMonthsList.vue:60
+#: src/pages/CategoryMonthTransactions.vue:65 src/pages/CostOfLiving.vue:173
+#: src/pages/Details.vue:47 src/pages/MonthCategoriesList.vue:59
+#: src/pages/Results.vue:52 src/pages/Results.vue:78
 msgid "Export Excel"
 msgstr "Mentés Excelbe"
 
-#: src/pages/CategoryMonthsList.vue:108
-#: src/pages/CategoryMonthTransactions.vue:101 src/pages/Details.vue:104
-#: src/pages/MonthCategoriesList.vue:107 src/pages/Results.vue:173
+#: src/pages/CategoryMonthsList.vue:109
+#: src/pages/CategoryMonthTransactions.vue:102 src/pages/Details.vue:104
+#: src/pages/MonthCategoriesList.vue:108 src/pages/Results.vue:155
 msgid "loading"
 msgstr "betöltés"
 
-#: src/pages/CategoryMonthsList.vue:110
-#: src/pages/CategoryMonthTransactions.vue:103
-#: src/pages/MonthCategoriesList.vue:109
+#: src/pages/CategoryMonthsList.vue:111
+#: src/pages/CategoryMonthTransactions.vue:104
+#: src/pages/MonthCategoriesList.vue:110
 msgid "Loading data"
 msgstr "Adatok betöltése"
 
-#: src/pages/CategoryMonthsList.vue:132
+#: src/pages/CategoryMonthsList.vue:133 src/pages/CostOfLiving.vue:102
 msgid "Month"
 msgstr "Hónap"
 
-#: src/pages/CategoryMonthsList.vue:133 src/pages/MonthCategoriesList.vue:132
+#: src/pages/CategoryMonthsList.vue:134 src/pages/CostOfLiving.vue:297
+#: src/pages/MonthCategoriesList.vue:133
 msgid "Total"
 msgstr "Összeg"
 
-#: src/pages/CategoryMonthsList.vue:181 src/pages/MonthCategoriesList.vue:180
+#: src/pages/CategoryMonthsList.vue:182 src/pages/MonthCategoriesList.vue:181
 msgid "No data found"
 msgstr "Nincs adat"
 
@@ -175,83 +225,213 @@ msgstr "Kategória hónapok"
 msgid "Back to Category Months"
 msgstr "Vissza a kategória hónapokhoz"
 
-#: src/pages/CategoryMonthTransactions.vue:125 src/pages/Details.vue:129
+#: src/pages/CategoryMonthTransactions.vue:126 src/pages/Details.vue:134
 msgid "Date"
 msgstr "Dátum"
 
-#: src/pages/CategoryMonthTransactions.vue:126 src/pages/Details.vue:132
+#: src/pages/CategoryMonthTransactions.vue:127 src/pages/Details.vue:137
 msgid "Amount"
 msgstr "Összeg"
 
-#: src/pages/CategoryMonthTransactions.vue:127 src/pages/Details.vue:131
+#: src/pages/CategoryMonthTransactions.vue:128 src/pages/Details.vue:136
 msgid "Merchant"
 msgstr "Kereskedő"
 
-#: src/pages/CategoryMonthTransactions.vue:163
+#: src/pages/CategoryMonthTransactions.vue:164
 msgid "No transactions found"
 msgstr "Nem találtam tranzakciót"
 
-#: src/pages/Details.vue:97
+#: src/pages/CostOfLiving.vue:108 src/pages/CostOfLiving.vue:223
+#: src/pages/Results.vue:181
+msgid "Cost of Living"
+msgstr "Megélhetési költségek"
+
+#: src/pages/CostOfLiving.vue:179
+msgid "Search"
+msgstr "Keresés"
+
+#: src/pages/CostOfLiving.vue:180
+msgid "Show _MENU_ entries"
+msgstr ""
+
+#: src/pages/CostOfLiving.vue:181
+msgid "Showing _START_ to _END_ of _TOTAL_ entries"
+msgstr ""
+
+#: src/pages/CostOfLiving.vue:182
+msgid "Showing 0 to 0 of 0 entries"
+msgstr ""
+
+#: src/pages/CostOfLiving.vue:183
+msgid "(filtered from _MAX_ total entries)"
+msgstr ""
+
+#: src/pages/CostOfLiving.vue:185
+msgid "First"
+msgstr "Első"
+
+#: src/pages/CostOfLiving.vue:186
+msgid "Last"
+msgstr "Utolsó"
+
+#: src/pages/CostOfLiving.vue:187
+msgid "Next"
+msgstr "Következő"
+
+#: src/pages/CostOfLiving.vue:188
+msgid "Previous"
+msgstr "Előző"
+
+#: src/pages/CostOfLiving.vue:222 src/pages/Details.vue:96
+#: src/pages/Results.vue:149 src/pages/Results.vue:199
+msgid "Categories"
+msgstr "Kategóriák"
+
+#: src/pages/CostOfLiving.vue:230
+msgid "Loading Cost of Living data"
+msgstr "Megélhetési költségek betöltése"
+
+#: src/pages/CostOfLiving.vue:244
+msgid "Cost of Living Analysis"
+msgstr "Megélhetési költségek kimutatása"
+
+#: src/pages/CostOfLiving.vue:247 src/pages/Details.vue:120
+msgid "Back to Categories"
+msgstr "Vissza a kategóriákhoz"
+
+#: src/pages/CostOfLiving.vue:254
+msgid "Select Account"
+msgstr "Számla kiválasztása"
+
+#: src/pages/CostOfLiving.vue:268
+msgid "No categories found in the data"
+msgstr "Nem találtunk kategóriákat"
+
+#: src/pages/CostOfLiving.vue:272
+msgid "Please select at least one category to see Cost of Living calculations"
+msgstr ""
+"Legalább egy kategóriát ki kell választani a megélhetési költségek "
+"kiszámításához"
+
+#: src/pages/CostOfLiving.vue:277
+msgid "Summary"
+msgstr "Összegzés"
+
+#: src/pages/CostOfLiving.vue:282
+msgid "Selected Categories"
+msgstr "Kiválasztott kategóriák"
+
+#: src/pages/CostOfLiving.vue:289
+msgid "Months Analyzed"
+msgstr "Elemzett hónapok"
+
+#: src/pages/CostOfLiving.vue:293
+msgid "Average Monthly"
+msgstr "Havi átlag"
+
+#: src/pages/CostOfLiving.vue:308
+msgid "Monthly Cost of Living"
+msgstr "Havi megélhetési költségek"
+
+#: src/pages/CostOfLiving.vue:311
+msgid "Show trendline"
+msgstr "Trendvonal mutatása"
+
+#: src/pages/CostOfLiving.vue:322
+msgid "Category Breakdown by Month"
+msgstr "Kategóriák hónapok szerinti lebontásban"
+
+#: src/pages/CostOfLiving.vue:325
+msgid ""
+"Each pie chart shows the composition of your selected categories for that "
+"month"
+msgstr "Mindegyik tortadiagram a kiválasztott kategóriák eloszlását mutatja"
+
+#: src/pages/CostOfLiving.vue:339
 msgid "Details"
 msgstr "Részletek"
 
-#: src/pages/Details.vue:106 src/pages/Results.vue:175
+#: src/pages/CostOfLiving.vue:342
+msgid "more"
+msgstr "több"
+
+#: src/pages/CostOfLiving.vue:354
+msgid "Detailed Monthly Data"
+msgstr "Részletes havi adatok"
+
+#: src/pages/CostOfLiving.vue:378
+msgid "Average"
+msgstr "Átlag"
+
+#: src/pages/CostOfLiving.vue:391
+msgid "No data available"
+msgstr "Nincs adat"
+
+#: src/pages/CostOfLiving.vue:396
+msgid "No Cost of Living data available"
+msgstr "Nincs megélhetési költség adat"
+
+#: src/pages/Details.vue:97 src/pages/Results.vue:175
+msgid "Transactions"
+msgstr "Tranzakciók"
+
+#: src/pages/Details.vue:106 src/pages/Results.vue:157
 msgid "Loading results"
 msgstr "Eredmények betöltése"
 
-#: src/pages/Details.vue:130 src/pages/MonthCategoriesList.vue:131
+#: src/pages/Details.vue:135 src/pages/MonthCategoriesList.vue:132
 msgid "Category"
 msgstr "Kategória"
 
-#: src/pages/Details.vue:133
+#: src/pages/Details.vue:138
 msgid "Currency"
 msgstr "Deviza"
 
-#: src/pages/Details.vue:134
+#: src/pages/Details.vue:139
 msgid "Account"
 msgstr "Számla"
 
-#: src/pages/Details.vue:135
+#: src/pages/Details.vue:140
 msgid "Type"
 msgstr "Típus"
 
-#: src/pages/Details.vue:136
+#: src/pages/Details.vue:141
 msgid "Confidence"
 msgstr "Bizonyosság"
 
-#: src/pages/Details.vue:137
+#: src/pages/Details.vue:142
 msgid "Notice"
 msgstr "Közlemény"
 
-#: src/pages/Details.vue:173 src/pages/Results.vue:246
+#: src/pages/Details.vue:166 src/pages/Results.vue:238
 msgid "No results found"
 msgstr "Eredmény nem található"
 
-#: src/pages/Index.vue:35
+#: src/pages/Index.vue:52
 msgid "Are you sure you want to clear the form?"
 msgstr "Biztos törölni akarod az űrlapot?"
 
-#: src/pages/Index.vue:37
+#: src/pages/Index.vue:54
 msgid "Form cleared"
 msgstr "Űrlap kiürítve"
 
-#: src/pages/Index.vue:56
+#: src/pages/Index.vue:73
 msgid "File uploads"
 msgstr "Fájl feltöltések"
 
-#: src/pages/Index.vue:58
+#: src/pages/Index.vue:75
 msgid "CSV file"
 msgstr "CSV fájl"
 
-#: src/pages/Index.vue:70
+#: src/pages/Index.vue:87
 msgid "Upload your CSV file containing the exported bank account history"
 msgstr "Töltse fel a bankszámlája exportált előzményeit tartalmazó CSV fájlt"
 
-#: src/pages/Index.vue:73
+#: src/pages/Index.vue:90
 msgid "Configuration file"
 msgstr "Beállítások fájl"
 
-#: src/pages/Index.vue:85
+#: src/pages/Index.vue:102
 msgid ""
 "Upload your configuration file here, or the default configuration will be "
 "used"
@@ -259,65 +439,65 @@ msgstr ""
 "Töltse fel a konfigurációs fájlt ide, vagy az alapértelmezett konfiguráció "
 "lesz használva"
 
-#: src/pages/Index.vue:90
+#: src/pages/Index.vue:107
 msgid "Filters"
 msgstr "Szűrők"
 
-#: src/pages/Index.vue:92
+#: src/pages/Index.vue:109
 msgid "Start date"
 msgstr "Kezdő dátum"
 
-#: src/pages/Index.vue:104
+#: src/pages/Index.vue:121
 msgid "Filter results starting from this date"
 msgstr "Szűrje az eredményeket ettől a dátumtól kezdve"
 
-#: src/pages/Index.vue:107
+#: src/pages/Index.vue:124
 msgid "End date"
 msgstr "Vég dátum"
 
-#: src/pages/Index.vue:119
+#: src/pages/Index.vue:136
 msgid "Filter results up until this date"
 msgstr "Szűrje az eredményeket eddig a dátumig"
 
-#: src/pages/Index.vue:122
+#: src/pages/Index.vue:139
 msgid "Category filter"
 msgstr "Kategória szűrő"
 
-#: src/pages/Index.vue:130
+#: src/pages/Index.vue:147
 msgid "Filter by category. (default = \"category\")"
 msgstr "Szűrje kategóriánként. (alapértelmezett = 'category')"
 
-#: src/pages/Index.vue:140
+#: src/pages/Index.vue:157
 msgid "Advanced settings"
 msgstr "Fejlett beállítások"
 
-#: src/pages/Index.vue:149
+#: src/pages/Index.vue:166
 msgid "Enable verbose logging"
 msgstr "Részletes naplózás engedélyezése"
 
-#: src/pages/Index.vue:150
+#: src/pages/Index.vue:167
 msgid "Enable detailed logging in the backend"
 msgstr "Részletes naplózást engedélyez a backend oldalon"
 
-#: src/pages/Index.vue:161
+#: src/pages/Index.vue:178
 msgid "Use Machine Learning model for categorization"
 msgstr "ML modell használata a kategorizáláshoz"
 
-#: src/pages/Index.vue:164
+#: src/pages/Index.vue:181
 msgid "Uncheck to use regular expressions instead of the ML model"
 msgstr ""
 "Tiltása esetén reguláris kifejezések lesznek használva a gépi tanulási "
 "modell helyett"
 
-#: src/pages/Index.vue:173
+#: src/pages/Index.vue:190
 msgid "Processing your transactions..."
 msgstr "Tranzakciók feldolgozása..."
 
-#: src/pages/Index.vue:173
+#: src/pages/Index.vue:190
 msgid "Submit"
 msgstr "Beküldés"
 
-#: src/pages/Index.vue:182
+#: src/pages/Index.vue:199
 msgid "Clear form"
 msgstr "Űrlap törlése"
 
@@ -329,29 +509,34 @@ msgstr "Hónap részletei"
 msgid "Month Details"
 msgstr "Hónap részletei"
 
-#: src/pages/Results.vue:184
-msgid "Processed results"
-msgstr "Feldolgozott eredmények"
+#: src/pages/Results.vue:166
+msgid "Transaction Categories"
+msgstr "Tranzakció kategóriák"
 
-#: src/pages/Results.vue:200
-msgid "Categories"
-msgstr "Kategóriák"
-
-#: src/pages/Results.vue:239
+#: src/pages/Results.vue:169
 msgid "Back to Form"
 msgstr "Vissza az űrlapra"
 
 #: src/pages/Results.vue:240
-msgid "View All Details"
-msgstr "Részletek mutatása"
-
-#: src/pages/Results.vue:248
 msgid "No result ID was provided."
 msgstr "Eredmény ID nem található."
 
-#: src/pages/Results.vue:249
+#: src/pages/Results.vue:241
 msgid "Please upload a CSV file first."
 msgstr "Előbb tölts fel egy CSV fájlt."
+
+#~ msgid "List of Transactions"
+#~ msgstr "Tranzakciók listája"
+
+#~ msgid "Processed results"
+#~ msgstr "Feldolgozott eredmények"
+
+#~ msgid "View All Details"
+#~ msgstr "Részletek mutatása"
+
+#, fuzzy
+#~ msgid "View details for"
+#~ msgstr "Részletek mutatása"
 
 #~ msgid "Generate reports from your bank account CSV history"
 #~ msgstr "Generáljon jelentéseket a bankszámlája CSV előzményeiből"
@@ -434,9 +619,6 @@ msgstr "Előbb tölts fel egy CSV fájlt."
 
 #~ msgid "February"
 #~ msgstr "Február"
-
-#~ msgid "March"
-#~ msgstr "Március"
 
 #~ msgid "April"
 #~ msgstr "Április"

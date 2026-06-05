@@ -1,14 +1,14 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { useFormWithNavigation } from '../stores/form'
-import { useFeedbackStore } from '../stores/feedback'
+import { useFormWithNavigation } from '../stores/form.js'
+import { useFeedbackStore } from '../stores/feedback.js'
 import { useGettext } from 'vue3-gettext'
 import CardComponent from '../components/ui/CardComponent.vue'
 import ButtonComponent from '../components/ui/ButtonComponent.vue'
 import ErrorDisplay from '../components/ErrorDisplay.vue'
 
 const { $gettext } = useGettext()
-const formStore = useFormWithNavigation()
+const { formStore, submitForm: submitFormFn } = useFormWithNavigation()
 const feedback = useFeedbackStore()
 
 
@@ -45,7 +45,7 @@ const handleTextInput = (field: InputField, event: Event) => {
 }
 
 const submitForm = async () => {
-  await formStore.submitForm()
+  await submitFormFn()
 }
 
 const clearForm = () => {

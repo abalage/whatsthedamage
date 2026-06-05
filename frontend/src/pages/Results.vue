@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { ref, onMounted, computed, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
-import { fetchResults as fetchResultsApi } from '../js/api'
-import { useFeedbackStore } from '../stores/feedback'
+import { fetchResults as fetchResultsApi } from '../js/api.js'
+import { useFeedbackStore } from '../stores/feedback.js'
 import { useGettext } from 'vue3-gettext'
-import type { ResultsApiResponse, AccountDataResponse } from '../types/api'
+import type { ResultsApiResponse, AccountDataResponse } from '../types/api.js'
 import ButtonComponent from '../components/ui/ButtonComponent.vue'
 
 const { $gettext } = useGettext()
@@ -146,7 +146,7 @@ onMounted(() => {
     <nav aria-label="breadcrumb">
       <ol class="breadcrumb">
         <li class="breadcrumb-item"><router-link to="/">{{ $gettext('Home') }}</router-link></li>
-        <li class="breadcrumb-item active" aria-current="page">{{ $gettext('Results') }}</li>
+        <li class="breadcrumb-item active" aria-current="page">{{ $gettext('Categories') }}</li>
       </ol>
     </nav>
 
@@ -163,9 +163,26 @@ onMounted(() => {
 
     <div v-else-if="resultsData">
       <div class="d-flex justify-content-between align-items-center mb-3">
-        <h1 class="mb-0">{{ $gettext('Processed results') }}</h1>
-        <div class="view-toggle">
-          <!-- View toggle would go here -->
+        <h1 class="mb-0">{{ $gettext('Transaction Categories') }}</h1>
+        <div class="d-flex gap-2">
+          <ButtonComponent
+            :text="$gettext('Back to Form')"
+            to="/"
+            variant="secondary"
+            class="mt-3 mb-3 me-2"
+          />
+          <ButtonComponent
+            :text="$gettext('Transactions')"
+            :to="{ name: 'details', params: { resultId: resultId } }"
+            variant="outline-secondary"
+            class="mt-3 mb-3 me-2"
+          />
+          <ButtonComponent
+            :text="$gettext('Cost of Living')"
+            :to="{ name: 'cost-of-living', params: { resultId: resultId } }"
+            variant="outline-secondary"
+            class="mt-3 mb-3"
+          />
         </div>
       </div>
 
@@ -213,29 +230,6 @@ v-for="[monthDisplay, monthTs] in getMonthsForAccount(account)"
               </table>
             </div>
           </div>
-        </div>
-      </div>
-
-      <div class="row">
-        <div class="col-md-6">
-          <ButtonComponent
-            :text="$gettext('Back to Form')"
-            to="/"
-            variant="secondary"
-            class="mt-3 mb-3 me-2"
-          />
-          <ButtonComponent
-            :text="$gettext('View All Details')"
-            :to="{ name: 'details', params: { resultId: resultId } }"
-            variant="outline-secondary"
-            class="mt-3 mb-3 me-2"
-          />
-          <ButtonComponent
-            :text="$gettext('Cost of Living')"
-            :to="{ name: 'cost-of-living', params: { resultId: resultId } }"
-            variant="outline-secondary"
-            class="mt-3 mb-3"
-          />
         </div>
       </div>
     </div>

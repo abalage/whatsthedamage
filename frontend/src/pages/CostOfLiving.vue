@@ -176,7 +176,7 @@ const tableOptions = computed<Config>(() => ({
   ],
   order: [[ZERO, 'desc']], // Sort by month descending by default
   language: {
-    search: $gettext('Search:') + ' ',
+    search: $gettext('Search') + ': ',
     lengthMenu: $gettext('Show _MENU_ entries'),
     info: $gettext('Showing _START_ to _END_ of _TOTAL_ entries'),
     infoEmpty: $gettext('Showing 0 to 0 of 0 entries'),
@@ -205,8 +205,6 @@ const getCategoryUrl = (categoryId: string) => ({
   params: { resultId: resultId.value, accountId: selectedAccountId.value, categoryId }
 });
 
-
-
 // Auto-save settings
 watch(() => [costOfLivingStore.selectedCategoryIds, costOfLivingStore.showTrendline], () => {
   costOfLivingStore.saveSettings();
@@ -221,7 +219,7 @@ onMounted(() => loadData());
     <nav aria-label="breadcrumb">
       <ol class="breadcrumb">
         <li class="breadcrumb-item"><router-link to="/">{{ $gettext('Home') }}</router-link></li>
-        <li class="breadcrumb-item"><router-link :to="{ name: 'results', query: { resultId: resultId } }">{{ $gettext('Results') }}</router-link></li>
+        <li class="breadcrumb-item"><router-link :to="{ name: 'results', query: { resultId: resultId } }">{{ $gettext('Categories') }}</router-link></li>
         <li class="breadcrumb-item active" aria-current="page">{{ $gettext('Cost of Living') }}</li>
       </ol>
     </nav>
@@ -246,7 +244,7 @@ onMounted(() => loadData());
         <h1><i class="bi bi-house-heart me-2"></i> {{ $gettext('Cost of Living Analysis') }}</h1>
         <div class="d-flex gap-2">
           <router-link :to="{ name: 'results', query: { resultId: resultId } }" class="btn btn-secondary">
-            <i class="bi bi-arrow-left me-1"></i> {{ $gettext('Back to Results') }}
+            <i class="bi bi-arrow-left me-1"></i> {{ $gettext('Back to Categories') }}
           </router-link>
         </div>
       </div>
@@ -257,7 +255,7 @@ onMounted(() => loadData());
         <div class="card-body">
           <select v-model="selectedAccountId" class="form-select">
             <option v-for="account in accounts" :key="account.id" :value="account.id">
-              {{ account.name }} ({{ account.id }})
+              {{ account.name }}
             </option>
           </select>
         </div>

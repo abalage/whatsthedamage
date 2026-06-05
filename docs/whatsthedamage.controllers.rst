@@ -17,6 +17,14 @@ whatsthedamage.controllers.cli\_controller module
    :show-inheritance:
    :undoc-members:
 
+whatsthedamage.controllers.frontend\_routes module
+--------------------------------------------------
+
+.. automodule:: whatsthedamage.controllers.frontend_routes
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
 whatsthedamage.controllers.ml\_cli module
 -----------------------------------------
 

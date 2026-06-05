@@ -104,7 +104,6 @@ const getCategoryDisplayName = (categoryId: string): string => $gettext(category
 
 .category-grid {
   display: grid;
-  /*grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));*/
   grid-template-columns: repeat(5, auto);
   gap: 8px;
 }
@@ -130,9 +129,7 @@ const getCategoryDisplayName = (categoryId: string): string => $gettext(category
 }
 
 .category-label {
-  /* display: flex; */
   align-items: center;
-  /* gap: 4px; */
   padding: 8px;
   border: 1px solid #dee2e6;
   border-radius: 6px;

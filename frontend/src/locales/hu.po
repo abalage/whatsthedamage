@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: whatsthedamage-1.0\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
 "POT-Creation-Date: \n"
-"PO-Revision-Date: 2026-06-04 22:12+0200\n"
+"PO-Revision-Date: 2026-06-05 10:19+0200\n"
 "Last-Translator: Balázs Németh <balagetech@protonmail.com>\n"
 "Language-Team: Hungarian\n"
 "Language: hu\n"
@@ -67,7 +67,7 @@ msgid "Tell me I didn't spend that much…"
 msgstr "Mondd hogy nem költöttem sokat..."
 
 #: src/components/Layout.vue:127 src/pages/CategoryMonthsList.vue:45
-#: src/pages/CategoryMonthTransactions.vue:41 src/pages/CostOfLiving.vue:223
+#: src/pages/CategoryMonthTransactions.vue:41 src/pages/CostOfLiving.vue:221
 #: src/pages/Details.vue:95 src/pages/MonthCategoriesList.vue:44
 #: src/pages/Results.vue:148
 msgid "Home"
@@ -158,9 +158,8 @@ msgid "Details for Category"
 msgstr "Kategória részletei"
 
 #: src/pages/CategoryMonthsList.vue:46
-#: src/pages/CategoryMonthTransactions.vue:42 src/pages/CostOfLiving.vue:224
-#: src/pages/Details.vue:96 src/pages/MonthCategoriesList.vue:45
-#: src/pages/Results.vue:149
+#: src/pages/CategoryMonthTransactions.vue:42
+#: src/pages/MonthCategoriesList.vue:45
 msgid "Results"
 msgstr "Eredmények"
 
@@ -169,8 +168,8 @@ msgid "Category Details"
 msgstr "Kategória részletei"
 
 #: src/pages/CategoryMonthsList.vue:51
-#: src/pages/CategoryMonthTransactions.vue:56 src/pages/CostOfLiving.vue:249
-#: src/pages/Details.vue:162 src/pages/MonthCategoriesList.vue:50
+#: src/pages/CategoryMonthTransactions.vue:56
+#: src/pages/MonthCategoriesList.vue:50
 msgid "Back to Results"
 msgstr "Vissza a részletekhez"
 
@@ -204,7 +203,7 @@ msgstr "Adatok betöltése"
 msgid "Month"
 msgstr "Hónap"
 
-#: src/pages/CategoryMonthsList.vue:134 src/pages/CostOfLiving.vue:299
+#: src/pages/CategoryMonthsList.vue:134 src/pages/CostOfLiving.vue:297
 #: src/pages/MonthCategoriesList.vue:133
 msgid "Total"
 msgstr "Összeg"
@@ -226,15 +225,15 @@ msgstr "Kategória hónapok"
 msgid "Back to Category Months"
 msgstr "Vissza a kategória hónapokhoz"
 
-#: src/pages/CategoryMonthTransactions.vue:126 src/pages/Details.vue:129
+#: src/pages/CategoryMonthTransactions.vue:126 src/pages/Details.vue:134
 msgid "Date"
 msgstr "Dátum"
 
-#: src/pages/CategoryMonthTransactions.vue:127 src/pages/Details.vue:132
+#: src/pages/CategoryMonthTransactions.vue:127 src/pages/Details.vue:137
 msgid "Amount"
 msgstr "Összeg"
 
-#: src/pages/CategoryMonthTransactions.vue:128 src/pages/Details.vue:131
+#: src/pages/CategoryMonthTransactions.vue:128 src/pages/Details.vue:136
 msgid "Merchant"
 msgstr "Kereskedő"
 
@@ -242,14 +241,14 @@ msgstr "Kereskedő"
 msgid "No transactions found"
 msgstr "Nem találtam tranzakciót"
 
-#: src/pages/CostOfLiving.vue:108 src/pages/CostOfLiving.vue:225
-#: src/pages/Results.vue:234
+#: src/pages/CostOfLiving.vue:108 src/pages/CostOfLiving.vue:223
+#: src/pages/Results.vue:181
 msgid "Cost of Living"
 msgstr "Megélhetési költségek"
 
 #: src/pages/CostOfLiving.vue:179
-msgid "Search:"
-msgstr "Keresés:"
+msgid "Search"
+msgstr "Keresés"
 
 #: src/pages/CostOfLiving.vue:180
 msgid "Show _MENU_ entries"
@@ -283,115 +282,128 @@ msgstr "Következő"
 msgid "Previous"
 msgstr "Előző"
 
-#: src/pages/CostOfLiving.vue:232
+#: src/pages/CostOfLiving.vue:222 src/pages/Details.vue:96
+#: src/pages/Results.vue:149 src/pages/Results.vue:199
+msgid "Categories"
+msgstr "Kategóriák"
+
+#: src/pages/CostOfLiving.vue:230
 msgid "Loading Cost of Living data"
 msgstr "Megélhetési költségek betöltése"
 
-#: src/pages/CostOfLiving.vue:246
+#: src/pages/CostOfLiving.vue:244
 msgid "Cost of Living Analysis"
 msgstr "Megélhetési költségek kimutatása"
 
-#: src/pages/CostOfLiving.vue:256
+#: src/pages/CostOfLiving.vue:247 src/pages/Details.vue:120
+msgid "Back to Categories"
+msgstr "Vissza a kategóriákhoz"
+
+#: src/pages/CostOfLiving.vue:254
 msgid "Select Account"
 msgstr "Számla kiválasztása"
 
-#: src/pages/CostOfLiving.vue:270
+#: src/pages/CostOfLiving.vue:268
 msgid "No categories found in the data"
 msgstr "Nem találtunk kategóriákat"
 
-#: src/pages/CostOfLiving.vue:274
+#: src/pages/CostOfLiving.vue:272
 msgid "Please select at least one category to see Cost of Living calculations"
 msgstr ""
 "Legalább egy kategóriát ki kell választani a megélhetési költségek "
 "kiszámításához"
 
-#: src/pages/CostOfLiving.vue:279
+#: src/pages/CostOfLiving.vue:277
 msgid "Summary"
 msgstr "Összegzés"
 
-#: src/pages/CostOfLiving.vue:284
+#: src/pages/CostOfLiving.vue:282
 msgid "Selected Categories"
 msgstr "Kiválasztott kategóriák"
 
-#: src/pages/CostOfLiving.vue:291
+#: src/pages/CostOfLiving.vue:289
 msgid "Months Analyzed"
 msgstr "Elemzett hónapok"
 
-#: src/pages/CostOfLiving.vue:295
+#: src/pages/CostOfLiving.vue:293
 msgid "Average Monthly"
 msgstr "Havi átlag"
 
-#: src/pages/CostOfLiving.vue:310
+#: src/pages/CostOfLiving.vue:308
 msgid "Monthly Cost of Living"
 msgstr "Havi megélhetési költségek"
 
-#: src/pages/CostOfLiving.vue:313
+#: src/pages/CostOfLiving.vue:311
 msgid "Show trendline"
 msgstr "Trendvonal mutatása"
 
-#: src/pages/CostOfLiving.vue:324
+#: src/pages/CostOfLiving.vue:322
 msgid "Category Breakdown by Month"
 msgstr "Kategóriák hónapok szerinti lebontásban"
 
-#: src/pages/CostOfLiving.vue:327
+#: src/pages/CostOfLiving.vue:325
 msgid ""
 "Each pie chart shows the composition of your selected categories for that "
 "month"
 msgstr "Mindegyik tortadiagram a kiválasztott kategóriák eloszlását mutatja"
 
-#: src/pages/CostOfLiving.vue:341 src/pages/Details.vue:97
+#: src/pages/CostOfLiving.vue:339
 msgid "Details"
 msgstr "Részletek"
 
-#: src/pages/CostOfLiving.vue:344
+#: src/pages/CostOfLiving.vue:342
 msgid "more"
 msgstr "több"
 
-#: src/pages/CostOfLiving.vue:356
+#: src/pages/CostOfLiving.vue:354
 msgid "Detailed Monthly Data"
 msgstr "Részletes havi adatok"
 
-#: src/pages/CostOfLiving.vue:380
+#: src/pages/CostOfLiving.vue:378
 msgid "Average"
 msgstr "Átlag"
 
-#: src/pages/CostOfLiving.vue:393
+#: src/pages/CostOfLiving.vue:391
 msgid "No data available"
 msgstr "Nincs adat"
 
-#: src/pages/CostOfLiving.vue:398
+#: src/pages/CostOfLiving.vue:396
 msgid "No Cost of Living data available"
 msgstr "Nincs megélhetési költség adat"
+
+#: src/pages/Details.vue:97 src/pages/Results.vue:175
+msgid "Transactions"
+msgstr "Tranzakciók"
 
 #: src/pages/Details.vue:106 src/pages/Results.vue:157
 msgid "Loading results"
 msgstr "Eredmények betöltése"
 
-#: src/pages/Details.vue:130 src/pages/MonthCategoriesList.vue:132
+#: src/pages/Details.vue:135 src/pages/MonthCategoriesList.vue:132
 msgid "Category"
 msgstr "Kategória"
 
-#: src/pages/Details.vue:133
+#: src/pages/Details.vue:138
 msgid "Currency"
 msgstr "Deviza"
 
-#: src/pages/Details.vue:134
+#: src/pages/Details.vue:139
 msgid "Account"
 msgstr "Számla"
 
-#: src/pages/Details.vue:135
+#: src/pages/Details.vue:140
 msgid "Type"
 msgstr "Típus"
 
-#: src/pages/Details.vue:136
+#: src/pages/Details.vue:141
 msgid "Confidence"
 msgstr "Bizonyosság"
 
-#: src/pages/Details.vue:137
+#: src/pages/Details.vue:142
 msgid "Notice"
 msgstr "Közlemény"
 
-#: src/pages/Details.vue:173 src/pages/Results.vue:244
+#: src/pages/Details.vue:166 src/pages/Results.vue:238
 msgid "No results found"
 msgstr "Eredmény nem található"
 
@@ -498,28 +510,29 @@ msgid "Month Details"
 msgstr "Hónap részletei"
 
 #: src/pages/Results.vue:166
-msgid "Processed results"
-msgstr "Feldolgozott eredmények"
+msgid "Transaction Categories"
+msgstr "Tranzakció kategóriák"
 
-#: src/pages/Results.vue:182
-msgid "Categories"
-msgstr "Kategóriák"
-
-#: src/pages/Results.vue:222
+#: src/pages/Results.vue:169
 msgid "Back to Form"
 msgstr "Vissza az űrlapra"
 
-#: src/pages/Results.vue:228
-msgid "View All Details"
-msgstr "Részletek mutatása"
-
-#: src/pages/Results.vue:246
+#: src/pages/Results.vue:240
 msgid "No result ID was provided."
 msgstr "Eredmény ID nem található."
 
-#: src/pages/Results.vue:247
+#: src/pages/Results.vue:241
 msgid "Please upload a CSV file first."
 msgstr "Előbb tölts fel egy CSV fájlt."
+
+#~ msgid "List of Transactions"
+#~ msgstr "Tranzakciók listája"
+
+#~ msgid "Processed results"
+#~ msgstr "Feldolgozott eredmények"
+
+#~ msgid "View All Details"
+#~ msgstr "Részletek mutatása"
 
 #, fuzzy
 #~ msgid "View details for"

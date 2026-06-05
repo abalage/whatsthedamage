@@ -81,17 +81,6 @@ footer {
   transition: var(--transition);
 }
 
-/* View toggle button styling */
-.view-toggle {
-  margin-left: auto;
-}
-
-.view-toggle .btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
 /* Text color overrides for Bootstrap utility classes */
 .text-primary {
   color: var(--primary-color) !important;
@@ -253,11 +242,6 @@ footer {
 
   .card {
     margin-bottom: 1rem;
-  }
-
-  .view-toggle {
-    margin-top: 1rem;
-    margin-left: 0;
   }
 
   h1 {

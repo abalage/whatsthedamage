@@ -1,39 +1,9 @@
 /**
- * Main JavaScript entry point for What's the Damage v2 results page
+ * Main JavaScript utilities for What's the Damage v2
+ * Now using VueDataTable instead of DataTables.net
  */
 
-import $ from 'jquery';
-import { initStatisticalAnalysis } from './statistical-analysis.js';
-
-/**
- * Initialize DataTables on a specific table element
- */
-function initDataTable(table: Element, csvText?: string, excelText?: string): void {
-    // Check if DataTable is already initialized on this table
-    if ($(table).hasClass('dataTable')) {
-        $(table).DataTable().destroy();
-    }
-
-    const config = {
-        dom: '<"dt-buttons"B><"clear">frtip',
-        buttons: [
-            {
-                extend: 'csvHtml5',
-                text: csvText ?? 'CSV',
-                className: 'btn'
-            },
-            {
-                extend: 'excelHtml5',
-                text: excelText ?? 'Excel',
-                className: 'btn'
-            }
-        ],
-        responsive: true,
-        pageLength: 25
-    };
-
-    $(table).DataTable(config);
-}
+import * as bootstrapNs from 'bootstrap';
 
 /**
  * Type for Bootstrap Popover from globalThis.bootstrap
@@ -57,19 +27,9 @@ interface WindowBootstrap {
 let popoverInstances: unknown[] = [];
 
 /**
- * Initialize DataTables and Bootstrap components
+ * Initialize Bootstrap popovers
  */
 export function initMainPage(): void {
-    // Get export button text from global variables (set by Vue components)
-    const windowObj = globalThis as unknown as Window;
-    const csvText = windowObj.exportCsvText;
-    const excelText = windowObj.exportExcelText;
-
-    // Initialize DataTables for all tables with data-datatable attribute
-    const tables = document.querySelectorAll('table[data-datatable="true"]');
-    tables.forEach(table => initDataTable(table, csvText, excelText));
-
-    // Initialize Bootstrap popovers with proper sanitization
     // Use globalThis.bootstrap which is set by src/main.ts
     const bootstrap = (globalThis as unknown as Window).bootstrap as WindowBootstrap | undefined;
     if (bootstrap?.Popover) {
@@ -90,9 +50,4 @@ export function initMainPage(): void {
             popoverInstances.push(popoverInstance);
         });
     }
-
-    // Initialize statistical analysis if controls are present
-    initStatisticalAnalysis();
 }
-
-

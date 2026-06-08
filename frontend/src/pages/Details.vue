@@ -1,9 +1,11 @@
 <script setup lang="ts">
-import { ref, onMounted, computed, nextTick } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { useGettext } from 'vue3-gettext'
 import { fetchResults } from '../js/api.js'
 import ButtonComponent from '../components/ui/ButtonComponent.vue'
+import VueDataTable from '../components/data/VueDataTable.vue'
+import type { Column } from '../components/data/VueDataTable.vue'
 import type { ResultsApiResponse } from '../types/api.js'
 
 const { $gettext } = useGettext()
@@ -19,6 +21,19 @@ const resultsData = ref<ResultsApiResponse | null>(null)
 const isLoading = ref(true)
 const error = ref<string | null>(null)
 
+// Table columns definition
+const columns: Column[] = [
+  { key: 'date', title: $gettext('Date') },
+  { key: 'category', title: $gettext('Category') },
+  { key: 'merchant', title: $gettext('Merchant') },
+  { key: 'amount', title: $gettext('Amount') },
+  { key: 'currency', title: $gettext('Currency') },
+  { key: 'account', title: $gettext('Account') },
+  { key: 'type', title: $gettext('Type') },
+  { key: 'confidence', title: $gettext('Confidence') },
+  { key: 'notice', title: $gettext('Notice') },
+]
+
 const loadResults = async () => {
   if (!resultId.value) {
     error.value = 'No result ID provided'
@@ -33,21 +48,8 @@ const loadResults = async () => {
     const response = await fetchResults(resultId.value)
 
     resultsData.value = response
-    // Set translation strings for DataTables export buttons and highlights
-    const w = globalThis as unknown as Window
-    w.highlights = resultsData.value?.accounts_data.highlights || {}
 
-    // Set isLoading to false BEFORE initializing DataTables so the results block renders
     isLoading.value = false
-
-    // Wait for Vue to render the tables with the new data
-    await nextTick()
-
-    w.exportCsvText = $gettext('Export CSV')
-    w.exportExcelText = $gettext('Export Excel')
-
-    // Initialize DataTables now that tables exist in DOM
-    w.initMainPage()
   } catch (err) {
     error.value = err instanceof Error ? err.message : 'Failed to load results'
     isLoading.value = false
@@ -80,6 +82,11 @@ const allTransactions = computed(() => {
   }
 
   return transactions
+})
+
+// Get highlights from results data for row highlighting
+const highlights = computed(() => {
+  return resultsData.value?.accounts_data.highlights || {}
 })
 
 onMounted(() => {
@@ -127,36 +134,13 @@ onMounted(() => {
 
       <div class="row mb-3">
         <div class="col-md-12">
-          <div class="table-responsive">
-            <table id="detail-datatable" class="table table-bordered" data-datatable="true">
-              <thead>
-                <tr>
-                  <th>{{ $gettext('Date') }}</th>
-                  <th>{{ $gettext('Category') }}</th>
-                  <th>{{ $gettext('Merchant') }}</th>
-                  <th>{{ $gettext('Amount') }}</th>
-                  <th>{{ $gettext('Currency') }}</th>
-                  <th>{{ $gettext('Account') }}</th>
-                  <th>{{ $gettext('Type') }}</th>
-                  <th>{{ $gettext('Confidence') }}</th>
-                  <th>{{ $gettext('Notice') }}</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="transaction in allTransactions" :key="transaction.row_id">
-                  <td>{{ transaction.date }}</td>
-                  <td>{{ transaction.category }}</td>
-                  <td>{{ transaction.merchant }}</td>
-                  <td>{{ transaction.amount }}</td>
-                  <td>{{ transaction.currency }}</td>
-                  <td>{{ transaction.account }}</td>
-                  <td>{{ transaction.type }}</td>
-                  <td>{{ transaction.confidence }}</td>
-                  <td>{{ transaction.notice }}</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+          <VueDataTable
+            id="detail-datatable"
+            :data="allTransactions"
+            :columns="columns"
+            :highlights="highlights"
+            show-column-filters
+          />
         </div>
       </div>
     </div>

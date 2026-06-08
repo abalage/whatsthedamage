@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { onMounted, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { useGettext } from 'vue3-gettext'
 import {
@@ -8,6 +8,8 @@ import {
 } from '../composables/useDrilldownData.js'
 import CardComponent from '../components/ui/CardComponent.vue'
 import ButtonComponent from '../components/ui/ButtonComponent.vue'
+import VueDataTable from '../components/data/VueDataTable.vue'
+import type { Column } from '../components/data/VueDataTable.vue'
 import { fetchCategoryMonthTransactions } from '../js/api.js'
 import type { CategoryMonthTransactionsApiResponse } from '../types/api.js'
 
@@ -20,6 +22,20 @@ const getRouteParam = (param: string): string | null => {
   const value = route.params[param]
   return typeof value === 'string' ? value : null
 }
+
+// Table columns
+const columns: Column[] = [
+  { key: 'date', title: $gettext('Date'), renderHtml: (value: unknown) => String((value as { display?: string })?.display || value || '') },
+  {
+    key: 'amount',
+    title: $gettext('Amount'),
+    renderHtml: (value: unknown, row: Record<string, unknown>) => {
+      const rowId = String(row.row_id || '')
+      return `<span data-row-id="${rowId}">${String((value as { display?: string })?.display || value || '')}</span>`
+    }
+  },
+  { key: 'merchant', title: $gettext('Merchant') }
+]
 
 const {
   data: transactionsData,
@@ -58,19 +74,23 @@ const {
       variant: 'outline-secondary'
     }
   ],
-  onDataLoaded: (data) => {
-    // Set translation strings for DataTables export buttons
-    const w6 = globalThis as unknown as Window
-    w6.exportCsvText = $gettext('Export CSV')
-    w6.exportExcelText = $gettext('Export Excel')
-
-    // Set highlights for statistical cell highlighting
-    w6.highlights = data.highlights || {}
-
-    // Initialize DataTables now that tables exist in DOM
-    w6.initMainPage()
-  },
   errorMessageKey: 'transactionsLoadError'
+})
+
+// Table data
+const tableData = computed(() => {
+  if (!transactionsData.value) return []
+  return transactionsData.value.data.map(t => ({
+    date: t.date,
+    amount: t.amount,
+    merchant: t.merchant,
+    row_id: t.row_id
+  }))
+})
+
+// Highlights
+const highlights = computed(() => {
+  return transactionsData.value?.highlights || {}
 })
 
 onMounted(() => {
@@ -119,26 +139,15 @@ onMounted(() => {
       <CardComponent :title="transactionsData.account_name" class="mb-4">
         <div class="row">
           <div class="col-md-8 mb-3">
-            <div class="table-responsive">
-              <table id="transaction-details-table" class="table table-bordered" data-datatable="true">
-                <thead>
-                  <tr>
-                    <th>{{ $gettext('Date') }}</th>
-                    <th>{{ $gettext('Amount') }}</th>
-                    <th>{{ $gettext('Merchant') }}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-for="transaction in transactionsData.data" :key="transaction.row_id">
-                    <td>{{ transaction.date.display }}</td>
-                    <td :data-row-id="transaction.row_id" class="">
-                      {{ transaction.amount.display }}
-                    </td>
-                    <td>{{ transaction.merchant }}</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
+            <VueDataTable
+              id="transaction-details-table"
+              :data="tableData"
+              :columns="columns"
+              :highlights="highlights"
+              :csv-text="$gettext('Export CSV')"
+              :excel-text="$gettext('Export Excel')"
+              show-column-filters
+            />
           </div>
         </div>
       </CardComponent>

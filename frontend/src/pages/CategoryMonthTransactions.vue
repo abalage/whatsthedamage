@@ -81,16 +81,8 @@ const tableData = computed(() => {
     date: t.date,
     amount: t.amount,
     merchant: t.merchant,
-    row_id: t.row_id,
-    _rowIds: {
-      amount: t.row_id // Map amount column to its row_id for cell-level highlighting
-    }
+    row_id: t.row_id
   }))
-})
-
-// Cell highlights from API (keyed by row_id)
-const cellHighlightsByRowId = computed(() => {
-  return transactionsData.value?.highlights || {}
 })
 
 onMounted(() => {
@@ -143,7 +135,6 @@ onMounted(() => {
               id="transaction-details-table"
               :data="tableData"
               :columns="columns"
-              :cell-highlights-by-row-id="cellHighlightsByRowId"
               :csv-text="$gettext('Export CSV')"
               :excel-text="$gettext('Export Excel')"
               show-column-filters

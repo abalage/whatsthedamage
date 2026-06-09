@@ -49,7 +49,7 @@ const {
     }
     return fetchCategoryMonthTransactions(params)
   },
-  getPageTitle: (data) => `${$gettext('Transaction Details')}: ${data.category_name} - ${data.month_name}`,
+  getPageTitle: (data) => `${$gettext('Details')}: ${data.category_name} - ${data.month_name}`,
   breadcrumbItems: (): BreadcrumbItem[] => [
     { name: $gettext('Home'), to: '/' },
     { name: $gettext('Results'), to: { name: 'results', query: { resultId: getRouteParam('resultId') } } },
@@ -66,7 +66,7 @@ const {
       variant: 'secondary'
     },
     {
-      text: $gettext('Back to Results'),
+      text: $gettext('Back to Categories'),
       to: { name: 'results', query: { resultId: getRouteParam('resultId') } },
       variant: 'outline-secondary'
     }
@@ -125,6 +125,17 @@ onMounted(() => {
     <div v-else-if="transactionsData">
       <div class="d-flex justify-content-between align-items-center mb-3">
         <h1 class="mb-0">{{ pageTitle }}</h1>
+        <div v-if="navButtons && navButtons.length" class="d-flex gap-2">
+          <ButtonComponent
+            v-for="(button, index) in navButtons"
+            :key="index"
+            :text="button.text"
+            :variant="button.variant"
+            :to="button.to"
+            :size="button.size"
+            :class="index < navButtons.length - 1 ? 'mt-3 mb-3 me-2' : 'mt-3 mb-3'"
+          />
+        </div>
       </div>
 
       <!-- Account Card -->
@@ -142,21 +153,6 @@ onMounted(() => {
           </div>
         </div>
       </CardComponent>
-
-      <!-- Navigation -->
-      <div v-if="navButtons && navButtons.length" class="row">
-        <div class="col-md-6">
-          <ButtonComponent
-            v-for="(button, index) in navButtons"
-            :key="index"
-            :text="button.text"
-            :variant="button.variant"
-            :to="button.to"
-            :size="button.size"
-            class="mt-3 mb-3 me-2"
-          />
-        </div>
-      </div>
     </div>
 
     <!-- No Data State -->

@@ -319,7 +319,7 @@ export interface MonthCategoriesApiResponse {
  * Data for a single transaction in drilldown response
  */
 interface TransactionDetailResponse {
-  date: { display: string };
+  date: { display: string; timestamp: number | string };
   amount: DisplayRawField;
   merchant: string;
   row_id: string;

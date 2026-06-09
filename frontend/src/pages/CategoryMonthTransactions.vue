@@ -25,11 +25,11 @@ const getRouteParam = (param: string): string | null => {
 
 // Table columns
 const columns: Column[] = [
-  { key: 'date', title: $gettext('Date'), renderHtml: (value: unknown) => String((value as { display?: string })?.display || value || '') },
+  { key: 'date', title: $gettext('Date'), renderHtml: (value: unknown, row: Record<string, unknown>) => String((row as { date_display?: string }).date_display || value || '') },
   {
     key: 'amount',
     title: $gettext('Amount'),
-    renderHtml: (value: unknown) => String((value as { display?: string })?.display || value || '')
+    renderHtml: (value: unknown, row: Record<string, unknown>) => String((row as { amount_display?: string }).amount_display || value || '')
   },
   { key: 'merchant', title: $gettext('Merchant') }
 ]
@@ -78,8 +78,10 @@ const {
 const tableData = computed(() => {
   if (!transactionsData.value) return []
   return transactionsData.value.data.map(t => ({
-    date: t.date,
-    amount: t.amount,
+    date: typeof t.date.timestamp === 'string' ? Number(t.date.timestamp) : t.date.timestamp,
+    date_display: t.date.display,
+    amount: t.amount.raw,
+    amount_display: t.amount.display,
     merchant: t.merchant,
     row_id: t.row_id
   }))

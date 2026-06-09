@@ -56,86 +56,182 @@ msgstr ""
 msgid "Default category"
 msgstr "Details for Category"
 
-#: src/components/Layout.vue:120
+#: src/components/data/VueDataTable.vue:553
+msgid "Search..."
+msgstr ""
+
+#: src/components/data/VueDataTable.vue:555 src/pages/CostOfLiving.vue:311
+msgid "Search"
+msgstr ""
+
+#: src/components/data/VueDataTable.vue:562
+#, fuzzy
+msgid "Clear search"
+msgstr "Clear form"
+
+#: src/components/data/VueDataTable.vue:575
+#: src/components/data/VueDataTable.vue:578
+#, fuzzy
+msgid "Clear all filters"
+msgstr "Category filter"
+
+#: src/components/data/VueDataTable.vue:589
+#: src/pages/CategoryMonthsList.vue:194
+#: src/pages/CategoryMonthTransactions.vue:151 src/pages/CostOfLiving.vue:309
+#: src/pages/MonthCategoriesList.vue:186 src/pages/Results.vue:280
+msgid "Export CSV"
+msgstr "Export CSV"
+
+#: src/components/data/VueDataTable.vue:595
+#: src/pages/CategoryMonthsList.vue:195
+#: src/pages/CategoryMonthTransactions.vue:152 src/pages/CostOfLiving.vue:310
+#: src/pages/MonthCategoriesList.vue:187 src/pages/Results.vue:281
+msgid "Export Excel"
+msgstr "Export Excel"
+
+#: src/components/data/VueDataTable.vue:657
+#, fuzzy
+msgid "Filter"
+msgstr "Filters"
+
+#: src/components/data/VueDataTable.vue:658
+#, fuzzy
+msgid "Filter by"
+msgstr "Filters"
+
+#: src/components/data/VueDataTable.vue:698
+#: src/pages/CategoryMonthsList.vue:207 src/pages/MonthCategoriesList.vue:199
+msgid "No data found"
+msgstr "No data found"
+
+#: src/components/data/VueDataTable.vue:712
+msgid "First page"
+msgstr ""
+
+#: src/components/data/VueDataTable.vue:715
+msgid "First"
+msgstr ""
+
+#: src/components/data/VueDataTable.vue:722
+msgid "Previous page"
+msgstr ""
+
+#: src/components/data/VueDataTable.vue:725
+msgid "Previous"
+msgstr ""
+
+#: src/components/data/VueDataTable.vue:738
+msgid "Page"
+msgstr ""
+
+#: src/components/data/VueDataTable.vue:749
+msgid "Next page"
+msgstr ""
+
+#: src/components/data/VueDataTable.vue:752
+msgid "Next"
+msgstr ""
+
+#: src/components/data/VueDataTable.vue:759
+msgid "Last page"
+msgstr ""
+
+#: src/components/data/VueDataTable.vue:762
+msgid "Last"
+msgstr ""
+
+#: src/components/data/VueDataTable.vue:767
+msgid "Showing"
+msgstr ""
+
+#: src/components/data/VueDataTable.vue:768
+msgid "of"
+msgstr ""
+
+#: src/components/data/VueDataTable.vue:768
+msgid "items"
+msgstr ""
+
+#: src/components/Layout.vue:112
 msgid "Tell me I didn't spend that much…"
 msgstr ""
 
-#: src/components/Layout.vue:127 src/pages/CategoryMonthsList.vue:45
-#: src/pages/CategoryMonthTransactions.vue:41 src/pages/CostOfLiving.vue:221
-#: src/pages/Details.vue:95 src/pages/MonthCategoriesList.vue:44
-#: src/pages/Results.vue:148
+#: src/components/Layout.vue:119 src/pages/CategoryMonthsList.vue:85
+#: src/pages/CategoryMonthTransactions.vue:54 src/pages/CostOfLiving.vue:168
+#: src/pages/Details.vue:96 src/pages/MonthCategoriesList.vue:81
+#: src/pages/Results.vue:228
 msgid "Home"
 msgstr "Home"
 
-#: src/components/Layout.vue:131 src/components/Layout.vue:141
+#: src/components/Layout.vue:123 src/components/Layout.vue:133
 msgid "About"
 msgstr "About"
 
-#: src/components/Layout.vue:135
+#: src/components/Layout.vue:127
 msgid "Privacy"
 msgstr "Privacy"
 
-#: src/components/Layout.vue:138
+#: src/components/Layout.vue:130
 msgid "Legal"
 msgstr "Legal"
 
-#: src/components/Layout.vue:147
+#: src/components/Layout.vue:139
 msgid "Analytics"
 msgstr ""
 
-#: src/components/Layout.vue:151
+#: src/components/Layout.vue:143
 msgid "Analysis direction"
 msgstr "Analysis direction"
 
-#: src/components/Layout.vue:160
+#: src/components/Layout.vue:152
 msgid "columns"
 msgstr "columns"
 
-#: src/components/Layout.vue:161
+#: src/components/Layout.vue:153
 msgid "rows"
 msgstr "rows"
 
-#: src/components/Layout.vue:165
+#: src/components/Layout.vue:157
 msgid "Algorithms"
 msgstr "Algorithms"
 
-#: src/components/Layout.vue:176
+#: src/components/Layout.vue:168
 msgid "IQR Outlier Detection"
 msgstr "IQR Outlier Detection"
 
-#: src/components/Layout.vue:177
+#: src/components/Layout.vue:169
 msgid "Pareto analysis"
 msgstr "Pareto analysis"
 
-#: src/components/Layout.vue:181
+#: src/components/Layout.vue:173
 msgid "Legend"
 msgstr "Legend"
 
-#: src/components/Layout.vue:186
+#: src/components/Layout.vue:178
 msgid "Marked outlier by IQR"
 msgstr ""
 
-#: src/components/Layout.vue:187
+#: src/components/Layout.vue:179
 msgid "Marked outlier by Pareto principle"
 msgstr ""
 
-#: src/components/Layout.vue:188
+#: src/components/Layout.vue:180
 msgid "Excluded from statistics"
 msgstr ""
 
-#: src/components/Layout.vue:189
+#: src/components/Layout.vue:181
 msgid "Matched by multiple algorithms"
 msgstr ""
 
-#: src/components/Layout.vue:203
+#: src/components/Layout.vue:195
 msgid "Reset to defaults"
 msgstr "Reset to defaults"
 
-#: src/components/Layout.vue:210
+#: src/components/Layout.vue:202
 msgid "Languages"
 msgstr "Languages"
 
-#: src/components/Layout.vue:228
+#: src/components/Layout.vue:220
 msgid "Skip to main content"
 msgstr "Skip to main content"
 
@@ -148,262 +244,201 @@ msgstr "Account"
 msgid "What's the Damage"
 msgstr "What's the Damage"
 
-#: src/pages/CategoryMonthsList.vue:43
-msgid "Details for Category"
-msgstr "Details for Category"
-
-#: src/pages/CategoryMonthsList.vue:46
-#: src/pages/CategoryMonthTransactions.vue:42
-#: src/pages/MonthCategoriesList.vue:45
-msgid "Results"
-msgstr "Results"
-
-#: src/pages/CategoryMonthsList.vue:47
-msgid "Category Details"
-msgstr "Category Details"
-
-#: src/pages/CategoryMonthsList.vue:51
-#: src/pages/CategoryMonthTransactions.vue:56
-#: src/pages/MonthCategoriesList.vue:50
-msgid "Back to Results"
-msgstr "Back to Results"
-
-#: src/pages/CategoryMonthsList.vue:59
-#: src/pages/CategoryMonthTransactions.vue:64 src/pages/CostOfLiving.vue:168
-#: src/pages/Details.vue:46 src/pages/MonthCategoriesList.vue:58
-#: src/pages/Results.vue:51 src/pages/Results.vue:77
-msgid "Export CSV"
-msgstr "Export CSV"
-
-#: src/pages/CategoryMonthsList.vue:60
-#: src/pages/CategoryMonthTransactions.vue:65 src/pages/CostOfLiving.vue:173
-#: src/pages/Details.vue:47 src/pages/MonthCategoriesList.vue:59
-#: src/pages/Results.vue:52 src/pages/Results.vue:78
-msgid "Export Excel"
-msgstr "Export Excel"
-
-#: src/pages/CategoryMonthsList.vue:109
-#: src/pages/CategoryMonthTransactions.vue:102 src/pages/Details.vue:104
-#: src/pages/MonthCategoriesList.vue:108 src/pages/Results.vue:155
-msgid "loading"
-msgstr "loading"
-
-#: src/pages/CategoryMonthsList.vue:111
-#: src/pages/CategoryMonthTransactions.vue:104
-#: src/pages/MonthCategoriesList.vue:110
-msgid "Loading data"
-msgstr "Loading data"
-
-#: src/pages/CategoryMonthsList.vue:133 src/pages/CostOfLiving.vue:102
+#: src/pages/CategoryMonthsList.vue:33 src/pages/CostOfLiving.vue:87
 msgid "Month"
 msgstr "Month"
 
-#: src/pages/CategoryMonthsList.vue:134 src/pages/CostOfLiving.vue:297
-#: src/pages/MonthCategoriesList.vue:133
+#: src/pages/CategoryMonthsList.vue:49 src/pages/CostOfLiving.vue:244
+#: src/pages/MonthCategoriesList.vue:48
 msgid "Total"
 msgstr "Total"
 
-#: src/pages/CategoryMonthsList.vue:182 src/pages/MonthCategoriesList.vue:181
-msgid "No data found"
-msgstr "No data found"
+#: src/pages/CategoryMonthsList.vue:83
+#: src/pages/CategoryMonthTransactions.vue:52 src/pages/CostOfLiving.vue:286
+#: src/pages/MonthCategoriesList.vue:79
+msgid "Details"
+msgstr "Details"
 
-#: src/pages/CategoryMonthTransactions.vue:39
-#: src/pages/CategoryMonthTransactions.vue:47 src/pages/Details.vue:117
-msgid "Transaction Details"
-msgstr "Transaction Details"
+#: src/pages/CategoryMonthsList.vue:86
+#: src/pages/CategoryMonthTransactions.vue:55
+#: src/pages/MonthCategoriesList.vue:82
+msgid "Results"
+msgstr "Results"
 
-#: src/pages/CategoryMonthTransactions.vue:44
-msgid "Category Months"
-msgstr "Category Months"
+#: src/pages/CategoryMonthsList.vue:87
+msgid "Category Details"
+msgstr "Category Details"
 
-#: src/pages/CategoryMonthTransactions.vue:51
-msgid "Back to Category Months"
-msgstr "Back to Category Months"
-
-#: src/pages/CategoryMonthTransactions.vue:126 src/pages/Details.vue:134
-msgid "Date"
-msgstr "Date"
-
-#: src/pages/CategoryMonthTransactions.vue:127 src/pages/Details.vue:137
-msgid "Amount"
-msgstr "Amount"
-
-#: src/pages/CategoryMonthTransactions.vue:128 src/pages/Details.vue:136
-msgid "Merchant"
-msgstr "Merchant"
-
-#: src/pages/CategoryMonthTransactions.vue:164
-msgid "No transactions found"
-msgstr "No transactions found"
-
-#: src/pages/CostOfLiving.vue:108 src/pages/CostOfLiving.vue:223
-#: src/pages/Results.vue:181
-msgid "Cost of Living"
-msgstr ""
-
-#: src/pages/CostOfLiving.vue:179
-msgid "Search"
-msgstr ""
-
-#: src/pages/CostOfLiving.vue:180
-msgid "Show _MENU_ entries"
-msgstr ""
-
-#: src/pages/CostOfLiving.vue:181
-msgid "Showing _START_ to _END_ of _TOTAL_ entries"
-msgstr ""
-
-#: src/pages/CostOfLiving.vue:182
-msgid "Showing 0 to 0 of 0 entries"
-msgstr ""
-
-#: src/pages/CostOfLiving.vue:183
-msgid "(filtered from _MAX_ total entries)"
-msgstr ""
-
-#: src/pages/CostOfLiving.vue:185
-msgid "First"
-msgstr ""
-
-#: src/pages/CostOfLiving.vue:186
-msgid "Last"
-msgstr ""
-
-#: src/pages/CostOfLiving.vue:187
-msgid "Next"
-msgstr ""
-
-#: src/pages/CostOfLiving.vue:188
-msgid "Previous"
-msgstr ""
-
-#: src/pages/CostOfLiving.vue:222 src/pages/Details.vue:96
-#: src/pages/Results.vue:149 src/pages/Results.vue:199
-msgid "Categories"
-msgstr "Categories"
-
-#: src/pages/CostOfLiving.vue:230
-#, fuzzy
-msgid "Loading Cost of Living data"
-msgstr "Loading data"
-
-#: src/pages/CostOfLiving.vue:244
-msgid "Cost of Living Analysis"
-msgstr ""
-
-#: src/pages/CostOfLiving.vue:247 src/pages/Details.vue:120
+#: src/pages/CategoryMonthsList.vue:91
+#: src/pages/CategoryMonthTransactions.vue:69 src/pages/CostOfLiving.vue:194
+#: src/pages/Details.vue:121 src/pages/MonthCategoriesList.vue:87
 #, fuzzy
 msgid "Back to Categories"
 msgstr "Back to Category Months"
 
-#: src/pages/CostOfLiving.vue:254
+#: src/pages/CategoryMonthsList.vue:158
+#: src/pages/CategoryMonthTransactions.vue:116 src/pages/Details.vue:105
+#: src/pages/MonthCategoriesList.vue:150 src/pages/Results.vue:235
+msgid "loading"
+msgstr "loading"
+
+#: src/pages/CategoryMonthsList.vue:160
+#: src/pages/CategoryMonthTransactions.vue:118
+#: src/pages/MonthCategoriesList.vue:152
+msgid "Loading data"
+msgstr "Loading data"
+
+#: src/pages/CategoryMonthTransactions.vue:28 src/pages/Details.vue:25
+msgid "Date"
+msgstr "Date"
+
+#: src/pages/CategoryMonthTransactions.vue:31 src/pages/Details.vue:28
+msgid "Amount"
+msgstr "Amount"
+
+#: src/pages/CategoryMonthTransactions.vue:34 src/pages/Details.vue:27
+msgid "Merchant"
+msgstr "Merchant"
+
+#: src/pages/CategoryMonthTransactions.vue:57
+msgid "Category Months"
+msgstr "Category Months"
+
+#: src/pages/CategoryMonthTransactions.vue:60 src/pages/Details.vue:118
+msgid "Transaction Details"
+msgstr "Transaction Details"
+
+#: src/pages/CategoryMonthTransactions.vue:64
+msgid "Back to Category Months"
+msgstr "Back to Category Months"
+
+#: src/pages/CategoryMonthTransactions.vue:162
+msgid "No transactions found"
+msgstr "No transactions found"
+
+#: src/pages/CostOfLiving.vue:93 src/pages/CostOfLiving.vue:170
+#: src/pages/Results.vue:261
+msgid "Cost of Living"
+msgstr ""
+
+#: src/pages/CostOfLiving.vue:169 src/pages/Details.vue:97
+#: src/pages/Results.vue:80 src/pages/Results.vue:229
+msgid "Categories"
+msgstr "Categories"
+
+#: src/pages/CostOfLiving.vue:177
+#, fuzzy
+msgid "Loading Cost of Living data"
+msgstr "Loading data"
+
+#: src/pages/CostOfLiving.vue:191
+msgid "Cost of Living Analysis"
+msgstr ""
+
+#: src/pages/CostOfLiving.vue:201
 #, fuzzy
 msgid "Select Account"
 msgstr "Account"
 
-#: src/pages/CostOfLiving.vue:268
+#: src/pages/CostOfLiving.vue:215
 msgid "No categories found in the data"
 msgstr ""
 
-#: src/pages/CostOfLiving.vue:272
+#: src/pages/CostOfLiving.vue:219
 msgid "Please select at least one category to see Cost of Living calculations"
 msgstr ""
 
-#: src/pages/CostOfLiving.vue:277
+#: src/pages/CostOfLiving.vue:224
 msgid "Summary"
 msgstr ""
 
-#: src/pages/CostOfLiving.vue:282
+#: src/pages/CostOfLiving.vue:229
 #, fuzzy
 msgid "Selected Categories"
 msgstr "Categories"
 
-#: src/pages/CostOfLiving.vue:289
+#: src/pages/CostOfLiving.vue:236
 msgid "Months Analyzed"
 msgstr ""
 
-#: src/pages/CostOfLiving.vue:293
+#: src/pages/CostOfLiving.vue:240
 msgid "Average Monthly"
 msgstr ""
 
-#: src/pages/CostOfLiving.vue:308
+#: src/pages/CostOfLiving.vue:255
 msgid "Monthly Cost of Living"
 msgstr ""
 
-#: src/pages/CostOfLiving.vue:311
+#: src/pages/CostOfLiving.vue:258
 msgid "Show trendline"
 msgstr ""
 
-#: src/pages/CostOfLiving.vue:322
+#: src/pages/CostOfLiving.vue:269
 #, fuzzy
 msgid "Category Breakdown by Month"
 msgstr "Category Months"
 
-#: src/pages/CostOfLiving.vue:325
+#: src/pages/CostOfLiving.vue:272
 msgid ""
 "Each pie chart shows the composition of your selected categories for that "
 "month"
 msgstr ""
 
-#: src/pages/CostOfLiving.vue:339
-msgid "Details"
-msgstr "Details"
-
-#: src/pages/CostOfLiving.vue:342
+#: src/pages/CostOfLiving.vue:289
 msgid "more"
 msgstr ""
 
-#: src/pages/CostOfLiving.vue:354
+#: src/pages/CostOfLiving.vue:301
 #, fuzzy
 msgid "Detailed Monthly Data"
 msgstr "Details for Month"
 
-#: src/pages/CostOfLiving.vue:378
+#: src/pages/CostOfLiving.vue:320
 msgid "Average"
 msgstr ""
 
-#: src/pages/CostOfLiving.vue:391
+#: src/pages/CostOfLiving.vue:333
 msgid "No data available"
 msgstr ""
 
-#: src/pages/CostOfLiving.vue:396
+#: src/pages/CostOfLiving.vue:338
 msgid "No Cost of Living data available"
 msgstr ""
 
-#: src/pages/Details.vue:97 src/pages/Results.vue:175
+#: src/pages/Details.vue:26 src/pages/MonthCategoriesList.vue:32
+msgid "Category"
+msgstr "Category"
+
+#: src/pages/Details.vue:29
+msgid "Currency"
+msgstr "Currency"
+
+#: src/pages/Details.vue:30
+msgid "Account"
+msgstr "Account"
+
+#: src/pages/Details.vue:31
+msgid "Type"
+msgstr "Type"
+
+#: src/pages/Details.vue:32
+msgid "Confidence"
+msgstr "Confidence"
+
+#: src/pages/Details.vue:33
+msgid "Notice"
+msgstr ""
+
+#: src/pages/Details.vue:98 src/pages/Results.vue:255
 #, fuzzy
 msgid "Transactions"
 msgstr "Transaction Details"
 
-#: src/pages/Details.vue:106 src/pages/Results.vue:157
+#: src/pages/Details.vue:107 src/pages/Results.vue:237
 msgid "Loading results"
 msgstr "Loading results"
 
-#: src/pages/Details.vue:135 src/pages/MonthCategoriesList.vue:132
-msgid "Category"
-msgstr "Category"
-
-#: src/pages/Details.vue:138
-msgid "Currency"
-msgstr "Currency"
-
-#: src/pages/Details.vue:139
-msgid "Account"
-msgstr "Account"
-
-#: src/pages/Details.vue:140
-msgid "Type"
-msgstr "Type"
-
-#: src/pages/Details.vue:141
-msgid "Confidence"
-msgstr "Confidence"
-
-#: src/pages/Details.vue:142
-msgid "Notice"
-msgstr ""
-
-#: src/pages/Details.vue:166 src/pages/Results.vue:238
+#: src/pages/Details.vue:143 src/pages/Results.vue:290
 msgid "No results found"
 msgstr "No results found"
 
@@ -506,30 +541,35 @@ msgstr "Submit"
 msgid "Clear form"
 msgstr "Clear form"
 
-#: src/pages/MonthCategoriesList.vue:42
-msgid "Details for Month"
-msgstr "Details for Month"
-
-#: src/pages/MonthCategoriesList.vue:46
+#: src/pages/MonthCategoriesList.vue:83
 msgid "Month Details"
 msgstr "Month Details"
 
-#: src/pages/Results.vue:166
+#: src/pages/Results.vue:246
 #, fuzzy
 msgid "Transaction Categories"
 msgstr "Transaction Details"
 
-#: src/pages/Results.vue:169
+#: src/pages/Results.vue:249
 msgid "Back to Form"
 msgstr "Back to Form"
 
-#: src/pages/Results.vue:240
+#: src/pages/Results.vue:292
 msgid "No result ID was provided."
 msgstr "No result ID was provided."
 
-#: src/pages/Results.vue:241
+#: src/pages/Results.vue:293
 msgid "Please upload a CSV file first."
 msgstr "Please upload a CSV file first."
+
+#~ msgid "Details for Category"
+#~ msgstr "Details for Category"
+
+#~ msgid "Back to Results"
+#~ msgstr "Back to Results"
+
+#~ msgid "Details for Month"
+#~ msgstr "Details for Month"
 
 #, fuzzy
 #~ msgid "List of Transactions"

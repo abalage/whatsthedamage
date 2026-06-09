@@ -95,7 +95,7 @@ def client():
             if category_id == 'food' and month_id == '1672531200':
                 transactions_list = [
                     TransactionDetail(
-                        date={'display': '2023-01-01', 'timestamp': ''},
+                        date={'display': '2023-01-01', 'timestamp': '1672531200'},
                         amount={'display': '$100.00', 'raw': 100.0},
                         merchant='Test Merchant 1',
                         currency='',
@@ -107,7 +107,7 @@ def client():
                         month_id=month_id
                     ),
                     TransactionDetail(
-                        date={'display': '2023-01-15', 'timestamp': ''},
+                        date={'display': '2023-01-15', 'timestamp': '1673740800'},
                         amount={'display': '$50.00', 'raw': 50.0},
                         merchant='Test Merchant 2',
                         currency='',

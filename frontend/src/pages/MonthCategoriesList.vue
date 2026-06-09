@@ -46,7 +46,7 @@ const columns: Column[] = [
   {
     key: 'total',
     title: $gettext('Total'),
-    renderHtml: (value: unknown) => String((value as { display?: string })?.display || value || '')
+    renderHtml: (value: unknown, row: Record<string, unknown>) => String((row as { total_display?: string }).total_display || value || '')
   }
 ]
 
@@ -100,7 +100,8 @@ const tableData = computed(() => {
   return monthCategoriesData.value.data.map(category => ({
     category: category.category,
     category_url: category.category_url,
-    total: category.total,
+    total: category.total.raw,
+    total_display: category.total.display,
     row_id: category.row_id,
     _rowIds: {
       total: category.row_id // Map total column to its row_id for cell-level highlighting

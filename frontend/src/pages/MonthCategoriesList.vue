@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { onMounted, computed } from 'vue'
+import { onMounted, computed, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useGettext } from 'vue3-gettext'
+import { useStatisticalStore } from '../stores/statistical.js'
 import {
   useDrilldownData,
   type BreadcrumbItem
@@ -16,6 +17,7 @@ import type { MonthCategoriesApiResponse } from '../types/api.js'
 
 const { $gettext } = useGettext()
 const route = useRoute()
+const statisticalStore = useStatisticalStore()
 
 // Helper to safely get route params
 const getRouteParam = (param: string): string | null => {
@@ -106,10 +108,17 @@ const tableData = computed(() => {
   }))
 })
 
-// Cell highlights from API (keyed by row_id)
+// Cell highlights from Pinia store
 const cellHighlightsByRowId = computed(() => {
-  return monthCategoriesData.value?.highlights || {}
+  return statisticalStore.highlights || {}
 })
+
+// Initialize highlights from API when data loads
+watch(() => monthCategoriesData.value, (newData) => {
+  if (newData?.highlights) {
+    statisticalStore.setHighlights(newData.highlights)
+  }
+}, { immediate: true })
 
 onMounted(() => {
   fetchData()

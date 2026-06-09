@@ -68,7 +68,6 @@ const triggerRecalculate = async () => {
     if (response?.highlights) {
       statisticalStore.setHighlights(response.highlights)
     }
-    showNotification('Statistics recalculated successfully!', 'success')
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error)
     feedback.showError(`${$gettext('Recalculate error')}: ${message}`)

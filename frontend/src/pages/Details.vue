@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useGettext } from 'vue3-gettext'
+import { useStatisticalStore } from '../stores/statistical.js'
 import { fetchResults } from '../js/api.js'
 import ButtonComponent from '../components/ui/ButtonComponent.vue'
 import VueDataTable from '../components/data/VueDataTable.vue'
@@ -10,6 +11,7 @@ import type { ResultsApiResponse } from '../types/api.js'
 
 const { $gettext } = useGettext()
 const route = useRoute()
+const statisticalStore = useStatisticalStore()
 
 
 const resultId = computed(() => {
@@ -49,6 +51,11 @@ const loadResults = async () => {
 
     resultsData.value = response
 
+    // Initialize highlights in Pinia store
+    if (response.accounts_data?.highlights) {
+      statisticalStore.setHighlights(response.accounts_data.highlights)
+    }
+
     isLoading.value = false
   } catch (err) {
     error.value = err instanceof Error ? err.message : 'Failed to load results'
@@ -87,9 +94,9 @@ const allTransactions = computed(() => {
   return transactions
 })
 
-// Cell highlights from API (keyed by row_id)
+// Cell highlights from Pinia store
 const cellHighlightsByRowId = computed(() => {
-  return resultsData.value?.accounts_data.highlights || {}
+  return statisticalStore.highlights || {}
 })
 
 onMounted(() => {

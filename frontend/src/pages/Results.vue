@@ -3,6 +3,7 @@ import { ref, onMounted, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { fetchResults as fetchResultsApi } from '../js/api.js'
 import { useFeedbackStore } from '../stores/feedback.js'
+import { useStatisticalStore } from '../stores/statistical.js'
 import { useGettext } from 'vue3-gettext'
 import type { ResultsApiResponse, AccountDataResponse } from '../types/api.js'
 import ButtonComponent from '../components/ui/ButtonComponent.vue'
@@ -17,6 +18,7 @@ const { $gettext } = useGettext()
 type AccountData = AccountDataResponse
 
 const feedback = useFeedbackStore()
+const statisticalStore = useStatisticalStore()
 const route = useRoute()
 
 
@@ -55,6 +57,11 @@ const loadResults = async () => {
     const response = await fetchResultsApi(resultId.value)
     resultsData.value = response
     error.value = null
+
+    // Initialize highlights in Pinia store
+    if (response.accounts_data?.highlights) {
+      statisticalStore.setHighlights(response.accounts_data.highlights)
+    }
 
     isLoading.value = false
   } catch (err) {
@@ -144,7 +151,7 @@ function buildTableData(account: AccountData): Record<string, unknown>[] {
       const monthData = catMonthMap[category]?.[monthTs]
       const columnKey = `month-${monthTs}`
       row[columnKey] = monthData?.total?.raw ?? 0
-      
+
       // Store the API row_id for this cell
       if (monthData?.row_id) {
         row._rowIds[columnKey] = monthData.row_id
@@ -157,9 +164,9 @@ function buildTableData(account: AccountData): Record<string, unknown>[] {
   return data
 }
 
-// Get highlights for an account's table (cell-level highlights from API)
+// Get highlights for an account's table from Pinia store
 function getAccountHighlights(): Record<string, string[]> {
-  return resultsData.value?.accounts_data.highlights || {}
+  return statisticalStore.highlights || {}
 }
 
 const getMonthsForAccount = (account: AccountData) => {

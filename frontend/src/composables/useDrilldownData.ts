@@ -293,12 +293,12 @@ export function useDrilldownData<T>(
  * @param pattern - Regex pattern to extract ID
  * @returns Extracted ID or fallback value
  */
-export function extractIdFromUrl(
+function extractIdFromUrl(
   url: string | undefined,
   pattern: RegExp,
   fallback: string
 ): string {
   if (!url) return fallback
   const match = pattern.exec(url)
-  return match ? match[1] : fallback // eslint-disable-line no-magic-numbers
+  return match ? match[1] : fallback
 }

@@ -21,8 +21,6 @@
     "check-updates": "npm-check-updates -u --upgradeInterval never"
   },
   "dependencies": {
-    "@emnapi/core": "^1.10.0",
-    "@emnapi/runtime": "^1.10.0",
     "@popperjs/core": "^2.11.8",
     "bootstrap": "^5.3.8",
     "chart.js": "^4.5.1",

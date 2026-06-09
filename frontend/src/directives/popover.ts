@@ -107,6 +107,3 @@ export const popoverDirective: Directive<HTMLElement, PopoverOptions> = {
     destroyPopover(el)
   }
 }
-
-// Export for use in main.ts
- export default popoverDirective

@@ -76,7 +76,7 @@ export interface Column {
 /**
  * Props for VueDataTable
  */
-export interface Props {
+interface Props {
   /** Table data (array of objects) */
   data: Record<string, unknown>[]
   /** Column definitions */
@@ -124,7 +124,7 @@ export interface Props {
 /**
  * Public API exposed via defineExpose
  */
-export interface TableApi {
+interface TableApi {
   /** Reset to page 1 */
   refresh: () => void
   /** Set search query */
@@ -552,15 +552,15 @@ defineExpose(tableApi)
           class="form-control"
           :placeholder="searchPlaceholder ?? $gettext('Search...')"
           :value="searchQuery"
-          @input="(e) => handleSearch((e.target as HTMLInputElement).value)"
           :aria-label="$gettext('Search')"
+          @input="(e) => handleSearch((e.target as HTMLInputElement).value)"
         />
         <button
           v-if="searchQuery"
           class="btn btn-outline-secondary"
           type="button"
-          @click="clearSearch"
           :aria-label="$gettext('Clear search')"
+          @click="clearSearch"
         >
           &times;
         </button>
@@ -572,8 +572,8 @@ defineExpose(tableApi)
       <button
         class="btn btn-sm btn-outline-secondary"
         type="button"
-        @click="clearColumnFilters"
         :aria-label="$gettext('Clear all filters')"
+        @click="clearColumnFilters"
       >
         {{ $gettext('Clear all filters') }}
       </button>
@@ -600,8 +600,8 @@ defineExpose(tableApi)
     <!-- Table -->
     <div class="table-responsive">
       <table
-        :class="tableClasses"
         :id="id"
+        :class="tableClasses"
       >
         <thead class="table-light">
           <tr>
@@ -619,8 +619,8 @@ defineExpose(tableApi)
                 },
               ]"
               :style="column.width ? { width: column.width } : {}"
-              @click="column.sortable !== false ? handleSort(column.key) : undefined"
               :aria-sort="sortColumn === column.key ? sortDirection : undefined"
+              @click="column.sortable !== false ? handleSort(column.key) : undefined"
             >
               <div class="d-flex flex-column gap-1">
                 <div class="d-flex align-items-center gap-2">
@@ -654,9 +654,9 @@ defineExpose(tableApi)
                   type="text"
                   class="form-control form-control-sm"
                   :value="columnFilters[column.key] || ''"
-                  @input="(e) => setColumnFilter(column.key, (e.target as HTMLInputElement).value)"
                   :placeholder="$gettext('Filter')"
                   :aria-label="$gettext('Filter by') + ' ' + column.title"
+                  @input="(e) => setColumnFilter(column.key, (e.target as HTMLInputElement).value)"
                 />
               </div>
             </th>
@@ -666,8 +666,8 @@ defineExpose(tableApi)
           <tr
             v-for="(row, rowIndex) in paginatedData"
             :key="rowIndex"
-            @click="onRowClick ? onRowClick(row, rowIndex) : undefined"
             :class="{ 'table-row-clickable': onRowClick }"
+            @click="onRowClick ? onRowClick(row, rowIndex) : undefined"
           >
             <td
               v-for="column in columns"
@@ -708,9 +708,9 @@ defineExpose(tableApi)
         <li class="page-item" :class="{ disabled: currentPage === 1 }">
           <button
             class="page-link"
-            @click="goToPage(1)"
             :disabled="currentPage === 1"
             :aria-label="$gettext('First page')"
+            @click="goToPage(1)"
           >
             {{ $gettext('First') }}
           </button>
@@ -718,9 +718,9 @@ defineExpose(tableApi)
         <li class="page-item" :class="{ disabled: currentPage === 1 }">
           <button
             class="page-link"
-            @click="goToPage(currentPage - 1)"
             :disabled="currentPage === 1"
             :aria-label="$gettext('Previous page')"
+            @click="goToPage(currentPage - 1)"
           >
             {{ $gettext('Previous') }}
           </button>
@@ -735,8 +735,8 @@ defineExpose(tableApi)
           <button
             v-if="typeof page === 'number'"
             class="page-link"
-            @click="goToPage(page)"
             :aria-label="$gettext('Page') + ' ' + page"
+            @click="goToPage(page)"
           >
             {{ page }}
           </button>
@@ -745,9 +745,9 @@ defineExpose(tableApi)
         <li class="page-item" :class="{ disabled: currentPage === totalPages }">
           <button
             class="page-link"
-            @click="goToPage(currentPage + 1)"
             :disabled="currentPage === totalPages"
             :aria-label="$gettext('Next page')"
+            @click="goToPage(currentPage + 1)"
           >
             {{ $gettext('Next') }}
           </button>
@@ -755,9 +755,9 @@ defineExpose(tableApi)
         <li class="page-item" :class="{ disabled: currentPage === totalPages }">
           <button
             class="page-link"
-            @click="goToPage(totalPages)"
             :disabled="currentPage === totalPages"
             :aria-label="$gettext('Last page')"
+            @click="goToPage(totalPages)"
           >
             {{ $gettext('Last') }}
           </button>

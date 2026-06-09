@@ -267,7 +267,7 @@ interface DrilldownUrls {
 /**
  * Data for a single month in category months response
  */
-export interface MonthData {
+interface MonthData {
   month: string;
   month_timestamp: number;
   total: DisplayRawField;
@@ -293,7 +293,7 @@ export interface CategoryMonthsApiResponse {
 /**
  * Data for a single category in month categories response
  */
-export interface CategoryData {
+interface CategoryData {
   category: string;
   total: DisplayRawField;
   row_id: string;

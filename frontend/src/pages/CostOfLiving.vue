@@ -301,8 +301,8 @@ onMounted(() => loadData());
         <div class="card-header"><h4 class="mb-0"><i class="bi bi-table me-2"></i> {{ $gettext('Detailed Monthly Data') }}</h4></div>
         <div class="card-body p-0">
           <VueDataTable
-            :key="`columns-${selectedCategories.join(',')}-${costOfLivingData?.months.length}`"
             id="cost-of-living-table"
+            :key="`columns-${selectedCategories.join(',')}-${costOfLivingData?.months.length}`"
             :columns="tableColumns"
             :data="tableData"
             :page-size="25"

@@ -1,8 +1,7 @@
 <script setup lang="ts">
-import { ref, onMounted, computed, watch } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { useGettext } from 'vue3-gettext'
-import { useStatisticalStore } from '../stores/statistical.js'
 import { fetchResults } from '../js/api.js'
 import ButtonComponent from '../components/ui/ButtonComponent.vue'
 import VueDataTable from '../components/data/VueDataTable.vue'
@@ -11,8 +10,6 @@ import type { ResultsApiResponse } from '../types/api.js'
 
 const { $gettext } = useGettext()
 const route = useRoute()
-const statisticalStore = useStatisticalStore()
-
 
 const resultId = computed(() => {
   const id = route.params.resultId
@@ -51,11 +48,6 @@ const loadResults = async () => {
 
     resultsData.value = response
 
-    // Initialize highlights in Pinia store
-    if (response.accounts_data?.highlights) {
-      statisticalStore.setHighlights(response.accounts_data.highlights)
-    }
-
     isLoading.value = false
   } catch (err) {
     error.value = err instanceof Error ? err.message : 'Failed to load results'
@@ -82,21 +74,13 @@ const allTransactions = computed(() => {
           type: detail.type || '',
           confidence: detail.confidence?.toString() ?? '',
           notice: detail.notice || '',
-          row_id: detail.row_id,
-          _rowIds: {
-            amount: detail.row_id // Map amount column to its row_id for cell-level highlighting
-          }
+          row_id: detail.row_id
         })
       }
     }
   }
 
   return transactions
-})
-
-// Cell highlights from Pinia store
-const cellHighlightsByRowId = computed(() => {
-  return statisticalStore.highlights || {}
 })
 
 onMounted(() => {
@@ -148,7 +132,6 @@ onMounted(() => {
             id="detail-datatable"
             :data="allTransactions"
             :columns="columns"
-            :cell-highlights-by-row-id="cellHighlightsByRowId"
             show-column-filters
           />
         </div>

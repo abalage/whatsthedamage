@@ -6,7 +6,6 @@ import { useStatisticalStore } from '../stores/statistical.js'
 import { useFeedbackStore } from '../stores/feedback.js'
 import { useGettext } from 'vue3-gettext'
 import { recalculateStatistics } from '../js/api.js'
-import { showNotification } from '../js/utils.js'
 
 const { $gettext } = useGettext()
 const route = useRoute()
@@ -90,7 +89,6 @@ const resetToDefaults = async () => {
       if (response?.highlights) {
         statisticalStore.setHighlights(response.highlights)
       }
-      showNotification('Defaults restored successfully!', 'success')
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
       feedback.showError(`${$gettext('Restore defaults error')}: ${message}`)

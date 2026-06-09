@@ -23,7 +23,6 @@
  *     :data="tableData"
  *     :columns="columns"
  *     id="my-table"
- *     :highlights="highlights"
  *   />
  */
 
@@ -103,8 +102,6 @@ interface Props {
   excelText?: string
 
   // Highlighting
-  /** Statistical highlights: row_id -> array of highlight class suffixes (for row-level highlighting) */
-  highlights?: Record<string, string[]>
   /** Cell-level highlights: row_id -> array of highlight types (for cell-level highlighting in pivot tables) */
   cellHighlightsByRowId?: Record<string, string[]>
 
@@ -344,15 +341,6 @@ const paginatedData = computed(() => {
   const end = start + pageSize.value
   return filteredData.value.slice(start, end)
 })
-
-/**
- * Get highlight classes for a row.
- */
-function getRowHighlightClasses(row: Record<string, unknown>): string[] {
-  const rowId = row.row_id as string | undefined
-  if (!rowId || !props.highlights) return []
-  return props.highlights[rowId] ?? []
-}
 
 /**
  * Get highlight CSS classes for a specific cell.
@@ -674,7 +662,7 @@ defineExpose(tableApi)
               :key="column.key"
               :class="[
                 column.class,
-                ...(props.cellHighlightsByRowId ? getCellHighlightClasses(row, column.key) : getRowHighlightClasses(row).map(h => `highlight-${h}`)),
+                ...getCellHighlightClasses(row, column.key),
               ]"
             >
               <template v-if="column.component">
@@ -816,7 +804,7 @@ th {
   text-decoration: underline;
 }
 
-/* Highlight classes - these are added dynamically based on highlights prop */
+/* Highlight classes - these are added dynamically based on cellHighlightsByRowId prop */
 :global(.highlight-positive) {
   background-color: rgba(40, 167, 69, 0.15);
 }

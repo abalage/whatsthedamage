@@ -45,10 +45,7 @@ const columns: Column[] = [
   {
     key: 'total',
     title: $gettext('Total'),
-    renderHtml: (value: unknown, row: Record<string, unknown>) => {
-      const rowId = String(row.row_id || '')
-      return `<span data-row-id="${rowId}">${String((value as { display?: string })?.display || value || '')}</span>`
-    }
+    renderHtml: (value: unknown) => String((value as { display?: string })?.display || value || '')
   }
 ]
 
@@ -110,12 +107,15 @@ const tableData = computed(() => {
     month_timestamp: month.month_timestamp,
     resultId,
     accountId,
-    categoryId
+    categoryId,
+    _rowIds: {
+      total: month.row_id // Map total column to its row_id for cell-level highlighting
+    }
   }))
 })
 
-// Highlights
-const highlights = computed(() => {
+// Cell highlights from API (keyed by row_id)
+const cellHighlightsByRowId = computed(() => {
   return categoryMonthsData.value?.highlights || {}
 })
 
@@ -169,7 +169,7 @@ onMounted(() => {
               id="datatable-category"
               :data="tableData"
               :columns="columns"
-              :highlights="highlights"
+              :cell-highlights-by-row-id="cellHighlightsByRowId"
               :csv-text="$gettext('Export CSV')"
               :excel-text="$gettext('Export Excel')"
               show-column-filters

@@ -30,6 +30,7 @@
 import { ref, computed, onUnmounted, defineExpose, type Component } from 'vue'
 import { useGettext } from 'vue3-gettext'
 import { RouterLink } from 'vue-router'
+import { getCssClassesForHighlights, DEFAULT_HIGHLIGHT_CONFIG } from '../../config/highlight-config'
 
 /**
  * Column definition for VueDataTable
@@ -102,8 +103,10 @@ export interface Props {
   excelText?: string
 
   // Highlighting
-  /** Statistical highlights: row_id -> array of highlight class suffixes */
+  /** Statistical highlights: row_id -> array of highlight class suffixes (for row-level highlighting) */
   highlights?: Record<string, string[]>
+  /** Cell-level highlights: row_id -> array of highlight types (for cell-level highlighting in pivot tables) */
+  cellHighlightsByRowId?: Record<string, string[]>
 
   // Display
   /** Show pagination controls. Default: true */
@@ -349,6 +352,33 @@ function getRowHighlightClasses(row: Record<string, unknown>): string[] {
   const rowId = row.row_id as string | undefined
   if (!rowId || !props.highlights) return []
   return props.highlights[rowId] ?? []
+}
+
+/**
+ * Get highlight CSS classes for a specific cell.
+ * Uses the cell's row_id from the _rowIds mapping.
+ * @param row - The table row data
+ * @param columnKey - The column key for the cell
+ * @returns Array of CSS class names (without 'highlight-' prefix)
+ */
+function getCellHighlightClasses(row: Record<string, unknown>, columnKey: string): string[] {
+  // Check if cell-level highlighting is enabled
+  if (!props.cellHighlightsByRowId) return []
+
+  // Get the _rowIds mapping from the row
+  const rowIds = row._rowIds as Record<string, string> | undefined
+  if (!rowIds) return []
+
+  // Get the API row_id for this specific cell/column
+  const cellRowId = rowIds[columnKey]
+  if (!cellRowId) return []
+
+  // Get the highlight types for this cell's row_id
+  const highlightTypes = props.cellHighlightsByRowId[cellRowId]
+  if (!highlightTypes) return []
+
+  // Use the highlight config to resolve CSS classes
+  return getCssClassesForHighlights(highlightTypes, DEFAULT_HIGHLIGHT_CONFIG)
 }
 
 /**
@@ -644,7 +674,7 @@ defineExpose(tableApi)
               :key="column.key"
               :class="[
                 column.class,
-                ...getRowHighlightClasses(row).map(h => `highlight-${h}`),
+                ...(props.cellHighlightsByRowId ? getCellHighlightClasses(row, column.key) : getRowHighlightClasses(row).map(h => `highlight-${h}`)),
               ]"
             >
               <template v-if="column.component">

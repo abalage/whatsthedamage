@@ -44,10 +44,7 @@ const columns: Column[] = [
   {
     key: 'total',
     title: $gettext('Total'),
-    renderHtml: (value: unknown, row: Record<string, unknown>) => {
-      const rowId = String(row.row_id || '')
-      return `<span data-row-id="${rowId}">${String((value as { display?: string })?.display || value || '')}</span>`
-    }
+    renderHtml: (value: unknown) => String((value as { display?: string })?.display || value || '')
   }
 ]
 
@@ -95,19 +92,22 @@ const {
 
 
 
-// Table data with row_id
+// Table data with _rowIds mapping
 const tableData = computed(() => {
   if (!monthCategoriesData.value) return []
   return monthCategoriesData.value.data.map(category => ({
     category: category.category,
     category_url: category.category_url,
     total: category.total,
-    row_id: category.row_id
+    row_id: category.row_id,
+    _rowIds: {
+      total: category.row_id // Map total column to its row_id for cell-level highlighting
+    }
   }))
 })
 
-// Highlights
-const highlights = computed(() => {
+// Cell highlights from API (keyed by row_id)
+const cellHighlightsByRowId = computed(() => {
   return monthCategoriesData.value?.highlights || {}
 })
 
@@ -161,7 +161,7 @@ onMounted(() => {
               id="datatable-month"
               :data="tableData"
               :columns="columns"
-              :highlights="highlights"
+              :cell-highlights-by-row-id="cellHighlightsByRowId"
               :csv-text="$gettext('Export CSV')"
               :excel-text="$gettext('Export Excel')"
               show-column-filters

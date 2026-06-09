@@ -75,7 +75,10 @@ const allTransactions = computed(() => {
           type: detail.type || '',
           confidence: detail.confidence?.toString() ?? '',
           notice: detail.notice || '',
-          row_id: detail.row_id
+          row_id: detail.row_id,
+          _rowIds: {
+            amount: detail.row_id // Map amount column to its row_id for cell-level highlighting
+          }
         })
       }
     }
@@ -84,8 +87,8 @@ const allTransactions = computed(() => {
   return transactions
 })
 
-// Get highlights from results data for row highlighting
-const highlights = computed(() => {
+// Cell highlights from API (keyed by row_id)
+const cellHighlightsByRowId = computed(() => {
   return resultsData.value?.accounts_data.highlights || {}
 })
 
@@ -138,7 +141,7 @@ onMounted(() => {
             id="detail-datatable"
             :data="allTransactions"
             :columns="columns"
-            :highlights="highlights"
+            :cell-highlights-by-row-id="cellHighlightsByRowId"
             show-column-filters
           />
         </div>

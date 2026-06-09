@@ -130,9 +130,25 @@ const tableData = computed<Record<string, unknown>[]>(() => {
       row[catId] = month.categories[catId] ?? { amount: ZERO };
     });
 
+    // Build _rowIds mapping for cell-level highlighting
+    // For Cost of Living, we map each category column to the month's timestamp
+    // This allows cell-level highlighting if highlights are available
+    const rowIds: Record<string, string> = {
+      total: String(month.month_timestamp)
+    }
+    selectedCategories.value.forEach(catId => {
+      rowIds[catId] = String(month.month_timestamp)
+    })
+    row._rowIds = rowIds
+
     return row;
   });
 });
+
+// Cell highlights from results data (keyed by row_id/month_timestamp)
+const cellHighlightsByRowId = computed(() => {
+  return resultsData.value?.accounts_data.highlights || {}
+})
 
 // VueDataTable uses individual props instead of options object
 // Default pageSize is 25, which matches the old DataTables config
@@ -305,6 +321,7 @@ onMounted(() => loadData());
             id="cost-of-living-table"
             :columns="tableColumns"
             :data="tableData"
+            :cell-highlights-by-row-id="cellHighlightsByRowId"
             :page-size="25"
             :csv-text="$gettext('Export CSV')"
             :excel-text="$gettext('Export Excel')"

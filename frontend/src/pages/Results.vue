@@ -137,11 +137,18 @@ function buildTableData(account: AccountData): Record<string, unknown>[] {
     const row: Record<string, unknown> = {
       category,
       accountId: account.id,
+      _rowIds: {} as Record<string, string> // Maps column keys to API row_ids
     }
 
     for (const [, monthTs] of months) {
       const monthData = catMonthMap[category]?.[monthTs]
-      row[`month-${monthTs}`] = monthData?.total?.raw ?? 0
+      const columnKey = `month-${monthTs}`
+      row[columnKey] = monthData?.total?.raw ?? 0
+      
+      // Store the API row_id for this cell
+      if (monthData?.row_id) {
+        row._rowIds[columnKey] = monthData.row_id
+      }
     }
 
     data.push(row)
@@ -150,7 +157,7 @@ function buildTableData(account: AccountData): Record<string, unknown>[] {
   return data
 }
 
-// Get highlights for an account's table
+// Get highlights for an account's table (cell-level highlights from API)
 function getAccountHighlights(): Record<string, string[]> {
   return resultsData.value?.accounts_data.highlights || {}
 }
@@ -262,7 +269,7 @@ onMounted(() => {
               :id="`datatable-${account.id}`"
               :data="buildTableData(account)"
               :columns="buildTableColumns(account)"
-              :highlights="getAccountHighlights(account)"
+              :cell-highlights-by-row-id="getAccountHighlights()"
               :csv-text="$gettext('Export CSV')"
               :excel-text="$gettext('Export Excel')"
               show-column-filters

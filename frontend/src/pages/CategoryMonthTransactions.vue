@@ -29,10 +29,7 @@ const columns: Column[] = [
   {
     key: 'amount',
     title: $gettext('Amount'),
-    renderHtml: (value: unknown, row: Record<string, unknown>) => {
-      const rowId = String(row.row_id || '')
-      return `<span data-row-id="${rowId}">${String((value as { display?: string })?.display || value || '')}</span>`
-    }
+    renderHtml: (value: unknown) => String((value as { display?: string })?.display || value || '')
   },
   { key: 'merchant', title: $gettext('Merchant') }
 ]
@@ -84,12 +81,15 @@ const tableData = computed(() => {
     date: t.date,
     amount: t.amount,
     merchant: t.merchant,
-    row_id: t.row_id
+    row_id: t.row_id,
+    _rowIds: {
+      amount: t.row_id // Map amount column to its row_id for cell-level highlighting
+    }
   }))
 })
 
-// Highlights
-const highlights = computed(() => {
+// Cell highlights from API (keyed by row_id)
+const cellHighlightsByRowId = computed(() => {
   return transactionsData.value?.highlights || {}
 })
 
@@ -143,7 +143,7 @@ onMounted(() => {
               id="transaction-details-table"
               :data="tableData"
               :columns="columns"
-              :highlights="highlights"
+              :cell-highlights-by-row-id="cellHighlightsByRowId"
               :csv-text="$gettext('Export CSV')"
               :excel-text="$gettext('Export Excel')"
               show-column-filters

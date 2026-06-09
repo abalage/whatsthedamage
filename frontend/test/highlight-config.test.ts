@@ -81,6 +81,11 @@ describe('Highlight Configuration', () => {
         expect(result).toEqual([]);
     });
 
+    it('should handle iqr as alias for outlier', () => {
+        const result = getCssClassesForHighlights(['iqr']);
+        expect(result).toEqual(['highlight-outlier']);
+    });
+
     it('should handle mixed known and unknown highlights', () => {
         const result = getCssClassesForHighlights(['outlier', 'unknown', 'pareto']);
         // unknown is filtered out, leaving outlier and pareto -> highlight-multiple

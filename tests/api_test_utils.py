@@ -8,7 +8,7 @@ from io import BytesIO
 from typing import Dict, List, Any, Optional
 from unittest.mock import Mock
 import uuid
-from whatsthedamage.models.dt_models import ProcessingResponse
+from whatsthedamage.models.domain.dt_models import ProcessingResponse
 
 class MockProcessingService:
     """Mock ProcessingService for testing with simplified result builders."""
@@ -27,7 +27,7 @@ class MockProcessingService:
         Returns:
             ProcessingResponse object matching ProcessingService.process_with_details output
         """
-        from whatsthedamage.models.dt_models import (
+        from whatsthedamage.models.domain.dt_models import (
             AccountResponse,
             AggregatedRow,
             DisplayRawField,

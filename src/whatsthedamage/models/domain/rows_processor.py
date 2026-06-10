@@ -1,15 +1,16 @@
-from typing import Optional, Dict, List, Union, Tuple
+from typing import Optional, Dict, List, Union, Tuple, TYPE_CHECKING
 from whatsthedamage.config.config import AppContext, EnricherPatternSets
-from whatsthedamage.models.dt_models import AccountResponse, DateField
-from whatsthedamage.models.csv_row import CsvRow
-from whatsthedamage.models.row_enrichment import RowEnrichment
-from whatsthedamage.models.row_enrichment_ml import RowEnrichmentML
-from whatsthedamage.models.row_filter import RowFilter
-from whatsthedamage.models.dt_response_builder import AccountResponseBuilder
+from whatsthedamage.models.domain.dt_models import AccountResponse, DateField
+from whatsthedamage.models.domain.csv_row import CsvRow
+from whatsthedamage.models.domain.row_enrichment import RowEnrichment
+from whatsthedamage.models.domain.row_enrichment_ml import RowEnrichmentML
+from whatsthedamage.models.domain.row_filter import RowFilter
+from whatsthedamage.models.domain.dt_response_builder import AccountResponseBuilder
 from whatsthedamage.utils.date_converter import DateConverter
-from whatsthedamage.view.row_printer import print_categorized_rows, print_training_data
-from whatsthedamage.services.text_correction_service import TextCorrectionService
 from whatsthedamage.utils.logging import get_logger
+
+if TYPE_CHECKING:
+    from whatsthedamage.services.text_correction_service import TextCorrectionService
 
 logger = get_logger(__name__)
 
@@ -38,6 +39,8 @@ class RowsProcessor:
         self._filter: Optional[str] = context.args.filter
         self._training_data: bool = context.args.training_data
         self._ml: bool = context.args.ml
+        # Lazy import to avoid circular dependency
+        from whatsthedamage.services.text_correction_service import TextCorrectionService
         self._text_correction_service = TextCorrectionService(context.config.text_cleaning)
 
         # Convert start and end dates to epoch if provided
@@ -88,6 +91,8 @@ class RowsProcessor:
         Returns:
             Dict[str, AccountResponse]: Mapping of account_id → AccountResponse.
         """
+        # Local import to avoid circular dependency
+        from whatsthedamage.view.row_printer import print_categorized_rows, print_training_data
         logger.info(f"Starting processing of {len(rows)} rows")
         # Apply text cleaning
         rows = self._clean_rows(rows)

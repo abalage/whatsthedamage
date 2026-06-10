@@ -1,4 +1,4 @@
-from whatsthedamage.models.csv_row import CsvRow
+from whatsthedamage.models.domain.csv_row import CsvRow
 import pytest
 import copy
 

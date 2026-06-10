@@ -7,7 +7,7 @@ and provides business logic for Controllers (CLI, Web, API).
 import pytest
 from unittest.mock import Mock, patch
 from whatsthedamage.services.processing_service import ProcessingService
-from whatsthedamage.models.dt_models import ProcessingResponse
+from whatsthedamage.models.domain.dt_models import ProcessingResponse
 
 
 @pytest.fixture

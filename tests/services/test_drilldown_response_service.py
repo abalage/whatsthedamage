@@ -6,7 +6,7 @@ highlight types for the same row_id instead of overwriting them.
 """
 import pytest
 from unittest.mock import MagicMock
-from whatsthedamage.models.dt_models import CellHighlight, ProcessingResponse, StatisticalMetadata
+from whatsthedamage.models.domain.dt_models import CellHighlight, ProcessingResponse, StatisticalMetadata
 from whatsthedamage.services.drilldown_response_service import DrilldownResponseService
 
 

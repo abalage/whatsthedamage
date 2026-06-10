@@ -18,7 +18,7 @@ from sklearn.pipeline import Pipeline
 from sklearn.utils.validation import check_is_fitted
 
 from whatsthedamage.config.ml_config import MLConfig
-from whatsthedamage.models.csv_row import CsvRow
+from whatsthedamage.models.domain.csv_row import CsvRow
 from whatsthedamage.utils.data_loader import load_json_data
 from whatsthedamage.utils.logging import get_logger
 

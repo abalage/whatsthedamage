@@ -13,9 +13,9 @@ Architecture Patterns:
 """
 import datetime
 from typing import Any, Callable, Dict, List, Optional, Tuple, cast
-from whatsthedamage.models.dt_models import ProcessingResponse, AggregatedRow, AccountResponse
+from whatsthedamage.models.domain.dt_models import ProcessingResponse, AggregatedRow, AccountResponse
 from whatsthedamage.utils.date_converter import DateConverter
-from whatsthedamage.models.api_responses import (
+from whatsthedamage.models.api.responses import (
     CategoryMonthsApiResponse,
     MonthCategoriesApiResponse,
     CategoryMonthTransactionsApiResponse,

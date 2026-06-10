@@ -12,7 +12,7 @@ Each test validates:
 """
 import pytest
 
-from whatsthedamage.models.api_responses import (
+from whatsthedamage.models.api.responses import (
     ResultsApiResponse,
     CategoryMonthsApiResponse,
     MonthCategoriesApiResponse,
@@ -20,7 +20,7 @@ from whatsthedamage.models.api_responses import (
     RecalculateApiResponse,
     ErrorApiResponse,
 )
-from whatsthedamage.models.dt_models import DetailedResponse
+from whatsthedamage.models.domain.dt_models import DetailedResponse
 from tests.api_test_utils import MockProcessingService
 
 

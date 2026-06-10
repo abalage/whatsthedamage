@@ -1,5 +1,5 @@
 from typing import List, Dict, Optional, TYPE_CHECKING
-from whatsthedamage.models.csv_row import CsvRow
+from whatsthedamage.models.domain.csv_row import CsvRow
 from whatsthedamage.config.config import get_category_name
 from whatsthedamage.utils.logging import get_logger
 

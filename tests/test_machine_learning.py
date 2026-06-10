@@ -18,12 +18,12 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.compose import ColumnTransformer
 from sklearn.feature_extraction.text import TfidfVectorizer
 
-from whatsthedamage.models.machine_learning import (
+from whatsthedamage.models.domain.machine_learning import (
     AmountSignTransformer, Train, Metrics, Inference,
     save, load, validate_model_for_inference, apply_ml_text_cleaning
 )
 from whatsthedamage.config.ml_config import MLConfig
-from whatsthedamage.models.csv_row import CsvRow
+from whatsthedamage.models.domain.csv_row import CsvRow
 
 
 # Fixtures Section
@@ -422,7 +422,7 @@ class TestTrainClass:
                 mock_fit.return_value = train_instance._pipe
 
                 # Mock the save function to avoid file operations
-                with patch('whatsthedamage.models.machine_learning.save') as mock_save:
+                with patch('whatsthedamage.models.domain.machine_learning.save') as mock_save:
                     train_instance.train()
 
                     # Verify fit was called
@@ -599,7 +599,7 @@ class TestIntegration:
             train_instance._preprocessor.fit(train_instance._x_train)
 
             # Mock the save function to avoid file operations and pickling issues
-            with patch('whatsthedamage.models.machine_learning.save') as mock_save:
+            with patch('whatsthedamage.models.domain.machine_learning.save') as mock_save:
                 # Mock training to avoid long execution
                 with patch.object(train_instance._pipe, 'fit') as mock_fit:
                     mock_fit.return_value = train_instance._pipe

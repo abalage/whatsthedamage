@@ -8,7 +8,7 @@ from werkzeug.exceptions import BadRequest
 from typing import Tuple
 import time
 
-from whatsthedamage.models.dt_models import ProcessingResponse
+from whatsthedamage.models.domain.dt_models import ProcessingResponse
 from whatsthedamage.api.helpers import (
     validate_csv_file,
     get_config_file,

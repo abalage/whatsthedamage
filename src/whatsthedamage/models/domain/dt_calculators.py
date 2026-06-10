@@ -8,10 +8,10 @@ after all category data has been added to the builder.
 
 from typing import List, Dict, Tuple, TYPE_CHECKING
 from gettext import gettext as _
-from whatsthedamage.models.dt_models import AggregatedRow, DateField
+from whatsthedamage.models.domain.dt_models import AggregatedRow, DateField
 
 if TYPE_CHECKING:
-    from whatsthedamage.models.dt_response_builder import AccountResponseBuilder
+    from whatsthedamage.models.domain.dt_response_builder import AccountResponseBuilder
 
 
 def create_balance_rows(builder: "AccountResponseBuilder") -> List[AggregatedRow]:

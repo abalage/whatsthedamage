@@ -4,11 +4,11 @@ import pytest
 from whatsthedamage.services.statistical_analysis_service import StatisticalAnalysisService
 
 from whatsthedamage.services.statistical_analysis_service import AnalysisDirection
-from whatsthedamage.models.statistical_algorithms import (
+from whatsthedamage.models.domain.statistical_algorithms import (
     IQROutlierDetection,
     ParetoAnalysis
 )
-from whatsthedamage.models.dt_models import AccountResponse, AggregatedRow, DisplayRawField, DateField
+from whatsthedamage.models.domain.dt_models import AccountResponse, AggregatedRow, DisplayRawField, DateField
 import uuid
 
 @pytest.fixture
@@ -181,7 +181,7 @@ class TestHelperMethods:
         # Since algorithms no longer have preferred directions, direction is used directly
         # The _get_algorithm_direction method has been removed as it was just a wrapper
         # Test that the service still works correctly with direction parameters
-        from whatsthedamage.models.dt_models import SummaryData
+        from whatsthedamage.models.domain.dt_models import SummaryData
 
         summary = SummaryData(
             summary={

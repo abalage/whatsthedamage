@@ -1,6 +1,6 @@
 from typing import List, Dict, Callable, Optional, Any
-from whatsthedamage.models.csv_row import CsvRow
-from whatsthedamage.models.dt_models import DisplayRawField, DateField, DetailRow, AggregatedRow, AccountResponse
+from whatsthedamage.models.domain.csv_row import CsvRow
+from whatsthedamage.models.domain.dt_models import DisplayRawField, DateField, DetailRow, AggregatedRow, AccountResponse
 from whatsthedamage.utils.date_converter import DateConverter
 import uuid
 
@@ -43,7 +43,7 @@ class AccountResponseBuilder:
             metadata (Optional[Any]): Optional detailed metadata.
             statistical_metadata (Optional[Any]): Optional statistical metadata.
         """
-        from whatsthedamage.models.dt_calculators import create_balance_rows, create_total_spendings, create_cost_of_living_rows
+        from whatsthedamage.models.domain.dt_calculators import create_balance_rows, create_total_spendings, create_cost_of_living_rows
 
         self._date_format = date_format
         self._aggregated_rows: List[AggregatedRow] = []

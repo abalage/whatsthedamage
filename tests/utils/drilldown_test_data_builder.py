@@ -4,7 +4,7 @@ This module provides utilities for creating test data structures
 that mimic real processing results.
 """
 from typing import Dict, List, Any, Optional
-from whatsthedamage.models.dt_models import AccountResponse, AggregatedRow, DateField, ProcessingResponse, StatisticalMetadata, DisplayRawField
+from whatsthedamage.models.domain.dt_models import AccountResponse, AggregatedRow, DateField, ProcessingResponse, StatisticalMetadata, DisplayRawField
 from datetime import datetime
 import uuid
 

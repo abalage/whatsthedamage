@@ -1,46 +1,79 @@
 """Domain/business models for transaction processing.
 
-This package contains all domain-specific models used for CSV processing,
-data aggregation, and business logic.
+This package provides a clean organization of domain-specific models.
 """
 
-from whatsthedamage.models.domain.csv_data import CsvRow
-from whatsthedamage.models.domain.aggregation import (
+# CSV data models
+from whatsthedamage.models.domain.csv_row import CsvRow
+from whatsthedamage.models.domain.csv_file_handler import CsvFileHandler
+from whatsthedamage.models.domain.csv_processor import CSVProcessor
+
+# Aggregation models
+from whatsthedamage.models.domain.dt_models import (
     AccountResponse,
     AggregatedRow,
     DetailRow,
     DateField,
     DisplayRawField,
-)
-from whatsthedamage.models.domain.value_objects import (
-    CellHighlight,
-    StatisticalMetadata,
-)
-from whatsthedamage.models.domain.processing import (
     ProcessingResponse,
     SummaryData,
-    ProcessingResponse as ProcessingResponseDataclass,
+    CellHighlight,
+    StatisticalMetadata,
+    DetailedResponse,
 )
 
-# Re-export for backward compatibility during transition
-from whatsthedamage.models.domain.aggregation import AccountResponse as DataTablesResponse
-from whatsthedamage.models.domain.aggregation import AggregatedRow, DetailRow, DateField, DisplayRawField
+# Builder
+from whatsthedamage.models.domain.dt_response_builder import AccountResponseBuilder
+
+# Calculators
+from whatsthedamage.models.domain.dt_calculators import (
+    create_balance_rows,
+    create_total_spendings,
+    create_cost_of_living_rows,
+)
+
+# Processing
+from whatsthedamage.models.domain.row_filter import RowFilter
+from whatsthedamage.models.domain.rows_processor import RowsProcessor
+from whatsthedamage.models.domain.row_enrichment import RowEnrichment
+from whatsthedamage.models.domain.row_enrichment_ml import RowEnrichmentML
+
+# Statistics
+from whatsthedamage.models.domain.statistical_algorithms import (
+    StatisticalAlgorithm,
+    IQROutlierDetection,
+    ParetoAnalysis,
+)
 
 __all__ = [
     # CSV data models
     'CsvRow',
+    'CsvFileHandler',
+    'CSVProcessor',
     # Aggregation models
     'AccountResponse',
     'AggregatedRow',
     'DetailRow',
     'DateField',
     'DisplayRawField',
-    # Value objects
-    'CellHighlight',
-    'StatisticalMetadata',
-    # Processing models
     'ProcessingResponse',
     'SummaryData',
-    # Backward compatibility aliases
-    'DataTablesResponse',
+    'CellHighlight',
+    'StatisticalMetadata',
+    'DetailedResponse',
+    # Builder
+    'AccountResponseBuilder',
+    # Calculators
+    'create_balance_rows',
+    'create_total_spendings',
+    'create_cost_of_living_rows',
+    # Processing
+    'RowFilter',
+    'RowsProcessor',
+    'RowEnrichment',
+    'RowEnrichmentML',
+    # Statistics
+    'StatisticalAlgorithm',
+    'IQROutlierDetection',
+    'ParetoAnalysis',
 ]

@@ -10,11 +10,11 @@ from typing import Dict, Optional
 import time
 import uuid
 from whatsthedamage.config.config import AppArgs, AppContext
-from whatsthedamage.models.csv_processor import CSVProcessor
+from whatsthedamage.models.domain.csv_processor import CSVProcessor
 from whatsthedamage.services.configuration_service import ConfigurationService, ConfigLoadResult
 from whatsthedamage.services.statistical_analysis_service import StatisticalAnalysisService
-from whatsthedamage.models.dt_models import StatisticalMetadata, AccountResponse, ProcessingResponse
-from whatsthedamage.models.api_models import ProcessingMetadata
+from whatsthedamage.models.domain.dt_models import StatisticalMetadata, AccountResponse, ProcessingResponse
+from whatsthedamage.models.api.common import ProcessingMetadata
 from whatsthedamage.utils.logging import get_logger
 
 logger = get_logger(__name__)

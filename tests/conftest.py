@@ -1,10 +1,10 @@
 import pytest
-from whatsthedamage.models.csv_row import CsvRow
+from whatsthedamage.models.domain.csv_row import CsvRow
 from whatsthedamage.config.config import AppConfig, CsvConfig, AppContext
 from whatsthedamage.config.config import AppArgs
 from whatsthedamage.config.config import EnricherPatternSets
-from whatsthedamage.models.dt_models import ProcessingResponse
-from whatsthedamage.models.api_models import ProcessingMetadata
+from whatsthedamage.models.domain.dt_models import ProcessingResponse
+from whatsthedamage.models.api.common import ProcessingMetadata
 
 # Import API fixtures from separate module
 pytest_plugins = ['tests.api_fixtures']
@@ -28,7 +28,7 @@ class MockCSVProcessor:
     
     def _read_csv_file(self):
         """Mock method to read CSV file and return rows."""
-        from whatsthedamage.models.csv_row import CsvRow
+        from whatsthedamage.models.domain.csv_row import CsvRow
         # Return sample rows
         mapping = {
             'date': 'date',
@@ -56,7 +56,7 @@ class MockCSVProcessor:
 @pytest.fixture
 def mock_processing_service_result():
     """Factory fixture for creating mock ProcessingService results with AccountResponse."""
-    from whatsthedamage.models.dt_models import AccountResponse, AggregatedRow, DisplayRawField, DateField, StatisticalMetadata
+    from whatsthedamage.models.domain.dt_models import AccountResponse, AggregatedRow, DisplayRawField, DateField, StatisticalMetadata
     import uuid
 
     def _create_result(data=None):

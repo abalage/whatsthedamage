@@ -1,7 +1,7 @@
 from pydantic import BaseModel, Field, ConfigDict
 from typing import List, Any, Dict, Optional
 from dataclasses import dataclass
-from whatsthedamage.models.api_models import ProcessingMetadata
+from whatsthedamage.models.api.common import ProcessingMetadata
 
 class DisplayRawField(BaseModel):
     display: str

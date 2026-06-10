@@ -6,7 +6,7 @@ from typing import Dict
 from whatsthedamage.controllers.cli_controller import CLIController
 from whatsthedamage.services.service_container import create_service_container, ServiceContainer
 from whatsthedamage.config.config import AppArgs
-from whatsthedamage.models.dt_models import AccountResponse, ProcessingResponse
+from whatsthedamage.models.domain.dt_models import AccountResponse, ProcessingResponse
 from whatsthedamage.utils.logging import configure_logging, get_logger
 
 logger = get_logger(__name__)

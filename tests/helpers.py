@@ -1,7 +1,7 @@
 import tempfile
 from typing import List, Dict
-from whatsthedamage.models.csv_file_handler import CsvFileHandler
-from whatsthedamage.models.csv_row import CsvRow
+from whatsthedamage.models.domain.csv_file_handler import CsvFileHandler
+from whatsthedamage.models.domain.csv_row import CsvRow
 
 
 def create_sample_csv_from_fixture(csv_rows: List[CsvRow], mapping: Dict[str, str] = {}) -> str:

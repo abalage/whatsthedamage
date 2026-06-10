@@ -5,8 +5,8 @@ to enable better testability through dependency injection and mocking.
 """
 from abc import ABC, abstractmethod
 from typing import Dict, List, Optional, Any
-from whatsthedamage.models.dt_models import AccountResponse, StatisticalMetadata
-from whatsthedamage.models.api_responses import (
+from whatsthedamage.models.domain.dt_models import AccountResponse, StatisticalMetadata
+from whatsthedamage.models.api.responses import (
     CategoryMonthsApiResponse,
     MonthCategoriesApiResponse,
     CategoryMonthTransactionsApiResponse

@@ -16,9 +16,10 @@ Architecture Patterns:
 import pandas as pd
 import json
 from typing import Dict, Optional, Any, List, TYPE_CHECKING
-from whatsthedamage.models.dt_models import AccountResponse, StatisticalMetadata, SummaryData, DetailedResponse, ProcessingResponse
-from whatsthedamage.models.api_models import ProcessingMetadata, ErrorResponse, ProcessingRequest
-from whatsthedamage.models.api_responses import (
+from whatsthedamage.models.domain.dt_models import AccountResponse, StatisticalMetadata, SummaryData, DetailedResponse, ProcessingResponse
+from whatsthedamage.models.api.common import ProcessingMetadata, ErrorResponse
+from whatsthedamage.models.api.requests import ProcessingRequest
+from whatsthedamage.models.api.responses import (
     ResultsApiResponse,
     AccountsDataResponse,
     AccountDataResponse,

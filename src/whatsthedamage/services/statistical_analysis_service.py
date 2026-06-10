@@ -9,9 +9,9 @@ import json
 from typing import Dict, List, Tuple, Optional, Any
 from enum import Enum
 from pathlib import Path
-from whatsthedamage.models.dt_models import CellHighlight, StatisticalMetadata, AccountResponse, AggregatedRow, SummaryData, ProcessingResponse
-from whatsthedamage.models.api_responses import RecalculateApiResponse
-from whatsthedamage.models.statistical_algorithms import (
+from whatsthedamage.models.domain.dt_models import CellHighlight, StatisticalMetadata, AccountResponse, AggregatedRow, SummaryData, ProcessingResponse
+from whatsthedamage.models.api.responses import RecalculateApiResponse
+from whatsthedamage.models.domain.statistical_algorithms import (
     StatisticalAlgorithm,
     IQROutlierDetection,
     ParetoAnalysis

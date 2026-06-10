@@ -9,7 +9,7 @@ from whatsthedamage.services.interfaces import (
     IIdMappingService, ICacheService,
     IDataFormattingService, IStatisticalAnalysisService
 )
-from whatsthedamage.models.dt_models import AccountResponse, StatisticalMetadata
+from whatsthedamage.models.domain.dt_models import AccountResponse, StatisticalMetadata
 
 class MockIdMappingService(IIdMappingService):
     """Mock implementation of IIdMappingService for testing."""
@@ -140,7 +140,7 @@ class DrilldownTestFactory:
         from whatsthedamage.services.statistical_analysis_service import StatisticalAnalysisService
         from flask_caching import Cache
         from flask import Flask
-        from whatsthedamage.models.dt_models import ProcessingResponse
+        from whatsthedamage.models.domain.dt_models import ProcessingResponse
         from typing import Optional
 
         # Create Flask app and cache for real dependencies

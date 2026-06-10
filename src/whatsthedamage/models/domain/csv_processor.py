@@ -1,9 +1,9 @@
 from typing import Dict, List
-from whatsthedamage.models.csv_row import CsvRow
-from whatsthedamage.models.csv_file_handler import CsvFileHandler
-from whatsthedamage.models.rows_processor import RowsProcessor
+from whatsthedamage.models.domain.csv_row import CsvRow
+from whatsthedamage.models.domain.csv_file_handler import CsvFileHandler
+from whatsthedamage.models.domain.rows_processor import RowsProcessor
 from whatsthedamage.config.config import AppContext
-from whatsthedamage.models.dt_models import AccountResponse
+from whatsthedamage.models.domain.dt_models import AccountResponse
 from whatsthedamage.utils.logging import get_logger
 
 logger = get_logger(__name__)

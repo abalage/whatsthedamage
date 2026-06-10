@@ -1,7 +1,7 @@
 import pytest
-from whatsthedamage.models.dt_response_builder import AccountResponseBuilder
-from whatsthedamage.models.dt_models import AccountResponse, AggregatedRow, DateField
-from whatsthedamage.models.csv_row import CsvRow
+from whatsthedamage.models.domain.dt_response_builder import AccountResponseBuilder
+from whatsthedamage.models.domain.dt_models import AccountResponse, AggregatedRow, DateField
+from whatsthedamage.models.domain.csv_row import CsvRow
 
 
 @pytest.fixture

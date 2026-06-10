@@ -1,4 +1,4 @@
-import { createApp } from 'vue'
+import { createApp, type Plugin } from 'vue'
 import { createPinia } from 'pinia'
 import App from './App.vue'
 import router from './router/index.js'
@@ -34,7 +34,7 @@ const pinia = createPinia()
 app.use(pinia)
 
 // Install vue3-gettext
-app.use(gettext)
+app.use(gettext as unknown as Plugin)
 
 // Use router
 app.use(router)

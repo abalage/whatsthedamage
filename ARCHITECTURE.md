@@ -273,7 +273,7 @@ Frontend SPA (Vue 3)
 
 **Name**: Response Formatting Service
 
-**Description**: Unified service combining data formatting and response building capabilities. Formats processed transaction data for various output targets including console, HTML, CSV, and JSON. Supports the unified DataTablesResponse format for web and API interfaces. This service merges the functionality of the previous DataFormattingService and ResponseBuilderService to reduce cognitive complexity and ensure consistent formatting across all interfaces.
+**Description**: Unified service combining data formatting and response building capabilities. Formats processed transaction data for various output targets including console, HTML, CSV, and JSON. Supports the unified AccountResponse format for web and API interfaces. This service merges the functionality of the previous DataFormattingService and ResponseBuilderService to reduce cognitive complexity and ensure consistent formatting across all interfaces.
 
 **Technologies**: Python
 
@@ -281,7 +281,7 @@ Frontend SPA (Vue 3)
 
 **Key Features**:
 - Multiple output formats: HTML tables, CSV strings, JSON, plain text
-- DataTablesResponse formatting for web and API interfaces
+- AccountResponse formatting for web and API interfaces
 - Currency formatting with locale support
 - Template preparation for Jinja2 rendering
 - Error response building for consistent API error handling
@@ -465,7 +465,7 @@ Frontend SPA (Vue 3)
 **Endpoints:**
 | Method | Endpoint | Purpose | Response Type |
 |--------|----------|---------|---------------|
-| POST | `/api/v2/process` | Process CSV transactions | `ProcessApiResponse` |
+| POST | `/api/v2/process` | Process CSV transactions | `DetailedResponse` |
 | GET | `/api/v2/results/<result_id>` | Retrieve processed results | `ResultsApiResponse` |
 | GET | `/api/v2/results/<r>/accounts/<a>/categories/<c>/months` | Category-by-month drilldown | `CategoryMonthsApiResponse` |
 | GET | `/api/v2/results/<r>/accounts/<a>/months/<m>/categories` | Month-by-category drilldown | `MonthCategoriesApiResponse` |
@@ -609,7 +609,7 @@ Frontend SPA (Vue 3)
 
 **ML**: Machine Learning - Production-ready feature for transaction categorization using Random Forest with confidence calibration and SMOTE support
 
-**DataTablesResponse**: Unified response format containing processed transaction data with aggregation by category and time period
+**AccountResponse**: Unified response format containing processed transaction data with aggregation by category and time period
 
 **Calculator Pattern**: Extensibility pattern allowing custom transaction calculations beyond built-in categorization
 

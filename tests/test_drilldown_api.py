@@ -7,7 +7,7 @@ import pytest
 from unittest.mock import MagicMock, patch
 from flask import Flask
 from whatsthedamage.api.v2.endpoints import v2_bp
-from whatsthedamage.models.dt_models import ProcessingResponse, DataTablesResponse, AggregatedRow, DetailRow, ProcessingMetadata
+from whatsthedamage.models.dt_models import ProcessingResponse, AccountResponse, AggregatedRow, DetailRow, ProcessingMetadata
 from whatsthedamage.models.api_responses import (
     CategoryMonthsApiResponse,
     MonthCategoriesApiResponse,
@@ -193,8 +193,8 @@ def _create_test_processing_response() -> ProcessingResponse:
         )
     ]
     
-    # Create DataTablesResponse
-    datatables_response = DataTablesResponse(
+    # Create AccountResponse
+    datatables_response = AccountResponse(
         data=aggregated_rows,
         account='test_account_123',
         name='Test Account',

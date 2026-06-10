@@ -1,6 +1,6 @@
 from typing import List, Dict, Callable, Optional, Any
 from whatsthedamage.models.csv_row import CsvRow
-from whatsthedamage.models.dt_models import DisplayRawField, DateField, DetailRow, AggregatedRow, DataTablesResponse
+from whatsthedamage.models.dt_models import DisplayRawField, DateField, DetailRow, AggregatedRow, AccountResponse
 from whatsthedamage.utils.date_converter import DateConverter
 import uuid
 
@@ -8,13 +8,13 @@ import uuid
 # Calculators receive the builder instance and return a list of AggregatedRow objects.
 # They are invoked sequentially after all category data has been added, and can access
 # previously calculated rows from earlier calculators.
-RowCalculator = Callable[["DataTablesResponseBuilder"], List[AggregatedRow]]
+RowCalculator = Callable[["AccountResponseBuilder"], List[AggregatedRow]]
 
-class DataTablesResponseBuilder:
+class AccountResponseBuilder:
     """
-    Builds DataTablesResponse in a transparent, step-by-step manner.
+    Builds AccountResponse in a transparent, step-by-step manner.
 
-    This builder encapsulates the logic for converting CSV rows into DataTables-compatible
+    This builder encapsulates the logic for converting CSV rows into account-compatible
     structures, providing a clear API for incrementally building the response.
     """
 
@@ -28,7 +28,7 @@ class DataTablesResponseBuilder:
         statistical_metadata: Optional[Any] = None
     ) -> None:
         """
-        Initializes the DataTablesResponseBuilder.
+        Initializes the AccountResponseBuilder.
 
         Args:
             date_format (str): The date format string for parsing dates.
@@ -86,23 +86,23 @@ class DataTablesResponseBuilder:
             # Initialize new month total
             self._month_totals[month_timestamp] = (date_field, total_amount)
 
-    def build(self) -> DataTablesResponse:
+    def build(self) -> AccountResponse:
         """
-        Returns the final DataTablesResponse.
+        Returns the final AccountResponse.
 
         Invokes all calculators sequentially after category data has been added.
         Each calculator can access the builder's internal state and previously
         calculated rows. Any exceptions raised by calculators will propagate to the caller.
 
         Returns:
-            DataTablesResponse: The complete DataTables-compatible response object.
+            AccountResponse: The complete account-compatible response object.
         """
         # Invoke calculators sequentially, allowing each to access prior rows
         for calculator in self._calculators:
             calculated_rows = calculator(self)
             self._aggregated_rows.extend(calculated_rows)
 
-        return DataTablesResponse(
+        return AccountResponse(
             data=self._aggregated_rows,
             account=self._account,
             currency=self._currency,

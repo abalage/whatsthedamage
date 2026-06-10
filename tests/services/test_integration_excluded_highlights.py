@@ -1,6 +1,6 @@
 """Integration test for excluded cells highlighting feature.
 
-This test verifies the complete pipeline from DataTablesResponse
+This test verifies the complete pipeline from AccountResponse
 through statistical analysis to template data preparation.
 """
 
@@ -8,12 +8,12 @@ import pytest
 from whatsthedamage.services.statistical_analysis_service import StatisticalAnalysisService
 
 from whatsthedamage.services.response_formatting_service import ResponseFormattingService
-from whatsthedamage.models.dt_models import DataTablesResponse, AggregatedRow, DisplayRawField, DateField, DetailRow
+from whatsthedamage.models.dt_models import AccountResponse, AggregatedRow, DisplayRawField, DateField, DetailRow
 import uuid
 
 @pytest.fixture
 def complete_dt_response():
-    """Create a complete DataTablesResponse with various row types."""
+    """Create a complete AccountResponse with various row types."""
     # Create detail rows for regular transactions
     details_grocery = [
         DetailRow(
@@ -107,14 +107,14 @@ def complete_dt_response():
     # Combine all rows
     all_rows = regular_rows + calculated_rows
 
-    return DataTablesResponse(
+    return AccountResponse(
         data=all_rows,
         account="12345678",
         currency="EUR"
     )
 
 def test_end_to_end_excluded_highlights_pipeline(complete_dt_response):
-    """Test the complete pipeline from DataTablesResponse to template data."""
+    """Test the complete pipeline from AccountResponse to template data."""
     # Step 1: Create statistical analysis service
     statistical_service = StatisticalAnalysisService(
         enabled_algorithms=["iqr", "pareto"]
@@ -160,7 +160,7 @@ def test_end_to_end_excluded_highlights_pipeline(complete_dt_response):
 
 def test_template_highlight_application():
     """Test that highlights can be applied to template data correctly."""
-    # Create a mock DataTablesResponse with calculated rows
+    # Create a mock AccountResponse with calculated rows
     calculated_row = AggregatedRow(
         row_id=str(uuid.uuid4()),
         category="Balance",
@@ -170,7 +170,7 @@ def test_template_highlight_application():
         is_calculated=True
     )
 
-    dt_response = DataTablesResponse(
+    dt_response = AccountResponse(
         data=[calculated_row],
         account="12345678",
         currency="EUR"

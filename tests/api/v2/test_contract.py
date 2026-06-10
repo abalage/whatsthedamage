@@ -13,7 +13,6 @@ Each test validates:
 import pytest
 
 from whatsthedamage.models.api_responses import (
-    ProcessApiResponse,
     ResultsApiResponse,
     CategoryMonthsApiResponse,
     MonthCategoriesApiResponse,
@@ -21,6 +20,7 @@ from whatsthedamage.models.api_responses import (
     RecalculateApiResponse,
     ErrorApiResponse,
 )
+from whatsthedamage.models.dt_models import DetailedResponse
 from tests.api_test_utils import MockProcessingService
 
 
@@ -51,10 +51,10 @@ def _setup_mock_with_data(mock_processing_service):
 class TestProcessEndpoint:
     """Contract tests for POST /api/v2/process endpoint."""
 
-    def test_process_returns_valid_process_api_response_schema(
+    def test_process_returns_valid_detailed_response_schema(
         self, api_client_with_mock, mock_processing_service, sample_csv_file
     ):
-        """Verify /process returns valid ProcessApiResponse schema."""
+        """Verify /process returns valid DetailedResponse schema."""
         _setup_mock_with_data(mock_processing_service)
         response = api_client_with_mock.post(
             '/api/v2/process',
@@ -66,7 +66,7 @@ class TestProcessEndpoint:
         data = response.get_json()
 
         # Validate against Pydantic model
-        validated = ProcessApiResponse.model_validate(data)
+        validated = DetailedResponse.model_validate(data)
 
         # Verify required fields exist
         assert validated.data is not None
@@ -497,8 +497,8 @@ class TestErrorResponses:
 class TestPydanticModelValidation:
     """Tests to verify Pydantic models properly validate response structures."""
 
-    def test_process_api_response_model_structure(self):
-        """Verify ProcessApiResponse has correct field structure."""
+    def test_detailed_response_model_structure(self):
+        """Verify DetailedResponse has correct field structure."""
         from pydantic import ValidationError
 
         # Valid data should pass
@@ -511,12 +511,12 @@ class TestPydanticModelValidation:
                 'ml_enabled': False,
             }
         }
-        ProcessApiResponse.model_validate(valid_data)
+        DetailedResponse.model_validate(valid_data)
 
         # Missing required fields should fail
         invalid_data = {'data': []}  # Missing metadata
         with pytest.raises(ValidationError):
-            ProcessApiResponse.model_validate(invalid_data)
+            DetailedResponse.model_validate(invalid_data)
 
     def test_results_api_response_model_structure(self):
         """Verify ResultsApiResponse has correct field structure."""

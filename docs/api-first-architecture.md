@@ -64,7 +64,7 @@ export function getApiUrl(endpoint: string): string
 ### 2. Endpoint Functions
 
 Each backend route has a corresponding frontend function with:
-- Strong TypeScript return types (`ProcessResponse`, `ResultsResponseV2`, etc.)
+- Strong TypeScript return types (`ProcessResponse`, `ResultsApiResponse`, etc.)
 - Proper error handling via `AppError`
 - Parameter validation
 - Documentation via JSDoc
@@ -72,7 +72,7 @@ Each backend route has a corresponding frontend function with:
 | Function | HTTP | Backend Endpoint | Special Notes |
 |----------|------|------------------|---------------|
 | `processTransactions(formData)` | POST | `/api/v2/process` | **Multipart**: No Content-Type header, uses raw `fetch` |
-| `fetchResults(resultId)` | GET | `/api/v2/results/{id}` | Returns typed `ResultsResponseV2` |
+| `fetchResults(resultId)` | GET | `/api/v2/results/{id}` | Returns typed `ResultsApiResponse` |
 | `fetchAccountResults(resultId)` | GET | `/api/v2/results/{id}` | For details page, same endpoint as fetchResults |
 | `fetchCategoryMonths(params)` | GET | `/api/v2/results/{r}/accounts/{a}/categories/{c}/months` | Drilldown endpoint |
 | `fetchMonthCategories(params)` | GET | `/api/v2/results/{r}/accounts/{a}/months/{m}/categories` | Drilldown endpoint |
@@ -284,7 +284,7 @@ Backend: endpoints.py::get_results(result_id)
     ▼ [HTTP 200]
     ▼ [JSON: {result_id, accounts_data, drilldown_urls_by_account, highlights}]
 
-frontend/src/js/api.ts::fetchResults() [resolves with ResultsResponseV2]
+frontend/src/js/api.ts::fetchResults() [resolves with ResultsApiResponse]
     │
     ▼ [Store in Vue ref: resultsData.value]
     ▼ [Set window.highlights for cell highlighting]
@@ -438,7 +438,7 @@ Frontend: Results.vue / Drilldown pages
 | **Errors** | `throw AppError` caught by components | `return handle_error(e)` returns HTTP error response |
 | **Error Format** | `AppError` with `{message, status, url}` | `{code, message, details?}` JSON response |
 | **Caching** | None (browser may cache HTTP responses) | `CacheService` stores processing results by `result_id` |
-| **DTOs (Data Transfer Objects)** | TypeScript interfaces (`ProcessApiResponse`, `ResultsResponseV2`, etc.) | Pydantic models (`DetailedResponse`, `ProcessingResponse`) **and** Python dicts (for `/results`, `/recalculate-statistics`, drilldown endpoints) |
+| **DTOs (Data Transfer Objects)** | TypeScript interfaces (`DetailedResponse`, `ResultsApiResponse`, etc.) | Pydantic models (`DetailedResponse`, `ProcessingResponse`) **and** Python dicts (for `/results`, `/recalculate-statistics`, drilldown endpoints) |
 | **Asynchronous** | Native Promise-based async/await | Synchronous route handling (Flask is sync by default) |
 | **Content-Type Handling** | `fetchApi` always sets `Content-Type: application/json`; `processTransactions` uses raw `fetch` to allow browser to set `multipart/form-data` with boundary |
 
@@ -453,7 +453,7 @@ The frontend and backend maintain corresponding type definitions for API data. *
 | Backend (Python) | Endpoint | Frontend (TypeScript) | Purpose |
 |------------------|----------|----------------------|---------|
 | `ApiEnvelope[T]` (Generic Pydantic model) | New endpoints (recommended) | `ApiEnvelope<T>` (interface) | Standard response envelope with status, data, meta, links, timestamp |
-| `ProcessApiResponse` (Pydantic model) | `/api/v2/process` | `ProcessApiResponse` (interface) | Transaction processing result with aggregated data and metadata |
+| `DetailedResponse` (Pydantic model) | `/api/v2/process` | `DetailedResponse` (interface) | Transaction processing result with aggregated data and metadata |
 | `ResultsApiResponse` (Pydantic model) | `/api/v2/results/<id>` | `ResultsApiResponse` (interface) | Cached results with accounts data and drilldown URLs |
 | `RecalculateApiResponse` (Pydantic model) | `/api/v2/recalculate-statistics` | `RecalculateApiResponse` (interface) | Statistical recalculation result with updated highlights |
 | `CategoryMonthsApiResponse` (Pydantic model) | `/api/v2/results/.../categories/.../months` | `CategoryMonthsApiResponse` (interface) | Category-by-month drilldown data |

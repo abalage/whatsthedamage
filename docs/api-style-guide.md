@@ -19,8 +19,8 @@ All API v2 endpoints **MUST** return Pydantic models defined in `src/whatsthedam
 
 | Entity Type | Convention | Example |
 |------------|------------|---------|
-| Response DTO (Python) | `{EndpointName}ApiResponse` | `ProcessApiResponse`, `ResultsApiResponse` |
-| TypeScript Interface | Match Python DTO name exactly | `ProcessApiResponse`, `ResultsApiResponse` |
+| Response DTO (Python) | `{EndpointName}ApiResponse` | `DetailedResponse`, `ResultsApiResponse` |
+| TypeScript Interface | Match Python DTO name exactly | `DetailedResponse`, `ResultsApiResponse` |
 | Backend Endpoint | snake_case | `/api/v2/process`, `/api/v2/recalculate_statistics` |
 | Frontend Function | camelCase | `processTransactions`, `fetchResults` |
 | Type File | snake_case | `api_responses.py`, `api.ts` |
@@ -192,7 +192,7 @@ console.log(envelope.links.self);
 from pydantic import BaseModel, Field
 from typing import List
 
-class ProcessApiResponse(BaseModel):
+class DetailedResponse(BaseModel):
     """Response from POST /api/v2/process."""
     data: List[AggregatedRow] = Field(..., description="Aggregated transaction data")
     metadata: ProcessingMetadata = Field(..., description="Processing metadata")
@@ -221,7 +221,7 @@ class ProcessApiResponse(BaseModel):
  * Contains processed transaction data grouped by category and month,
  * plus processing metadata.
  */
-export interface ProcessApiResponse {
+export interface DetailedResponse {
   data: AggregatedRow[];
   metadata: ProcessingMetadata;
 }
@@ -230,12 +230,12 @@ export interface ProcessApiResponse {
  * Process transactions via API
  *
  * @param formData - Form data containing CSV and config
- * @returns Promise with ProcessApiResponse containing aggregated transaction data
+ * @returns Promise with DetailedResponse containing aggregated transaction data
  * @throws AppError if processing fails
  */
 export async function processTransactions(
   formData: FormData
-): Promise<ProcessApiResponse> {
+): Promise<DetailedResponse> {
   // ... implementation
 }
 ```
@@ -260,7 +260,7 @@ def test_process_returns_valid_schema(client: FlaskClient):
     assert response.status_code == 200
     
     data = response.get_json()
-    validated = ProcessApiResponse.model_validate(data)
+    validated = DetailedResponse.model_validate(data)
     
     assert validated.data is not None
     assert validated.metadata.result_id is not None
@@ -288,12 +288,12 @@ def test_process_api_response_model_structure():
             'ml_enabled': False,
         }
     }
-    ProcessApiResponse.model_validate(valid_data)
+    DetailedResponse.model_validate(valid_data)
     
     # Missing required fields should fail
     invalid_data = {'data': []}  # Missing metadata
     with pytest.raises(ValidationError):
-        ProcessApiResponse.model_validate(invalid_data)
+        DetailedResponse.model_validate(invalid_data)
 ```
 
 ### 5.3 Integration Tests (Frontend)
@@ -322,7 +322,7 @@ export type CategoryMonthTransactionsResponse = CategoryMonthTransactionsApiResp
 ```
 
 **Migration Path:**
-1. New code should use the new type names (`ProcessApiResponse`, etc.)
+1. New code should use the new type names (`DetailedResponse`, etc.)
 2. Legacy code can continue using the old names via aliases
 3. Aliases will be deprecated in a future release
 
@@ -396,7 +396,7 @@ from pydantic import BaseModel, Field
 from typing import List
 from .dt_models import AggregatedRow, ProcessingMetadata
 
-class ProcessApiResponse(BaseModel):
+class DetailedResponse(BaseModel):
     """Response from POST /api/v2/process."""
     data: List[AggregatedRow] = Field(..., description="Aggregated transaction data")
     metadata: ProcessingMetadata = Field(..., description="Processing metadata")
@@ -405,7 +405,7 @@ class ProcessApiResponse(BaseModel):
 # api/v2/endpoints.py
 from flask import Blueprint, jsonify, request
 from werkzeug.exceptions import BadRequest
-from ..models.api_responses import ProcessApiResponse, ErrorApiResponse
+from ..models.api_responses import DetailedResponse, ErrorApiResponse
 from ..api.helpers import validate_csv_file, save_uploaded_files, cleanup_files
 
 @v2_bp.route('/process', methods=['POST'])
@@ -422,7 +422,7 @@ def process_transactions():
         
         cleanup_files(csv_path, config_path)
         
-        response = ProcessApiResponse(
+        response = DetailedResponse(
             data=result.data[''].data,  # Extract aggregated rows
             metadata=result.metadata
         )
@@ -453,7 +453,7 @@ export interface ProcessingMetadata {
   date_range?: string;
 }
 
-export interface ProcessApiResponse {
+export interface DetailedResponse {
   data: AggregatedRow[];
   metadata: ProcessingMetadata;
 }
@@ -461,7 +461,7 @@ export interface ProcessApiResponse {
 // frontend/src/js/api.ts
 export async function processTransactions(
   formData: FormData
-): Promise<ProcessApiResponse> {
+): Promise<DetailedResponse> {
   const response = await fetch(`${API_BASE_URL}/process`, {
     method: 'POST',
     body: formData,
@@ -480,11 +480,11 @@ export async function processTransactions(
 
 // frontend/src/pages/Results.vue (usage)
 import { processTransactions } from '../js/api';
-import type { ProcessApiResponse, AggregatedRow } from '../types/api';
+import type { DetailedResponse, AggregatedRow } from '../types/api';
 
 const onSubmit = async (formData: FormData) => {
   try {
-    const response: ProcessApiResponse = await processTransactions(formData);
+    const response: DetailedResponse = await processTransactions(formData);
     console.log('Result ID:', response.metadata.result_id);
     console.log('Rows processed:', response.metadata.row_count);
     console.log('Data:', response.data);

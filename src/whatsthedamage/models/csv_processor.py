@@ -3,7 +3,7 @@ from whatsthedamage.models.csv_row import CsvRow
 from whatsthedamage.models.csv_file_handler import CsvFileHandler
 from whatsthedamage.models.rows_processor import RowsProcessor
 from whatsthedamage.config.config import AppContext
-from whatsthedamage.models.dt_models import DataTablesResponse
+from whatsthedamage.models.dt_models import AccountResponse
 from whatsthedamage.utils.logging import get_logger
 
 logger = get_logger(__name__)
@@ -33,13 +33,13 @@ class CSVProcessor:
         self.processor = RowsProcessor(self.context)
         self._rows: List[CsvRow] = []  # Cache for rows to avoid re-reading
 
-    def process(self) -> Dict[str, DataTablesResponse]:
+    def process(self) -> Dict[str, AccountResponse]:
         """
-        Processes the CSV file and returns the DataTablesResponse structure for DataTables frontend (API v2).
+        Processes the CSV file and returns the AccountResponse structure for frontend (API v2).
         Only used for ML categorization.
 
         Returns:
-            Dict[str, DataTablesResponse]: The DataTables-compatible structure for frontend.
+            Dict[str, AccountResponse]: The account-compatible structure for frontend.
         """
         logger.info(f"Processing CSV file: {self.args.filename}")
         self._rows = self._read_csv_file()

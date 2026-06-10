@@ -2,7 +2,7 @@
 
 import pytest
 from whatsthedamage.services.cache_service import CacheService, CacheProtocol
-from whatsthedamage.models.dt_models import ProcessingResponse, DataTablesResponse, StatisticalMetadata, AggregatedRow, CellHighlight, DisplayRawField, DateField, DetailRow
+from whatsthedamage.models.dt_models import ProcessingResponse, AccountResponse, StatisticalMetadata, AggregatedRow, CellHighlight, DisplayRawField, DateField, DetailRow
 from typing import Dict, Optional
 import time
 import uuid
@@ -83,7 +83,7 @@ class TestCacheService:
         return ProcessingResponse(
             result_id="test-result-id",
             data={
-                "account1": DataTablesResponse(
+                "account1": AccountResponse(
                     data=[
                         AggregatedRow(
                             row_id=row_id_sample,
@@ -262,7 +262,7 @@ class TestCacheServiceIntegration:
             )
         ]
 
-        dt_response = DataTablesResponse(
+        dt_response = AccountResponse(
             data=aggregated_rows,
             account="checking",
             currency="USD",
@@ -294,7 +294,7 @@ class TestCacheServiceIntegration:
         service = CacheService(backend)
 
         # Create responses for multiple accounts
-        account1_response = DataTablesResponse(
+        account1_response = AccountResponse(
             data=[AggregatedRow(
                 row_id=str(uuid.uuid4()),
                 category="Grocery",
@@ -307,7 +307,7 @@ class TestCacheServiceIntegration:
             currency="USD"
         )
 
-        account2_response = DataTablesResponse(
+        account2_response = AccountResponse(
             data=[AggregatedRow(
                 row_id=str(uuid.uuid4()),
                 category="Rent",

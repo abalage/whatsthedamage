@@ -79,7 +79,7 @@ def process_transactions() -> tuple[Response, int]:
 
             # Delegate to service for response construction
             response = _get_response_formatting_service().build_api_detailed_response(
-                datatables_response=result.data,
+                account_response=result.data,
                 metadata=result.metadata,
                 params=params,
                 processing_time=processing_time,

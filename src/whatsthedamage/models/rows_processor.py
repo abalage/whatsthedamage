@@ -1,11 +1,11 @@
 from typing import Optional, Dict, List, Union, Tuple
 from whatsthedamage.config.config import AppContext, EnricherPatternSets
-from whatsthedamage.models.dt_models import DataTablesResponse, DateField
+from whatsthedamage.models.dt_models import AccountResponse, DateField
 from whatsthedamage.models.csv_row import CsvRow
 from whatsthedamage.models.row_enrichment import RowEnrichment
 from whatsthedamage.models.row_enrichment_ml import RowEnrichmentML
 from whatsthedamage.models.row_filter import RowFilter
-from whatsthedamage.models.dt_response_builder import DataTablesResponseBuilder
+from whatsthedamage.models.dt_response_builder import AccountResponseBuilder
 from whatsthedamage.utils.date_converter import DateConverter
 from whatsthedamage.view.row_printer import print_categorized_rows, print_training_data
 from whatsthedamage.services.text_correction_service import TextCorrectionService
@@ -73,9 +73,9 @@ class RowsProcessor:
         logger.info(f"Cleaned {len(rows)} rows successfully")
         return rows
 
-    def process_rows(self, rows: List[CsvRow]) -> Dict[str, DataTablesResponse]:
+    def process_rows(self, rows: List[CsvRow]) -> Dict[str, AccountResponse]:
         """
-        Processes a list of CsvRow objects and returns per-account DataTablesResponse structures.
+        Processes a list of CsvRow objects and returns per-account AccountResponse structures.
 
         Groups rows by account first, then processes each account independently.
         Each account gets its own Balance and Total Spendings calculations.
@@ -86,7 +86,7 @@ class RowsProcessor:
             rows (List[CsvRow]): List of CsvRow objects (potentially from multiple accounts).
 
         Returns:
-            Dict[str, DataTablesResponse]: Mapping of account_id → DataTablesResponse.
+            Dict[str, AccountResponse]: Mapping of account_id → AccountResponse.
         """
         logger.info(f"Starting processing of {len(rows)} rows")
         # Apply text cleaning
@@ -96,7 +96,7 @@ class RowsProcessor:
         row_filter = RowFilter(rows, self.context)
         rows_by_account = row_filter.filter_by_account()
 
-        responses_by_account: Dict[str, DataTablesResponse] = {}
+        responses_by_account: Dict[str, AccountResponse] = {}
 
         # Process each account independently
         for account_id, account_rows in rows_by_account.items():
@@ -104,7 +104,7 @@ class RowsProcessor:
             filtered_sets = self._filter_rows(account_rows)
 
             # Initialize the builder with all necessary fields
-            builder = DataTablesResponseBuilder(
+            builder = AccountResponseBuilder(
                 date_format=self._date_attribute_format,
                 account=account_id,
                 currency=account_rows[0].currency if account_rows else ""

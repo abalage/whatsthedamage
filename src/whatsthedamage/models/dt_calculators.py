@@ -1,7 +1,7 @@
 """
-Default calculator functions for DataTablesResponseBuilder.
+Default calculator functions for AccountResponseBuilder.
 
-Calculators are functions that receive a DataTablesResponseBuilder instance
+Calculators are functions that receive a AccountResponseBuilder instance
 and return a list of AggregatedRow objects. They are invoked sequentially
 after all category data has been added to the builder.
 """
@@ -11,10 +11,10 @@ from gettext import gettext as _
 from whatsthedamage.models.dt_models import AggregatedRow, DateField
 
 if TYPE_CHECKING:
-    from whatsthedamage.models.dt_response_builder import DataTablesResponseBuilder
+    from whatsthedamage.models.dt_response_builder import AccountResponseBuilder
 
 
-def create_balance_rows(builder: "DataTablesResponseBuilder") -> List[AggregatedRow]:
+def create_balance_rows(builder: "AccountResponseBuilder") -> List[AggregatedRow]:
     """
     Default calculator that creates Balance category rows for each month.
 
@@ -22,7 +22,7 @@ def create_balance_rows(builder: "DataTablesResponseBuilder") -> List[Aggregated
     This function serves as a reference implementation of the calculator pattern.
 
     Args:
-        builder: The DataTablesResponseBuilder instance with access to internal state.
+        builder: The AccountResponseBuilder instance with access to internal state.
 
     Returns:
         List[AggregatedRow]: List of Balance aggregated rows, one per month.
@@ -44,7 +44,7 @@ def create_balance_rows(builder: "DataTablesResponseBuilder") -> List[Aggregated
     return balance_rows
 
 
-def create_total_spendings(builder: "DataTablesResponseBuilder") -> List[AggregatedRow]:
+def create_total_spendings(builder: "AccountResponseBuilder") -> List[AggregatedRow]:
     """
     Calculator that creates "Total Spendings" rows for each month.
     
@@ -55,7 +55,7 @@ def create_total_spendings(builder: "DataTablesResponseBuilder") -> List[Aggrega
     This calculator converts them to positive values to show spending amount.
     
     Args:
-        builder: The DataTablesResponseBuilder instance with access to internal state.
+        builder: The AccountResponseBuilder instance with access to internal state.
     
     Returns:
         List[AggregatedRow]: List of Total Spendings aggregated rows, one per month.
@@ -93,7 +93,7 @@ def create_total_spendings(builder: "DataTablesResponseBuilder") -> List[Aggrega
     return spendings_rows
 
 
-def create_cost_of_living_rows(builder: "DataTablesResponseBuilder") -> List[AggregatedRow]:
+def create_cost_of_living_rows(builder: "AccountResponseBuilder") -> List[AggregatedRow]:
     """
     Calculator that creates "Cost of Living" rows for each month.
 
@@ -105,7 +105,7 @@ def create_cost_of_living_rows(builder: "DataTablesResponseBuilder") -> List[Agg
     Users can customize their own Cost of Living definition on the frontend.
 
     Args:
-        builder: The DataTablesResponseBuilder instance with access to internal state.
+        builder: The AccountResponseBuilder instance with access to internal state.
 
     Returns:
         List[AggregatedRow]: List of Cost of Living aggregated rows, one per month.

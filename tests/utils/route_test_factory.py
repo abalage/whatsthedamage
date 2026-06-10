@@ -61,7 +61,7 @@ class RouteTestFactory:
         category_ids: Dict[str, Optional[str]] = {}
         month_ids: Dict[str, Optional[str]] = {}
 
-        # Get the DataTablesResponse for the account
+        # Get the AccountResponse for the account
         dt_response = processing_response.data.get(account_number)
         if dt_response:
             for row in dt_response.data:

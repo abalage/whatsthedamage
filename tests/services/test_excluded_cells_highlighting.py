@@ -3,12 +3,12 @@
 import pytest
 from whatsthedamage.services.statistical_analysis_service import StatisticalAnalysisService
 
-from whatsthedamage.models.dt_models import DataTablesResponse, AggregatedRow, DisplayRawField, DateField, DetailRow
+from whatsthedamage.models.dt_models import AccountResponse, AggregatedRow, DisplayRawField, DateField, DetailRow
 import uuid
 
 @pytest.fixture
 def sample_dt_response():
-    """Create a sample DataTablesResponse with calculated rows and excluded categories."""
+    """Create a sample AccountResponse with calculated rows and excluded categories."""
     # Create some detail rows
     details1 = [
         DetailRow(
@@ -83,7 +83,7 @@ def sample_dt_response():
     # Combine all rows
     all_rows = regular_rows + calculated_rows
 
-    return DataTablesResponse(
+    return AccountResponse(
         data=all_rows,
         account="12345678",
         currency="EUR"

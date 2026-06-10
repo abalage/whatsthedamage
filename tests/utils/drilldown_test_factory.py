@@ -9,7 +9,7 @@ from whatsthedamage.services.interfaces import (
     IIdMappingService, ICacheService,
     IDataFormattingService, IStatisticalAnalysisService
 )
-from whatsthedamage.models.dt_models import DataTablesResponse, StatisticalMetadata
+from whatsthedamage.models.dt_models import AccountResponse, StatisticalMetadata
 
 class MockIdMappingService(IIdMappingService):
     """Mock implementation of IIdMappingService for testing."""
@@ -94,7 +94,7 @@ class MockStatisticalAnalysisService(IStatisticalAnalysisService):
 
     def compute_statistical_metadata(
         self,
-        datatables_responses: Dict[str, DataTablesResponse],
+        datatables_responses: Dict[str, AccountResponse],
         algorithms: List[str],
         direction: Optional[str] = None
     ) -> StatisticalMetadata:

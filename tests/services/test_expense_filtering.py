@@ -2,7 +2,7 @@
 
 import pytest
 from whatsthedamage.services.statistical_analysis_service import StatisticalAnalysisService, AnalysisDirection
-from whatsthedamage.models.dt_models import DataTablesResponse, AggregatedRow, DateField, DisplayRawField
+from whatsthedamage.models.dt_models import AccountResponse, AggregatedRow, DateField, DisplayRawField
 import uuid
 
 @pytest.fixture
@@ -126,7 +126,7 @@ class TestExpenseFiltering:
 
     def test_filter_expenses_only_removes_positive_values(self, sample_data_with_mixed_values):
         """Test that _filter_data_for_analysis removes positive values when expense filtering is enabled."""
-        dt_response = DataTablesResponse(
+        dt_response = AccountResponse(
             data=sample_data_with_mixed_values,
             account="Test Account",
             currency="USD"
@@ -164,7 +164,7 @@ class TestExpenseFiltering:
                 is_calculated=False
             ),
         ]
-        dt_response = DataTablesResponse(
+        dt_response = AccountResponse(
             data=data,
             account="Test Account",
             currency="USD"
@@ -178,7 +178,7 @@ class TestExpenseFiltering:
 
     def test_filter_expenses_only_disabled_keeps_all_values(self, sample_data_with_mixed_values):
         """Test that _filter_data_for_analysis keeps all values when expense filtering is disabled."""
-        dt_response = DataTablesResponse(
+        dt_response = AccountResponse(
             data=sample_data_with_mixed_values,
             account="Test Account",
             currency="USD"
@@ -198,7 +198,7 @@ class TestExpenseFiltering:
 
     def test_filter_expenses_only_with_all_expenses(self, sample_data_all_expenses):
         """Test that _filter_data_for_analysis keeps all values when all are expenses."""
-        dt_response = DataTablesResponse(
+        dt_response = AccountResponse(
             data=sample_data_all_expenses,
             account="Test Account",
             currency="USD"
@@ -215,7 +215,7 @@ class TestExpenseFiltering:
 
     def test_filter_expenses_only_with_all_income(self, sample_data_all_income):
         """Test that _filter_data_for_analysis removes all values when all are income."""
-        dt_response = DataTablesResponse(
+        dt_response = AccountResponse(
             data=sample_data_all_income,
             account="Test Account",
             currency="USD"
@@ -228,15 +228,15 @@ class TestExpenseFiltering:
 
     def test_compute_statistical_metadata_with_expense_filtering(self, sample_data_with_mixed_values):
         """Test that compute_statistical_metadata applies expense filtering by default."""
-        dt_response = DataTablesResponse(
+        dt_response = AccountResponse(
             data=sample_data_with_mixed_values,
             account="Test Account",
             currency="USD"
         )
-        datatables_responses = {"test_table": dt_response}
+        account_responses = {"test_table": dt_response}
 
         service = StatisticalAnalysisService(enabled_algorithms=["pareto"], filter_expenses_only=True)
-        metadata = service.compute_statistical_metadata(datatables_responses)
+        metadata = service.compute_statistical_metadata(account_responses)
 
         # Should only analyze expense categories
         # With the test data, the top expenses by absolute value are:
@@ -254,15 +254,15 @@ class TestExpenseFiltering:
 
     def test_compute_statistical_metadata_without_expense_filtering(self, sample_data_with_mixed_values):
         """Test that compute_statistical_metadata can skip expense filtering."""
-        dt_response = DataTablesResponse(
+        dt_response = AccountResponse(
             data=sample_data_with_mixed_values,
             account="Test Account",
             currency="USD"
         )
-        datatables_responses = {"test_table": dt_response}
+        account_responses = {"test_table": dt_response}
 
         service = StatisticalAnalysisService(enabled_algorithms=["pareto"], filter_expenses_only=False)
-        metadata = service.compute_statistical_metadata(datatables_responses)
+        metadata = service.compute_statistical_metadata(account_responses)
 
         # Should analyze all categories (both expenses and income)
         assert len(metadata.highlights) > 0
@@ -279,16 +279,16 @@ class TestExpenseFiltering:
 
     def test_compute_statistical_metadata_with_expense_filtering_custom_params(self, sample_data_with_mixed_values):
         """Test that compute_statistical_metadata works with custom parameters."""
-        dt_response = DataTablesResponse(
+        dt_response = AccountResponse(
             data=sample_data_with_mixed_values,
             account="Test Account",
             currency="USD"
         )
-        datatables_responses = {"test_table": dt_response}
+        account_responses = {"test_table": dt_response}
 
         service = StatisticalAnalysisService(enabled_algorithms=["pareto"], filter_expenses_only=True)
         metadata = service.compute_statistical_metadata(
-            datatables_responses=datatables_responses,
+            account_responses=account_responses,
             algorithms=["pareto"],
             direction=AnalysisDirection.COLUMNS
         )
@@ -304,16 +304,16 @@ class TestExpenseFiltering:
 
     def test_compute_statistical_metadata_without_expense_filtering_custom_params(self, sample_data_with_mixed_values):
         """Test that compute_statistical_metadata works with custom parameters and no filtering."""
-        dt_response = DataTablesResponse(
+        dt_response = AccountResponse(
             data=sample_data_with_mixed_values,
             account="Test Account",
             currency="USD"
         )
-        datatables_responses = {"test_table": dt_response}
+        account_responses = {"test_table": dt_response}
 
         service = StatisticalAnalysisService(enabled_algorithms=["pareto"], filter_expenses_only=False)
         metadata = service.compute_statistical_metadata(
-            datatables_responses=datatables_responses,
+            account_responses=account_responses,
             algorithms=["pareto"],
             direction=AnalysisDirection.COLUMNS
         )

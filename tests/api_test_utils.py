@@ -28,7 +28,7 @@ class MockProcessingService:
             ProcessingResponse object matching ProcessingService.process_with_details output
         """
         from whatsthedamage.models.dt_models import (
-            DataTablesResponse,
+            AccountResponse,
             AggregatedRow,
             DisplayRawField,
             DateField,
@@ -63,8 +63,8 @@ class MockProcessingService:
                 details=details
             ))
 
-        # Create real DataTablesResponse
-        dt_response = DataTablesResponse(
+        # Create real AccountResponse
+        dt_response = AccountResponse(
             data=aggregated_rows,
             currency="USD"
         )

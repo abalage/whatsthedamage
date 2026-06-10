@@ -306,8 +306,8 @@ class TestStatisticalAnalysisService:
             account_id="test"
         )
 
-        # Create mock DataTablesResponse with UUIDs for testing
-        from whatsthedamage.models.dt_models import AggregatedRow, DataTablesResponse, DateField, DisplayRawField
+        # Create mock AccountResponse with UUIDs for testing
+        from whatsthedamage.models.dt_models import AggregatedRow, AccountResponse, DateField, DisplayRawField
         import uuid
 
         # Create mock rows with UUIDs
@@ -323,7 +323,7 @@ class TestStatisticalAnalysisService:
                 )
                 rows.append(row)
 
-        dt_response = DataTablesResponse(data=rows, account="test", currency="USD")
+        dt_response = AccountResponse(data=rows, account="test", currency="USD")
 
         highlights = service.get_highlights(summary, AnalysisDirection.COLUMNS, dt_response=dt_response)
 
@@ -382,8 +382,8 @@ class TestStatisticalAnalysisService:
             account_id="test"
         )
 
-        # Create mock DataTablesResponse with UUIDs for testing
-        from whatsthedamage.models.dt_models import AggregatedRow, DataTablesResponse, DateField, DisplayRawField
+        # Create mock AccountResponse with UUIDs for testing
+        from whatsthedamage.models.dt_models import AggregatedRow, AccountResponse, DateField, DisplayRawField
         import uuid
 
         # Create mock rows with UUIDs
@@ -399,7 +399,7 @@ class TestStatisticalAnalysisService:
                 )
                 rows.append(row)
 
-        dt_response = DataTablesResponse(data=rows, account="test", currency="USD")
+        dt_response = AccountResponse(data=rows, account="test", currency="USD")
 
         highlights = service.get_highlights(summary, AnalysisDirection.ROWS, dt_response=dt_response)
 
@@ -429,8 +429,8 @@ class TestStatisticalAnalysisService:
             account_id="test"
         )
 
-        # Create mock DataTablesResponse with UUIDs for testing
-        from whatsthedamage.models.dt_models import AggregatedRow, DataTablesResponse, DateField, DisplayRawField
+        # Create mock AccountResponse with UUIDs for testing
+        from whatsthedamage.models.dt_models import AggregatedRow, AccountResponse, DateField, DisplayRawField
         import uuid
 
         # Create mock rows with UUIDs
@@ -446,7 +446,7 @@ class TestStatisticalAnalysisService:
                 )
                 rows.append(row)
 
-        dt_response = DataTablesResponse(data=rows, account="test", currency="USD")
+        dt_response = AccountResponse(data=rows, account="test", currency="USD")
 
         # Test with only IQR algorithm (explicitly use COLUMNS to override IQR's default)
         highlights_iqr = service.get_highlights(summary, AnalysisDirection.COLUMNS, algorithms=["iqr"], dt_response=dt_response)
@@ -552,8 +552,8 @@ class TestStatisticalAlgorithmIntegration:
             account_id="test"
         )
 
-        # Create mock DataTablesResponse with UUIDs for testing
-        from whatsthedamage.models.dt_models import AggregatedRow, DataTablesResponse, DateField, DisplayRawField
+        # Create mock AccountResponse with UUIDs for testing
+        from whatsthedamage.models.dt_models import AggregatedRow, AccountResponse, DateField, DisplayRawField
         import uuid
 
         # Create mock rows with UUIDs
@@ -569,7 +569,7 @@ class TestStatisticalAlgorithmIntegration:
                 )
                 rows.append(row)
 
-        dt_response = DataTablesResponse(data=rows, account="test", currency="USD")
+        dt_response = AccountResponse(data=rows, account="test", currency="USD")
 
         highlights = service.get_highlights(summary, dt_response=dt_response)
 

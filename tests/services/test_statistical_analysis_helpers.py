@@ -8,12 +8,12 @@ from whatsthedamage.models.statistical_algorithms import (
     IQROutlierDetection,
     ParetoAnalysis
 )
-from whatsthedamage.models.dt_models import DataTablesResponse, AggregatedRow, DisplayRawField, DateField
+from whatsthedamage.models.dt_models import AccountResponse, AggregatedRow, DisplayRawField, DateField
 import uuid
 
 @pytest.fixture
 def sample_dt_response():
-    """Create a sample DataTablesResponse for testing helper methods."""
+    """Create a sample AccountResponse for testing helper methods."""
     row_id_grocery="f178193c-faef-4d1e-86a5-61347d30a0d7"
     regular_rows = [
         AggregatedRow(
@@ -63,7 +63,7 @@ def sample_dt_response():
 
     all_rows = regular_rows + calculated_rows
 
-    return DataTablesResponse(
+    return AccountResponse(
         data=all_rows,
         account="12345678",
         currency="EUR"
@@ -71,7 +71,7 @@ def sample_dt_response():
 
 @pytest.fixture
 def dt_response_with_outliers():
-    """Create a DataTablesResponse with data that will produce outliers."""
+    """Create a AccountResponse with data that will produce outliers."""
     row_id_outlier="f178193c-faef-4d1e-86a5-61347d30a0d7"
     regular_rows = [
         AggregatedRow(
@@ -113,7 +113,7 @@ def dt_response_with_outliers():
 
     all_rows = regular_rows + calculated_rows
 
-    return DataTablesResponse(
+    return AccountResponse(
         data=all_rows,
         account="12345678",
         currency="EUR"

@@ -1,13 +1,13 @@
 import pytest
-from whatsthedamage.models.dt_response_builder import DataTablesResponseBuilder
-from whatsthedamage.models.dt_models import DataTablesResponse, AggregatedRow, DateField
+from whatsthedamage.models.dt_response_builder import AccountResponseBuilder
+from whatsthedamage.models.dt_models import AccountResponse, AggregatedRow, DateField
 from whatsthedamage.models.csv_row import CsvRow
 
 
 @pytest.fixture
 def builder():
-    """Create a DataTablesResponseBuilder instance."""
-    return DataTablesResponseBuilder(date_format="%Y-%m-%d")
+    """Create a AccountResponseBuilder instance."""
+    return AccountResponseBuilder(date_format="%Y-%m-%d")
 
 
 @pytest.fixture
@@ -92,7 +92,7 @@ def test_add_multiple_categories(builder, sample_csv_rows):
 
 
 def test_build_returns_datatables_response(builder, sample_csv_rows):
-    """Test that build() returns a proper DataTablesResponse."""
+    """Test that build() returns a proper AccountResponse."""
     date_field = DateField(display="January", timestamp=1735689600)
     builder.add_category_data(
         category="Groceries",
@@ -103,7 +103,7 @@ def test_build_returns_datatables_response(builder, sample_csv_rows):
 
     response = builder.build()
 
-    assert isinstance(response, DataTablesResponse)
+    assert isinstance(response, AccountResponse)
     # Response now includes the original category plus Balance and Total Spendings
     assert len(response.data) == 3
     assert isinstance(response.data[0], AggregatedRow)
@@ -131,13 +131,13 @@ def test_empty_builder_build(builder):
     """Test building with no data added."""
     response = builder.build()
 
-    assert isinstance(response, DataTablesResponse)
+    assert isinstance(response, AccountResponse)
     assert response.data == []
 
 
 def test_builder_with_no_currency():
     """Test builder behavior when no currency is provided."""
-    builder = DataTablesResponseBuilder(date_format="%Y-%m-%d")
+    builder = AccountResponseBuilder(date_format="%Y-%m-%d")
     mapping = {'date': 'date', 'amount': 'amount', 'currency': 'currency', 'partner': 'partner'}
     rows = [CsvRow({"date": "2025-01-15", "amount": "50.0", "currency": "", "partner": "Test"}, mapping)]
     date_field = DateField(display="January", timestamp=1735689600)
@@ -280,7 +280,7 @@ def test_balance_multiple_months(builder, sample_csv_rows, mapping):
 
 def test_balance_with_no_currency(mapping):
     """Test Balance formatting when no currency is provided."""
-    builder = DataTablesResponseBuilder(date_format="%Y-%m-%d")
+    builder = AccountResponseBuilder(date_format="%Y-%m-%d")
     rows = [CsvRow({"date": "2025-01-15", "amount": "50.0", "currency": "", "partner": "Test"}, mapping)]
     date_field = DateField(display="January", timestamp=1735689600)
 
@@ -301,7 +301,7 @@ def test_balance_with_no_currency(mapping):
 
 def test_calculator_pattern_disable_balance(builder, sample_csv_rows):
     """Test disabling Balance by passing empty calculators list."""
-    builder_no_balance = DataTablesResponseBuilder(
+    builder_no_balance = AccountResponseBuilder(
         date_format="%Y-%m-%d",
         calculators=[]  # Explicitly disable all calculators
     )
@@ -360,7 +360,7 @@ def test_full_pipeline_with_confidence(builder, sample_csv_rows):
 
     response = builder.build()
 
-    assert isinstance(response, DataTablesResponse)
+    assert isinstance(response, AccountResponse)
     # Find the Groceries row (not Balance or Total Spendings)
     groceries_row = next((row for row in response.data if row.category == "Groceries"), None)
     assert groceries_row is not None

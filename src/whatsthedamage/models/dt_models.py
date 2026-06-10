@@ -37,7 +37,7 @@ class CellHighlight(BaseModel):
 class StatisticalMetadata(BaseModel):
     highlights: List[CellHighlight]
 
-class DataTablesResponse(BaseModel):
+class AccountResponse(BaseModel):
     data: List[AggregatedRow]
     account: str = ""
     currency: str = ""
@@ -87,7 +87,7 @@ class DetailedResponse(BaseModel):
 
 @dataclass(frozen=True)
 class SummaryData:
-    """Extracted summary data from a DataTablesResponse for a single account.
+    """Extracted summary data from an AccountResponse for a single account.
 
     This model encapsulates the summary data extracted from transaction data,
     providing a simplified format for formatting and display.
@@ -108,18 +108,18 @@ class SummaryData:
     @classmethod
     def from_datatable_response(
         cls,
-        dt_response: DataTablesResponse,
+        dt_response: AccountResponse,
         account_id: Optional[str] = None,
         include_calculated: bool = True
     ) -> 'SummaryData':
-        """Create a SummaryData instance from a DataTablesResponse.
+        """Create a SummaryData instance from an AccountResponse.
 
         This is the canonical way to extract summary data from transaction data.
         Aggregates transaction data by month and category, creating a nested dictionary
         suitable for formatting and analysis.
 
         Args:
-            dt_response: DataTablesResponse containing aggregated transaction data
+            dt_response: AccountResponse containing aggregated transaction data
             account_id: Optional account identifier (defaults to dt_response.account)
             include_calculated: Whether to include calculated rows (e.g., Balance, Total)
 
@@ -177,12 +177,12 @@ class ProcessingResponse:
 
     Attributes:
         result_id: Unique identifier for this processing result
-        data: Dictionary mapping account IDs to their DataTablesResponse objects
+        data: Dictionary mapping account IDs to their AccountResponse objects
         metadata: Processing metadata containing statistics (processing_time, row_count, etc.)
         statistical_metadata: Statistical analysis results including highlights
     """
     result_id: str
-    data: Dict[str, DataTablesResponse]
+    data: Dict[str, AccountResponse]
     metadata: Any  # ProcessingMetadata
     statistical_metadata: StatisticalMetadata
 

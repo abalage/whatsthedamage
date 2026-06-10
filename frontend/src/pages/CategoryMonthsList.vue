@@ -32,7 +32,7 @@ const columns: Column[] = [
     key: 'month',
     title: $gettext('Month'),
     component: TableLink,
-    componentProps: (value: string, row: Record<string, unknown>) => {
+    componentProps: (value: unknown, row: Record<string, unknown>) => {
       const resultId = String(row.resultId || '')
       const accountId = String(row.accountId || '')
       const categoryId = String(row.categoryId || '')
@@ -40,7 +40,7 @@ const columns: Column[] = [
       return {
         to: { name: 'category-month-transactions', params: { resultId, accountId, categoryId, monthId } },
         class: 'clickable',
-        children: value
+        children: String(value)
       }
     }
   },

@@ -31,7 +31,7 @@ const columns: Column[] = [
     key: 'category',
     title: $gettext('Category'),
     component: TableLink,
-    componentProps: (value: string, row: Record<string, unknown>) => {
+    componentProps: (value: unknown, row: Record<string, unknown>) => {
       const accountId = String(route.params.accountId || '')
       const monthId = String(route.params.monthId || '')
       const resultId = String(route.params.resultId || '')
@@ -39,7 +39,7 @@ const columns: Column[] = [
       return {
         to: { name: 'category-month-transactions', params: { resultId, accountId, categoryId, monthId } },
         class: 'clickable',
-        children: value
+        children: String(value)
       }
     }
   },

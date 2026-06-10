@@ -27,7 +27,7 @@
  */
 
 import { computed } from 'vue'
-import { RouterLink } from 'vue-router'
+import { RouterLink, type RouteLocationRaw } from 'vue-router'
 
 interface Props {
   /**
@@ -35,7 +35,7 @@ interface Props {
    * - String: Used as href for <a> tag
    * - Route object: Used with <router-link> for SPA navigation
    */
-  to: string | { name: string, params?: Record<string, unknown>, query?: Record<string, unknown> }
+  to: RouteLocationRaw
   /** CSS class(es) for the link */
   class?: string | string[]
   /** Link content (text) */

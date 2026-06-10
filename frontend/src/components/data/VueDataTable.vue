@@ -26,10 +26,10 @@
  *   />
  */
 
-import { ref, computed, onUnmounted, defineExpose, type Component } from 'vue'
+import { ref, computed, onUnmounted, type Component } from 'vue'
 import { useGettext } from 'vue3-gettext'
-import { RouterLink } from 'vue-router'
-import { getCssClassesForHighlights, DEFAULT_HIGHLIGHT_CONFIG } from '../../config/highlight-config'
+import { RouterLink, type RouteLocationRaw } from 'vue-router'
+import { getCssClassesForHighlights, DEFAULT_HIGHLIGHT_CONFIG } from '../../config/highlight-config.ts'
 
 /**
  * Column definition for VueDataTable
@@ -43,7 +43,7 @@ export interface Column {
    * Custom HTML rendering function. Returns HTML string for v-html.
    * SECURITY: Only use with trusted content. HTML will be rendered as-is.
    */
-  renderHtml?: (value: unknown, row: Record<string, unknown>, index: number) => string
+  renderHtml?: (value: unknown, row?: Record<string, unknown>, index?: number) => string
   /**
    * Vue component to render in cell.
    * Enables SPA navigation, custom components, etc.
@@ -52,8 +52,9 @@ export interface Column {
   /**
    * Props to pass to the component.
    * Function receives (value, row, index) and returns props object.
+   * row and index are optional for backwards compatibility.
    */
-  componentProps?: (value: unknown, row: Record<string, unknown>, index: number) => Record<string, unknown>
+  componentProps?: (value: unknown, row?: Record<string, unknown>, index?: number) => Record<string, unknown>
   /** CSS class(es) for cells. Can be string or array. */
   class?: string | string[]
   /** Enable sorting. Default: true */
@@ -69,7 +70,7 @@ export interface Column {
    * When set, clicking the column header will navigate to this location.
    * Uses Vue Router's <router-link> if object, <a> tag if string.
    */
-  headerTo?: string | { name: string, params?: Record<string, unknown>, query?: Record<string, unknown> }
+  headerTo?: RouteLocationRaw
 }
 
 /**
@@ -151,6 +152,12 @@ const searchQuery = ref('')
 const sortColumn = ref<string | null>(null)
 const sortDirection = ref<'asc' | 'desc'>('asc')
 const columnFilters = ref<Record<string, string>>({})
+
+// ARIA sort attribute value (maps 'asc'/'desc' to 'ascending'/'descending' for accessibility)
+const ariaSortValue = computed(() => {
+  if (!sortColumn.value) return undefined
+  return sortDirection.value === 'asc' ? 'ascending' : 'descending'
+})
 
 // Debounced search timeout
 let searchTimeout: ReturnType<typeof setTimeout> | null = null
@@ -446,7 +453,7 @@ function exportCSV(): void {
       // Use export value (plain text, no HTML)
       const displayValue = getExportValue(column, value, row, rowIndex)
       // Escape for CSV (wrap in quotes, escape quotes)
-      return `"${displayValue.replace(/"/g, '""')}"`
+      return `"${displayValue.replaceAll('"', '""')}"`
     }).join(',')
   })
 
@@ -458,7 +465,7 @@ function exportCSV(): void {
   link.download = `${props.id || 'data'}-${new Date().toISOString().slice(0, 10)}.csv`
   document.body.appendChild(link)
   link.click()
-  document.body.removeChild(link)
+  link.remove()
   URL.revokeObjectURL(url)
 }
 
@@ -483,7 +490,7 @@ function exportExcel(): void {
   link.download = `${props.id || 'data'}-${new Date().toISOString().slice(0, 10)}.xlsx`
   document.body.appendChild(link)
   link.click()
-  document.body.removeChild(link)
+  link.remove()
   URL.revokeObjectURL(url)
 }
 
@@ -607,7 +614,7 @@ defineExpose(tableApi)
                 },
               ]"
               :style="column.width ? { width: column.width } : {}"
-              :aria-sort="sortColumn === column.key ? sortDirection : undefined"
+              :aria-sort="sortColumn === column.key ? ariaSortValue : undefined"
               @click="column.sortable !== false ? handleSort(column.key) : undefined"
             >
               <div class="d-flex flex-column gap-1">

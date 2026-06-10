@@ -80,7 +80,7 @@ function buildTableColumns(account: AccountData): Column[] {
       title: $gettext('Categories'),
       sortable: false, // Categories are row headers, not sortable in this view
       component: TableLink,
-      componentProps: (value: string) => {
+      componentProps: (value: unknown) => {
         const category = String(value)
         const categoryId = getCategoryId(accountId, category)
         return {
@@ -141,10 +141,13 @@ function buildTableData(account: AccountData): Record<string, unknown>[] {
   const months = getMonthsForAccount(account)
 
   for (const category of Object.keys(catMonthMap).sort()) {
-    const row: Record<string, unknown> = {
+    interface TableRow extends Record<string, unknown> {
+      _rowIds: Record<string, string>
+    }
+    const row: TableRow = {
       category,
       accountId: account.id,
-      _rowIds: {} as Record<string, string> // Maps column keys to API row_ids
+      _rowIds: {}
     }
 
     for (const [, monthTs] of months) {

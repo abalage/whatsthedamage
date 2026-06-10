@@ -93,7 +93,7 @@ const tableColumns = computed<Column[]>(() => {
       title: $gettext('Cost of Living'),
       class: 'text-nowrap text-end',
       sortable: true,
-      renderHtml: (value: number) => `${Math.abs(value)}`
+      renderHtml: (value: unknown) => `${Math.abs(Number(value))}`
     }
   ];
 
@@ -104,8 +104,8 @@ const tableColumns = computed<Column[]>(() => {
       title: getCategoryDisplayName(catId),
       class: 'text-nowrap text-end',
       sortable: true,
-      renderHtml: (value: { amount: number } | null) => {
-        const amount = value?.amount ?? ZERO;
+      renderHtml: (value: unknown) => {
+        const amount = (value as { amount: number } | null)?.amount ?? ZERO;
         return `${Math.abs(amount)}`;
       }
     });

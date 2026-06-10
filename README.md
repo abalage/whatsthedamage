@@ -72,7 +72,7 @@ Using a machine learning model can automatically learn patterns from a given tra
 
 The repository does not provide any pre-built model on purpose because of the risk of model inversion. Model inversion may reveal transaction data used for training the model to possible third parties which would defeat the purpose of the tool.  
 
-If you want to read about how you can make a model for yourself check out its own [README_ML.md](src/whatsthedamage/README_ML.md) file.
+If you want to read about how you can make a model for yourself check out its own [README_ML.md](README_ML.md) file.
 
 ## Install
 

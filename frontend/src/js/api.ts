@@ -5,7 +5,7 @@
 
 import { AppError, ApiResponse } from '../types/index.js';
 import type {
-  ProcessApiResponse,
+  DetailedResponse,
   ResultsApiResponse,
   CategoryMonthsApiResponse,
   MonthCategoriesApiResponse,
@@ -110,7 +110,7 @@ function getApiUrl(endpoint: string): string {
  * @returns Promise with processing result
  * @throws AppError if processing fails
  */
-export async function processTransactions(formData: FormData): Promise<ProcessApiResponse> {
+export async function processTransactions(formData: FormData): Promise<DetailedResponse> {
   try {
     const response = await fetch(`${API_BASE_URL}/process`, {
       method: 'POST',

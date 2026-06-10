@@ -43,7 +43,7 @@ def process_transactions() -> tuple[Response, int]:
     - language (optional): Output language (default: en)
 
     Returns:
-        ProcessApiResponse: Typed response with processed transaction data
+        DetailedResponse: Typed response with processed transaction data
 
     Status Codes:
         200: Successfully processed

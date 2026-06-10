@@ -5,8 +5,8 @@
  * ensuring type safety and consistency with backend Pydantic models.
  *
  * Backend counterparts are defined in:
- * - src/whatsthedamage/models/api_responses.py (API v2 Response DTOs)
- * - src/whatsthedamage/models/dt_models.py (Data models)
+ * - src/whatsthedamage/models/api/responses.py (API v2 Response DTOs)
+ * - src/whatsthedamage/models/domain/dt_models.py (Data models)
  */
 
 // ============================================================================
@@ -143,7 +143,7 @@ interface CategorySummary {
  * Contains processed transaction data grouped by category and month,
  * plus processing metadata.
  */
-export interface ProcessApiResponse {
+export interface DetailedResponse {
   data: AggregatedRow[];
   metadata: ProcessingMetadata;
 }

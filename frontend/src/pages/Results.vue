@@ -1,11 +1,16 @@
 <script setup lang="ts">
-import { ref, onMounted, computed, nextTick } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { fetchResults as fetchResultsApi } from '../js/api.js'
 import { useFeedbackStore } from '../stores/feedback.js'
+import { useStatisticalStore } from '../stores/statistical.js'
 import { useGettext } from 'vue3-gettext'
 import type { ResultsApiResponse, AccountDataResponse } from '../types/api.js'
 import ButtonComponent from '../components/ui/ButtonComponent.vue'
+import VueDataTable from '../components/data/VueDataTable.vue'
+import TableLink from '../components/data/TableLink.vue'
+import TableLinkWithPopover from '../components/data/TableLinkWithPopover.vue'
+import type { Column } from '../components/data/VueDataTable.vue'
 
 const { $gettext } = useGettext()
 
@@ -13,6 +18,7 @@ const { $gettext } = useGettext()
 type AccountData = AccountDataResponse
 
 const feedback = useFeedbackStore()
+const statisticalStore = useStatisticalStore()
 const route = useRoute()
 
 
@@ -24,8 +30,6 @@ const resultId = computed(() => {
 const resultsData = ref<ResultsApiResponse | null>(null)
 const isLoading = ref(true)
 const error = ref<string | null>(null)
-
-const DEFERRED_TIMEOUT = 0
 
 const loadResults = async () => {
   if (!resultId.value) {
@@ -39,18 +43,7 @@ const loadResults = async () => {
       const fallbackResponse = await fetchResultsApi('demo-result-id')
       resultsData.value = fallbackResponse
 
-      // Initialize DataTables for fallback data
-      await nextTick()
-      await new Promise(resolve => setTimeout(resolve, DEFERRED_TIMEOUT))
-      const w1 = globalThis as unknown as Window
-
-      // Set highlights for statistical cell highlighting
-      w1.highlights = fallbackResponse.accounts_data?.highlights || {}
-
-      // Set export button translations for DataTables
-      w1.exportCsvText = $gettext('Export CSV')
-      w1.exportExcelText = $gettext('Export Excel')
-      w1.initMainPage()
+      isLoading.value = false
     } catch (fallbackError) {
       const message = fallbackError instanceof Error ? fallbackError.message : String(fallbackError)
       feedback.showError(`Failed to load fallback data: ${message}`)
@@ -65,28 +58,118 @@ const loadResults = async () => {
     resultsData.value = response
     error.value = null
 
-    // Set isLoading to false BEFORE initializing DataTables so the results block renders
+    // Initialize highlights in Pinia store
+    if (response.accounts_data?.highlights) {
+      statisticalStore.setHighlights(response.accounts_data.highlights)
+    }
+
     isLoading.value = false
-
-    // Wait for Vue to render the tables with the new data
-    await nextTick()
-    await new Promise(resolve => setTimeout(resolve, DEFERRED_TIMEOUT))
-
-    // Set translation strings for DataTables export buttons
-    const w2 = globalThis as unknown as Window
-    w2.exportCsvText = $gettext('Export CSV')
-    w2.exportExcelText = $gettext('Export Excel')
-
-    // Set highlights for statistical cell highlighting
-    w2.highlights = resultsData.value?.accounts_data.highlights || {}
-
-    // Initialize DataTables now that tables exist in DOM
-    w2.initMainPage()
   } catch (err) {
     error.value = err instanceof Error ? err.message : 'Failed to load results'
     feedback.showError('Failed to load results: ' + error.value)
     isLoading.value = false
   }
+}
+
+// Build column definitions for an account's table
+function buildTableColumns(account: AccountData): Column[] {
+  const accountId = account.id
+  const columns: Column[] = [
+    {
+      key: 'category',
+      title: $gettext('Categories'),
+      sortable: false, // Categories are row headers, not sortable in this view
+      component: TableLink,
+      componentProps: (value: unknown) => {
+        const category = String(value)
+        const categoryId = getCategoryId(accountId, category)
+        return {
+          to: { name: 'category-months', params: { resultId: resultId.value, accountId, categoryId } },
+          class: 'clickable',
+          children: category
+        }
+      }
+    }
+  ]
+
+  // Add month columns
+  for (const [monthDisplay, monthTs] of getMonthsForAccount(account)) {
+    const monthId = getMonthId(accountId, monthTs)
+    columns.push({
+      key: `month-${monthTs}`,
+      title: monthDisplay,
+      sortable: true,
+      headerTo: { name: 'month-categories', params: { resultId: resultId.value, accountId, monthId } },
+      component: TableLinkWithPopover,
+      componentProps: (value: unknown, row: Record<string, unknown>) => {
+        const category = String(row.category)
+        const monthData = buildCategoryMonthMap(account)[category]?.[monthTs]
+
+        if (!monthData) {
+          return { to: '#', children: '' }
+        }
+
+        const total = monthData.total?.display || ''
+        const accountId = account.id
+        const categoryId = getCategoryId(accountId, category)
+
+        const linkUrl = { name: 'category-month-transactions', params: { resultId: resultId.value, accountId, categoryId, monthId } }
+
+        // For popover
+        const hasDetails = monthData.details && monthData.details.length > 0
+        const detailsContent = hasDetails ? getDetailsString(monthData.details) : ''
+
+        return {
+          to: linkUrl,
+          class: 'clickable',
+          children: total,
+          popoverContent: hasDetails ? detailsContent : undefined,
+          popoverPlacement: 'top',
+          popoverCustomClass: 'popover-wide'
+        }
+      }
+    })
+  }
+
+  return columns
+}
+
+// Build table data for an account
+function buildTableData(account: AccountData): Record<string, unknown>[] {
+  const data: Record<string, unknown>[] = []
+  const catMonthMap = buildCategoryMonthMap(account)
+  const months = getMonthsForAccount(account)
+
+  for (const category of Object.keys(catMonthMap).sort()) {
+    interface TableRow extends Record<string, unknown> {
+      _rowIds: Record<string, string>
+    }
+    const row: TableRow = {
+      category,
+      accountId: account.id,
+      _rowIds: {}
+    }
+
+    for (const [, monthTs] of months) {
+      const monthData = catMonthMap[category]?.[monthTs]
+      const columnKey = `month-${monthTs}`
+      row[columnKey] = monthData?.total?.raw ?? 0
+
+      // Store the API row_id for this cell
+      if (monthData?.row_id) {
+        row._rowIds[columnKey] = monthData.row_id
+      }
+    }
+
+    data.push(row)
+  }
+
+  return data
+}
+
+// Get highlights for an account's table from Pinia store
+function getAccountHighlights(): Record<string, string[]> {
+  return statisticalStore.highlights || {}
 }
 
 const getMonthsForAccount = (account: AccountData) => {
@@ -192,43 +275,15 @@ onMounted(() => {
             <h3>{{ account.name }}</h3>
           </div>
           <div class="card-body">
-            <div class="table-responsive">
-              <table :id="`datatable-${account.id}`" class="table table-bordered" data-datatable="true">
-                <thead>
-                  <tr>
-                    <th>{{ $gettext('Categories') }}</th>
-                    <th
-v-for="[monthDisplay, monthTs] in getMonthsForAccount(account)"
-                        :key="monthTs"
-                        :data-order="monthTs">
-                      <router-link :to="{ name: 'month-categories', params: { resultId: resultId, accountId: account.id, monthId: getMonthId(account.id, monthTs) } }" class="clickable">{{ monthDisplay }}</router-link>
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-for="category in Object.keys(buildCategoryMonthMap(account)).sort()" :key="category">
-                    <td>
-                      <router-link :to="{ name: 'category-months', params: { resultId: resultId, accountId: account.id, categoryId: getCategoryId(account.id, category) } }" class="clickable">{{ category }}</router-link>
-                    </td>
-                    <!-- eslint-disable-next-line vue/first-attribute-linebreak,vue/no-unused-vars -->
-                    <td v-for="[monthDisplay, monthTs] in getMonthsForAccount(account)" :key="monthTs"
-                        :data-order="buildCategoryMonthMap(account)[category][monthTs]?.total.raw ?? 0"
-                        :data-row-id="buildCategoryMonthMap(account)[category][monthTs]?.row_id ?? ''"
-                        :tabindex="buildCategoryMonthMap(account)[category][monthTs]?.details ? 0 : undefined"
-                        :data-bs-toggle="buildCategoryMonthMap(account)[category][monthTs]?.details ? 'popover' : undefined"
-                        :data-bs-trigger="buildCategoryMonthMap(account)[category][monthTs]?.details ? 'hover focus' : undefined"
-                        data-bs-html="false"
-                        :data-bs-content="buildCategoryMonthMap(account)[category][monthTs]?.details ? getDetailsString(buildCategoryMonthMap(account)[category][monthTs].details) : undefined"
-                        data-bs-placement="top"
-                        data-bs-custom-class="popover-wide">
-                      <template v-if="buildCategoryMonthMap(account)[category][monthTs]">
-                        <router-link :to="{ name: 'category-month-transactions', params: { resultId: resultId, accountId: account.id, categoryId: getCategoryId(account.id, category), monthId: getMonthId(account.id, monthTs) } }" class="clickable">{{ buildCategoryMonthMap(account)[category][monthTs].total.display }}</router-link>
-                      </template>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
+            <VueDataTable
+              :id="`datatable-${account.id}`"
+              :data="buildTableData(account)"
+              :columns="buildTableColumns(account)"
+              :cell-highlights-by-row-id="getAccountHighlights()"
+              :csv-text="$gettext('Export CSV')"
+              :excel-text="$gettext('Export Excel')"
+              show-column-filters
+            />
           </div>
         </div>
       </div>

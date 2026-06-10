@@ -10,25 +10,9 @@ import BarChart from '../components/charts/BarChart.vue';
 import PieChart from '../components/charts/PieChart.vue';
 import CostOfLivingCategorySelector from '../components/CostOfLivingCategorySelector.vue';
 
-// DataTable Vue3 component imports
-import DataTable from 'datatables.net-vue3';
-import DataTablesLib from 'datatables.net-bs5';
-import 'datatables.net-buttons-bs5';
-import 'datatables.net-fixedheader-bs5';
-import 'datatables.net-buttons/js/buttons.html5';
-import type { Config } from 'datatables.net';
-
-// DataTables column type - ConfigColumns is not exported from datatables.net
-interface DataTableColumn {
-  title: string;
-  data: string | number;
-  className?: string;
-  orderable?: boolean;
-  render?: (data: any, type: string) => any;
-}
-
-// Register DataTables library with the Vue component
-DataTable.use(DataTablesLib);
+// VueDataTable component
+import VueDataTable from '../components/data/VueDataTable.vue';
+import type { Column } from '../components/data/VueDataTable.vue';
 
 const { $gettext } = useGettext();
 const feedback = useFeedbackStore();
@@ -95,42 +79,34 @@ const safeMonths = computed(() => costOfLivingData.value?.months || []);
 // Use gettext directly on category IDs - translations are already configured
 const getCategoryDisplayName = (categoryId: string): string => $gettext(categoryId);
 
-// NEW: Table column definitions for DataTable
-const tableColumns = computed<DataTableColumn[]>(() => {
-  const columns: DataTableColumn[] = [
+// NEW: Table column definitions for VueDataTable
+const tableColumns = computed<Column[]>(() => {
+  const columns: Column[] = [
     {
+      key: 'month',
       title: $gettext('Month'),
-      data: 'month',
-      className: 'text-nowrap',
-      orderable: true
+      class: 'text-nowrap',
+      sortable: true
     },
     {
+      key: 'total',
       title: $gettext('Cost of Living'),
-      data: 'total',
-      className: 'text-nowrap text-end',
-      orderable: true,
-      render: (data: number, type: string) => {
-        if (type === 'display') {
-          return `${Math.abs(data)}`;
-        }
-        return Math.abs(data);
-      }
+      class: 'text-nowrap text-end',
+      sortable: true,
+      renderHtml: (value: unknown) => `${Math.abs(Number(value))}`
     }
   ];
 
   // Add columns for each selected category
   selectedCategories.value.forEach(catId => {
     columns.push({
+      key: catId,
       title: getCategoryDisplayName(catId),
-      data: catId,
-      className: 'text-nowrap text-end',
-      orderable: true,
-      render: (data: { amount: number } | null, type: string) => {
-        const amount = data?.amount ?? ZERO;
-        if (type === 'display') {
-          return `${Math.abs(amount)}`;
-        }
-        return Math.abs(amount);
+      class: 'text-nowrap text-end',
+      sortable: true,
+      renderHtml: (value: unknown) => {
+        const amount = (value as { amount: number } | null)?.amount ?? ZERO;
+        return `${Math.abs(amount)}`;
       }
     });
   });
@@ -138,14 +114,15 @@ const tableColumns = computed<DataTableColumn[]>(() => {
   return columns;
 });
 
-// NEW: Table data for DataTable
+// NEW: Table data for VueDataTable
 const tableData = computed<Record<string, unknown>[]>(() => {
   if (!costOfLivingData.value) return [];
 
   return costOfLivingData.value.months.map(month => {
     const row: Record<string, unknown> = {
       month: month.month,
-      total: month.total
+      total: month.total,
+      row_id: month.month_timestamp // Use timestamp as row_id for highlighting
     };
 
     // Add category data for each selected category
@@ -157,38 +134,8 @@ const tableData = computed<Record<string, unknown>[]>(() => {
   });
 });
 
-// NEW: Table options for DataTable
-const tableOptions = computed<Config>(() => ({
-  responsive: true,
-  pageLength: 25,
-  dom: '<"dt-buttons"B><"clear">frtip',
-  buttons: [
-    {
-      extend: 'csvHtml5',
-      text: $gettext('Export CSV'),
-      className: 'btn'
-    },
-    {
-      extend: 'excelHtml5',
-      text: $gettext('Export Excel'),
-      className: 'btn'
-    }
-  ],
-  order: [[ZERO, 'desc']], // Sort by month descending by default
-  language: {
-    search: $gettext('Search') + ': ',
-    lengthMenu: $gettext('Show _MENU_ entries'),
-    info: $gettext('Showing _START_ to _END_ of _TOTAL_ entries'),
-    infoEmpty: $gettext('Showing 0 to 0 of 0 entries'),
-    infoFiltered: $gettext('(filtered from _MAX_ total entries)'),
-    paginate: {
-      first: $gettext('First'),
-      last: $gettext('Last'),
-      next: $gettext('Next'),
-      previous: $gettext('Previous')
-    }
-  }
-}));
+// VueDataTable uses individual props instead of options object
+// Default pageSize is 25, which matches the old DataTables config
 
 // NEW: Helper function to calculate category average
 const calculateCategoryAverage = (catId: string): string => {
@@ -349,30 +296,25 @@ onMounted(() => loadData());
         </div>
       </div>
 
-      <!-- Data Table - Vue3-native DataTable component -->
+      <!-- Data Table - VueDataTable component -->
       <div v-if="costOfLivingData && selectedCategories.length > 0" class="card">
         <div class="card-header"><h4 class="mb-0"><i class="bi bi-table me-2"></i> {{ $gettext('Detailed Monthly Data') }}</h4></div>
         <div class="card-body p-0">
-          <div class="table-responsive">
-            <DataTable
-              :key="`columns-${selectedCategories.join(',')}-${costOfLivingData?.months.length}`"
-              :columns="tableColumns"
-              :data="tableData"
-              :options="tableOptions"
-              class="display table table-bordered table-hover mb-0 small"
-            >
-              <thead class="table-light">
-                <tr>
-                  <th
-                    v-for="col in tableColumns"
-                    :key="col.data ?? col.title"
-                    :class="col.className"
-                    scope="col"
-                  >
-                    {{ col.title }}
-                  </th>
-                </tr>
-              </thead>
+          <VueDataTable
+            id="cost-of-living-table"
+            :key="`columns-${selectedCategories.join(',')}-${costOfLivingData?.months.length}`"
+            :columns="tableColumns"
+            :data="tableData"
+            :page-size="25"
+            :csv-text="$gettext('Export CSV')"
+            :excel-text="$gettext('Export Excel')"
+            :search-placeholder="$gettext('Search') + ': '"
+            show-column-filters
+            class="small"
+          />
+          <!-- Table footer with averages (rendered separately since VueDataTable doesn't support tfoot slots) -->
+          <div v-if="selectedCategories.length > 0" class="table-footer-wrapper">
+            <table class="table table-bordered table-hover mb-0 small">
               <tfoot class="table-light">
                 <tr>
                   <th scope="col">{{ $gettext('Average') }}</th>
@@ -382,7 +324,7 @@ onMounted(() => loadData());
                   </th>
                 </tr>
               </tfoot>
-            </DataTable>
+            </table>
           </div>
         </div>
       </div>

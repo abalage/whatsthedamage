@@ -80,7 +80,7 @@ export async function fetchWithErrorHandling<T>(
  * @param data - Request body
  * @returns Promise with parsed data
  */
-export async function postData<T>(
+async function postData<T>(
   url: string,
   data: unknown
 ): Promise<T> {
@@ -95,7 +95,7 @@ export async function postData<T>(
  * @param endpoint - API endpoint path
  * @returns Full API URL
  */
-export function getApiUrl(endpoint: string): string {
+function getApiUrl(endpoint: string): string {
   return `${API_BASE_URL}${endpoint}`;
 }
 

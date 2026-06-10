@@ -63,13 +63,9 @@ const triggerRecalculate = async () => {
       direction.value
     )
 
-    // Update global highlights
+    // Store highlights in Pinia
     if (response?.highlights) {
-      const w3 = globalThis as unknown as Window
-      w3.highlights = response.highlights
-      if (typeof w3.updateCellHighlights === 'function') {
-        w3.updateCellHighlights(response.highlights)
-      }
+      statisticalStore.setHighlights(response.highlights)
     }
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error)
@@ -91,11 +87,7 @@ const resetToDefaults = async () => {
       )
 
       if (response?.highlights) {
-        const w4 = globalThis as unknown as Window
-        w4.highlights = response.highlights
-        if (typeof w4.updateCellHighlights === 'function') {
-          w4.updateCellHighlights(response.highlights)
-        }
+        statisticalStore.setHighlights(response.highlights)
       }
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)

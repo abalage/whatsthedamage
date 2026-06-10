@@ -1,19 +1,23 @@
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { onMounted, computed, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useGettext } from 'vue3-gettext'
+import { useStatisticalStore } from '../stores/statistical.js'
 import {
   useDrilldownData,
-  extractIdFromUrl,
   type BreadcrumbItem
 } from '../composables/useDrilldownData.js'
 import CardComponent from '../components/ui/CardComponent.vue'
 import ButtonComponent from '../components/ui/ButtonComponent.vue'
+import VueDataTable from '../components/data/VueDataTable.vue'
+import TableLink from '../components/data/TableLink.vue'
+import type { Column } from '../components/data/VueDataTable.vue'
 import { fetchMonthCategories } from '../js/api.js'
-import type { MonthCategoriesApiResponse, CategoryData } from '../types/api.js'
+import type { MonthCategoriesApiResponse } from '../types/api.js'
 
 const { $gettext } = useGettext()
 const route = useRoute()
+const statisticalStore = useStatisticalStore()
 
 // Helper to safely get route params
 const getRouteParam = (param: string): string | null => {
@@ -21,14 +25,47 @@ const getRouteParam = (param: string): string | null => {
   return typeof value === 'string' ? value : null
 }
 
+// Table columns
+const columns: Column[] = [
+  {
+    key: 'category',
+    title: $gettext('Category'),
+    component: TableLink,
+    componentProps: (value: unknown, row: Record<string, unknown>) => {
+      const accountId = String(route.params.accountId || '')
+      const monthId = String(route.params.monthId || '')
+      const resultId = String(route.params.resultId || '')
+      const categoryId = extractCategoryIdFromData(row)
+      return {
+        to: { name: 'category-month-transactions', params: { resultId, accountId, categoryId, monthId } },
+        class: 'clickable',
+        children: String(value)
+      }
+    }
+  },
+  {
+    key: 'total',
+    title: $gettext('Total'),
+    renderHtml: (value: unknown, row: Record<string, unknown>) => String((row as { total_display?: string }).total_display || value || '')
+  }
+]
+
+// Extract category_id from row data
+function extractCategoryIdFromData(row: Record<string, unknown>): string {
+  const category = row.category as string | undefined
+  const categoryUrl = row.category_url as string | undefined
+  if (categoryUrl) {
+    const match = categoryUrl.match(/categories\/([^/]+)\/months/)
+    if (match) return match[1]
+  }
+  return category || ''
+}
+
 const {
   data: monthCategoriesData,
   isLoading,
   error,
   fetchData,
-  resultId,
-  accountId,
-  monthId,
   pageTitle,
   breadcrumbItems,
   navButtons
@@ -39,7 +76,7 @@ const {
     }
     return fetchMonthCategories(params)
   },
-  getPageTitle: (data) => `${$gettext('Details for Month')}: ${data.month_name}`,
+  getPageTitle: (data) => `${$gettext('Details')}: ${data.month_name}`,
   breadcrumbItems: (): BreadcrumbItem[] => [
     { name: $gettext('Home'), to: '/' },
     { name: $gettext('Results'), to: { name: 'results', query: { resultId: getRouteParam('resultId') } } },
@@ -47,37 +84,42 @@ const {
   ],
   navButtons: [
     {
-      text: $gettext('Back to Results'),
+      text: $gettext('Back to Categories'),
       to: { name: 'results', query: { resultId: getRouteParam('resultId') } },
       variant: 'secondary'
     }
   ],
-  onDataLoaded: (data) => {
-    // Set translation strings for DataTables export buttons
-    const w7 = globalThis as unknown as Window
-    w7.exportCsvText = $gettext('Export CSV')
-    w7.exportExcelText = $gettext('Export Excel')
-
-    // Set highlights for statistical cell highlighting
-    w7.highlights = data.highlights || {}
-
-    // Initialize DataTables now that tables exist in DOM
-    w7.initMainPage()
-  },
   errorMessageKey: 'monthCategoriesLoadError'
 })
 
-/**
- * Extract category_id from category data (from category_url or category name)
- */
-const extractCategoryId = (category: CategoryData): string => {
-  // Try to extract from category_url first
-  return extractIdFromUrl(
-    category.category_url,
-    /categories\/([^/]+)\/months/,
-    category.category
-  )
-}
+
+
+// Table data with _rowIds mapping
+const tableData = computed(() => {
+  if (!monthCategoriesData.value) return []
+  return monthCategoriesData.value.data.map(category => ({
+    category: category.category,
+    category_url: category.category_url,
+    total: category.total.raw,
+    total_display: category.total.display,
+    row_id: category.row_id,
+    _rowIds: {
+      total: category.row_id // Map total column to its row_id for cell-level highlighting
+    }
+  }))
+})
+
+// Cell highlights from Pinia store
+const cellHighlightsByRowId = computed(() => {
+  return statisticalStore.highlights || {}
+})
+
+// Initialize highlights from API when data loads
+watch(() => monthCategoriesData.value, (newData) => {
+  if (newData?.highlights) {
+    statisticalStore.setHighlights(newData.highlights)
+  }
+}, { immediate: true })
 
 onMounted(() => {
   fetchData()
@@ -119,50 +161,7 @@ onMounted(() => {
     <div v-else-if="monthCategoriesData">
       <div class="d-flex justify-content-between align-items-center mb-3">
         <h1 class="mb-0">{{ pageTitle }}</h1>
-      </div>
-
-      <!-- Account Card -->
-      <CardComponent :title="monthCategoriesData.account_name" class="mb-4">
-        <div class="row">
-          <div class="col-md-6 mb-3">
-            <div class="table-responsive">
-              <table id="datatable-month" class="table table-bordered" data-datatable="true">
-                <thead>
-                  <tr>
-                    <th>{{ $gettext('Category') }}</th>
-                    <th>{{ $gettext('Total') }}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-for="category in monthCategoriesData.data" :key="category.row_id">
-                    <td>
-                      <router-link
-                        :to="{
-                          name: 'category-month-transactions',
-                          params: {
-                            resultId: resultId,
-                            accountId: accountId,
-                            categoryId: extractCategoryId(category),
-                            monthId: monthId
-                          }
-                        }"
-                        class="clickable"
-                      >{{ category.category }}</router-link>
-                    </td>
-                    <td :data-row-id="category.row_id" class="">
-                      {{ category.total.display }}
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      </CardComponent>
-
-      <!-- Navigation -->
-      <div v-if="navButtons && navButtons.length" class="row">
-        <div class="col-md-6">
+        <div v-if="navButtons && navButtons.length" class="d-flex gap-2">
           <ButtonComponent
             v-for="(button, index) in navButtons"
             :key="index"
@@ -170,10 +169,29 @@ onMounted(() => {
             :variant="button.variant"
             :to="button.to"
             :size="button.size"
-            class="mt-3 mb-3 me-2"
+            class="mt-3 mb-3"
           />
         </div>
       </div>
+
+      <!-- Account Card -->
+      <CardComponent :title="monthCategoriesData.account_name" class="mb-4">
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <VueDataTable
+              id="datatable-month"
+              :data="tableData"
+              :columns="columns"
+              :cell-highlights-by-row-id="cellHighlightsByRowId"
+              :csv-text="$gettext('Export CSV')"
+              :excel-text="$gettext('Export Excel')"
+              show-column-filters
+            />
+          </div>
+        </div>
+      </CardComponent>
+
+
     </div>
 
     <!-- No Data State -->

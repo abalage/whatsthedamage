@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { onMounted, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { useGettext } from 'vue3-gettext'
 import {
@@ -8,6 +8,8 @@ import {
 } from '../composables/useDrilldownData.js'
 import CardComponent from '../components/ui/CardComponent.vue'
 import ButtonComponent from '../components/ui/ButtonComponent.vue'
+import VueDataTable from '../components/data/VueDataTable.vue'
+import type { Column } from '../components/data/VueDataTable.vue'
 import { fetchCategoryMonthTransactions } from '../js/api.js'
 import type { CategoryMonthTransactionsApiResponse } from '../types/api.js'
 
@@ -20,6 +22,17 @@ const getRouteParam = (param: string): string | null => {
   const value = route.params[param]
   return typeof value === 'string' ? value : null
 }
+
+// Table columns
+const columns: Column[] = [
+  { key: 'date', title: $gettext('Date'), renderHtml: (value: unknown, row: Record<string, unknown>) => String((row as { date_display?: string }).date_display || value || '') },
+  {
+    key: 'amount',
+    title: $gettext('Amount'),
+    renderHtml: (value: unknown, row: Record<string, unknown>) => String((row as { amount_display?: string }).amount_display || value || '')
+  },
+  { key: 'merchant', title: $gettext('Merchant') }
+]
 
 const {
   data: transactionsData,
@@ -36,7 +49,7 @@ const {
     }
     return fetchCategoryMonthTransactions(params)
   },
-  getPageTitle: (data) => `${$gettext('Transaction Details')}: ${data.category_name} - ${data.month_name}`,
+  getPageTitle: (data) => `${$gettext('Details')}: ${data.category_name} - ${data.month_name}`,
   breadcrumbItems: (): BreadcrumbItem[] => [
     { name: $gettext('Home'), to: '/' },
     { name: $gettext('Results'), to: { name: 'results', query: { resultId: getRouteParam('resultId') } } },
@@ -53,24 +66,25 @@ const {
       variant: 'secondary'
     },
     {
-      text: $gettext('Back to Results'),
+      text: $gettext('Back to Categories'),
       to: { name: 'results', query: { resultId: getRouteParam('resultId') } },
       variant: 'outline-secondary'
     }
   ],
-  onDataLoaded: (data) => {
-    // Set translation strings for DataTables export buttons
-    const w6 = globalThis as unknown as Window
-    w6.exportCsvText = $gettext('Export CSV')
-    w6.exportExcelText = $gettext('Export Excel')
-
-    // Set highlights for statistical cell highlighting
-    w6.highlights = data.highlights || {}
-
-    // Initialize DataTables now that tables exist in DOM
-    w6.initMainPage()
-  },
   errorMessageKey: 'transactionsLoadError'
+})
+
+// Table data
+const tableData = computed(() => {
+  if (!transactionsData.value) return []
+  return transactionsData.value.data.map(t => ({
+    date: typeof t.date.timestamp === 'string' ? Number(t.date.timestamp) : t.date.timestamp,
+    date_display: t.date.display,
+    amount: t.amount.raw,
+    amount_display: t.amount.display,
+    merchant: t.merchant,
+    row_id: t.row_id
+  }))
 })
 
 onMounted(() => {
@@ -113,39 +127,7 @@ onMounted(() => {
     <div v-else-if="transactionsData">
       <div class="d-flex justify-content-between align-items-center mb-3">
         <h1 class="mb-0">{{ pageTitle }}</h1>
-      </div>
-
-      <!-- Account Card -->
-      <CardComponent :title="transactionsData.account_name" class="mb-4">
-        <div class="row">
-          <div class="col-md-8 mb-3">
-            <div class="table-responsive">
-              <table id="transaction-details-table" class="table table-bordered" data-datatable="true">
-                <thead>
-                  <tr>
-                    <th>{{ $gettext('Date') }}</th>
-                    <th>{{ $gettext('Amount') }}</th>
-                    <th>{{ $gettext('Merchant') }}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-for="transaction in transactionsData.data" :key="transaction.row_id">
-                    <td>{{ transaction.date.display }}</td>
-                    <td :data-row-id="transaction.row_id" class="">
-                      {{ transaction.amount.display }}
-                    </td>
-                    <td>{{ transaction.merchant }}</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      </CardComponent>
-
-      <!-- Navigation -->
-      <div v-if="navButtons && navButtons.length" class="row">
-        <div class="col-md-6">
+        <div v-if="navButtons && navButtons.length" class="d-flex gap-2">
           <ButtonComponent
             v-for="(button, index) in navButtons"
             :key="index"
@@ -153,10 +135,26 @@ onMounted(() => {
             :variant="button.variant"
             :to="button.to"
             :size="button.size"
-            class="mt-3 mb-3 me-2"
+            :class="index < navButtons.length - 1 ? 'mt-3 mb-3 me-2' : 'mt-3 mb-3'"
           />
         </div>
       </div>
+
+      <!-- Account Card -->
+      <CardComponent :title="transactionsData.account_name" class="mb-4">
+        <div class="row">
+          <div class="col-md-8 mb-3">
+            <VueDataTable
+              id="transaction-details-table"
+              :data="tableData"
+              :columns="columns"
+              :csv-text="$gettext('Export CSV')"
+              :excel-text="$gettext('Export Excel')"
+              show-column-filters
+            />
+          </div>
+        </div>
+      </CardComponent>
     </div>
 
     <!-- No Data State -->

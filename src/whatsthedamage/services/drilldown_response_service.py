@@ -215,7 +215,7 @@ class DrilldownResponseService:
             dt = datetime.datetime.fromtimestamp(int(v))
             month_name_loc = DateConverter.convert_month_number_to_name(dt.month)
             return f"{month_name_loc} {dt.year}"
-        
+
         month_name = self._get_display_name(
             account_data['data'], original_month_ts, 'date', 'display',
             format_month_name
@@ -937,9 +937,29 @@ class DrilldownResponseService:
             Formatted transaction dictionary
         """
         detail_dict = self._format_detail(detail)
+        # Extract date with both display and timestamp
+        date_obj = detail_dict.get('date', {})
+        if isinstance(date_obj, dict):
+            date_formatted = {
+                'display': self._get_display_value(date_obj),
+                'timestamp': date_obj.get('timestamp', '')
+            }
+        else:
+            date_formatted = {'display': str(date_obj), 'timestamp': ''}
+
+        # Extract amount with both display and raw
+        amount_obj = detail_dict.get('amount', {})
+        if isinstance(amount_obj, dict):
+            amount_formatted = {
+                'display': self._get_display_value(amount_obj),
+                'raw': amount_obj.get('raw', 0.0)
+            }
+        else:
+            amount_formatted = {'display': str(amount_obj), 'raw': amount_obj if amount_obj is not None else 0.0}
+
         return {
-            'date': {'display': self._get_display_value(detail_dict.get('date'))},
-            'amount': {'display': self._get_display_value(detail_dict.get('amount'))},
+            'date': date_formatted,
+            'amount': amount_formatted,
             'merchant': detail_dict.get('merchant', ''),
             'notice': detail_dict.get('notice', None),
             'row_id': detail_dict.get('row_id', '')
@@ -1039,14 +1059,14 @@ class DrilldownResponseService:
             account_data['data'], original_category, 'category', 'category_display',
             lambda v: v.replace('_', ' ').title()
         )
-        
+
         def format_month_name(v: str) -> str:
             if v.isdigit():
                 dt = datetime.datetime.fromtimestamp(int(v))
                 month_name_loc = DateConverter.convert_month_number_to_name(dt.month)
                 return f"{month_name_loc} {dt.year}"
             return v.replace('-', ' ').title()
-        
+
         month_name = self._get_display_name(
             account_data['data'], original_month_ts, 'date', 'display',
             format_month_name
@@ -1064,9 +1084,13 @@ class DrilldownResponseService:
         for tx_dict in transactions_dicts:
             # _format_transaction_detail returns a dict with date, amount, merchant, row_id
             # We need to convert it to TransactionDetail format
+            # Note: TransactionDetail expects date.timestamp as string, so convert int to str
+            timestamp = tx_dict.get('date', {}).get('timestamp', '')
+            if isinstance(timestamp, int):
+                timestamp = str(timestamp)
             transactions.append(TransactionDetail(
-                date={'display': tx_dict.get('date', {}).get('display', ''), 'timestamp': ''},
-                amount={'display': tx_dict.get('amount', {}).get('display', ''), 'raw': 0.0},
+                date={'display': tx_dict.get('date', {}).get('display', ''), 'timestamp': timestamp},
+                amount={'display': tx_dict.get('amount', {}).get('display', ''), 'raw': tx_dict.get('amount', {}).get('raw', 0.0)},
                 merchant=tx_dict.get('merchant', ''),
                 notice=tx_dict.get('notice', None),
                 currency='',

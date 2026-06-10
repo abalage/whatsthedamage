@@ -6,7 +6,7 @@
 /**
  * Response from statistical analysis API
  */
-export interface StatisticalAnalysisResponse {
+interface StatisticalAnalysisResponse {
   status: 'success' | 'error';
   highlights: Record<string, string[]> | {};  // row_id -> array of highlight types
   error?: string;
@@ -15,7 +15,7 @@ export interface StatisticalAnalysisResponse {
 /**
  * Request payload for statistical analysis
  */
-export interface StatisticalAnalysisRequest {
+interface StatisticalAnalysisRequest {
   result_id: string;
   algorithms: string[];
   direction: 'columns' | 'rows';

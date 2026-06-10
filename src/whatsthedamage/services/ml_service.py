@@ -1,6 +1,6 @@
 from typing import List, Union
-from whatsthedamage.models.machine_learning import Train, Inference, Metrics
-from whatsthedamage.models.csv_row import CsvRow
+from whatsthedamage.models.domain.machine_learning import Train, Inference, Metrics
+from whatsthedamage.models.domain.csv_row import CsvRow
 from whatsthedamage.config.ml_config import MLConfig
 from whatsthedamage.utils.logging import get_logger
 

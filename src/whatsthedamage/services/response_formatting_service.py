@@ -16,9 +16,10 @@ Architecture Patterns:
 import pandas as pd
 import json
 from typing import Dict, Optional, Any, List, TYPE_CHECKING
-from whatsthedamage.models.dt_models import DataTablesResponse, StatisticalMetadata, SummaryData, DetailedResponse, ProcessingResponse
-from whatsthedamage.models.api_models import ProcessingMetadata, ErrorResponse, ProcessingRequest
-from whatsthedamage.models.api_responses import (
+from whatsthedamage.models.domain.dt_models import AccountResponse, StatisticalMetadata, SummaryData, DetailedResponse, ProcessingResponse
+from whatsthedamage.models.api.common import ProcessingMetadata, ErrorResponse
+from whatsthedamage.models.api.requests import ProcessingRequest
+from whatsthedamage.models.api.responses import (
     ResultsApiResponse,
     AccountsDataResponse,
     AccountDataResponse,
@@ -270,15 +271,15 @@ class ResponseFormattingService(IDataFormattingService):
 
     def format_datatables_as_html_table(
         self,
-        dt_responses: Dict[str, DataTablesResponse],
+        dt_responses: Dict[str, AccountResponse],
         account_id: Optional[str] = None,
         nowrap: bool = False
     ) -> str:
-        """Format DataTablesResponse as HTML table.
+        """Format AccountResponse as HTML table.
 
-        Extracts summary data from DataTablesResponse and formats as HTML.
+        Extracts summary data from AccountResponse and formats as HTML.
 
-        :param dt_responses: Dict mapping account_id to DataTablesResponse
+        :param dt_responses: Dict mapping account_id to AccountResponse
         :param account_id: Account ID to format. If None and multiple accounts exist,
             raises ValueError. If None and single account exists, uses that account.
         :param nowrap: If True, disables text wrapping in pandas output
@@ -302,15 +303,15 @@ class ResponseFormattingService(IDataFormattingService):
 
     def format_datatables_as_csv(
         self,
-        dt_responses: Dict[str, DataTablesResponse],
+        dt_responses: Dict[str, AccountResponse],
         account_id: Optional[str] = None,
         delimiter: str = ',',
     ) -> str:
-        """Format DataTablesResponse as CSV string.
+        """Format AccountResponse as CSV string.
 
-        Extracts summary data from DataTablesResponse and formats as CSV.
+        Extracts summary data from AccountResponse and formats as CSV.
 
-        :param dt_responses: Dict mapping account_id to DataTablesResponse
+        :param dt_responses: Dict mapping account_id to AccountResponse
         :param account_id: Account ID to format. If None and multiple accounts exist,
             raises ValueError. If None and single account exists, uses that account.
         :param delimiter: CSV delimiter character
@@ -334,15 +335,15 @@ class ResponseFormattingService(IDataFormattingService):
 
     def format_datatables_as_string(
         self,
-        dt_responses: Dict[str, DataTablesResponse],
+        dt_responses: Dict[str, AccountResponse],
         account_id: Optional[str] = None,
         nowrap: bool = False,
     ) -> str:
-        """Format DataTablesResponse as plain string for console output.
+        """Format AccountResponse as plain string for console output.
 
-        Extracts summary data from DataTablesResponse and formats as plain text.
+        Extracts summary data from AccountResponse and formats as plain text.
 
-        :param dt_responses: Dict mapping account_id to DataTablesResponse
+        :param dt_responses: Dict mapping account_id to AccountResponse
         :param account_id: Account ID to format. If None and multiple accounts exist,
             raises ValueError. If None and single account exists, uses that account.
         :param nowrap: If True, disables text wrapping in pandas output
@@ -366,18 +367,18 @@ class ResponseFormattingService(IDataFormattingService):
 
     def format_datatables_for_output(
         self,
-        dt_responses: Dict[str, DataTablesResponse],
+        dt_responses: Dict[str, AccountResponse],
         account_id: Optional[str] = None,
         output_format: Optional[str] = None,
         output_file: Optional[str] = None,
         nowrap: bool = False
     ) -> str:
-        """Format DataTablesResponse for various output types.
+        """Format AccountResponse for various output types.
 
-        This is a convenience method for formatting DataTablesResponse to
+        This is a convenience method for formatting AccountResponse to
         HTML, CSV file, or console string.
 
-        :param dt_responses: Dict mapping account_id to DataTablesResponse
+        :param dt_responses: Dict mapping account_id to AccountResponse
         :param account_id: Account ID to format. If None and multiple accounts exist,
             raises ValueError. If None and single account exists, uses that account.
         :param output_format: Output format ('html' or None for default)
@@ -405,7 +406,7 @@ class ResponseFormattingService(IDataFormattingService):
 
     def format_all_accounts_for_output(
         self,
-        dt_responses: Dict[str, DataTablesResponse],
+        dt_responses: Dict[str, AccountResponse],
         output_format: Optional[str] = None,
         output_file: Optional[str] = None,
         nowrap: bool = False
@@ -415,7 +416,7 @@ class ResponseFormattingService(IDataFormattingService):
         Handles multi-account iteration internally, calling the appropriate
         existing formatter for each account and combining results with separators.
 
-        :param dt_responses: Dict mapping account_id to DataTablesResponse
+        :param dt_responses: Dict mapping account_id to AccountResponse
         :param output_format: Output format ('html' or None for default)
         :param output_file: Path to output file (triggers CSV export)
         :param nowrap: If True, disables text wrapping in pandas output
@@ -471,16 +472,16 @@ class ResponseFormattingService(IDataFormattingService):
 
     def prepare_accounts_for_template(
         self,
-        dt_responses: Dict[str, DataTablesResponse],
+        dt_responses: Dict[str, AccountResponse],
         statistical_metadata: StatisticalMetadata
     ) -> Dict[str, Any]:
         """Prepare accounts data for Jinja2 template rendering.
 
         Provides structured data that templates can iterate over, including
         formatted account identifiers and metadata. Templates can still access
-        the underlying DataTablesResponse for detailed rendering.
+        the underlying AccountResponse for detailed rendering.
 
-        :param dt_responses: Dict mapping account_id to DataTablesResponse
+        :param dt_responses: Dict mapping account_id to AccountResponse
         :param statistical_metadata: StatisticalMetadata containing highlights for all accounts
         :return: Dict with 'accounts' list, 'highlights' (combined), and 'has_multiple_accounts' flag
         """
@@ -520,12 +521,12 @@ class ResponseFormattingService(IDataFormattingService):
 
     def _select_account(
         self,
-        dt_responses: Dict[str, DataTablesResponse],
+        dt_responses: Dict[str, AccountResponse],
         account_id: Optional[str] = None
     ) -> str:
-        """Select and validate account from DataTablesResponse dict.
+        """Select and validate account from AccountResponse dict.
 
-        :param dt_responses: Dict mapping account_id to DataTablesResponse
+        :param dt_responses: Dict mapping account_id to AccountResponse
         :param account_id: Optional account ID to select. If None and multiple accounts
             exist, raises ValueError. If None and single account exists, uses that account.
         :return: Selected account_id
@@ -561,7 +562,7 @@ class ResponseFormattingService(IDataFormattingService):
 
     def build_api_detailed_response(
         self,
-        datatables_response: Dict[str, DataTablesResponse],
+        account_response: Dict[str, AccountResponse],
         metadata: Dict[str, Any] | ProcessingMetadata,
         params: ProcessingRequest,
         processing_time: float,
@@ -570,7 +571,7 @@ class ResponseFormattingService(IDataFormattingService):
         """Build standardized API detailed response.
 
         Args:
-            datatables_response: Dict[str, DataTablesResponse] mapping account to response objects
+            account_response: Dict[str, AccountResponse] mapping account to response objects
             metadata: Processing metadata (row_count, etc.)
             params: Request parameters
             processing_time: Total processing time in seconds
@@ -580,7 +581,7 @@ class ResponseFormattingService(IDataFormattingService):
 
         Example:
             >>> response = service.build_api_detailed_response(
-            ...     datatables_response={'12345': dt_response1, '67890': dt_response2},
+            ...     account_response={'12345': dt_response1, '67890': dt_response2},
             ...     metadata={'row_count': 150},
             ...     params=ProcessingRequest(ml_enabled=True),
             ...     processing_time=1.2
@@ -588,8 +589,8 @@ class ResponseFormattingService(IDataFormattingService):
         """
         # Convert dict to array, sorted by account ID
         aggregated_rows = []
-        for account_id in sorted(datatables_response.keys()):
-            dt_response = datatables_response[account_id]
+        for account_id in sorted(account_response.keys()):
+            dt_response = account_response[account_id]
             # Add all aggregated rows from this account
             aggregated_rows.extend(dt_response.data)
 

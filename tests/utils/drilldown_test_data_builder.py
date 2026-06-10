@@ -4,7 +4,7 @@ This module provides utilities for creating test data structures
 that mimic real processing results.
 """
 from typing import Dict, List, Any, Optional
-from whatsthedamage.models.dt_models import DataTablesResponse, AggregatedRow, DateField, ProcessingResponse, StatisticalMetadata, DisplayRawField
+from whatsthedamage.models.domain.dt_models import AccountResponse, AggregatedRow, DateField, ProcessingResponse, StatisticalMetadata, DisplayRawField
 from datetime import datetime
 import uuid
 
@@ -49,8 +49,8 @@ class DrilldownTestDataBuilder:
         categories: Optional[List[str]] = None,
         months: Optional[List[str]] = None,
         currency: str = "EUR"
-    ) -> DataTablesResponse:
-        """Create a DataTablesResponse with realistic test data.
+    ) -> AccountResponse:
+        """Create a AccountResponse with realistic test data.
 
         Args:
             account_number: Account number
@@ -59,7 +59,7 @@ class DrilldownTestDataBuilder:
             currency: Currency code
 
         Returns:
-            DataTablesResponse instance
+            AccountResponse instance
         """
         categories = categories or ["Grocery", "Vehicle", "Utility"]
         months = months or ["1704067200", "1706745600"]  # Jan 2024, Feb 2024
@@ -73,7 +73,7 @@ class DrilldownTestDataBuilder:
                     timestamp=month
                 ))
 
-        return DataTablesResponse(
+        return AccountResponse(
             data=data,
             account=account_number,
             currency=currency

@@ -1,7 +1,7 @@
 import os
 import pytest
-from whatsthedamage.models.csv_file_handler import CsvFileHandler
-from whatsthedamage.models.csv_row import CsvRow
+from whatsthedamage.models.domain.csv_file_handler import CsvFileHandler
+from whatsthedamage.models.domain.csv_row import CsvRow
 from .helpers import create_sample_csv_from_fixture
 
 

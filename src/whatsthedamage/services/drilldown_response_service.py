@@ -13,9 +13,9 @@ Architecture Patterns:
 """
 import datetime
 from typing import Any, Callable, Dict, List, Optional, Tuple, cast
-from whatsthedamage.models.dt_models import ProcessingResponse, AggregatedRow, DataTablesResponse
+from whatsthedamage.models.domain.dt_models import ProcessingResponse, AggregatedRow, AccountResponse
 from whatsthedamage.utils.date_converter import DateConverter
-from whatsthedamage.models.api_responses import (
+from whatsthedamage.models.api.responses import (
     CategoryMonthsApiResponse,
     MonthCategoriesApiResponse,
     CategoryMonthTransactionsApiResponse,
@@ -720,7 +720,7 @@ class DrilldownResponseService:
         self,
         result_id: str,
         account_number: Optional[str],
-        dt_response: Optional[DataTablesResponse]
+        dt_response: Optional[AccountResponse]
     ) -> Dict[str, Any]:
         """Generate all drill-down URLs for a result using ID mapping.
 
@@ -730,7 +730,7 @@ class DrilldownResponseService:
         Args:
             result_id: Processing result ID
             account_number: Original account number
-            dt_response: DataTablesResponse containing the data
+            dt_response: AccountResponse containing the data
 
         Returns:
             Dictionary containing pre-generated URLs for all drill-down levels

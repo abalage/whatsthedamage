@@ -3,8 +3,8 @@ Integration test to verify that the DataTables response has proper timestamps.
 """
 import pytest
 from whatsthedamage.config.config import AppContext, AppConfig, CsvConfig, EnricherPatternSets, AppArgs
-from whatsthedamage.models.csv_row import CsvRow
-from whatsthedamage.models.rows_processor import RowsProcessor
+from whatsthedamage.models.domain.csv_row import CsvRow
+from whatsthedamage.models.domain.rows_processor import RowsProcessor
 
 
 @pytest.fixture

@@ -1,5 +1,5 @@
 import pytest
-from whatsthedamage.models.rows_processor import RowsProcessor
+from whatsthedamage.models.domain.rows_processor import RowsProcessor
 
 
 @pytest.fixture

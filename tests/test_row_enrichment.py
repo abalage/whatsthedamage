@@ -1,4 +1,4 @@
-from whatsthedamage.models.row_enrichment import RowEnrichment
+from whatsthedamage.models.domain.row_enrichment import RowEnrichment
 
 
 def test_add_category_attribute_by_partner(csv_rows, pattern_sets):

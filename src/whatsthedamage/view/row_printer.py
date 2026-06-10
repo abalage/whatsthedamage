@@ -1,18 +1,18 @@
 from typing import Dict, List
-from whatsthedamage.models.dt_models import DataTablesResponse, DetailRow
+from whatsthedamage.models.domain.dt_models import AccountResponse, DetailRow
 import json
 import sys
 
 
-def print_categorized_rows(responses_by_account: Dict[str, DataTablesResponse]) -> None:
+def print_categorized_rows(responses_by_account: Dict[str, AccountResponse]) -> None:
     """
-    Prints categorized rows from DataTablesResponse structures.
+    Prints categorized rows from AccountResponse structures.
 
     Loops over accounts and prints separate sections with account headers.
     Extracts transaction data from AggregatedRow.details.
 
     Args:
-        responses_by_account (Dict[str, DataTablesResponse]): Mapping of account_id → DataTablesResponse.
+        responses_by_account (Dict[str, AccountResponse]): Mapping of account_id → AccountResponse.
 
     Returns:
         None
@@ -38,15 +38,15 @@ def print_categorized_rows(responses_by_account: Dict[str, DataTablesResponse]) 
                       f"merchant={detail_row.merchant}, currency={detail_row.currency}), notice={detail_row.notice})", file=sys.stderr)
 
 
-def print_training_data(responses_by_account: Dict[str, DataTablesResponse]) -> None:
+def print_training_data(responses_by_account: Dict[str, AccountResponse]) -> None:
     """
-    Prints training data from DataTablesResponse structures as JSON array to STDERR.
+    Prints training data from AccountResponse structures as JSON array to STDERR.
 
     Extracts transaction data from AggregatedRow.details and formats as JSON.
     Strips account field for ML model compatibility.
 
     Args:
-        responses_by_account (Dict[str, DataTablesResponse]): Mapping of account_id → DataTablesResponse.
+        responses_by_account (Dict[str, AccountResponse]): Mapping of account_id → AccountResponse.
 
     Example::
 

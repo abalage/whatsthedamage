@@ -1,5 +1,5 @@
 from unittest.mock import patch
-from whatsthedamage.models.csv_row import CsvRow
+from whatsthedamage.models.domain.csv_row import CsvRow
 
 
 class DummyPrediction:
@@ -27,7 +27,7 @@ def _create_mock_csv_row_from_prediction(csv_row, dummy_prediction, mapping):
 def test_enrich_rows_sets_type_and_category(csv_rows, mapping):
     # Set one row's type to empty to test the 'card_reservation' logic
     csv_rows[1].type = ""
-    with patch("whatsthedamage.models.row_enrichment_ml.get_category_name", side_effect=lambda x: x.upper()), \
+    with patch("whatsthedamage.models.domain.row_enrichment_ml.get_category_name", side_effect=lambda x: x.upper()), \
          patch("whatsthedamage.services.ml_service.MLService") as MockMLService:
 
         # Create mock CsvRow objects with the predicted categories
@@ -37,7 +37,7 @@ def test_enrich_rows_sets_type_and_category(csv_rows, mapping):
         ]
 
         MockMLService.return_value.get_predictions.return_value = mock_rows
-        from whatsthedamage.models.row_enrichment_ml import RowEnrichmentML
+        from whatsthedamage.models.domain.row_enrichment_ml import RowEnrichmentML
         enricher = RowEnrichmentML(csv_rows)
         enricher._enrich_rows()
         assert csv_rows[0].type == "deposit"
@@ -49,7 +49,7 @@ def test_enrich_rows_sets_type_and_category(csv_rows, mapping):
 
 
 def test_enrich_rows_category_with_spaces(csv_rows, mapping):
-    with patch("whatsthedamage.models.row_enrichment_ml.get_category_name", side_effect=lambda x: x.upper()), \
+    with patch("whatsthedamage.models.domain.row_enrichment_ml.get_category_name", side_effect=lambda x: x.upper()), \
          patch("whatsthedamage.services.ml_service.MLService") as MockMLService:
 
         # Create mock CsvRow objects with the predicted categories
@@ -59,7 +59,7 @@ def test_enrich_rows_category_with_spaces(csv_rows, mapping):
         ]
 
         MockMLService.return_value.get_predictions.return_value = mock_rows
-        from whatsthedamage.models.row_enrichment_ml import RowEnrichmentML
+        from whatsthedamage.models.domain.row_enrichment_ml import RowEnrichmentML
         enricher = RowEnrichmentML(csv_rows)
         enricher._enrich_rows()
         assert csv_rows[0].category == "online_shopping".upper()
@@ -67,16 +67,16 @@ def test_enrich_rows_category_with_spaces(csv_rows, mapping):
 
 
 def test_enrich_rows_empty_rows():
-    with patch("whatsthedamage.models.row_enrichment_ml.get_category_name", side_effect=lambda x: x.upper()), \
+    with patch("whatsthedamage.models.domain.row_enrichment_ml.get_category_name", side_effect=lambda x: x.upper()), \
          patch("whatsthedamage.services.ml_service.MLService") as MockMLService:
         MockMLService.return_value.get_predictions.return_value = []
-        from whatsthedamage.models.row_enrichment_ml import RowEnrichmentML
+        from whatsthedamage.models.domain.row_enrichment_ml import RowEnrichmentML
         enricher = RowEnrichmentML([])
         enricher._enrich_rows()
         assert list(enricher.categorized.keys()) == ["other".upper()]
 
 def test_enrich_rows_propagates_confidence(csv_rows, mapping):
-    with patch("whatsthedamage.models.row_enrichment_ml.get_category_name", side_effect=lambda x: x.upper()), \
+    with patch("whatsthedamage.models.domain.row_enrichment_ml.get_category_name", side_effect=lambda x: x.upper()), \
          patch("whatsthedamage.services.ml_service.MLService") as MockMLService:
 
         # Create mock CsvRow objects with the predicted categories and confidence
@@ -86,7 +86,7 @@ def test_enrich_rows_propagates_confidence(csv_rows, mapping):
         ]
 
         MockMLService.return_value.get_predictions.return_value = mock_rows
-        from whatsthedamage.models.row_enrichment_ml import RowEnrichmentML
+        from whatsthedamage.models.domain.row_enrichment_ml import RowEnrichmentML
         enricher = RowEnrichmentML(csv_rows)
         enricher._enrich_rows()
         assert csv_rows[0].confidence == 0.95
@@ -95,7 +95,7 @@ def test_enrich_rows_propagates_confidence(csv_rows, mapping):
         assert csv_rows[1].category == "other".upper()
 
 def test_enrich_rows_handles_none_confidence(csv_rows, mapping):
-    with patch("whatsthedamage.models.row_enrichment_ml.get_category_name", side_effect=lambda x: x.upper()), \
+    with patch("whatsthedamage.models.domain.row_enrichment_ml.get_category_name", side_effect=lambda x: x.upper()), \
          patch("whatsthedamage.services.ml_service.MLService") as MockMLService:
 
         # Create mock CsvRow objects with the predicted categories and confidence
@@ -105,7 +105,7 @@ def test_enrich_rows_handles_none_confidence(csv_rows, mapping):
         ]
 
         MockMLService.return_value.get_predictions.return_value = mock_rows
-        from whatsthedamage.models.row_enrichment_ml import RowEnrichmentML
+        from whatsthedamage.models.domain.row_enrichment_ml import RowEnrichmentML
         enricher = RowEnrichmentML(csv_rows)
         enricher._enrich_rows()
         assert csv_rows[0].confidence is None

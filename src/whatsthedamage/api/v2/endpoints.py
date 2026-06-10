@@ -8,7 +8,7 @@ from werkzeug.exceptions import BadRequest
 from typing import Tuple
 import time
 
-from whatsthedamage.models.dt_models import ProcessingResponse
+from whatsthedamage.models.domain.dt_models import ProcessingResponse
 from whatsthedamage.api.helpers import (
     validate_csv_file,
     get_config_file,
@@ -43,7 +43,7 @@ def process_transactions() -> tuple[Response, int]:
     - language (optional): Output language (default: en)
 
     Returns:
-        ProcessApiResponse: Typed response with processed transaction data
+        DetailedResponse: Typed response with processed transaction data
 
     Status Codes:
         200: Successfully processed
@@ -79,7 +79,7 @@ def process_transactions() -> tuple[Response, int]:
 
             # Delegate to service for response construction
             response = _get_response_formatting_service().build_api_detailed_response(
-                datatables_response=result.data,
+                account_response=result.data,
                 metadata=result.metadata,
                 params=params,
                 processing_time=processing_time,

@@ -1,6 +1,6 @@
 import csv
 from typing import Sequence, Dict, List
-from whatsthedamage.models.csv_row import CsvRow
+from whatsthedamage.models.domain.csv_row import CsvRow
 from whatsthedamage.utils.logging import get_logger
 
 logger = get_logger(__name__)

@@ -1,6 +1,6 @@
 import re
 from typing import List, Dict
-from whatsthedamage.models.csv_row import CsvRow
+from whatsthedamage.models.domain.csv_row import CsvRow
 from whatsthedamage.config.config import EnricherPatternSets, get_category_name
 
 

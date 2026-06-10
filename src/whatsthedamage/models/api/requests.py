@@ -1,13 +1,9 @@
-"""
-API request and response models using Pydantic.
+"""API request models for REST API v2 endpoints.
 
-These models are used exclusively for JSON API request/response validation
-and serialization. Web UI forms use FlaskForm, and file uploads use Flask's
-request.files. These models provide type safety and automatic validation for
-the REST API endpoints.
+These Pydantic models define the contract for API request validation.
 """
-from pydantic import BaseModel, Field, model_validator, ConfigDict
-from typing import Optional, Dict, List, Union
+from pydantic import BaseModel, Field, model_validator
+from typing import Optional
 from whatsthedamage.config.config import CsvConfig
 
 
@@ -79,47 +75,3 @@ class ProcessingRequest(BaseModel):
             raise ValueError(range_result.error_message or "Invalid date range")
 
         return self
-
-
-class ProcessingMetadata(BaseModel):
-    """Metadata for processing response."""
-    row_count: int = Field(description="Number of rows processed")
-    processing_time: float = Field(description="Processing time in seconds")
-    ml_enabled: bool = Field(description="Whether ML categorization was used")
-    result_id: str = Field(description="Unique identifier for this processing result")
-    date_range: Optional[Dict[str, str]] = Field(
-        default=None,
-        description="Date range filter applied (start and end dates)"
-    )
-
-class ErrorResponse(BaseModel):
-    """Standardized error response for all API endpoints.
-
-    Provides consistent error format for v2 API with
-    HTTP status code, message, and optional debugging details.
-    """
-    code: int = Field(
-        description="HTTP status code",
-        examples=[400, 404, 422, 500]
-    )
-    message: str = Field(
-        description="Human-readable error message",
-        examples=["Invalid CSV format", "Results expired, please re-process"]
-    )
-    details: Optional[Dict[str, Union[str, int, List[str]]]] = Field(
-        default=None,
-        description="Additional error context and debugging information"
-    )
-
-    model_config = ConfigDict(
-        json_schema_extra={
-            "example": {
-                "code": 422,
-                "message": "CSV processing failed",
-                "details": {
-                    "errors": ["Missing required column: 'amount'"],
-                    "line": 5
-                }
-            }
-        }
-    )

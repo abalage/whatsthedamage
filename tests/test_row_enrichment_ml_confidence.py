@@ -1,8 +1,8 @@
 """Test RowEnrichmentML confidence threshold functionality."""
 import pytest
 from unittest.mock import patch
-from whatsthedamage.models.csv_row import CsvRow
-from whatsthedamage.models.row_enrichment_ml import RowEnrichmentML
+from whatsthedamage.models.domain.csv_row import CsvRow
+from whatsthedamage.models.domain.row_enrichment_ml import RowEnrichmentML
 
 
 class DummyPrediction:
@@ -55,7 +55,7 @@ def test_row_enrichment_ml_confidence_threshold():
     rows = [row1, row2]
 
     # Test with threshold of 0.5
-    with patch('whatsthedamage.models.row_enrichment_ml.get_category_name', side_effect=lambda x: x.upper()), \
+    with patch('whatsthedamage.models.domain.row_enrichment_ml.get_category_name', side_effect=lambda x: x.upper()), \
          patch('whatsthedamage.services.ml_service.MLService') as MockMLService:
 
         # Create mock CsvRow objects with the predicted categories and confidence
@@ -99,7 +99,7 @@ def test_row_enrichment_ml_custom_threshold():
 
     rows = [row]
 
-    with patch('whatsthedamage.models.row_enrichment_ml.get_category_name', side_effect=lambda x: x.upper()), \
+    with patch('whatsthedamage.models.domain.row_enrichment_ml.get_category_name', side_effect=lambda x: x.upper()), \
          patch('whatsthedamage.services.ml_service.MLService') as MockMLService:
 
         # Create mock CsvRow with the predicted category and confidence
@@ -130,7 +130,7 @@ def test_row_enrichment_ml_none_confidence():
 
     rows = [row]
 
-    with patch('whatsthedamage.models.row_enrichment_ml.get_category_name', side_effect=lambda x: x.upper()), \
+    with patch('whatsthedamage.models.domain.row_enrichment_ml.get_category_name', side_effect=lambda x: x.upper()), \
          patch('whatsthedamage.services.ml_service.MLService') as MockMLService:
 
         # Create mock CsvRow with the predicted category and None confidence

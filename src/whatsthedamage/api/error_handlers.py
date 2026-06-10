@@ -7,7 +7,7 @@ from typing import Any, Protocol
 from flask import jsonify, Response, request, Flask
 from werkzeug.exceptions import BadRequest, RequestEntityTooLarge, HTTPException
 from pydantic import ValidationError
-from whatsthedamage.models.api_models import ErrorResponse
+from whatsthedamage.models.api.common import ErrorResponse
 from whatsthedamage.utils.logging import get_logger
 
 

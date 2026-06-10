@@ -12,9 +12,6 @@ from pydantic import BaseModel, Field, ConfigDict
 from typing import Dict, List, Optional, Any, Generic, TypeVar
 from datetime import datetime
 
-from whatsthedamage.models.dt_models import AggregatedRow
-from whatsthedamage.models.api_models import ProcessingMetadata
-
 
 # =============================================================================
 # Standard Response Envelope (for new endpoints)
@@ -96,51 +93,6 @@ class ApiEnvelope(BaseModel, Generic[T]):
 # =============================================================================
 # Process Endpoint Response
 
-
-# =============================================================================
-# Process Endpoint Response
-# =============================================================================
-
-class ProcessApiResponse(BaseModel):
-    """Response for POST /api/v2/process endpoint.
-
-    Returns processed transaction data with metadata.
-
-    Attributes:
-        data (List[AggregatedRow]): List of aggregated rows containing transaction data grouped by category and date
-        metadata (ProcessingMetadata): Processing metadata including result_id, timing, and configuration
-    """
-    data: List[AggregatedRow] = Field(
-        description="Aggregated transaction data grouped by category and month"
-    )
-    metadata: ProcessingMetadata = Field(
-        description="Metadata about the processing run, including result_id"
-    )
-
-    model_config = ConfigDict(
-        from_attributes=True,
-        json_schema_extra={
-            "example": {
-                "data": [
-                    {
-                        "row_id": "abc123",
-                        "category": "Groceries",
-                        "total": {"display": "-100.00", "raw": -100.0},
-                        "date": {"display": "January 2024", "timestamp": 1704067200},
-                        "details": [],
-                        "is_calculated": False,
-                    }
-                ],
-                "metadata": {
-                    "result_id": "550e8400-e29b-41d4-a716-446655440000",
-                    "row_count": 50,
-                    "processing_time": 1.234,
-                    "ml_enabled": False,
-                    "date_range": "2024-01-01 to 2024-01-31",
-                }
-            }
-        }
-    )
 
 
 # =============================================================================

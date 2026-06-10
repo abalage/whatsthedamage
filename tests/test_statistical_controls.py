@@ -1,14 +1,14 @@
 """Test cases for the new statistical analysis controls feature."""
 
 from whatsthedamage.services.statistical_analysis_service import StatisticalAnalysisService, AnalysisDirection
-from whatsthedamage.models.dt_models import DataTablesResponse, AggregatedRow, DisplayRawField, DateField, StatisticalMetadata
+from whatsthedamage.models.domain.dt_models import AccountResponse, AggregatedRow, DisplayRawField, DateField, StatisticalMetadata
 import uuid
 
 def test_recalculate_highlights_method():
     """Test the compute_statistical_metadata method in StatisticalAnalysisService."""
     # Create test data
     test_responses = {
-        'account1': DataTablesResponse(
+        'account1': AccountResponse(
             data=[
                 AggregatedRow(
                     row_id=str(uuid.uuid4()),
@@ -37,7 +37,7 @@ def test_recalculate_highlights_method():
 
     # Test with IQR algorithm and columns direction
     result = service.compute_statistical_metadata(
-        datatables_responses=test_responses,
+        account_responses=test_responses,
         algorithms=['iqr'],
         direction=AnalysisDirection.COLUMNS
     )
@@ -48,7 +48,7 @@ def test_recalculate_highlights_method():
 
     # Test with Pareto algorithm and rows direction
     result2 = service.compute_statistical_metadata(
-        datatables_responses=test_responses,
+        account_responses=test_responses,
         algorithms=['pareto'],
         direction=AnalysisDirection.ROWS
     )
@@ -60,7 +60,7 @@ def test_recalculate_highlights_with_both_algorithms():
     """Test compute_statistical_metadata with both algorithms."""
     # Create test data with more varied values to trigger highlights
     test_responses = {
-        'account1': DataTablesResponse(
+        'account1': AccountResponse(
             data=[
                 AggregatedRow(
                     row_id=str(uuid.uuid4()),
@@ -104,7 +104,7 @@ def test_recalculate_highlights_with_both_algorithms():
 
     # Test with both algorithms
     result = service.compute_statistical_metadata(
-        datatables_responses=test_responses,
+        account_responses=test_responses,
         algorithms=['iqr', 'pareto'],
         direction=AnalysisDirection.COLUMNS
     )
@@ -127,7 +127,7 @@ def test_highlight_key_format():
     service = StatisticalAnalysisService()
 
     test_responses = {
-        'account1': DataTablesResponse(
+        'account1': AccountResponse(
             data=[
                 AggregatedRow(
                     row_id=str(uuid.uuid4()),
@@ -144,7 +144,7 @@ def test_highlight_key_format():
     }
 
     result = service.compute_statistical_metadata(
-        datatables_responses=test_responses,
+        account_responses=test_responses,
         algorithms=['iqr'],
         direction=AnalysisDirection.COLUMNS
     )

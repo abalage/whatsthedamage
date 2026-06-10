@@ -6,7 +6,7 @@ from typing import Dict
 from whatsthedamage.controllers.cli_controller import CLIController
 from whatsthedamage.services.service_container import create_service_container, ServiceContainer
 from whatsthedamage.config.config import AppArgs
-from whatsthedamage.models.dt_models import DataTablesResponse, ProcessingResponse
+from whatsthedamage.models.domain.dt_models import AccountResponse, ProcessingResponse
 from whatsthedamage.utils.logging import configure_logging, get_logger
 
 logger = get_logger(__name__)
@@ -36,14 +36,14 @@ def set_locale(locale_str: str | None) -> None:
 
 
 def format_output(
-    dt_responses: Dict[str, DataTablesResponse],
+    dt_responses: Dict[str, AccountResponse],
     args: AppArgs,
     container: ServiceContainer
 ) -> str:
     """Format processed data for CLI output.
 
     Args:
-        dt_responses: DataTablesResponse objects per account
+        dt_responses: AccountResponse objects per account
         args: CLI arguments with formatting options
         container: Service container with formatting service
 
@@ -95,8 +95,8 @@ def main() -> None:
             training_data=args.training_data
         )
 
-        # Extract DataTablesResponse per account
-        dt_responses: Dict[str, DataTablesResponse] = result.data
+        # Extract AccountResponse per account
+        dt_responses: Dict[str, AccountResponse] = result.data
 
         # Format all accounts using service (handles multi-account iteration)
         output = format_output(dt_responses, args, container)

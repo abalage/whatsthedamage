@@ -8,7 +8,7 @@ from werkzeug.exceptions import BadRequest
 from werkzeug.datastructures import FileStorage
 from typing import Optional, cast
 
-from whatsthedamage.models.api_models import ProcessingRequest
+from whatsthedamage.models.api.requests import ProcessingRequest
 from whatsthedamage.services.configuration_service import ConfigurationService
 from whatsthedamage.services.response_formatting_service import ResponseFormattingService
 from whatsthedamage.services.file_upload_service import FileUploadService, FileUploadError

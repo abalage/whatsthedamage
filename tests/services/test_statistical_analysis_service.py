@@ -2,13 +2,13 @@
 
 import pytest
 from whatsthedamage.services.statistical_analysis_service import StatisticalAnalysisService
-from whatsthedamage.models.statistical_algorithms import (
+from whatsthedamage.models.domain.statistical_algorithms import (
     IQROutlierDetection,
     ParetoAnalysis,
     StatisticalAlgorithm
 )
 from whatsthedamage.services.statistical_analysis_service import AnalysisDirection
-from whatsthedamage.models.dt_models import CellHighlight
+from whatsthedamage.models.domain.dt_models import CellHighlight
 from typing import Dict
 
 @pytest.fixture
@@ -284,7 +284,7 @@ class TestStatisticalAnalysisService:
         service = StatisticalAnalysisService(enabled_algorithms=["iqr", "pareto"])
 
         # Create test summary data with more data points for proper IQR calculation
-        from whatsthedamage.models.dt_models import SummaryData
+        from whatsthedamage.models.domain.dt_models import SummaryData
 
         summary = SummaryData(
             summary={
@@ -306,8 +306,8 @@ class TestStatisticalAnalysisService:
             account_id="test"
         )
 
-        # Create mock DataTablesResponse with UUIDs for testing
-        from whatsthedamage.models.dt_models import AggregatedRow, DataTablesResponse, DateField, DisplayRawField
+        # Create mock AccountResponse with UUIDs for testing
+        from whatsthedamage.models.domain.dt_models import AggregatedRow, AccountResponse, DateField, DisplayRawField
         import uuid
 
         # Create mock rows with UUIDs
@@ -323,7 +323,7 @@ class TestStatisticalAnalysisService:
                 )
                 rows.append(row)
 
-        dt_response = DataTablesResponse(data=rows, account="test", currency="USD")
+        dt_response = AccountResponse(data=rows, account="test", currency="USD")
 
         highlights = service.get_highlights(summary, AnalysisDirection.COLUMNS, dt_response=dt_response)
 
@@ -345,7 +345,7 @@ class TestStatisticalAnalysisService:
         service = StatisticalAnalysisService(enabled_algorithms=["iqr", "pareto"])
 
         # Create test summary data with at least 4 data points per category for IQR
-        from whatsthedamage.models.dt_models import SummaryData
+        from whatsthedamage.models.domain.dt_models import SummaryData
 
         summary = SummaryData(
             summary={
@@ -382,8 +382,8 @@ class TestStatisticalAnalysisService:
             account_id="test"
         )
 
-        # Create mock DataTablesResponse with UUIDs for testing
-        from whatsthedamage.models.dt_models import AggregatedRow, DataTablesResponse, DateField, DisplayRawField
+        # Create mock AccountResponse with UUIDs for testing
+        from whatsthedamage.models.domain.dt_models import AggregatedRow, AccountResponse, DateField, DisplayRawField
         import uuid
 
         # Create mock rows with UUIDs
@@ -399,7 +399,7 @@ class TestStatisticalAnalysisService:
                 )
                 rows.append(row)
 
-        dt_response = DataTablesResponse(data=rows, account="test", currency="USD")
+        dt_response = AccountResponse(data=rows, account="test", currency="USD")
 
         highlights = service.get_highlights(summary, AnalysisDirection.ROWS, dt_response=dt_response)
 
@@ -421,7 +421,7 @@ class TestStatisticalAnalysisService:
         service = StatisticalAnalysisService(enabled_algorithms=["iqr", "pareto"])
 
         # Wrap summary data in SummaryData object
-        from whatsthedamage.models.dt_models import SummaryData
+        from whatsthedamage.models.domain.dt_models import SummaryData
 
         summary = SummaryData(
             summary=summary_data_with_outliers,
@@ -429,8 +429,8 @@ class TestStatisticalAnalysisService:
             account_id="test"
         )
 
-        # Create mock DataTablesResponse with UUIDs for testing
-        from whatsthedamage.models.dt_models import AggregatedRow, DataTablesResponse, DateField, DisplayRawField
+        # Create mock AccountResponse with UUIDs for testing
+        from whatsthedamage.models.domain.dt_models import AggregatedRow, AccountResponse, DateField, DisplayRawField
         import uuid
 
         # Create mock rows with UUIDs
@@ -446,7 +446,7 @@ class TestStatisticalAnalysisService:
                 )
                 rows.append(row)
 
-        dt_response = DataTablesResponse(data=rows, account="test", currency="USD")
+        dt_response = AccountResponse(data=rows, account="test", currency="USD")
 
         # Test with only IQR algorithm (explicitly use COLUMNS to override IQR's default)
         highlights_iqr = service.get_highlights(summary, AnalysisDirection.COLUMNS, algorithms=["iqr"], dt_response=dt_response)
@@ -464,7 +464,7 @@ class TestStatisticalAnalysisService:
         """Test data transformation for COLUMNS direction."""
         service = StatisticalAnalysisService()
 
-        from whatsthedamage.models.dt_models import SummaryData
+        from whatsthedamage.models.domain.dt_models import SummaryData
 
         summary = SummaryData(
             summary={
@@ -484,7 +484,7 @@ class TestStatisticalAnalysisService:
         """Test data transformation for ROWS direction."""
         service = StatisticalAnalysisService()
 
-        from whatsthedamage.models.dt_models import SummaryData
+        from whatsthedamage.models.domain.dt_models import SummaryData
 
         summary = SummaryData(
             summary={
@@ -504,7 +504,7 @@ class TestStatisticalAnalysisService:
     def test_get_highlights_with_empty_summary(self):
         """Test get_highlights with empty summary."""
         service = StatisticalAnalysisService()
-        from whatsthedamage.models.dt_models import SummaryData
+        from whatsthedamage.models.domain.dt_models import SummaryData
         summary = SummaryData(summary={}, currency="USD", account_id="test")
         highlights = service.get_highlights(summary)
         assert highlights == []
@@ -512,7 +512,7 @@ class TestStatisticalAnalysisService:
     def test_get_highlights_with_no_highlights(self):
         """Test get_highlights when no highlights are detected."""
         service = StatisticalAnalysisService(enabled_algorithms=["iqr"])
-        from whatsthedamage.models.dt_models import SummaryData
+        from whatsthedamage.models.domain.dt_models import SummaryData
         summary = SummaryData(
             summary={
                 "2023-01": {
@@ -545,15 +545,15 @@ class TestStatisticalAlgorithmIntegration:
         service.enabled_algorithms = ["mock"]
         data = {"mock_item": 100.0, "other": 50.0}
         # Use get_highlights with a simple summary structure
-        from whatsthedamage.models.dt_models import SummaryData
+        from whatsthedamage.models.domain.dt_models import SummaryData
         summary = SummaryData(
             summary={"month1": data},
             currency="USD",
             account_id="test"
         )
 
-        # Create mock DataTablesResponse with UUIDs for testing
-        from whatsthedamage.models.dt_models import AggregatedRow, DataTablesResponse, DateField, DisplayRawField
+        # Create mock AccountResponse with UUIDs for testing
+        from whatsthedamage.models.domain.dt_models import AggregatedRow, AccountResponse, DateField, DisplayRawField
         import uuid
 
         # Create mock rows with UUIDs
@@ -569,7 +569,7 @@ class TestStatisticalAlgorithmIntegration:
                 )
                 rows.append(row)
 
-        dt_response = DataTablesResponse(data=rows, account="test", currency="USD")
+        dt_response = AccountResponse(data=rows, account="test", currency="USD")
 
         highlights = service.get_highlights(summary, dt_response=dt_response)
 

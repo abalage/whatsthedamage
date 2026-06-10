@@ -1,10 +1,10 @@
 import pytest
-from whatsthedamage.models.csv_row import CsvRow
+from whatsthedamage.models.domain.csv_row import CsvRow
 from whatsthedamage.config.config import AppConfig, CsvConfig, AppContext
 from whatsthedamage.config.config import AppArgs
 from whatsthedamage.config.config import EnricherPatternSets
-from whatsthedamage.models.dt_models import ProcessingResponse
-from whatsthedamage.models.api_models import ProcessingMetadata
+from whatsthedamage.models.domain.dt_models import ProcessingResponse
+from whatsthedamage.models.api.common import ProcessingMetadata
 
 # Import API fixtures from separate module
 pytest_plugins = ['tests.api_fixtures']
@@ -28,7 +28,7 @@ class MockCSVProcessor:
     
     def _read_csv_file(self):
         """Mock method to read CSV file and return rows."""
-        from whatsthedamage.models.csv_row import CsvRow
+        from whatsthedamage.models.domain.csv_row import CsvRow
         # Return sample rows
         mapping = {
             'date': 'date',
@@ -55,15 +55,15 @@ class MockCSVProcessor:
 
 @pytest.fixture
 def mock_processing_service_result():
-    """Factory fixture for creating mock ProcessingService results with DataTablesResponse."""
-    from whatsthedamage.models.dt_models import DataTablesResponse, AggregatedRow, DisplayRawField, DateField, StatisticalMetadata
+    """Factory fixture for creating mock ProcessingService results with AccountResponse."""
+    from whatsthedamage.models.domain.dt_models import AccountResponse, AggregatedRow, DisplayRawField, DateField, StatisticalMetadata
     import uuid
 
     def _create_result(data=None):
         if data is None:
             data = {}
 
-        # Create mock DataTablesResponse
+        # Create mock AccountResponse
         agg_rows = []
         for category, amount in data.items():
             agg_rows.append(
@@ -79,7 +79,7 @@ def mock_processing_service_result():
         # Create statistical metadata with empty highlights
         statistical_metadata = StatisticalMetadata(highlights=[])
 
-        dt_response = DataTablesResponse(
+        dt_response = AccountResponse(
             data=agg_rows,
             currency="USD",
         )

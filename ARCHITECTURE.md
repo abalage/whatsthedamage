@@ -85,19 +85,25 @@ whatsthedamage/
 │   │   ├── routes_helpers.py # Web route helpers
 │   │   └── frontend_routes.py # Frontend SPA routes (catch-all for Vue SPA)
 │   ├── models/              # Data models and processing
-│   │   ├── api_models.py       # API models
-│   │   ├── csv_file_handler.py # CSV file parsing
-│   │   ├── csv_processor.py    # CSV processing orchestrator
-│   │   ├── csv_row.py          # Transaction row model
-│   │   ├── dt_calculators.py   # Calculator pattern implementations
-│   │   ├── dt_models.py        # DataTable related models
-│   │   ├── dt_response_builder.py # DataTables response builder
-│   │   ├── machine_learning.py  # ML model training and inference
-│   │   ├── row_enrichment.py    # Regex-based categorization
-│   │   ├── row_enrichment_ml.py # ML-based categorization
-│   │   ├── row_filter.py        # Date filtering
-│   │   ├── rows_processor.py    # Main processing pipeline
-│   │   └── statistical_algorithms.py # Statistical analysis
+│   │   ├── api/              # API contract models
+│   │   │   ├── __init__.py     # Package exports
+│   │   │   ├── common.py       # Common API models (ProcessingMetadata, ErrorResponse)
+│   │   │   ├── requests.py     # Request models (ProcessingRequest)
+│   │   │   └── responses.py    # Response models (ResultsApiResponse, etc.)
+│   │   └── domain/           # Domain/business models
+│   │       ├── __init__.py     # Package exports
+│   │       ├── csv_row.py          # Transaction row model
+│   │       ├── csv_file_handler.py # CSV file parsing
+│   │       ├── csv_processor.py    # CSV processing orchestrator
+│   │       ├── dt_models.py        # Aggregation models (AccountResponse, etc.)
+│   │       ├── dt_response_builder.py # AccountResponse builder
+│   │       ├── dt_calculators.py   # Calculator pattern implementations
+│   │       ├── machine_learning.py  # ML model training and inference
+│   │       ├── row_enrichment.py    # Regex-based categorization
+│   │       ├── row_enrichment_ml.py # ML-based categorization
+│   │       ├── row_filter.py        # Date filtering
+│   │       ├── rows_processor.py    # Main processing pipeline
+│   │       └── statistical_algorithms.py # Statistical analysis
 │   ├── scripts/              # placeholder
 │   ├── services/             # Business logic services
 │   │   ├── cache_service.py      # Caching service
@@ -273,7 +279,7 @@ Frontend SPA (Vue 3)
 
 **Name**: Response Formatting Service
 
-**Description**: Unified service combining data formatting and response building capabilities. Formats processed transaction data for various output targets including console, HTML, CSV, and JSON. Supports the unified DataTablesResponse format for web and API interfaces. This service merges the functionality of the previous DataFormattingService and ResponseBuilderService to reduce cognitive complexity and ensure consistent formatting across all interfaces.
+**Description**: Unified service combining data formatting and response building capabilities. Formats processed transaction data for various output targets including console, HTML, CSV, and JSON. Supports the unified AccountResponse format for web and API interfaces. This service merges the functionality of the previous DataFormattingService and ResponseBuilderService to reduce cognitive complexity and ensure consistent formatting across all interfaces.
 
 **Technologies**: Python
 
@@ -281,7 +287,7 @@ Frontend SPA (Vue 3)
 
 **Key Features**:
 - Multiple output formats: HTML tables, CSV strings, JSON, plain text
-- DataTablesResponse formatting for web and API interfaces
+- AccountResponse formatting for web and API interfaces
 - Currency formatting with locale support
 - Template preparation for Jinja2 rendering
 - Error response building for consistent API error handling
@@ -449,7 +455,7 @@ Frontend SPA (Vue 3)
 **Integration Method**: Flask REST API with Pydantic models
 
 **Architecture:**
-- **API-First Design**: Contract defined via Pydantic models in `src/whatsthedamage/models/api_responses.py`
+- **API-First Design**: Contract defined via Pydantic models in `src/whatsthedamage/models/api/responses.py`
 - **Type Safety**: Backend Pydantic models mirror frontend TypeScript interfaces exactly
 - **Validation**: All responses validated using Pydantic; all requests validated before processing
 - **Service Layer**: Business logic delegated to services (ProcessingService, CacheService, StatisticalService, DrilldownResponseService)
@@ -457,7 +463,7 @@ Frontend SPA (Vue 3)
 
 **Key Components:**
 - `src/whatsthedamage/api/v2/endpoints.py`: REST API route handlers
-- `src/whatsthedamage/models/api_responses.py`: Pydantic response DTOs
+- `src/whatsthedamage/models/api/responses.py`: Pydantic response DTOs
 - `src/whatsthedamage/api/helpers.py`: Request validation and error handling utilities
 - `frontend/src/js/api.ts`: TypeScript API client with typed functions
 - `frontend/src/types/api.ts`: TypeScript response interfaces
@@ -465,7 +471,7 @@ Frontend SPA (Vue 3)
 **Endpoints:**
 | Method | Endpoint | Purpose | Response Type |
 |--------|----------|---------|---------------|
-| POST | `/api/v2/process` | Process CSV transactions | `ProcessApiResponse` |
+| POST | `/api/v2/process` | Process CSV transactions | `DetailedResponse` |
 | GET | `/api/v2/results/<result_id>` | Retrieve processed results | `ResultsApiResponse` |
 | GET | `/api/v2/results/<r>/accounts/<a>/categories/<c>/months` | Category-by-month drilldown | `CategoryMonthsApiResponse` |
 | GET | `/api/v2/results/<r>/accounts/<a>/months/<m>/categories` | Month-by-category drilldown | `MonthCategoriesApiResponse` |
@@ -599,7 +605,7 @@ Frontend SPA (Vue 3)
 
 **Primary Contact/Team**: Balage Abalage
 
-**Date of Last Update**: 2026-05-06
+**Date of Last Update**: 2026-06-10
 
 ## 11. Glossary / Acronyms
 
@@ -609,7 +615,7 @@ Frontend SPA (Vue 3)
 
 **ML**: Machine Learning - Production-ready feature for transaction categorization using Random Forest with confidence calibration and SMOTE support
 
-**DataTablesResponse**: Unified response format containing processed transaction data with aggregation by category and time period
+**AccountResponse**: Unified response format containing processed transaction data with aggregation by category and time period
 
 **Calculator Pattern**: Extensibility pattern allowing custom transaction calculations beyond built-in categorization
 

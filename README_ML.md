@@ -322,7 +322,7 @@ The comprehensive metrics provided by the `Metrics` class can help identify area
    
    # For programmatic use:
    python3 -c "
-   from whatsthedamage.models.machine_learning import Train, TrainingData, Metrics
+   from whatsthedamage.models.domain.machine_learning import Train, TrainingData, Metrics
    from whatsthedamage.config.ml_config import MLConfig
    
    config = MLConfig()

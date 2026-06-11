@@ -16,49 +16,49 @@ def summary_data_with_outliers():
     """Fixture providing summary data with outliers for testing."""
     return {
         "2023-01": {
-            "Grocery": 500.0,
-            "Rent": 1000.0,  # Should be outlier
-            "Entertainment": 100.0,
-            "Utilities": 200.0,
-            "Transport": 150.0,
-            "Dining": 300.0,
-            "Shopping": 250.0
+            "grocery": 500.0,
+            "home_maintenance": 1000.0,  # Should be outlier
+            "entertainment_and_leisure": 100.0,
+            "utility": 200.0,
+            "transportation": 150.0,
+            "dining_out": 300.0,
+            "other": 250.0
         },
         "2023-02": {
-            "Grocery": 400.0,
-            "Rent": 800.0,  # Should be outlier
-            "Entertainment": 50.0,
-            "Utilities": 200.0,
-            "Transport": 150.0,
-            "Dining": 200.0,
-            "Shopping": 200.0
+            "grocery": 400.0,
+            "home_maintenance": 800.0,  # Should be outlier
+            "entertainment_and_leisure": 50.0,
+            "utility": 200.0,
+            "transportation": 150.0,
+            "dining_out": 200.0,
+            "other": 200.0
         },
         "2023-03": {
-            "Grocery": 450.0,
-            "Rent": 600.0,
-            "Entertainment": 60.0,
-            "Utilities": 210.0,
-            "Transport": 160.0,
-            "Dining": 220.0,
-            "Shopping": 220.0
+            "grocery": 450.0,
+            "home_maintenance": 600.0,
+            "entertainment_and_leisure": 60.0,
+            "utility": 210.0,
+            "transportation": 160.0,
+            "dining_out": 220.0,
+            "other": 220.0
         },
         "2023-04": {
-            "Grocery": 480.0,
-            "Rent": 650.0,
-            "Entertainment": 70.0,
-            "Utilities": 220.0,
-            "Transport": 170.0,
-            "Dining": 230.0,
-            "Shopping": 230.0
+            "grocery": 480.0,
+            "home_maintenance": 650.0,
+            "entertainment_and_leisure": 70.0,
+            "utility": 220.0,
+            "transportation": 170.0,
+            "dining_out": 230.0,
+            "other": 230.0
         },
         "2023-05": {
-            "Grocery": 470.0,
-            "Rent": 620.0,
-            "Entertainment": 65.0,
-            "Utilities": 215.0,
-            "Transport": 165.0,
-            "Dining": 225.0,
-            "Shopping": 225.0
+            "grocery": 470.0,
+            "home_maintenance": 620.0,
+            "entertainment_and_leisure": 65.0,
+            "utility": 215.0,
+            "transportation": 165.0,
+            "dining_out": 225.0,
+            "other": 225.0
         }
     }
 
@@ -289,17 +289,17 @@ class TestStatisticalAnalysisService:
         summary = SummaryData(
             summary={
                 "2023-01": {
-                    "Grocery": 500.0,
-                    "Rent": 1000.0,  # Should be outlier
-                    "Entertainment": 100.0,
-                    "Utilities": 200.0,
-                    "Transport": 150.0
+                    "grocery": 500.0,
+                    "home_maintenance": 1000.0,  # Should be outlier
+                    "entertainment_and_leisure": 100.0,
+                    "utility": 200.0,
+                    "transportation": 150.0
                 },
                 "2023-02": {
-                    "Grocery": 400.0,
-                    "Utilities": 200.0,
-                    "Entertainment": 50.0,
-                    "Transport": 150.0
+                    "grocery": 400.0,
+                    "utility": 200.0,
+                    "entertainment_and_leisure": 50.0,
+                    "transportation": 150.0
                 }
             },
             currency="USD",
@@ -316,7 +316,7 @@ class TestStatisticalAnalysisService:
             for category, amount in categories.items():
                 row = AggregatedRow(
                     row_id=str(uuid.uuid4()),
-                    category=category,
+                    category_id=category,
                     total=DisplayRawField(display=f"{amount:.2f}", raw=amount),
                     date=DateField(display=month, timestamp=0),
                     details=[]
@@ -350,32 +350,32 @@ class TestStatisticalAnalysisService:
         summary = SummaryData(
             summary={
                 "2023-01": {
-                    "Grocery": 500.0,
-                    "Rent": 1000.0,
-                    "Entertainment": 100.0,
-                    "Utilities": 200.0,
-                    "Transport": 150.0
+                    "grocery": 500.0,
+                    "home_maintenance": 1000.0,
+                    "entertainment_and_leisure": 100.0,
+                    "utility": 200.0,
+                    "transportation": 150.0
                 },
                 "2023-02": {
-                    "Grocery": 400.0,
-                    "Rent": 900.0,
-                    "Utilities": 200.0,
-                    "Entertainment": 50.0,
-                    "Transport": 150.0
+                    "grocery": 400.0,
+                    "home_maintenance": 900.0,
+                    "utility": 200.0,
+                    "entertainment_and_leisure": 50.0,
+                    "transportation": 150.0
                 },
                 "2023-03": {
-                    "Grocery": 1500.0,  # Should be outlier for Grocery category
-                    "Rent": 1100.0,
-                    "Utilities": 250.0,
-                    "Entertainment": 75.0,
-                    "Transport": 160.0
+                    "grocery": 1500.0,  # Should be outlier for Grocery category
+                    "home_maintenance": 1100.0,
+                    "utility": 250.0,
+                    "entertainment_and_leisure": 75.0,
+                    "transportation": 160.0
                 },
                 "2023-04": {
-                    "Grocery": 600.0,
-                    "Rent": 950.0,
-                    "Utilities": 220.0,
-                    "Entertainment": 80.0,
-                    "Transport": 140.0
+                    "grocery": 600.0,
+                    "home_maintenance": 950.0,
+                    "utility": 220.0,
+                    "entertainment_and_leisure": 80.0,
+                    "transportation": 140.0
                 }
             },
             currency="USD",
@@ -392,7 +392,7 @@ class TestStatisticalAnalysisService:
             for category, amount in categories.items():
                 row = AggregatedRow(
                     row_id=str(uuid.uuid4()),
-                    category=category,
+                    category_id=category,
                     total=DisplayRawField(display=f"{amount:.2f}", raw=amount),
                     date=DateField(display=month, timestamp=0),
                     details=[]
@@ -439,7 +439,7 @@ class TestStatisticalAnalysisService:
             for category, amount in categories.items():
                 row = AggregatedRow(
                     row_id=str(uuid.uuid4()),
-                    category=category,
+                    category_id=category,
                     total=DisplayRawField(display=f"{amount:.2f}", raw=amount),
                     date=DateField(display=month, timestamp=0),
                     details=[]
@@ -516,9 +516,9 @@ class TestStatisticalAnalysisService:
         summary = SummaryData(
             summary={
                 "2023-01": {
-                    "Grocery": 100.0,
-                    "Entertainment": 100.0,
-                    "Utilities": 100.0
+                    "grocery": 100.0,
+                    "entertainment_and_leisure": 100.0,
+                    "utility": 100.0
                 }
             },
             currency="USD",
@@ -562,7 +562,7 @@ class TestStatisticalAlgorithmIntegration:
             for category, amount in categories.items():
                 row = AggregatedRow(
                     row_id=str(uuid.uuid4()),
-                    category=category,
+                    category_id=category,
                     total=DisplayRawField(display=f"{amount:.2f}", raw=amount),
                     date=DateField(display=month, timestamp=0),
                     details=[]

@@ -36,7 +36,7 @@ class MockCSVProcessor:
             'partner': 'partner',
             'amount': 'amount',
             'currency': 'currency',
-            'category': 'category',
+            'category_id': 'category',
             'account': 'account',
         }
         return [
@@ -46,7 +46,8 @@ class MockCSVProcessor:
                     "type": "deposit",
                     "partner": "bank",
                     "amount": "100",
-                    "currency": "EUR"
+                    "currency": "EUR",
+                    "category": ""
                 },
                 mapping,
             ),
@@ -65,12 +66,12 @@ def mock_processing_service_result():
 
         # Create mock AccountResponse
         agg_rows = []
-        for category, amount in data.items():
+        for category_id, amount in data.items():
             agg_rows.append(
                 AggregatedRow(
                     row_id=str(uuid.uuid4()),  # Add required row_id field
                     date=DateField(display="Total", timestamp=0),
-                    category=category,
+                    category_id=category_id,
                     total=DisplayRawField(display=f"{amount:.2f} USD", raw=amount),
                     details=[]
                 )
@@ -106,7 +107,7 @@ def mapping():
         'partner': 'partner',
         'amount': 'amount',
         'currency': 'currency',
-        'category': 'category',
+        'category_id': 'category',
         'account': 'account',
         'notice': 'notice',
     }
@@ -177,19 +178,19 @@ def app_context():
 
     # Create the AppArgs object
     app_args = AppArgs(
-        category="category1",
         config="config.yml",
         filename="data.csv",
-        nowrap=False,
+        category_id="",
         output_format="html",
+        nowrap=False,
         verbose=True,
+        training_data=False,
+        ml=False,
         end_date="2023-12-31",
         filter=None,
         output=None,
         start_date="2023-01-01",
         lang="en",
-        training_data=False,
-        ml=False,
     )
 
     # Return the AppContext object

@@ -11,48 +11,48 @@ def sample_data_with_mixed_values():
     return [
         AggregatedRow(
             row_id=str(uuid.uuid4()),
-            category="Grocery",
-            total=DisplayRawField(display="-264100.00", raw="-264100.00"),
+            category_id="grocery",
+            total=DisplayRawField(display="-264100.00", raw=-264100.00),
             date=DateField(display="January 2024", timestamp=1672531200),
             details=[],
             is_calculated=False
         ),
         AggregatedRow(
             row_id=str(uuid.uuid4()),
-            category="Maintenance",
-            total=DisplayRawField(display="-140588.00", raw="-140588.00"),
+            category_id="home_maintenance",
+            total=DisplayRawField(display="-140588.00", raw=-140588.00),
             date=DateField(display="January 2024", timestamp=1672531200),
             details=[],
             is_calculated=False
         ),
         AggregatedRow(
             row_id=str(uuid.uuid4()),
-            category="Interest",
-            total=DisplayRawField(display="9.00", raw="9.00"),
+            category_id="interest",
+            total=DisplayRawField(display="9.00", raw=9.00),
             date=DateField(display="January 2024", timestamp=1672531200),
             details=[],
             is_calculated=False
         ),
         AggregatedRow(
             row_id=str(uuid.uuid4()),
-            category="Refund",
-            total=DisplayRawField(display="2416.00", raw="2416.00"),
+            category_id="refund",
+            total=DisplayRawField(display="2416.00", raw=2416.00),
             date=DateField(display="January 2024", timestamp=1672531200),
             details=[],
             is_calculated=False
         ),
         AggregatedRow(
             row_id=str(uuid.uuid4()),
-            category="Health",
-            total=DisplayRawField(display="-25795.00", raw="-25795.00"),
+            category_id="health",
+            total=DisplayRawField(display="-25795.00", raw=-25795.00),
             date=DateField(display="January 2024", timestamp=1672531200),
             details=[],
             is_calculated=False
         ),
         AggregatedRow(
             row_id=str(uuid.uuid4()),
-            category="Vehicle",
-            total=DisplayRawField(display="-58542.00", raw="-58542.00"),
+            category_id="transportation",
+            total=DisplayRawField(display="-58542.00", raw=-58542.00),
             date=DateField(display="January 2024", timestamp=1672531200),
             details=[],
             is_calculated=False
@@ -65,24 +65,24 @@ def sample_data_all_expenses():
     return [
         AggregatedRow(
             row_id=str(uuid.uuid4()),
-            category="Grocery",
-            total=DisplayRawField(display="-264100.00", raw="-264100.00"),
+            category_id="grocery",
+            total=DisplayRawField(display="-264100.00", raw=-264100.00),
             date=DateField(display="January 2024", timestamp=1672531200),
             details=[],
             is_calculated=False
         ),
         AggregatedRow(
             row_id=str(uuid.uuid4()),
-            category="Maintenance",
-            total=DisplayRawField(display="-140588.00", raw="-140588.00"),
+            category_id="home_maintenance",
+            total=DisplayRawField(display="-140588.00", raw=-140588.00),
             date=DateField(display="January 2024", timestamp=1672531200),
             details=[],
             is_calculated=False
         ),
         AggregatedRow(
             row_id=str(uuid.uuid4()),
-            category="Health",
-            total=DisplayRawField(display="-25795.00", raw="-25795.00"),
+            category_id="health",
+            total=DisplayRawField(display="-25795.00", raw=-25795.00),
             date=DateField(display="January 2024", timestamp=1672531200),
             details=[],
             is_calculated=False
@@ -95,16 +95,16 @@ def sample_data_all_income():
     return [
         AggregatedRow(
             row_id=str(uuid.uuid4()),
-            category="Interest",
-            total=DisplayRawField(display="9.00", raw="9.00"),
+            category_id="interest",
+            total=DisplayRawField(display="9.00", raw=9.00),
             date=DateField(display="January 2024", timestamp=1672531200),
             details=[],
             is_calculated=False
         ),
         AggregatedRow(
             row_id=str(uuid.uuid4()),
-            category="Refund",
-            total=DisplayRawField(display="2416.00", raw="2416.00"),
+            category_id="refund",
+            total=DisplayRawField(display="2416.00", raw=2416.00),
             date=DateField(display="January 2024", timestamp=1672531200),
             details=[],
             is_calculated=False
@@ -135,30 +135,30 @@ class TestExpenseFiltering:
         filtered_response = service._filter_data_for_analysis(dt_response)
 
         # Should only have negative values
-        assert len(filtered_response.data) == 4  # Grocery, Maintenance, Health, Vehicle
-        categories = [row.category for row in filtered_response.data]
-        assert "Grocery" in categories
-        assert "Maintenance" in categories
-        assert "Health" in categories
-        assert "Vehicle" in categories
-        assert "Interest" not in categories
-        assert "Refund" not in categories
+        assert len(filtered_response.data) == 4  # grocery, home_maintenance, health, transportation
+        categories = [row.category_id for row in filtered_response.data]
+        assert "grocery" in categories
+        assert "home_maintenance" in categories
+        assert "health" in categories
+        assert "transportation" in categories
+        assert "interest" not in categories
+        assert "refund" not in categories
 
     def test_filter_expenses_only_removes_zero_values(self):
         """Test that _filter_data_for_analysis removes zero values when expense filtering is enabled."""
         data = [
             AggregatedRow(
                 row_id=str(uuid.uuid4()),
-                category="Grocery",
-                total=DisplayRawField(display="-100.00", raw="-100.00"),
+                category_id="grocery",
+                total=DisplayRawField(display="-100.00", raw=-100.00),
                 date=DateField(display="January 2024", timestamp=1672531200),
                 details=[],
                 is_calculated=False
             ),
             AggregatedRow(
                 row_id=str(uuid.uuid4()),
-                category="Interest",
-                total=DisplayRawField(display="0.00", raw="0.00"),
+                category_id="interest",
+                total=DisplayRawField(display="0.00", raw=0.00),
                 date=DateField(display="January 2024", timestamp=1672531200),
                 details=[],
                 is_calculated=False
@@ -174,7 +174,7 @@ class TestExpenseFiltering:
 
         # Should only have negative values (zero is not negative)
         assert len(filtered_response.data) == 1
-        assert filtered_response.data[0].category == "Grocery"
+        assert filtered_response.data[0].category_id == "grocery"
 
     def test_filter_expenses_only_disabled_keeps_all_values(self, sample_data_with_mixed_values):
         """Test that _filter_data_for_analysis keeps all values when expense filtering is disabled."""
@@ -188,13 +188,13 @@ class TestExpenseFiltering:
 
         # Should have all values
         assert len(filtered_response.data) == 6
-        categories = [row.category for row in filtered_response.data]
-        assert "Grocery" in categories
-        assert "Maintenance" in categories
-        assert "Interest" in categories
-        assert "Refund" in categories
-        assert "Health" in categories
-        assert "Vehicle" in categories
+        categories = [row.category_id for row in filtered_response.data]
+        assert "grocery" in categories
+        assert "home_maintenance" in categories
+        assert "interest" in categories
+        assert "refund" in categories
+        assert "health" in categories
+        assert "transportation" in categories
 
     def test_filter_expenses_only_with_all_expenses(self, sample_data_all_expenses):
         """Test that _filter_data_for_analysis keeps all values when all are expenses."""
@@ -208,10 +208,10 @@ class TestExpenseFiltering:
 
         # Should have all values since they're all expenses
         assert len(filtered_response.data) == 3
-        categories = [row.category for row in filtered_response.data]
-        assert "Grocery" in categories
-        assert "Maintenance" in categories
-        assert "Health" in categories
+        categories = [row.category_id for row in filtered_response.data]
+        assert "grocery" in categories
+        assert "home_maintenance" in categories
+        assert "health" in categories
 
     def test_filter_expenses_only_with_all_income(self, sample_data_all_income):
         """Test that _filter_data_for_analysis removes all values when all are income."""
@@ -245,12 +245,12 @@ class TestExpenseFiltering:
         # Pareto should include: Grocery, Maintenance (264100 + 140588 = 404,688 > 391,220)
         assert len(metadata.highlights) > 0
         # Map row_ids to categories for verification
-        row_id_to_category = {row.row_id: row.category for row in sample_data_with_mixed_values}
+        row_id_to_category = {row.row_id: row.category_id for row in sample_data_with_mixed_values}
         highlight_categories = {row_id_to_category[h.row_id] for h in metadata.highlights if "pareto" in h.highlight_types}
-        assert "Grocery" in highlight_categories
-        assert "Maintenance" in highlight_categories
+        assert "grocery" in highlight_categories
+        assert "home_maintenance" in highlight_categories
         # Income categories should not be in highlights
-        assert not any(row_id_to_category[h.row_id] in ["Interest", "Refund"] for h in metadata.highlights if "pareto" in h.highlight_types)
+        assert not any(row_id_to_category[h.row_id] in ["interest", "refund"] for h in metadata.highlights if "pareto" in h.highlight_types)
 
     def test_compute_statistical_metadata_without_expense_filtering(self, sample_data_with_mixed_values):
         """Test that compute_statistical_metadata can skip expense filtering."""
@@ -267,14 +267,14 @@ class TestExpenseFiltering:
         # Should analyze all categories (both expenses and income)
         assert len(metadata.highlights) > 0
         # Map row_ids to categories for verification
-        row_id_to_category = {row.row_id: row.category for row in sample_data_with_mixed_values}
+        row_id_to_category = {row.row_id: row.category_id for row in sample_data_with_mixed_values}
         highlight_categories = {row_id_to_category[h.row_id] for h in metadata.highlights if "pareto" in h.highlight_types}
         # With all values included, the absolute values are:
         # Grocery (264100), Maintenance (140588), Vehicle (58542), Health (25795), Interest (9), Refund (2416)
         # Total = 489,025 + 2425 = 491,450, 80% = 393,160
         # Pareto should include: Grocery, Maintenance (264100 + 140588 = 404,688 > 393,160)
-        assert "Grocery" in highlight_categories
-        assert "Maintenance" in highlight_categories
+        assert "grocery" in highlight_categories
+        assert "home_maintenance" in highlight_categories
         # Vehicle is not included because Grocery + Maintenance already exceed 80%
 
     def test_compute_statistical_metadata_with_expense_filtering_custom_params(self, sample_data_with_mixed_values):
@@ -295,12 +295,12 @@ class TestExpenseFiltering:
 
         # Should only analyze expense categories
         # Map row_ids to categories for verification
-        row_id_to_category = {row.row_id: row.category for row in sample_data_with_mixed_values}
+        row_id_to_category = {row.row_id: row.category_id for row in sample_data_with_mixed_values}
         highlight_categories = {row_id_to_category[h.row_id] for h in metadata.highlights if "pareto" in h.highlight_types}
-        assert "Grocery" in highlight_categories
-        assert "Maintenance" in highlight_categories
+        assert "grocery" in highlight_categories
+        assert "home_maintenance" in highlight_categories
         # Income categories should not be in highlights
-        assert not any(row_id_to_category[h.row_id] in ["Interest", "Refund"] for h in metadata.highlights if "pareto" in h.highlight_types)
+        assert not any(row_id_to_category[h.row_id] in ["interest", "refund"] for h in metadata.highlights if "pareto" in h.highlight_types)
 
     def test_compute_statistical_metadata_without_expense_filtering_custom_params(self, sample_data_with_mixed_values):
         """Test that compute_statistical_metadata works with custom parameters and no filtering."""
@@ -320,12 +320,12 @@ class TestExpenseFiltering:
 
         # Should analyze all categories (both expenses and income)
         # Map row_ids to categories for verification
-        row_id_to_category = {row.row_id: row.category for row in sample_data_with_mixed_values}
+        row_id_to_category = {row.row_id: row.category_id for row in sample_data_with_mixed_values}
         highlight_categories = {row_id_to_category[h.row_id] for h in metadata.highlights if "pareto" in h.highlight_types}
         # With all values included, the absolute values are:
         # Grocery (264100), Maintenance (140588), Vehicle (58542), Health (25795), Interest (9), Refund (2416)
         # Total = 489,025 + 2425 = 491,450, 80% = 393,160
         # Pareto should include: Grocery, Maintenance (264100 + 140588 = 404,688 > 393,160)
-        assert "Grocery" in highlight_categories
-        assert "Maintenance" in highlight_categories
+        assert "grocery" in highlight_categories
+        assert "home_maintenance" in highlight_categories
         # Vehicle is not included because Grocery + Maintenance already exceed 80%

@@ -228,9 +228,9 @@ class StatisticalAnalysisService(IStatisticalAnalysisService):
         if month_display not in month_map:
             return False
 
-        # Find the row with matching category
+        # Find the row with matching category_id
         for agg_row in month_map[month_display]:
-            if agg_row.category == category:
+            if agg_row.category_id == category:
                 # Cell is excluded if it's a calculated row or belongs to excluded category
                 return agg_row.is_calculated or category in excluded_categories
 
@@ -292,10 +292,10 @@ class StatisticalAnalysisService(IStatisticalAnalysisService):
 
         for agg_row in dt_response.data:
             month_display = agg_row.date.display
-            category = agg_row.category
-            # Index by both (month, category) and (category, month) for flexibility
-            row_index[(month_display, category)] = agg_row.row_id
-            row_index[(category, month_display)] = agg_row.row_id
+            category_id = agg_row.category_id
+            # Index by both (month, category_id) and (category_id, month) for flexibility
+            row_index[(month_display, category_id)] = agg_row.row_id
+            row_index[(category_id, month_display)] = agg_row.row_id
 
         return row_index
 
@@ -395,10 +395,10 @@ class StatisticalAnalysisService(IStatisticalAnalysisService):
         # Iterate through all rows directly instead of extracting summary
         for agg_row in dt_response.data:
             month_display = agg_row.date.display
-            category = agg_row.category
+            category_id = agg_row.category_id
 
             # Check if this cell should be excluded, using pre-built month map
-            if self._is_cell_excluded(month_display, category, dt_response, month_map):
+            if self._is_cell_excluded(month_display, category_id, dt_response, month_map):
                 excluded_highlights.append(CellHighlight(
                     row_id=agg_row.row_id,
                     highlight_types=['excluded']
@@ -429,7 +429,7 @@ class StatisticalAnalysisService(IStatisticalAnalysisService):
                 continue
 
             # Skip excluded categories
-            if row.category in excluded_categories:
+            if row.category_id in excluded_categories:
                 continue
 
             # Skip non-expenses if filter is enabled

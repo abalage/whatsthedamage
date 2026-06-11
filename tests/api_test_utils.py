@@ -57,7 +57,7 @@ class MockProcessingService:
 
             aggregated_rows.append(AggregatedRow(
                 row_id=str(uuid.uuid4()),
-                category=row_dict['category'],
+                category_id=row_dict['category'],
                 total=DisplayRawField(**row_dict['total']),
                 date=DateField(**row_dict['details'][0]['date']),  # Use date instead of month
                 details=details

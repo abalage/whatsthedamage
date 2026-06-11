@@ -224,8 +224,7 @@ class CategoryMonthsApiResponse(BaseModel):
     result_id: str = Field(description="Processing result identifier")
     account_id: str = Field(description="Account identifier")
     account_name: str = Field(description="Account display name")
-    category_id: str = Field(description="Category identifier")
-    category_name: str = Field(description="Category display name")
+    category_id: str = Field(description="Category identifier (e.g., 'grocery'). Frontend should use /categories endpoint to get display name.")
     data: List[MonthData] = Field(
         description="Month-by-month aggregation data for this category"
     )
@@ -302,7 +301,6 @@ class TransactionDetail(BaseModel):
     type: str = Field(default="", description="Transaction type")
     confidence: Optional[float] = Field(default=None, description="ML confidence score if applicable")
     notice: Optional[str] = Field(default=None, description="Transaction notice or memo")
-    category: str = Field(default="", description="Category name")
     category_id: str = Field(default="", description="Category identifier")
     month_id: str = Field(default="", description="Month identifier")
 
@@ -315,8 +313,7 @@ class CategoryMonthTransactionsApiResponse(BaseModel):
     result_id: str = Field(description="Processing result identifier")
     account_id: str = Field(description="Account identifier")
     account_name: str = Field(description="Account display name")
-    category_id: str = Field(description="Category identifier")
-    category_name: str = Field(description="Category display name")
+    category_id: str = Field(description="Category identifier (e.g., 'grocery'). Frontend should use /categories endpoint to get display name.")
     month_id: str = Field(description="Month identifier")
     month_name: str = Field(description="Month display name")
     data: List[TransactionDetail] = Field(

@@ -102,8 +102,8 @@ function buildTableColumns(account: AccountData): Column[] {
       headerTo: { name: 'month-categories', params: { resultId: resultId.value, accountId, monthId } },
       component: TableLinkWithPopover,
       componentProps: (value: unknown, row: Record<string, unknown>) => {
-        const category = String(row.category)
-        const monthData = buildCategoryMonthMap(account)[category]?.[monthTs]
+        const category_id = String(row.category_id)
+        const monthData = buildCategoryMonthMap(account)[category_id]?.[monthTs]
 
         if (!monthData) {
           return { to: '#', children: '' }
@@ -111,7 +111,7 @@ function buildTableColumns(account: AccountData): Column[] {
 
         const total = monthData.total?.display || ''
         const accountId = account.id
-        const categoryId = getCategoryId(accountId, category)
+        const categoryId = getCategoryId(accountId, category_id)
 
         const linkUrl = { name: 'category-month-transactions', params: { resultId: resultId.value, accountId, categoryId, monthId } }
 
@@ -185,11 +185,11 @@ const buildCategoryMonthMap = (account: AccountData) => {
   const catMonthMap: Record<string, Record<number, any>> = {}
 
   for (const row of account.dt_response.data) {
-    if (!catMonthMap[row.category]) {
-      catMonthMap[row.category] = {}
+    if (!catMonthMap[row.category_id]) {
+      catMonthMap[row.category_id] = {}
     }
     const monthKey = row.date.timestamp
-    catMonthMap[row.category][monthKey] = row
+    catMonthMap[row.category_id][monthKey] = row
   }
 
   return catMonthMap
@@ -202,11 +202,11 @@ const getDetailsString = (details: Array<{ date: { display: string }, amount: { 
 }
 
 /**
- * Get category ID from drilldown URLs for a specific account and category
+ * Get category ID from drilldown URLs for a specific account and category_id
  */
-const getCategoryId = (accountId: string, category: string): string => {
+const getCategoryId = (accountId: string, category_id: string): string => {
   const urls = resultsData.value?.drilldown_urls_by_account[accountId]
-  return urls?.category_urls?.[category]?.category_id || category
+  return urls?.category_urls?.[category_id]?.category_id || category_id
 }
 
 /**

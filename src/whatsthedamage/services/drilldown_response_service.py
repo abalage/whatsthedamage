@@ -126,12 +126,6 @@ class DrilldownResponseService:
                 cell_url=cell_url
             ))
 
-        # Get category display name
-        category_name = self._get_display_name(
-            account_data['data'], original_category, 'category', 'category_display',
-            lambda v: v.replace('_', ' ').title()
-        )
-
         # Aggregate highlights for drilldown rows
         highlights = self._aggregate_highlights_for_drilldown(
             cached_result, month_groups, category_filter=original_category
@@ -142,7 +136,6 @@ class DrilldownResponseService:
             account_id=account_id,
             account_name=account_data['name'],
             category_id=category_id,
-            category_name=category_name,
             data=months_list,
             highlights=highlights
         )
@@ -800,8 +793,8 @@ class DrilldownResponseService:
         """
         if not hasattr(row, 'row_id'):
             return False
-        if category_filter and hasattr(row, 'category'):
-            if str(row.category) != category_filter:
+        if category_filter and hasattr(row, 'category_id'):
+            if str(row.category_id) != category_filter:
                 return False
         if month_filter and hasattr(row, 'date'):
             if self._extract_month_key(row.date) != month_filter:
@@ -1097,7 +1090,6 @@ class DrilldownResponseService:
                 type='',
                 confidence=None,
                 row_id=tx_dict.get('row_id', ''),
-                category=original_category,
                 category_id=category_id,
                 month_id=month_id
             ))
@@ -1109,7 +1101,6 @@ class DrilldownResponseService:
             account_id=account_id,
             account_name=account_data['name'],
             category_id=category_id,
-            category_name=category_name,
             month_id=month_id,
             month_name=month_name,
             data=transactions,

@@ -146,7 +146,9 @@ export interface DrilldownResult<T> extends FetchState<T> {
  *   useDrilldownData<CategoryMonthsResponse>({
  *     buildEndpoint: drilldownEndpoints.categoryMonths,
  *     tableId: 'datatable-category',
- *     getPageTitle: (d) => `Details for Category: ${d.category_name}`,
+ *     // Note: category_name is no longer in API responses. Use categories store to get display name.
+ *     // getPageTitle: (d) => `Details for Category: ${d.category_name}`,
+ *     getPageTitle: (d) => `Details for Category: ${useCategoriesStore().getCategoryDisplayName(d.category_id)}`,
  *     breadcrumbItems: (d) => [
  *       { name: 'Home', to: '/' },
  *       { name: 'Results', to: { name: 'results', query: { resultId: d?.result_id } } },

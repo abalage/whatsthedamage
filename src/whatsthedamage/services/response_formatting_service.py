@@ -805,7 +805,7 @@ class ResponseFormattingService(IDataFormattingService):
             details_array = self._convert_row_details(row)
 
             dt_response_data.append({
-                'category': row.category,
+                'category_id': row.category_id,
                 'date': {'display': row.date.display, 'timestamp': row.date.timestamp},
                 'total': {'display': row.total.display, 'raw': row.total.raw},
                 'details': details_array,

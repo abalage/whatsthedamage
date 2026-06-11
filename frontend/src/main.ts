@@ -33,6 +33,11 @@ const app = createApp(App)
 const pinia = createPinia()
 app.use(pinia)
 
+// Initialize categories store (load categories from API)
+import { useCategoriesStore } from './stores/categories.js'
+const categoriesStore = useCategoriesStore()
+categoriesStore.loadCategories().catch(console.error)
+
 // Install vue3-gettext
 app.use(gettext as unknown as Plugin)
 

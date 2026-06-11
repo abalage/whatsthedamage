@@ -43,7 +43,7 @@ export const useCostOfLivingStore = defineStore('costOfLiving', () => {
     const categories: Set<string> = new Set();
     for (const row of account.dt_response.data) {
       if (!row.is_calculated) {
-        categories.add(row.category);
+        categories.add(row.category_id);
       }
     }
     return Array.from(categories).sort();
@@ -106,12 +106,12 @@ export const useCostOfLivingStore = defineStore('costOfLiving', () => {
             : Number.parseFloat(row.total.raw as string);
           
           // If this category is in our selection, add to total
-          if (selectedCategoryIds.value.includes(row.category)) {
+          if (selectedCategoryIds.value.includes(row.category_id)) {
             total += amount;
           }
           
           // Always store category data for breakdown
-          categories[row.category] = {
+          categories[row.category_id] = {
             amount,
             display: row.total.display
           };

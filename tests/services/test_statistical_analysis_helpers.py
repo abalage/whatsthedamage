@@ -18,7 +18,7 @@ def sample_dt_response():
     regular_rows = [
         AggregatedRow(
             row_id=row_id_grocery,
-            category="Grocery",
+            category_id="grocery",
             total=DisplayRawField(display="100.00", raw=100.0),
             date=DateField(display="January 2023", timestamp=1672531200),
             details=[],
@@ -26,7 +26,7 @@ def sample_dt_response():
         ),
         AggregatedRow(
             row_id=str(uuid.uuid4()),
-            category="Rent",
+            category_id="home_maintenance",
             total=DisplayRawField(display="500.00", raw=500.0),
             date=DateField(display="January 2023", timestamp=1672531200),
             details=[],
@@ -34,7 +34,7 @@ def sample_dt_response():
         ),
         AggregatedRow(
             row_id=str(uuid.uuid4()),
-            category="Utilities",
+            category_id="utility",
             total=DisplayRawField(display="200.00", raw=200.0),
             date=DateField(display="February 2023", timestamp=1677657600),
             details=[],
@@ -45,7 +45,7 @@ def sample_dt_response():
     calculated_rows = [
         AggregatedRow(
             row_id=str(uuid.uuid4()),
-            category="Balance",
+            category_id="balance",
             total=DisplayRawField(display="600.00", raw=600.0),
             date=DateField(display="January 2023", timestamp=1672531200),
             details=[],
@@ -53,7 +53,7 @@ def sample_dt_response():
         ),
         AggregatedRow(
             row_id=str(uuid.uuid4()),
-            category="Total",
+            category_id="total_spendings",
             total=DisplayRawField(display="800.00", raw=800.0),
             date=DateField(display="Total", timestamp=0),
             details=[],
@@ -76,7 +76,7 @@ def dt_response_with_outliers():
     regular_rows = [
         AggregatedRow(
             row_id=row_id_outlier,
-            category="Grocery",
+            category_id="grocery",
             total=DisplayRawField(display="-100.00", raw=-100.0),
             date=DateField(display="January 2023", timestamp=1672531200),
             details=[],
@@ -84,7 +84,7 @@ def dt_response_with_outliers():
         ),
         AggregatedRow(
             row_id=str(uuid.uuid4()),
-            category="Rent",
+            category_id="home_maintenance",
             total=DisplayRawField(display="-200.00", raw=-200.0),
             date=DateField(display="January 2023", timestamp=1672531200),
             details=[],
@@ -92,7 +92,7 @@ def dt_response_with_outliers():
         ),
         AggregatedRow(
             row_id=str(uuid.uuid4()),
-            category="Utilities",
+            category_id="utility",
             total=DisplayRawField(display="-100000.00", raw=-100000.0),
             date=DateField(display="January 2023", timestamp=1672531200),
             details=[],
@@ -103,7 +103,7 @@ def dt_response_with_outliers():
     calculated_rows = [
         AggregatedRow(
             row_id=str(uuid.uuid4()),
-            category="Balance",
+            category_id="balance",
             total=DisplayRawField(display="-300.00", raw=-300.0),
             date=DateField(display="January 2023", timestamp=1672531200),
             details=[],
@@ -133,45 +133,45 @@ class TestHelperMethods:
 
         # January should have 3 rows (Grocery, Rent, Balance)
         assert len(month_map["January 2023"]) == 3
-        categories = [row.category for row in month_map["January 2023"]]
-        assert "Grocery" in categories
-        assert "Rent" in categories
-        assert "Balance" in categories
+        categories = [row.category_id for row in month_map["January 2023"]]
+        assert "grocery" in categories
+        assert "home_maintenance" in categories
+        assert "balance" in categories
 
         # February should have 1 row (Utilities)
         assert len(month_map["February 2023"]) == 1
-        assert month_map["February 2023"][0].category == "Utilities"
+        assert month_map["February 2023"][0].category_id == "utility"
 
     def test_is_cell_excluded_calculated_row(self, sample_dt_response):
         """Test _is_cell_excluded identifies calculated rows."""
         service = StatisticalAnalysisService()
         # Balance row is calculated
-        result = service._is_cell_excluded("January 2023", "Balance", sample_dt_response)
+        result = service._is_cell_excluded("January 2023", "balance", sample_dt_response)
         assert result is True
 
     def test_is_cell_excluded_regular_row(self, sample_dt_response):
         """Test _is_cell_excluded identifies regular rows as not excluded."""
         service = StatisticalAnalysisService()
         # Grocery row is not calculated
-        result = service._is_cell_excluded("January 2023", "Grocery", sample_dt_response)
+        result = service._is_cell_excluded("January 2023", "grocery", sample_dt_response)
         assert result is False
 
     def test_is_cell_excluded_with_exclusion_service(self, sample_dt_response):
         """Test _is_cell_excluded with exclusion service."""
         service = StatisticalAnalysisService()
-        service.set_user_exclusions("default", ["Rent"])
+        service.set_user_exclusions("default", ["home_maintenance"])
         # Rent is in exclusion list
-        result = service._is_cell_excluded("January 2023", "Rent", sample_dt_response)
+        result = service._is_cell_excluded("January 2023", "home_maintenance", sample_dt_response)
         assert result is True
 
         # Grocery is not excluded
-        result = service._is_cell_excluded("January 2023", "Grocery", sample_dt_response)
+        result = service._is_cell_excluded("January 2023", "grocery", sample_dt_response)
         assert result is False
 
     def test_is_cell_excluded_nonexistent_month(self, sample_dt_response):
         """Test _is_cell_excluded with non-existent month."""
         service = StatisticalAnalysisService()
-        result = service._is_cell_excluded("March 2023", "Grocery", sample_dt_response)
+        result = service._is_cell_excluded("March 2023", "grocery", sample_dt_response)
         assert result is False
 
     def test_direction_handling_simplification(self):
@@ -186,11 +186,11 @@ class TestHelperMethods:
         summary = SummaryData(
             summary={
                 "2023-01": {
-                    "Grocery": 500.0,
-                    "Rent": 1000.0,
-                    "Entertainment": 100.0,
-                    "Utilities": 200.0,
-                    "Transport": 150.0
+                    "grocery": 500.0,
+                    "home_maintenance": 1000.0,
+                    "entertainment_and_leisure": 100.0,
+                    "utility": 200.0,
+                    "transportation": 150.0
                 }
             },
             currency="USD",
@@ -237,7 +237,7 @@ class TestHelperMethods:
         # Using negative values (expenses) that will create outliers: -100, -200, -300, -100000
         # All categories together will create an outlier
         transformed_data = [
-            ("January 2023", {"Grocery": -100.0, "Rent": -200.0, "Utilities": -100000.0, "Balance": -300.0}),
+            ("January 2023", {"grocery": -100.0, "home_maintenance": -200.0, "utility": -100000.0, "balance": -300.0}),
         ]
 
         # Call the method
@@ -262,10 +262,10 @@ class TestHelperMethods:
         # Create transformed data for ROWS direction
         # Format: List[Tuple[category, Dict[month, amount]]]
         transformed_data = [
-            ("Grocery", {"January 2023": 100.0}),
-            ("Rent", {"January 2023": 500.0}),
-            ("Utilities", {"February 2023": 200.0}),
-            ("Balance", {"January 2023": 600.0})
+            ("grocery", {"January 2023": 100.0}),
+            ("home_maintenance", {"January 2023": 500.0}),
+            ("utility", {"February 2023": 200.0}),
+            ("balance", {"January 2023": 600.0})
         ]
 
         # Call the method

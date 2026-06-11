@@ -167,7 +167,7 @@ class IdMappingService(IIdMappingService):
 
             # Create category and month mappings
             for row in dt_response.data:
-                self.get_category_id(result_id, row.category)
+                self.get_category_id(result_id, row.category_id)
                 self.get_month_id(str(row.date.timestamp))
 
     def clear_mappings_for_result(self, result_id: str) -> None:

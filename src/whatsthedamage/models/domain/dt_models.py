@@ -24,7 +24,7 @@ class DetailRow(BaseModel):
 
 class AggregatedRow(BaseModel):
     row_id: str
-    category: str
+    category_id: str
     total: DisplayRawField
     date: DateField
     details: List[DetailRow]
@@ -62,9 +62,9 @@ class DetailedResponse(BaseModel):
             "example": {
                 "data": [
                     {
-                        "category": "grocery",
+                        "category_id": "grocery",
                         "total": {"display": "-45,000.00 HUF", "raw": -45000.00},
-                        "month": {"display": "January 2024", "timestamp": 1704067200},
+                        "date": {"display": "January 2024", "timestamp": 1704067200},
                         "details": [
                             {
                                 "date": {"display": "2024-01-15", "timestamp": 1705276800},
@@ -146,7 +146,7 @@ class SummaryData:
                 period_map[ts] = {'display': display, 'categories': {}}
 
             cats = period_map[ts]['categories']
-            cats[agg_row.category] = cats.get(agg_row.category, 0.0) + float(agg_row.total.raw)
+            cats[agg_row.category_id] = cats.get(agg_row.category_id, 0.0) + float(agg_row.total.raw)
 
         # Handle duplicate month displays (e.g., 'January' across different years)
         # by appending timestamp if needed

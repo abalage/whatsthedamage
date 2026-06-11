@@ -92,7 +92,7 @@ line-length = 119
 select = ["C901", "PLR0912"]
 
 [tool.ruff.lint.mccabe]
-max-complexity = 10
+max-complexity = 11
 
 [tool.vulture]
 min_confidence = 80

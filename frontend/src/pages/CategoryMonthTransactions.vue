@@ -6,6 +6,7 @@ import {
   useDrilldownData,
   type BreadcrumbItem
 } from '../composables/useDrilldownData.js'
+import { useCategoriesStore } from '../stores/categories.js'
 import CardComponent from '../components/ui/CardComponent.vue'
 import ButtonComponent from '../components/ui/ButtonComponent.vue'
 import VueDataTable from '../components/data/VueDataTable.vue'
@@ -14,6 +15,7 @@ import { fetchCategoryMonthTransactions } from '../js/api.js'
 import type { CategoryMonthTransactionsApiResponse } from '../types/api.js'
 
 const { $gettext } = useGettext()
+const categoriesStore = useCategoriesStore()
 const route = useRoute()
 
 
@@ -34,6 +36,12 @@ const columns: Column[] = [
   { key: 'merchant', title: $gettext('Merchant') }
 ]
 
+// Function to get page title with category display name
+const getPageTitle = (data: CategoryMonthTransactionsApiResponse): string => {
+  const categoryDisplayName = categoriesStore.getCategoryDisplayName(data.category_id)
+  return `${$gettext('Details')}: ${categoryDisplayName} - ${data.month_name}`
+}
+
 const {
   data: transactionsData,
   isLoading,
@@ -49,7 +57,7 @@ const {
     }
     return fetchCategoryMonthTransactions(params)
   },
-  getPageTitle: (data) => `${$gettext('Details')}: ${data.category_name} - ${data.month_name}`,
+  getPageTitle,
   breadcrumbItems: (): BreadcrumbItem[] => [
     { name: $gettext('Home'), to: '/' },
     { name: $gettext('Results'), to: { name: 'results', query: { resultId: getRouteParam('resultId') } } },

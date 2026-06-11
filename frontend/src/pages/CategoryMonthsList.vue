@@ -3,6 +3,7 @@ import { onMounted, computed, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useGettext } from 'vue3-gettext'
 import { useStatisticalStore } from '../stores/statistical.js'
+import { useCategoriesStore } from '../stores/categories.js'
 import {
   useDrilldownData,
   type BreadcrumbItem
@@ -16,6 +17,7 @@ import { fetchCategoryMonths } from '../js/api.js'
 import type { CategoryMonthsApiResponse } from '../types/api.js'
 
 const { $gettext } = useGettext()
+const categoriesStore = useCategoriesStore()
 
 const route = useRoute()
 const statisticalStore = useStatisticalStore()
@@ -62,6 +64,12 @@ function extractMonthIdFromData(row: Record<string, unknown>): string {
   return String(monthTimestamp || '')
 }
 
+// Function to get page title with category display name
+const getPageTitle = (data: CategoryMonthsApiResponse): string => {
+  const displayName = categoriesStore.getCategoryDisplayName(data.category_id)
+  return `${$gettext('Details')}: ${displayName}`
+}
+
 const {
   data: categoryMonthsData,
   isLoading,
@@ -80,7 +88,7 @@ const {
     }
     return fetchCategoryMonths(params)
   },
-  getPageTitle: (data) => `${$gettext('Details')}: ${data.category_name}`,
+  getPageTitle,
   breadcrumbItems: (): BreadcrumbItem[] => [
     { name: $gettext('Home'), to: '/' },
     { name: $gettext('Results'), to: { name: 'results', query: { resultId: getRouteParam('resultId') } } },

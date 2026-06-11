@@ -52,7 +52,7 @@ def complete_dt_response():
     regular_rows = [
         AggregatedRow(
             row_id=str(uuid.uuid4()),
-            category="Grocery",
+            category_id="grocery",
             total=DisplayRawField(display="100.00", raw=100.0),
             date=DateField(display="January 2023", timestamp=1672531200),
             details=details_grocery,
@@ -60,7 +60,7 @@ def complete_dt_response():
         ),
         AggregatedRow(
             row_id=str(uuid.uuid4()),
-            category="Rent",
+            category_id="home_maintenance",
             total=DisplayRawField(display="500.00", raw=500.0),
             date=DateField(display="January 2023", timestamp=1672531200),
             details=details_rent,
@@ -68,7 +68,7 @@ def complete_dt_response():
         ),
         AggregatedRow(
             row_id=str(uuid.uuid4()),
-            category="Utilities",
+            category_id="utility",
             total=DisplayRawField(display="200.00", raw=200.0),
             date=DateField(display="February 2023", timestamp=1677657600),
             details=details_utilities,
@@ -76,7 +76,7 @@ def complete_dt_response():
         ),
         AggregatedRow(
             row_id=str(uuid.uuid4()),
-            category="Dining",
+            category_id="dining_out",
             total=DisplayRawField(display="150.00", raw=150.0),
             date=DateField(display="February 2023", timestamp=1677657600),
             details=[],
@@ -88,7 +88,7 @@ def complete_dt_response():
     calculated_rows = [
         AggregatedRow(
             row_id=str(uuid.uuid4()),
-            category="Balance",
+            category_id="balance",
             total=DisplayRawField(display="600.00", raw=600.0),
             date=DateField(display="January 2023", timestamp=1672531200),
             details=[],
@@ -96,9 +96,9 @@ def complete_dt_response():
         ),
         AggregatedRow(
             row_id=str(uuid.uuid4()),
-            category="Total",
+            category_id="total_spendings",
             total=DisplayRawField(display="850.00", raw=850.0),
-            date=DateField(display="Total", timestamp=0),
+            date=DateField(display="total_spendings", timestamp=0),
             details=[],
             is_calculated=True
         )
@@ -119,7 +119,7 @@ def test_end_to_end_excluded_highlights_pipeline(complete_dt_response):
     statistical_service = StatisticalAnalysisService(
         enabled_algorithms=["iqr", "pareto"]
     )
-    statistical_service.set_user_exclusions("default", ["Rent", "Deposit"])
+    statistical_service.set_user_exclusions("default", ["home_maintenance", "Deposit"])
 
     # Step 3: Compute statistical metadata
     metadata = statistical_service.compute_statistical_metadata({
@@ -163,7 +163,7 @@ def test_template_highlight_application():
     # Create a mock AccountResponse with calculated rows
     calculated_row = AggregatedRow(
         row_id=str(uuid.uuid4()),
-        category="Balance",
+        category_id="balance",
         total=DisplayRawField(display="100.00", raw=100.0),
         date=DateField(display="January 2023", timestamp=1672531200),
         details=[],

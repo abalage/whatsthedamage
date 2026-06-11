@@ -8,11 +8,11 @@ def rows_processor(app_context):
 
 
 def test_enrich_and_categorize_rows(rows_processor, csv_rows):
-    rows_processor._category = "Test Category"
+    rows_processor._category_id = "category_id"
     categorized_rows = rows_processor._enrich_and_categorize_rows(csv_rows)
     assert isinstance(categorized_rows, dict)
-    for category, rows in categorized_rows.items():
-        assert isinstance(category, str)
+    for category_id, rows in categorized_rows.items():
+        assert isinstance(category_id, str)
         assert isinstance(rows, list)
 
 

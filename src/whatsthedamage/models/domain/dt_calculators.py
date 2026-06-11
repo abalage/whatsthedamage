@@ -33,7 +33,7 @@ def create_balance_rows(builder: "AccountResponseBuilder") -> List[AggregatedRow
 
         # Use builder's public helper to create properly formatted row
         balance_row = builder.build_aggregated_row(
-            category=_("Balance"),
+            category_id="balance",
             total_amount=total_amount,
             details=[],  # Balance has no detail rows
             date_field=month_field,
@@ -82,7 +82,7 @@ def create_total_spendings(builder: "AccountResponseBuilder") -> List[Aggregated
     for month_timestamp in sorted(month_totals.keys()):
         month_field, total = month_totals[month_timestamp]
         spendings_row = builder.build_aggregated_row(
-            category=_("Total Spendings"),
+            category_id="total_spendings",
             total_amount=total,
             details=[],
             date_field=month_field,
@@ -101,7 +101,7 @@ def create_cost_of_living_rows(builder: "AccountResponseBuilder") -> List[Aggreg
     represent essential living expenses.
 
     The default categories are defined in config.py (COST_OF_LIVING_CATEGORY_IDS).
-    Categories are matched by their display names (from AVAILABLE_CATEGORIES.default_name).
+    Categories are now matched by their IDs (from AVAILABLE_CATEGORIES.id).
     Users can customize their own Cost of Living definition on the frontend.
 
     Args:
@@ -110,14 +110,7 @@ def create_cost_of_living_rows(builder: "AccountResponseBuilder") -> List[Aggreg
     Returns:
         List[AggregatedRow]: List of Cost of Living aggregated rows, one per month.
     """
-    from whatsthedamage.config.config import COST_OF_LIVING_CATEGORY_IDS, AVAILABLE_CATEGORIES
-
-    # Convert category IDs to display names for comparison
-    # row.category contains display names (e.g., "Grocery"), not IDs (e.g., "grocery")
-    cost_of_living_display_names = {
-        cat.default_name for cat in AVAILABLE_CATEGORIES
-        if cat.id in COST_OF_LIVING_CATEGORY_IDS
-    }
+    from whatsthedamage.config.config import COST_OF_LIVING_CATEGORY_IDS
 
     # Track totals per month
     month_totals: Dict[int, Tuple[DateField, float]] = {}
@@ -129,8 +122,8 @@ def create_cost_of_living_rows(builder: "AccountResponseBuilder") -> List[Aggreg
             continue
 
         # Only include categories that are part of Cost of Living
-        # Compare against display names since row.category contains display names
-        if row.category not in cost_of_living_display_names:
+        # Compare against category IDs since row.category_id contains IDs
+        if row.category_id not in COST_OF_LIVING_CATEGORY_IDS:
             continue
 
         month_timestamp = row.date.timestamp
@@ -147,7 +140,7 @@ def create_cost_of_living_rows(builder: "AccountResponseBuilder") -> List[Aggreg
     for month_timestamp in sorted(month_totals.keys()):
         month_field, total = month_totals[month_timestamp]
         col_row = builder.build_aggregated_row(
-            category=_("Cost of Living"),
+            category_id="cost_of_living",
             total_amount=total,
             details=[],  # No detail rows for calculated category
             date_field=month_field,

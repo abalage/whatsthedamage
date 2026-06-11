@@ -14,7 +14,7 @@ class TestAPIv2Process:
     def test_process_valid_csv_returns_200(self, api_test_helper, mock_processing_service, sample_csv_file):
         """Test successful CSV processing returns 200 with detailed JSON structure."""
         # Override default mock with detailed data
-        detail_row = MockProcessingService.create_detail_row('bank_category', 300.0, 'bank')
+        detail_row = MockProcessingService.create_detail_row('grocery', 300.0, 'bank')
         mock_processing_service.process_with_details.return_value = \
             MockProcessingService.create_detailed_result([detail_row], row_count=2)
 
@@ -26,7 +26,7 @@ class TestAPIv2Process:
 
         # Verify detailed structure
         first_row = data['data'][0]
-        assert 'category' in first_row
+        assert 'category_id' in first_row
         assert 'total' in first_row
         assert 'date' in first_row
         assert 'details' in first_row
@@ -206,7 +206,7 @@ class TestAPIv2DetailedResponseStructure:
         assert len(data['data']) == 1
         row = data['data'][0]
 
-        assert row['category'] == 'grocery'
+        assert row['category_id'] == 'grocery'
         assert row['total']['display'] == '-45,000.00 HUF'
         assert 'display' in row['details'][0]['date']
         assert 'timestamp' in row['details'][0]['date']

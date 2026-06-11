@@ -66,7 +66,7 @@ const allTransactions = computed(() => {
       for (const detail of aggRow.details) {
         transactions.push({
           date: detail.date.display,
-          category: aggRow.category,
+          category_id: aggRow.category_id,
           merchant: detail.merchant,
           amount: detail.amount.display,
           currency: detail.currency,

@@ -12,7 +12,7 @@ def test_recalculate_highlights_method():
             data=[
                 AggregatedRow(
                     row_id=str(uuid.uuid4()),
-                    category='Grocery',
+                    category_id='Grocery',
                     total=DisplayRawField(display='100.00', raw=100.0),
                     date=DateField(display='January 2024', timestamp=1704067200),
                     details=[],
@@ -20,7 +20,7 @@ def test_recalculate_highlights_method():
                 ),
                 AggregatedRow(
                     row_id=str(uuid.uuid4()),
-                    category='Utilities',
+                    category_id='Utilities',
                     total=DisplayRawField(display='50.00', raw=50.0),
                     date=DateField(display='January 2024', timestamp=1704067200),
                     details=[],
@@ -64,7 +64,7 @@ def test_recalculate_highlights_with_both_algorithms():
             data=[
                 AggregatedRow(
                     row_id=str(uuid.uuid4()),
-                    category='Grocery',
+                    category_id='Grocery',
                     total=DisplayRawField(display='1000.00', raw=1000.0),  # Large value - potential outlier
                     date=DateField(display='January 2024', timestamp=1704067200),
                     details=[],
@@ -72,7 +72,7 @@ def test_recalculate_highlights_with_both_algorithms():
                 ),
                 AggregatedRow(
                     row_id=str(uuid.uuid4()),
-                    category='Utilities',
+                    category_id='Utilities',
                     total=DisplayRawField(display='50.00', raw=50.0),
                     date=DateField(display='January 2024', timestamp=1704067200),
                     details=[],
@@ -80,7 +80,7 @@ def test_recalculate_highlights_with_both_algorithms():
                 ),
                 AggregatedRow(
                     row_id=str(uuid.uuid4()),
-                    category='Entertainment',
+                    category_id='Entertainment',
                     total=DisplayRawField(display='200.00', raw=200.0),
                     date=DateField(display='January 2024', timestamp=1704067200),
                     details=[],
@@ -88,7 +88,7 @@ def test_recalculate_highlights_with_both_algorithms():
                 ),
                 AggregatedRow(
                     row_id=str(uuid.uuid4()),
-                    category='Entertainment',
+                    category_id='Entertainment',
                     total=DisplayRawField(display='-500.00', raw=-500.0),
                     date=DateField(display='January 2024', timestamp=1704067200),
                     details=[],
@@ -131,7 +131,7 @@ def test_highlight_key_format():
             data=[
                 AggregatedRow(
                     row_id=str(uuid.uuid4()),
-                    category='TestCategory',
+                    category_id='TestCategory',
                     total=DisplayRawField(display='100.00', raw=100.0),
                     date=DateField(display='January 2024', timestamp=1704067200),
                     details=[],

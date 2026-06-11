@@ -56,7 +56,7 @@ class AccountResponseBuilder:
 
     def add_category_data(
         self,
-        category: str,
+        category_id: str,
         rows: List[CsvRow],
         total_amount: float,
         date_field: DateField
@@ -65,14 +65,14 @@ class AccountResponseBuilder:
         Adds data for a single category/month combination.
 
         Args:
-            category (str): Category name (e.g., 'Groceries', 'Entertainment').
+            category_id (str): Category ID (e.g., 'grocery', 'clothes').
             rows (List[CsvRow]): Raw CSV rows for this category/month.
             total_amount (float): Aggregated total amount for this category/month.
             date_field (DateField): DateField with proper timestamp from actual data.
         """
         details = self._build_detail_rows(rows)
         aggregated_row = self.build_aggregated_row(
-            category, total_amount, details, date_field
+            category_id, total_amount, details, date_field
         )
         self._aggregated_rows.append(aggregated_row)
 
@@ -157,7 +157,7 @@ class AccountResponseBuilder:
 
     def build_aggregated_row(
         self,
-        category: str,
+        category_id: str,
         total_amount: float,
         details: List[DetailRow],
         date_field: DateField,
@@ -170,7 +170,7 @@ class AccountResponseBuilder:
         properly formatted AggregatedRow objects without duplicating formatting logic.
 
         Args:
-            category (str): Category name.
+            category_id (str): Category ID (e.g., 'grocery', 'balance').
             total_amount (float): Total amount for this category/month.
             details (List[DetailRow]): List of detail rows.
             date_field (DateField): DateField with timestamp from actual data.
@@ -185,7 +185,7 @@ class AccountResponseBuilder:
 
         return AggregatedRow(
             row_id=str(uuid.uuid4()),
-            category=category,
+            category_id=category_id,
             total=total_field,
             date=date_field,
             details=details,

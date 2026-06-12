@@ -86,8 +86,8 @@ class DrilldownResponseService:
         if not original_category:
             original_category = category_id
 
-        # Filter rows by category and group by month
-        category_rows = self._filter_rows(account_data['data'], 'category', original_category)
+        # Filter rows by category_id and group by month
+        category_rows = self._filter_rows(account_data['data'], 'category_id', original_category)
         month_groups = self._group_rows(category_rows, lambda r: self._extract_month_key(r.date))
 
         if not month_groups:
@@ -173,7 +173,7 @@ class DrilldownResponseService:
 
         # Filter rows by month and group by category
         month_rows = self._filter_rows(account_data['data'], 'date', original_month_ts, self._extract_month_key)
-        category_groups = self._group_rows(month_rows, lambda r: getattr(r, 'category', 'uncategorized'))
+        category_groups = self._group_rows(month_rows, lambda r: getattr(r, 'category_id', 'uncategorized'))
 
         if not category_groups:
             raise ValueError('Month not found or has no data')
@@ -630,7 +630,7 @@ class DrilldownResponseService:
             account_id: Secure account ID
             category_urls: Dictionary to store category URLs
         """
-        category = getattr(row, 'category', None)
+        category = getattr(row, 'category_id', None)
         if category and category not in category_urls:
             category_id = self._id_mapping_service.get_category_id(result_id, category) or category
             category_str = cast(str, category)
@@ -690,7 +690,7 @@ class DrilldownResponseService:
             account_id: Secure account ID
             cell_urls: Dictionary to store cell URLs
         """
-        category = getattr(row, 'category', None)
+        category = getattr(row, 'category_id', None)
         date_obj = getattr(row, 'date', None)
         row_id = getattr(row, 'row_id', None)
         if category and date_obj and row_id and hasattr(date_obj, 'timestamp') and date_obj.timestamp:
@@ -916,7 +916,7 @@ class DrilldownResponseService:
         Returns:
             True if row matches both filters
         """
-        row_category = getattr(row, 'category', 'uncategorized')
+        row_category = getattr(row, 'category_id', 'uncategorized')
         row_month_key = self._extract_month_key(getattr(row, 'date', None))
         return row_category == category and row_month_key == month_ts
 

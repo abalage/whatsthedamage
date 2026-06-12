@@ -23,7 +23,7 @@ const error = ref<string | null>(null)
 // Table columns definition
 const columns: Column[] = [
   { key: 'date', title: $gettext('Date') },
-  { key: 'category', title: $gettext('Category') },
+  { key: 'category_id', title: $gettext('Category') },
   { key: 'merchant', title: $gettext('Merchant') },
   { key: 'amount', title: $gettext('Amount') },
   { key: 'currency', title: $gettext('Currency') },

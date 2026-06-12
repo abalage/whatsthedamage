@@ -4,6 +4,7 @@ import { useRoute } from 'vue-router'
 import { fetchResults as fetchResultsApi } from '../js/api.js'
 import { useFeedbackStore } from '../stores/feedback.js'
 import { useStatisticalStore } from '../stores/statistical.js'
+import { useCategoriesStore } from '../stores/categories.js'
 import { useGettext } from 'vue3-gettext'
 import type { ResultsApiResponse, AccountDataResponse } from '../types/api.js'
 import ButtonComponent from '../components/ui/ButtonComponent.vue'
@@ -19,6 +20,7 @@ type AccountData = AccountDataResponse
 
 const feedback = useFeedbackStore()
 const statisticalStore = useStatisticalStore()
+const categoriesStore = useCategoriesStore()
 const route = useRoute()
 
 
@@ -35,20 +37,6 @@ const loadResults = async () => {
   if (!resultId.value) {
     error.value = 'No result ID provided'
     isLoading.value = false
-
-    // Fallback: Try to fetch some demo data or show a helpful message
-    // For development/testing, we could fetch a hardcoded result
-    // In production, this would redirect to the upload form
-    try {
-      const fallbackResponse = await fetchResultsApi('demo-result-id')
-      resultsData.value = fallbackResponse
-
-      isLoading.value = false
-    } catch (fallbackError) {
-      const message = fallbackError instanceof Error ? fallbackError.message : String(fallbackError)
-      feedback.showError(`Failed to load fallback data: ${message}`)
-    }
-
     return
   }
 
@@ -74,19 +62,29 @@ const loadResults = async () => {
 // Build column definitions for an account's table
 function buildTableColumns(account: AccountData): Column[] {
   const accountId = account.id
+
+  // Extract category_id from row data
+  function extractCategoryIdFromData(row: Record<string, unknown>): string {
+    const category_id = row.category_id as string | undefined
+    return category_id || ''
+  }
+
   const columns: Column[] = [
     {
       key: 'category',
       title: $gettext('Categories'),
       sortable: false, // Categories are row headers, not sortable in this view
       component: TableLink,
-      componentProps: (value: unknown) => {
-        const category = String(value)
-        const categoryId = getCategoryId(accountId, category)
+      componentProps: (value: unknown, row: Record<string, unknown>) => {
+        const categoryId = extractCategoryIdFromData(row)
+        const categoryDisplayName = categoriesStore.getCategoryDisplayName(categoryId)
+        if (!categoryId) {
+          return { to: '#', class: 'clickable', children: categoryDisplayName }
+        }
         return {
           to: { name: 'category-months', params: { resultId: resultId.value, accountId, categoryId } },
           class: 'clickable',
-          children: category
+          children: categoryDisplayName
         }
       }
     }
@@ -102,7 +100,7 @@ function buildTableColumns(account: AccountData): Column[] {
       headerTo: { name: 'month-categories', params: { resultId: resultId.value, accountId, monthId } },
       component: TableLinkWithPopover,
       componentProps: (value: unknown, row: Record<string, unknown>) => {
-        const category_id = String(row.category_id)
+        const category_id = String(row.category_id ?? row.category ?? '')
         const monthData = buildCategoryMonthMap(account)[category_id]?.[monthTs]
 
         if (!monthData) {
@@ -111,7 +109,10 @@ function buildTableColumns(account: AccountData): Column[] {
 
         const total = monthData.total?.display || ''
         const accountId = account.id
-        const categoryId = getCategoryId(accountId, category_id)
+        const categoryId = getCategoryId(accountId, category_id) || category_id
+        if (!categoryId || !monthId) {
+          return { to: '#', class: 'clickable', children: total }
+        }
 
         const linkUrl = { name: 'category-month-transactions', params: { resultId: resultId.value, accountId, categoryId, monthId } }
 
@@ -146,6 +147,7 @@ function buildTableData(account: AccountData): Record<string, unknown>[] {
     }
     const row: TableRow = {
       category,
+      category_id: category,
       accountId: account.id,
       _rowIds: {}
     }

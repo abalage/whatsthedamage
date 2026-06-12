@@ -16,7 +16,7 @@ class CLIController:
         parser.add_argument('--verbose', '-v', action='store_true', help='Print categorized rows for troubleshooting.')
         parser.add_argument('--version', action='version', version=f"whatsthedamage v{get_version()}", help='Show the version of the program.')  # noqa: E501
         parser.add_argument('--config', '-c', type=str, help='Path to the configuration file.')
-        parser.add_argument('--category', type=str, default='category_id', help='The attribute to categorize by. (default: category_id)')  # noqa: E501
+        parser.add_argument('--category-id', type=str, default='category_id', help='The attribute to categorize by. (default: category_id)')  # noqa: E501
         parser.add_argument('--output', '-o', type=str, help='Save the result into a CSV file with the specified filename.')  # noqa: E501
         parser.add_argument('--output-format', type=str, default='csv', help='Supported formats are: html, csv. (default: csv).')  # noqa: E501
         parser.add_argument('--nowrap', '-n', action='store_true', help='Do not wrap the output text. Useful for viewing the output without line wraps.')  # noqa: E501

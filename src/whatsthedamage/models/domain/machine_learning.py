@@ -223,7 +223,7 @@ class Train:
 
         # Validate and clean data (originally from TrainingData class)
         self._df = self._validate_and_clean_data(df)
-        self._y = self._df["category"]
+        self._y = self._df["category_id"]
 
         # Validate class sizes for stratified split
         class_counts = self._y.value_counts()
@@ -484,9 +484,9 @@ class Train:
         # Create MANIFEST using shared method
         MANIFEST = self._create_manifest(model, tuning_method, best_params)
 
-        # Prepare test data for saving (add category labels)
+        # Prepare test data for saving (add category_id labels)
         test_data_with_labels = self._df_test.copy()
-        test_data_with_labels["category"] = self._y_test
+        test_data_with_labels["category_id"] = self._y_test
 
         # Delegate all file saving to the enhanced package save function
         # This centralizes model, manifest, and test data saving in one atomic operation
@@ -582,7 +582,7 @@ class Metrics:
         # Load and prepare test data
         self.test_data = self._load_and_prepare_test_data(test_data_path)
         self.x_test = self.test_data[self.config.feature_columns]
-        self.y_test = self.test_data["category"]
+        self.y_test = self.test_data["category_id"]
 
         # Validate model before attempting inference
         validate_model_for_inference(self.model)
@@ -609,7 +609,7 @@ class Metrics:
         df_cleaned = apply_ml_text_cleaning(df)
 
         # Drop rows with missing values in required columns
-        df_cleaned = df_cleaned.dropna(subset=self.config.feature_columns + ["category"])
+        df_cleaned = df_cleaned.dropna(subset=self.config.feature_columns + ["category_id"])
         if df_cleaned.empty:
             raise ValueError("All rows were dropped due to missing values.")
 
@@ -757,7 +757,7 @@ class Metrics:
             predicted=self.y_pred,
             confidence=self.y_proba.max(axis=1)
         )
-        results_df['correct'] = results_df['category'] == results_df['predicted']
+        results_df['correct'] = results_df['category_id'] == results_df['predicted']
 
         # Misclassified samples
         misclassified = results_df[~results_df['correct']]
@@ -776,7 +776,7 @@ class Metrics:
         low_conf_errors = []
         for _, row in low_conf.sort_values('confidence').head(20).iterrows():
             low_conf_errors.append({
-                'actual': row['category'],
+                'actual': row['category_id'],
                 'predicted': row['predicted'],
                 'confidence': float(row['confidence']),
                 'partner': str(row['partner'])
@@ -787,7 +787,7 @@ class Metrics:
         high_conf_errors = []
         for _, row in high_conf.head(20).iterrows():
             high_conf_errors.append({
-                'actual': row['category'],
+                'actual': row['category_id'],
                 'predicted': row['predicted'],
                 'confidence': float(row['confidence']),
                 'partner': str(row['partner'])
@@ -807,7 +807,7 @@ class Metrics:
         test_indices = self.test_data.index.isin(self.x_test.index)
         results_df = self.test_data[test_indices].assign(
             predicted=self.y_pred,
-            correct=lambda x: x['category'] == self.y_pred
+            correct=lambda x: x['category_id'] == self.y_pred
         )
 
         # Misclassified samples
@@ -912,14 +912,14 @@ class Inference:
             raise RuntimeError(f"Model is not fitted for inference: {e}") from e
         confidence = proba.max(axis=1)
         df_output = df_input.copy()
-        df_output["predicted_category"] = predicted_categories
+        df_output["predicted_category_id"] = predicted_categories
         df_output["prediction_confidence"] = confidence
         return df_output
 
     def get_predictions(self) -> List[CsvRow]:
-        """Return predictions as a list of CsvRow objects with 'category' overwritten and confidence included."""
+        """Return predictions as a list of CsvRow objects with 'category_id' overwritten and confidence included."""
         df_filtered = self.df_output.copy()
-        df_filtered["category"] = df_filtered["predicted_category"]
+        df_filtered["category_id"] = df_filtered["predicted_category_id"]
 
         csv_rows = []
         for _, row in df_filtered.iterrows():
@@ -931,7 +931,7 @@ class Inference:
                     "partner": "partner",
                     "amount": "amount",
                     "currency": "currency",
-                    "category": "category"
+                    "category_id": "category_id"
                 }
             )
             # Set confidence from prediction
@@ -947,7 +947,7 @@ class Inference:
         pd.set_option('display.width', 130)
         pd.set_option('display.expand_frame_repr', False)
 
-        cols = self.config.feature_columns + ["predicted_category"]
+        cols = self.config.feature_columns + ["predicted_category_id"]
         if with_confidence:
             cols += ["prediction_confidence"]
         print(self.df_output[cols])

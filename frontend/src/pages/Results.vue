@@ -63,12 +63,6 @@ const loadResults = async () => {
 function buildTableColumns(account: AccountData): Column[] {
   const accountId = account.id
 
-  // Extract category_id from row data
-  function extractCategoryIdFromData(row: Record<string, unknown>): string {
-    const category_id = row.category_id as string | undefined
-    return category_id || ''
-  }
-
   const columns: Column[] = [
     {
       key: 'category',
@@ -76,7 +70,7 @@ function buildTableColumns(account: AccountData): Column[] {
       sortable: false, // Categories are row headers, not sortable in this view
       component: TableLink,
       componentProps: (value: unknown, row: Record<string, unknown>) => {
-        const categoryId = extractCategoryIdFromData(row)
+        const categoryId = categoriesStore.extractCategoryIdFromData(row)
         const categoryDisplayName = categoriesStore.getCategoryDisplayName(categoryId)
         if (!categoryId) {
           return { to: '#', class: 'clickable', children: categoryDisplayName }

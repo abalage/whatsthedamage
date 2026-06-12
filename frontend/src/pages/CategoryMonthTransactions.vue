@@ -38,7 +38,9 @@ const columns: Column[] = [
 
 // Function to get page title with category display name
 const getPageTitle = (data: CategoryMonthTransactionsApiResponse): string => {
-  return `${$gettext('Details')}: ${data.month_name}`
+  const categoryId = categoriesStore.extractCategoryIdFromData(data as Record<string, unknown>)
+  const categoryDisplayName = categoryId ? categoriesStore.getCategoryDisplayName(categoryId) : ''
+  return `${$gettext('Details')}: ${categoryDisplayName} - ${data.month_name}`
 }
 
 const {

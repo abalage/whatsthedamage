@@ -67,6 +67,26 @@ export const useCategoriesStore = defineStore('categories', () => {
   }
 
   /**
+   * Extract category_id from row/data object
+   * Supports extraction from direct field or from category_url via regex
+   * @param data - The data object containing category information
+   * @returns The extracted category_id or empty string if not found
+   */
+  function extractCategoryIdFromData(data: Record<string, unknown>): string {
+    const categoryUrl = data.category_url as string | undefined;
+    const category_id = data.category_id as string | undefined;
+
+    // Try to extract from category_url first (for drilldown responses)
+    if (categoryUrl) {
+      const match = categoryUrl.match(/categories\/([^/]+)\/months/);
+      if (match) return match[1];
+    }
+
+    // Fall back to direct category_id field
+    return category_id || '';
+  }
+
+  /**
    * Get all category IDs
    * @returns Array of all category IDs
    */
@@ -84,6 +104,7 @@ export const useCategoriesStore = defineStore('categories', () => {
     loadCategories,
     getCategoryById,
     getCategoryDisplayName,
+    extractCategoryIdFromData,
     categoryIds,
     hasCategories,
   };

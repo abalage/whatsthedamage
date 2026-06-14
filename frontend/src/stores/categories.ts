@@ -83,7 +83,7 @@ export const useCategoriesStore = defineStore('categories', () => {
     }
 
     // Fall back to direct category_id field
-    return category_id || '';
+    return category_id ?? '';
   }
 
   /**

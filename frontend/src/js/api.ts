@@ -229,3 +229,11 @@ export async function fetchCategoryMonthTransactions(
 export async function fetchCategories(): Promise<CategoryDefinition[]> {
   return fetchWithErrorHandling<CategoryDefinition[]>(getApiUrl('/categories'));
 }
+
+/**
+ * Fetch cost of living category definition
+ * @returns Promise with array of CategoryDefinition objects
+ */
+export async function fetchCostOfLivingCategories(): Promise<CategoryDefinition[]> {
+  return fetchWithErrorHandling<CategoryDefinition[]>(getApiUrl('/categories/cost-of-living'));
+}

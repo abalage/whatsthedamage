@@ -8,7 +8,7 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import type { CategoryDefinition } from '../types/api.js';
-import { fetchCategories } from '../js/api.js';
+import { fetchCategories, fetchCostOfLivingCategories } from '../js/api.js';
 import { useLocaleStore } from './locale.js';
 
 /**
@@ -16,6 +16,7 @@ import { useLocaleStore } from './locale.js';
  */
 export const useCategoriesStore = defineStore('categories', () => {
   const categories = ref<CategoryDefinition[]>([]);
+  const costOfLivingCategories = ref<string[]>([]);
   const isLoading = ref<boolean>(false);
   const error = ref<string | null>(null);
 
@@ -35,6 +36,27 @@ export const useCategoriesStore = defineStore('categories', () => {
     } catch (err) {
       error.value = err instanceof Error ? err.message : String(err);
       console.error('Failed to load categories:', err);
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  /**
+   * Fetch cost of livingcategories from the API
+   */
+  async function loadCostOfLivingCategories(): Promise<void> {
+    if (costOfLivingCategories.value.length > 0) {
+      // Already loaded
+      return;
+    }
+
+    try {
+      isLoading.value = true;
+      error.value = null;
+      costOfLivingCategories.value = (await fetchCostOfLivingCategories()).map(cat => cat.id);
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : String(err);
+      console.error('Failed to load cost of living categories:', err);
     } finally {
       isLoading.value = false;
     }
@@ -99,9 +121,11 @@ export const useCategoriesStore = defineStore('categories', () => {
 
   return {
     categories,
+    costOfLivingCategories,
     isLoading,
     error,
     loadCategories,
+    loadCostOfLivingCategories,
     getCategoryById,
     getCategoryDisplayName,
     extractCategoryIdFromData,

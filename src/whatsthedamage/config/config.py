@@ -34,7 +34,6 @@ class AppArgs:
     filter: Optional[str] = None
     output: Optional[str] = None
     start_date: Optional[str] = None
-    lang: Optional[str] = None
 
 class CsvConfig(BaseModel):
     dialect: str = Field(default="excel-tab")
@@ -233,16 +232,3 @@ def get_category_id_from_name(category_name: str) -> str:
     # If still not found, return the normalized version
     # This could happen with translated names, but we'll use it as-is
     return normalized
-
-
-def get_localized_category_name(default_name: str) -> str:
-    """
-    Get the category name.
-
-    Note: This function now returns the plain English name.
-    For localized display, frontend should use category_id as translation key.
-
-    :param default_name: The default name of the category.
-    :return: The category name.
-    """
-    return default_name

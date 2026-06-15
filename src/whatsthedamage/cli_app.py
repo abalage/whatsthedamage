@@ -1,7 +1,4 @@
 """CLI application entrypoint for whatsthedamage."""
-import os
-import gettext
-import importlib.resources as resources
 from typing import Dict
 from whatsthedamage.controllers.cli_controller import CLIController
 from whatsthedamage.services.service_container import create_service_container, ServiceContainer
@@ -10,30 +7,6 @@ from whatsthedamage.models.domain.dt_models import AccountResponse, ProcessingRe
 from whatsthedamage.utils.logging import configure_logging, get_logger
 
 logger = get_logger(__name__)
-
-def set_locale(locale_str: str | None) -> None:
-    """
-    Sets the locale for the application, allowing override of the system locale.
-
-    Args:
-        locale_str (str | None): The language code (e.g., 'en', 'hu'). If None, defaults to the system locale.
-    """
-    # Default to system locale if no language is provided
-    if not locale_str:
-        locale_str = os.getenv("LANG", "en").split(".")[0]  # Use system locale or fallback to 'en'
-
-    # Override the LANGUAGE environment variable
-    os.environ["LANGUAGE"] = locale_str
-
-    with resources.path("whatsthedamage", "locale") as localedir:
-        try:
-            gettext.bindtextdomain('messages', str(localedir))
-            gettext.textdomain('messages')
-            gettext.translation('messages', str(localedir), languages=[locale_str], fallback=False).install()
-        except FileNotFoundError:
-            logger.warning(f"Locale '{locale_str}' not found. Falling back to default.")
-            gettext.translation('messages', str(localedir), fallback=True).install()
-
 
 def format_output(
     dt_responses: Dict[str, AccountResponse],
@@ -72,9 +45,6 @@ def main() -> None:
     logger.info("Starting CLI application")
     logger.debug("CLI arguments parsed", context={"filename": args.filename, "config": args.config})
 
-    # Set the locale
-    set_locale(args.lang)
-
     # Initialize services via factory (dependency injection)
     container = create_service_container()
     logger.info("Services initialized via factory")
@@ -88,7 +58,6 @@ def main() -> None:
             end_date=args.end_date,
             ml_enabled=args.ml,
             category_filter=args.filter,
-            language=args.lang or 'en',
             verbose=args.verbose,
             training_data=args.training_data
         )

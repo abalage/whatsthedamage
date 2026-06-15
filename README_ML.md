@@ -188,10 +188,6 @@ Example manifest: [model-rf-v6alpha_en.manifest.json](../static/model-rf-v6alpha
 
 The app `whatsthedamage` provides a CLI option `--training-data` to print transactions to STDERR categorized by the existing regexp-based enrichment. If you redirect STDERR into a file, you will have all transactions in a JSON file, which can be directly provided to the machine learning script (`ml_util.py`).
 
-It is highly recommended to match the `--language` setting with the language of the data used for inference, as currently the model learns the category names as-is.
-
-This might change in the future.
-
 ### Training Data Structure
 
 Data objects are based on [CsvRow](../models/csv_row.py) objects.

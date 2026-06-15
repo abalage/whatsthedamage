@@ -36,11 +36,6 @@ class ProcessingRequest(BaseModel):
         description="Filter results by category (e.g., 'grocery', 'utilities')",
         examples=["grocery"]
     )
-    language: str = Field(
-        default="en",
-        description="Language for output localization",
-        examples=["en", "hu"]
-    )
     date_format: Optional[str] = Field(
         default=None,
         description="Date format string (Python strptime format). If not provided, uses CsvConfig default.",

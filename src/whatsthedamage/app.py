@@ -1,15 +1,12 @@
-from flask import Flask, current_app
+from flask import Flask
 from flask_cors import CORS
 import os
-import gettext
-from typing import Optional, Any
+from typing import Optional
 from whatsthedamage.controllers.routes import bp as main_bp
 from whatsthedamage.api.v2.endpoints import v2_bp
 from whatsthedamage.controllers.frontend_routes import frontend_bp
 from whatsthedamage.api.error_handlers import register_error_handlers
 from whatsthedamage.config.flask_config import FlaskAppConfig
-from whatsthedamage.utils.flask_locale import get_locale
-from whatsthedamage.utils.version import get_version
 from whatsthedamage.utils.logging import configure_logging, get_logger, LoggerAdapter
 from whatsthedamage.services.service_container import ServiceContainer, create_service_container
 
@@ -39,40 +36,6 @@ def _configure_cors(app: Flask) -> None:
     CORS(app, resources={
         r"/api/*": {"origins": ["http://localhost:3000", "http://127.0.0.1:3000"]}
     })
-
-
-def _setup_jinja2_gettext(app: Flask) -> None:
-    """Configure Jinja2 environment with gettext translation functions."""
-    def jinja_gettext(message: str) -> str:
-        """Jinja2 global gettext function that works with macros."""
-        lang = get_locale()
-        try:
-            translations = gettext.translation(
-                'messages',
-                localedir=os.path.join(app.root_path, 'locale'),
-                languages=[lang],
-                fallback=True
-            )
-        except Exception:
-            translations = gettext.NullTranslations()
-        return translations.gettext(message)
-
-    def jinja_ngettext(singular: str, plural: str, n: int) -> str:
-        """Jinja2 global ngettext function that works with macros."""
-        lang = get_locale()
-        try:
-            translations = gettext.translation(
-                'messages',
-                localedir=os.path.join(app.root_path, 'locale'),
-                languages=[lang],
-                fallback=True
-            )
-        except Exception:
-            translations = gettext.NullTranslations()
-        return translations.ngettext(singular, plural, n)
-
-    app.jinja_env.globals['_'] = jinja_gettext
-    app.jinja_env.globals['ngettext'] = jinja_ngettext
 
 
 def _load_external_config(app: Flask) -> None:
@@ -107,29 +70,6 @@ def _initialize_service_container(
     app.extensions['drilldown_response_service'] = service_container.drilldown_response_service
 
     return service_container
-
-
-def _setup_template_context_processors(app: Flask) -> None:
-    """Set up template context processors for gettext integration."""
-    @app.context_processor
-    def inject_gettext() -> dict[str, Any]:
-        lang = get_locale()
-        try:
-            translations = gettext.translation(
-                'messages',
-                localedir=os.path.join(current_app.root_path, 'locale'),
-                languages=[lang],
-                fallback=True
-            )
-        except Exception:
-            translations = gettext.NullTranslations()
-
-        return {
-            '_': translations.gettext,
-            'ngettext': translations.ngettext,
-            'app_version': get_version(),
-            'lang': lang
-        }
 
 
 def _register_blueprints(app: Flask) -> None:
@@ -175,13 +115,11 @@ def create_app(
 
     logger.info("Flask application configured successfully")
 
-    _setup_jinja2_gettext(app)
     _load_external_config(app)
     _ensure_upload_folder(app)
 
     service_container = _initialize_service_container(app, service_container)
 
-    _setup_template_context_processors(app)
     _register_blueprints(app)
     _register_error_handlers(app)
     _setup_request_logging(app, logger)

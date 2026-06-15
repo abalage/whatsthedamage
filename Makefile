@@ -86,22 +86,10 @@ lint: dev
 	$(TOX) -e lint
 	$(TOX) -e type
 
-# Extract strings for backend (Python + Jinja2)
-lang-backend: dev
-	$(PYBABEL) extract -F babel.cfg \
-	  -k getTranslation -k gettext -k ngettext -k dgettext -k _ -k N_ \
-	  -o src/whatsthedamage/locale/en/LC_MESSAGES/messages.pot \
-	  src/whatsthedamage/
-
-# Extract and compile strings for frontend using vue3-gettext
-lang-frontend: dev
-	cd frontend && $(NPM_RUN) gettext-extract
-	cd frontend && $(NPM_RUN) gettext-compile
-
 # Extract strings for both backend and frontend
 lang: dev
-	$(MAKE) lang-backend
-	$(MAKE) lang-frontend
+	cd frontend && $(NPM_RUN) gettext-extract
+	cd frontend && $(NPM_RUN) gettext-compile
 
 # Build Sphinx documentation
 docs:

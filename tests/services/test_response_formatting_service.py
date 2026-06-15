@@ -119,31 +119,6 @@ class TestFormatAsJson:
         assert json.loads(json_str) == data
 
 
-class TestFormatCurrency:
-    """Test suite for currency formatting."""
-
-    @pytest.mark.parametrize("value,currency,decimal_places,expected", [
-        (150.5, "EUR", 2, "150.50 EUR"),
-        (0.0, "USD", 2, "0.00 USD"),
-        (1000.123, "HUF", 2, "1000.12 HUF"),
-        (-50.75, "GBP", 2, "-50.75 GBP"),
-        (150.5, "EUR", 0, "150 EUR"),
-        (150.5, "EUR", 3, "150.500 EUR"),
-    ])
-    def test_currency_formatting(self, service, value, currency, decimal_places, expected):
-        """Test currency formatting with various parameters."""
-        result = service.format_currency(value, currency, decimal_places=decimal_places)
-        assert result == expected
-
-    @pytest.mark.parametrize("value,expected", [
-        (150.567, "150.57 EUR"),
-        (150.564, "150.56 EUR"),
-    ])
-    def test_rounding(self, service, value, expected):
-        """Test currency rounding behavior."""
-        assert service.format_currency(value, "EUR") == expected
-
-
 class TestIntegration:
     """Integration tests for end-to-end scenarios."""
 

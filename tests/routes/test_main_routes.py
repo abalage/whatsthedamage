@@ -2,7 +2,7 @@
 
 This module contains tests for the main application routes that are still active
 in the API-only backend. Tests for deprecated routes (process, clear, legal, privacy,
-about, set_language, recalculate-statistics) have been removed as those
+about, recalculate-statistics) have been removed as those
 routes now return 410 Gone or have been moved to API v2 endpoints.
 
 Note: The index route (/) is now handled by frontend_bp which serves the Vue SPA

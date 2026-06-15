@@ -175,7 +175,7 @@ const getMonthsForAccount = (account: AccountData) => {
     const monthField = row.date
     monthMap.set(monthField.timestamp, monthField.timestamp)
   }
-  return Array.from(monthMap.values()).sort((a, b) => b - a) // eslint-disable-line no-magic-numbers
+  return Array.from(monthMap.values()).sort((a, b) => b - a)  
 }
 
 const buildCategoryMonthMap = (account: AccountData) => {

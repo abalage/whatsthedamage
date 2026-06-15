@@ -21,7 +21,6 @@ class CLIController:
         parser.add_argument('--output-format', type=str, default='csv', help='Supported formats are: html, csv. (default: csv).')  # noqa: E501
         parser.add_argument('--nowrap', '-n', action='store_true', help='Do not wrap the output text. Useful for viewing the output without line wraps.')  # noqa: E501
         parser.add_argument('--filter', '-f', type=str, help='Filter by category. Use it in conjunction with --verbose.')
-        parser.add_argument('--lang', '-l', type=str, help='Language for localization.')
         parser.add_argument('--training-data', action='store_true', help="Print training data in JSON format to STDERR. Use 2> redirection to save it to a file.")  # noqa: E501
         parser.add_argument('--ml', action='store_true', help="Use machine learning for categorization instead of regular expressions. (experimental)")
         parser.add_argument('--log-level', type=str, default='WARN', help='Set the logging level (DEBUG, INFO, WARN, ERROR). Default: WARN')
@@ -42,7 +41,6 @@ class CLIController:
             output=parsed_args.output,
             start_date=parsed_args.start_date,
             verbose=parsed_args.verbose,
-            lang=parsed_args.lang,
             training_data=parsed_args.training_data,
             ml=parsed_args.ml,
             log_level=parsed_args.log_level,

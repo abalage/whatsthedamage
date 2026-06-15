@@ -127,7 +127,6 @@ whatsthedamage/
 │   ├── utils/                # Utility functions
 │   │   ├── data_loader.py  # Data loading utils for Machine Learning
 │   │   ├── date_converter.py  # Date parsing/formatting
-│   │   ├── flask_locale.py    # Flask localization
 │   │   ├── logging.py          # Centralized logging utils
 │   │   ├── validation.py      # Validation utilities
 │   │   └── version.py         # Version management
@@ -175,7 +174,7 @@ The system follows a layered architecture with clear separation of concerns:
 - **Service Layer**: Business logic services (ProcessingService, ValidationService, etc.)
 - **Model Layer**: Data processing and domain logic (CSVProcessor, RowsProcessor, etc.)
 - **Configuration Layer**: Centralized configuration management
-- **Utility Layer**: Cross-cutting concerns (localization, date handling)
+- **Utility Layer**: Cross-cutting concerns (date handling)
 
 ## 3. Core Components
 
@@ -288,8 +287,6 @@ Frontend SPA (Vue 3)
 **Key Features**:
 - Multiple output formats: HTML tables, CSV strings, JSON, plain text
 - AccountResponse formatting for web and API interfaces
-- Currency formatting with locale support
-- Template preparation for Jinja2 rendering
 - Error response building for consistent API error handling
 - Account-aware formatting with secure ID handling
 
@@ -440,11 +437,7 @@ Frontend SPA (Vue 3)
 
 ### 5.2. Localization
 
-**Service Name**: gettext/i18n
-
-**Purpose**: Provides localization support for English and Hungarian languages.
-
-**Integration Method**: Python gettext module with locale files
+Removed.
 
 ### 5.3. REST API v2
 

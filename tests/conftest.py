@@ -189,8 +189,7 @@ def app_context():
         end_date="2023-12-31",
         filter=None,
         output=None,
-        start_date="2023-01-01",
-        lang="en",
+        start_date="2023-01-01"
     )
 
     # Return the AppContext object

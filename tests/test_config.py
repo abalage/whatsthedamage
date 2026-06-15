@@ -52,7 +52,6 @@ def test_app_args_required_fields():
         "filter": None,
         "output": None,
         "start_date": None,
-        "lang": None,
         "training_data": False,
         "ml": False,
     }
@@ -76,7 +75,6 @@ def test_app_args_optional_fields():
         "filter": "test_filter",
         "output": "test_output",
         "start_date": "2023-01-01",
-        "lang": None,
         "training_data": True,
         "ml": True,
     }

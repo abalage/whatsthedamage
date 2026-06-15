@@ -56,7 +56,6 @@ All API endpoints accept multipart/form-data with the following parameters:
 | `end_date` | ❌ No | string | Filter end date (format: YYYY-MM-DD) |
 | `ml_enabled` | ❌ No | boolean | Enable ML categorization (default: false) |
 | `category_filter` | ❌ No | string | Filter by specific category (e.g., "Grocery") |
-| `language` | ❌ No | string | Output language: "en" or "hu" (default: "en") |
 
 ## Response Format
 

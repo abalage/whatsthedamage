@@ -7,7 +7,6 @@ from typing import List, Dict, Optional, Any
 from dataclasses import dataclass
 import yaml
 from pydantic import BaseModel, ValidationError, Field
-from gettext import gettext as _
 from whatsthedamage.config.ml_config import MLConfig
 from whatsthedamage.utils.logging import get_logger
 
@@ -59,28 +58,28 @@ class CategoryDefinition(BaseModel):
 
 
 AVAILABLE_CATEGORIES = [
-    CategoryDefinition(id="grocery", default_name=_("Grocery"), patterns=[]),
-    CategoryDefinition(id="clothes", default_name=_("Clothes"), patterns=[]),
-    CategoryDefinition(id="dining_out", default_name=_("Dining Out"), patterns=[]),
-    CategoryDefinition(id="health", default_name=_("Health"), patterns=[]),
-    CategoryDefinition(id="payment", default_name=_("Payment"), patterns=[]),
-    CategoryDefinition(id="transportation", default_name=_("Transportation"), patterns=[]),
-    CategoryDefinition(id="utility", default_name=_("Utility"), patterns=[]),
-    CategoryDefinition(id="home_maintenance", default_name=_("Home Maintenance"), patterns=[]),
-    CategoryDefinition(id="entertainment_and_leisure", default_name=_("Entertainment and Leisure"), patterns=[]),
-    CategoryDefinition(id="insurance", default_name=_("Insurance"), patterns=[]),
-    CategoryDefinition(id="loan", default_name=_("Loan"), patterns=[]),
-    CategoryDefinition(id="withdrawal", default_name=_("Withdrawal"), patterns=[]),
-    CategoryDefinition(id="fee", default_name=_("Fee"), patterns=[]),
-    CategoryDefinition(id="deposit", default_name=_("Deposit"), patterns=[]),
-    CategoryDefinition(id="refund", default_name=_("Refund"), patterns=[]),
-    CategoryDefinition(id="interest", default_name=_("Interest"), patterns=[]),
-    CategoryDefinition(id="electronics_digital_services", default_name=_("Electronics and Digital Services"), patterns=[]),
-    CategoryDefinition(id="transfer", default_name=_("Transfer"), patterns=[]),
-    CategoryDefinition(id="other", default_name=_("Other"), patterns=[]),
-    CategoryDefinition(id="balance", default_name=_("Balance"), patterns=[]),
-    CategoryDefinition(id="total_spendings", default_name=_("Total Spendings"), patterns=[]),
-    CategoryDefinition(id="cost_of_living", default_name=_("Cost of Living"), patterns=[]),
+    CategoryDefinition(id="grocery", default_name="Grocery", patterns=[]),
+    CategoryDefinition(id="clothes", default_name="Clothes", patterns=[]),
+    CategoryDefinition(id="dining_out", default_name="Dining Out", patterns=[]),
+    CategoryDefinition(id="health", default_name="Health", patterns=[]),
+    CategoryDefinition(id="payment", default_name="Payment", patterns=[]),
+    CategoryDefinition(id="transportation", default_name="Transportation", patterns=[]),
+    CategoryDefinition(id="utility", default_name="Utility", patterns=[]),
+    CategoryDefinition(id="home_maintenance", default_name="Home Maintenance", patterns=[]),
+    CategoryDefinition(id="entertainment_and_leisure", default_name="Entertainment and Leisure", patterns=[]),
+    CategoryDefinition(id="insurance", default_name="Insurance", patterns=[]),
+    CategoryDefinition(id="loan", default_name="Loan", patterns=[]),
+    CategoryDefinition(id="withdrawal", default_name="Withdrawal", patterns=[]),
+    CategoryDefinition(id="fee", default_name="Fee", patterns=[]),
+    CategoryDefinition(id="deposit", default_name="Deposit", patterns=[]),
+    CategoryDefinition(id="refund", default_name="Refund", patterns=[]),
+    CategoryDefinition(id="interest", default_name="Interest", patterns=[]),
+    CategoryDefinition(id="electronics_digital_services", default_name="Electronics and Digital Services", patterns=[]),
+    CategoryDefinition(id="transfer", default_name="Transfer", patterns=[]),
+    CategoryDefinition(id="other", default_name="Other", patterns=[]),
+    CategoryDefinition(id="balance", default_name="Balance", patterns=[]),
+    CategoryDefinition(id="total_spendings", default_name="Total Spendings", patterns=[]),
+    CategoryDefinition(id="cost_of_living", default_name="Cost of Living", patterns=[]),
 ]
 
 # Default categories that constitute Cost of Living
@@ -156,10 +155,10 @@ def load_config(config_path: str | None) -> AppConfig:
 
 def get_category_by_id(category_id: str) -> Optional[CategoryDefinition]:
     """Get CategoryDefinition by ID.
-    
+
     Args:
         category_id: The category ID to look up (e.g., 'grocery', 'clothes')
-        
+
     Returns:
         The CategoryDefinition object if found, None otherwise.
     """
@@ -170,34 +169,35 @@ def get_category_by_id(category_id: str) -> Optional[CategoryDefinition]:
 
 
 def get_category_display_name(category_id: str) -> str:
-    """Get localized display name for a category ID.
-    
-    Uses gettext to translate the default_name from CategoryDefinition.
+    """Get display name for a category ID.
+
+    Returns the plain English default_name from CategoryDefinition.
     This is used by CLI and any backend code that needs to display category names.
-    
+    For frontend display, use category_id as translation key in frontend PO files.
+
     Args:
         category_id: The category ID to get display name for (e.g., 'grocery')
-        
+
     Returns:
-        The localized display name, or the category_id if not found.
+        The display name, or the category_id if not found.
     """
     category = get_category_by_id(category_id)
     if category:
-        return _(category.default_name)  # gettext handles translation
+        return category.default_name
     return category_id  # fallback to ID if not found
 
 
 def get_category_id_from_name(category_name: str) -> str:
     """Get category ID from a display name.
-    
+
     This function tries to find a matching category by comparing the input
     against both the default_name and id fields. It also handles common
     transformations like replacing spaces with underscores.
-    
+
     Args:
         category_name: The display name or ID to look up (e.g., 'Grocery', 'grocery',
                       'Cost of Living', 'cost_of_living', 'Konyha')
-        
+
     Returns:
         The category ID if found, otherwise returns the lowercased input
         with spaces replaced by underscores as a fallback.
@@ -206,30 +206,30 @@ def get_category_id_from_name(category_name: str) -> str:
     for cat in AVAILABLE_CATEGORIES:
         if cat.id == category_name:
             return cat.id
-    
+
     # Then, try exact match on default_name
     for cat in AVAILABLE_CATEGORIES:
         if cat.default_name == category_name:
             return cat.id
-    
+
     # Try case-insensitive match on id
     category_lower = category_name.lower()
     for cat in AVAILABLE_CATEGORIES:
         if cat.id == category_lower:
             return cat.id
-    
+
     # Try case-insensitive match on default_name
     for cat in AVAILABLE_CATEGORIES:
         if cat.default_name.lower() == category_lower:
             return cat.id
-    
+
     # Fallback: convert input to ID format (lowercase, underscores for spaces)
     # This handles ML predictions that use display names
     normalized = category_lower.replace(" ", "_")
     for cat in AVAILABLE_CATEGORIES:
         if cat.id == normalized:
             return cat.id
-    
+
     # If still not found, return the normalized version
     # This could happen with translated names, but we'll use it as-is
     return normalized
@@ -237,9 +237,12 @@ def get_category_id_from_name(category_name: str) -> str:
 
 def get_localized_category_name(default_name: str) -> str:
     """
-    Get the localized name of a category using gettext.
+    Get the category name.
+
+    Note: This function now returns the plain English name.
+    For localized display, frontend should use category_id as translation key.
 
     :param default_name: The default name of the category.
-    :return: The localized category name.
+    :return: The category name.
     """
-    return _(default_name)
+    return default_name

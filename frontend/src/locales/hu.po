@@ -552,6 +552,97 @@ msgstr "Eredmény ID nem található."
 msgid "Please upload a CSV file first."
 msgstr "Előbb tölts fel egy CSV fájlt."
 
+
+
+# Category display names - using category IDs as msgid
+#: src/stores/categories.ts:80
+msgid "grocery"
+msgstr "Bevásárlás"
+
+#: src/stores/categories.ts:80
+msgid "clothes"
+msgstr "Ruházat"
+
+#: src/stores/categories.ts:80
+msgid "dining_out"
+msgstr "Vendéglátás"
+
+#: src/stores/categories.ts:80
+msgid "health"
+msgstr "Egészség"
+
+#: src/stores/categories.ts:80
+msgid "payment"
+msgstr "Kifizetés"
+
+#: src/stores/categories.ts:80
+msgid "transportation"
+msgstr "Közlekedés"
+
+#: src/stores/categories.ts:80
+msgid "utility"
+msgstr "Rezsi"
+
+#: src/stores/categories.ts:80
+msgid "home_maintenance"
+msgstr "Otthon karbantartás"
+
+#: src/stores/categories.ts:80
+msgid "entertainment_and_leisure"
+msgstr "Szórakozás és szabadidő"
+
+#: src/stores/categories.ts:80
+msgid "insurance"
+msgstr "Biztosítás"
+
+#: src/stores/categories.ts:80
+msgid "loan"
+msgstr "Hitel"
+
+#: src/stores/categories.ts:80
+msgid "withdrawal"
+msgstr "Pénzfelvétel"
+
+#: src/stores/categories.ts:80
+msgid "fee"
+msgstr "Díj"
+
+#: src/stores/categories.ts:80
+msgid "deposit"
+msgstr "Bevétel"
+
+#: src/stores/categories.ts:80
+msgid "refund"
+msgstr "Visszatérítés"
+
+#: src/stores/categories.ts:80
+msgid "interest"
+msgstr "Kamat"
+
+#: src/stores/categories.ts:80
+msgid "electronics_digital_services"
+msgstr "Elektronika és digitális szolgáltatások"
+
+#: src/stores/categories.ts:80
+msgid "transfer"
+msgstr "Átvezetés"
+
+#: src/stores/categories.ts:80
+msgid "other"
+msgstr "Egyéb"
+
+#: src/stores/categories.ts:80
+msgid "balance"
+msgstr "Egyenleg"
+
+#: src/stores/categories.ts:80
+msgid "total_spendings"
+msgstr "Teljes költés"
+
+#: src/stores/categories.ts:80
+msgid "cost_of_living"
+msgstr "Megélhetési költségek"
+
 #~ msgid "Details for Category"
 #~ msgstr "Kategória részletei"
 

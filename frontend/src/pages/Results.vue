@@ -12,6 +12,7 @@ import VueDataTable from '../components/data/VueDataTable.vue'
 import TableLink from '../components/data/TableLink.vue'
 import TableLinkWithPopover from '../components/data/TableLinkWithPopover.vue'
 import type { Column } from '../components/data/VueDataTable.vue'
+import { formatMonthYear } from '../js/dateUtils.js'
 
 const { $gettext } = useGettext()
 
@@ -67,7 +68,7 @@ function buildTableColumns(account: AccountData): Column[] {
     {
       key: 'category',
       title: $gettext('Categories'),
-      sortable: false, // Categories are row headers, not sortable in this view
+      sortable: true,
       component: TableLink,
       componentProps: (value: unknown, row: Record<string, unknown>) => {
         const categoryId = categoriesStore.extractCategoryIdFromData(row)
@@ -85,11 +86,11 @@ function buildTableColumns(account: AccountData): Column[] {
   ]
 
   // Add month columns
-  for (const [monthDisplay, monthTs] of getMonthsForAccount(account)) {
+  for (const monthTs of getMonthsForAccount(account)) {
     const monthId = getMonthId(accountId, monthTs)
     columns.push({
       key: `month-${monthTs}`,
-      title: monthDisplay,
+      title: formatMonthYear(monthTs),
       sortable: true,
       headerTo: { name: 'month-categories', params: { resultId: resultId.value, accountId, monthId } },
       component: TableLinkWithPopover,
@@ -146,7 +147,7 @@ function buildTableData(account: AccountData): Record<string, unknown>[] {
       _rowIds: {}
     }
 
-    for (const [, monthTs] of months) {
+    for (const monthTs of months) {
       const monthData = catMonthMap[category]?.[monthTs]
       const columnKey = `month-${monthTs}`
       row[columnKey] = monthData?.total?.raw ?? 0
@@ -169,12 +170,12 @@ function getAccountHighlights(): Record<string, string[]> {
 }
 
 const getMonthsForAccount = (account: AccountData) => {
-  const monthMap = new Map<number, [string, number]>()
+  const monthMap = new Map<number, number>()
   for (const row of account.dt_response.data) {
     const monthField = row.date
-    monthMap.set(monthField.timestamp, [monthField.display, monthField.timestamp])
+    monthMap.set(monthField.timestamp, monthField.timestamp)
   }
-  return Array.from(monthMap.values()).sort((a, b) => b[1] - a[1]) // eslint-disable-line no-magic-numbers
+  return Array.from(monthMap.values()).sort((a, b) => b - a) // eslint-disable-line no-magic-numbers
 }
 
 const buildCategoryMonthMap = (account: AccountData) => {

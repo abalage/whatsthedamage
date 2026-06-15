@@ -13,6 +13,7 @@ import VueDataTable from '../components/data/VueDataTable.vue'
 import type { Column } from '../components/data/VueDataTable.vue'
 import { fetchCategoryMonthTransactions } from '../js/api.js'
 import type { CategoryMonthTransactionsApiResponse } from '../types/api.js'
+import { formatMonthYear } from '../js/dateUtils.js'
 
 const { $gettext } = useGettext()
 const categoriesStore = useCategoriesStore()
@@ -40,7 +41,7 @@ const columns: Column[] = [
 const getPageTitle = (data: CategoryMonthTransactionsApiResponse): string => {
   const categoryId = categoriesStore.extractCategoryIdFromData(data as Record<string, unknown>)
   const categoryDisplayName = categoryId ? categoriesStore.getCategoryDisplayName(categoryId) : ''
-  return `${$gettext('Details')}: ${categoryDisplayName} - ${data.month_name}`
+  return `${$gettext('Details')}: ${categoryDisplayName} - ${formatMonthYear(data.month_timestamp)}`
 }
 
 const {

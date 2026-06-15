@@ -1,6 +1,6 @@
 /**
  * Pinia store for category definitions
- * 
+ *
  * This store manages the list of available categories fetched from the backend.
  * Categories are used to translate category_id values to display names.
  */
@@ -74,18 +74,22 @@ export const useCategoriesStore = defineStore('categories', () => {
   /**
    * Get display name for a category ID
    * Uses the locale store for i18n translation
+   * Uses category ID as the translation key for frontend-controlled localization
    * @param categoryId - The category ID to get display name for
    * @returns The localized display name, or the category_id if not found
    */
   function getCategoryDisplayName(categoryId: string): string {
+    const localeStore = useLocaleStore();
+    const translated = localeStore.translate(categoryId);
+
+    // If translation returns the same as categoryId (not found in PO files),
+    // try to use default_name as fallback for backward compatibility
     const category = getCategoryById(categoryId);
-    if (category) {
-      // Use the locale store's translation function
-      const localeStore = useLocaleStore();
+    if (translated === categoryId && category?.default_name) {
       return localeStore.translate(category.default_name);
     }
-    // Fallback to the category_id if category not found
-    return categoryId;
+
+    return translated;
   }
 
   /**
@@ -95,16 +99,7 @@ export const useCategoriesStore = defineStore('categories', () => {
    * @returns The extracted category_id or empty string if not found
    */
   function extractCategoryIdFromData(data: Record<string, unknown>): string {
-    const categoryUrl = data.category_url as string | undefined;
     const category_id = data.category_id as string | undefined;
-
-    // Try to extract from category_url first (for drilldown responses)
-    if (categoryUrl) {
-      const match = categoryUrl.match(/categories\/([^/]+)\/months/);
-      if (match) return match[1];
-    }
-
-    // Fall back to direct category_id field
     return category_id ?? '';
   }
 

@@ -1,6 +1,5 @@
 from datetime import datetime, timezone
 from dateutil import parser
-from gettext import gettext as _
 
 
 class DateConverter:
@@ -43,32 +42,34 @@ class DateConverter:
     @staticmethod
     def convert_month_number_to_name(month_number: int) -> str:
         """
-        Convert a month number to its localized month name.
+        Convert a month number to its month name.
+
+        Note: This now returns plain English month names.
+        For localized month names, frontend should format timestamps using browser locale.
 
         :param month_number: The month number to convert. Must be an integer between 1 and 12.
-        :return: The localized name of the month corresponding to the given month number.
+        :return: The month name corresponding to the given month number.
         :raises ValueError: If the month number is not between 1 and 12.
         """
         month_number = int(month_number)
         if 1 <= month_number <= 12:
-            # Use localized month names
             month_names = {
-                1: _("January"),
-                2: _("February"),
-                3: _("March"),
-                4: _("April"),
-                5: _("May"),
-                6: _("June"),
-                7: _("July"),
-                8: _("August"),
-                9: _("September"),
-                10: _("October"),
-                11: _("November"),
-                12: _("December"),
+                1: "January",
+                2: "February",
+                3: "March",
+                4: "April",
+                5: "May",
+                6: "June",
+                7: "July",
+                8: "August",
+                9: "September",
+                10: "October",
+                11: "November",
+                12: "December",
             }
             return month_names[month_number]
         else:
-            raise ValueError(_("Invalid month number. Please enter a number between 1 and 12."))
+            raise ValueError("Invalid month number. Please enter a number between 1 and 12.")
 
     @staticmethod
     def convert_date_format(date_str: str, date_format: str) -> str:

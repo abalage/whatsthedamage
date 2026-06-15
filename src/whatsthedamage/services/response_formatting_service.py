@@ -55,7 +55,7 @@ class ResponseFormattingService(IDataFormattingService):
     def __init__(self, statistical_analysis_service: Optional[StatisticalAnalysisService] = None) -> None:
         """Initialize the response formatting service."""
         self.statistical_analysis_service = statistical_analysis_service
-        self._categories_header = _("Categories")
+        self._categories_header = "Categories"
         self.logger = get_logger(__name__)
 
     # Data Formatting Methods (from DataFormattingService)

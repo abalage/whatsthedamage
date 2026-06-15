@@ -13,6 +13,7 @@ import CostOfLivingCategorySelector from '../components/CostOfLivingCategorySele
 // VueDataTable component
 import VueDataTable from '../components/data/VueDataTable.vue';
 import type { Column } from '../components/data/VueDataTable.vue';
+import { formatMonthYear } from '../js/dateUtils.js';
 
 const { $gettext } = useGettext();
 const feedback = useFeedbackStore();
@@ -65,7 +66,7 @@ const accounts = computed<AccountDataResponse[]>(() => resultsData.value?.accoun
 const monthlyBreakdown = computed(() => {
   if (!costOfLivingData.value) return [];
   return costOfLivingData.value.months.map(month => ({
-    label: month.month,
+    label: formatMonthYear(month.month_timestamp),
     value: month.total,
     timestamp: month.month_timestamp
   }));
@@ -120,7 +121,7 @@ const tableData = computed<Record<string, unknown>[]>(() => {
 
   return costOfLivingData.value.months.map(month => {
     const row: Record<string, unknown> = {
-      month: month.month,
+      month: formatMonthYear(month.month_timestamp),
       total: month.total,
       row_id: month.month_timestamp // Use timestamp as row_id for highlighting
     };
@@ -275,7 +276,7 @@ onMounted(() => loadData());
               <div class="h-100">
                 <div class="card h-100">
                   <div class="card-header d-flex justify-content-between align-items-center p-2">
-                    <h6 class="mb-0">{{ month.month }}</h6>
+                    <h6 class="mb-0">{{ formatMonthYear(month.month_timestamp) }}</h6>
                     <span class="badge bg-primary">{{ month.total }}</span>
                   </div>
                   <div class="card-body p-2">

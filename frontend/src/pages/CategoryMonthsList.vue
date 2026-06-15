@@ -15,6 +15,7 @@ import TableLink from '../components/data/TableLink.vue'
 import type { Column } from '../components/data/VueDataTable.vue'
 import { fetchCategoryMonths } from '../js/api.js'
 import type { CategoryMonthsApiResponse } from '../types/api.js'
+import { formatMonthYear } from '../js/dateUtils.js'
 
 const { $gettext } = useGettext()
 const categoriesStore = useCategoriesStore()
@@ -110,7 +111,7 @@ const {
 const tableData = computed(() => {
   if (!categoryMonthsData.value) return []
   return categoryMonthsData.value.data.map(month => ({
-    month: month.month,
+    month: formatMonthYear(month.month_timestamp),
     total: month.total.raw,
     total_display: month.total.display,
     row_id: month.row_id,

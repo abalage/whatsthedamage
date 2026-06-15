@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { ref, inject } from 'vue'
+import { ref } from 'vue'
 import { useGettext } from 'vue3-gettext'
 
 export const useLocaleStore = defineStore('locale', () => {

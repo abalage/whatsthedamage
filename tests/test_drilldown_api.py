@@ -45,7 +45,6 @@ def client():
         def get_category_months_side_effect(result_id, account_id, category_id):
             months_list = [
                 MonthData(
-                    month='January 2023',
                     month_timestamp=1672531200,
                     total={'display': '$150.00', 'raw': 150.0},
                     row_id='row_1',
@@ -81,7 +80,7 @@ def client():
                 account_id=account_id,
                 account_name='Test Account',
                 month_id=month_id,
-                month_name='January 2023',
+                month_timestamp=1672531200,
                 data=categories_list,
                 highlights=None
             )
@@ -119,7 +118,7 @@ def client():
                     account_name='Test Account',
                     category_id=category_id,
                     month_id=month_id,
-                    month_name='January 2023',
+                    month_timestamp=1672531200,
                     data=transactions_list,
                     highlights=None
                 )
@@ -228,11 +227,10 @@ def test_get_category_months_success(client):
     assert data['account_id'] == 'test_account_123'
     assert data['category_id'] == 'grocery'
     assert len(data['data']) == 1
-    assert data['data'][0]['month'] == 'January 2023'
     assert data['data'][0]['total']['display'] == '$150.00'
-    # Check that cell_url and month_timestamp are present for frontend navigation
+    # Check that month_timestamp is present for frontend navigation
     assert 'cell_url' in data['data'][0]
-    assert 'month_timestamp' in data['data'][0]
+    assert data['data'][0]['month_timestamp'] == 1672531200
     assert data['data'][0]['row_id'] == 'row_1'
 
 
@@ -267,6 +265,7 @@ def test_get_month_categories_success(client):
     assert data['result_id'] == 'test_result_123'
     assert data['account_id'] == 'test_account_123'
     assert data['month_id'] == '1672531200'
+    assert data['month_timestamp'] == 1672531200
     assert len(data['data']) == 2  # Should have both food and entertainment
     
     # Check that both categories are present
@@ -290,6 +289,7 @@ def test_get_category_month_transactions_success(client):
     assert data['account_id'] == 'test_account_123'
     assert data['category_id'] == 'grocery'
     assert data['month_id'] == '1672531200'
+    assert data['month_timestamp'] == 1672531200
     assert len(data['data']) == 2  # Should have both detail rows for food category
     
     # Check transaction details

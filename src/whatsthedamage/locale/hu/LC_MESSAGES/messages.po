@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: whatsthedamage-1.0\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-05-21 10:35+0200\n"
-"PO-Revision-Date: 2026-05-21 10:47+0200\n"
+"POT-Creation-Date: 2026-06-14 21:14+0200\n"
+"PO-Revision-Date: 2026-06-14 21:20+0200\n"
 "Last-Translator: Balázs Németh <balagetech@protonmail.com>\n"
 "Language-Team: Hungarian\n"
 "Language: hu_HU\n"
@@ -18,153 +18,17 @@ msgstr ""
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 "X-Generator: Poedit 3.6\n"
 
-#: src/whatsthedamage/config/config.py:61
-msgid "Grocery"
-msgstr "Bevásárlás"
+#: src/whatsthedamage/config/config.py:83
+msgid "Cost of Living"
+msgstr "Megélhetési költségek"
 
-#: src/whatsthedamage/config/config.py:62
-msgid "Clothes"
-msgstr "Ruházat"
-
-#: src/whatsthedamage/config/config.py:63
-msgid "Dining Out"
-msgstr "Vendéglátás"
-
-#: src/whatsthedamage/config/config.py:64
-msgid "Health"
-msgstr "Egészség"
-
-#: src/whatsthedamage/config/config.py:65
-msgid "Payment"
-msgstr "Kifizetés"
-
-#: src/whatsthedamage/config/config.py:66
-msgid "Transportation"
-msgstr "Közlekedés"
-
-#: src/whatsthedamage/config/config.py:67
-msgid "Utility"
-msgstr "Rezsi"
-
-#: src/whatsthedamage/config/config.py:68
-msgid "Home Maintenance"
-msgstr "Otthon karbantartás"
-
-#: src/whatsthedamage/config/config.py:69
-msgid "Entertainment and Leisure"
-msgstr "Szórakozás és szabadidő"
-
-#: src/whatsthedamage/config/config.py:70
-msgid "Insurance"
-msgstr "Biztosítás"
-
-#: src/whatsthedamage/config/config.py:71
-msgid "Loan"
-msgstr "Hitel"
-
-#: src/whatsthedamage/config/config.py:72
-msgid "Withdrawal"
-msgstr "Pénzfelvétel"
-
-#: src/whatsthedamage/config/config.py:73
-msgid "Fee"
-msgstr "Díj"
-
-#: src/whatsthedamage/config/config.py:74
-msgid "Deposit"
-msgstr "Bevétel"
-
-#: src/whatsthedamage/config/config.py:75
-msgid "Refund"
-msgstr "Visszatérítés"
-
-#: src/whatsthedamage/config/config.py:76
-msgid "Interest"
-msgstr "Kamat"
-
-#: src/whatsthedamage/config/config.py:77
-msgid "Electronics and Digital Services"
-msgstr "Elektronika és digitális szolgáltatások"
-
-#: src/whatsthedamage/config/config.py:78
-msgid "Transfer"
-msgstr "Átvezetés"
-
-#: src/whatsthedamage/config/config.py:79
-msgid "Other"
-msgstr "Egyéb"
-
-#: src/whatsthedamage/config/config.py:80
-#: src/whatsthedamage/models/dt_calculators.py:36
-#: src/whatsthedamage/models/dt_calculators.py:68
-msgid "Balance"
-msgstr "Egyenleg"
-
-#: src/whatsthedamage/config/config.py:81
-#: src/whatsthedamage/models/dt_calculators.py:68
-#: src/whatsthedamage/models/dt_calculators.py:85
-msgid "Total Spendings"
-msgstr "Teljes költés"
-
-#: src/whatsthedamage/services/response_formatting_service.py:57
+#: src/whatsthedamage/services/response_formatting_service.py:58
 msgid "Categories"
 msgstr "Kategóriák"
 
-#: src/whatsthedamage/services/response_formatting_service.py:436
+#: src/whatsthedamage/services/response_formatting_service.py:437
 msgid "Account"
 msgstr "Számla"
-
-#: src/whatsthedamage/utils/date_converter.py:56
-msgid "January"
-msgstr "Január"
-
-#: src/whatsthedamage/utils/date_converter.py:57
-msgid "February"
-msgstr "Február"
-
-#: src/whatsthedamage/utils/date_converter.py:58
-msgid "March"
-msgstr "Március"
-
-#: src/whatsthedamage/utils/date_converter.py:59
-msgid "April"
-msgstr "Április"
-
-#: src/whatsthedamage/utils/date_converter.py:60
-msgid "May"
-msgstr "Május"
-
-#: src/whatsthedamage/utils/date_converter.py:61
-msgid "June"
-msgstr "Június"
-
-#: src/whatsthedamage/utils/date_converter.py:62
-msgid "July"
-msgstr "Július"
-
-#: src/whatsthedamage/utils/date_converter.py:63
-msgid "August"
-msgstr "Augusztus"
-
-#: src/whatsthedamage/utils/date_converter.py:64
-msgid "September"
-msgstr "Szeptember"
-
-#: src/whatsthedamage/utils/date_converter.py:65
-msgid "October"
-msgstr "Október"
-
-#: src/whatsthedamage/utils/date_converter.py:66
-msgid "November"
-msgstr "November"
-
-#: src/whatsthedamage/utils/date_converter.py:67
-msgid "December"
-msgstr "December"
-
-#: src/whatsthedamage/utils/date_converter.py:71
-msgid "Invalid month number. Please enter a number between 1 and 12."
-msgstr "Érvénytelen hónap. A hónap száma 1 és 12 között kell hogy legyen."
 
 #~ msgid "Vehicle"
 #~ msgstr "Vehicle"

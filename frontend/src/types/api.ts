@@ -280,9 +280,9 @@ export interface CategoryDefinition {
 
 /**
  * Data for a single month in category months response
+ * Frontend should use month_timestamp to format the month display name.
  */
 interface MonthData {
-  month: string;
   month_timestamp: number;
   total: DisplayRawField;
   row_id: string;
@@ -317,13 +317,14 @@ interface CategoryData {
  * Response from GET /api/v2/results/<r>/accounts/<a>/months/<m>/categories
  *
  * Returns category-by-category aggregation for a specific month.
+ * Frontend should use month_timestamp to format the month display name.
  */
 export interface MonthCategoriesApiResponse {
   result_id: string;
   account_id: string;
   account_name: string;
   month_id: string;
-  month_name: string;
+  month_timestamp: number;
   data: CategoryData[];
   highlights?: StatisticalHighlights;
 }
@@ -342,6 +343,7 @@ interface TransactionDetailResponse {
  * Response from GET /api/v2/results/<r>/accounts/<a>/categories/<c>/months/<m>/transactions
  *
  * Returns individual transaction details for a specific category and month.
+ * Frontend should use month_timestamp to format the month display name.
  */
 export interface CategoryMonthTransactionsApiResponse {
   result_id: string;
@@ -349,7 +351,7 @@ export interface CategoryMonthTransactionsApiResponse {
   account_name: string;
   category_id: string;
   month_id: string;
-  month_name: string;
+  month_timestamp: number;
   data: TransactionDetailResponse[];
   highlights?: StatisticalHighlights;
 }

@@ -27,6 +27,9 @@ from whatsthedamage.services.interfaces import (
     IIdMappingService,
     ICacheService,
 )
+from whatsthedamage.utils.logging import get_logger
+
+logger = get_logger(__name__)
 
 
 class DrilldownResponseService:
@@ -111,15 +114,7 @@ class DrilldownResponseService:
                 month_id=month_ts
             )
 
-            # Convert timestamp to human-readable month format (e.g., "January 2024")
-            if month_ts:
-                dt = datetime.datetime.fromtimestamp(int(month_ts))
-                month_name = DateConverter.convert_month_number_to_name(dt.month)
-                month_display = f"{month_name} {dt.year}"
-            else:
-                month_display = "Unknown"
             months_list.append(MonthData(
-                month=month_display,
                 month_timestamp=int(month_ts) if month_ts else 0,
                 total=total_dict,
                 row_id=row_id,
@@ -203,17 +198,6 @@ class DrilldownResponseService:
                 category_url=category_url
             ))
 
-        # Get month display name
-        def format_month_name(v: str) -> str:
-            dt = datetime.datetime.fromtimestamp(int(v))
-            month_name_loc = DateConverter.convert_month_number_to_name(dt.month)
-            return f"{month_name_loc} {dt.year}"
-
-        month_name = self._get_display_name(
-            account_data['data'], original_month_ts, 'date', 'display',
-            format_month_name
-        )
-
         # Aggregate highlights for drilldown rows
         highlights = self._aggregate_highlights_for_drilldown(
             cached_result, category_groups, category_filter=None, month_filter=original_month_ts
@@ -224,7 +208,7 @@ class DrilldownResponseService:
             account_id=account_id,
             account_name=account_data['name'],
             month_id=month_id,
-            month_name=month_name,
+            month_timestamp=int(original_month_ts) if original_month_ts else 0,
             data=categories_list,
             highlights=highlights
         )
@@ -889,12 +873,14 @@ class DrilldownResponseService:
         try:
             original_category = self._id_mapping_service.get_category_name(result_id, category_id)
         except Exception:
+            logger.warning(f"Failed to resolve category name for result_id={result_id}, category_id={category_id}")
             original_category = category_id
         if original_category is None:
             original_category = category_id
         try:
             original_month_ts = self._id_mapping_service.get_month_timestamp(month_id)
         except Exception:
+            logger.warning(f"Failed to resolve month timestamp for result_id={result_id}, month_id={month_id}")
             original_month_ts = month_id
         if original_month_ts is None:
             original_month_ts = month_id
@@ -1047,24 +1033,6 @@ class DrilldownResponseService:
         if original_category is None or original_month_ts is None:
             raise ValueError('Category or month not found')
 
-        # Get display names with better fallback
-        category_name = self._get_display_name(
-            account_data['data'], original_category, 'category', 'category_display',
-            lambda v: v.replace('_', ' ').title()
-        )
-
-        def format_month_name(v: str) -> str:
-            if v.isdigit():
-                dt = datetime.datetime.fromtimestamp(int(v))
-                month_name_loc = DateConverter.convert_month_number_to_name(dt.month)
-                return f"{month_name_loc} {dt.year}"
-            return v.replace('-', ' ').title()
-
-        month_name = self._get_display_name(
-            account_data['data'], original_month_ts, 'date', 'display',
-            format_month_name
-        )
-
         # Extract transactions and convert to TransactionDetail DTOs
         transactions_dicts = self._extract_transactions(
             account_data['data'], original_category, original_month_ts
@@ -1090,7 +1058,7 @@ class DrilldownResponseService:
                 type='',
                 confidence=None,
                 row_id=tx_dict.get('row_id', ''),
-                category_id=category_id,
+                category_id=original_category,
                 month_id=month_id
             ))
 
@@ -1100,9 +1068,9 @@ class DrilldownResponseService:
             result_id=result_id,
             account_id=account_id,
             account_name=account_data['name'],
-            category_id=category_id,
+            category_id=original_category,
             month_id=month_id,
-            month_name=month_name,
+            month_timestamp=int(original_month_ts) if original_month_ts else 0,
             data=transactions,
             highlights=highlights_dict
         )

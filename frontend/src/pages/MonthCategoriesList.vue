@@ -15,6 +15,7 @@ import TableLink from '../components/data/TableLink.vue'
 import type { Column } from '../components/data/VueDataTable.vue'
 import { fetchMonthCategories } from '../js/api.js'
 import type { MonthCategoriesApiResponse } from '../types/api.js'
+import { formatMonthYear } from '../js/dateUtils.js'
 
 const { $gettext } = useGettext()
 const categoriesStore = useCategoriesStore()
@@ -79,7 +80,7 @@ const {
     }
     return fetchMonthCategories(params)
   },
-  getPageTitle: (data) => `${$gettext('Details')}: ${data.month_name}`,
+  getPageTitle: (data) => `${$gettext('Details')}: ${formatMonthYear(data.month_timestamp)}`,
   breadcrumbItems: (): BreadcrumbItem[] => [
     { name: $gettext('Home'), to: '/' },
     { name: $gettext('Results'), to: { name: 'results', query: { resultId: getRouteParam('resultId') } } },

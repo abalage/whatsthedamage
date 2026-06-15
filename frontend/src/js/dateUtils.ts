@@ -22,22 +22,3 @@ export function formatMonthYear(timestamp: number): string {
     year: 'numeric' 
   });
 }
-
-/**
- * Format a timestamp as a localized date string.
- * 
- * @param timestamp - Unix epoch timestamp in seconds
- * @param options - Intl.DateTimeFormatOptions for custom formatting
- * @returns Formatted date string
- */
-export function formatDate(timestamp: number, options?: Intl.DateTimeFormatOptions): string {
-  const localeStore = useLocaleStore();
-  const date = new Date(timestamp * 1000);
-  const defaultOptions: Intl.DateTimeFormatOptions = {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric'
-  };
-  const mergedOptions = { ...defaultOptions, ...options };
-  return date.toLocaleString(localeStore.locale, mergedOptions);
-}

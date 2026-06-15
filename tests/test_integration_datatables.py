@@ -37,7 +37,6 @@ def app_context():
         end_date=None,
         verbose=False,
         filter=None,
-        lang="en",
         training_data=False,
         ml=False,
         output="html"

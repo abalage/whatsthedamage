@@ -54,7 +54,6 @@ class ProcessingService:
         end_date: str | None = None,
         ml_enabled: bool = False,
         category_filter: str | None = None,
-        language: str = 'en',
         verbose: bool = False,
         training_data: bool = False
     ) -> ProcessingResponse:
@@ -70,7 +69,6 @@ class ProcessingService:
             end_date: Filter transactions to this date (YYYY-MM-DD)
             ml_enabled: Use ML-based categorization instead of regex
             category_filter: Filter results to specific category
-            language: Output language for month names ('en' or 'hu')
             verbose: Print verbose categorized output to stdout
             training_data: Print training data JSON to stderr
 
@@ -79,7 +77,7 @@ class ProcessingService:
         """
         start_time = time.time()
         logger.info(f"Starting CSV processing: {csv_file_path}")
-        logger.debug(f"Processing parameters: ml_enabled={ml_enabled}, category_filter={category_filter}, language={language}")
+        logger.debug(f"Processing parameters: ml_enabled={ml_enabled}, category_filter={category_filter}")
 
         # Build arguments for CSVProcessor
         args = self._build_args(
@@ -89,7 +87,6 @@ class ProcessingService:
             end_date=end_date,
             ml_enabled=ml_enabled,
             category_filter=category_filter,
-            language=language,
             verbose=verbose,
             training_data=training_data
         )
@@ -164,7 +161,6 @@ class ProcessingService:
         end_date: str | None = None,
         ml_enabled: bool = False,
         category_filter: str | None = None,
-        language: str = 'en',
         verbose: bool = False,
         training_data: bool = False
     ) -> AppArgs:
@@ -177,7 +173,6 @@ class ProcessingService:
             end_date: End date filter
             ml_enabled: ML categorization flag
             category_filter: Category filter
-            language: Language code
             verbose: Verbose output flag
 
         Returns:
@@ -195,7 +190,6 @@ class ProcessingService:
             verbose=verbose,
             nowrap=False,
             training_data=training_data,
-            lang=language,
             ml=ml_enabled
         )
 

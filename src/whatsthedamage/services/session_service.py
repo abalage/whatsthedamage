@@ -82,16 +82,12 @@ class SessionService:
         SESSION_KEY_FORM_DATA: Key for storing form data
         SESSION_KEY_RESULT: Key for storing HTML result
         SESSION_KEY_TABLE_DATA: Key for storing table data
-        SESSION_KEY_LANG: Key for storing language preference
-        DEFAULT_LANGUAGE: Default language code
     """
 
     SESSION_KEY_FORM_DATA = 'form_data'
     SESSION_KEY_RESULT = 'result'
     SESSION_KEY_TABLE_DATA = 'table_data'
-    SESSION_KEY_LANG = 'lang'
     SESSION_KEY_UPLOADED_FILES = 'uploaded_files'
-    DEFAULT_LANGUAGE = 'en'
 
     def store_form_data(self, form_data: Dict[str, Any]) -> None:
         """Store form data in session.
@@ -119,21 +115,6 @@ class SessionService:
         """
         return self.SESSION_KEY_FORM_DATA in session
 
-    def set_language(self, lang_code: str) -> None:
-        """Set user language preference.
-
-        :param lang_code: Language code (e.g., 'en', 'hu')
-        """
-        session[self.SESSION_KEY_LANG] = lang_code
-
-    def get_language(self) -> str:
-        """Get user language preference.
-
-        :returns: Language code from session or default language
-        :rtype: str
-        """
-        return str(session.get(self.SESSION_KEY_LANG, self.DEFAULT_LANGUAGE))
-
     def clear_form_data(self) -> None:
         """Remove form data from session."""
         session.pop(self.SESSION_KEY_FORM_DATA, None)
@@ -147,8 +128,6 @@ class SessionService:
         """Clear all session data managed by this service."""
         self.clear_form_data()
         self.clear_result()
-        # Note: Language preference is preserved across clears
-        # If you need to clear it too, add: session.pop(self.SESSION_KEY_LANG, None)
 
     def store_uploaded_file_reference(self, file_path: str, ttl: int = 600) -> None:
         """Store uploaded file reference with TTL.

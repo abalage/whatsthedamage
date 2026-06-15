@@ -7,7 +7,6 @@ after all category data has been added to the builder.
 """
 
 from typing import List, Dict, Tuple, TYPE_CHECKING
-from gettext import gettext as _
 from whatsthedamage.models.domain.dt_models import AggregatedRow, DateField
 
 if TYPE_CHECKING:

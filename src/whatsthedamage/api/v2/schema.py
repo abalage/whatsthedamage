@@ -195,12 +195,6 @@ def get_openapi_schema() -> dict[str, Any]:
                             "type": "string",
                             "description": "Filter results to specific category by category_id (e.g., 'grocery'). Use /categories endpoint to see available IDs.",
                             "example": "grocery"
-                        },
-                        "language": {
-                            "type": "string",
-                            "enum": ["en", "hu"],
-                            "default": "en",
-                            "description": "Output language for month names and messages"
                         }
                     }
                 },

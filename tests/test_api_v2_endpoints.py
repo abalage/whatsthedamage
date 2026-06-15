@@ -54,8 +54,7 @@ class TestAPIv2Process:
     @pytest.mark.parametrize('param_name,param_value,expected_metadata', [
         ('start_date', '2023.01.01', None),  # Metadata checked separately
         ('ml_enabled', 'true', {'ml_enabled': True}),
-        ('category_filter', 'grocery', None),
-        ('language', 'hu', None),
+        ('category_filter', 'grocery', None)
     ])
     def test_process_with_parameters(self, api_test_helper, mock_processing_service, sample_csv_file,
                                      param_name, param_value, expected_metadata):

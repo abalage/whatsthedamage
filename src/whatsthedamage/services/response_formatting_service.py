@@ -28,7 +28,6 @@ from whatsthedamage.models.api.responses import (
     MonthUrlInfo,
     CellUrlInfo,
 )
-from gettext import gettext as _
 from whatsthedamage.services.statistical_analysis_service import StatisticalAnalysisService
 from whatsthedamage.services.interfaces import IDataFormattingService
 from whatsthedamage.utils.logging import get_logger
@@ -195,30 +194,6 @@ class ResponseFormattingService(IDataFormattingService):
         if pretty:
             return json.dumps(data, indent=2, ensure_ascii=False)
         return json.dumps(data, ensure_ascii=False)
-
-    def format_currency(
-        self,
-        value: float,
-        currency: str,
-        decimal_places: int = 2
-    ) -> str:
-        """Format currency value for display.
-
-        :param value: Numeric value to format
-        :param currency: Currency code (e.g., "EUR", "USD")
-        :param decimal_places: Number of decimal places
-        :return: Formatted currency string
-
-        Example::
-
-            >>> formatted = service.format_currency(150.567, "EUR")
-            >>> assert formatted == "150.57 EUR"
-
-        .. note::
-            Simple formatting is used. Can be extended with babel/locale
-            support in the future if needed.
-        """
-        return f"{value:.{decimal_places}f} {currency}"
 
     def format_for_output(
         self,
@@ -434,7 +409,7 @@ class ResponseFormattingService(IDataFormattingService):
                 # Format account number (add dash every 8 digits)
                 formatted_id = self.format_account_id(account_id)
                 separator = "=" * 60
-                header = f"\n{separator}\n{_('Account')}: {formatted_id}\n{separator}\n"
+                header = f"\n{separator}\n{'Account'}: {formatted_id}\n{separator}\n"
                 outputs.append(header)
 
             # Use existing formatter for single account

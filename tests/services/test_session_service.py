@@ -138,43 +138,8 @@ class TestSessionServiceFormData:
             assert not session_service.has_form_data()
 
 
-class TestSessionServiceLanguage:
-    """Tests for SessionService language management."""
-
-    @pytest.mark.parametrize("lang_code,expected", [
-        ('hu', 'hu'),
-        ('en', 'en'),
-        ('de', 'de'),
-    ])
-    def test_set_and_get_language(self, app, session_service, lang_code, expected):
-        """Test setting and getting language preference."""
-        with app.test_request_context():
-            session_service.set_language(lang_code)
-            assert session['lang'] == expected
-            assert session_service.get_language() == expected
-
-    def test_get_language_default(self, app, session_service):
-        """Test getting language returns default when not set."""
-        with app.test_request_context():
-            assert session_service.get_language() == SessionService.DEFAULT_LANGUAGE
-
-
 class TestSessionServiceClear:
     """Tests for SessionService clear operations."""
-
-    def test_clear_session_preserves_language(self, app, session_service, sample_form_data):
-        """Test clearing all session data preserves language preference."""
-        with app.test_request_context():
-            # Set all session data
-            session_service.store_form_data(sample_form_data)
-            session_service.set_language('hu')
-
-            # Clear session
-            session_service.clear_session()
-
-            # Check form data cleared, language preserved
-            assert not session_service.has_form_data()
-            assert session_service.get_language() == 'hu'
 
     def test_clear_session_when_empty(self, app, session_service):
         """Test clearing session when already empty."""

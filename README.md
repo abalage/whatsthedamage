@@ -30,7 +30,6 @@ My financial details are considered a private matter between myself and my chose
  - Transactions can be filtered by start and end dates. If no filter is set, grouping is based on the number of months.
  - Shows a report about the summarized amounts grouped by transaction categories, including Total Spendings, Balance.
  - Reports can be saved into CSV, XLS files with interactive DataTable visualization (sorting, searching).
- - Localization support. Currently English (default) and Hungarian languages are supported.
  - Frontend is a standalone Vue 3 SPA for easier use with API-only backend communication.
  - REST API v2 for programmatic access and integrations.
 
@@ -111,8 +110,8 @@ You can access the web interface on [http://localhost:5000](http://localhost:500
 
 ## Usage:
 ```
-usage: whatsthedamage [-h] [--start-date START_DATE] [--end-date END_DATE] [--verbose] [--version] [--config CONFIG] [--category CATEGORY] [--output OUTPUT] [--output-format OUTPUT_FORMAT] [--nowrap]
-                      [--filter FILTER] [--lang LANG] [--training-data] [--ml] [--log-level LOG_LEVEL] [--log-output LOG_OUTPUT] [--log-format LOG_FORMAT]
+usage: whatsthedamage [-h] [--start-date START_DATE] [--end-date END_DATE] [--verbose] [--version] [--config CONFIG] [--category-id CATEGORY_ID] [--output OUTPUT] [--output-format OUTPUT_FORMAT] [--nowrap]
+                      [--filter FILTER] [--training-data] [--ml] [--log-level LOG_LEVEL] [--log-output LOG_OUTPUT] [--log-format LOG_FORMAT]
                       filename
 
 A CLI tool to process bank account transaction exports in CSV files.
@@ -128,13 +127,13 @@ options:
   --verbose, -v         Print categorized rows for troubleshooting.
   --version             Show the version of the program.
   --config, -c CONFIG   Path to the configuration file.
-  --category CATEGORY   The attribute to categorize by. (default: category)
+  --category-id CATEGORY_ID
+                        The attribute to categorize by. (default: category_id)
   --output, -o OUTPUT   Save the result into a CSV file with the specified filename.
   --output-format OUTPUT_FORMAT
                         Supported formats are: html, csv. (default: csv).
   --nowrap, -n          Do not wrap the output text. Useful for viewing the output without line wraps.
   --filter, -f FILTER   Filter by category. Use it in conjunction with --verbose.
-  --lang, -l LANG       Language for localization.
   --training-data       Print training data in JSON format to STDERR. Use 2> redirection to save it to a file.
   --ml                  Use machine learning for categorization instead of regular expressions. (experimental)
   --log-level LOG_LEVEL
@@ -313,9 +312,9 @@ frontend/
 
 ### Localization
 
-The application by default uses the English language, however it also supports Hungarian language.
+The application frontend by default uses the English language, however it also supports Hungarian language.
 
-For translation support [gettext](https://docs.python.org/3/library/gettext.html) is used.
+For translation support [vue3-gettext](https://github.com/jshmrtn/vue3-gettext) is used.
 
 1. To update the English .pot file with new translatable strings use `make lang`.
 ```shell
@@ -323,11 +322,11 @@ $ make lang
 ```
 2. Create or edit the .po file to add translations by a tool like `poedit`.
 ```shell
-$ poedit locale/en/LC_MESSAGES/messages.po
+$ poedit frontend/src/locales/en/LC_MESSAGES/messages.po
 ```
 3. Compile the .po file into a .mo file. (`poedit` will do this for you):
 ```bash
-$ msgfmt locale/en/LC_MESSAGES/messages.po -o locale/en/LC_MESSAGES/messages.mo
+$ msgfmt frontend/src/locales/en/LC_MESSAGES/messages.po -o frontend/src/locales/en/LC_MESSAGES/messages.mo
 ```
 
 ### Contributing

@@ -40,7 +40,6 @@ def process_transactions() -> tuple[Response, int]:
     - date_format (optional): Date format string (default from config)
     - ml_enabled (optional): Enable ML categorization (default: false)
     - category_filter (optional): Filter by specific category
-    - language (optional): Output language (default: en)
 
     Returns:
         DetailedResponse: Typed response with processed transaction data
@@ -67,8 +66,7 @@ def process_transactions() -> tuple[Response, int]:
                 start_date=params.start_date,
                 end_date=params.end_date,
                 ml_enabled=params.ml_enabled,
-                category_filter=params.category_filter,
-                language=params.language
+                category_filter=params.category_filter
             )
 
             # Cache result for drilldown views

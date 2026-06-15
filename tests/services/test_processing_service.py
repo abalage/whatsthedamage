@@ -129,7 +129,6 @@ class TestProcessingService:
         assert args.filter is None
         assert args.output_format == 'json'
         assert args.verbose is False
-        assert args.lang == 'en'
         assert args.ml is False
 
     def test_build_args_all_parameters(self, service):
@@ -141,7 +140,6 @@ class TestProcessingService:
             end_date='2023-12-31',
             ml_enabled=True,
             category_filter='Food',
-            language='hu',
             verbose=True
         )
 
@@ -149,7 +147,6 @@ class TestProcessingService:
         assert args.end_date == '2023-12-31'
         assert args.ml is True
         assert args.filter == 'Food'
-        assert args.lang == 'hu'
         assert args.verbose is True
 
     @patch('whatsthedamage.services.processing_service.AppContext')

@@ -123,8 +123,7 @@ def parse_request_params() -> ProcessingRequest:
         end_date=request.form.get('end_date'),
         date_format=request.form.get('date_format'),
         ml_enabled=request.form.get('ml_enabled', 'false').lower() == 'true',
-        category_filter=request.form.get('category_filter'),
-        language=request.form.get('language', 'en')
+        category_filter=request.form.get('category_filter')
     )
 
 

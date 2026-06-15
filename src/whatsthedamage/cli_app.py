@@ -70,8 +70,6 @@ def main() -> None:
     configure_logging(log_level=args.log_level, log_output=args.log_output, log_format=args.log_format)
     logger = get_logger(__name__)
     logger.info("Starting CLI application")
-
-
     logger.debug("CLI arguments parsed", context={"filename": args.filename, "config": args.config})
 
     # Set the locale

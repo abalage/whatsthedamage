@@ -290,3 +290,36 @@ def recalculate_statistics() -> Tuple[Response, int]:
 
     except Exception as e:
         return handle_error(e, 'recalculate_statistics')
+
+
+@v2_bp.route('/categories', methods=['GET'])
+def get_categories() -> tuple[Response, int]:
+    """Get all available category definitions.
+    
+    Returns the full list of CategoryDefinition objects that the frontend
+    can use for translating category IDs to display names client-side.
+    
+    This endpoint provides the canonical source of category definitions,
+    allowing the frontend to map category_id values to localized display names.
+    
+    Returns:
+        List of CategoryDefinition objects with id, default_name, and patterns.
+    
+    Status Codes:
+        200: Successfully retrieved categories
+    """
+    from whatsthedamage.config.config import AVAILABLE_CATEGORIES
+    return jsonify([cat.model_dump() for cat in AVAILABLE_CATEGORIES]), 200
+
+@v2_bp.route('/categories/cost-of-living', methods=['GET'])
+def get_cost_of_living_categories() -> tuple[Response, int]:
+    """Get cost of living category definitions.
+    
+    Returns:
+        List of CategoryDefinition objects for categories counted in cost of living calculations.
+    
+    Status Codes:
+        200: Successfully retrieved list of categories
+    """
+    from whatsthedamage.config.config import AVAILABLE_CATEGORIES, COST_OF_LIVING_CATEGORY_IDS
+    return jsonify([cat.model_dump() for cat in AVAILABLE_CATEGORIES if cat.id in COST_OF_LIVING_CATEGORY_IDS]), 200

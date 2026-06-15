@@ -20,9 +20,21 @@ export const useLocaleStore = defineStore('locale', () => {
     }
   }
 
+  /**
+   * Translate a string using gettext's $gettext function
+   * @param text - The text to translate
+   * @returns The translated text
+   */
+  const translate = (text: string): string => {
+    // The $gettext function is available globally from the vue3-gettext plugin
+    // We need to access it through the injected gettext object
+    return gettext.$gettext(text)
+  }
+
   return {
     locale,
     setLocale,
-    loadLocale
+    loadLocale,
+    translate
   }
 })

@@ -24,8 +24,10 @@ class RowFilter:
         Extract month ID from a date and create a DateField with proper timestamp.
 
         Creates a DateField with:
-        - display: Localized year and month name (e.g., '2023 January', '2023 január')
+        - display: Year and month name in English (e.g., '2023 January')
         - timestamp: Epoch timestamp of the first day of that month
+
+        Note: For localized display, frontend should use the timestamp field.
 
         :param date_value: Date string to extract month from.
         :return: DateField with month name and timestamp.
@@ -34,7 +36,7 @@ class RowFilter:
         # Use DateConverter primitives to keep business display logic here.
         timestamp = DateConverter.start_of_month_epoch(date_value, self._date_format)
 
-        # Build a business-display string: Localized "YYYY <MonthName>"
+        # Build a display string with year and month name (English)
         date_obj = datetime.datetime.fromtimestamp(timestamp)
         month = date_obj.month
         year = date_obj.year

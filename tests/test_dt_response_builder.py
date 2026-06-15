@@ -19,7 +19,7 @@ def mapping():
         'partner': 'partner',
         'amount': 'amount',
         'currency': 'currency',
-        'category': 'category',
+        'category_id': 'category',
         'notice': 'notice',
     }
 
@@ -53,7 +53,7 @@ def test_add_category_data(builder, sample_csv_rows):
     """Test adding category data to the builder."""
     date_field = DateField(display="January", timestamp=1735689600)  # 2025-01-01
     builder.add_category_data(
-        category="Groceries",
+        category_id="grocery",
         rows=sample_csv_rows[:1],
         total_amount=-50.0,
         date_field=date_field
@@ -61,7 +61,7 @@ def test_add_category_data(builder, sample_csv_rows):
 
     assert len(builder._aggregated_rows) == 1
     row = builder._aggregated_rows[0]
-    assert row.category == "Groceries"
+    assert row.category_id == "grocery"
     assert row.total.raw == pytest.approx(-50.0)
     # Currency comes from row data (USD in sample_csv_rows)
     assert "50.00" in row.total.display
@@ -74,28 +74,28 @@ def test_add_multiple_categories(builder, sample_csv_rows):
     """Test adding multiple category data entries."""
     date_field = DateField(display="January", timestamp=1735689600)
     builder.add_category_data(
-        category="Groceries",
+        category_id="grocery",
         rows=sample_csv_rows[:1],
         total_amount=-50.0,
         date_field=date_field
     )
     builder.add_category_data(
-        category="Transportation",
+        category_id="transportation",
         rows=sample_csv_rows[1:2],
         total_amount=-30.0,
         date_field=date_field
     )
 
     assert len(builder._aggregated_rows) == 2
-    assert builder._aggregated_rows[0].category == "Groceries"
-    assert builder._aggregated_rows[1].category == "Transportation"
+    assert builder._aggregated_rows[0].category_id == "grocery"
+    assert builder._aggregated_rows[1].category_id == "transportation"
 
 
 def test_build_returns_datatables_response(builder, sample_csv_rows):
     """Test that build() returns a proper AccountResponse."""
     date_field = DateField(display="January", timestamp=1735689600)
     builder.add_category_data(
-        category="Groceries",
+        category_id="grocery",
         rows=sample_csv_rows,
         total_amount=-105.0,
         date_field=date_field
@@ -104,15 +104,18 @@ def test_build_returns_datatables_response(builder, sample_csv_rows):
     response = builder.build()
 
     assert isinstance(response, AccountResponse)
-    # Response now includes the original category plus Balance and Total Spendings
-    assert len(response.data) == 3
+    # Response now includes the original category plus Balance, Total Spendings, and Cost of Living (grocery is in COST_OF_LIVING_CATEGORY_IDS)
+    assert len(response.data) == 4
     assert isinstance(response.data[0], AggregatedRow)
     # Verify Balance row is included
-    balance_row = next((row for row in response.data if row.category == "Balance"), None)
+    balance_row = next((row for row in response.data if row.category_id == "balance"), None)
     assert balance_row is not None
     # Verify Total Spendings row is included
-    spendings_row = next((row for row in response.data if row.category == "Total Spendings"), None)
+    spendings_row = next((row for row in response.data if row.category_id == "total_spendings"), None)
     assert spendings_row is not None
+    # Verify Cost of Living row is included (grocery is in COST_OF_LIVING_CATEGORY_IDS)
+    cost_of_living_row = next((row for row in response.data if row.category_id == "cost_of_living"), None)
+    assert cost_of_living_row is not None
 
 
 def test_build_detail_rows(builder, sample_csv_rows):
@@ -138,12 +141,12 @@ def test_empty_builder_build(builder):
 def test_builder_with_no_currency():
     """Test builder behavior when no currency is provided."""
     builder = AccountResponseBuilder(date_format="%Y-%m-%d")
-    mapping = {'date': 'date', 'amount': 'amount', 'currency': 'currency', 'partner': 'partner'}
-    rows = [CsvRow({"date": "2025-01-15", "amount": "50.0", "currency": "", "partner": "Test"}, mapping)]
+    mapping = {'date': 'date', 'amount': 'amount', 'currency': 'currency', 'partner': 'partner', 'category_id': 'category'}
+    rows = [CsvRow({"date": "2025-01-15", "amount": "50.0", "currency": "", "partner": "Test", "category": ""}, mapping)]
     date_field = DateField(display="January", timestamp=1735689600)
 
     builder.add_category_data(
-        category="Test",
+        category_id="test",
         rows=rows,
         total_amount=50.0,
         date_field=date_field
@@ -159,7 +162,7 @@ def test_date_field_is_preserved(builder, sample_csv_rows):
     date_field = DateField(display="February", timestamp=1706745600)  # 2024-02-01
 
     builder.add_category_data(
-        category="Test",
+        category_id="test",
         rows=sample_csv_rows[:1],
         total_amount=-100.0,
         date_field=date_field
@@ -176,13 +179,13 @@ def test_balance_category_is_added(builder, sample_csv_rows):
 
     # Add two categories for the same month (negative amounts = expenses)
     builder.add_category_data(
-        category="Groceries",
+        category_id="grocery",
         rows=sample_csv_rows[:1],
         total_amount=-50.0,
         date_field=date_field
     )
     builder.add_category_data(
-        category="Transportation",
+        category_id="transportation",
         rows=sample_csv_rows[1:2],
         total_amount=-30.0,
         date_field=date_field
@@ -194,7 +197,7 @@ def test_balance_category_is_added(builder, sample_csv_rows):
     assert len(response.data) == 5
 
     # Find the Balance row
-    balance_row = next((row for row in response.data if row.category == "Balance"), None)
+    balance_row = next((row for row in response.data if row.category_id == "balance"), None)
     assert balance_row is not None, "Balance category should be present"
 
     # Balance should be the sum of all categories (-50.0 + -30.0 = -80.0)
@@ -206,16 +209,16 @@ def test_balance_category_is_added(builder, sample_csv_rows):
     assert balance_row.details == []  # Balance has no detail rows
 
     # Find the Total Spendings row
-    spendings_row = next((row for row in response.data if row.category == "Total Spendings"), None)
+    spendings_row = next((row for row in response.data if row.category_id == "total_spendings"), None)
     assert spendings_row is not None, "Total Spendings category should be present"
     assert spendings_row.total.raw == pytest.approx(80.0)  # Absolute value of expenses
     assert spendings_row.details == []  # Total Spendings has no detail rows
 
     # Find the Cost of Living row
-    cost_of_living_row = next((row for row in response.data if row.category == "Cost of Living"), None)
+    cost_of_living_row = next((row for row in response.data if row.category_id == "cost_of_living"), None)
     assert cost_of_living_row is not None, "Cost of Living category should be present"
-    # Cost of Living includes Transportation (30.0) but not Groceries (doesn't match "Grocery")
-    assert cost_of_living_row.total.raw == pytest.approx(-30.0)
+    # Cost of Living includes both Grocery and Transportation which are in COST_OF_LIVING_CATEGORY_IDS
+    assert cost_of_living_row.total.raw == pytest.approx(-80.0)
     assert cost_of_living_row.details == []
 
 
@@ -226,13 +229,13 @@ def test_balance_multiple_months(builder, sample_csv_rows, mapping):
 
     # January categories (negative amounts = expenses)
     builder.add_category_data(
-        category="Groceries",
+        category_id="grocery",
         rows=sample_csv_rows[:1],
         total_amount=-50.0,
         date_field=january_field
     )
     builder.add_category_data(
-        category="Transportation",
+        category_id="transportation",
         rows=sample_csv_rows[1:2],
         total_amount=-30.0,
         date_field=january_field
@@ -241,12 +244,12 @@ def test_balance_multiple_months(builder, sample_csv_rows, mapping):
     # February categories
     february_rows = [
         CsvRow(
-            {"date": "2025-02-10", "amount": "-40.0", "currency": "USD", "partner": "Grocery Store", "type": "purchase"},
+            {"date": "2025-02-10", "amount": "-40.0", "currency": "USD", "partner": "Grocery Store", "type": "purchase", "category": ""},
             mapping
         ),
     ]
     builder.add_category_data(
-        category="Groceries",
+        category_id="grocery",
         rows=february_rows,
         total_amount=-40.0,
         date_field=february_field
@@ -254,12 +257,12 @@ def test_balance_multiple_months(builder, sample_csv_rows, mapping):
 
     response = builder.build()
 
-    # Should have 8 rows: Jan Groceries, Jan Transportation, Feb Groceries, Jan Balance, Feb Balance, Jan Total Spendings, Feb Total Spendings, Jan Cost of Living
-    # Note: Feb Cost of Living is not added because Groceries doesn't match "Grocery" in COST_OF_LIVING_CATEGORY_IDS
-    assert len(response.data) == 8
+    # Should have 9 rows: Jan Groceries, Jan Transportation, Feb Groceries, Jan Balance, Feb Balance, Jan Total Spendings, Feb Total Spendings, Jan Cost of Living, Feb Cost of Living
+    # Both Grocery and Transportation are in COST_OF_LIVING_CATEGORY_IDS
+    assert len(response.data) == 9
 
     # Find Balance rows
-    balance_rows = [row for row in response.data if row.category == "Balance"]
+    balance_rows = [row for row in response.data if row.category_id == "balance"]
     assert len(balance_rows) == 2, "Should have Balance for each month"
 
     # Sort by timestamp
@@ -274,18 +277,23 @@ def test_balance_multiple_months(builder, sample_csv_rows, mapping):
     assert balance_rows[1].date.display == "February"
 
     # Find Cost of Living rows
-    cost_of_living_rows = [row for row in response.data if row.category == "Cost of Living"]
-    assert len(cost_of_living_rows) == 1, "Should have Cost of Living only for January (Transportation matches)"
-    assert cost_of_living_rows[0].total.raw == pytest.approx(-30.0)  # Only Transportation from January
+    cost_of_living_rows = [row for row in response.data if row.category_id == "cost_of_living"]
+    assert len(cost_of_living_rows) == 2, "Should have Cost of Living for both months (Grocery and Transportation match)"
+    # Sort by timestamp
+    cost_of_living_rows.sort(key=lambda x: x.date.timestamp)
+    # January Cost of Living: Grocery (-50) + Transportation (-30) = -80
+    assert cost_of_living_rows[0].total.raw == pytest.approx(-80.0)
+    # February Cost of Living: Grocery (-40)
+    assert cost_of_living_rows[1].total.raw == pytest.approx(-40.0)
 
 def test_balance_with_no_currency(mapping):
     """Test Balance formatting when no currency is provided."""
     builder = AccountResponseBuilder(date_format="%Y-%m-%d")
-    rows = [CsvRow({"date": "2025-01-15", "amount": "50.0", "currency": "", "partner": "Test"}, mapping)]
+    rows = [CsvRow({"date": "2025-01-15", "amount": "50.0", "currency": "", "partner": "Test", "category": ""}, mapping)]
     date_field = DateField(display="January", timestamp=1735689600)
 
     builder.add_category_data(
-        category="Test",
+        category_id="test",
         rows=rows,
         total_amount=50.0,
         date_field=date_field
@@ -294,7 +302,7 @@ def test_balance_with_no_currency(mapping):
     response = builder.build()
 
     # Find Balance row
-    balance_row = next((row for row in response.data if row.category == "Balance"), None)
+    balance_row = next((row for row in response.data if row.category_id == "balance"), None)
     assert balance_row is not None
     assert balance_row.total.display == "50.00"  # No currency prefix
 
@@ -308,7 +316,7 @@ def test_calculator_pattern_disable_balance(builder, sample_csv_rows):
 
     date_field = DateField(display="January", timestamp=1735689600)
     builder_no_balance.add_category_data(
-        category="Groceries",
+        category_id="grocery",
         rows=sample_csv_rows[:1],
         total_amount=-50.0,
         date_field=date_field
@@ -352,7 +360,7 @@ def test_full_pipeline_with_confidence(builder, sample_csv_rows):
 
     date_field = DateField(display="January", timestamp=1735689600)
     builder.add_category_data(
-        category="Groceries",
+        category_id="grocery",
         rows=sample_csv_rows,
         total_amount=-105.0,
         date_field=date_field
@@ -362,7 +370,7 @@ def test_full_pipeline_with_confidence(builder, sample_csv_rows):
 
     assert isinstance(response, AccountResponse)
     # Find the Groceries row (not Balance or Total Spendings)
-    groceries_row = next((row for row in response.data if row.category == "Groceries"), None)
+    groceries_row = next((row for row in response.data if row.category_id == "grocery"), None)
     assert groceries_row is not None
     assert len(groceries_row.details) == 3
 
@@ -378,11 +386,11 @@ def test_build_detail_rows_with_notice(builder, mapping):
     """Test that detail rows include notice when available."""
     rows = [
         CsvRow(
-            {"date": "2025-01-15", "amount": "-50.0", "currency": "USD", "partner": "Grocery Store", "type": "purchase", "notice": "Invoice payment"},
+            {"date": "2025-01-15", "amount": "-50.0", "currency": "USD", "partner": "Grocery Store", "type": "purchase", "notice": "Invoice payment", "category": ""},
             mapping
         ),
         CsvRow(
-            {"date": "2025-01-16", "amount": "-30.0", "currency": "USD", "partner": "Gas Station", "type": "purchase"},
+            {"date": "2025-01-16", "amount": "-30.0", "currency": "USD", "partner": "Gas Station", "type": "purchase", "category": ""},
             mapping
         ),
     ]

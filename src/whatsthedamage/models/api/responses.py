@@ -206,8 +206,11 @@ class ResultsApiResponse(BaseModel):
 # =============================================================================
 
 class MonthData(BaseModel):
-    """Data for a single month in category months response."""
-    month: str = Field(description="Month display name")
+    """Data for a single month in category months response.
+
+    Frontend should use month_timestamp to format the month display name
+    according to the current locale.
+    """
     month_timestamp: int = Field(description="Unix timestamp for the month")
     total: Dict[str, Any] = Field(
         description="Total amount with display and raw values"
@@ -224,8 +227,7 @@ class CategoryMonthsApiResponse(BaseModel):
     result_id: str = Field(description="Processing result identifier")
     account_id: str = Field(description="Account identifier")
     account_name: str = Field(description="Account display name")
-    category_id: str = Field(description="Category identifier")
-    category_name: str = Field(description="Category display name")
+    category_id: str = Field(description="Category identifier (e.g., 'grocery'). Frontend should use /categories endpoint to get display name.")
     data: List[MonthData] = Field(
         description="Month-by-month aggregation data for this category"
     )
@@ -244,7 +246,6 @@ class CategoryMonthsApiResponse(BaseModel):
                 "category_name": "Groceries",
                 "data": [
                     {
-                        "month": "January 2024",
                         "month_timestamp": 1704067200,
                         "total": {"display": "-500.00", "raw": -500.0},
                         "row_id": "row_001",
@@ -273,12 +274,13 @@ class MonthCategoriesApiResponse(BaseModel):
     """Response for GET /api/v2/results/<result_id>/accounts/<account_id>/months/<month_id>/categories endpoint.
 
     Returns category-by-category aggregation for a specific month.
+    Frontend should use month_timestamp to format the month display name.
     """
     result_id: str = Field(description="Processing result identifier")
     account_id: str = Field(description="Account identifier")
     account_name: str = Field(description="Account display name")
-    month_id: str = Field(description="Month identifier")
-    month_name: str = Field(description="Month display name")
+    month_id: str = Field(description="Month identifier (opaque ID for URL routing)")
+    month_timestamp: int = Field(description="Unix timestamp for the month")
     data: List[CategoryData] = Field(
         description="Category-by-category aggregation data for this month"
     )
@@ -302,7 +304,6 @@ class TransactionDetail(BaseModel):
     type: str = Field(default="", description="Transaction type")
     confidence: Optional[float] = Field(default=None, description="ML confidence score if applicable")
     notice: Optional[str] = Field(default=None, description="Transaction notice or memo")
-    category: str = Field(default="", description="Category name")
     category_id: str = Field(default="", description="Category identifier")
     month_id: str = Field(default="", description="Month identifier")
 
@@ -311,14 +312,14 @@ class CategoryMonthTransactionsApiResponse(BaseModel):
     """Response for GET /api/v2/results/<result_id>/accounts/<account_id>/categories/<category_id>/months/<month_id>/transactions endpoint.
 
     Returns individual transaction details for a specific category and month.
+    Frontend should use month_timestamp to format the month display name.
     """
     result_id: str = Field(description="Processing result identifier")
     account_id: str = Field(description="Account identifier")
     account_name: str = Field(description="Account display name")
-    category_id: str = Field(description="Category identifier")
-    category_name: str = Field(description="Category display name")
-    month_id: str = Field(description="Month identifier")
-    month_name: str = Field(description="Month display name")
+    category_id: str = Field(description="Category identifier (e.g., 'grocery'). Frontend should use /categories endpoint to get display name.")
+    month_id: str = Field(description="Month identifier (opaque ID for URL routing)")
+    month_timestamp: int = Field(description="Unix timestamp for the month")
     data: List[TransactionDetail] = Field(
         description="Individual transaction details"
     )

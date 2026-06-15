@@ -2,16 +2,16 @@
 import { computed } from 'vue';
 import { useGettext } from 'vue3-gettext';
 import { useCostOfLivingStore } from '../stores/costOfLiving.js';
-import { DEFAULT_COST_OF_LIVING_CATEGORY_IDS } from '../types/costOfLiving.js';
 
 const { $gettext } = useGettext();
 const costOfLivingStore = useCostOfLivingStore();
 
 const allCategories = computed(() => costOfLivingStore.availableCategoryNames);
 const selectedCategories = computed(() => costOfLivingStore.selectedCategoryIds);
+const defaultCategories = computed(() => costOfLivingStore.defaultCostOfLivingCategoryIds);
 
 const isSelected = (categoryId: string): boolean => selectedCategories.value.includes(categoryId);
-const isDefaultCategory = (categoryId: string): boolean => (DEFAULT_COST_OF_LIVING_CATEGORY_IDS as readonly string[]).includes(categoryId);
+const isDefaultCategory = (categoryId: string): boolean => defaultCategories.value.includes(categoryId);
 
 const toggleCategory = (categoryId: string) => costOfLivingStore.toggleCategory(categoryId);
 const selectAll = () => costOfLivingStore.selectAll();
@@ -57,7 +57,7 @@ const getCategoryDisplayName = (categoryId: string): string => $gettext(category
         {{ $gettext('Selected') }}: <strong>{{ selectedCount }}</strong> / {{ allCategories.length }}
         <span v-if="selectedCount > 0" class="ms-2">
           | {{ $gettext('Default categories') }}:
-          <span class="badge bg-primary ms-1">{{ DEFAULT_COST_OF_LIVING_CATEGORY_IDS.length }}</span>
+          <span class="badge bg-primary ms-1">{{ defaultCategories.length }}</span>
         </span>
       </p>
 

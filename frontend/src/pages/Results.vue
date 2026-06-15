@@ -4,6 +4,7 @@ import { useRoute } from 'vue-router'
 import { fetchResults as fetchResultsApi } from '../js/api.js'
 import { useFeedbackStore } from '../stores/feedback.js'
 import { useStatisticalStore } from '../stores/statistical.js'
+import { useCategoriesStore } from '../stores/categories.js'
 import { useGettext } from 'vue3-gettext'
 import type { ResultsApiResponse, AccountDataResponse } from '../types/api.js'
 import ButtonComponent from '../components/ui/ButtonComponent.vue'
@@ -11,6 +12,7 @@ import VueDataTable from '../components/data/VueDataTable.vue'
 import TableLink from '../components/data/TableLink.vue'
 import TableLinkWithPopover from '../components/data/TableLinkWithPopover.vue'
 import type { Column } from '../components/data/VueDataTable.vue'
+import { formatMonthYear } from '../js/dateUtils.js'
 
 const { $gettext } = useGettext()
 
@@ -19,6 +21,7 @@ type AccountData = AccountDataResponse
 
 const feedback = useFeedbackStore()
 const statisticalStore = useStatisticalStore()
+const categoriesStore = useCategoriesStore()
 const route = useRoute()
 
 
@@ -35,20 +38,6 @@ const loadResults = async () => {
   if (!resultId.value) {
     error.value = 'No result ID provided'
     isLoading.value = false
-
-    // Fallback: Try to fetch some demo data or show a helpful message
-    // For development/testing, we could fetch a hardcoded result
-    // In production, this would redirect to the upload form
-    try {
-      const fallbackResponse = await fetchResultsApi('demo-result-id')
-      resultsData.value = fallbackResponse
-
-      isLoading.value = false
-    } catch (fallbackError) {
-      const message = fallbackError instanceof Error ? fallbackError.message : String(fallbackError)
-      feedback.showError(`Failed to load fallback data: ${message}`)
-    }
-
     return
   }
 
@@ -74,36 +63,40 @@ const loadResults = async () => {
 // Build column definitions for an account's table
 function buildTableColumns(account: AccountData): Column[] {
   const accountId = account.id
+
   const columns: Column[] = [
     {
       key: 'category',
       title: $gettext('Categories'),
-      sortable: false, // Categories are row headers, not sortable in this view
+      sortable: true,
       component: TableLink,
-      componentProps: (value: unknown) => {
-        const category = String(value)
-        const categoryId = getCategoryId(accountId, category)
+      componentProps: (value: unknown, row: Record<string, unknown>) => {
+        const categoryId = categoriesStore.extractCategoryIdFromData(row)
+        const categoryDisplayName = categoriesStore.getCategoryDisplayName(categoryId)
+        if (!categoryId) {
+          return { to: '#', class: 'clickable', children: categoryDisplayName }
+        }
         return {
           to: { name: 'category-months', params: { resultId: resultId.value, accountId, categoryId } },
           class: 'clickable',
-          children: category
+          children: categoryDisplayName
         }
       }
     }
   ]
 
   // Add month columns
-  for (const [monthDisplay, monthTs] of getMonthsForAccount(account)) {
+  for (const monthTs of getMonthsForAccount(account)) {
     const monthId = getMonthId(accountId, monthTs)
     columns.push({
       key: `month-${monthTs}`,
-      title: monthDisplay,
+      title: formatMonthYear(monthTs),
       sortable: true,
       headerTo: { name: 'month-categories', params: { resultId: resultId.value, accountId, monthId } },
       component: TableLinkWithPopover,
       componentProps: (value: unknown, row: Record<string, unknown>) => {
-        const category = String(row.category)
-        const monthData = buildCategoryMonthMap(account)[category]?.[monthTs]
+        const category_id = String(row.category_id ?? row.category ?? '')
+        const monthData = buildCategoryMonthMap(account)[category_id]?.[monthTs]
 
         if (!monthData) {
           return { to: '#', children: '' }
@@ -111,7 +104,10 @@ function buildTableColumns(account: AccountData): Column[] {
 
         const total = monthData.total?.display || ''
         const accountId = account.id
-        const categoryId = getCategoryId(accountId, category)
+        const categoryId = getCategoryId(accountId, category_id) || category_id
+        if (!categoryId || !monthId) {
+          return { to: '#', class: 'clickable', children: total }
+        }
 
         const linkUrl = { name: 'category-month-transactions', params: { resultId: resultId.value, accountId, categoryId, monthId } }
 
@@ -146,11 +142,12 @@ function buildTableData(account: AccountData): Record<string, unknown>[] {
     }
     const row: TableRow = {
       category,
+      category_id: category,
       accountId: account.id,
       _rowIds: {}
     }
 
-    for (const [, monthTs] of months) {
+    for (const monthTs of months) {
       const monthData = catMonthMap[category]?.[monthTs]
       const columnKey = `month-${monthTs}`
       row[columnKey] = monthData?.total?.raw ?? 0
@@ -173,23 +170,23 @@ function getAccountHighlights(): Record<string, string[]> {
 }
 
 const getMonthsForAccount = (account: AccountData) => {
-  const monthMap = new Map<number, [string, number]>()
+  const monthMap = new Map<number, number>()
   for (const row of account.dt_response.data) {
     const monthField = row.date
-    monthMap.set(monthField.timestamp, [monthField.display, monthField.timestamp])
+    monthMap.set(monthField.timestamp, monthField.timestamp)
   }
-  return Array.from(monthMap.values()).sort((a, b) => b[1] - a[1]) // eslint-disable-line no-magic-numbers
+  return Array.from(monthMap.values()).sort((a, b) => b - a) // eslint-disable-line no-magic-numbers
 }
 
 const buildCategoryMonthMap = (account: AccountData) => {
   const catMonthMap: Record<string, Record<number, any>> = {}
 
   for (const row of account.dt_response.data) {
-    if (!catMonthMap[row.category]) {
-      catMonthMap[row.category] = {}
+    if (!catMonthMap[row.category_id]) {
+      catMonthMap[row.category_id] = {}
     }
     const monthKey = row.date.timestamp
-    catMonthMap[row.category][monthKey] = row
+    catMonthMap[row.category_id][monthKey] = row
   }
 
   return catMonthMap
@@ -202,11 +199,11 @@ const getDetailsString = (details: Array<{ date: { display: string }, amount: { 
 }
 
 /**
- * Get category ID from drilldown URLs for a specific account and category
+ * Get category ID from drilldown URLs for a specific account and category_id
  */
-const getCategoryId = (accountId: string, category: string): string => {
+const getCategoryId = (accountId: string, category_id: string): string => {
   const urls = resultsData.value?.drilldown_urls_by_account[accountId]
-  return urls?.category_urls?.[category]?.category_id || category
+  return urls?.category_urls?.[category_id]?.category_id || category_id
 }
 
 /**

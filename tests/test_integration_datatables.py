@@ -28,9 +28,9 @@ def app_context():
     )
     
     app_args = AppArgs(
-        category="category",
         config="config.yml",
         filename="data.csv",
+        category_id="category_id",
         nowrap=False,
         output_format="html",
         start_date=None,

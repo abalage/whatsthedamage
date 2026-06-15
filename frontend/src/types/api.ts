@@ -55,7 +55,7 @@ interface DetailRow {
  */
 export interface AggregatedRow {
   row_id: string;
-  category: string;
+  category_id: string;
   total: DisplayRawField;
   date: DateField;
   details: DetailRow[];
@@ -261,14 +261,28 @@ interface DrilldownUrls {
 }
 
 // -----------------------------------------------------------------------------
+// Category Definitions
+// -----------------------------------------------------------------------------
+
+/**
+ * Category definition from the backend
+ * Fetched via GET /api/v2/categories
+ */
+export interface CategoryDefinition {
+  id: string;
+  default_name: string;
+  patterns: string[];
+}
+
+// -----------------------------------------------------------------------------
 // Drilldown Endpoints
 // -----------------------------------------------------------------------------
 
 /**
  * Data for a single month in category months response
+ * Frontend should use month_timestamp to format the month display name.
  */
 interface MonthData {
-  month: string;
   month_timestamp: number;
   total: DisplayRawField;
   row_id: string;
@@ -285,7 +299,6 @@ export interface CategoryMonthsApiResponse {
   account_id: string;
   account_name: string;
   category_id: string;
-  category_name: string;
   data: MonthData[];
   highlights?: StatisticalHighlights;
 }
@@ -294,7 +307,7 @@ export interface CategoryMonthsApiResponse {
  * Data for a single category in month categories response
  */
 interface CategoryData {
-  category: string;
+  category_id: string;
   total: DisplayRawField;
   row_id: string;
   category_url: string;
@@ -304,13 +317,14 @@ interface CategoryData {
  * Response from GET /api/v2/results/<r>/accounts/<a>/months/<m>/categories
  *
  * Returns category-by-category aggregation for a specific month.
+ * Frontend should use month_timestamp to format the month display name.
  */
 export interface MonthCategoriesApiResponse {
   result_id: string;
   account_id: string;
   account_name: string;
   month_id: string;
-  month_name: string;
+  month_timestamp: number;
   data: CategoryData[];
   highlights?: StatisticalHighlights;
 }
@@ -329,15 +343,15 @@ interface TransactionDetailResponse {
  * Response from GET /api/v2/results/<r>/accounts/<a>/categories/<c>/months/<m>/transactions
  *
  * Returns individual transaction details for a specific category and month.
+ * Frontend should use month_timestamp to format the month display name.
  */
 export interface CategoryMonthTransactionsApiResponse {
   result_id: string;
   account_id: string;
   account_name: string;
   category_id: string;
-  category_name: string;
   month_id: string;
-  month_name: string;
+  month_timestamp: number;
   data: TransactionDetailResponse[];
   highlights?: StatisticalHighlights;
 }

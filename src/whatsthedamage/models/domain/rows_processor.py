@@ -35,8 +35,8 @@ class RowsProcessor:
         self._end_date: Optional[str] = context.args.end_date
         self._end_date_epoch: float = 0
         self._verbose: bool = context.args.verbose
-        self._category: str = context.args.category
-        self._filter: Optional[str] = context.args.filter
+        self._category_id: str = context.args.category_id  # This is the attribute name to categorize by (e.g., 'category_id', 'type')
+        self._filter: Optional[str] = context.args.filter  # This is now a category_id filter
         self._training_data: bool = context.args.training_data
         self._ml: bool = context.args.ml
         # Lazy import to avoid circular dependency
@@ -123,16 +123,16 @@ class RowsProcessor:
 
                 # Calculate category totals inline
                 category_totals = {}
-                for category, category_rows in categorized_rows.items():
+                for category_id, category_rows in categorized_rows.items():
                     total = sum(float(getattr(row, 'amount', 0)) for row in category_rows)
-                    category_totals[category] = total
+                    category_totals[category_id] = total
 
                 # Add each category to the builder with DateField
-                for category, category_rows in categorized_rows.items():
+                for category_id, category_rows in categorized_rows.items():
                     builder.add_category_data(
-                        category=category,
+                        category_id=category_id,
                         rows=category_rows,
-                        total_amount=category_totals[category],
+                        total_amount=category_totals[category_id],
                         date_field=month_field
                     )
 
@@ -182,24 +182,25 @@ class RowsProcessor:
         Raises:
             ValueError: If the category attribute is not set.
         """
-        if not self._category:
+        if not self._category_id:
             raise ValueError("Category attribute is not set")
         enricher: Union[RowEnrichmentML, RowEnrichment]
         if self._ml:
             enricher = RowEnrichmentML(rows, self.context.config.ml_config.ml_confidence_threshold)
         else:
             enricher = RowEnrichment(rows, self._cfg_pattern_sets)
-        return enricher.categorize_by_attribute(self._category)
+        return enricher.categorize_by_attribute(self._category_id)
 
     def _apply_filter(self, rows_dict: Dict[str, List[CsvRow]]) -> Dict[str, List[CsvRow]]:
         """
         Applies the filter to the categorized rows.
+        The filter is a category_id that we want to include exclusively.
 
         Args:
-            rows_dict (Dict[str, List[CsvRow]]): A dictionary of categorized rows.
+            rows_dict (Dict[str, List[CsvRow]]): A dictionary of categorized rows by category_id.
 
         Returns:
-            Dict[str, List[CsvRow]]: A dictionary of filtered rows.
+            Dict[str, List[CsvRow]]: A dictionary of filtered rows (only the matching category_id).
         """
         if self._filter:
             return {k: v for k, v in rows_dict.items() if k == self._filter}

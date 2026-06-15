@@ -3,6 +3,7 @@ import { onMounted, computed, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useGettext } from 'vue3-gettext'
 import { useStatisticalStore } from '../stores/statistical.js'
+import { useCategoriesStore } from '../stores/categories.js'
 import {
   useDrilldownData,
   type BreadcrumbItem
@@ -14,8 +15,10 @@ import TableLink from '../components/data/TableLink.vue'
 import type { Column } from '../components/data/VueDataTable.vue'
 import { fetchMonthCategories } from '../js/api.js'
 import type { MonthCategoriesApiResponse } from '../types/api.js'
+import { formatMonthYear } from '../js/dateUtils.js'
 
 const { $gettext } = useGettext()
+const categoriesStore = useCategoriesStore()
 const route = useRoute()
 const statisticalStore = useStatisticalStore()
 
@@ -28,7 +31,7 @@ const getRouteParam = (param: string): string | null => {
 // Table columns
 const columns: Column[] = [
   {
-    key: 'category',
+    key: 'category_id',
     title: $gettext('Category'),
     component: TableLink,
     componentProps: (value: unknown, row: Record<string, unknown>) => {
@@ -36,10 +39,11 @@ const columns: Column[] = [
       const monthId = String(route.params.monthId || '')
       const resultId = String(route.params.resultId || '')
       const categoryId = extractCategoryIdFromData(row)
+      const categoryDisplayName = categoriesStore.getCategoryDisplayName(categoryId)
       return {
         to: { name: 'category-month-transactions', params: { resultId, accountId, categoryId, monthId } },
         class: 'clickable',
-        children: String(value)
+        children: categoryDisplayName
       }
     }
   },
@@ -52,13 +56,13 @@ const columns: Column[] = [
 
 // Extract category_id from row data
 function extractCategoryIdFromData(row: Record<string, unknown>): string {
-  const category = row.category as string | undefined
+  const category_id = row.category_id as string | undefined
   const categoryUrl = row.category_url as string | undefined
   if (categoryUrl) {
     const match = categoryUrl.match(/categories\/([^/]+)\/months/)
     if (match) return match[1]
   }
-  return category || ''
+  return category_id || ''
 }
 
 const {
@@ -76,7 +80,7 @@ const {
     }
     return fetchMonthCategories(params)
   },
-  getPageTitle: (data) => `${$gettext('Details')}: ${data.month_name}`,
+  getPageTitle: (data) => `${$gettext('Details')}: ${formatMonthYear(data.month_timestamp)}`,
   breadcrumbItems: (): BreadcrumbItem[] => [
     { name: $gettext('Home'), to: '/' },
     { name: $gettext('Results'), to: { name: 'results', query: { resultId: getRouteParam('resultId') } } },
@@ -98,7 +102,7 @@ const {
 const tableData = computed(() => {
   if (!monthCategoriesData.value) return []
   return monthCategoriesData.value.data.map(category => ({
-    category: category.category,
+    category_id: category.category_id,
     category_url: category.category_url,
     total: category.total.raw,
     total_display: category.total.display,

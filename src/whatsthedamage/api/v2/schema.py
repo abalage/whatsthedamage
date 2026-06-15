@@ -39,6 +39,33 @@ def get_openapi_schema() -> dict[str, Any]:
             }
         ],
         "paths": {
+            "/categories": {
+                "get": {
+                    "summary": "Get all category definitions",
+                    "description": (
+                        "Returns the full list of CategoryDefinition objects that the frontend "
+                        "can use for translating category IDs to display names. Each category has "
+                        "an 'id' field (for API usage) and a 'default_name' field (for display, can be localized)."
+                    ),
+                    "operationId": "getCategories",
+                    "tags": ["Categories"],
+                    "responses": {
+                        "200": {
+                            "description": "Successfully retrieved category definitions",
+                            "content": {
+                                "application/json": {
+                                    "schema": {
+                                        "type": "array",
+                                        "items": {
+                                            "$ref": "#/components/schemas/CategoryDefinition"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
             "/process": {
                 "post": {
                     "summary": "Process CSV transaction file with details",
@@ -107,6 +134,29 @@ def get_openapi_schema() -> dict[str, Any]:
         },
         "components": {
             "schemas": {
+                "CategoryDefinition": {
+                    "type": "object",
+                    "required": ["id", "default_name", "patterns"],
+                    "properties": {
+                        "id": {
+                            "type": "string",
+                            "description": "Unique category identifier (e.g., 'grocery', 'clothes'). Used in API responses.",
+                            "example": "grocery"
+                        },
+                        "default_name": {
+                            "type": "string",
+                            "description": "Default display name for the category. Can be localized by the client.",
+                            "example": "Grocery"
+                        },
+                        "patterns": {
+                            "type": "array",
+                            "description": "List of regex patterns used for automatic categorization",
+                            "items": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                },
                 "ProcessingRequest": {
                     "type": "object",
                     "required": ["csv_file"],
@@ -143,8 +193,8 @@ def get_openapi_schema() -> dict[str, Any]:
                         },
                         "category_filter": {
                             "type": "string",
-                            "description": "Filter results to specific category",
-                            "example": "Grocery"
+                            "description": "Filter results to specific category by category_id (e.g., 'grocery'). Use /categories endpoint to see available IDs.",
+                            "example": "grocery"
                         },
                         "language": {
                             "type": "string",
@@ -203,17 +253,17 @@ def get_openapi_schema() -> dict[str, Any]:
                 },
                 "AggregatedRow": {
                     "type": "object",
-                    "required": ["category", "total", "month", "details"],
+                    "required": ["category_id", "total", "date", "details"],
                     "properties": {
-                        "category": {
+                        "category_id": {
                             "type": "string",
-                            "description": "Transaction category",
-                            "example": "Grocery"
+                            "description": "Category ID (e.g., 'grocery', 'clothes'). Use /categories endpoint to get display names.",
+                            "example": "grocery"
                         },
                         "total": {
                             "$ref": "#/components/schemas/AmountField"
                         },
-                        "month": {
+                        "date": {
                             "$ref": "#/components/schemas/DateField"
                         },
                         "details": {

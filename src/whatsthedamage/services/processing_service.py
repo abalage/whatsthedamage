@@ -188,7 +188,7 @@ class ProcessingService:
             config=config or '',
             start_date=start_date,
             end_date=end_date,
-            category='category',  # Default categorization attribute
+            category_id='category_id',  # Default categorization attribute
             filter=category_filter,
             output=None,
             output_format='json',

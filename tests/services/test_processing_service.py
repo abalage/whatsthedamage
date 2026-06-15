@@ -125,7 +125,7 @@ class TestProcessingService:
         assert args.filename == '/path/to/file.csv'
         assert args.start_date is None
         assert args.end_date is None
-        assert args.category == 'category'
+        assert args.category_id == 'category_id'
         assert args.filter is None
         assert args.output_format == 'json'
         assert args.verbose is False

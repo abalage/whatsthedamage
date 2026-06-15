@@ -11,6 +11,7 @@ import type {
   MonthCategoriesApiResponse,
   CategoryMonthTransactionsApiResponse,
   RecalculateApiResponse,
+  CategoryDefinition,
 } from '../types/api.js';
 
 // API base URL configuration
@@ -219,4 +220,20 @@ export async function fetchCategoryMonthTransactions(
   return fetchWithErrorHandling<CategoryMonthTransactionsApiResponse>(
     getApiUrl(`/results/${resultId}/accounts/${accountId}/categories/${categoryId}/months/${monthId}/transactions`)
   );
+}
+
+/**
+ * Fetch all category definitions
+ * @returns Promise with array of CategoryDefinition objects
+ */
+export async function fetchCategories(): Promise<CategoryDefinition[]> {
+  return fetchWithErrorHandling<CategoryDefinition[]>(getApiUrl('/categories'));
+}
+
+/**
+ * Fetch cost of living category definition
+ * @returns Promise with array of CategoryDefinition objects
+ */
+export async function fetchCostOfLivingCategories(): Promise<CategoryDefinition[]> {
+  return fetchWithErrorHandling<CategoryDefinition[]>(getApiUrl('/categories/cost-of-living'));
 }

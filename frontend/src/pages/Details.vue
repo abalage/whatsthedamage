@@ -3,12 +3,15 @@ import { ref, onMounted, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { useGettext } from 'vue3-gettext'
 import { fetchResults } from '../js/api.js'
+import { useCategoriesStore } from '../stores/categories.js'
 import ButtonComponent from '../components/ui/ButtonComponent.vue'
 import VueDataTable from '../components/data/VueDataTable.vue'
+import TableLink from '../components/data/TableLink.vue'
 import type { Column } from '../components/data/VueDataTable.vue'
 import type { ResultsApiResponse } from '../types/api.js'
 
 const { $gettext } = useGettext()
+const categoriesStore = useCategoriesStore()
 const route = useRoute()
 
 const resultId = computed(() => {
@@ -16,14 +19,23 @@ const resultId = computed(() => {
   return typeof id === 'string' ? id : null
 })
 
-const resultsData = ref<ResultsApiResponse | null>(null)
-const isLoading = ref(true)
-const error = ref<string | null>(null)
-
 // Table columns definition
 const columns: Column[] = [
   { key: 'date', title: $gettext('Date') },
-  { key: 'category', title: $gettext('Category') },
+  {
+    key: 'category_id',
+    title: $gettext('Category'),
+    component: TableLink,
+    componentProps: (value: unknown, row: Record<string, unknown>) => {
+      const categoryId = categoriesStore.extractCategoryIdFromData(row)
+      const categoryDisplayName = categoriesStore.getCategoryDisplayName(categoryId)
+      return {
+        to: '#',
+        class: 'clickable',
+        children: categoryDisplayName
+      }
+    }
+  },
   { key: 'merchant', title: $gettext('Merchant') },
   { key: 'amount', title: $gettext('Amount') },
   { key: 'currency', title: $gettext('Currency') },
@@ -32,6 +44,10 @@ const columns: Column[] = [
   { key: 'confidence', title: $gettext('Confidence') },
   { key: 'notice', title: $gettext('Notice') },
 ]
+
+const resultsData = ref<ResultsApiResponse | null>(null)
+const isLoading = ref(true)
+const error = ref<string | null>(null)
 
 const loadResults = async () => {
   if (!resultId.value) {
@@ -66,7 +82,7 @@ const allTransactions = computed(() => {
       for (const detail of aggRow.details) {
         transactions.push({
           date: detail.date.display,
-          category: aggRow.category,
+          category_id: aggRow.category_id,
           merchant: detail.merchant,
           amount: detail.amount.display,
           currency: detail.currency,

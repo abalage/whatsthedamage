@@ -109,7 +109,7 @@ class TestProcessEndpoint:
         if data['data']:
             first_item = data['data'][0]
             assert 'row_id' in first_item
-            assert 'category' in first_item
+            assert 'category_id' in first_item
             assert 'total' in first_item
             assert 'date' in first_item
             assert 'details' in first_item

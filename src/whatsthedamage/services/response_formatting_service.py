@@ -55,7 +55,7 @@ class ResponseFormattingService(IDataFormattingService):
     def __init__(self, statistical_analysis_service: Optional[StatisticalAnalysisService] = None) -> None:
         """Initialize the response formatting service."""
         self.statistical_analysis_service = statistical_analysis_service
-        self._categories_header = _("Categories")
+        self._categories_header = "Categories"
         self.logger = get_logger(__name__)
 
     # Data Formatting Methods (from DataFormattingService)
@@ -805,7 +805,7 @@ class ResponseFormattingService(IDataFormattingService):
             details_array = self._convert_row_details(row)
 
             dt_response_data.append({
-                'category': row.category,
+                'category_id': row.category_id,
                 'date': {'display': row.date.display, 'timestamp': row.date.timestamp},
                 'total': {'display': row.total.display, 'raw': row.total.raw},
                 'details': details_array,

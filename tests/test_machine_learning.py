@@ -46,7 +46,7 @@ def sample_training_data():
     return [
         {
             "amount": -100.0,
-            "category": "Grocery",
+            "category_id": "grocery",
             "currency": "EUR",
             "date": "2023-01-01",
             "partner": "Test Grocery Store",
@@ -54,7 +54,7 @@ def sample_training_data():
         },
         {
             "amount": -50.0,
-            "category": "Grocery",
+            "category_id": "grocery",
             "currency": "EUR",
             "date": "2023-01-02",
             "partner": "Test Market",
@@ -62,7 +62,7 @@ def sample_training_data():
         },
         {
             "amount": -75.0,
-            "category": "Grocery",
+            "category_id": "grocery",
             "currency": "EUR",
             "date": "2023-01-03",
             "partner": "Test Supermarket",
@@ -70,7 +70,7 @@ def sample_training_data():
         },
         {
             "amount": -30.0,
-            "category": "Transportation",
+            "category_id": "transportation",
             "currency": "EUR",
             "date": "2023-01-04",
             "partner": "Test Taxi Service",
@@ -78,7 +78,7 @@ def sample_training_data():
         },
         {
             "amount": -20.0,
-            "category": "Transportation",
+            "category_id": "transportation",
             "currency": "EUR",
             "date": "2023-01-05",
             "partner": "Test Bus Company",
@@ -86,7 +86,7 @@ def sample_training_data():
         },
         {
             "amount": -40.0,
-            "category": "Transportation",
+            "category_id": "transportation",
             "currency": "EUR",
             "date": "2023-01-06",
             "partner": "Test Train Company",
@@ -94,7 +94,7 @@ def sample_training_data():
         },
         {
             "amount": 200.0,
-            "category": "Salary",
+            "category_id": "salary",
             "currency": "EUR",
             "date": "2023-01-07",
             "partner": "Test Employer",
@@ -102,7 +102,7 @@ def sample_training_data():
         },
         {
             "amount": 150.0,
-            "category": "Salary",
+            "category_id": "salary",
             "currency": "EUR",
             "date": "2023-01-08",
             "partner": "Test Company",
@@ -110,7 +110,7 @@ def sample_training_data():
         },
         {
             "amount": 180.0,
-            "category": "Salary",
+            "category_id": "salary",
             "currency": "EUR",
             "date": "2023-01-09",
             "partner": "Test Corporation",
@@ -520,7 +520,7 @@ class TestInferenceClass:
             assert hasattr(inference, 'df_output')
 
             # Verify predictions were made
-            assert 'predicted_category' in inference.df_output.columns
+            assert 'predicted_category_id' in inference.df_output.columns
             assert 'prediction_confidence' in inference.df_output.columns
 
         else:

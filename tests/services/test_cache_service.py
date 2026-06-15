@@ -87,7 +87,7 @@ class TestCacheService:
                     data=[
                         AggregatedRow(
                             row_id=row_id_sample,
-                            category="Grocery",
+                            category_id="grocery",
                             total=DisplayRawField(display="100.00", raw=100.0),
                             date=DateField(display="Jan 2023", timestamp=1672531200),
                             details=[],
@@ -246,7 +246,7 @@ class TestCacheServiceIntegration:
         aggregated_rows = [
             AggregatedRow(
                 row_id=str(uuid.uuid4()),
-                category="Grocery",
+                category_id="grocery",
                 total=DisplayRawField(display="100.00", raw=100.0),
                 date=DateField(display="Jan 2023", timestamp=1672531200),
                 details=detail_rows,
@@ -254,7 +254,7 @@ class TestCacheServiceIntegration:
             ),
             AggregatedRow(
                 row_id=str(uuid.uuid4()),
-                category="Utilities",
+                category_id="utility",
                 total=DisplayRawField(display="150.00", raw=150.0),
                 date=DateField(display="Jan 2023", timestamp=1672531200),
                 details=[],
@@ -297,7 +297,7 @@ class TestCacheServiceIntegration:
         account1_response = AccountResponse(
             data=[AggregatedRow(
                 row_id=str(uuid.uuid4()),
-                category="Grocery",
+                category_id="grocery",
                 total=DisplayRawField(display="100.00", raw=100.0),
                 date=DateField(display="Jan 2023", timestamp=1672531200),
                 details=[],
@@ -310,7 +310,7 @@ class TestCacheServiceIntegration:
         account2_response = AccountResponse(
             data=[AggregatedRow(
                 row_id=str(uuid.uuid4()),
-                category="Rent",
+                category_id="home_maintenance",  # Rent -> home_maintenance
                 total=DisplayRawField(display="1000.00", raw=1000.0),
                 date=DateField(display="Jan 2023", timestamp=1672531200),
                 details=[],

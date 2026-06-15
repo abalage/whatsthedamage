@@ -3,6 +3,7 @@ import { onMounted, computed, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useGettext } from 'vue3-gettext'
 import { useStatisticalStore } from '../stores/statistical.js'
+import { useCategoriesStore } from '../stores/categories.js'
 import {
   useDrilldownData,
   type BreadcrumbItem
@@ -14,8 +15,10 @@ import TableLink from '../components/data/TableLink.vue'
 import type { Column } from '../components/data/VueDataTable.vue'
 import { fetchCategoryMonths } from '../js/api.js'
 import type { CategoryMonthsApiResponse } from '../types/api.js'
+import { formatMonthYear } from '../js/dateUtils.js'
 
 const { $gettext } = useGettext()
+const categoriesStore = useCategoriesStore()
 
 const route = useRoute()
 const statisticalStore = useStatisticalStore()
@@ -62,6 +65,12 @@ function extractMonthIdFromData(row: Record<string, unknown>): string {
   return String(monthTimestamp || '')
 }
 
+// Function to get page title with category display name
+const getPageTitle = (data: CategoryMonthsApiResponse): string => {
+  const displayName = categoriesStore.getCategoryDisplayName(data.category_id)
+  return `${$gettext('Details')}: ${displayName}`
+}
+
 const {
   data: categoryMonthsData,
   isLoading,
@@ -80,7 +89,7 @@ const {
     }
     return fetchCategoryMonths(params)
   },
-  getPageTitle: (data) => `${$gettext('Details')}: ${data.category_name}`,
+  getPageTitle,
   breadcrumbItems: (): BreadcrumbItem[] => [
     { name: $gettext('Home'), to: '/' },
     { name: $gettext('Results'), to: { name: 'results', query: { resultId: getRouteParam('resultId') } } },
@@ -102,7 +111,7 @@ const {
 const tableData = computed(() => {
   if (!categoryMonthsData.value) return []
   return categoryMonthsData.value.data.map(month => ({
-    month: month.month,
+    month: formatMonthYear(month.month_timestamp),
     total: month.total.raw,
     total_display: month.total.display,
     row_id: month.row_id,

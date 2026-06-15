@@ -36,7 +36,7 @@ def sample_dt_response():
     regular_rows = [
         AggregatedRow(
             row_id=str(uuid.uuid4()),
-            category="Grocery",
+            category_id="grocery",
             total=DisplayRawField(display="100.00", raw=100.0),
             date=DateField(display="January 2023", timestamp=1672531200),
             details=details1,
@@ -44,7 +44,7 @@ def sample_dt_response():
         ),
         AggregatedRow(
             row_id=str(uuid.uuid4()),
-            category="Rent",
+            category_id="home_maintenance",
             total=DisplayRawField(display="500.00", raw=500.0),
             date=DateField(display="January 2023", timestamp=1672531200),
             details=details2,
@@ -52,7 +52,7 @@ def sample_dt_response():
         ),
         AggregatedRow(
             row_id=str(uuid.uuid4()),
-            category="Utilities",
+            category_id="utility",
             total=DisplayRawField(display="200.00", raw=200.0),
             date=DateField(display="February 2023", timestamp=1677657600),
             details=[],
@@ -64,7 +64,7 @@ def sample_dt_response():
     calculated_rows = [
         AggregatedRow(
             row_id=str(uuid.uuid4()),
-            category="Balance",
+            category_id="balance",
             total=DisplayRawField(display="600.00", raw=600.0),
             date=DateField(display="January 2023", timestamp=1672531200),
             details=[],
@@ -72,9 +72,9 @@ def sample_dt_response():
         ),
         AggregatedRow(
             row_id=str(uuid.uuid4()),
-            category="Total",
+            category_id="total_spendings",
             total=DisplayRawField(display="800.00", raw=800.0),
-            date=DateField(display="Total", timestamp=0),
+            date=DateField(display="total_spendings", timestamp=0),
             details=[],
             is_calculated=True
         )
@@ -97,7 +97,7 @@ def test_excluded_cells_highlighting_with_exclusion_service(sample_dt_response):
     )
 
     # Set user exclusions directly on the service
-    statistical_service.set_user_exclusions("default", ["Rent", "Deposit"])
+    statistical_service.set_user_exclusions("default", ["home_maintenance", "deposit"])
 
     # Compute statistical metadata
     metadata = statistical_service.compute_statistical_metadata({
@@ -115,7 +115,7 @@ def test_excluded_cells_highlighting_with_exclusion_service(sample_dt_response):
 
     # Should have excluded highlights for:
     # 1. Calculated rows (Balance, Total)
-    # 2. Excluded categories (Rent)
+    # 2. Excluded categories (home_maintenance)
     assert len(excluded_highlights) > 0
 
     # Verify the highlight structure
@@ -148,7 +148,7 @@ def test_excluded_cells_highlighting_without_exclusion_service(sample_dt_respons
     # # Check that calculated rows are excluded
     # calculated_excluded = [
     #     h for h in excluded_highlights
-    #     if h.row in ["Balance", "Total"]
+    #     if h.row in ["balance", "total_spendings"]
     # ]
     # assert len(calculated_excluded) > 0
 
@@ -156,7 +156,7 @@ def test_get_excluded_cell_highlights_method(sample_dt_response):
     """Test the _get_excluded_cell_highlights method directly."""
     # Create statistical analysis service
     statistical_service = StatisticalAnalysisService()
-    statistical_service.set_user_exclusions("default", ["Rent"])
+    statistical_service.set_user_exclusions("default", ["home_maintenance"])
 
     # Call the method directly
     excluded_highlights = statistical_service._get_excluded_cell_highlights(sample_dt_response)

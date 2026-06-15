@@ -1,6 +1,6 @@
 from typing import List, Dict, Optional, TYPE_CHECKING
 from whatsthedamage.models.domain.csv_row import CsvRow
-from whatsthedamage.config.config import get_category_name
+from whatsthedamage.config.config import get_category_id_from_name
 from whatsthedamage.utils.logging import get_logger
 
 if TYPE_CHECKING:
@@ -19,7 +19,7 @@ class RowEnrichmentML:
         """
         self.rows = rows
         self.confidence_threshold = confidence_threshold
-        self.categorized: Dict[str, List[CsvRow]] = {get_category_name('other'): []}
+        self.categorized: Dict[str, List[CsvRow]] = {"other": []}
         self.ml_service: Optional['MLService'] = None
 
     def _get_ml_service(self) -> 'MLService':
@@ -64,11 +64,9 @@ class RowEnrichmentML:
 
         # Assign predicted categories and confidence to CsvRow objects
         for row, predicted_row in zip(self.rows, predictions):
-            category_str = predicted_row.category
-            # Quirk to not break existing setup
-            if " " in category_str:
-                category_str = category_str.replace(" ", "_")
-            localized_category = get_category_name(category_str.lower())
+            category_str = predicted_row.category_id
+            # Map ML prediction (which uses display names) to category ID
+            category_id = get_category_id_from_name(category_str)
 
             # Propagate confidence from ML prediction
             row.confidence = predicted_row.confidence
@@ -77,14 +75,14 @@ class RowEnrichmentML:
             if (row.confidence is not None and
                 row.confidence < self.confidence_threshold):
                 # Use 'other' category for low-confidence predictions
-                localized_category = get_category_name('other')
+                category_id = "other"
                 # Log rows with low confidence scores
                 logger.debug(f"Low confidence prediction: {row}")
 
-            row.category = localized_category
+            row.category_id = category_id
 
-            if localized_category not in self.categorized:
-                self.categorized[localized_category] = []
+            if category_id not in self.categorized:
+                self.categorized[category_id] = []
 
     def categorize_by_attribute(self, attribute_name: str) -> Dict[str, List[CsvRow]]:
         """

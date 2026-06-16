@@ -9,6 +9,7 @@ import type { AccountDataResponse } from '../types/api.js';
 import BarChart from '../components/charts/BarChart.vue';
 import PieChart from '../components/charts/PieChart.vue';
 import CostOfLivingCategorySelector from '../components/CostOfLivingCategorySelector.vue';
+import CardComponent from '../components/ui/CardComponent.vue'
 
 // VueDataTable component
 import VueDataTable from '../components/data/VueDataTable.vue';
@@ -135,22 +136,28 @@ const tableData = computed<Record<string, unknown>[]>(() => {
   });
 });
 
-// VueDataTable uses individual props instead of options object
-// Default pageSize is 25, which matches the old DataTables config
+// Footer row data for the data table
+const footerData = computed<Record<string, unknown>[]>(() => {
+  if (!costOfLivingData.value || safeMonths.value.length === ZERO) return [];
 
-// NEW: Helper function to calculate category average
-const calculateCategoryAverage = (catId: string): string => {
-  if (safeMonths.value.length === ZERO) return '0.00';
-  const sum = safeMonths.value.reduce(
-    (acc, m) => acc + Math.abs(m.categories[catId]?.amount || ZERO),
-    ZERO
-  );
-  return (sum / safeMonths.value.length).toFixed(2);
-};
+  const footerRow: Record<string, unknown> = {
+    month: $gettext('Average'),
+    total: trendlineValue.value
+  };
 
-const getCategoryUrl = (categoryId: string) => ({
-  name: 'category-months',
-  params: { resultId: resultId.value, accountId: selectedAccountId.value, categoryId }
+  // Add average for each selected category
+  selectedCategories.value.forEach(catId => {
+    if (safeMonths.value.length > ZERO) {
+      const sum = safeMonths.value.reduce(
+        (acc, m) => acc + Math.abs(m.categories[catId]?.amount || ZERO),
+        ZERO
+      );
+      const average = sum / safeMonths.value.length;
+      footerRow[catId] = { amount: average };
+    }
+  });
+
+  return [footerRow];
 });
 
 // Auto-save settings
@@ -162,7 +169,7 @@ onMounted(() => loadData());
 </script>
 
 <template>
-  <div class="container">
+  <div class="container-fluid">
     <!-- Breadcrumb -->
     <nav aria-label="breadcrumb">
       <ol class="breadcrumb">
@@ -198,15 +205,14 @@ onMounted(() => loadData());
       </div>
 
       <!-- Account Selector -->
-      <div v-if="accounts.length > 1" class="card mb-4">
-        <div class="card-header"><h5>{{ $gettext('Select Account') }}</h5></div>
-        <div class="card-body">
+      <div v-if="accounts.length > 1">
+        <CardComponent :title="$gettext('Select Account')" class="mb-4" width="auto">
           <select v-model="selectedAccountId" class="form-select">
             <option v-for="account in accounts" :key="account.id" :value="account.id">
               {{ account.name }}
             </option>
           </select>
-        </div>
+        </CardComponent>
       </div>
 
       <!-- Category Selector -->
@@ -221,9 +227,8 @@ onMounted(() => loadData());
       </div>
 
       <!-- Summary -->
-      <div v-if="costOfLivingData && selectedCategories.length > 0" class="card mb-4">
-        <div class="card-header"><h4><i class="bi bi-bar-chart-line me-2"></i> {{ $gettext('Summary') }}</h4></div>
-        <div class="card-body">
+      <div v-if="costOfLivingData && selectedCategories.length > 0" class="mb-4">
+        <CardComponent :title="$gettext('Summary')" class="mb-4" width="auto">
           <div class="row">
             <div class="col-md-6">
               <div class="d-flex justify-content-between mb-2">
@@ -247,87 +252,56 @@ onMounted(() => loadData());
               </div>
             </div>
           </div>
-        </div>
+        </CardComponent>
       </div>
 
       <!-- Bar Chart -->
-      <div v-if="costOfLivingData && selectedCategories.length > 0" class="card mb-4">
-        <div class="card-header d-flex justify-content-between align-items-center">
+      <div v-if="costOfLivingData && selectedCategories.length > 0" class="mb-4">
+        <CardComponent :title="$gettext('Monthly Cost of Living')" class="mb-4" width="auto">
           <h4 class="mb-0"><i class="bi bi-bar-chart me-2"></i> {{ $gettext('Monthly Cost of Living') }}</h4>
           <div class="form-check form-switch mb-0">
             <input id="showTrendline" v-model="costOfLivingStore.showTrendline" class="form-check-input" type="checkbox" />
             <label class="form-check-label" for="showTrendline">{{ $gettext('Show trendline') }}</label>
           </div>
-        </div>
         <div class="card-body">
           <div class="chart-wrapper"><BarChart :data="monthlyBreakdown" :show-trendline="costOfLivingStore.showTrendline"/></div>
         </div>
+        </CardComponent>
       </div>
 
       <!-- Pie Charts -->
-      <div v-if="costOfLivingData && selectedCategories.length > 0" class="card mb-4">
-        <div class="card-header">
-          <h4 class="mb-0"><i class="bi bi-pie-chart me-2"></i> {{ $gettext('Category Breakdown by Month') }}</h4>
-        </div>
-        <div class="card-body">
+      <div v-if="costOfLivingData && selectedCategories.length > 0" class="mb-4">
+        <CardComponent :title="$gettext('Category Breakdown by Month')" class="mb-4" width="auto">
           <p class="text-muted small mb-3"><i class="bi bi-info-circle me-1"></i> {{ $gettext('Each pie chart shows the composition of your selected categories for that month') }}</p>
           <div class="row">
             <div v-for="month in safeMonths" :key="month.month_timestamp" class="col-md-6 col-lg-4 mb-4">
-              <div class="h-100">
-                <div class="card h-100">
-                  <div class="card-header d-flex justify-content-between align-items-center p-2">
-                    <h6 class="mb-0">{{ formatMonthYear(month.month_timestamp) }}</h6>
-                    <span class="badge bg-primary">{{ month.total }}</span>
-                  </div>
-                  <div class="card-body p-2">
-                    <PieChart :data="Object.entries(month.categories).filter(([id]) => selectedCategories.includes(id)).map(([id, d]) => ({ label: getCategoryDisplayName(id), value: d.amount, categoryId: id }))" :total="month.total" />
-                  </div>
-                  <div class="card-footer p-2">
-                    <div class="d-flex flex-wrap gap-1">
-                      <router-link v-for="catId in selectedCategories.slice(0, 3)" :key="catId" :to="getCategoryUrl(catId)" class="btn btn-sm btn-outline-primary" :title="$gettext('Details') + ': ' + getCategoryDisplayName(catId)">
-                        <i class="bi bi-box-arrow-up-right me-1"></i>{{ getCategoryDisplayName(catId).substring(0, 8) }}
-                      </router-link>
-                      <span v-if="selectedCategories.length > 3" class="small text-muted ms-2">+{{ selectedCategories.length - 3 }} {{ $gettext('more') }}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
+              <CardComponent :title="formatMonthYear(month.month_timestamp)" class="mb-4" width="auto">
+                <PieChart :data="Object.entries(month.categories).filter(([id]) => selectedCategories.includes(id)).map(([id, d]) => ({ label: getCategoryDisplayName(id), value: d.amount, categoryId: id }))" :total="month.total" />
+              </CardComponent>
             </div>
           </div>
-        </div>
+        </CardComponent>
       </div>
 
       <!-- Data Table - VueDataTable component -->
-      <div v-if="costOfLivingData && selectedCategories.length > 0" class="card">
-        <div class="card-header"><h4 class="mb-0"><i class="bi bi-table me-2"></i> {{ $gettext('Detailed Monthly Data') }}</h4></div>
-        <div class="card-body p-0">
+      <div v-if="costOfLivingData && selectedCategories.length > 0">
+        <CardComponent :title="$gettext('Detailed Monthly Data')" class="mb-4" width="auto">
           <VueDataTable
             id="cost-of-living-table"
             :key="`columns-${selectedCategories.join(',')}-${costOfLivingData?.months.length}`"
             :columns="tableColumns"
             :data="tableData"
+            :footer-data="footerData"
+            footer-row-class="table-light fw-bold"
             :page-size="25"
             :csv-text="$gettext('Export CSV')"
             :excel-text="$gettext('Export Excel')"
             :search-placeholder="$gettext('Search') + ': '"
+            wrapper-class="w-auto"
             show-column-filters
             class="small"
           />
-          <!-- Table footer with averages (rendered separately since VueDataTable doesn't support tfoot slots) -->
-          <div v-if="selectedCategories.length > 0" class="table-footer-wrapper">
-            <table class="table table-bordered table-hover mb-0 small">
-              <tfoot class="table-light">
-                <tr>
-                  <th scope="col">{{ $gettext('Average') }}</th>
-                  <th scope="col" class="fw-bold text-end">{{ trendlineValue }}</th>
-                  <th v-for="catId in selectedCategories" :key="catId" scope="col" class="text-end">
-                    {{ calculateCategoryAverage(catId) }}
-                  </th>
-                </tr>
-              </tfoot>
-            </table>
-          </div>
-        </div>
+        </CardComponent>
       </div>
 
       <div v-if="!costOfLivingData && !isLoading" class="alert alert-info">

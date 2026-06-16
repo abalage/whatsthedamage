@@ -36,7 +36,7 @@ const PERCENTAGE_MULTIPLIER = 100;
 const chartData = computed(() => {
   const labels = props.data.map(item => item.label);
   const values = props.data.map(item => item.value);
-  
+
   return {
     labels,
     datasets: [
@@ -64,54 +64,69 @@ const chartOptions = computed(() => ({
         font: {
           size: 11
         }
-      }
-    },
-    title: {
-      display: !!props.title,
-      text: props.title,
-      font: {
-        size: 14
-      }
+      },
     },
     tooltip: {
       callbacks: {
         label: (context: any) => {
           const label = context.label || '';
           const value = context.raw as number;
-          const total = context.dataset.data.reduce((a: number, b: number) => a + b, ZERO);
-          const percentage = total > ZERO ? ((value / total) * PERCENTAGE_MULTIPLIER).toFixed(ONE) : ZERO;
-          return `${label}: ${value} (${percentage}%)`;
+          const totalSum = context.dataset.data.reduce((a: number, b: number) => a + b, ZERO);
+          const percentage = totalSum > ZERO ? ((value / totalSum) * PERCENTAGE_MULTIPLIER).toFixed(ONE) : '0';
+
+          // Ensure label always exists even if undefined by tooltip logic strips it
+          return `${label || '(Unknown Category)'}: ${value} (${percentage}%)`;
         }
       }
-    }
-  }
-}));
+    },
+  } as any
+}))
 </script>
 
 <template>
-  <div class="pie-chart-container">
-    <div v-if="total !== undefined" class="pie-chart-total">
-      <strong>Total:</strong> {{ total }}
+  <div class="pie-chart-wrapper">
+    <div :class="{ 'has-top-info': props.total !== undefined && !props.title }" class="chart-content-area">
+      <div v-if="props.total !== undefined && props.title" aria-live="polite">
+        <strong>{{ props.title }}</strong>
+      </div>
+      <Pie
+        :data="chartData"
+        :options="chartOptions"
+        class="pie-chart-element"
+      />
     </div>
-    <Pie :data="chartData" :options="chartOptions" />
+    <div v-if="(props.total !== undefined && !props.title)" aria-live="polite">
+      <strong>Total:</strong> {{ props.total }}
+      <slot name="legend"></slot>
+    </div>
   </div>
 </template>
 
 <style scoped>
-.pie-chart-container {
+.pie-chart-wrapper {
   position: relative;
-  height: 280px;
+  height: auto;
+  min-height: 280px;
   width: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
-.pie-chart-total {
-  position: absolute;
-  top: 10px;
-  left: 0;
-  right: 0;
-  text-align: center;
-  font-size: 0.9rem;
-  color: #666;
-  z-index: 10;
+/* Content area that holds the chart, allows shrinking/growing based on aspect ratio needs via vue-chartjs internal sizing if desired, but here we constrain height to prevent overflow. */
+.chart-content-area {
+  display: flex;
+  flex-grow: 1; /* Allow content to expand within available space */
+}
+
+/* Ensure Pie element doesn't exceed wrapper constraints */
+.pie-chart-element {
+    min-height: 20px; /* Small base height even if data is minimal */
+    margin-bottom: 1em;
+}
+
+/* Adjust spacing logic based on presence of title vs total label to avoid overlap */
+.has-top-info {
+    padding-bottom: 0.5rem;
+    flex-direction: column-reverse !important;
 }
 </style>

@@ -26,7 +26,7 @@
  *   />
  */
 
-import { ref, computed, onUnmounted, type Component } from 'vue'
+import { ref, computed, onUnmounted, type Component, type CSSProperties } from 'vue'
 import { useGettext } from 'vue3-gettext'
 import { RouterLink, type RouteLocationRaw } from 'vue-router'
 import { getCssClassesForHighlights, DEFAULT_HIGHLIGHT_CONFIG } from '../../config/highlight-config.ts'
@@ -106,6 +106,12 @@ interface Props {
   /** Cell-level highlights: row_id -> array of highlight types (for cell-level highlighting in pivot tables) */
   cellHighlightsByRowId?: Record<string, string[]>
 
+  // Footer rows
+  /** Footer rows (summary/totals). Rendered in <tfoot>, unaffected by pagination/filtering */
+  footerData?: Record<string, unknown>[]
+  /** CSS classes for footer rows */
+  footerRowClass?: string | string[]
+
   // Display
   /** Show pagination controls. Default: true */
   showPagination?: boolean
@@ -113,6 +119,10 @@ interface Props {
   showColumnFilters?: boolean
   /** Additional CSS classes for table element */
   tableClass?: string | string[]
+  /** Additional CSS classes for the wrapper container */
+  wrapperClass?: string | string[]
+  /** Inline styles for the wrapper container */
+  wrapperStyle?: CSSProperties
 
   // Callbacks
   /** Called when a row is clicked */
@@ -538,7 +548,7 @@ defineExpose(tableApi)
 </script>
 
 <template>
-  <div class="data-table-container">
+  <div class="data-table-container" :class="wrapperClass" :style="wrapperStyle">
     <!-- Search bar -->
     <div v-if="showSearch !== false" class="mb-3">
       <div class="input-group">
@@ -694,6 +704,34 @@ defineExpose(tableApi)
             </td>
           </tr>
         </tbody>
+        <!-- Footer rows (not paginated, not exported) -->
+        <tfoot v-if="footerData && footerData.length > 0" :class="footerRowClass">
+          <tr v-for="(row, rowIndex) in footerData" :key="`footer-${rowIndex}`">
+            <td
+              v-for="column in columns"
+              :key="column.key"
+              :class="[
+                column.class,
+                ...getCellHighlightClasses(row, column.key),
+              ]"
+            >
+              <template v-if="column.component">
+                <component
+                  :is="column.component"
+                  v-bind="column.componentProps ? column.componentProps(row[column.key], row, rowIndex) : {}"
+                />
+              </template>
+              <template v-else-if="usesHtmlRendering(column)">
+                <!-- SECURITY: v-html used for custom render. Only enabled with renderHtml. -->
+                <!-- eslint-disable-next-line vue/no-v-html -->
+                <span v-html="getDisplayValue(column, row[column.key], row, rowIndex)" />
+              </template>
+              <template v-else>
+                {{ getDisplayValue(column, row[column.key], row, rowIndex) }}
+              </template>
+            </td>
+          </tr>
+        </tfoot>
       </table>
     </div>
 
@@ -768,7 +806,9 @@ defineExpose(tableApi)
 
 <style scoped>
 .data-table-container {
-  width: 100%;
+  width: auto;
+  max-width: 100%;
+  min-width: 0;
   overflow-x: auto;
 }
 

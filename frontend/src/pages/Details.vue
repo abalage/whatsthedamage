@@ -5,6 +5,7 @@ import { useGettext } from 'vue3-gettext'
 import { fetchResults } from '../js/api.js'
 import { useCategoriesStore } from '../stores/categories.js'
 import ButtonComponent from '../components/ui/ButtonComponent.vue'
+import CardComponent from '../components/ui/CardComponent.vue'
 import VueDataTable from '../components/data/VueDataTable.vue'
 import TableLink from '../components/data/TableLink.vue'
 import type { Column } from '../components/data/VueDataTable.vue'
@@ -26,8 +27,8 @@ const columns: Column[] = [
     key: 'category_id',
     title: $gettext('Category'),
     component: TableLink,
-    componentProps: (value: unknown, row: Record<string, unknown>) => {
-      const categoryId = categoriesStore.extractCategoryIdFromData(row)
+    componentProps: (value: unknown, row?: Record<string, unknown>) => {
+      const categoryId = categoriesStore.extractCategoryIdFromData(row ?? {})
       const categoryDisplayName = categoriesStore.getCategoryDisplayName(categoryId)
       return {
         to: '#',
@@ -105,7 +106,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="container">
+  <div class="container-fluid">
     <!-- Breadcrumb Navigation -->
     <nav aria-label="breadcrumb">
       <ol class="breadcrumb">
@@ -142,16 +143,15 @@ onMounted(() => {
         </div>
       </div>
 
-      <div class="row mb-3">
-        <div class="col-md-12">
+      <CardComponent :title="$gettext('Transactions')" class="mb-4" width="fit-content">
           <VueDataTable
             id="detail-datatable"
             :data="allTransactions"
             :columns="columns"
+            wrapper-class="w-auto"
             show-column-filters
           />
-        </div>
-      </div>
+      </CardComponent>
     </div>
 
     <!-- No Data State -->

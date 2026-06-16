@@ -28,18 +28,18 @@ const getRouteParam = (param: string): string | null => {
 
 // Table columns
 const columns: Column[] = [
-  { key: 'date', title: $gettext('Date'), renderHtml: (value: unknown, row: Record<string, unknown>) => String((row as { date_display?: string }).date_display || value || '') },
+  { key: 'date', title: $gettext('Date'), renderHtml: (value: unknown, row?: Record<string, unknown>) => String(((row as { date_display?: string })?.date_display) || value || '') },
   {
     key: 'amount',
     title: $gettext('Amount'),
-    renderHtml: (value: unknown, row: Record<string, unknown>) => String((row as { amount_display?: string }).amount_display || value || '')
+    renderHtml: (value: unknown, row?: Record<string, unknown>) => String(((row as { amount_display?: string })?.amount_display) || value || '')
   },
   { key: 'merchant', title: $gettext('Merchant') }
 ]
 
 // Function to get page title with category display name
 const getPageTitle = (data: CategoryMonthTransactionsApiResponse): string => {
-  const categoryId = categoriesStore.extractCategoryIdFromData(data as Record<string, unknown>)
+  const categoryId = categoriesStore.extractCategoryIdFromData(data as unknown as Record<string, unknown>)
   const categoryDisplayName = categoryId ? categoriesStore.getCategoryDisplayName(categoryId) : ''
   return `${$gettext('Details')}: ${categoryDisplayName} - ${formatMonthYear(data.month_timestamp)}`
 }
@@ -62,7 +62,7 @@ const {
   getPageTitle,
   breadcrumbItems: (): BreadcrumbItem[] => [
     { name: $gettext('Home'), to: '/' },
-    { name: $gettext('Results'), to: { name: 'results', query: { resultId: getRouteParam('resultId') } } },
+    { name: $gettext('Categories'), to: { name: 'results', query: { resultId: getRouteParam('resultId') } } },
     {
       name: $gettext('Category Months'),
       to: { name: 'category-months', params: { resultId: getRouteParam('resultId'), accountId: getRouteParam('accountId'), categoryId: getRouteParam('categoryId') } }
@@ -103,7 +103,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="container">
+  <div class="container-fluid">
     <!-- Breadcrumb Navigation -->
     <nav v-if="breadcrumbItems.length" aria-label="breadcrumb">
       <ol class="breadcrumb">
@@ -151,19 +151,16 @@ onMounted(() => {
       </div>
 
       <!-- Account Card -->
-      <CardComponent :title="transactionsData.account_name" class="mb-4">
-        <div class="row">
-          <div class="col-md-8 mb-3">
+      <CardComponent :title="transactionsData.account_name" class="mb-4" width="fit-content">
             <VueDataTable
               id="transaction-details-table"
               :data="tableData"
               :columns="columns"
               :csv-text="$gettext('Export CSV')"
               :excel-text="$gettext('Export Excel')"
+              wrapper-class="w-auto"
               show-column-filters
             />
-          </div>
-        </div>
       </CardComponent>
     </div>
 

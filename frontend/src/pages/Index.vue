@@ -23,25 +23,15 @@ const handleConfigChange = (event: Event) => {
   formStore.handleFileChange(event, 'configFile')
 }
 
-type InputField = 'startDate' | 'endDate' | 'categoryFilter' | 'verbose' | 'mlEnabled'
+type InputField = 'mlEnabled'
 
 const handleInputChange = (field: InputField, value: string | boolean) => {
   formStore.handleInputChange(field, value)
 }
 
-const handleDateChange = (field: InputField, event: Event) => {
-  const target = event.target as HTMLInputElement
-  handleInputChange(field, target.value)
-}
-
 const handleCheckboxChange = (field: InputField, event: Event) => {
   const target = event.target as HTMLInputElement
   handleInputChange(field, target.checked)
-}
-
-const handleTextInput = (field: InputField, event: Event) => {
-  const target = event.target as HTMLInputElement
-  handleInputChange(field, target.value)
 }
 
 const submitForm = async () => {
@@ -68,9 +58,9 @@ onMounted(() => {
     <ErrorDisplay />
 
     <form enctype="multipart/form-data" @submit.prevent="submitForm">
+      <CardComponent :title="$gettext('File uploads')" type="standard" width="75%">
       <div class="row">
-        <div class="col-md-6 mb-3">
-          <CardComponent :title="$gettext('File uploads')" type="standard">
+          <div class="col-md-12 mb-3">
             <div class="mb-3">
               <label for="filename" class="form-label">{{ $gettext('CSV file') }}:</label>
               <input
@@ -101,71 +91,7 @@ onMounted(() => {
               </div>
               <div id="configHelp" class="form-text">{{ $gettext('Upload your configuration file here, or the default configuration will be used') }}</div>
             </div>
-          </CardComponent>
-        </div>
-        <div class="col-md-6 mb-3">
-          <CardComponent :title="$gettext('Filters')" type="standard">
-            <div class="mb-3">
-              <label for="start_date" class="form-label">{{ $gettext('Start date') }}:</label>
-              <input
-                id="start_date"
-                v-model="formStore.formData.startDate"
-                type="date"
-                class="form-control"
-                :class="{ 'is-invalid': formStore.getError('startDate') }"
-                @change="handleDateChange('startDate', $event)"
-              />
-              <div v-if="formStore.getError('startDate')" class="invalid-feedback">
-                {{ formStore.getError('startDate') }}
-              </div>
-              <div id="dateStartHelp" class="form-text">{{ $gettext('Filter results starting from this date') }}</div>
-            </div>
-            <div class="mb-3">
-              <label for="end_date" class="form-label">{{ $gettext('End date') }}:</label>
-              <input
-                id="end_date"
-                v-model="formStore.formData.endDate"
-                type="date"
-                class="form-control"
-                :class="{ 'is-invalid': formStore.getError('endDate') }"
-                @change="handleDateChange('endDate', $event)"
-              />
-              <div v-if="formStore.getError('endDate')" class="invalid-feedback">
-                {{ formStore.getError('endDate') }}
-              </div>
-              <div id="dateEndHelp" class="form-text">{{ $gettext('Filter results up until this date') }}</div>
-            </div>
-            <div class="mb-3">
-              <label for="filter" class="form-label">{{ $gettext('Category filter') }}:</label>
-              <input
-                id="filter"
-                v-model="formStore.formData.categoryFilter"
-                type="text"
-                class="form-control"
-                @input="handleTextInput('categoryFilter', $event)"
-              />
-              <div id="filterHelp" class="form-text">{{ $gettext('Filter by category. (default = "category")') }}</div>
-            </div>
-            <div v-if="formStore.getError('dateRange')" class="invalid-feedback">
-              {{ formStore.getError('dateRange') }}
-            </div>
-          </CardComponent>
-        </div>
-      </div>
-      <div class="row">
-        <div class="col-md-12 mb-3">
-          <CardComponent :title="$gettext('Advanced settings')" type="standard">
-            <div class="mb-3 form-check">
-              <input
-                id="verbose"
-                v-model="formStore.formData.verbose"
-                type="checkbox"
-                class="form-check-input"
-                @change="handleCheckboxChange('verbose', $event)"
-              />
-              <label class="form-check-label" for="verbose">{{ $gettext('Enable verbose logging') }}</label>
-              <div id="verboseHelp" class="form-text">{{ $gettext('Enable detailed logging in the backend') }}</div>
-            </div>
+            <label for="ml" class="form-label">{{ $gettext('Advanced settings') }}:</label>
             <div class="mb-3 form-check">
               <input
                 id="ml"
@@ -181,29 +107,29 @@ onMounted(() => {
                 {{ $gettext('Uncheck to use regular expressions instead of the ML model') }}
               </div>
             </div>
-          </CardComponent>
-        </div>
+          </div>
       </div>
       <div class="row">
-        <div class="col-md-6">
-          <ButtonComponent
-            :text="formStore.isLoading ? $gettext('Processing your transactions...') : $gettext('Submit')"
-            variant="primary"
-            type="submit"
-            :disabled="formStore.isLoading"
-            size="lg"
-          />
-        </div>
-        <div class="col-md-6 text-end">
-          <ButtonComponent
-            :text="$gettext('Clear form')"
-            variant="secondary"
-            type="button"
-            size="lg"
-            @click="clearForm"
-          />
-        </div>
+          <div class="col-md-6">
+            <ButtonComponent
+              :text="formStore.isLoading ? $gettext('Processing your transactions...') : $gettext('Submit')"
+              variant="primary"
+              type="submit"
+              :disabled="formStore.isLoading"
+              size="lg"
+            />
+          </div>
+          <div class="col-md-6 text-end">
+            <ButtonComponent
+              :text="$gettext('Clear form')"
+              variant="secondary"
+              type="button"
+              size="lg"
+              @click="clearForm"
+            />
+          </div>
       </div>
+      </CardComponent>
     </form>
   </div>
 </template>

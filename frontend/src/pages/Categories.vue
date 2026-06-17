@@ -268,7 +268,7 @@ onMounted(() => {
       </div>
 
       <div v-for="account in resultsData.accounts_data.accounts" :key="account.id" class="mb-5">
-        <CardComponent :title="account.name" class="mb-4" width="fit-content">
+        <CardComponent :title="`${$gettext('Account')}: ${account.formatted_id} (${account.currency})`" class="mb-4" width="fit-content">
             <VueDataTable
               :id="`datatable-${account.id}`"
               :data="buildTableData(account)"

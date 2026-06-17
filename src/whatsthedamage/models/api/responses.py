@@ -103,6 +103,8 @@ class AccountDataResponse(BaseModel):
     """Data structure for a single account in results response."""
     id: str = Field(description="Account identifier")
     name: str = Field(description="Account display name")
+    formatted_id: str = Field(description="Formatted account identifier for display")
+    currency: str = Field(description="Account currency code")
     dt_response: Dict[str, Any] = Field(
         description="DataTables-compatible response data for this account"
     )

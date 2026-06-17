@@ -3,8 +3,8 @@ import Index from '../pages/Index.vue'
 import About from '../pages/About.vue'
 import Legal from '../pages/Legal.vue'
 import Privacy from '../pages/Privacy.vue'
-import Results from '../pages/Results.vue'
-import Details from '../pages/Details.vue'
+import Categories from '../pages/Categories.vue'
+import Transactions from '../pages/Transactions.vue'
 import Statistics from '../pages/Statistics.vue'
 import CategoryMonthsList from '../pages/CategoryMonthsList.vue'
 import MonthCategoriesList from '../pages/MonthCategoriesList.vue'
@@ -37,7 +37,7 @@ const router = createRouter({
     {
       path: '/results',
       name: 'results',
-      component: Results
+      component: Categories
     },
     {
       path: '/results/:resultId/accounts/:accountId/categories/:categoryId/months',
@@ -57,7 +57,7 @@ const router = createRouter({
     {
       path: '/results/:resultId',
       name: 'details',
-      component: Details
+      component: Transactions
     },
     {
       path: '/details',

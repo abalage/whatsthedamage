@@ -2,6 +2,7 @@
 import { computed } from 'vue';
 import { useGettext } from 'vue3-gettext';
 import { useCostOfLivingStore } from '../stores/costOfLiving.js';
+import CardComponent from '../components/ui/CardComponent.vue'
 
 const { $gettext } = useGettext();
 const costOfLivingStore = useCostOfLivingStore();
@@ -28,14 +29,8 @@ const getCategoryDisplayName = (categoryId: string): string => $gettext(category
 </script>
 
 <template>
-  <div class="category-selector card mb-4">
-    <div class="card-header">
-      <h5 class="mb-0">
-        <i class="bi bi-gear me-2"></i>
-        {{ $gettext('Customize Categories') }}
-      </h5>
-    </div>
-    <div class="card-body">
+  <div class="category-selector mb-4">
+    <CardComponent :title="$gettext('Customize Categories')" class="mb-4" width="auto">
       <p class="text-muted small mb-3">
         {{ $gettext('Select which categories to include in your Cost of Living calculation. Your selection is saved automatically.') }}
       </p>
@@ -92,7 +87,7 @@ const getCategoryDisplayName = (categoryId: string): string => $gettext(category
           </button>
         </div>
       </fieldset>
-    </div>
+  </CardComponent>
   </div>
 </template>
 

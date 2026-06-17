@@ -8,6 +8,7 @@ import { useCategoriesStore } from '../stores/categories.js'
 import { useGettext } from 'vue3-gettext'
 import type { ResultsApiResponse, AccountDataResponse } from '../types/api.js'
 import ButtonComponent from '../components/ui/ButtonComponent.vue'
+import CardComponent from '../components/ui/CardComponent.vue'
 import VueDataTable from '../components/data/VueDataTable.vue'
 import TableLink from '../components/data/TableLink.vue'
 import TableLinkWithPopover from '../components/data/TableLinkWithPopover.vue'
@@ -70,8 +71,8 @@ function buildTableColumns(account: AccountData): Column[] {
       title: $gettext('Categories'),
       sortable: true,
       component: TableLink,
-      componentProps: (value: unknown, row: Record<string, unknown>) => {
-        const categoryId = categoriesStore.extractCategoryIdFromData(row)
+      componentProps: (value: unknown, row?: Record<string, unknown>) => {
+        const categoryId = categoriesStore.extractCategoryIdFromData(row ?? {})
         const categoryDisplayName = categoriesStore.getCategoryDisplayName(categoryId)
         if (!categoryId) {
           return { to: '#', class: 'clickable', children: categoryDisplayName }
@@ -94,8 +95,8 @@ function buildTableColumns(account: AccountData): Column[] {
       sortable: true,
       headerTo: { name: 'month-categories', params: { resultId: resultId.value, accountId, monthId } },
       component: TableLinkWithPopover,
-      componentProps: (value: unknown, row: Record<string, unknown>) => {
-        const category_id = String(row.category_id ?? row.category ?? '')
+      componentProps: (value: unknown, row?: Record<string, unknown>) => {
+        const category_id = String(row?.category_id ?? row?.category ?? '')
         const monthData = buildCategoryMonthMap(account)[category_id]?.[monthTs]
 
         if (!monthData) {
@@ -222,7 +223,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="container">
+  <div class="container-fluid">
     <nav aria-label="breadcrumb">
       <ol class="breadcrumb">
         <li class="breadcrumb-item"><router-link to="/">{{ $gettext('Home') }}</router-link></li>
@@ -267,11 +268,7 @@ onMounted(() => {
       </div>
 
       <div v-for="account in resultsData.accounts_data.accounts" :key="account.id" class="mb-5">
-        <div class="card">
-          <div class="card-header">
-            <h3>{{ account.name }}</h3>
-          </div>
-          <div class="card-body">
+        <CardComponent :title="`${$gettext('Account')}: ${account.formatted_id} (${account.currency})`" class="mb-4" width="fit-content">
             <VueDataTable
               :id="`datatable-${account.id}`"
               :data="buildTableData(account)"
@@ -279,10 +276,10 @@ onMounted(() => {
               :cell-highlights-by-row-id="getAccountHighlights()"
               :csv-text="$gettext('Export CSV')"
               :excel-text="$gettext('Export Excel')"
+              wrapper-class="w-auto"
               show-column-filters
             />
-          </div>
-        </div>
+        </CardComponent>
       </div>
     </div>
 

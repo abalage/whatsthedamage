@@ -34,11 +34,11 @@ const columns: Column[] = [
     key: 'category_id',
     title: $gettext('Category'),
     component: TableLink,
-    componentProps: (value: unknown, row: Record<string, unknown>) => {
+    componentProps: (value: unknown, row?: Record<string, unknown>) => {
       const accountId = String(route.params.accountId || '')
       const monthId = String(route.params.monthId || '')
       const resultId = String(route.params.resultId || '')
-      const categoryId = extractCategoryIdFromData(row)
+      const categoryId = extractCategoryIdFromData(row ?? {})
       const categoryDisplayName = categoriesStore.getCategoryDisplayName(categoryId)
       return {
         to: { name: 'category-month-transactions', params: { resultId, accountId, categoryId, monthId } },
@@ -50,7 +50,7 @@ const columns: Column[] = [
   {
     key: 'total',
     title: $gettext('Total'),
-    renderHtml: (value: unknown, row: Record<string, unknown>) => String((row as { total_display?: string }).total_display || value || '')
+    renderHtml: (value: unknown, row?: Record<string, unknown>) => String(((row as { total_display?: string })?.total_display) || value || '')
   }
 ]
 
@@ -83,7 +83,7 @@ const {
   getPageTitle: (data) => `${$gettext('Details')}: ${formatMonthYear(data.month_timestamp)}`,
   breadcrumbItems: (): BreadcrumbItem[] => [
     { name: $gettext('Home'), to: '/' },
-    { name: $gettext('Results'), to: { name: 'results', query: { resultId: getRouteParam('resultId') } } },
+    { name: $gettext('Categories'), to: { name: 'results', query: { resultId: getRouteParam('resultId') } } },
     { name: $gettext('Month Details'), active: true }
   ],
   navButtons: [
@@ -131,7 +131,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="container">
+  <div class="container-fluid">
     <!-- Breadcrumb Navigation -->
     <nav v-if="breadcrumbItems.length" aria-label="breadcrumb">
       <ol class="breadcrumb">
@@ -179,9 +179,7 @@ onMounted(() => {
       </div>
 
       <!-- Account Card -->
-      <CardComponent :title="monthCategoriesData.account_name" class="mb-4">
-        <div class="row">
-          <div class="col-md-6 mb-3">
+      <CardComponent :title="monthCategoriesData.account_name" class="mb-4" width="fit-content">
             <VueDataTable
               id="datatable-month"
               :data="tableData"
@@ -189,10 +187,9 @@ onMounted(() => {
               :cell-highlights-by-row-id="cellHighlightsByRowId"
               :csv-text="$gettext('Export CSV')"
               :excel-text="$gettext('Export Excel')"
+              wrapper-class="w-auto"
               show-column-filters
             />
-          </div>
-        </div>
       </CardComponent>
 
 

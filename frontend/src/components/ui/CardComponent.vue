@@ -11,6 +11,7 @@ interface CardProps {
   id?: string
   type?: 'standard' | 'simple' | 'account' | 'info'
   account?: AccountData
+  width?: string // Accepts valid CSS width values like '50%', '70%', etc.
 }
 
 const props = withDefaults(defineProps<CardProps>(), {
@@ -18,7 +19,8 @@ const props = withDefaults(defineProps<CardProps>(), {
   classes: '',
   id: undefined,
   type: 'standard',
-  account: undefined
+  account: undefined,
+  width: '100%' // Default width
 })
 
 const emit = defineEmits(['close'])
@@ -27,6 +29,12 @@ const cardClasses = computed(() => {
   const baseClasses = ['card']
   if (props.classes) baseClasses.push(props.classes)
   return baseClasses.join(' ')
+})
+
+const cardStyle = computed(() => {
+  return props.width
+    ? { width: props.width, margin: '0 auto' }
+    : undefined
 })
 
 const headerClasses = computed(() => {
@@ -65,7 +73,7 @@ const closeAlert = () => {
 
 <template>
   <!-- Standard Card -->
-  <div v-if="type === 'standard'" :id="id" :class="cardClasses">
+  <div v-if="type === 'standard'" :id="id" :class="cardClasses" :style="cardStyle">
     <div v-if="showHeader" :class="headerClasses">
       {{ title }}
     </div>

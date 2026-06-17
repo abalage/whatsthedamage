@@ -35,11 +35,11 @@ const columns: Column[] = [
     key: 'month',
     title: $gettext('Month'),
     component: TableLink,
-    componentProps: (value: unknown, row: Record<string, unknown>) => {
-      const resultId = String(row.resultId || '')
-      const accountId = String(row.accountId || '')
-      const categoryId = String(row.categoryId || '')
-      const monthId = extractMonthIdFromData(row)
+    componentProps: (value: unknown, row?: Record<string, unknown>) => {
+      const resultId = String(row?.resultId || '')
+      const accountId = String(row?.accountId || '')
+      const categoryId = String(row?.categoryId || '')
+      const monthId = extractMonthIdFromData(row ?? {})
       return {
         to: { name: 'category-month-transactions', params: { resultId, accountId, categoryId, monthId } },
         class: 'clickable',
@@ -50,7 +50,7 @@ const columns: Column[] = [
   {
     key: 'total',
     title: $gettext('Total'),
-    renderHtml: (value: unknown, row: Record<string, unknown>) => String((row as { total_display?: string }).total_display || value || '')
+    renderHtml: (value: unknown, row?: Record<string, unknown>) => String(((row as { total_display?: string })?.total_display) || value || '')
   }
 ]
 
@@ -92,7 +92,7 @@ const {
   getPageTitle,
   breadcrumbItems: (): BreadcrumbItem[] => [
     { name: $gettext('Home'), to: '/' },
-    { name: $gettext('Results'), to: { name: 'results', query: { resultId: getRouteParam('resultId') } } },
+    { name: $gettext('Categories'), to: { name: 'results', query: { resultId: getRouteParam('resultId') } } },
     { name: $gettext('Category Details'), active: true }
   ],
   navButtons: [
@@ -144,7 +144,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="container">
+  <div class="container-fluid">
     <!-- Breadcrumb Navigation -->
     <nav v-if="breadcrumbItems.length" aria-label="breadcrumb">
       <ol class="breadcrumb">
@@ -192,9 +192,7 @@ onMounted(() => {
       </div>
 
       <!-- Account Card -->
-      <CardComponent :title="categoryMonthsData.account_name" class="mb-4">
-        <div class="row">
-          <div class="col-md-6 mb-3">
+      <CardComponent :title="categoryMonthsData.account_name" class="mb-4" width="fit-content">
             <VueDataTable
               id="datatable-category"
               :data="tableData"
@@ -202,10 +200,9 @@ onMounted(() => {
               :cell-highlights-by-row-id="cellHighlightsByRowId"
               :csv-text="$gettext('Export CSV')"
               :excel-text="$gettext('Export Excel')"
+              wrapper-class="w-auto"
               show-column-filters
             />
-          </div>
-        </div>
       </CardComponent>
 
 

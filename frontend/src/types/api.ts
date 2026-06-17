@@ -158,6 +158,8 @@ export interface DetailedResponse {
 export interface AccountDataResponse {
   id: string;
   name: string;
+  formatted_id: string;
+  currency: string;
   dt_response: {
     data: AggregatedRow[];
   };

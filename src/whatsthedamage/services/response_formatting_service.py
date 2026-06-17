@@ -749,7 +749,9 @@ class ResponseFormattingService(IDataFormattingService):
 
             accounts_list.append(AccountDataResponse(
                 id=account_id,
+                formatted_id=self.format_account_id(account_id),
                 name=account_name,
+                currency=getattr(account_data, 'currency', ''),
                 dt_response={'data': dt_response_data}
             ))
 

@@ -1,6 +1,6 @@
 from typing import Optional, Dict, List, Union, Tuple, TYPE_CHECKING
 from whatsthedamage.config.config import AppContext, EnricherPatternSets
-from whatsthedamage.models.domain.dt_models import DateField
+from whatsthedamage.models.common.display_fields import DateField
 from whatsthedamage.models.domain.csv_row import CsvRow
 from whatsthedamage.models.domain.row_enrichment import RowEnrichment
 from whatsthedamage.models.domain.row_enrichment_ml import RowEnrichmentML
@@ -114,7 +114,7 @@ class RowsProcessor:
             formatted_account_id = '-'.join(
                 account_id[i:i+8] for i in range(0, len(account_id), 8)
             )
-            
+
             builder = AccountResponseBuilder(
                 date_format=self._date_attribute_format,
                 id=account_id,

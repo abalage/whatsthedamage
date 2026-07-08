@@ -16,29 +16,28 @@
 /**
  * Display and raw value pair (e.g., formatted currency with numeric value)
  */
-interface DisplayRawField {
+export interface DisplayRawField {
   display: string;
-  raw: number | string;
+  raw: number;
 }
 
 /**
  * Date with display format and timestamp
  */
-interface DateField {
+export interface DateField {
   display: string;
   timestamp: number;
 }
-
-
 
 // ============================================================================
 // Data Models (from dt_models.py)
 // ============================================================================
 
 /**
- * A single detailed transaction row
+ * Unified transaction detail model - consolidates DetailRow and TransactionDetail.
+ * Replaces the previous DetailRow and TransactionDetailResponse interfaces.
  */
-interface DetailRow {
+export interface TransactionDetail {
   row_id: string;
   date: DateField;
   amount: DisplayRawField;
@@ -48,6 +47,9 @@ interface DetailRow {
   type?: string | null;
   confidence?: number | null;
   notice?: string | null;
+  // API drilldown context fields
+  category_id?: string | null;
+  month_id?: string | null;
 }
 
 /**
@@ -58,9 +60,12 @@ export interface AggregatedRow {
   category_id: string;
   total: DisplayRawField;
   date: DateField;
-  details: DetailRow[];
+  details: TransactionDetail[];
   is_calculated?: boolean;
 }
+
+// DetailRow is now an alias to TransactionDetail
+export type DetailRow = TransactionDetail;
 
 /**
  * Processing metadata
@@ -225,7 +230,7 @@ export interface CategoryDefinition {
  * Data for a single month in category months response
  * Frontend should use month_timestamp to format the month display name.
  */
-interface MonthData {
+export interface MonthData {
   month_timestamp: number;
   total: DisplayRawField;
   row_id: string;
@@ -249,7 +254,7 @@ export interface CategoryMonthsApiResponse {
 /**
  * Data for a single category in month categories response
  */
-interface CategoryData {
+export interface CategoryData {
   category_id: string;
   total: DisplayRawField;
   row_id: string;
@@ -273,16 +278,6 @@ export interface MonthCategoriesApiResponse {
 }
 
 /**
- * Data for a single transaction in drilldown response
- */
-interface TransactionDetailResponse {
-  date: { display: string; timestamp: number | string };
-  amount: DisplayRawField;
-  merchant: string;
-  row_id: string;
-}
-
-/**
  * Response from GET /api/v2/results/<r>/accounts/<a>/categories/<c>/months/<m>/transactions
  *
  * Returns individual transaction details for a specific category and month.
@@ -295,7 +290,7 @@ export interface CategoryMonthTransactionsApiResponse {
   category_id: string;
   month_id: string;
   month_timestamp: number;
-  data: TransactionDetailResponse[];
+  data: TransactionDetail[];
   highlights?: StatisticalHighlights;
 }
 

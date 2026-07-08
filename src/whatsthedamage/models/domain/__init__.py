@@ -11,9 +11,8 @@ from whatsthedamage.models.domain.csv_processor import CSVProcessor
 # Aggregation models
 from whatsthedamage.models.domain.dt_models import (
     AggregatedRow,
-    DetailRow,
-    DateField,
-    DisplayRawField,
+    TransactionDetail,
+    DetailRow,  # Alias to TransactionDetail
     ProcessingResponse,
     SummaryData,
     CellHighlight,
@@ -57,8 +56,7 @@ __all__ = [
     'Account',
     'AggregatedRow',
     'DetailRow',
-    'DateField',
-    'DisplayRawField',
+    'TransactionDetail',
     'ProcessingResponse',
     'SummaryData',
     'CellHighlight',

@@ -1,5 +1,5 @@
 from typing import Dict, List
-from whatsthedamage.models.domain.dt_models import DetailRow
+from whatsthedamage.models.domain.dt_models import TransactionDetail
 from whatsthedamage.models.domain.account import Account
 from whatsthedamage.config.config import get_category_display_name
 import json
@@ -24,7 +24,7 @@ def print_categorized_rows(responses_by_account: Dict[str, Account]) -> None:
         print(f"\n=== Account: {account_id} ===", file=sys.stderr)
 
         # Group details by category display name
-        category_rows: Dict[str, List[DetailRow]] = {}
+        category_rows: Dict[str, List[TransactionDetail]] = {}
         for agg_row in dt_response.data:
             category_display = get_category_display_name(agg_row.category_id)
             if category_display not in category_rows:
@@ -35,10 +35,10 @@ def print_categorized_rows(responses_by_account: Dict[str, Account]) -> None:
         for category_id in sorted(category_rows.keys()):
             print(f"\nCategory: {get_category_display_name(category_id)}", file=sys.stderr)
             # Sort by timestamp to keep ordering unambiguous across years
-            for detail_row in sorted(category_rows[category_id], key=lambda r: f"{getattr(r.date, 'timestamp', 0)}_{r.merchant}_{r.amount.raw}"):
+            for transaction_detail in sorted(category_rows[category_id], key=lambda r: f"{getattr(r.date, 'timestamp', 0)}_{r.merchant}_{r.amount.raw}"):
                 # Format similar to CsvRow repr output
-                print(f"DetailRow(date={detail_row.date.display}, amount={detail_row.amount.raw}, "
-                      f"merchant={detail_row.merchant}, currency={detail_row.currency}, notice={detail_row.notice})", file=sys.stderr)
+                print(f"TransactionDetail(date={transaction_detail.date.display}, amount={transaction_detail.amount.raw}, "
+                      f"merchant={transaction_detail.merchant}, currency={transaction_detail.currency}, notice={transaction_detail.notice})", file=sys.stderr)
 
 
 def print_training_data(responses_by_account: Dict[str, Account]) -> None:

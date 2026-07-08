@@ -1,51 +1,128 @@
-from pydantic import BaseModel, Field, ConfigDict
-from typing import List, Any, Dict, Optional, TYPE_CHECKING
 from dataclasses import dataclass
-from whatsthedamage.models.api.common import ProcessingMetadata
+from typing import TYPE_CHECKING, TypedDict
+
+from pydantic import BaseModel, ConfigDict, Field
+
+from whatsthedamage.models.common.display_fields import DisplayRawField, DateField
+from whatsthedamage.models.common.processing_metadata import ProcessingMetadata
 
 if TYPE_CHECKING:
     from whatsthedamage.models.domain.account import Account
 
-class DisplayRawField(BaseModel):
-    display: str
-    raw: Any
 
-class DateField(BaseModel):
+class PeriodData(TypedDict):
+    """Type for period map values containing display name and category amounts."""
     display: str
-    timestamp: int
+    categories: dict[str, float]
 
-class DetailRow(BaseModel):
-    row_id: str
-    date: DateField
-    amount: DisplayRawField
-    merchant: str
-    currency: str
-    account: str
-    type: Optional[str] = None
-    confidence: Optional[float] = None
-    notice: Optional[str] = None
+
+class TransactionDetail(BaseModel):
+    """Unified transaction detail model.
+
+    Consolidates DetailRow (domain) and TransactionDetail (API) into a single
+    model with all fields. Used for individual transactions within aggregated
+    rows.
+
+    Attributes:
+        row_id (str): Unique row identifier.
+        date (DateField): Transaction date.
+        amount (DisplayRawField): Transaction amount.
+        merchant (str): Merchant or transaction description.
+        currency (str): Currency code.
+        account (str): Account identifier.
+        type (str | None): Transaction type.
+        confidence (float | None): ML confidence score.
+        notice (str | None): Transaction notice or memo.
+        category_id (str | None): Category ID for drilldown.
+        month_id (str | None): Month ID for drilldown.
+    """
+    row_id: str = Field(description="Unique row identifier")
+    date: DateField = Field(description="Transaction date")
+    amount: DisplayRawField = Field(description="Transaction amount")
+    merchant: str = Field(description="Merchant or transaction description")
+    currency: str = Field(default="", description="Currency code")
+    account: str = Field(default="", description="Account identifier")
+    type: str | None = Field(default=None, description="Transaction type")
+    confidence: float | None = Field(
+        default=None, description="ML confidence score"
+    )
+    notice: str | None = Field(
+        default=None, description="Transaction notice or memo"
+    )
+    category_id: str | None = Field(
+        default=None, description="Category ID for drilldown"
+    )
+    month_id: str | None = Field(
+        default=None, description="Month ID for drilldown"
+    )
+
+
+# Backward compatibility alias - DetailRow is now TransactionDetail
+DetailRow = TransactionDetail
+
 
 class AggregatedRow(BaseModel):
-    row_id: str
-    category_id: str
-    total: DisplayRawField
-    date: DateField
-    details: List[DetailRow]
-    is_calculated: bool = False
+    """Transactions grouped by category and date period.
+
+    Represents aggregated transaction data for a specific category within a
+    time period (typically a month). Contains the total amount and individual
+    transaction details.
+
+    Attributes:
+        row_id (str): Unique row identifier.
+        category_id (str): Category identifier.
+        total (DisplayRawField): Total amount for this category/period.
+        date (DateField): Date period (month).
+        details (list[TransactionDetail]): Individual transactions in this group.
+        is_calculated (bool): Whether this row was calculated (e.g., Balance,
+            Total).
+    """
+    row_id: str = Field(description="Unique row identifier")
+    category_id: str = Field(description="Category identifier")
+    total: DisplayRawField = Field(
+        description="Total amount for this category/period"
+    )
+    date: DateField = Field(description="Date period (month)")
+    details: list[TransactionDetail] = Field(
+        default_factory=list,
+        description="Individual transactions in this group"
+    )
+    is_calculated: bool = Field(
+        default=False,
+        description="Whether this row was calculated (e.g., Balance, Total)"
+    )
 
 class CellHighlight(BaseModel):
-    row_id: str  # Unique identifier referencing AggregatedRow or DetailRow
-    highlight_types: List[str]  # List of all highlight types for this row (e.g., ['outlier', 'pareto'])
+    """Represents highlight metadata for a table cell.
+
+    Attributes:
+        row_id (str): Unique identifier referencing AggregatedRow or DetailRow.
+        highlight_types (list[str]): List of highlight types for this row
+            (e.g., ['outlier', 'pareto']).
+    """
+    row_id: str
+    highlight_types: list[str]
+
 
 class StatisticalMetadata(BaseModel):
-    highlights: List[CellHighlight]
+    """Statistical analysis metadata for response data.
+
+    Attributes:
+        highlights (list[CellHighlight]): List of cell highlights from analysis.
+    """
+    highlights: list[CellHighlight]
 
 class DetailedResponse(BaseModel):
     """Response model for v2 API (includes transaction details).
 
     Returns transaction-level details grouped by category and month.
+
+    Attributes:
+        data (list[AggregatedRow]): List of aggregated rows with transaction
+            details.
+        metadata (ProcessingMetadata): Processing metadata.
     """
-    data: List[AggregatedRow] = Field(
+    data: list[AggregatedRow] = Field(
         description="List of aggregated rows with transaction details"
     )
     metadata: ProcessingMetadata = Field(
@@ -88,16 +165,15 @@ class SummaryData:
     This model encapsulates the summary data extracted from transaction data,
     providing a simplified format for formatting and display.
 
-    :param summary: Dict mapping column headers to category amounts.
-                    Column headers are typically time periods (e.g., 'January', 'January (1704067200)').
-                    Format: {column_header: {category: amount}}
-    :type summary: Dict[str, Dict[str, float]]
-    :param currency: Currency code (e.g., 'EUR', 'USD')
-    :type currency: str
-    :param account_id: Account identifier this summary belongs to
-    :type account_id: str
+    Attributes:
+        summary (dict[str, dict[str, float]]): Dict mapping column headers to
+            category amounts. Column headers are typically time periods
+            (e.g., 'January', 'January (1704067200)').
+            Format: {column_header: {category: amount}}
+        currency (str): Currency code (e.g., 'EUR', 'USD').
+        account_id (str): Account identifier this summary belongs to.
     """
-    summary: Dict[str, Dict[str, float]]
+    summary: dict[str, dict[str, float]]
     currency: str
     account_id: str
 
@@ -105,59 +181,32 @@ class SummaryData:
     def from_datatable_response(
         cls,
         dt_response: "Account",
-        account_id: Optional[str] = None,
+        account_id: str | None = None,
         include_calculated: bool = True
     ) -> 'SummaryData':
         """Create a SummaryData instance from an Account or AccountResponse.
 
         This is the canonical way to extract summary data from transaction data.
-        Aggregates transaction data by month and category, creating a nested dictionary
-        suitable for formatting and analysis.
+        Aggregates transaction data by month and category, creating a nested
+        dictionary suitable for formatting and analysis.
 
-        Args:
-            dt_response: Account containing aggregated transaction data
-            account_id: Optional account identifier (defaults to dt_response.id)
-            include_calculated: Whether to include calculated rows (e.g., Balance, Total)
+        Parameters:
+            dt_response (Account): Account containing aggregated transaction data.
+            account_id (str | None): Optional account identifier (defaults to
+                dt_response.id).
+            include_calculated (bool): Whether to include calculated rows
+                (e.g., Balance, Total).
 
         Returns:
-            SummaryData instance with extracted summary
+            SummaryData: SummaryData instance with extracted summary.
 
         Example:
             >>> summary = SummaryData.from_datatable_response(dt_response)
             >>> summary.summary['January 2024']['Grocery']  # 1234.56
         """
-        # Aggregate by canonical timestamp first to keep year information unambiguous
-        period_map: Dict[int, Dict[str, Any]] = {}
-
-        for agg_row in dt_response.data:
-            # Skip calculated rows if requested
-            if not include_calculated and getattr(agg_row, 'is_calculated', False):
-                continue
-
-            period_field = agg_row.date
-            ts = period_field.timestamp
-            display = period_field.display
-
-            if ts not in period_map:
-                period_map[ts] = {'display': display, 'categories': {}}
-
-            cats = period_map[ts]['categories']
-            cats[agg_row.category_id] = cats.get(agg_row.category_id, 0.0) + float(agg_row.total.raw)
-
-        # Handle duplicate month displays (e.g., 'January' across different years)
-        # by appending timestamp if needed
-        display_counts: Dict[str, int] = {}
-        for v in period_map.values():
-            display_counts[v['display']] = display_counts.get(v['display'], 0) + 1
-
-        summary = {}
-        # Iterate months in descending timestamp order (most recent first)
-        for ts in sorted(period_map.keys(), reverse=True):
-            display = period_map[ts]['display']
-            key = display if display_counts.get(display, 0) == 1 else f"{display} ({ts})"
-            summary[key] = period_map[ts]['categories']
-
-        # Get account_id from the Account model
+        period_map = cls._aggregate_by_period(dt_response, include_calculated)
+        display_counts = cls._count_display_occurrences(period_map)
+        summary = cls._build_summary_dict(period_map, display_counts)
         response_account_id = getattr(dt_response, 'id', None)
         return cls(
             summary=summary,
@@ -165,23 +214,103 @@ class SummaryData:
             account_id=account_id or response_account_id or ""
         )
 
+    @classmethod
+    def _aggregate_by_period(
+        cls,
+        dt_response: "Account",
+        include_calculated: bool
+    ) -> dict[int, PeriodData]:
+        """Aggregate transaction data by timestamp period.
+
+        Parameters:
+            dt_response (Account): Account containing aggregated transaction data.
+            include_calculated (bool): Whether to include calculated rows.
+
+        Returns:
+            dict[int, PeriodData]: Mapping of timestamps to period data
+                containing display name and category amounts.
+        """
+        period_map: dict[int, PeriodData] = {}
+        for agg_row in dt_response.data:
+            if not include_calculated and getattr(agg_row, 'is_calculated', False):
+                continue
+            period_field = agg_row.date
+            ts = period_field.timestamp
+            display = period_field.display
+            if ts not in period_map:
+                period_map[ts] = {'display': display, 'categories': {}}
+            cats = period_map[ts]['categories']
+            cats[agg_row.category_id] = cats.get(agg_row.category_id, 0.0) + float(
+                agg_row.total.raw
+            )
+        return period_map
+
+    @classmethod
+    def _count_display_occurrences(
+        cls,
+        period_map: dict[int, PeriodData]
+    ) -> dict[str, int]:
+        """Count occurrences of each display name in period map.
+
+        Parameters:
+            period_map (dict[int, PeriodData]): Period mapping from
+                _aggregate_by_period.
+
+        Returns:
+            dict[str, int]: Count of each display name occurrence.
+        """
+        display_counts: dict[str, int] = {}
+        for period_data in period_map.values():
+            display = period_data['display']
+            display_counts[display] = display_counts.get(display, 0) + 1
+        return display_counts
+
+    @classmethod
+    def _build_summary_dict(
+        cls,
+        period_map: dict[int, PeriodData],
+        display_counts: dict[str, int]
+    ) -> dict[str, dict[str, float]]:
+        """Build final summary dictionary with unique keys.
+
+        Parameters:
+            period_map (dict[int, PeriodData]): Period mapping from
+                _aggregate_by_period.
+            display_counts (dict[str, int]): Display name counts from
+                _count_display_occurrences.
+
+        Returns:
+            dict[str, dict[str, float]]: Summary dictionary with unique keys,
+                sorted by timestamp descending.
+        """
+        summary: dict[str, dict[str, float]] = {}
+        for ts in sorted(period_map.keys(), reverse=True):
+            period_data = period_map[ts]
+            display = period_data['display']
+            key = display if display_counts.get(display, 0) == 1 else f"{display} ({ts})"
+            summary[key] = period_data['categories']
+        return summary
+
 @dataclass
 class ProcessingResponse:
     """Complete response from CSV processing including data and metadata.
 
-    This dataclass encapsulates the complete response from processing a CSV file,
-    including the processed transaction data, processing metadata, and statistical
-    analysis results.
+    This dataclass encapsulates the complete response from processing a CSV
+    file, including the processed transaction data, processing metadata, and
+    statistical analysis results.
 
     Attributes:
-        result_id: Unique identifier for this processing result
-        data: Dictionary mapping account IDs to their Account objects
-        metadata: Processing metadata containing statistics (processing_time, row_count, etc.)
-        statistical_metadata: Statistical analysis results including highlights
+        result_id (str): Unique identifier for this processing result.
+        data (dict[str, Account]): Dictionary mapping account IDs to their
+            Account objects.
+        metadata (ProcessingMetadata): Processing metadata containing statistics
+            (processing_time, row_count, etc.).
+        statistical_metadata (StatisticalMetadata): Statistical analysis results
+            including highlights.
     """
     result_id: str
-    data: Dict[str, "Account"]  # Changed from AccountResponse to unified Account model
-    metadata: Any  # ProcessingMetadata
+    data: dict[str, "Account"]
+    metadata: ProcessingMetadata
     statistical_metadata: StatisticalMetadata
 
 

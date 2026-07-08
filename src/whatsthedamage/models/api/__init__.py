@@ -2,6 +2,7 @@
 
 This package provides a clean organization of API-related models.
 """
+from typing import TYPE_CHECKING
 
 # Request models
 from whatsthedamage.models.api.requests import ProcessingRequest
@@ -17,15 +18,14 @@ from whatsthedamage.models.api.responses import (
     CategoryMonthsApiResponse,
     MonthCategoriesApiResponse,
     CategoryMonthTransactionsApiResponse,
-    TransactionDetail,
     CategoryData,
     MonthData,
     RecalculateApiResponse,
-    ErrorApiResponse,
 )
 
 # Common models
-from whatsthedamage.models.api.common import ProcessingMetadata, ErrorResponse
+from whatsthedamage.models.api.common import ProcessingMetadata
+from whatsthedamage.models.common.error_models import ErrorResponse
 
 __all__ = [
     # Request models
@@ -43,9 +43,7 @@ __all__ = [
     'CategoryMonthsApiResponse',
     'MonthCategoriesApiResponse',
     'CategoryMonthTransactionsApiResponse',
-    'TransactionDetail',
     'CategoryData',
     'MonthData',
     'RecalculateApiResponse',
-    'ErrorApiResponse',
 ]

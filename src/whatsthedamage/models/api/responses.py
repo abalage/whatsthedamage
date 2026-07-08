@@ -12,6 +12,9 @@ from pydantic import BaseModel, Field, ConfigDict
 from typing import Dict, List, Optional, Any, Generic, TypeVar
 from datetime import datetime
 from whatsthedamage.models.domain.account import Account
+from whatsthedamage.models.domain.dt_models import TransactionDetail
+from whatsthedamage.models.common.display_fields import DisplayRawField, DateField
+from whatsthedamage.models.common.processing_metadata import ProcessingMetadata
 
 
 # =============================================================================
@@ -198,7 +201,7 @@ class MonthData(BaseModel):
     according to the current locale.
     """
     month_timestamp: int = Field(description="Unix timestamp for the month")
-    total: Dict[str, Any] = Field(
+    total: DisplayRawField = Field(
         description="Total amount with display and raw values"
     )
     row_id: str = Field(description="Unique row identifier")
@@ -248,8 +251,8 @@ class CategoryMonthsApiResponse(BaseModel):
 
 class CategoryData(BaseModel):
     """Data for a single category in month categories response."""
-    category: str = Field(description="Category name")
-    total: Dict[str, Any] = Field(
+    category_id: str = Field(description="Category identifier")
+    total: DisplayRawField = Field(
         description="Total amount with display and raw values"
     )
     row_id: str = Field(description="Unique row identifier")
@@ -274,24 +277,6 @@ class MonthCategoriesApiResponse(BaseModel):
         default=None,
         description="Statistical highlights for drilldown rows, mapped by row_id to highlight types"
     )
-
-
-class TransactionDetail(BaseModel):
-    """Data for a single transaction in drilldown response."""
-    date: Dict[str, str] = Field(
-        description="Date information with display format"
-    )
-    amount: Dict[str, Any] = Field(
-        description="Amount with display and raw values"
-    )
-    merchant: str = Field(description="Merchant or transaction description")
-    row_id: str = Field(description="Unique row identifier")
-    currency: str = Field(default="", description="Currency code")
-    type: str = Field(default="", description="Transaction type")
-    confidence: Optional[float] = Field(default=None, description="ML confidence score if applicable")
-    notice: Optional[str] = Field(default=None, description="Transaction notice or memo")
-    category_id: str = Field(default="", description="Category identifier")
-    month_id: str = Field(default="", description="Month identifier")
 
 
 class CategoryMonthTransactionsApiResponse(BaseModel):
@@ -362,40 +347,4 @@ class RecalculateApiResponse(BaseModel):
     )
 
 
-# =============================================================================
-# Error Response
-# =============================================================================
 
-class ErrorApiResponse(BaseModel):
-    """Standard error response format for all API v2 endpoints.
-
-    All error responses (non-200 status codes) should use this format.
-
-    Attributes:
-        code: HTTP status code
-        message: Human-readable error description
-        details: Optional additional error context/diagnostics
-    """
-    code: int = Field(
-        description="HTTP status code (400, 404, 422, 500, etc.)"
-    )
-    message: str = Field(
-        description="Human-readable error message"
-    )
-    details: Optional[Dict[str, Any]] = Field(
-        default=None,
-        description="Additional error details for debugging"
-    )
-
-    model_config = ConfigDict(
-        json_schema_extra={
-            "example": {
-                "code": 400,
-                "message": "Missing required file: csv_file",
-                "details": {
-                    "field": "csv_file",
-                    "expected": "multipart/form-data"
-                }
-            }
-        }
-    )

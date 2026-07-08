@@ -18,8 +18,8 @@ from whatsthedamage.models.api.responses import (
     MonthCategoriesApiResponse,
     CategoryMonthTransactionsApiResponse,
     RecalculateApiResponse,
-    ErrorApiResponse,
 )
+from whatsthedamage.models.common.error_models import ErrorResponse
 from whatsthedamage.models.domain.dt_models import DetailedResponse
 from tests.api_test_utils import MockProcessingService
 
@@ -441,7 +441,7 @@ class TestErrorResponses:
     """Contract tests for error responses."""
 
     def test_missing_file_returns_error_response(self, api_client_with_mock):
-        """Verify missing file error returns valid ErrorApiResponse format."""
+        """Verify missing file error returns valid ErrorResponse format."""
         response = api_client_with_mock.post(
             '/api/v2/process',
             data={},  # No csv_file
@@ -452,27 +452,27 @@ class TestErrorResponses:
         data = response.get_json()
 
         # Validate against Pydantic model
-        validated = ErrorApiResponse.model_validate(data)
+        validated = ErrorResponse.model_validate(data)
 
         assert validated.code == 400
         assert validated.message is not None
         assert len(validated.message) > 0
 
     def test_nonexistent_result_returns_error_response(self, api_client_with_mock):
-        """Verify non-existent result error returns valid ErrorApiResponse format."""
+        """Verify non-existent result error returns valid ErrorResponse format."""
         response = api_client_with_mock.get('/api/v2/results/nonexistent-id')
 
         # The endpoint may return 404 or 422 depending on error handling
         assert response.status_code in [404, 422]
         data = response.get_json()
 
-        validated = ErrorApiResponse.model_validate(data)
+        validated = ErrorResponse.model_validate(data)
 
         assert validated.code in [404, 422]
         assert validated.message is not None
 
     def test_invalid_recalculate_payload_returns_error_response(self, api_client_with_mock):
-        """Verify invalid recalculate payload returns valid ErrorApiResponse format."""
+        """Verify invalid recalculate payload returns valid ErrorResponse format."""
         response = api_client_with_mock.post(
             '/api/v2/recalculate-statistics',
             json={},  # Missing required fields
@@ -481,7 +481,7 @@ class TestErrorResponses:
         assert response.status_code == 400
         data = response.get_json()
 
-        validated = ErrorApiResponse.model_validate(data)
+        validated = ErrorResponse.model_validate(data)
 
         assert validated.code == 400
         assert validated.message is not None
@@ -550,17 +550,17 @@ class TestPydanticModelValidation:
         with pytest.raises(ValidationError):
             RecalculateApiResponse.model_validate(invalid_data)
 
-    def test_error_api_response_model_structure(self):
-        """Verify ErrorApiResponse has correct field structure."""
+    def test_error_response_model_structure(self):
+        """Verify ErrorResponse has correct field structure."""
         from pydantic import ValidationError
 
         valid_data = {
             'code': 400,
             'message': 'Test error'
         }
-        ErrorApiResponse.model_validate(valid_data)
+        ErrorResponse.model_validate(valid_data)
 
         # Missing required fields should fail
         invalid_data = {'code': 400}  # Missing message
         with pytest.raises(ValidationError):
-            ErrorApiResponse.model_validate(invalid_data)
+            ErrorResponse.model_validate(invalid_data)

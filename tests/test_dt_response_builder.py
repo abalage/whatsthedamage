@@ -1,6 +1,7 @@
 import pytest
 from whatsthedamage.models.domain.dt_response_builder import AccountResponseBuilder
-from whatsthedamage.models.domain.dt_models import AccountResponse, AggregatedRow, DateField
+from whatsthedamage.models.domain.dt_models import AggregatedRow, DateField
+from whatsthedamage.models.domain.account import Account
 from whatsthedamage.models.domain.csv_row import CsvRow
 
 
@@ -92,7 +93,7 @@ def test_add_multiple_categories(builder, sample_csv_rows):
 
 
 def test_build_returns_datatables_response(builder, sample_csv_rows):
-    """Test that build() returns a proper AccountResponse."""
+    """Test that build() returns a proper Account."""
     date_field = DateField(display="January", timestamp=1735689600)
     builder.add_category_data(
         category_id="grocery",
@@ -103,7 +104,7 @@ def test_build_returns_datatables_response(builder, sample_csv_rows):
 
     response = builder.build()
 
-    assert isinstance(response, AccountResponse)
+    assert isinstance(response, Account)
     # Response now includes the original category plus Balance, Total Spendings, and Cost of Living (grocery is in COST_OF_LIVING_CATEGORY_IDS)
     assert len(response.data) == 4
     assert isinstance(response.data[0], AggregatedRow)
@@ -134,7 +135,7 @@ def test_empty_builder_build(builder):
     """Test building with no data added."""
     response = builder.build()
 
-    assert isinstance(response, AccountResponse)
+    assert isinstance(response, Account)
     assert response.data == []
 
 
@@ -368,7 +369,7 @@ def test_full_pipeline_with_confidence(builder, sample_csv_rows):
 
     response = builder.build()
 
-    assert isinstance(response, AccountResponse)
+    assert isinstance(response, Account)
     # Find the Groceries row (not Balance or Total Spendings)
     groceries_row = next((row for row in response.data if row.category_id == "grocery"), None)
     assert groceries_row is not None

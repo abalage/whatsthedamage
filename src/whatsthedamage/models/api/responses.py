@@ -11,6 +11,7 @@ response format with metadata and hypermedia links.
 from pydantic import BaseModel, Field, ConfigDict
 from typing import Dict, List, Optional, Any, Generic, TypeVar
 from datetime import datetime
+from whatsthedamage.models.domain.account import Account
 
 
 # =============================================================================
@@ -99,28 +100,6 @@ class ApiEnvelope(BaseModel, Generic[T]):
 # Results Endpoint Responses
 # =============================================================================
 
-class AccountDataResponse(BaseModel):
-    """Data structure for a single account in results response."""
-    id: str = Field(description="Account identifier")
-    name: str = Field(description="Account display name")
-    formatted_id: str = Field(description="Formatted account identifier for display")
-    currency: str = Field(description="Account currency code")
-    dt_response: Dict[str, Any] = Field(
-        description="DataTables-compatible response data for this account"
-    )
-
-
-class AccountsDataResponse(BaseModel):
-    """Container for all accounts data in results response."""
-    accounts: List[AccountDataResponse] = Field(
-        description="List of account data"
-    )
-    highlights: Dict[str, List[str]] = Field(
-        default_factory=dict,
-        description="Statistical highlights mapped by row_id to highlight types"
-    )
-
-
 class DrilldownUrlInfo(BaseModel):
     """URL information for drilldown navigation."""
     category_url: str = Field(description="URL to view category details")
@@ -167,12 +146,17 @@ class ResultsApiResponse(BaseModel):
 
     Attributes:
         result_id: UUID of the cached processing result
-        accounts_data: All account data and highlights
+        accounts: List of Account objects with processing data
+        highlights: Statistical highlights mapped by row_id to highlight types
         drilldown_urls_by_account: Navigation URLs for drilldown views organized by account
     """
     result_id: str = Field(description="Unique identifier for this processing result")
-    accounts_data: AccountsDataResponse = Field(
-        description="Processed account data with highlights"
+    accounts: List[Account] = Field(
+        description="List of account data with processing results"
+    )
+    highlights: Dict[str, List[str]] = Field(
+        default_factory=dict,
+        description="Statistical highlights mapped by row_id to highlight types"
     )
     drilldown_urls_by_account: Dict[str, DrilldownUrls] = Field(
         default_factory=dict,

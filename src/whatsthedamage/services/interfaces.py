@@ -5,7 +5,8 @@ to enable better testability through dependency injection and mocking.
 """
 from abc import ABC, abstractmethod
 from typing import Dict, List, Optional, Any
-from whatsthedamage.models.domain.dt_models import AccountResponse, StatisticalMetadata
+from whatsthedamage.models.domain.dt_models import StatisticalMetadata
+from whatsthedamage.models.domain.account import Account
 from whatsthedamage.models.api.responses import (
     CategoryMonthsApiResponse,
     MonthCategoriesApiResponse,
@@ -150,7 +151,7 @@ class IStatisticalAnalysisService(ABC):
     @abstractmethod
     def compute_statistical_metadata(
         self,
-        account_responses: Dict[str, AccountResponse],
+        account_responses: Dict[str, Account],
         algorithms: List[str],
         direction: Optional[str] = None
     ) -> StatisticalMetadata:

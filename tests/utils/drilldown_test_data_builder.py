@@ -4,7 +4,8 @@ This module provides utilities for creating test data structures
 that mimic real processing results.
 """
 from typing import Dict, List, Any, Optional
-from whatsthedamage.models.domain.dt_models import AccountResponse, AggregatedRow, DateField, ProcessingResponse, StatisticalMetadata, DisplayRawField
+from whatsthedamage.models.domain.dt_models import AggregatedRow, DateField, ProcessingResponse, StatisticalMetadata, DisplayRawField
+from whatsthedamage.models.domain.account import Account
 from datetime import datetime
 import uuid
 
@@ -33,7 +34,7 @@ class DrilldownTestDataBuilder:
         """
         return AggregatedRow(
             row_id=row_id or str(uuid.uuid4()),
-            category=category,
+            category_id=category,
             total=DisplayRawField(display=f"{amount:.2f}", raw=amount),
             date=DateField(
                 timestamp=int(timestamp),
@@ -49,8 +50,8 @@ class DrilldownTestDataBuilder:
         categories: Optional[List[str]] = None,
         months: Optional[List[str]] = None,
         currency: str = "EUR"
-    ) -> AccountResponse:
-        """Create a AccountResponse with realistic test data.
+    ) -> Account:
+        """Create a Account with realistic test data.
 
         Args:
             account_number: Account number
@@ -59,7 +60,7 @@ class DrilldownTestDataBuilder:
             currency: Currency code
 
         Returns:
-            AccountResponse instance
+            Account instance
         """
         categories = categories or ["Grocery", "Vehicle", "Utility"]
         months = months or ["1704067200", "1706745600"]  # Jan 2024, Feb 2024
@@ -73,10 +74,10 @@ class DrilldownTestDataBuilder:
                     timestamp=month
                 ))
 
-        return AccountResponse(
-            data=data,
-            account=account_number,
-            currency=currency
+        return Account(
+            id=account_number,
+            currency=currency,
+            data=data
         )
 
     @staticmethod

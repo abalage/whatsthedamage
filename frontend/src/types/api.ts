@@ -84,49 +84,17 @@ type StatisticalHighlights = Record<string, string[]> | {};
 // ============================================================================
 
 /**
- * Account data structure for results
+ * Unified Account model - matches backend Account Pydantic model
+ * Replaces previous AccountData and AccountDataResponse interfaces
  */
-export interface AccountData {
+export interface Account {
   id: string;
+  name: string;
   formatted_id: string;
   currency: string;
-  transactions: TransactionData[];
-  summary: AccountSummary;
-}
-
-/**
- * Individual transaction data
- */
-interface TransactionData {
-  id: string;
-  date: string;
-  amount: number;
-  currency: string;
-  description: string;
-  merchant: string;
-  category: string;
-  category_confidence: number;
-  type: string;
-  account_id: string;
-}
-
-/**
- * Account summary statistics
- */
-interface AccountSummary {
-  total_transactions: number;
-  total_amount: number;
-  categories: CategorySummary[];
-}
-
-/**
- * Category-level summary
- */
-interface CategorySummary {
-  category: string;
-  count: number;
-  total_amount: number;
-  percentage: number;
+  data: AggregatedRow[];  // Previously was dt_response: { data: AggregatedRow[] }
+  result_id: string;
+  metadata: unknown | null;
 }
 
 // ============================================================================
@@ -151,27 +119,6 @@ export interface DetailedResponse {
 // -----------------------------------------------------------------------------
 // Results Endpoint: GET /api/v2/results/<result_id>
 // -----------------------------------------------------------------------------
-
-/**
- * Data for a single account in results response
- */
-export interface AccountDataResponse {
-  id: string;
-  name: string;
-  formatted_id: string;
-  currency: string;
-  dt_response: {
-    data: AggregatedRow[];
-  };
-}
-
-/**
- * Container for all accounts data
- */
-interface AccountsDataResponse {
-  accounts: AccountDataResponse[];
-  highlights: StatisticalHighlights;
-}
 
 /**
  * URL info for category drilldown
@@ -212,19 +159,13 @@ interface DrilldownUrls {
  * Response from GET /api/v2/results/<result_id>
  *
  * Contains cached processing results with accounts data and drilldown URLs.
+ * Now uses simplified structure with direct Account array instead of nested wrappers.
  */
 export interface ResultsApiResponse {
   result_id: string;
-  accounts_data: AccountsDataResponse;
-  drilldown_urls_by_account: Record<string, DrilldownUrls>;
-}
-
-/**
- * Container for all accounts data
- */
-interface AccountsDataResponse {
-  accounts: AccountDataResponse[];
+  accounts: Account[];  // Changed from accounts_data: AccountsDataResponse
   highlights: StatisticalHighlights;
+  drilldown_urls_by_account: Record<string, DrilldownUrls>;
 }
 
 /**

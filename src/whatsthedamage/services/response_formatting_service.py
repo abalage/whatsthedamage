@@ -6,30 +6,36 @@ to provide a unified interface for all output formatting and response building n
 Architecture Patterns:
 - Strategy Pattern: Different formatting strategies per output type
 - Adapter Pattern: Adapt DataFrame to various output formats
-- Factory Pattern: Create appropriate formatter based on output type
-- Decorator Pattern: Add features (sorting, currency) to base formatters
 - Builder Pattern: Complex response objects built step-by-step
 - Facade Pattern: Simplifies complex response building logic
 - Template Method: Common structure, variant implementations
 - DRY Principle: Single implementation for formatting and response building operations
 """
-import pandas as pd
 import json
-from typing import Dict, Optional, Any, List, TYPE_CHECKING
-from whatsthedamage.models.domain.dt_models import AccountResponse, StatisticalMetadata, SummaryData, DetailedResponse, ProcessingResponse
-from whatsthedamage.models.api.common import ProcessingMetadata, ErrorResponse
+
+import pandas as pd
+from typing import Any, Dict, List, Optional, TYPE_CHECKING
+
+from whatsthedamage.models.api.common import ErrorResponse, ProcessingMetadata
 from whatsthedamage.models.api.requests import ProcessingRequest
 from whatsthedamage.models.api.responses import (
-    ResultsApiResponse,
-    AccountsDataResponse,
-    AccountDataResponse,
-    DrilldownUrls,
-    DrilldownUrlInfo,
-    MonthUrlInfo,
     CellUrlInfo,
+    DrilldownUrlInfo,
+    DrilldownUrls,
+    MonthUrlInfo,
+    ResultsApiResponse,
 )
-from whatsthedamage.services.statistical_analysis_service import StatisticalAnalysisService
+from whatsthedamage.models.domain.account import Account
+from whatsthedamage.models.domain.dt_models import (
+    DetailedResponse,
+    ProcessingResponse,
+    StatisticalMetadata,
+    SummaryData,
+)
 from whatsthedamage.services.interfaces import IDataFormattingService
+from whatsthedamage.services.statistical_analysis_service import (
+    StatisticalAnalysisService,
+)
 from whatsthedamage.utils.logging import get_logger
 
 if TYPE_CHECKING:
@@ -246,15 +252,15 @@ class ResponseFormattingService(IDataFormattingService):
 
     def format_datatables_as_html_table(
         self,
-        dt_responses: Dict[str, AccountResponse],
+        dt_responses: Dict[str, "Account"],
         account_id: Optional[str] = None,
         nowrap: bool = False
     ) -> str:
-        """Format AccountResponse as HTML table.
+        """Format Account as HTML table.
 
-        Extracts summary data from AccountResponse and formats as HTML.
+        Extracts summary data from Account and formats as HTML.
 
-        :param dt_responses: Dict mapping account_id to AccountResponse
+        :param dt_responses: Dict mapping account_id to Account
         :param account_id: Account ID to format. If None and multiple accounts exist,
             raises ValueError. If None and single account exists, uses that account.
         :param nowrap: If True, disables text wrapping in pandas output
@@ -278,15 +284,15 @@ class ResponseFormattingService(IDataFormattingService):
 
     def format_datatables_as_csv(
         self,
-        dt_responses: Dict[str, AccountResponse],
+        dt_responses: Dict[str, "Account"],
         account_id: Optional[str] = None,
         delimiter: str = ',',
     ) -> str:
-        """Format AccountResponse as CSV string.
+        """Format Account as CSV string.
 
-        Extracts summary data from AccountResponse and formats as CSV.
+        Extracts summary data from Account and formats as CSV.
 
-        :param dt_responses: Dict mapping account_id to AccountResponse
+        :param dt_responses: Dict mapping account_id to Account
         :param account_id: Account ID to format. If None and multiple accounts exist,
             raises ValueError. If None and single account exists, uses that account.
         :param delimiter: CSV delimiter character
@@ -310,15 +316,15 @@ class ResponseFormattingService(IDataFormattingService):
 
     def format_datatables_as_string(
         self,
-        dt_responses: Dict[str, AccountResponse],
+        dt_responses: Dict[str, "Account"],
         account_id: Optional[str] = None,
         nowrap: bool = False,
     ) -> str:
-        """Format AccountResponse as plain string for console output.
+        """Format Account as plain string for console output.
 
-        Extracts summary data from AccountResponse and formats as plain text.
+        Extracts summary data from Account and formats as plain text.
 
-        :param dt_responses: Dict mapping account_id to AccountResponse
+        :param dt_responses: Dict mapping account_id to Account
         :param account_id: Account ID to format. If None and multiple accounts exist,
             raises ValueError. If None and single account exists, uses that account.
         :param nowrap: If True, disables text wrapping in pandas output
@@ -342,18 +348,18 @@ class ResponseFormattingService(IDataFormattingService):
 
     def format_datatables_for_output(
         self,
-        dt_responses: Dict[str, AccountResponse],
+        dt_responses: Dict[str, "Account"],
         account_id: Optional[str] = None,
         output_format: Optional[str] = None,
         output_file: Optional[str] = None,
         nowrap: bool = False
     ) -> str:
-        """Format AccountResponse for various output types.
+        """Format Account for various output types.
 
-        This is a convenience method for formatting AccountResponse to
+        This is a convenience method for formatting Account to
         HTML, CSV file, or console string.
 
-        :param dt_responses: Dict mapping account_id to AccountResponse
+        :param dt_responses: Dict mapping account_id to Account
         :param account_id: Account ID to format. If None and multiple accounts exist,
             raises ValueError. If None and single account exists, uses that account.
         :param output_format: Output format ('html' or None for default)
@@ -381,7 +387,7 @@ class ResponseFormattingService(IDataFormattingService):
 
     def format_all_accounts_for_output(
         self,
-        dt_responses: Dict[str, AccountResponse],
+        dt_responses: Dict[str, "Account"],
         output_format: Optional[str] = None,
         output_file: Optional[str] = None,
         nowrap: bool = False
@@ -391,7 +397,7 @@ class ResponseFormattingService(IDataFormattingService):
         Handles multi-account iteration internally, calling the appropriate
         existing formatter for each account and combining results with separators.
 
-        :param dt_responses: Dict mapping account_id to AccountResponse
+        :param dt_responses: Dict mapping account_id to Account
         :param output_format: Output format ('html' or None for default)
         :param output_file: Path to output file (triggers CSV export)
         :param nowrap: If True, disables text wrapping in pandas output
@@ -447,16 +453,16 @@ class ResponseFormattingService(IDataFormattingService):
 
     def prepare_accounts_for_template(
         self,
-        dt_responses: Dict[str, AccountResponse],
+        dt_responses: Dict[str, "Account"],
         statistical_metadata: StatisticalMetadata
     ) -> Dict[str, Any]:
         """Prepare accounts data for Jinja2 template rendering.
 
         Provides structured data that templates can iterate over, including
         formatted account identifiers and metadata. Templates can still access
-        the underlying AccountResponse for detailed rendering.
+        the underlying Account for detailed rendering.
 
-        :param dt_responses: Dict mapping account_id to AccountResponse
+        :param dt_responses: Dict mapping account_id to Account
         :param statistical_metadata: StatisticalMetadata containing highlights for all accounts
         :return: Dict with 'accounts' list, 'highlights' (combined), and 'has_multiple_accounts' flag
         """
@@ -496,12 +502,12 @@ class ResponseFormattingService(IDataFormattingService):
 
     def _select_account(
         self,
-        dt_responses: Dict[str, AccountResponse],
+        dt_responses: Dict[str, "Account"],
         account_id: Optional[str] = None
     ) -> str:
-        """Select and validate account from AccountResponse dict.
+        """Select and validate account from Account dict.
 
-        :param dt_responses: Dict mapping account_id to AccountResponse
+        :param dt_responses: Dict mapping account_id to Account
         :param account_id: Optional account ID to select. If None and multiple accounts
             exist, raises ValueError. If None and single account exists, uses that account.
         :return: Selected account_id
@@ -509,7 +515,7 @@ class ResponseFormattingService(IDataFormattingService):
             or if specified account_id not found
         """
         if not dt_responses:
-            raise ValueError("No account data available")
+            raise ValueError("No account data available.")
 
         # If account_id not specified, validate single account
         if account_id is None:
@@ -528,7 +534,7 @@ class ResponseFormattingService(IDataFormattingService):
             available_accounts = ', '.join(dt_responses.keys())
             raise ValueError(
                 f"Account '{account_id}' not found in responses. "
-                f"Available accounts: {available_accounts}"
+                f"Available accounts: {available_accounts}."
             )
 
         return account_id
@@ -537,7 +543,7 @@ class ResponseFormattingService(IDataFormattingService):
 
     def build_api_detailed_response(
         self,
-        account_response: Dict[str, AccountResponse],
+        account_response: Dict[str, "Account"],
         metadata: Dict[str, Any] | ProcessingMetadata,
         params: ProcessingRequest,
         processing_time: float,
@@ -546,7 +552,7 @@ class ResponseFormattingService(IDataFormattingService):
         """Build standardized API detailed response.
 
         Args:
-            account_response: Dict[str, AccountResponse] mapping account to response objects
+            account_response: Dict[str, "Account"] mapping account to Account objects
             metadata: Processing metadata (row_count, etc.)
             params: Request parameters
             processing_time: Total processing time in seconds
@@ -706,22 +712,46 @@ class ResponseFormattingService(IDataFormattingService):
         Note:
             This consolidates the data transformation logic that was previously
             duplicated in api/v2/endpoints.py get_results() endpoint.
+
+            Now uses the unified Account model directly from ProcessingResponse.
         """
         if cached_result is None:
-            raise ValueError('Result data not found or expired')
+            raise ValueError('Result data not found or expired.')
 
         highlights_dict = self._convert_highlights(cached_result)
-        accounts_list, drilldown_urls_dict = self._build_accounts_and_drilldowns(
-            cached_result
-        )
 
-        # Build final response
+        # Since ProcessingResponse.data is now Dict[str, Account], we can use accounts directly
+        # But we still need to generate drilldown URLs
+        accounts_list: List[Account] = []
+        drilldown_urls_dict: Dict[str, DrilldownUrls] = {}
+
+        if (not hasattr(cached_result, 'data') or
+            not isinstance(cached_result.data, dict) or
+            not cached_result.data):
+            return ResultsApiResponse(
+                result_id=cached_result.result_id,
+                accounts=accounts_list,
+                highlights=highlights_dict,
+                drilldown_urls_by_account=drilldown_urls_dict
+            )
+
+        for account_id, account in cached_result.data.items():
+            # Account is already the unified model, just add to list
+            accounts_list.append(account)
+
+            # Generate drilldown URLs for this account
+            # We need to convert account.data to the frontend format for URL generation
+            dt_response_data = self._convert_aggregated_rows_to_frontend(account.data)
+            drilldown_urls = self._generate_drilldown_urls(
+                cached_result.result_id, account_id, account, dt_response_data
+            )
+            drilldown_urls_dict[account_id] = drilldown_urls
+
+        # Build final response with simplified structure
         return ResultsApiResponse(
             result_id=cached_result.result_id,
-            accounts_data=AccountsDataResponse(
-                accounts=accounts_list,
-                highlights=highlights_dict
-            ),
+            accounts=accounts_list,
+            highlights=highlights_dict,
             drilldown_urls_by_account=drilldown_urls_dict
         )
 
@@ -733,53 +763,33 @@ class ResponseFormattingService(IDataFormattingService):
             return self._convert_metadata_to_highlights_dict(cached_result.statistical_metadata)
         return {}
 
-    def _build_accounts_and_drilldowns(
-        self, cached_result: ProcessingResponse
-    ) -> tuple[List[AccountDataResponse], Dict[str, DrilldownUrls]]:
-        """Build accounts list and drilldown URLs from cached result data."""
-        accounts_list: List[AccountDataResponse] = []
-        drilldown_urls_dict: Dict[str, DrilldownUrls] = {}
+    def _convert_aggregated_rows_to_frontend(self, aggregated_rows: List[Any]) -> List[Dict[str, Any]]:
+        """Convert aggregated rows to frontend-compatible dict format.
 
-        if not hasattr(cached_result, 'data') or not isinstance(cached_result.data, dict):
-            return accounts_list, drilldown_urls_dict
+        This is used for drilldown URL generation which expects the old dt_response format.
 
-        for account_id, account_data in cached_result.data.items():
-            account_name = self._get_account_name(account_id, account_data)
-            dt_response_data = self._convert_account_data_to_frontend(account_data)
+        Args:
+            aggregated_rows: List of AggregatedRow objects from Account.data
 
-            accounts_list.append(AccountDataResponse(
-                id=account_id,
-                formatted_id=self.format_account_id(account_id),
-                name=account_name,
-                currency=getattr(account_data, 'currency', ''),
-                dt_response={'data': dt_response_data}
-            ))
-
-            drilldown_urls = self._generate_drilldown_urls(
-                cached_result.result_id, account_id, account_data, dt_response_data
-            )
-            drilldown_urls_dict[account_id] = drilldown_urls
-
-        return accounts_list, drilldown_urls_dict
-
-    def _get_account_name(self, account_id: str, account_data: Any) -> str:
-        """Get account name with fallback logic."""
-        account_name = getattr(account_data, 'name', None)
-        if not account_name and hasattr(account_data, 'account'):
-            account_name = account_data.account or f'Account {account_id}'
-        if not account_name:
-            account_name = f'Account {account_id}'
-        return account_name
-
-    def _convert_account_data_to_frontend(self, account_data: Any) -> List[Dict[str, Any]]:
-        """Convert account data rows to frontend format."""
+        Returns:
+            List of dicts in the format expected by drilldown URL generation
+        """
         dt_response_data: List[Dict[str, Any]] = []
 
-        if not hasattr(account_data, 'data'):
-            return dt_response_data
-
-        for row in account_data.data:
-            details_array = self._convert_row_details(row)
+        for row in aggregated_rows:
+            details_array = []
+            if hasattr(row, 'details') and row.details:
+                for detail in row.details:
+                    details_array.append({
+                        'date': {'display': detail.date.display},
+                        'amount': {'display': detail.amount.display},
+                        'merchant': detail.merchant,
+                        'currency': detail.currency if hasattr(detail, 'currency') else '',
+                        'type': detail.type if hasattr(detail, 'type') else '',
+                        'confidence': detail.confidence if hasattr(detail, 'confidence') else None,
+                        'notice': detail.notice if hasattr(detail, 'notice') else None,
+                        'row_id': detail.row_id if hasattr(detail, 'row_id') else ''
+                    })
 
             dt_response_data.append({
                 'category_id': row.category_id,
@@ -790,25 +800,6 @@ class ResponseFormattingService(IDataFormattingService):
             })
 
         return dt_response_data
-
-    def _convert_row_details(self, row: Any) -> List[Dict[str, Any]]:
-        """Convert row details to frontend format."""
-        details_array: List[Dict[str, Any]] = []
-
-        if hasattr(row, 'details') and row.details:
-            for detail in row.details:
-                details_array.append({
-                    'date': {'display': detail.date.display},
-                    'amount': {'display': detail.amount.display},
-                    'merchant': detail.merchant,
-                    'currency': detail.currency if hasattr(detail, 'currency') else '',
-                    'type': detail.type if hasattr(detail, 'type') else '',
-                    'confidence': detail.confidence if hasattr(detail, 'confidence') else None,
-                    'notice': detail.notice if hasattr(detail, 'notice') else None,
-                    'row_id': detail.row_id if hasattr(detail, 'row_id') else ''
-                })
-
-        return details_array
 
     def _generate_drilldown_urls(
         self,

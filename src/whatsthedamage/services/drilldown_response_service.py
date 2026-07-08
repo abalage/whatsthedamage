@@ -13,7 +13,8 @@ Architecture Patterns:
 """
 import datetime
 from typing import Any, Callable, Dict, List, Optional, Tuple, cast
-from whatsthedamage.models.domain.dt_models import ProcessingResponse, AggregatedRow, AccountResponse
+from whatsthedamage.models.domain.dt_models import ProcessingResponse, AggregatedRow
+from whatsthedamage.models.domain.account import Account
 from whatsthedamage.utils.date_converter import DateConverter
 from whatsthedamage.models.api.responses import (
     CategoryMonthsApiResponse,
@@ -697,7 +698,7 @@ class DrilldownResponseService:
         self,
         result_id: str,
         account_number: Optional[str],
-        dt_response: Optional[AccountResponse]
+        dt_response: Optional[Account]
     ) -> Dict[str, Any]:
         """Generate all drill-down URLs for a result using ID mapping.
 
@@ -707,7 +708,7 @@ class DrilldownResponseService:
         Args:
             result_id: Processing result ID
             account_number: Original account number
-            dt_response: AccountResponse containing the data
+            dt_response: Account containing the data
 
         Returns:
             Dictionary containing pre-generated URLs for all drill-down levels

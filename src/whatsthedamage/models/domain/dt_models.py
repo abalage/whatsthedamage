@@ -1,7 +1,10 @@
 from pydantic import BaseModel, Field, ConfigDict
-from typing import List, Any, Dict, Optional
+from typing import List, Any, Dict, Optional, TYPE_CHECKING
 from dataclasses import dataclass
 from whatsthedamage.models.api.common import ProcessingMetadata
+
+if TYPE_CHECKING:
+    from whatsthedamage.models.domain.account import Account
 
 class DisplayRawField(BaseModel):
     display: str
@@ -36,13 +39,6 @@ class CellHighlight(BaseModel):
 
 class StatisticalMetadata(BaseModel):
     highlights: List[CellHighlight]
-
-class AccountResponse(BaseModel):
-    data: List[AggregatedRow]
-    account: str = ""
-    currency: str = ""
-    result_id: str = ""
-    metadata: Optional[Any] = None
 
 class DetailedResponse(BaseModel):
     """Response model for v2 API (includes transaction details).
@@ -108,19 +104,19 @@ class SummaryData:
     @classmethod
     def from_datatable_response(
         cls,
-        dt_response: AccountResponse,
+        dt_response: "Account",
         account_id: Optional[str] = None,
         include_calculated: bool = True
     ) -> 'SummaryData':
-        """Create a SummaryData instance from an AccountResponse.
+        """Create a SummaryData instance from an Account or AccountResponse.
 
         This is the canonical way to extract summary data from transaction data.
         Aggregates transaction data by month and category, creating a nested dictionary
         suitable for formatting and analysis.
 
         Args:
-            dt_response: AccountResponse containing aggregated transaction data
-            account_id: Optional account identifier (defaults to dt_response.account)
+            dt_response: Account containing aggregated transaction data
+            account_id: Optional account identifier (defaults to dt_response.id)
             include_calculated: Whether to include calculated rows (e.g., Balance, Total)
 
         Returns:
@@ -161,10 +157,12 @@ class SummaryData:
             key = display if display_counts.get(display, 0) == 1 else f"{display} ({ts})"
             summary[key] = period_map[ts]['categories']
 
+        # Get account_id from the Account model
+        response_account_id = getattr(dt_response, 'id', None)
         return cls(
             summary=summary,
             currency=dt_response.currency,
-            account_id=account_id or dt_response.account
+            account_id=account_id or response_account_id or ""
         )
 
 @dataclass
@@ -177,12 +175,16 @@ class ProcessingResponse:
 
     Attributes:
         result_id: Unique identifier for this processing result
-        data: Dictionary mapping account IDs to their AccountResponse objects
+        data: Dictionary mapping account IDs to their Account objects
         metadata: Processing metadata containing statistics (processing_time, row_count, etc.)
         statistical_metadata: Statistical analysis results including highlights
     """
     result_id: str
-    data: Dict[str, AccountResponse]
+    data: Dict[str, "Account"]  # Changed from AccountResponse to unified Account model
     metadata: Any  # ProcessingMetadata
     statistical_metadata: StatisticalMetadata
+
+
+# Note: Circular dependency with Account model in account.py
+# Both use string forward references and need model_rebuild() to be called after all imports
 

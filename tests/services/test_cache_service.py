@@ -2,7 +2,8 @@
 
 import pytest
 from whatsthedamage.services.cache_service import CacheService, CacheProtocol
-from whatsthedamage.models.domain.dt_models import ProcessingResponse, AccountResponse, StatisticalMetadata, AggregatedRow, CellHighlight, DisplayRawField, DateField, DetailRow
+from whatsthedamage.models.domain.dt_models import ProcessingResponse, StatisticalMetadata, AggregatedRow, CellHighlight, DisplayRawField, DateField, DetailRow
+from whatsthedamage.models.domain.account import Account
 from typing import Dict, Optional
 import time
 import uuid
@@ -83,7 +84,8 @@ class TestCacheService:
         return ProcessingResponse(
             result_id="test-result-id",
             data={
-                "account1": AccountResponse(
+                "account1": Account(
+                    id="account1",
                     data=[
                         AggregatedRow(
                             row_id=row_id_sample,
@@ -94,7 +96,6 @@ class TestCacheService:
                             is_calculated=False
                         )
                     ],
-                    account="account1",
                     currency="USD",
                     metadata=None
                 )
@@ -119,7 +120,7 @@ class TestCacheService:
         retrieved = cache_service.get("test_result_id")
         assert retrieved is not None
         assert retrieved == sample_cached_result
-        assert retrieved.data["account1"].account == "account1"
+        assert retrieved.data["account1"].id == "account1"
 
     def test_cache_service_get_nonexistent(self, cache_service):
         """Test getting non-existent cache entry."""
@@ -262,9 +263,9 @@ class TestCacheServiceIntegration:
             )
         ]
 
-        dt_response = AccountResponse(
+        dt_response = Account(
+            id="checking",
             data=aggregated_rows,
-            account="checking",
             currency="USD",
             metadata=None
         )
@@ -284,7 +285,7 @@ class TestCacheServiceIntegration:
 
         assert retrieved is not None
         assert len(retrieved.data) == 1
-        assert retrieved.data["checking"].account == "checking"
+        assert retrieved.data["checking"].id == "checking"
         assert len(retrieved.data["checking"].data) == 2
         assert len(retrieved.statistical_metadata.highlights) == 1
 
@@ -294,7 +295,8 @@ class TestCacheServiceIntegration:
         service = CacheService(backend)
 
         # Create responses for multiple accounts
-        account1_response = AccountResponse(
+        account1_response = Account(
+            id="account1",
             data=[AggregatedRow(
                 row_id=str(uuid.uuid4()),
                 category_id="grocery",
@@ -303,11 +305,11 @@ class TestCacheServiceIntegration:
                 details=[],
                 is_calculated=False
             )],
-            account="account1",
             currency="USD"
         )
 
-        account2_response = AccountResponse(
+        account2_response = Account(
+            id="account2",
             data=[AggregatedRow(
                 row_id=str(uuid.uuid4()),
                 category_id="home_maintenance",  # Rent -> home_maintenance
@@ -316,7 +318,6 @@ class TestCacheServiceIntegration:
                 details=[],
                 is_calculated=False
             )],
-            account="account2",
             currency="EUR"
         )
 

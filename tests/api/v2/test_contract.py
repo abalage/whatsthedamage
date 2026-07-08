@@ -167,7 +167,7 @@ class TestResultsEndpoint:
 
         # Verify required fields
         assert validated.result_id == result_id
-        assert validated.accounts_data is not None
+        assert validated.accounts is not None
 
     def test_results_response_has_correct_structure(
         self, api_client_with_mock, mock_processing_service, sample_csv_file
@@ -187,13 +187,10 @@ class TestResultsEndpoint:
 
         # Check top-level structure
         assert 'result_id' in data
-        assert 'accounts_data' in data
+        assert 'accounts' in data
+        assert 'highlights' in data
         assert 'drilldown_urls_by_account' in data
-
-        # Check accounts_data structure
-        assert 'accounts' in data['accounts_data']
-        assert 'highlights' in data['accounts_data']
-        assert isinstance(data['accounts_data']['accounts'], list)
+        assert isinstance(data['accounts'], list)
 
     def test_results_404_for_nonexistent_id(self, api_client_with_mock):
         """Verify /results/<id> returns error for non-existent result_id."""
@@ -234,8 +231,8 @@ class TestDrilldownEndpoints:
 
         # Find first account with valid id and data
         account = None
-        for acc in results_data.get('accounts_data', {}).get('accounts', []):
-            if acc.get('id') and acc.get('dt_response', {}).get('data'):
+        for acc in results_data.get('accounts', []):
+            if acc.get('id') and acc.get('data'):
                 account = acc
                 break
 
@@ -243,8 +240,8 @@ class TestDrilldownEndpoints:
             account_id = account['id']
 
             # Get first category_id from account data
-            first_row = account['dt_response']['data'][0]
-            category_id = first_row['category']
+            first_row = account['data'][0]
+            category_id = first_row['category_id']
 
             # Fetch category months
             response = api_client_with_mock.get(
@@ -281,8 +278,8 @@ class TestDrilldownEndpoints:
 
         # Find first account with valid id and data
         account = None
-        for acc in results_data.get('accounts_data', {}).get('accounts', []):
-            if acc.get('id') and acc.get('dt_response', {}).get('data'):
+        for acc in results_data.get('accounts', []):
+            if acc.get('id') and acc.get('data'):
                 account = acc
                 break
 
@@ -290,7 +287,7 @@ class TestDrilldownEndpoints:
             account_id = account['id']
 
             # Get first month from account data
-            first_row = account['dt_response']['data'][0]
+            first_row = account['data'][0]
             month_id = first_row['date']['display']
 
             response = api_client_with_mock.get(
@@ -325,16 +322,16 @@ class TestDrilldownEndpoints:
 
         # Find first account with valid id and data
         account = None
-        for acc in results_data.get('accounts_data', {}).get('accounts', []):
-            if acc.get('id') and acc.get('dt_response', {}).get('data'):
+        for acc in results_data.get('accounts', []):
+            if acc.get('id') and acc.get('data'):
                 account = acc
                 break
 
         if account:
             account_id = account['id']
 
-            first_row = account['dt_response']['data'][0]
-            category_id = first_row['category']
+            first_row = account['data'][0]
+            category_id = first_row['category_id']
             month_id = first_row['date']['display']
 
             response = api_client_with_mock.get(
@@ -524,16 +521,14 @@ class TestPydanticModelValidation:
 
         valid_data = {
             'result_id': 'test-id',
-            'accounts_data': {
-                'accounts': [],
-                'highlights': {}
-            },
+            'accounts': [],
+            'highlights': {},
             'drilldown_urls_by_account': {}
         }
         ResultsApiResponse.model_validate(valid_data)
 
         # Missing required fields should fail
-        invalid_data = {'result_id': 'test-id'}  # Missing accounts_data
+        invalid_data = {'result_id': 'test-id'}  # Missing accounts
         with pytest.raises(ValidationError):
             ResultsApiResponse.model_validate(invalid_data)
 

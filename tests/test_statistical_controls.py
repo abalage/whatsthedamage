@@ -1,14 +1,15 @@
 """Test cases for the new statistical analysis controls feature."""
 
 from whatsthedamage.services.statistical_analysis_service import StatisticalAnalysisService, AnalysisDirection
-from whatsthedamage.models.domain.dt_models import AccountResponse, AggregatedRow, DisplayRawField, DateField, StatisticalMetadata
+from whatsthedamage.models.domain.dt_models import AggregatedRow, DisplayRawField, DateField, StatisticalMetadata
+from whatsthedamage.models.domain.account import Account
 import uuid
 
 def test_recalculate_highlights_method():
     """Test the compute_statistical_metadata method in StatisticalAnalysisService."""
     # Create test data
     test_responses = {
-        'account1': AccountResponse(
+        'account1': Account(
             data=[
                 AggregatedRow(
                     row_id=str(uuid.uuid4()),
@@ -27,7 +28,7 @@ def test_recalculate_highlights_method():
                     is_calculated=False
                 )
             ],
-            account='account1',
+            id='account1',
             currency='USD'
         )
     }
@@ -60,7 +61,7 @@ def test_recalculate_highlights_with_both_algorithms():
     """Test compute_statistical_metadata with both algorithms."""
     # Create test data with more varied values to trigger highlights
     test_responses = {
-        'account1': AccountResponse(
+        'account1': Account(
             data=[
                 AggregatedRow(
                     row_id=str(uuid.uuid4()),
@@ -95,7 +96,7 @@ def test_recalculate_highlights_with_both_algorithms():
                     is_calculated=False
                 )
             ],
-            account='account1',
+            id='account1',
             currency='USD'
         )
     }
@@ -127,7 +128,7 @@ def test_highlight_key_format():
     service = StatisticalAnalysisService()
 
     test_responses = {
-        'account1': AccountResponse(
+        'account1': Account(
             data=[
                 AggregatedRow(
                     row_id=str(uuid.uuid4()),
@@ -138,7 +139,7 @@ def test_highlight_key_format():
                     is_calculated=False
                 )
             ],
-            account='account1',
+            id='account1',
             currency='USD'
         )
     }

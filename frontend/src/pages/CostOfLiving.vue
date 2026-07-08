@@ -5,7 +5,7 @@ import { fetchResults } from '../js/api.js';
 import { useFeedbackStore } from '../stores/feedback.js';
 import { useGettext } from 'vue3-gettext';
 import { useCostOfLivingStore } from '../stores/costOfLiving.js';
-import type { AccountDataResponse } from '../types/api.js';
+import type { Account } from '../types/api.js';
 import BarChart from '../components/charts/BarChart.vue';
 import PieChart from '../components/charts/PieChart.vue';
 import CostOfLivingCategorySelector from '../components/CostOfLivingCategorySelector.vue';
@@ -41,8 +41,8 @@ const loadData = async () => {
     costOfLivingStore.loadSettings();
     
     // If no account is selected, select the first one
-    if (!selectedAccountId.value && response.accounts_data.accounts.length > ZERO) {
-      costOfLivingStore.setSelectedAccountId(response.accounts_data.accounts[ZERO].id);
+    if (!selectedAccountId.value && response.accounts.length > ZERO) {
+      costOfLivingStore.setSelectedAccountId(response.accounts[ZERO].id);
     }
     
     isLoading.value = false;
@@ -62,7 +62,7 @@ const selectedAccountId = computed({
 });
 const selectedCategories = computed(() => costOfLivingStore.selectedCategoryIds);
 const availableCategories = computed(() => costOfLivingStore.availableCategoryNames);
-const accounts = computed<AccountDataResponse[]>(() => resultsData.value?.accounts_data.accounts || []);
+const accounts = computed<Account[]>(() => resultsData.value?.accounts || []);
 
 const monthlyBreakdown = computed(() => {
   if (!costOfLivingData.value) return [];

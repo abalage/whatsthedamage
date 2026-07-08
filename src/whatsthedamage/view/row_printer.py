@@ -1,20 +1,21 @@
 from typing import Dict, List
-from whatsthedamage.models.domain.dt_models import AccountResponse, DetailRow
+from whatsthedamage.models.domain.dt_models import DetailRow
+from whatsthedamage.models.domain.account import Account
 from whatsthedamage.config.config import get_category_display_name
 import json
 import sys
 
 
-def print_categorized_rows(responses_by_account: Dict[str, AccountResponse]) -> None:
+def print_categorized_rows(responses_by_account: Dict[str, Account]) -> None:
     """
-    Prints categorized rows from AccountResponse structures.
+    Prints categorized rows from Account structures.
 
     Loops over accounts and prints separate sections with account headers.
     Extracts transaction data from AggregatedRow.details.
     Translates category IDs to display names for output.
 
     Args:
-        responses_by_account (Dict[str, AccountResponse]): Mapping of account_id → AccountResponse.
+        responses_by_account (Dict[str, Account]): Mapping of account_id → Account.
 
     Returns:
         None
@@ -40,15 +41,15 @@ def print_categorized_rows(responses_by_account: Dict[str, AccountResponse]) -> 
                       f"merchant={detail_row.merchant}, currency={detail_row.currency}, notice={detail_row.notice})", file=sys.stderr)
 
 
-def print_training_data(responses_by_account: Dict[str, AccountResponse]) -> None:
+def print_training_data(responses_by_account: Dict[str, Account]) -> None:
     """
-    Prints training data from AccountResponse structures as JSON array to STDERR.
+    Prints training data from Account structures as JSON array to STDERR.
 
     Extracts transaction data from AggregatedRow.details and formats as JSON.
     Strips account field for ML model compatibility.
 
     Args:
-        responses_by_account (Dict[str, AccountResponse]): Mapping of account_id → AccountResponse.
+        responses_by_account (Dict[str, Account]): Mapping of account_id → Account.
 
     Example::
 

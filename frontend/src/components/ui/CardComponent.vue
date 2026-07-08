@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useGettext } from 'vue3-gettext'
-import type { AccountData } from '../../types/api.js'
+import type { Account } from '../../types/api.js'
 
 const { $gettext } = useGettext()
 
@@ -10,7 +10,7 @@ interface CardProps {
   classes?: string
   id?: string
   type?: 'standard' | 'simple' | 'account' | 'info'
-  account?: AccountData
+  account?: Account
   width?: string // Accepts valid CSS width values like '50%', '70%', etc.
 }
 

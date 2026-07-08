@@ -1,8 +1,11 @@
-from typing import List, Dict, Callable, Optional, Any
+from typing import List, Dict, Callable, Optional, Any, TYPE_CHECKING
 from whatsthedamage.models.domain.csv_row import CsvRow
-from whatsthedamage.models.domain.dt_models import DisplayRawField, DateField, DetailRow, AggregatedRow, AccountResponse
+from whatsthedamage.models.domain.dt_models import DisplayRawField, DateField, DetailRow, AggregatedRow
 from whatsthedamage.utils.date_converter import DateConverter
 import uuid
+
+if TYPE_CHECKING:
+    from whatsthedamage.models.domain.account import Account
 
 # Type alias for row calculator callables
 # Calculators receive the builder instance and return a list of AggregatedRow objects.
@@ -10,21 +13,28 @@ import uuid
 # previously calculated rows from earlier calculators.
 RowCalculator = Callable[["AccountResponseBuilder"], List[AggregatedRow]]
 
+
 class AccountResponseBuilder:
     """
-    Builds AccountResponse in a transparent, step-by-step manner.
+    Builds Account in a transparent, step-by-step manner.
 
     This builder encapsulates the logic for converting CSV rows into account-compatible
     structures, providing a clear API for incrementally building the response.
+
+    Note: This builder now creates Account models (unified) instead of AccountResponse.
+    The 'account' parameter has been renamed to 'id' to match the new Account model.
     """
 
     def __init__(
         self,
         date_format: str,
         calculators: Optional[List[RowCalculator]] = None,
-        account: str = "",
+        id: str = "",
+        name: str = "",
+        formatted_id: str = "",
         currency: str = "",
         metadata: Optional[Any] = None,
+        result_id: str = "",
         statistical_metadata: Optional[Any] = None
     ) -> None:
         """
@@ -37,10 +47,12 @@ class AccountResponseBuilder:
                 a list of AggregatedRow objects. Calculators are invoked sequentially during build()
                 after all category data has been added. Later calculators can access rows created by
                 earlier calculators. Defaults to [create_balance_rows, create_total_spendings].
-            row_count (Optional[int]): Total number of rows processed.
-            account (str): Account identifier.
+            id (str): Account identifier (raw account number). Replaces the old 'account' parameter.
+            name (str): Account display name.
+            formatted_id (str): Formatted account ID for display.
             currency (str): Currency code.
             metadata (Optional[Any]): Optional detailed metadata.
+            result_id (str): Processing result identifier.
             statistical_metadata (Optional[Any]): Optional statistical metadata.
         """
         from whatsthedamage.models.domain.dt_calculators import create_balance_rows, create_total_spendings, create_cost_of_living_rows
@@ -49,9 +61,12 @@ class AccountResponseBuilder:
         self._aggregated_rows: List[AggregatedRow] = []
         self._month_totals: Dict[int, tuple[DateField, float]] = {}
         self._calculators = calculators if calculators is not None else [create_balance_rows, create_total_spendings, create_cost_of_living_rows]
-        self._account = account
+        self._id = id
+        self._name = name
+        self._formatted_id = formatted_id
         self._currency = currency
         self._metadata = metadata
+        self._result_id = result_id
         self._statistical_metadata = statistical_metadata
 
     def add_category_data(
@@ -86,26 +101,32 @@ class AccountResponseBuilder:
             # Initialize new month total
             self._month_totals[month_timestamp] = (date_field, total_amount)
 
-    def build(self) -> AccountResponse:
+    def build(self) -> "Account":
         """
-        Returns the final AccountResponse.
+        Returns the final Account.
 
         Invokes all calculators sequentially after category data has been added.
         Each calculator can access the builder's internal state and previously
         calculated rows. Any exceptions raised by calculators will propagate to the caller.
 
         Returns:
-            AccountResponse: The complete account-compatible response object.
+            Account: The complete account-compatible response object.
         """
         # Invoke calculators sequentially, allowing each to access prior rows
         for calculator in self._calculators:
             calculated_rows = calculator(self)
             self._aggregated_rows.extend(calculated_rows)
 
-        return AccountResponse(
+        # Import Account here to avoid circular imports
+        from whatsthedamage.models.domain.account import Account
+
+        return Account(
+            id=self._id,
+            name=self._name,
+            formatted_id=self._formatted_id,
             data=self._aggregated_rows,
-            account=self._account,
             currency=self._currency,
+            result_id=self._result_id,
             metadata=self._metadata
         )
 

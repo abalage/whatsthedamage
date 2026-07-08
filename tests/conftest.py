@@ -56,15 +56,16 @@ class MockCSVProcessor:
 
 @pytest.fixture
 def mock_processing_service_result():
-    """Factory fixture for creating mock ProcessingService results with AccountResponse."""
-    from whatsthedamage.models.domain.dt_models import AccountResponse, AggregatedRow, DisplayRawField, DateField, StatisticalMetadata
+    """Factory fixture for creating mock ProcessingService results with Account."""
+    from whatsthedamage.models.domain.dt_models import AggregatedRow, DisplayRawField, DateField, StatisticalMetadata
+    from whatsthedamage.models.domain.account import Account
     import uuid
 
     def _create_result(data=None):
         if data is None:
             data = {}
 
-        # Create mock AccountResponse
+        # Create mock Account
         agg_rows = []
         for category_id, amount in data.items():
             agg_rows.append(
@@ -80,7 +81,8 @@ def mock_processing_service_result():
         # Create statistical metadata with empty highlights
         statistical_metadata = StatisticalMetadata(highlights=[])
 
-        dt_response = AccountResponse(
+        dt_response = Account(
+            id="default_account",
             data=agg_rows,
             currency="USD",
         )

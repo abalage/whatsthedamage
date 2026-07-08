@@ -9,8 +9,6 @@ from whatsthedamage.models.api.requests import ProcessingRequest
 # Response models
 from whatsthedamage.models.api.responses import (
     ApiEnvelope,
-    AccountDataResponse,
-    AccountsDataResponse,
     DrilldownUrlInfo,
     MonthUrlInfo,
     CellUrlInfo,
@@ -37,8 +35,6 @@ __all__ = [
     'ErrorResponse',
     # Response models
     'ApiEnvelope',
-    'AccountDataResponse',
-    'AccountsDataResponse',
     'DrilldownUrlInfo',
     'MonthUrlInfo',
     'CellUrlInfo',

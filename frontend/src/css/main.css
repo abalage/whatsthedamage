@@ -44,33 +44,12 @@ footer {
 
 .card-header {
   border-radius: var(--border-radius) var(--border-radius) 0 0 !important;
-  border: none;
+  border: 5px black;
   font-weight: 600;
 }
 
 .card-body {
   border-radius: 0 0 var(--border-radius) var(--border-radius);
-}
-
-/* Account section styling */
-.account-section {
-  background: white;
-  border-radius: var(--border-radius);
-  box-shadow: var(--box-shadow);
-  padding: 1.5rem;
-  margin-bottom: 2rem;
-}
-
-.account-header {
-  border-bottom: 2px solid #e9ecef;
-  padding-bottom: 1rem;
-  margin-bottom: 1.5rem;
-}
-
-.account-header h2 {
-  color: var(--dark-color);
-  font-size: 1.75rem;
-  margin-bottom: 0;
 }
 
 /* Button styles */
@@ -233,11 +212,6 @@ footer {
 
   header, footer {
     padding: 10px 0;
-  }
-
-  .account-section {
-    padding: 1rem;
-    margin-bottom: 1.5rem;
   }
 
   .card {

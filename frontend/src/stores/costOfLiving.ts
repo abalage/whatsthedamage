@@ -9,7 +9,7 @@
  */
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
-import type { ResultsApiResponse, AggregatedRow, Account } from '../types/api.js';
+import type { ResultsApiResponse, Account } from '../types/api.js';
 import type { CostOfLivingSettings } from '../types/costOfLiving.js';
 import { useCategoriesStore } from './categories.js';
 

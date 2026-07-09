@@ -38,16 +38,10 @@ const cardStyle = computed(() => {
 })
 
 const headerClasses = computed(() => {
-  if (props.type === 'account') {
-    return 'account-header bg-light p-3 rounded'
-  }
   return 'card-header bg-success text-white'
 })
 
 const bodyClasses = computed(() => {
-  if (props.type === 'account') {
-    return 'account-content mt-3'
-  }
   return 'card-body bg-light'
 })
 
@@ -90,12 +84,10 @@ const closeAlert = () => {
   </div>
 
   <!-- Account Card -->
-  <div v-else-if="type === 'account'" class="account-section mb-4">
+  <div v-else-if="type === 'account'" :class="cardClasses">
     <div :class="headerClasses">
-      <h2 class="mb-0">
-        {{ $gettext('account') }}: {{ formattedAccountId }}
-        <span v-if="accountCurrency" class="badge bg-info">({{ accountCurrency }})</span>
-      </h2>
+        {{ $gettext('Account') }}: {{ formattedAccountId }}
+        <span v-if="accountCurrency" class="badge bg-info">{{ accountCurrency }}</span>
     </div>
     <div :class="bodyClasses">
       <slot></slot>

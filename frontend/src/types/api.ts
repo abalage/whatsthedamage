@@ -246,6 +246,8 @@ export interface CategoryMonthsApiResponse {
   result_id: string;
   account_id: string;
   account_name: string;
+  account_formatted_id: string;
+  account_currency: string;
   category_id: string;
   data: MonthData[];
   highlights?: StatisticalHighlights;
@@ -271,6 +273,8 @@ export interface MonthCategoriesApiResponse {
   result_id: string;
   account_id: string;
   account_name: string;
+  account_formatted_id: string;
+  account_currency: string;
   month_id: string;
   month_timestamp: number;
   data: CategoryData[];
@@ -287,6 +291,8 @@ export interface CategoryMonthTransactionsApiResponse {
   result_id: string;
   account_id: string;
   account_name: string;
+  account_formatted_id: string;
+  account_currency: string;
   category_id: string;
   month_id: string;
   month_timestamp: number;

@@ -216,6 +216,8 @@ class CategoryMonthsApiResponse(BaseModel):
     result_id: str = Field(description="Processing result identifier")
     account_id: str = Field(description="Account identifier")
     account_name: str = Field(description="Account display name")
+    account_formatted_id: str = Field(description="Formatted account ID for display")
+    account_currency: str = Field(description="Account currency code")
     category_id: str = Field(description="Category identifier (e.g., 'grocery'). Frontend should use /categories endpoint to get display name.")
     data: List[MonthData] = Field(
         description="Month-by-month aggregation data for this category"
@@ -268,6 +270,8 @@ class MonthCategoriesApiResponse(BaseModel):
     result_id: str = Field(description="Processing result identifier")
     account_id: str = Field(description="Account identifier")
     account_name: str = Field(description="Account display name")
+    account_formatted_id: str = Field(description="Formatted account ID for display")
+    account_currency: str = Field(description="Account currency code")
     month_id: str = Field(description="Month identifier (opaque ID for URL routing)")
     month_timestamp: int = Field(description="Unix timestamp for the month")
     data: List[CategoryData] = Field(
@@ -288,6 +292,8 @@ class CategoryMonthTransactionsApiResponse(BaseModel):
     result_id: str = Field(description="Processing result identifier")
     account_id: str = Field(description="Account identifier")
     account_name: str = Field(description="Account display name")
+    account_formatted_id: str = Field(description="Formatted account ID for display")
+    account_currency: str = Field(description="Account currency code")
     category_id: str = Field(description="Category identifier (e.g., 'grocery'). Frontend should use /categories endpoint to get display name.")
     month_id: str = Field(description="Month identifier (opaque ID for URL routing)")
     month_timestamp: int = Field(description="Unix timestamp for the month")

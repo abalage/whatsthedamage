@@ -17,13 +17,10 @@ import { formatMonthYear } from '../js/dateUtils.js'
 
 const { $gettext } = useGettext()
 
-
-
 const feedback = useFeedbackStore()
 const statisticalStore = useStatisticalStore()
 const categoriesStore = useCategoriesStore()
 const route = useRoute()
-
 
 // Try both camelCase and snake_case for the query parameter
 const resultId = computed(() => {
@@ -214,8 +211,6 @@ const getMonthId = (accountId: string, monthTs: number): string => {
   return urls?.month_urls?.[String(monthTs)]?.month_id || String(monthTs)
 }
 
-
-
 onMounted(() => {
   loadResults()
 })
@@ -267,7 +262,7 @@ onMounted(() => {
       </div>
 
       <div v-for="account in resultsData.accounts" :key="account.id" class="mb-5">
-        <CardComponent :title="`${$gettext('Account')}: ${account.formatted_id} (${account.currency})`" class="mb-4" width="fit-content">
+        <CardComponent type="account" :account="account" class="mb-4" width="100%">
             <VueDataTable
               :id="`datatable-${account.id}`"
               :data="buildTableData(account)"

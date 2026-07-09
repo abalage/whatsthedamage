@@ -131,6 +131,8 @@ class DrilldownResponseService:
             result_id=result_id,
             account_id=account_id,
             account_name=account_data['name'],
+            account_formatted_id=account_data.get('formatted_id', ''),
+            account_currency=account_data.get('currency', ''),
             category_id=category_id,
             data=months_list,
             highlights=highlights
@@ -208,6 +210,8 @@ class DrilldownResponseService:
             result_id=result_id,
             account_id=account_id,
             account_name=account_data['name'],
+            account_formatted_id=account_data.get('formatted_id', ''),
+            account_currency=account_data.get('currency', ''),
             month_id=month_id,
             month_timestamp=int(original_month_ts) if original_month_ts else 0,
             data=categories_list,
@@ -272,7 +276,7 @@ class DrilldownResponseService:
             result_id: Result ID for ID mapping resolution
 
         Returns:
-            Dictionary with 'id', 'name', and 'data' keys, or None if not found
+            Dictionary with 'id', 'name', 'formatted_id', 'currency', and 'data' keys, or None if not found
         """
         if not cached_result or not hasattr(cached_result, 'data'):
             return None
@@ -293,6 +297,8 @@ class DrilldownResponseService:
                     return {
                         'id': existing_id,
                         'name': getattr(account_data, 'name', None) or f'Account {existing_id}',
+                        'formatted_id': getattr(account_data, 'formatted_id', None) or '',
+                        'currency': getattr(account_data, 'currency', None) or '',
                         'data': getattr(account_data, 'data', [])
                     }
 
@@ -1083,6 +1089,8 @@ class DrilldownResponseService:
             result_id=result_id,
             account_id=account_id,
             account_name=account_data['name'],
+            account_formatted_id=account_data.get('formatted_id', ''),
+            account_currency=account_data.get('currency', ''),
             category_id=original_category,
             month_id=month_id,
             month_timestamp=int(original_month_ts) if original_month_ts else 0,

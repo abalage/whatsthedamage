@@ -151,7 +151,7 @@ onMounted(() => {
       </div>
 
       <!-- Account Card -->
-      <CardComponent :title="transactionsData.account_name" class="mb-4" width="fit-content">
+      <CardComponent type="account" :account="{ id: transactionsData.account_id, name: transactionsData.account_name, formatted_id: transactionsData.account_formatted_id, currency: transactionsData.account_currency }" class="mb-4" width="fit-content">
             <VueDataTable
               id="transaction-details-table"
               :data="tableData"

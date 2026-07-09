@@ -87,7 +87,7 @@ const allTransactions = computed(() => {
           merchant: detail.merchant,
           amount: detail.amount.display,
           currency: detail.currency,
-          account: account.name,
+          account: account.formatted_id,
           type: detail.type || '',
           confidence: detail.confidence?.toString() ?? '',
           notice: detail.notice || '',
@@ -151,6 +151,7 @@ onMounted(() => {
             wrapper-class="w-auto"
             show-column-filters
             show-pagination
+            :pageSize="100"
           />
       </CardComponent>
     </div>

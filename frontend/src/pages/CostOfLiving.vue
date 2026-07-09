@@ -207,9 +207,10 @@ onMounted(() => loadData());
       <!-- Account Selector -->
       <div v-if="accounts.length > 1">
         <CardComponent :title="$gettext('Select Account')" class="mb-4" width="auto">
-          <select v-model="selectedAccountId" class="form-select">
+          <label for="selectedAccountId" class="form-label">{{ $gettext('Account') }}</label>
+          <select id="selectedAccountId" v-model="selectedAccountId" class="form-select">
             <option v-for="account in accounts" :key="account.id" :value="account.id">
-              {{ account.name }}
+              {{ account.formatted_id }} ({{ account.currency }})
             </option>
           </select>
         </CardComponent>

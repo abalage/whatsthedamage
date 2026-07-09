@@ -446,7 +446,7 @@ function getExportValue(column: Column, value: unknown, row: Record<string, unkn
   if (column.renderHtml) {
     const html = column.renderHtml(value, row, index)
     // Strip HTML tags for export
-    return html.replace(/<[^>]*>/g, '')
+    return html.replace(/<[^<>]*>/g, '')
   }
   if (value == null) return ''
   return String(value)

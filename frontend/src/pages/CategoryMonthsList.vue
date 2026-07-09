@@ -105,8 +105,6 @@ const {
   errorMessageKey: 'categoryMonthsLoadError'
 })
 
-
-
 // Table data
 const tableData = computed(() => {
   if (!categoryMonthsData.value) return []
@@ -192,7 +190,7 @@ onMounted(() => {
       </div>
 
       <!-- Account Card -->
-      <CardComponent :title="categoryMonthsData.account_name" class="mb-4" width="fit-content">
+      <CardComponent type="account" :account="{ id: categoryMonthsData.account_id, name: categoryMonthsData.account_name, formatted_id: categoryMonthsData.account_formatted_id, currency: categoryMonthsData.account_currency }" class="mb-4" width="fit-content">
             <VueDataTable
               id="datatable-category"
               :data="tableData"

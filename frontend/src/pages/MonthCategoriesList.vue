@@ -189,6 +189,7 @@ onMounted(() => {
               :excel-text="$gettext('Export Excel')"
               wrapper-class="w-auto"
               show-column-filters
+              show-pagination
             />
       </CardComponent>
 

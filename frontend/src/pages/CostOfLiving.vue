@@ -299,6 +299,7 @@ onMounted(() => loadData());
             :search-placeholder="$gettext('Search') + ': '"
             wrapper-class="w-auto"
             show-column-filters
+            show-pagination
             class="small"
           />
         </CardComponent>

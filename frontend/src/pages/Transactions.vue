@@ -150,6 +150,7 @@ onMounted(() => {
             :columns="columns"
             wrapper-class="w-auto"
             show-column-filters
+            show-pagination
           />
       </CardComponent>
     </div>

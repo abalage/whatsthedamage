@@ -16,29 +16,28 @@
 /**
  * Display and raw value pair (e.g., formatted currency with numeric value)
  */
-interface DisplayRawField {
+export interface DisplayRawField {
   display: string;
-  raw: number | string;
+  raw: number;
 }
 
 /**
  * Date with display format and timestamp
  */
-interface DateField {
+export interface DateField {
   display: string;
   timestamp: number;
 }
-
-
 
 // ============================================================================
 // Data Models (from dt_models.py)
 // ============================================================================
 
 /**
- * A single detailed transaction row
+ * Unified transaction detail model - consolidates DetailRow and TransactionDetail.
+ * Replaces the previous DetailRow and TransactionDetailResponse interfaces.
  */
-interface DetailRow {
+export interface TransactionDetail {
   row_id: string;
   date: DateField;
   amount: DisplayRawField;
@@ -48,6 +47,9 @@ interface DetailRow {
   type?: string | null;
   confidence?: number | null;
   notice?: string | null;
+  // API drilldown context fields
+  category_id?: string | null;
+  month_id?: string | null;
 }
 
 /**
@@ -58,9 +60,12 @@ export interface AggregatedRow {
   category_id: string;
   total: DisplayRawField;
   date: DateField;
-  details: DetailRow[];
+  details: TransactionDetail[];
   is_calculated?: boolean;
 }
+
+// DetailRow is now an alias to TransactionDetail
+export type DetailRow = TransactionDetail;
 
 /**
  * Processing metadata
@@ -84,49 +89,17 @@ type StatisticalHighlights = Record<string, string[]> | {};
 // ============================================================================
 
 /**
- * Account data structure for results
+ * Unified Account model - matches backend Account Pydantic model
+ * Replaces previous AccountData and AccountDataResponse interfaces
  */
-export interface AccountData {
+export interface Account {
   id: string;
+  name: string;
   formatted_id: string;
   currency: string;
-  transactions: TransactionData[];
-  summary: AccountSummary;
-}
-
-/**
- * Individual transaction data
- */
-interface TransactionData {
-  id: string;
-  date: string;
-  amount: number;
-  currency: string;
-  description: string;
-  merchant: string;
-  category: string;
-  category_confidence: number;
-  type: string;
-  account_id: string;
-}
-
-/**
- * Account summary statistics
- */
-interface AccountSummary {
-  total_transactions: number;
-  total_amount: number;
-  categories: CategorySummary[];
-}
-
-/**
- * Category-level summary
- */
-interface CategorySummary {
-  category: string;
-  count: number;
-  total_amount: number;
-  percentage: number;
+  data: AggregatedRow[];  // Previously was dt_response: { data: AggregatedRow[] }
+  result_id: string;
+  metadata: unknown | null;
 }
 
 // ============================================================================
@@ -151,27 +124,6 @@ export interface DetailedResponse {
 // -----------------------------------------------------------------------------
 // Results Endpoint: GET /api/v2/results/<result_id>
 // -----------------------------------------------------------------------------
-
-/**
- * Data for a single account in results response
- */
-export interface AccountDataResponse {
-  id: string;
-  name: string;
-  formatted_id: string;
-  currency: string;
-  dt_response: {
-    data: AggregatedRow[];
-  };
-}
-
-/**
- * Container for all accounts data
- */
-interface AccountsDataResponse {
-  accounts: AccountDataResponse[];
-  highlights: StatisticalHighlights;
-}
 
 /**
  * URL info for category drilldown
@@ -212,19 +164,13 @@ interface DrilldownUrls {
  * Response from GET /api/v2/results/<result_id>
  *
  * Contains cached processing results with accounts data and drilldown URLs.
+ * Now uses simplified structure with direct Account array instead of nested wrappers.
  */
 export interface ResultsApiResponse {
   result_id: string;
-  accounts_data: AccountsDataResponse;
-  drilldown_urls_by_account: Record<string, DrilldownUrls>;
-}
-
-/**
- * Container for all accounts data
- */
-interface AccountsDataResponse {
-  accounts: AccountDataResponse[];
+  accounts: Account[];  // Changed from accounts_data: AccountsDataResponse
   highlights: StatisticalHighlights;
+  drilldown_urls_by_account: Record<string, DrilldownUrls>;
 }
 
 /**
@@ -284,7 +230,7 @@ export interface CategoryDefinition {
  * Data for a single month in category months response
  * Frontend should use month_timestamp to format the month display name.
  */
-interface MonthData {
+export interface MonthData {
   month_timestamp: number;
   total: DisplayRawField;
   row_id: string;
@@ -308,7 +254,7 @@ export interface CategoryMonthsApiResponse {
 /**
  * Data for a single category in month categories response
  */
-interface CategoryData {
+export interface CategoryData {
   category_id: string;
   total: DisplayRawField;
   row_id: string;
@@ -332,16 +278,6 @@ export interface MonthCategoriesApiResponse {
 }
 
 /**
- * Data for a single transaction in drilldown response
- */
-interface TransactionDetailResponse {
-  date: { display: string; timestamp: number | string };
-  amount: DisplayRawField;
-  merchant: string;
-  row_id: string;
-}
-
-/**
  * Response from GET /api/v2/results/<r>/accounts/<a>/categories/<c>/months/<m>/transactions
  *
  * Returns individual transaction details for a specific category and month.
@@ -354,7 +290,7 @@ export interface CategoryMonthTransactionsApiResponse {
   category_id: string;
   month_id: string;
   month_timestamp: number;
-  data: TransactionDetailResponse[];
+  data: TransactionDetail[];
   highlights?: StatisticalHighlights;
 }
 

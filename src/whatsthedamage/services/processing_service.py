@@ -13,7 +13,8 @@ from whatsthedamage.config.config import AppArgs, AppContext
 from whatsthedamage.models.domain.csv_processor import CSVProcessor
 from whatsthedamage.services.configuration_service import ConfigurationService, ConfigLoadResult
 from whatsthedamage.services.statistical_analysis_service import StatisticalAnalysisService
-from whatsthedamage.models.domain.dt_models import StatisticalMetadata, AccountResponse, ProcessingResponse
+from whatsthedamage.models.domain.dt_models import StatisticalMetadata, ProcessingResponse
+from whatsthedamage.models.domain.account import Account
 from whatsthedamage.models.api.common import ProcessingMetadata
 from whatsthedamage.utils.logging import get_logger
 
@@ -193,11 +194,11 @@ class ProcessingService:
             ml=ml_enabled
         )
 
-    def _compute_statistical_metadata(self, account_responses: Dict[str, AccountResponse]) -> StatisticalMetadata:
+    def _compute_statistical_metadata(self, account_responses: Dict[str, Account]) -> StatisticalMetadata:
         """Compute statistical metadata including highlights for the given responses.
 
         Args:
-            account_responses: Dictionary mapping account IDs to AccountResponse objects
+            account_responses: Dictionary mapping account IDs to Account objects
 
         Returns:
             StatisticalMetadata with highlights

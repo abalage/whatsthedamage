@@ -3,20 +3,21 @@ from typing import Dict
 from whatsthedamage.controllers.cli_controller import CLIController
 from whatsthedamage.services.service_container import create_service_container, ServiceContainer
 from whatsthedamage.config.config import AppArgs
-from whatsthedamage.models.domain.dt_models import AccountResponse, ProcessingResponse
+from whatsthedamage.models.domain.dt_models import ProcessingResponse
+from whatsthedamage.models.domain.account import Account
 from whatsthedamage.utils.logging import configure_logging, get_logger
 
 logger = get_logger(__name__)
 
 def format_output(
-    dt_responses: Dict[str, AccountResponse],
+    dt_responses: Dict[str, Account],
     args: AppArgs,
     container: ServiceContainer
 ) -> str:
     """Format processed data for CLI output.
 
     Args:
-        dt_responses: AccountResponse objects per account
+        dt_responses: Account objects per account
         args: CLI arguments with formatting options
         container: Service container with formatting service
 
@@ -62,8 +63,8 @@ def main() -> None:
             training_data=args.training_data
         )
 
-        # Extract AccountResponse per account
-        dt_responses: Dict[str, AccountResponse] = result.data
+        # Extract Account per account
+        dt_responses: Dict[str, Account] = result.data
 
         # Format all accounts using service (handles multi-account iteration)
         output = format_output(dt_responses, args, container)

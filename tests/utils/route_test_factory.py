@@ -61,12 +61,12 @@ class RouteTestFactory:
         category_ids: Dict[str, Optional[str]] = {}
         month_ids: Dict[str, Optional[str]] = {}
 
-        # Get the AccountResponse for the account
+        # Get the Account for the account
         dt_response = processing_response.data.get(account_number)
         if dt_response:
             for row in dt_response.data:
-                if row.category not in category_ids:
-                    category_ids[row.category] = id_mapping_service.get_category_id(result_id, row.category)
+                if row.category_id not in category_ids:
+                    category_ids[row.category_id] = id_mapping_service.get_category_id(result_id, row.category_id)
                 month_ts = str(row.date.timestamp)
                 if month_ts not in month_ids:
                     month_ids[month_ts] = id_mapping_service.get_month_id(month_ts)

@@ -7,7 +7,8 @@ after all category data has been added to the builder.
 """
 
 from typing import List, Dict, Tuple, TYPE_CHECKING
-from whatsthedamage.models.domain.dt_models import AggregatedRow, DateField
+from whatsthedamage.models.common.display_fields import DateField
+from whatsthedamage.models.domain.dt_models import AggregatedRow
 
 if TYPE_CHECKING:
     from whatsthedamage.models.domain.dt_response_builder import AccountResponseBuilder

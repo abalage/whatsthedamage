@@ -2,7 +2,8 @@
 
 import pytest
 from whatsthedamage.services.statistical_analysis_service import StatisticalAnalysisService, AnalysisDirection
-from whatsthedamage.models.domain.dt_models import AccountResponse, AggregatedRow, DateField, DisplayRawField
+from whatsthedamage.models.domain.dt_models import AggregatedRow, DateField, DisplayRawField
+from whatsthedamage.models.domain.account import Account
 import uuid
 
 @pytest.fixture
@@ -126,9 +127,9 @@ class TestExpenseFiltering:
 
     def test_filter_expenses_only_removes_positive_values(self, sample_data_with_mixed_values):
         """Test that _filter_data_for_analysis removes positive values when expense filtering is enabled."""
-        dt_response = AccountResponse(
+        dt_response = Account(
             data=sample_data_with_mixed_values,
-            account="Test Account",
+            id="Test Account",
             currency="USD"
         )
         service = StatisticalAnalysisService(filter_expenses_only=True)
@@ -164,9 +165,9 @@ class TestExpenseFiltering:
                 is_calculated=False
             ),
         ]
-        dt_response = AccountResponse(
+        dt_response = Account(
             data=data,
-            account="Test Account",
+            id="Test Account",
             currency="USD"
         )
         service = StatisticalAnalysisService(filter_expenses_only=True)
@@ -178,9 +179,9 @@ class TestExpenseFiltering:
 
     def test_filter_expenses_only_disabled_keeps_all_values(self, sample_data_with_mixed_values):
         """Test that _filter_data_for_analysis keeps all values when expense filtering is disabled."""
-        dt_response = AccountResponse(
+        dt_response = Account(
             data=sample_data_with_mixed_values,
-            account="Test Account",
+            id="Test Account",
             currency="USD"
         )
         service = StatisticalAnalysisService(filter_expenses_only=False)
@@ -198,9 +199,9 @@ class TestExpenseFiltering:
 
     def test_filter_expenses_only_with_all_expenses(self, sample_data_all_expenses):
         """Test that _filter_data_for_analysis keeps all values when all are expenses."""
-        dt_response = AccountResponse(
+        dt_response = Account(
             data=sample_data_all_expenses,
-            account="Test Account",
+            id="Test Account",
             currency="USD"
         )
         service = StatisticalAnalysisService(filter_expenses_only=True)
@@ -215,9 +216,9 @@ class TestExpenseFiltering:
 
     def test_filter_expenses_only_with_all_income(self, sample_data_all_income):
         """Test that _filter_data_for_analysis removes all values when all are income."""
-        dt_response = AccountResponse(
+        dt_response = Account(
             data=sample_data_all_income,
-            account="Test Account",
+            id="Test Account",
             currency="USD"
         )
         service = StatisticalAnalysisService(filter_expenses_only=True)
@@ -228,9 +229,9 @@ class TestExpenseFiltering:
 
     def test_compute_statistical_metadata_with_expense_filtering(self, sample_data_with_mixed_values):
         """Test that compute_statistical_metadata applies expense filtering by default."""
-        dt_response = AccountResponse(
+        dt_response = Account(
             data=sample_data_with_mixed_values,
-            account="Test Account",
+            id="Test Account",
             currency="USD"
         )
         account_responses = {"test_table": dt_response}
@@ -254,9 +255,9 @@ class TestExpenseFiltering:
 
     def test_compute_statistical_metadata_without_expense_filtering(self, sample_data_with_mixed_values):
         """Test that compute_statistical_metadata can skip expense filtering."""
-        dt_response = AccountResponse(
+        dt_response = Account(
             data=sample_data_with_mixed_values,
-            account="Test Account",
+            id="Test Account",
             currency="USD"
         )
         account_responses = {"test_table": dt_response}
@@ -279,9 +280,9 @@ class TestExpenseFiltering:
 
     def test_compute_statistical_metadata_with_expense_filtering_custom_params(self, sample_data_with_mixed_values):
         """Test that compute_statistical_metadata works with custom parameters."""
-        dt_response = AccountResponse(
+        dt_response = Account(
             data=sample_data_with_mixed_values,
-            account="Test Account",
+            id="Test Account",
             currency="USD"
         )
         account_responses = {"test_table": dt_response}
@@ -304,9 +305,9 @@ class TestExpenseFiltering:
 
     def test_compute_statistical_metadata_without_expense_filtering_custom_params(self, sample_data_with_mixed_values):
         """Test that compute_statistical_metadata works with custom parameters and no filtering."""
-        dt_response = AccountResponse(
+        dt_response = Account(
             data=sample_data_with_mixed_values,
-            account="Test Account",
+            id="Test Account",
             currency="USD"
         )
         account_responses = {"test_table": dt_response}

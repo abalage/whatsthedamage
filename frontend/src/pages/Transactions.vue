@@ -78,8 +78,8 @@ const allTransactions = computed(() => {
 
   const transactions = []
 
-  for (const account of resultsData.value.accounts_data.accounts) {
-    for (const aggRow of account.dt_response.data) {
+  for (const account of resultsData.value.accounts) {
+    for (const aggRow of account.data) {
       for (const detail of aggRow.details) {
         transactions.push({
           date: detail.date.display,

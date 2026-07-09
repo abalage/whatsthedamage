@@ -13,7 +13,9 @@ Architecture Patterns:
 """
 import datetime
 from typing import Any, Callable, Dict, List, Optional, Tuple, cast
-from whatsthedamage.models.domain.dt_models import ProcessingResponse, AggregatedRow, AccountResponse
+from whatsthedamage.models.domain.dt_models import ProcessingResponse, AggregatedRow, TransactionDetail
+from whatsthedamage.models.domain.account import Account
+from whatsthedamage.models.common.display_fields import DisplayRawField, DateField
 from whatsthedamage.utils.date_converter import DateConverter
 from whatsthedamage.models.api.responses import (
     CategoryMonthsApiResponse,
@@ -21,7 +23,6 @@ from whatsthedamage.models.api.responses import (
     CategoryMonthTransactionsApiResponse,
     MonthData,
     CategoryData,
-    TransactionDetail,
 )
 from whatsthedamage.services.interfaces import (
     IIdMappingService,
@@ -192,7 +193,7 @@ class DrilldownResponseService:
             )
 
             categories_list.append(CategoryData(
-                category=category,
+                category_id=category,
                 total=total_dict,
                 row_id=row_id,
                 category_url=category_url
@@ -419,23 +420,26 @@ class DrilldownResponseService:
                 return fallback
         return value
 
-    def _build_item_total(self, first_row: AggregatedRow, rows: List[AggregatedRow]) -> Dict[str, Any]:
-        """Build total dictionary for an item, aggregating if multiple rows.
+    def _build_item_total(self, first_row: AggregatedRow, rows: List[AggregatedRow]) -> DisplayRawField:
+        """Build total DisplayRawField for an item, aggregating if multiple rows.
 
         Args:
             first_row: First row in the group
             rows: All rows in the group
 
         Returns:
-            Total dictionary with 'display' and 'raw' keys
+            DisplayRawField with formatted display and raw value
         """
         if len(rows) > 1:
             total_raw = sum(getattr(row.total, 'raw', 0.0) for row in rows)
-            return {'display': f"${total_raw:.2f}", 'raw': total_raw}
-        return {
-            'display': getattr(first_row.total, 'display', str(first_row.total)),
-            'raw': getattr(first_row.total, 'raw', 0.0)
-        }
+            return DisplayRawField(
+                display=f"${total_raw:.2f}",
+                raw=total_raw
+            )
+        return DisplayRawField(
+            display=getattr(first_row.total, 'display', str(first_row.total)),
+            raw=getattr(first_row.total, 'raw', 0.0)
+        )
 
     def _build_drilldown_item_url(
         self,
@@ -697,7 +701,7 @@ class DrilldownResponseService:
         self,
         result_id: str,
         account_number: Optional[str],
-        dt_response: Optional[AccountResponse]
+        dt_response: Optional[Account]
     ) -> Dict[str, Any]:
         """Generate all drill-down URLs for a result using ID mapping.
 
@@ -707,7 +711,7 @@ class DrilldownResponseService:
         Args:
             result_id: Processing result ID
             account_number: Original account number
-            dt_response: AccountResponse containing the data
+            dt_response: Account containing the data
 
         Returns:
             Dictionary containing pre-generated URLs for all drill-down levels
@@ -1044,14 +1048,24 @@ class DrilldownResponseService:
         transactions: List[TransactionDetail] = []
         for tx_dict in transactions_dicts:
             # _format_transaction_detail returns a dict with date, amount, merchant, row_id
-            # We need to convert it to TransactionDetail format
-            # Note: TransactionDetail expects date.timestamp as string, so convert int to str
-            timestamp = tx_dict.get('date', {}).get('timestamp', '')
-            if isinstance(timestamp, int):
+            # We need to convert it to TransactionDetail format with proper types
+            date_data = tx_dict.get('date', {})
+            amount_data = tx_dict.get('amount', {})
+
+            # Handle timestamp - can be int or str
+            timestamp = date_data.get('timestamp', '')
+            if timestamp and isinstance(timestamp, int):
                 timestamp = str(timestamp)
+
             transactions.append(TransactionDetail(
-                date={'display': tx_dict.get('date', {}).get('display', ''), 'timestamp': timestamp},
-                amount={'display': tx_dict.get('amount', {}).get('display', ''), 'raw': tx_dict.get('amount', {}).get('raw', 0.0)},
+                date=DateField(
+                    display=date_data.get('display', ''),
+                    timestamp=int(timestamp) if timestamp else 0
+                ),
+                amount=DisplayRawField(
+                    display=amount_data.get('display', ''),
+                    raw=amount_data.get('raw', 0.0)
+                ),
                 merchant=tx_dict.get('merchant', ''),
                 notice=tx_dict.get('notice', None),
                 currency='',
@@ -1059,7 +1073,8 @@ class DrilldownResponseService:
                 confidence=None,
                 row_id=tx_dict.get('row_id', ''),
                 category_id=original_category,
-                month_id=month_id
+                month_id=month_id,
+                account=''  # Account field is required by TransactionDetail
             ))
 
         highlights_dict = self._extract_highlights_dict(cached_result)

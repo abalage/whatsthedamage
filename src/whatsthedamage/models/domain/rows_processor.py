@@ -1,6 +1,6 @@
 from typing import Optional, Dict, List, Union, Tuple, TYPE_CHECKING
 from whatsthedamage.config.config import AppContext, EnricherPatternSets
-from whatsthedamage.models.domain.dt_models import AccountResponse, DateField
+from whatsthedamage.models.common.display_fields import DateField
 from whatsthedamage.models.domain.csv_row import CsvRow
 from whatsthedamage.models.domain.row_enrichment import RowEnrichment
 from whatsthedamage.models.domain.row_enrichment_ml import RowEnrichmentML
@@ -11,6 +11,7 @@ from whatsthedamage.utils.logging import get_logger
 
 if TYPE_CHECKING:
     from whatsthedamage.services.text_correction_service import TextCorrectionService
+    from whatsthedamage.models.domain.account import Account
 
 logger = get_logger(__name__)
 
@@ -76,9 +77,9 @@ class RowsProcessor:
         logger.info(f"Cleaned {len(rows)} rows successfully")
         return rows
 
-    def process_rows(self, rows: List[CsvRow]) -> Dict[str, AccountResponse]:
+    def process_rows(self, rows: List[CsvRow]) -> Dict[str, "Account"]:
         """
-        Processes a list of CsvRow objects and returns per-account AccountResponse structures.
+        Processes a list of CsvRow objects and returns per-account Account structures.
 
         Groups rows by account first, then processes each account independently.
         Each account gets its own Balance and Total Spendings calculations.
@@ -89,7 +90,7 @@ class RowsProcessor:
             rows (List[CsvRow]): List of CsvRow objects (potentially from multiple accounts).
 
         Returns:
-            Dict[str, AccountResponse]: Mapping of account_id → AccountResponse.
+            Dict[str, Account]: Mapping of account_id → Account.
         """
         # Local import to avoid circular dependency
         from whatsthedamage.view.row_printer import print_categorized_rows, print_training_data
@@ -101,7 +102,7 @@ class RowsProcessor:
         row_filter = RowFilter(rows, self.context)
         rows_by_account = row_filter.filter_by_account()
 
-        responses_by_account: Dict[str, AccountResponse] = {}
+        responses_by_account: Dict[str, "Account"] = {}
 
         # Process each account independently
         for account_id, account_rows in rows_by_account.items():
@@ -109,9 +110,16 @@ class RowsProcessor:
             filtered_sets = self._filter_rows(account_rows)
 
             # Initialize the builder with all necessary fields
+            # Format account ID by adding dashes every 8 digits
+            formatted_account_id = '-'.join(
+                account_id[i:i+8] for i in range(0, len(account_id), 8)
+            )
+
             builder = AccountResponseBuilder(
                 date_format=self._date_attribute_format,
-                account=account_id,
+                id=account_id,
+                name="",  # Will be empty for now, can be set later
+                formatted_id=formatted_account_id,
                 currency=account_rows[0].currency if account_rows else ""
             )
 

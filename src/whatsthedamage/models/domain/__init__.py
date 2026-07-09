@@ -10,17 +10,19 @@ from whatsthedamage.models.domain.csv_processor import CSVProcessor
 
 # Aggregation models
 from whatsthedamage.models.domain.dt_models import (
-    AccountResponse,
     AggregatedRow,
-    DetailRow,
-    DateField,
-    DisplayRawField,
+    TransactionDetail,
+    DetailRow,  # Alias to TransactionDetail
     ProcessingResponse,
     SummaryData,
     CellHighlight,
     StatisticalMetadata,
     DetailedResponse,
 )
+from whatsthedamage.models.domain.account import Account
+
+# Resolve forward references for Account model
+Account.model_rebuild()
 
 # Builder
 from whatsthedamage.models.domain.dt_response_builder import AccountResponseBuilder
@@ -51,11 +53,10 @@ __all__ = [
     'CsvFileHandler',
     'CSVProcessor',
     # Aggregation models
-    'AccountResponse',
+    'Account',
     'AggregatedRow',
     'DetailRow',
-    'DateField',
-    'DisplayRawField',
+    'TransactionDetail',
     'ProcessingResponse',
     'SummaryData',
     'CellHighlight',

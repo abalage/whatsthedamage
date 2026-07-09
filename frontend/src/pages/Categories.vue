@@ -6,7 +6,7 @@ import { useFeedbackStore } from '../stores/feedback.js'
 import { useStatisticalStore } from '../stores/statistical.js'
 import { useCategoriesStore } from '../stores/categories.js'
 import { useGettext } from 'vue3-gettext'
-import type { ResultsApiResponse, AccountDataResponse } from '../types/api.js'
+import type { ResultsApiResponse, Account } from '../types/api.js'
 import ButtonComponent from '../components/ui/ButtonComponent.vue'
 import CardComponent from '../components/ui/CardComponent.vue'
 import VueDataTable from '../components/data/VueDataTable.vue'
@@ -17,8 +17,7 @@ import { formatMonthYear } from '../js/dateUtils.js'
 
 const { $gettext } = useGettext()
 
-// Import AccountData type from API types
-type AccountData = AccountDataResponse
+
 
 const feedback = useFeedbackStore()
 const statisticalStore = useStatisticalStore()
@@ -49,8 +48,8 @@ const loadResults = async () => {
     error.value = null
 
     // Initialize highlights in Pinia store
-    if (response.accounts_data?.highlights) {
-      statisticalStore.setHighlights(response.accounts_data.highlights)
+    if (response.highlights) {
+      statisticalStore.setHighlights(response.highlights)
     }
 
     isLoading.value = false
@@ -62,7 +61,7 @@ const loadResults = async () => {
 }
 
 // Build column definitions for an account's table
-function buildTableColumns(account: AccountData): Column[] {
+function buildTableColumns(account: Account): Column[] {
   const accountId = account.id
 
   const columns: Column[] = [
@@ -132,7 +131,7 @@ function buildTableColumns(account: AccountData): Column[] {
 }
 
 // Build table data for an account
-function buildTableData(account: AccountData): Record<string, unknown>[] {
+function buildTableData(account: Account): Record<string, unknown>[] {
   const data: Record<string, unknown>[] = []
   const catMonthMap = buildCategoryMonthMap(account)
   const months = getMonthsForAccount(account)
@@ -170,19 +169,19 @@ function getAccountHighlights(): Record<string, string[]> {
   return statisticalStore.highlights || {}
 }
 
-const getMonthsForAccount = (account: AccountData) => {
+const getMonthsForAccount = (account: Account) => {
   const monthMap = new Map<number, number>()
-  for (const row of account.dt_response.data) {
+  for (const row of account.data) {
     const monthField = row.date
     monthMap.set(monthField.timestamp, monthField.timestamp)
   }
   return Array.from(monthMap.values()).sort((a, b) => b - a)  
 }
 
-const buildCategoryMonthMap = (account: AccountData) => {
+const buildCategoryMonthMap = (account: Account) => {
   const catMonthMap: Record<string, Record<number, any>> = {}
 
-  for (const row of account.dt_response.data) {
+  for (const row of account.data) {
     if (!catMonthMap[row.category_id]) {
       catMonthMap[row.category_id] = {}
     }
@@ -267,7 +266,7 @@ onMounted(() => {
         </div>
       </div>
 
-      <div v-for="account in resultsData.accounts_data.accounts" :key="account.id" class="mb-5">
+      <div v-for="account in resultsData.accounts" :key="account.id" class="mb-5">
         <CardComponent :title="`${$gettext('Account')}: ${account.formatted_id} (${account.currency})`" class="mb-4" width="fit-content">
             <VueDataTable
               :id="`datatable-${account.id}`"

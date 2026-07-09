@@ -28,7 +28,6 @@ class MockProcessingService:
             ProcessingResponse object matching ProcessingService.process_with_details output
         """
         from whatsthedamage.models.domain.dt_models import (
-            AccountResponse,
             AggregatedRow,
             DisplayRawField,
             DateField,
@@ -36,6 +35,7 @@ class MockProcessingService:
             ProcessingResponse,
             StatisticalMetadata
         )
+        from whatsthedamage.models.domain.account import Account
 
         if rows is None:
             rows = []
@@ -63,8 +63,9 @@ class MockProcessingService:
                 details=details
             ))
 
-        # Create real AccountResponse
-        dt_response = AccountResponse(
+        # Create real Account
+        dt_response = Account(
+            id="",
             data=aggregated_rows,
             currency="USD"
         )

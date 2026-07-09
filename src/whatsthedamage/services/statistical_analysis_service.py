@@ -9,7 +9,8 @@ import json
 from typing import Dict, List, Tuple, Optional, Any
 from enum import Enum
 from pathlib import Path
-from whatsthedamage.models.domain.dt_models import CellHighlight, StatisticalMetadata, AccountResponse, AggregatedRow, SummaryData, ProcessingResponse
+from whatsthedamage.models.domain.dt_models import CellHighlight, StatisticalMetadata, AggregatedRow, SummaryData, ProcessingResponse
+from whatsthedamage.models.domain.account import Account
 from whatsthedamage.models.api.responses import RecalculateApiResponse
 from whatsthedamage.models.domain.statistical_algorithms import (
     StatisticalAlgorithm,
@@ -171,11 +172,11 @@ class StatisticalAnalysisService(IStatisticalAnalysisService):
             'user': self.user_exclusions
         }
 
-    def _build_month_to_rows_map(self, dt_response: AccountResponse) -> Dict[str, List[AggregatedRow]]:
+    def _build_month_to_rows_map(self, dt_response: Account) -> Dict[str, List[AggregatedRow]]:
         """Build a mapping of month displays to their corresponding rows.
 
         Args:
-            dt_response: AccountResponse containing aggregated rows
+            dt_response: Account containing aggregated rows
 
         Returns:
             Dictionary mapping month_display to list of AggregatedRow objects
@@ -201,7 +202,7 @@ class StatisticalAnalysisService(IStatisticalAnalysisService):
         """
         return set(self.get_exclusions())
 
-    def _is_cell_excluded(self, month_display: str, category: str, dt_response: AccountResponse, month_map: Optional[Dict[str, List[AggregatedRow]]] = None) -> bool:
+    def _is_cell_excluded(self, month_display: str, category: str, dt_response: Account, month_map: Optional[Dict[str, List[AggregatedRow]]] = None) -> bool:
         """Check if a specific cell (month, category) should be excluded.
 
         A cell is excluded if:
@@ -211,7 +212,7 @@ class StatisticalAnalysisService(IStatisticalAnalysisService):
         Args:
             month_display: The month display string
             category: The category name
-            dt_response: AccountResponse containing all rows
+            dt_response: Account containing all rows
             month_map: Optional pre-built month to rows mapping for performance optimization
 
         Returns:
@@ -278,11 +279,11 @@ class StatisticalAnalysisService(IStatisticalAnalysisService):
             highlight_types=[highlight_type]
         )
 
-    def _create_row_index(self, dt_response: AccountResponse) -> Dict[Tuple[str, str], str]:
+    def _create_row_index(self, dt_response: Account) -> Dict[Tuple[str, str], str]:
         """Create an efficient lookup index for rows by (month_display, category) or (category, month_display).
 
         Args:
-            dt_response: AccountResponse containing the actual rows with UUIDs
+            dt_response: Account containing the actual rows with UUIDs
 
         Returns:
             Dictionary mapping (month_display, category) tuples to row_ids for COLUMNS direction,
@@ -304,7 +305,7 @@ class StatisticalAnalysisService(IStatisticalAnalysisService):
         algo: StatisticalAlgorithm,
         algo_direction: AnalysisDirection,
         algo_transformed_data: List[Tuple[str, Dict[str, float]]],
-        dt_response: AccountResponse
+        dt_response: Account
     ) -> List[CellHighlight]:
         """Create highlights for a single algorithm using efficient row lookup.
 
@@ -314,7 +315,7 @@ class StatisticalAnalysisService(IStatisticalAnalysisService):
             algo: The algorithm instance
             algo_direction: The direction to use for analysis
             algo_transformed_data: Transformed data for analysis
-            dt_response: AccountResponse containing the actual rows with UUIDs
+            dt_response: Account containing the actual rows with UUIDs
 
         Returns:
             List of CellHighlight objects with direct UUID references
@@ -347,7 +348,7 @@ class StatisticalAnalysisService(IStatisticalAnalysisService):
         summary: SummaryData,
         direction: AnalysisDirection = AnalysisDirection.COLUMNS,
         algorithms: List[str] | None = None,
-        dt_response: Optional[AccountResponse] = None
+        dt_response: Optional[Account] = None
     ) -> List[CellHighlight]:
         """Get highlights for the summary data with flexible analysis direction.
 
@@ -357,7 +358,7 @@ class StatisticalAnalysisService(IStatisticalAnalysisService):
         :param direction: Analysis direction (COLUMNS or ROWS), default COLUMNS
         :param algorithms: Optional list of algorithm names to use (overrides enabled_algorithms)
         :param use_default_directions: If True, use each algorithm's default direction instead of the provided direction
-        :param dt_response: AccountResponse needed for UUID lookup
+        :param dt_response: Account needed for UUID lookup
         :return: List of CellHighlight
         """
         highlights: List[CellHighlight] = []
@@ -375,14 +376,14 @@ class StatisticalAnalysisService(IStatisticalAnalysisService):
 
         return highlights
 
-    def _get_excluded_cell_highlights(self, dt_response: AccountResponse) -> List[CellHighlight]:
+    def _get_excluded_cell_highlights(self, dt_response: Account) -> List[CellHighlight]:
         """Get highlights for cells that should be excluded from statistical analysis.
 
         Identifies cells that are either calculated rows or belong to excluded categories.
         Uses caching mechanism for better performance by building month map once.
 
         Args:
-            dt_response: Original AccountResponse with all rows
+            dt_response: Original Account with all rows
 
         Returns:
             List of CellHighlight objects with type 'excluded'
@@ -407,17 +408,17 @@ class StatisticalAnalysisService(IStatisticalAnalysisService):
         return excluded_highlights
 
 
-    def _filter_data_for_analysis(self, dt_response: AccountResponse) -> AccountResponse:
-        """Filter AccountResponse for statistical analysis in a single pass.
+    def _filter_data_for_analysis(self, dt_response: Account) -> Account:
+        """Filter Account for statistical analysis in a single pass.
 
         Applies all filtering criteria (calculated rows, excluded categories, expenses)
         in one iteration to improve performance and reduce object creation overhead.
 
         Args:
-            dt_response: Original AccountResponse with all rows
+            dt_response: Original Account with all rows
 
         Returns:
-            AccountResponse with filtered rows ready for analysis
+            Account with filtered rows ready for analysis
         """
         # Get excluded categories
         excluded_categories = set(self.get_exclusions())
@@ -438,23 +439,23 @@ class StatisticalAnalysisService(IStatisticalAnalysisService):
 
             filtered_rows.append(row)
 
-        return AccountResponse(
+        return Account(
             data=filtered_rows,
-            account=dt_response.account,
+            id=dt_response.id,
             currency=dt_response.currency
         )
 
     def _extract_summary_from_response(
         self,
-        dt_response: AccountResponse
+        dt_response: Account
     ) -> SummaryData:
-        """Extract summary data from AccountResponse for statistical analysis.
+        """Extract summary data from Account for statistical analysis.
 
         Uses the canonical SummaryData.from_datatable_response method to extract
         summary data, ensuring consistency across the codebase.
 
         Args:
-            dt_response: AccountResponse containing aggregated transaction data
+            dt_response: Account containing aggregated transaction data
 
         Returns:
             SummaryData object containing the nested summary for analysis
@@ -470,14 +471,14 @@ class StatisticalAnalysisService(IStatisticalAnalysisService):
 
     def compute_statistical_metadata(
         self,
-        account_responses: Dict[str, AccountResponse],
+        account_responses: Dict[str, Account],
         algorithms: List[str] | None = None,
         direction: str | None = None,
     ) -> StatisticalMetadata:
         """Compute statistical metadata including highlights for the given responses.
 
         Args:
-            account_responses: Dictionary mapping account IDs to AccountResponse objects
+            account_responses: Dictionary mapping account IDs to Account objects
             algorithms: Optional list of algorithm names to use (if None, use enabled_algorithms)
             direction: Optional analysis direction (if None, use default behavior)
             use_default_directions: If True, use each algorithm's default direction

@@ -159,7 +159,7 @@ class IdMappingService(IIdMappingService):
 
         Args:
             result_id: Processing result ID
-            dt_responses_by_account: Dictionary of AccountResponse by account
+            dt_responses_by_account: Dictionary of Account by account
         """
         for account_number, dt_response in dt_responses_by_account.items():
             # Create account mapping

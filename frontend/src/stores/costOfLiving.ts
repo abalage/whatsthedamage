@@ -9,7 +9,7 @@
  */
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
-import type { ResultsApiResponse, AggregatedRow } from '../types/api.js';
+import type { ResultsApiResponse, AggregatedRow, Account } from '../types/api.js';
 import type { CostOfLivingSettings } from '../types/costOfLiving.js';
 import { useCategoriesStore } from './categories.js';
 
@@ -40,14 +40,14 @@ export const useCostOfLivingStore = defineStore('costOfLiving', () => {
   const availableCategoryNames = computed<string[]>(() => {
     if (!resultsData.value || !selectedAccountId.value) return [];
 
-    const account = resultsData.value.accounts_data.accounts.find(
+    const account = resultsData.value.accounts.find(
       (a) => a.id === selectedAccountId.value
     );
 
     if (!account) return [];
 
     const categories: Set<string> = new Set();
-    for (const row of account.dt_response.data) {
+    for (const row of account.data) {
       if (!row.is_calculated) {
         categories.add(row.category_id);
       }
@@ -59,7 +59,7 @@ export const useCostOfLivingStore = defineStore('costOfLiving', () => {
   const months = computed<{ display: string; timestamp: number }[]>(() => {
     if (!resultsData.value || !selectedAccountId.value) return [];
 
-    const account = resultsData.value.accounts_data.accounts.find(
+    const account = resultsData.value.accounts.find(
       (a) => a.id === selectedAccountId.value
     );
 
@@ -67,7 +67,7 @@ export const useCostOfLivingStore = defineStore('costOfLiving', () => {
 
     // Extract unique months from account data
     const monthMap = new Map<number, { display: string; timestamp: number }>();
-    for (const row of account.dt_response.data) {
+    for (const row of account.data) {
       monthMap.set(row.date.timestamp, {
         display: row.date.display,
         timestamp: row.date.timestamp
@@ -93,11 +93,11 @@ export const useCostOfLivingStore = defineStore('costOfLiving', () => {
   } | null>(() => {
     if (!resultsData.value || !selectedAccountId.value) return null;
 
-    const account = resultsData.value.accounts_data.accounts.find(
+    const account = resultsData.value.accounts.find(
       (a) => a.id === selectedAccountId.value
-    ) as { id: string; name: string; dt_response: { data: AggregatedRow[]; currency: string } } | undefined;
+    ) as Account | undefined;
 
-    if (!account || account.dt_response.data.length === ZERO) return null;
+    if (!account || account.data.length === ZERO) return null;
 
     // Create data for each month
     const monthsData = months.value.map(month => {
@@ -105,7 +105,7 @@ export const useCostOfLivingStore = defineStore('costOfLiving', () => {
       const categories: Record<string, { amount: number; display: string }> = {};
 
       // Find all rows for this month
-      for (const row of account.dt_response.data) {
+      for (const row of account.data) {
         if (row.date.timestamp === month.timestamp && !row.is_calculated) {
           const amount = typeof row.total.raw === 'number'
             ? row.total.raw
@@ -138,8 +138,8 @@ export const useCostOfLivingStore = defineStore('costOfLiving', () => {
       ? totals.reduce((a, b) => a + b, ZERO) / totals.length
       : ZERO;
 
-    // Get currency from account's dt_response
-    const currency = account.dt_response.currency ?? '';
+    // Get currency from account
+    const currency = account.currency ?? '';
 
     return {
       months: monthsData,
@@ -154,8 +154,8 @@ export const useCostOfLivingStore = defineStore('costOfLiving', () => {
   const setResultsData = (data: ResultsApiResponse): void => {
     resultsData.value = data;
     // Select first account by default
-    if (data.accounts_data.accounts.length > ZERO) {
-      selectedAccountId.value = data.accounts_data.accounts[ZERO].id;
+    if (data.accounts.length > ZERO) {
+      selectedAccountId.value = data.accounts[ZERO].id;
     }
   };
 

@@ -9,7 +9,7 @@ import Statistics from '../pages/Statistics.vue'
 import CategoryMonthsList from '../pages/CategoryMonthsList.vue'
 import MonthCategoriesList from '../pages/MonthCategoriesList.vue'
 import CategoryMonthTransactions from '../pages/CategoryMonthTransactions.vue'
-import CostOfLiving from '../pages/CostOfLiving.vue'
+import PivotTable from '../pages/PivotTable.vue'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -70,9 +70,9 @@ const router = createRouter({
       component: Statistics
     },
     {
-      path: '/results/:resultId/cost-of-living',
-      name: 'cost-of-living',
-      component: CostOfLiving,
+      path: '/results/:resultId/pivot',
+      name: 'pivot',
+      component: PivotTable,
       props: true
     }
   ]

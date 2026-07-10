@@ -235,5 +235,6 @@ export async function fetchCategories(): Promise<CategoryDefinition[]> {
  * @returns Promise with array of CategoryDefinition objects
  */
 export async function fetchCostOfLivingCategories(): Promise<CategoryDefinition[]> {
+  console.log('Fetching cost of living categories...');
   return fetchWithErrorHandling<CategoryDefinition[]>(getApiUrl('/categories/cost-of-living'));
 }

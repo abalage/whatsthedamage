@@ -36,18 +36,18 @@ const loadData = async () => {
     isLoading.value = false;
     return;
   }
-  
+
   try {
     const response = await fetchResults(resultId.value);
     await categoriesStore.loadCostOfLivingCategories();
     pivotStore.setResultsData(response);
     pivotStore.loadSettings();
-    
+
     // If no account is selected, select the first one
     if (!selectedAccountId.value && response.accounts.length > ZERO) {
       pivotStore.setSelectedAccountId(response.accounts[ZERO].id);
     }
-    
+
     isLoading.value = false;
   } catch (err) {
     error.value = err instanceof Error ? err.message : 'Failed to load data';
@@ -67,12 +67,18 @@ const selectedCategories = computed(() => pivotStore.selectedCategoryIds);
 const availableCategories = computed(() => pivotStore.availableCategoryNames);
 const accounts = computed<Account[]>(() => resultsData.value?.accounts || []);
 
-const monthlyBreakdown = computed(() => {
+// Chart data format for BarChart with stacked categories
+const chartData = computed(() => {
   if (!pivotData.value) return [];
   return pivotData.value.months.map(month => ({
     label: formatMonthYear(month.month_timestamp),
-    value: month.total,
-    timestamp: month.month_timestamp
+    timestamp: month.month_timestamp,
+    values: Object.fromEntries(
+      Object.entries(month.categories).map(([catId, data]) => [
+        catId,
+        data?.amount || ZERO
+      ])
+    )
   }));
 });
 
@@ -80,6 +86,14 @@ const trendlineValue = computed(() => pivotData.value?.mean ?? ZERO);
 
 // Safe access to months for DataTable footer calculations
 const safeMonths = computed(() => pivotData.value?.months || []);
+
+// Handle bar selection from BarChart
+const handleBarSelected = (payload: { index: number; label: string; values: Record<string, number>; total: number }) => {
+  console.log('Bar selected:', payload);
+  // Extension point for future functionality
+  // payload contains: index, label, values (all categories), total
+  // Could show additional details, filter data, etc.
+};
 
 // Use gettext directly on category IDs - translations are already configured
 const getCategoryDisplayName = (categoryId: string): string => $gettext(categoryId);
@@ -221,11 +235,11 @@ onMounted(() => loadData());
 
       <!-- Category Selector -->
       <PivotCategorySelector v-if="availableCategories.length > 0" />
-      
+
       <div v-else class="alert alert-warning">
         <i class="bi bi-exclamation-triangle-fill me-2"></i> {{ $gettext('No categories found in the data') }}
       </div>
-      
+
       <div v-if="selectedCategories.length === 0 && availableCategories.length > 0" class="alert alert-info mb-4">
         <i class="bi bi-info-circle me-2"></i> {{ $gettext('Please select at least one category to see calculations') }}
       </div>
@@ -262,13 +276,21 @@ onMounted(() => loadData());
       <!-- Bar Chart -->
       <div v-if="pivotData && selectedCategories.length > 0" class="mb-4">
         <CardComponent :title="$gettext('Monthly breakdown of selected categories')" class="mb-4" width="auto">
-          <h4 class="mb-0"><i class="bi bi-bar-chart me-2"></i> {{ $gettext('Summaries of selected categories') }}</h4>
           <div class="form-check form-switch mb-0">
             <input id="showTrendline" v-model="pivotStore.showTrendline" class="form-check-input" type="checkbox" />
             <label class="form-check-label" for="showTrendline">{{ $gettext('Show trendline') }}</label>
           </div>
         <div class="card-body">
-          <div class="chart-wrapper"><BarChart :data="monthlyBreakdown" :show-trendline="pivotStore.showTrendline"/></div>
+          <div class="chart-wrapper">
+            <BarChart
+              :data="chartData"
+              :categories="selectedCategories.map(id => ({ id, label: getCategoryDisplayName(id) }))"
+              :title="$gettext('Summaries of selected categories')"
+              :show-trendline="pivotStore.showTrendline"
+              :selectable="true"
+              @bar-selected="handleBarSelected"
+            />
+          </div>
         </div>
         </CardComponent>
       </div>

@@ -87,11 +87,11 @@ const trendlineValue = computed(() => pivotData.value?.mean ?? ZERO);
 // Safe access to months for DataTable footer calculations
 const safeMonths = computed(() => pivotData.value?.months || []);
 
-// Handle bar selection from BarChart
-const handleBarSelected = (payload: { index: number; label: string; values: Record<string, number>; total: number }) => {
-  console.log('Bar selected:', payload);
+// Handle selection changes from BarChart
+const handleSelectionChanged = (payload: { selectedIndices: number[]; selectedItems: Array<{ index: number; label: string; values: Record<string, number>; total: number }>; changedIndex: number; isSelected: boolean }) => {
+  console.log('Selection changed:', payload);
   // Extension point for future functionality
-  // payload contains: index, label, values (all categories), total
+  // payload contains: selectedIndices, selectedItems, changedIndex, isSelected
   // Could show additional details, filter data, etc.
 };
 
@@ -288,7 +288,7 @@ onMounted(() => loadData());
               :title="$gettext('Summaries of selected categories')"
               :show-trendline="pivotStore.showTrendline"
               :selectable="true"
-              @bar-selected="handleBarSelected"
+              @selection-changed="handleSelectionChanged"
             />
           </div>
         </div>

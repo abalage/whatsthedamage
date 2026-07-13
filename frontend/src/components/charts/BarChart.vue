@@ -55,16 +55,16 @@ interface BarChartProps {
 
 const props = defineProps<BarChartProps>();
 
-const emit = defineEmits(['bar-selected']);
+const emit = defineEmits(['selection-changed']);
 
-// Track selected bar index (X-axis position)
-const selectedBarIndex = ref<number | null>(null);
+// Track selected bar indices (X-axis positions)
+const selectedBarIndices = ref<number[]>([]);
 
 // Reference to the chart instance
 const chartRef = ref<{ chart: Chart } | null>(null);
 
 // Watch for selection changes and trigger chart update
-watch(selectedBarIndex, () => {
+watch(selectedBarIndices, () => {
   if (chartRef.value?.chart) {
     nextTick(() => {
       chartRef.value?.chart.update();
@@ -146,38 +146,46 @@ const chartData = computed<ChartData<'bar'>>(() => {
   };
 });
 
-// Handle bar selection - selects the entire stacked bar at X position
+// Handle bar selection - selects/deselects the entire stacked bar at X position
 const handleChartClick = (event: unknown, elements: ActiveElement[]) => {
   if (!props.selectable || elements.length === ZERO) return;
 
   const element = elements[ZERO];
   if (element && element.index !== undefined) {
     const barIndex = element.index;
+    const currentSelection = [...selectedBarIndices.value];
+    const isSelected = currentSelection.includes(barIndex);
 
-    // Toggle selection - if clicking the same bar, deselect it
-    if (selectedBarIndex.value === barIndex) {
-      selectedBarIndex.value = null;
+    if (isSelected) {
+      selectedBarIndices.value = currentSelection.filter(i => i !== barIndex);
     } else {
-      selectedBarIndex.value = barIndex;
+      selectedBarIndices.value = [...currentSelection, barIndex];
+    }
 
-      // Emit selection event with all category values for this bar
-      const dataItem = props.data[barIndex];
+    // Build selected items data
+    const selectedItems = selectedBarIndices.value.map(idx => {
+      const item = props.data[idx];
       const values: Record<string, number> = {};
       let total = ZERO;
-
       props.categories.forEach(category => {
-        const value = dataItem.values[category.id] || ZERO;
+        const value = item.values[category.id] || ZERO;
         values[category.id] = value;
         total += value;
       });
-
-      emit('bar-selected', {
-        index: barIndex,
-        label: dataItem.label,
+      return {
+        index: idx,
+        label: item.label,
         values,
         total
-      });
-    }
+      };
+    });
+
+    emit('selection-changed', {
+      selectedIndices: selectedBarIndices.value,
+      selectedItems,
+      changedIndex: barIndex,
+      isSelected: !isSelected
+    });
   }
 };
 
@@ -235,13 +243,13 @@ const chartOptions = computed<ChartOptions<'bar'>>(() => ({
       ticks: {
         display: true,
         color: (context: { index: number }) => {
-          return context.index === selectedBarIndex.value ? SELECTED_LABEL_COLOR : NORMAL_LABEL_COLOR;
+          return selectedBarIndices.value.includes(context.index) ? SELECTED_LABEL_COLOR : NORMAL_LABEL_COLOR;
         },
         font: (context: { index: number }) => {
           return {
             size: 12,
             family: 'sans-serif',
-            weight: context.index === selectedBarIndex.value ? 'bold' : 'normal'
+            weight: selectedBarIndices.value.includes(context.index) ? 'bold' : 'normal'
           };
         }
       }

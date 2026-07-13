@@ -1,23 +1,23 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { useGettext } from 'vue3-gettext';
-import { useCostOfLivingStore } from '../stores/costOfLiving.js';
+import { usePivotStore } from '../stores/pivot.js';
 import CardComponent from '../components/ui/CardComponent.vue'
 
 const { $gettext } = useGettext();
-const costOfLivingStore = useCostOfLivingStore();
+const pivotStore = usePivotStore();
 
-const allCategories = computed(() => costOfLivingStore.availableCategoryNames);
-const selectedCategories = computed(() => costOfLivingStore.selectedCategoryIds);
-const defaultCategories = computed(() => costOfLivingStore.defaultCostOfLivingCategoryIds);
+const allCategories = computed(() => pivotStore.availableCategoryNames);
+const selectedCategories = computed(() => pivotStore.selectedCategoryIds);
+const defaultCategories = computed(() => pivotStore.defaultCostOfLivingCategoryIds);
 
 const isSelected = (categoryId: string): boolean => selectedCategories.value.includes(categoryId);
 const isDefaultCategory = (categoryId: string): boolean => defaultCategories.value.includes(categoryId);
 
-const toggleCategory = (categoryId: string) => costOfLivingStore.toggleCategory(categoryId);
-const selectAll = () => costOfLivingStore.selectAll();
-const clearAll = () => costOfLivingStore.clearAll();
-const resetToDefaults = () => costOfLivingStore.resetToDefaults();
+const toggleCategory = (categoryId: string) => pivotStore.toggleCategory(categoryId);
+const selectAll = () => pivotStore.selectAll();
+const clearAll = () => pivotStore.clearAll();
+const resetToDefaults = () => pivotStore.resetToDefaults();
 
 const selectedCount = computed(() => selectedCategories.value.length);
 const hasNoAllCategories = computed(() => allCategories.value.length === 0);
@@ -30,9 +30,9 @@ const getCategoryDisplayName = (categoryId: string): string => $gettext(category
 
 <template>
   <div class="category-selector mb-4">
-    <CardComponent :title="$gettext('Customize Categories')" class="mb-4" width="auto">
+    <CardComponent :title="$gettext('Select Categories')" class="mb-4" width="auto">
       <p class="text-muted small mb-3">
-        {{ $gettext('Select which categories to include in your Cost of Living calculation. Your selection is saved automatically.') }}
+        {{ $gettext('Select which categories to include in your calculation. Your selection is saved automatically. (Defaults to categories belonging to "Cost of Living")') }}
       </p>
 
       <div class="d-flex gap-2 mb-3 flex-wrap">
@@ -56,7 +56,7 @@ const getCategoryDisplayName = (categoryId: string): string => $gettext(category
         </span>
       </p>
 
-      <fieldset class="category-grid" aria-label="Cost of Living Categories">
+      <fieldset class="category-grid" aria-label="Selected Categories">
         <div
           v-for="category in allCategories.filter(c => c)"
           :key="category"

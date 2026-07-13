@@ -23,16 +23,9 @@ from whatsthedamage.models.api.responses import (
     RecalculateApiResponse,
 )
 
-# Common models
-from whatsthedamage.models.api.common import ProcessingMetadata
-from whatsthedamage.models.common.error_models import ErrorResponse
-
 __all__ = [
     # Request models
     'ProcessingRequest',
-    # Common models
-    'ProcessingMetadata',
-    'ErrorResponse',
     # Response models
     'ApiEnvelope',
     'DrilldownUrlInfo',

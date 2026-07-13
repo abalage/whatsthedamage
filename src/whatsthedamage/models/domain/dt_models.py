@@ -74,8 +74,7 @@ class AggregatedRow(BaseModel):
         total (DisplayRawField): Total amount for this category/period.
         date (DateField): Date period (month).
         details (list[TransactionDetail]): Individual transactions in this group.
-        is_calculated (bool): Whether this row was calculated (e.g., Balance,
-            Total).
+        is_calculated (bool): Whether this row was calculated (e.g., Balance, Total).
     """
     row_id: str = Field(description="Unique row identifier")
     category_id: str = Field(description="Category identifier")
@@ -97,8 +96,7 @@ class CellHighlight(BaseModel):
 
     Attributes:
         row_id (str): Unique identifier referencing AggregatedRow or DetailRow.
-        highlight_types (list[str]): List of highlight types for this row
-            (e.g., ['outlier', 'pareto']).
+        highlight_types (list[str]): List of highlight types for this row (e.g., ['outlier', 'pareto']).
     """
     row_id: str
     highlight_types: list[str]
@@ -118,8 +116,7 @@ class DetailedResponse(BaseModel):
     Returns transaction-level details grouped by category and month.
 
     Attributes:
-        data (list[AggregatedRow]): List of aggregated rows with transaction
-            details.
+        data (list[AggregatedRow]): List of aggregated rows with transaction details.
         metadata (ProcessingMetadata): Processing metadata.
     """
     data: list[AggregatedRow] = Field(
@@ -166,10 +163,7 @@ class SummaryData:
     providing a simplified format for formatting and display.
 
     Attributes:
-        summary (dict[str, dict[str, float]]): Dict mapping column headers to
-            category amounts. Column headers are typically time periods
-            (e.g., 'January', 'January (1704067200)').
-            Format: {column_header: {category: amount}}
+        summary (dict[str, dict[str, float]]): Dict mapping column headers to category amounts. Format: {column_header: {category: amount}}
         currency (str): Currency code (e.g., 'EUR', 'USD').
         account_id (str): Account identifier this summary belongs to.
     """
@@ -192,10 +186,8 @@ class SummaryData:
 
         Parameters:
             dt_response (Account): Account containing aggregated transaction data.
-            account_id (str | None): Optional account identifier (defaults to
-                dt_response.id).
-            include_calculated (bool): Whether to include calculated rows
-                (e.g., Balance, Total).
+            account_id (str | None): Optional account identifier (defaults to dt_response.id).
+            include_calculated (bool): Whether to include calculated rows (e.g., Balance, Total).
 
         Returns:
             SummaryData: SummaryData instance with extracted summary.
@@ -301,12 +293,9 @@ class ProcessingResponse:
 
     Attributes:
         result_id (str): Unique identifier for this processing result.
-        data (dict[str, Account]): Dictionary mapping account IDs to their
-            Account objects.
-        metadata (ProcessingMetadata): Processing metadata containing statistics
-            (processing_time, row_count, etc.).
-        statistical_metadata (StatisticalMetadata): Statistical analysis results
-            including highlights.
+        data (dict[str, Account]): Dictionary mapping account IDs to their Account objects.
+        metadata (ProcessingMetadata): Processing metadata containing statistics (processing_time, row_count, etc.).
+        statistical_metadata (StatisticalMetadata): Statistical analysis results including highlights.
     """
     result_id: str
     data: dict[str, "Account"]

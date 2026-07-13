@@ -71,7 +71,8 @@ def process_transactions() -> tuple[Response, int]:
 
             # Cache result for drilldown views
             cache_service = _get_cache_service()
-            cache_service.set(result.result_id, result)
+            cache_timeout = params.cache_ttl if params.cache_ttl is not None else None
+            cache_service.set(result.result_id, result, timeout=cache_timeout)
 
             processing_time = time.time() - start_time
 

@@ -22,27 +22,26 @@ if TYPE_CHECKING:
 
 class Account(BaseModel):
     """Unified account model used throughout the application.
-    
+
     This model consolidates AccountResponse (domain) and AccountDataResponse (API)
     into a single representation that serves both purposes.
-    
+
     Attributes:
         id: Account identifier (raw account number). Replaces 'account' field from
             AccountResponse and 'id' field from AccountDataResponse.
+
         name: Account display name. Previously only in AccountDataResponse.
         formatted_id: Formatted account ID for display (e.g., '1234-5678').
-            Previously only in AccountDataResponse.
         currency: Account currency code (e.g., 'USD', 'HUF', 'EUR').
         data: Aggregated transaction data for this account as a list of AggregatedRow.
-            Replaces dt_response['data'] from AccountDataResponse.
         result_id: Processing result identifier for context.
         metadata: Optional processing metadata.
-    
+
     Example usage::
-    
+
         from whatsthedamage.models.domain.account import Account
         from whatsthedamage.models.domain.dt_models import AggregatedRow
-        
+
         account = Account(
             id='1234567890123456',
             name='Primary Account',

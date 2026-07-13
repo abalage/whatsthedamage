@@ -27,6 +27,7 @@ class ApiEnvelope(BaseModel, Generic[T]):
     """Standard response envelope for API v2 endpoints.
 
     Provides a consistent structure for all API responses, enabling:
+
     - Standardized metadata (status, timestamp, request_id)
     - Hypermedia navigation (links)
     - Consistent error handling format

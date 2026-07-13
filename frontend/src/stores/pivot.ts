@@ -1,24 +1,24 @@
 /**
- * Pinia store for Cost of Living settings and calculations
+ * Pinia store for Pivot settings and calculations
  *
  * This store manages:
  * - Results data from backend
- * - User-selected categories for Cost of Living
+ * - User-selected categories for Pivot
  * - Chart display preferences
- * - Calculated Cost of Living data
+ * - Calculated Pivot data
  */
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
-import type { ResultsApiResponse, Account } from '../types/api.js';
-import type { CostOfLivingSettings } from '../types/costOfLiving.js';
-import { useCategoriesStore } from './categories.js';
+import type { ResultsApiResponse, Account } from '../types/api.ts';
+import type { PivotSettings } from '../types/pivot.ts';
+import { useCategoriesStore } from './categories.ts';
 
 // Constants
 const ZERO = 0;
 const ONE = 1;
 const NEGATIVE_ONE = -1;
 
-export const useCostOfLivingStore = defineStore('costOfLiving', () => {
+export const usePivotStore = defineStore('pivot', () => {
   const categoriesStore = useCategoriesStore();
 
   // Results data from backend (via fetchResults)
@@ -27,10 +27,10 @@ export const useCostOfLivingStore = defineStore('costOfLiving', () => {
   // Selected account ID (for multi-account support)
   const selectedAccountId = ref<string>('');
 
-  // Default cost of living categories from the categories store
+  // Default Pivot categories from the categories store
   const defaultCostOfLivingCategoryIds = computed(() => categoriesStore.costOfLivingCategories);
 
-  // User-selected categories for Cost of Living
+  // User-selected categories for Pivot
   const selectedCategoryIds = ref<string[]>([...defaultCostOfLivingCategoryIds.value]);
 
   // Chart display settings
@@ -79,8 +79,8 @@ export const useCostOfLivingStore = defineStore('costOfLiving', () => {
       .sort((a, b) => b.timestamp - a.timestamp);
   });
 
-  // Computed: Calculate Cost of Living data from selected categories
-  const costOfLivingData = computed<{
+  // Computed: Calculate Pivot data from selected categories
+  const pivotData = computed<{
     months: Array<{
       month: string;
       month_timestamp: number;
@@ -207,10 +207,10 @@ export const useCostOfLivingStore = defineStore('costOfLiving', () => {
 
   // ========== Persistence ==========
 
-  const STORAGE_KEY = 'costOfLivingSettings';
+  const STORAGE_KEY = 'PivotSettings';
 
   const saveSettings = (): void => {
-    const settings: CostOfLivingSettings = {
+    const settings: PivotSettings = {
       selectedCategoryIds: selectedCategoryIds.value,
       showTrendline: showTrendline.value,
       showDataLabels: true  // Currently not used but kept for future
@@ -222,11 +222,11 @@ export const useCostOfLivingStore = defineStore('costOfLiving', () => {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) {
       try {
-        const settings: CostOfLivingSettings = JSON.parse(saved);
+        const settings: PivotSettings = JSON.parse(saved);
         selectedCategoryIds.value = settings.selectedCategoryIds ?? [...defaultCostOfLivingCategoryIds.value];
         showTrendline.value = settings.showTrendline ?? true;
       } catch {
-        // Failed to load Cost of Living settings - silently ignore
+        // Failed to load Pivot settings - silently ignore
       }
     }
   };
@@ -241,7 +241,7 @@ export const useCostOfLivingStore = defineStore('costOfLiving', () => {
     // Computed
     availableCategoryNames,
     months,
-    costOfLivingData,
+    pivotData,
     defaultCostOfLivingCategoryIds,
 
     // Actions

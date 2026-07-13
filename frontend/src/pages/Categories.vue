@@ -253,8 +253,8 @@ onMounted(() => {
             class="mt-3 mb-3 me-2"
           />
           <ButtonComponent
-            :text="$gettext('Cost of Living')"
-            :to="{ name: 'cost-of-living', params: { resultId: resultId } }"
+            :text="$gettext('Pivot Table')"
+            :to="{ name: 'pivot', params: { resultId: resultId } }"
             variant="outline-secondary"
             class="mt-3 mb-3"
           />

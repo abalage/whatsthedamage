@@ -23,7 +23,7 @@ const handleConfigChange = (event: Event) => {
   formStore.handleFileChange(event, 'configFile')
 }
 
-type InputField = 'mlEnabled'
+type InputField = 'mlEnabled' | 'cacheEnabled'
 
 const handleInputChange = (field: InputField, value: string | boolean) => {
   formStore.handleInputChange(field, value)
@@ -105,6 +105,21 @@ onMounted(() => {
               </label>
               <div id="mlHelp" class="form-text">
                 {{ $gettext('Uncheck to use regular expressions instead of the ML model') }}
+              </div>
+            </div>
+            <div class="mb-3 form-check">
+              <input
+                id="cacheData"
+                v-model="formStore.formData.cacheEnabled"
+                type="checkbox"
+                class="form-check-input"
+                @change="handleCheckboxChange('cacheEnabled', $event)"
+              />
+              <label class="form-check-label" for="cacheData">
+                {{ $gettext('Cache data with TTL') }}
+              </label>
+              <div id="cacheHelp" class="form-text">
+                {{ $gettext('Checked: cache with default TTL (30 min). Unchecked: cache never expires.') }}
               </div>
             </div>
           </div>

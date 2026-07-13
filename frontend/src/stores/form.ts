@@ -16,6 +16,7 @@ interface FormData {
   categoryFilter: string
   verbose: boolean
   mlEnabled: boolean
+  cacheEnabled: boolean
 }
 
 /**
@@ -57,7 +58,8 @@ const useFormStore = defineStore('form', () => {
     endDate: '',
     categoryFilter: '',
     verbose: false,
-    mlEnabled: false
+    mlEnabled: false,
+    cacheEnabled: true
   })
 
   /**
@@ -91,6 +93,7 @@ const useFormStore = defineStore('form', () => {
     formData.categoryFilter = ''
     formData.verbose = false
     formData.mlEnabled = false
+    formData.cacheEnabled = true
     errors.value = {}
     isSubmitted.value = false
   }
@@ -217,6 +220,7 @@ const useFormStore = defineStore('form', () => {
 
       formDataObj.append('verbose', formData.verbose.toString())
       formDataObj.append('ml_enabled', formData.mlEnabled.toString())
+      formDataObj.append('cache_ttl', formData.cacheEnabled ? '1800' : '0')
 
       // Call API
       const response: DetailedResponse = await processTransactions(formDataObj)

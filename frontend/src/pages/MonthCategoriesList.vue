@@ -198,7 +198,7 @@ onMounted(() => {
 
     <!-- No Data State -->
     <div v-else class="alert alert-info">
-      {{ $gettext('No data found') }}
+      {{ $gettext('No data available') }}
     </div>
   </div>
 </template>

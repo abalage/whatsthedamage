@@ -192,14 +192,14 @@ onMounted(() => loadData());
       <ol class="breadcrumb">
         <li class="breadcrumb-item"><router-link to="/">{{ $gettext('Home') }}</router-link></li>
         <li class="breadcrumb-item"><router-link :to="{ name: 'results', query: { resultId: resultId } }">{{ $gettext('Categories') }}</router-link></li>
-        <li class="breadcrumb-item active" aria-current="page">{{ $gettext('Pivot table') }}</li>
+        <li class="breadcrumb-item active" aria-current="page">{{ $gettext('Pivot Table') }}</li>
       </ol>
     </nav>
 
     <!-- Loading -->
     <div v-if="isLoading" class="text-center my-5">
       <output class="spinner-border text-primary">
-        <span class="mt-2">{{ $gettext('Loading pivot data') }}...</span>
+        <span class="mt-2">{{ $gettext('Loading data') }}...</span>
       </output>
     </div>
 
@@ -213,7 +213,7 @@ onMounted(() => loadData());
     <div v-else-if="resultsData">
       <!-- Header -->
       <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1><i class="bi bi-house-heart me-2"></i> {{ $gettext('Pivot table') }}</h1>
+        <h1><i class="bi bi-house-heart me-2"></i> {{ $gettext('Pivot Table') }}</h1>
         <div class="d-flex gap-2">
           <router-link :to="{ name: 'results', query: { resultId: resultId } }" class="btn btn-secondary">
             <i class="bi bi-arrow-left me-1"></i> {{ $gettext('Back to Categories') }}
@@ -337,7 +337,7 @@ onMounted(() => loadData());
     </div>
 
     <div v-else class="alert alert-info">
-      <i class="bi bi-inbox me-2"></i> {{ $gettext('No Pivot data available') }}
+      <i class="bi bi-inbox me-2"></i> {{ $gettext('No data available') }}
     </div>
   </div>
 </template>

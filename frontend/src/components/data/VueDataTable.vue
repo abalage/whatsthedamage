@@ -700,7 +700,7 @@ defineExpose(tableApi)
           </tr>
           <tr v-if="paginatedData.length === 0">
             <td :colspan="columns.length" class="text-center text-muted py-4">
-              {{ $gettext('No data found') }}
+              {{ $gettext('No data available') }}
             </td>
           </tr>
         </tbody>

@@ -25,14 +25,6 @@ whatsthedamage.utils.date\_converter module
    :show-inheritance:
    :undoc-members:
 
-whatsthedamage.utils.flask\_locale module
------------------------------------------
-
-.. automodule:: whatsthedamage.utils.flask_locale
-   :members:
-   :show-inheritance:
-   :undoc-members:
-
 whatsthedamage.utils.logging module
 -----------------------------------
 

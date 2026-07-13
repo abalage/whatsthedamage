@@ -11,6 +11,4 @@ from whatsthedamage.models.common.processing_metadata import ProcessingMetadata
 __all__ = [
     'DisplayRawField',
     'DateField',
-    'ErrorResponse',
-    'ProcessingMetadata',
 ]

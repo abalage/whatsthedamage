@@ -1,7 +1,7 @@
 from typing import List, Dict, Callable, Optional, Any, TYPE_CHECKING
 from whatsthedamage.models.domain.csv_row import CsvRow
 from whatsthedamage.models.common.display_fields import DisplayRawField, DateField
-from whatsthedamage.models.domain.dt_models import TransactionDetail, AggregatedRow, DetailRow
+from whatsthedamage.models.domain.dt_models import AggregatedRow, DetailRow
 from whatsthedamage.utils.date_converter import DateConverter
 import uuid
 

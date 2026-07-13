@@ -10,7 +10,6 @@ from whatsthedamage.utils.date_converter import DateConverter
 from whatsthedamage.utils.logging import get_logger
 
 if TYPE_CHECKING:
-    from whatsthedamage.services.text_correction_service import TextCorrectionService
     from whatsthedamage.models.domain.account import Account
 
 logger = get_logger(__name__)

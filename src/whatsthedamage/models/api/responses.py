@@ -13,8 +13,7 @@ from typing import Dict, List, Optional, Any, Generic, TypeVar
 from datetime import datetime
 from whatsthedamage.models.domain.account import Account
 from whatsthedamage.models.domain.dt_models import TransactionDetail
-from whatsthedamage.models.common.display_fields import DisplayRawField, DateField
-from whatsthedamage.models.common.processing_metadata import ProcessingMetadata
+from whatsthedamage.models.common.display_fields import DisplayRawField
 
 
 # =============================================================================

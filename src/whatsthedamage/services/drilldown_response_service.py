@@ -11,12 +11,10 @@ Architecture Patterns:
 - Single Responsibility: Each method handles one specific drilldown type
 - DRY: Common highlight aggregation logic centralized
 """
-import datetime
 from typing import Any, Callable, Dict, List, Optional, Tuple, cast
 from whatsthedamage.models.domain.dt_models import ProcessingResponse, AggregatedRow, TransactionDetail
 from whatsthedamage.models.domain.account import Account
 from whatsthedamage.models.common.display_fields import DisplayRawField, DateField
-from whatsthedamage.utils.date_converter import DateConverter
 from whatsthedamage.models.api.responses import (
     CategoryMonthsApiResponse,
     MonthCategoriesApiResponse,

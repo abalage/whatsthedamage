@@ -41,6 +41,11 @@ class ProcessingRequest(BaseModel):
         description="Date format string (Python strptime format). If not provided, uses CsvConfig default.",
         examples=["%Y.%m.%d", "%Y-%m-%d"]
     )
+    cache_ttl: Optional[int] = Field(
+        default=None,
+        description="Cache TTL in seconds. If None, uses backend default. 0 means never expire.",
+        examples=[1800, 0]
+    )
 
     @model_validator(mode='after')
     def validate_date_formats(self) -> 'ProcessingRequest':

@@ -118,12 +118,16 @@ def parse_request_params() -> ProcessingRequest:
     Raises:
         ValidationError: If parameters are invalid
     """
+    cache_ttl_value = request.form.get('cache_ttl')
+    cache_ttl = int(cache_ttl_value) if cache_ttl_value is not None else None
+
     return ProcessingRequest(
         start_date=request.form.get('start_date'),
         end_date=request.form.get('end_date'),
         date_format=request.form.get('date_format'),
         ml_enabled=request.form.get('ml_enabled', 'false').lower() == 'true',
-        category_filter=request.form.get('category_filter')
+        category_filter=request.form.get('category_filter'),
+        cache_ttl=cache_ttl
     )
 
 

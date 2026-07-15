@@ -4,8 +4,7 @@
 // These strings are extracted by vue-gettext-extract for translation.
 // Runtime category names are fetched from the API, not from this file.
 
-// For extraction: declare $gettext as a function to avoid runtime errors
-// @ts-expect-error - $gettext is injected by vue3-gettext plugin at runtime
+// Declare $gettext for extraction (injected by vue3-gettext plugin at runtime)
 declare const $gettext: (s: string) => string;
 
 // Array of all category display names - used only for extraction

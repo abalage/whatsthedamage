@@ -244,91 +244,91 @@ msgstr "Alapértelmezett kategória"
 msgid "Account"
 msgstr "Számla"
 
-#: src/js/categoryTranslations.ts:13
+#: src/js/categoryTranslations.ts:12
 msgid "Grocery"
 msgstr "Bevásárlás"
 
-#: src/js/categoryTranslations.ts:14
+#: src/js/categoryTranslations.ts:13
 msgid "Clothes"
 msgstr "Ruházat"
 
-#: src/js/categoryTranslations.ts:15
+#: src/js/categoryTranslations.ts:14
 msgid "Dining Out"
 msgstr "Vendéglátás"
 
-#: src/js/categoryTranslations.ts:16
+#: src/js/categoryTranslations.ts:15
 msgid "Health"
 msgstr "Egészség"
 
-#: src/js/categoryTranslations.ts:17
+#: src/js/categoryTranslations.ts:16
 msgid "Payment"
 msgstr "Kifizetés"
 
-#: src/js/categoryTranslations.ts:18
+#: src/js/categoryTranslations.ts:17
 msgid "Transportation"
 msgstr "Közlekedés"
 
-#: src/js/categoryTranslations.ts:19
+#: src/js/categoryTranslations.ts:18
 msgid "Utility"
 msgstr "Rezsi"
 
-#: src/js/categoryTranslations.ts:20
+#: src/js/categoryTranslations.ts:19
 msgid "Home Maintenance"
 msgstr "Otthon karbantartás"
 
-#: src/js/categoryTranslations.ts:21
+#: src/js/categoryTranslations.ts:20
 msgid "Entertainment and Leisure"
 msgstr "Szórakozás és szabadidő"
 
-#: src/js/categoryTranslations.ts:22
+#: src/js/categoryTranslations.ts:21
 msgid "Insurance"
 msgstr "Biztosítás"
 
-#: src/js/categoryTranslations.ts:23
+#: src/js/categoryTranslations.ts:22
 msgid "Loan"
 msgstr "Hitel"
 
-#: src/js/categoryTranslations.ts:24
+#: src/js/categoryTranslations.ts:23
 msgid "Withdrawal"
 msgstr "Pénzfelvétel"
 
-#: src/js/categoryTranslations.ts:25
+#: src/js/categoryTranslations.ts:24
 msgid "Fee"
 msgstr "Díj"
 
-#: src/js/categoryTranslations.ts:26
+#: src/js/categoryTranslations.ts:25
 msgid "Deposit"
 msgstr "Bevétel"
 
-#: src/js/categoryTranslations.ts:27
+#: src/js/categoryTranslations.ts:26
 msgid "Refund"
 msgstr "Visszatérítés"
 
-#: src/js/categoryTranslations.ts:28
+#: src/js/categoryTranslations.ts:27
 msgid "Interest"
 msgstr "Kamat"
 
-#: src/js/categoryTranslations.ts:29
+#: src/js/categoryTranslations.ts:28
 msgid "Electronics and Digital Services"
 msgstr "Elektronika és digitális szolgáltatások"
 
-#: src/js/categoryTranslations.ts:30
+#: src/js/categoryTranslations.ts:29
 msgid "Transfer"
 msgstr "Átvezetés"
 
-#: src/js/categoryTranslations.ts:31
+#: src/js/categoryTranslations.ts:30
 msgid "Other"
 msgstr "Egyéb"
 
-#: src/js/categoryTranslations.ts:32
+#: src/js/categoryTranslations.ts:31
 msgid "Balance"
 msgstr "Egyenleg"
 
-#: src/js/categoryTranslations.ts:33
+#: src/js/categoryTranslations.ts:32
 msgid "Total Spendings"
 msgstr "Teljes költés"
 
-#: src/js/categoryTranslations.ts:34
+#: src/js/categoryTranslations.ts:33
 msgid "Cost of Living"
 msgstr "Megélhetési költségek"
 

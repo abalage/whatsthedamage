@@ -39,6 +39,7 @@ const loadData = async () => {
 
   try {
     const response = await fetchResults(resultId.value);
+    await categoriesStore.loadCategories();
     await categoriesStore.loadCostOfLivingCategories();
     pivotStore.setResultsData(response);
     pivotStore.loadSettings();
@@ -95,8 +96,8 @@ const handleSelectionChanged = (payload: { selectedIndices: number[]; selectedIt
   // Could show additional details, filter data, etc.
 };
 
-// Use gettext directly on category IDs - translations are already configured
-const getCategoryDisplayName = (categoryId: string): string => $gettext(categoryId);
+// Use categories store to get proper display name with translation
+const getCategoryDisplayName = (categoryId: string): string => categoriesStore.getCategoryDisplayName(categoryId);
 
 // NEW: Table column definitions for VueDataTable
 const tableColumns = computed<Column[]>(() => {

@@ -88,6 +88,7 @@ lint: dev
 
 # Extract strings for both backend and frontend
 lang: dev
+	$(PYTHON) scripts/extract_category_strings.py
 	cd frontend && $(NPM_RUN) gettext-extract
 	cd frontend && $(NPM_RUN) gettext-compile
 

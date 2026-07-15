@@ -2,10 +2,12 @@
 import { computed } from 'vue';
 import { useGettext } from 'vue3-gettext';
 import { usePivotStore } from '../stores/pivot.js';
+import { useCategoriesStore } from '../stores/categories.js';
 import CardComponent from '../components/ui/CardComponent.vue'
 
 const { $gettext } = useGettext();
 const pivotStore = usePivotStore();
+const categoriesStore = useCategoriesStore();
 
 const allCategories = computed(() => pivotStore.availableCategoryNames);
 const selectedCategories = computed(() => pivotStore.selectedCategoryIds);
@@ -23,9 +25,8 @@ const selectedCount = computed(() => selectedCategories.value.length);
 const hasNoAllCategories = computed(() => allCategories.value.length === 0);
 const allSelected = computed(() => selectedCategories.value.length === allCategories.value.length && !hasNoAllCategories.value);
 
-// Use gettext directly on category IDs - translations are already configured
-// The category IDs (e.g., "grocery") will be translated to display names (e.g., "Grocery")
-const getCategoryDisplayName = (categoryId: string): string => $gettext(categoryId);
+// Use categories store to get proper display name with translation
+const getCategoryDisplayName = (categoryId: string): string => categoriesStore.getCategoryDisplayName(categoryId);
 </script>
 
 <template>

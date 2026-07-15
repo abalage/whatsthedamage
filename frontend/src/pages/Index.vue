@@ -116,10 +116,10 @@ onMounted(() => {
                 @change="handleCheckboxChange('cacheEnabled', $event)"
               />
               <label class="form-check-label" for="cacheData">
-                {{ $gettext('Cache data with TTL') }}
+                {{ $gettext('Cache data with expiry') }} (TTL=30m)
               </label>
               <div id="cacheHelp" class="form-text">
-                {{ $gettext('Checked: cache with default TTL (30 min). Unchecked: cache never expires.') }}
+                {{ $gettext('Uncheck to make cache never expire') }}
               </div>
             </div>
           </div>

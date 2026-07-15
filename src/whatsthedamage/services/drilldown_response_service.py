@@ -95,6 +95,9 @@ class DrilldownResponseService:
         if not month_groups:
             raise ValueError('Category not found or has no data')
 
+        # Ensure we use mapped category ID for URLs
+        mapped_category_id = self._id_mapping_service.get_category_id(result_id, original_category) or category_id
+
         # Build response data - convert to MonthData DTOs
         months_list: List[MonthData] = []
         for month_ts, rows in month_groups.items():
@@ -105,11 +108,12 @@ class DrilldownResponseService:
             total_dict = self._build_item_total(first_row, rows)
 
             # Build cell_url (drilldown to transactions for this month)
+            # Use mapped category ID for security
             cell_url = self._build_frontend_url(
                 'category_month_transactions',
                 result_id=result_id,
                 account_id=account_id,
-                category_id=category_id,
+                category_id=mapped_category_id,
                 month_id=month_ts
             )
 
@@ -131,7 +135,7 @@ class DrilldownResponseService:
             account_name=account_data['name'],
             account_formatted_id=account_data.get('formatted_id', ''),
             account_currency=account_data.get('currency', ''),
-            category_id=category_id,
+            category_id=original_category,
             data=months_list,
             highlights=highlights
         )
@@ -184,11 +188,13 @@ class DrilldownResponseService:
             total_dict = self._build_item_total(first_row, rows)
 
             # Build category_url (drilldown to transactions for this category)
+            # Use mapped category ID for security
+            mapped_category_id = self._id_mapping_service.get_category_id(result_id, category) or category
             category_url = self._build_frontend_url(
                 'category_month_transactions',
                 result_id=result_id,
                 account_id=account_id,
-                category_id=category,
+                category_id=mapped_category_id,
                 month_id=original_month_ts
             )
 

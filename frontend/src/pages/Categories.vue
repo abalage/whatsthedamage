@@ -68,8 +68,9 @@ function buildTableColumns(account: Account): Column[] {
       sortable: true,
       component: TableLink,
       componentProps: (value: unknown, row?: Record<string, unknown>) => {
-        const categoryId = categoriesStore.extractCategoryIdFromData(row ?? {})
-        const categoryDisplayName = categoriesStore.getCategoryDisplayName(categoryId)
+        const category_id = String(row?.category_id ?? '')
+        const categoryId = getCategoryId(accountId, category_id) || category_id
+        const categoryDisplayName = categoriesStore.getCategoryDisplayName(category_id)
         if (!categoryId) {
           return { to: '#', class: 'clickable', children: categoryDisplayName }
         }

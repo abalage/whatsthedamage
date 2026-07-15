@@ -39,7 +39,7 @@ const columns: Column[] = [
       const monthId = String(route.params.monthId || '')
       const resultId = String(route.params.resultId || '')
       const categoryId = extractCategoryIdFromData(row ?? {})
-      const categoryDisplayName = categoriesStore.getCategoryDisplayName(categoryId)
+      const categoryDisplayName = categoriesStore.getCategoryDisplayName(String(row?.category_id ?? ''))
       return {
         to: { name: 'category-month-transactions', params: { resultId, accountId, categoryId, monthId } },
         class: 'clickable',
@@ -80,7 +80,7 @@ const {
     }
     return fetchMonthCategories(params)
   },
-  getPageTitle: (data) => `${$gettext('Details')}: ${formatMonthYear(data.month_timestamp)}`,
+  getPageTitle: (data) => `${$gettext('Month Details')}: ${formatMonthYear(data.month_timestamp)}`,
   breadcrumbItems: (): BreadcrumbItem[] => [
     { name: $gettext('Home'), to: '/' },
     { name: $gettext('Categories'), to: { name: 'results', query: { resultId: getRouteParam('resultId') } } },

@@ -41,7 +41,7 @@ const columns: Column[] = [
 const getPageTitle = (data: CategoryMonthTransactionsApiResponse): string => {
   const categoryId = categoriesStore.extractCategoryIdFromData(data as unknown as Record<string, unknown>)
   const categoryDisplayName = categoryId ? categoriesStore.getCategoryDisplayName(categoryId) : ''
-  return `${$gettext('Details')}: ${categoryDisplayName} - ${formatMonthYear(data.month_timestamp)}`
+  return `${$gettext('Transactions')}: ${categoryDisplayName} - ${formatMonthYear(data.month_timestamp)}`
 }
 
 const {
@@ -73,12 +73,12 @@ const {
     {
       text: $gettext('Back to Category Months'),
       to: { name: 'category-months', params: { resultId: getRouteParam('resultId'), accountId: getRouteParam('accountId'), categoryId: getRouteParam('categoryId') } },
-      variant: 'secondary'
+      variant: 'outline-secondary'
     },
     {
       text: $gettext('Back to Categories'),
       to: { name: 'results', query: { resultId: getRouteParam('resultId') } },
-      variant: 'outline-secondary'
+      variant: 'secondary'
     }
   ],
   errorMessageKey: 'transactionsLoadError'

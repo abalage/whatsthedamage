@@ -132,7 +132,7 @@ onMounted(() => {
     <!-- Main Content -->
     <div v-else-if="resultsData">
       <div class="d-flex justify-content-between align-items-center mb-3">
-        <h1 class="mb-0">{{ $gettext('Transaction Details') }}</h1>
+        <h1 class="mb-0">{{ $gettext('Transactions') }}</h1>
         <div class="d-flex gap-2">
           <ButtonComponent
             :text="$gettext('Back to Categories')"

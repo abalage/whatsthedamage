@@ -80,7 +80,7 @@ const {
     }
     return fetchMonthCategories(params)
   },
-  getPageTitle: (data) => `${$gettext('Details')}: ${formatMonthYear(data.month_timestamp)}`,
+  getPageTitle: (data) => `${$gettext('Month Details')}: ${formatMonthYear(data.month_timestamp)}`,
   breadcrumbItems: (): BreadcrumbItem[] => [
     { name: $gettext('Home'), to: '/' },
     { name: $gettext('Categories'), to: { name: 'results', query: { resultId: getRouteParam('resultId') } } },

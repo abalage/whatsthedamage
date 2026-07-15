@@ -239,24 +239,24 @@ onMounted(() => {
 
     <div v-else-if="resultsData">
       <div class="d-flex justify-content-between align-items-center mb-3">
-        <h1 class="mb-0">{{ $gettext('Transaction Categories') }}</h1>
+        <h1 class="mb-0">{{ $gettext('Categories') }}</h1>
         <div class="d-flex gap-2">
           <ButtonComponent
             :text="$gettext('Back to Form')"
             to="/"
-            variant="secondary"
+            variant="outline-secondary"
             class="mt-3 mb-3 me-2"
           />
           <ButtonComponent
             :text="$gettext('Transactions')"
             :to="{ name: 'details', params: { resultId: resultId } }"
-            variant="outline-secondary"
+            variant="secondary"
             class="mt-3 mb-3 me-2"
           />
           <ButtonComponent
             :text="$gettext('Pivot Table')"
             :to="{ name: 'pivot', params: { resultId: resultId } }"
-            variant="outline-secondary"
+            variant="secondary"
             class="mt-3 mb-3"
           />
         </div>

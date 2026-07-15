@@ -68,7 +68,7 @@ function extractMonthIdFromData(row: Record<string, unknown>): string {
 // Function to get page title with category display name
 const getPageTitle = (data: CategoryMonthsApiResponse): string => {
   const displayName = categoriesStore.getCategoryDisplayName(data.category_id)
-  return `${$gettext('Details')}: ${displayName}`
+  return `${$gettext('Category Details')}: ${displayName}`
 }
 
 const {

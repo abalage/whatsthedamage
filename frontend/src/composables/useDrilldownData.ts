@@ -6,8 +6,10 @@
 import { ref, computed, nextTick, type ComputedRef, type Ref } from 'vue'
 import { useRoute, type RouteLocationRaw } from 'vue-router'
 import { useFeedbackStore } from '../stores/feedback.js'
+import { useCategoriesStore } from '../stores/categories.js'
 import { useGettext } from 'vue3-gettext'
 import { fetchWithErrorHandling, API_BASE_URL } from '../js/api.js'
+import { formatMonthYear } from '../js/dateUtils.js'
 import type { TranslationKeys } from '../vue-shim.js'
 
 /**
@@ -35,7 +37,7 @@ export interface BreadcrumbItem {
 /**
  * Navigation button configuration
  */
-interface NavButton {
+export interface NavButton {
   text: string
   to: RouteLocationRaw
   variant?: 'primary' | 'secondary' | 'outline-primary' | 'outline-secondary' | 'back'
@@ -77,12 +79,44 @@ export interface DrilldownPageConfig<T> {
   tableId?: string
   /**
    * Function to generate page title from data
+   * Use titleBaseKey/titleFormat/titleExtractor for built-in patterns instead
+   * @param data - The API response data
+   * @returns The formatted page title string
    */
   getPageTitle?: (data: T) => string
   /**
    * Static page title if getPageTitle is not provided
+   * Fallback chain: getPageTitle -> pageTitle -> auto-generated -> 'Details'
    */
   pageTitle?: string
+  /**
+   * Base translation key for auto-generating page title
+   * Used with titleFormat and titleExtractor to create titles like "Transactions: Food - Jan 2025"
+   * @example 'Transactions'
+   */
+  titleBaseKey?: string
+  /**
+   * Format pattern for auto-generating page title
+   * - 'category':        "{titleBaseKey}: {categoryName}"
+   * - 'month':          "{titleBaseKey}: {formattedMonth}"
+   * - 'category-month': "{titleBaseKey}: {categoryName} - {formattedMonth}"
+   * - 'custom':         Use getPageTitle function (default behavior)
+   */
+  titleFormat?: 'category' | 'month' | 'category-month' | 'custom'
+  /**
+   * Extract categoryId and/or monthTimestamp from API response data for title generation
+   * Only needed when using titleFormat (not 'custom')
+   * @param data - The API response data
+   * @returns Object with categoryId and/or monthTimestamp used for title formatting
+   * @example
+   * ```typescript
+   * titleExtractor: (data) => ({
+   *   categoryId: data.category_id,
+   *   monthTimestamp: data.month_timestamp
+   * })
+   * ```
+   */
+  titleExtractor?: (data: T) => { categoryId?: string; monthTimestamp?: number }
   /**
    * Breadcrumb items - can be static or function that takes data
    */
@@ -142,12 +176,28 @@ export interface DrilldownResult<T> extends FetchState<T> {
  *
  * @example
  * ```typescript
+ * // Using built-in title generation (recommended)
+ * const { data, isLoading, error, fetchData, pageTitle, breadcrumbItems } =
+ *   useDrilldownData<CategoryMonthsResponse>({
+ *     fetchData: async (params) => fetchCategoryMonths(params),
+ *     titleBaseKey: 'Category Details',
+ *     titleFormat: 'category',
+ *     titleExtractor: (data) => ({ categoryId: data.category_id }),
+ *     breadcrumbItems: [
+ *       { name: 'Home', to: '/' },
+ *       { name: 'Categories', to: { name: 'results', query: { resultId } } },
+ *       { name: 'Category Details', active: true }
+ *     ],
+ *     navButtons: [
+ *       { text: 'Back to Results', to: { name: 'results', query: { resultId } }, variant: 'secondary' }
+ *     ]
+ *   })
+ *
+ * // Using custom getPageTitle function (for complex cases)
  * const { data, isLoading, error, fetchData, pageTitle, breadcrumbItems } =
  *   useDrilldownData<CategoryMonthsResponse>({
  *     buildEndpoint: drilldownEndpoints.categoryMonths,
  *     tableId: 'datatable-category',
- *     // Note: category_name is no longer in API responses. Use categories store to get display name.
- *     // getPageTitle: (d) => `Details for Category: ${d.category_name}`,
  *     getPageTitle: (d) => `Details for Category: ${useCategoriesStore().getCategoryDisplayName(d.category_id)}`,
  *     breadcrumbItems: (d) => [
  *       { name: 'Home', to: '/' },
@@ -189,10 +239,51 @@ export function useDrilldownData<T>(
 
   // Computed page title
   const pageTitle = computed(() => {
+    // Custom function takes precedence
     if (data.value && config.getPageTitle) {
       return config.getPageTitle(data.value)
     }
-    return config.pageTitle ?? t('Details')
+    // Static title
+    if (config.pageTitle) {
+      return config.pageTitle
+    }
+    // Auto-generate from config
+    if (data.value && config.titleBaseKey && config.titleExtractor) {
+      const base = t(config.titleBaseKey)
+      const extracted = config.titleExtractor(data.value)
+      const { categoryId, monthTimestamp } = extracted
+
+      switch (config.titleFormat) {
+        case 'category': {
+          if (categoryId) {
+            const categoriesStore = useCategoriesStore()
+            const displayName = categoriesStore.getCategoryDisplayName(categoryId)
+            return displayName ? `${base}: ${displayName}` : base
+          }
+          return base
+        }
+        case 'month': {
+          if (monthTimestamp !== undefined) {
+            return `${base}: ${formatMonthYear(monthTimestamp)}`
+          }
+          return base
+        }
+        case 'category-month': {
+          const displayName = categoryId ? useCategoriesStore().getCategoryDisplayName(categoryId) : ''
+          const formattedMonth = monthTimestamp !== undefined ? formatMonthYear(monthTimestamp) : ''
+          if (displayName && formattedMonth) {
+            return `${base}: ${displayName} - ${formattedMonth}`
+          }
+          if (displayName) return `${base}: ${displayName}`
+          if (formattedMonth) return `${base}: ${formattedMonth}`
+          return base
+        }
+        case 'custom':
+        default:
+          break
+      }
+    }
+    return t('Details')
   })
 
   // Computed breadcrumb items

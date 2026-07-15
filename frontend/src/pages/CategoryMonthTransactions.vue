@@ -2,18 +2,20 @@
 import { onMounted, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { useGettext } from 'vue3-gettext'
+import { useCategoriesStore } from '../stores/categories.js'
 import {
   useDrilldownData,
   type BreadcrumbItem
 } from '../composables/useDrilldownData.js'
-import { useCategoriesStore } from '../stores/categories.js'
+import BreadcrumbNavigation from '../components/layout/BreadcrumbNavigation.vue'
+import LoadingState from '../components/layout/LoadingState.vue'
+import ErrorState from '../components/layout/ErrorState.vue'
+import PageHeader from '../components/layout/PageHeader.vue'
 import CardComponent from '../components/ui/CardComponent.vue'
-import ButtonComponent from '../components/ui/ButtonComponent.vue'
 import VueDataTable from '../components/data/VueDataTable.vue'
 import type { Column } from '../components/data/VueDataTable.vue'
 import { fetchCategoryMonthTransactions } from '../js/api.js'
 import type { CategoryMonthTransactionsApiResponse } from '../types/api.js'
-import { formatMonthYear } from '../js/dateUtils.js'
 
 const { $gettext } = useGettext()
 const categoriesStore = useCategoriesStore()
@@ -37,13 +39,6 @@ const columns: Column[] = [
   { key: 'merchant', title: $gettext('Merchant') }
 ]
 
-// Function to get page title with category display name
-const getPageTitle = (data: CategoryMonthTransactionsApiResponse): string => {
-  const categoryId = categoriesStore.extractCategoryIdFromData(data as unknown as Record<string, unknown>)
-  const categoryDisplayName = categoryId ? categoriesStore.getCategoryDisplayName(categoryId) : ''
-  return `${$gettext('Transactions')}: ${categoryDisplayName} - ${formatMonthYear(data.month_timestamp)}`
-}
-
 const {
   data: transactionsData,
   isLoading,
@@ -59,7 +54,12 @@ const {
     }
     return fetchCategoryMonthTransactions(params)
   },
-  getPageTitle,
+  titleBaseKey: 'Transactions',
+  titleFormat: 'category-month',
+  titleExtractor: (data: CategoryMonthTransactionsApiResponse) => ({
+    categoryId: categoriesStore.extractCategoryIdFromData(data as unknown as Record<string, unknown>),
+    monthTimestamp: data.month_timestamp
+  }),
   breadcrumbItems: (): BreadcrumbItem[] => [
     { name: $gettext('Home'), to: '/' },
     { name: $gettext('Categories'), to: { name: 'results', query: { resultId: getRouteParam('resultId') } } },
@@ -104,51 +104,15 @@ onMounted(() => {
 
 <template>
   <div class="container-fluid">
-    <!-- Breadcrumb Navigation -->
-    <nav v-if="breadcrumbItems.length" aria-label="breadcrumb">
-      <ol class="breadcrumb">
-        <li
-          v-for="(item, index) in breadcrumbItems"
-          :key="index"
-          class="breadcrumb-item"
-          :class="{ 'active': item.active }"
-          :aria-current="item.active ? 'page' : undefined"
-        >
-          <router-link v-if="item.to && !item.active" :to="item.to">{{ item.name }}</router-link>
-          <span v-else>{{ item.name }}</span>
-        </li>
-      </ol>
-    </nav>
+    <BreadcrumbNavigation :items="breadcrumbItems" />
 
-    <!-- Loading State -->
-    <div v-if="isLoading" class="text-center my-5">
-      <output class="spinner-border text-primary">
-        <span class="visually-hidden">{{ $gettext('loading') }}...</span>
-      </output>
-      <p class="mt-2">{{ $gettext('Loading data') }}...</p>
-    </div>
+    <LoadingState v-if="isLoading" />
 
-    <!-- Error State -->
-    <div v-else-if="error" class="alert alert-danger">
-      {{ error }}
-    </div>
+    <ErrorState v-else-if="error" :message="error" />
 
     <!-- Main Content -->
     <div v-else-if="transactionsData">
-      <div class="d-flex justify-content-between align-items-center mb-3">
-        <h1 class="mb-0">{{ pageTitle }}</h1>
-        <div v-if="navButtons && navButtons.length" class="d-flex gap-2">
-          <ButtonComponent
-            v-for="(button, index) in navButtons"
-            :key="index"
-            :text="button.text"
-            :variant="button.variant"
-            :to="button.to"
-            :size="button.size"
-            :class="index < navButtons.length - 1 ? 'mt-3 mb-3 me-2' : 'mt-3 mb-3'"
-          />
-        </div>
-      </div>
+      <PageHeader :title="pageTitle" :buttons="navButtons" />
 
       <!-- Account Card -->
       <CardComponent type="account" :account="{ id: transactionsData.account_id, name: transactionsData.account_name, formatted_id: transactionsData.account_formatted_id, currency: transactionsData.account_currency }" class="mb-4" width="fit-content">

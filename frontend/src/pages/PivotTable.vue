@@ -14,7 +14,7 @@ import CardComponent from '../components/ui/CardComponent.vue'
 
 // VueDataTable component
 import VueDataTable from '../components/data/VueDataTable.vue';
-import type { Column } from '../components/data/VueDataTable.vue';
+import type { Column, AggregateRowConfig } from '../components/data/VueDataTable.vue';
 import { formatMonthYear } from '../js/dateUtils.js';
 
 const { $gettext } = useGettext();
@@ -154,28 +154,29 @@ const tableData = computed<Record<string, unknown>[]>(() => {
   });
 });
 
-// Footer row data for the data table
-const footerData = computed<Record<string, unknown>[]>(() => {
+// Aggregate row configuration for the data table
+const aggregateRows = computed<AggregateRowConfig[]>(() => {
   if (!pivotData.value || safeMonths.value.length === ZERO) return [];
 
-  const footerRow: Record<string, unknown> = {
-    month: $gettext('Average'),
-    total: trendlineValue.value
-  };
+  return [
+    {
+      id: 'average',
+      label: $gettext('Average'),
+      type: 'custom',
+      position: 'footer',
+      includeInExport: true,
+      customCalculator: (data, columnKey) => {
+        if (columnKey === 'month') return $gettext('Average');
+        if (columnKey === 'total') return trendlineValue.value;
 
-  // Add average for each selected category
-  selectedCategories.value.forEach(catId => {
-    if (safeMonths.value.length > ZERO) {
-      const sum = safeMonths.value.reduce(
-        (acc, m) => acc + Math.abs(m.categories[catId]?.amount || ZERO),
-        ZERO
-      );
-      const average = sum / safeMonths.value.length;
-      footerRow[catId] = average;
+        const values = data.map(row => {
+          const val = row[columnKey];
+          return typeof val === 'number' ? Math.abs(val) : 0;
+        });
+        return values.reduce((sum, val) => sum + val, 0) / values.length;
+      }
     }
-  });
-
-  return [footerRow];
+  ];
 });
 
 // Auto-save settings
@@ -318,8 +319,8 @@ onMounted(() => loadData());
             :key="`columns-${selectedCategories.join(',')}-${pivotData?.months.length}`"
             :columns="tableColumns"
             :data="tableData"
-            :footer-data="footerData"
-            footer-row-class="table-light fw-bold"
+            :aggregate-rows="aggregateRows"
+            aggregate-footer-row-class="table-light fw-bold"
             :page-size="25"
             :csv-text="$gettext('Export CSV')"
             :excel-text="$gettext('Export Excel')"

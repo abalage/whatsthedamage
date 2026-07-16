@@ -13,7 +13,7 @@ import ErrorState from '../components/layout/ErrorState.vue'
 import PageHeader from '../components/layout/PageHeader.vue'
 import CardComponent from '../components/ui/CardComponent.vue'
 import VueDataTable from '../components/data/VueDataTable.vue'
-import type { Column } from '../components/data/VueDataTable.vue'
+import type { Column, AggregateRowConfig } from '../components/data/VueDataTable.vue'
 import { fetchCategoryMonthTransactions } from '../js/api.js'
 import type { CategoryMonthTransactionsApiResponse } from '../types/api.js'
 
@@ -97,6 +97,29 @@ const tableData = computed(() => {
   }))
 })
 
+// Aggregate row configuration for the table
+const aggregateRows = computed<AggregateRowConfig[]>(() => {
+  if (!transactionsData.value || transactionsData.value.data.length === 0) return []
+
+  return [
+    {
+      id: 'amount-sum',
+      type: 'custom',
+      position: 'footer',
+      includeInExport: true,
+      class: 'fw-bold table-light',
+      customCalculator: (data, columnKey) => {
+        if (columnKey === 'date') return $gettext('Total')
+        if (columnKey === 'amount') {
+          const numericValues = data.map(row => Number(row[columnKey])).filter(v => !Number.isNaN(v))
+          return numericValues.reduce((sum, val) => sum + val, 0)
+        }
+        return ''
+      }
+    }
+  ]
+})
+
 onMounted(() => {
   fetchData()
 })
@@ -120,6 +143,7 @@ onMounted(() => {
               id="transaction-details-table"
               :data="tableData"
               :columns="columns"
+              :aggregate-rows="aggregateRows"
               :csv-text="$gettext('Export CSV')"
               :excel-text="$gettext('Export Excel')"
               wrapper-class="w-auto"

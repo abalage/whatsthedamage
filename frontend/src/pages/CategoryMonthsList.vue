@@ -14,7 +14,7 @@ import PageHeader from '../components/layout/PageHeader.vue'
 import CardComponent from '../components/ui/CardComponent.vue'
 import VueDataTable from '../components/data/VueDataTable.vue'
 import TableLink from '../components/data/TableLink.vue'
-import type { Column } from '../components/data/VueDataTable.vue'
+import type { Column, AggregateRowConfig } from '../components/data/VueDataTable.vue'
 import { fetchCategoryMonths } from '../js/api.js'
 import type { CategoryMonthsApiResponse } from '../types/api.js'
 import { formatMonthYear } from '../js/dateUtils.js'
@@ -123,6 +123,29 @@ const tableData = computed(() => {
   }))
 })
 
+// Aggregate row configuration for the table
+const aggregateRows = computed<AggregateRowConfig[]>(() => {
+  if (!categoryMonthsData.value || categoryMonthsData.value.data.length === 0) return []
+
+  return [
+    {
+      id: 'total-sum',
+      type: 'custom',
+      position: 'footer',
+      includeInExport: true,
+      class: 'fw-bold table-light',
+      customCalculator: (data, columnKey) => {
+        if (columnKey === 'month') return $gettext('Total')
+        if (columnKey === 'total') {
+          const numericValues = data.map(row => Number(row[columnKey])).filter(v => !Number.isNaN(v))
+          return numericValues.reduce((sum, val) => sum + val, 0)
+        }
+        return ''
+      }
+    }
+  ]
+})
+
 // Cell highlights from Pinia store
 const cellHighlightsByRowId = computed(() => {
   return statisticalStore.highlights || {}
@@ -158,6 +181,7 @@ onMounted(() => {
               id="datatable-category"
               :data="tableData"
               :columns="columns"
+              :aggregate-rows="aggregateRows"
               :cell-highlights-by-row-id="cellHighlightsByRowId"
               :csv-text="$gettext('Export CSV')"
               :excel-text="$gettext('Export Excel')"

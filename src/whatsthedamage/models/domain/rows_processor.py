@@ -119,7 +119,7 @@ class RowsProcessor:
                 id=account_id,
                 name="",  # Will be empty for now, can be set later
                 formatted_id=formatted_account_id,
-                currency=account_rows[0].currency if account_rows else ""
+                currency=next((row.currency for row in account_rows if row.currency), "") if account_rows else ""
             )
 
             # Process each month/date range for this account

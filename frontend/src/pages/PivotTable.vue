@@ -125,7 +125,7 @@ const tableColumns = computed<Column[]>(() => {
       class: 'text-nowrap text-end',
       sortable: true,
       renderHtml: (value: unknown) => {
-        const amount = (value as { amount: number } | null)?.amount ?? ZERO;
+        const amount = typeof value === 'number' ? value : (value as { amount: number } | null)?.amount ?? ZERO;
         return `${Math.abs(amount)}`;
       }
     });
@@ -147,7 +147,7 @@ const tableData = computed<Record<string, unknown>[]>(() => {
 
     // Add category data for each selected category
     selectedCategories.value.forEach(catId => {
-      row[catId] = month.categories[catId] ?? { amount: ZERO };
+      row[catId] = month.categories[catId]?.amount ?? ZERO;
     });
 
     return row;
@@ -171,7 +171,7 @@ const footerData = computed<Record<string, unknown>[]>(() => {
         ZERO
       );
       const average = sum / safeMonths.value.length;
-      footerRow[catId] = { amount: average };
+      footerRow[catId] = average;
     }
   });
 

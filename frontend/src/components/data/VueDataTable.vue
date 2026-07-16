@@ -24,6 +24,11 @@
  *     :columns="columns"
  *     id="my-table"
  *   />
+ *
+ * NOTE: For sorting to work correctly, cell values should be primitive types
+ * (numbers, strings, dates) or null/undefined. Object values will be converted
+ * to strings using String(value) for comparison, which may not produce expected
+ * results (e.g., { amount: 100 } becomes "[object Object]").
  */
 
 import { ref, computed, onUnmounted, type Component, type CSSProperties } from 'vue'

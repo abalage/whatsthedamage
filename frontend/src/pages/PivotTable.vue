@@ -7,10 +7,16 @@ import { useGettext } from 'vue3-gettext';
 import { usePivotStore } from '../stores/pivot.js';
 import { useCategoriesStore } from '../stores/categories.js';
 import type { Account } from '../types/api.js';
+import type { BreadcrumbItem } from '../composables/useDrilldownData.js';
 import BarChart from '../components/charts/BarChart.vue';
 import PieChart from '../components/charts/PieChart.vue';
 import PivotCategorySelector from '../components/PivotCategorySelector.vue';
 import CardComponent from '../components/ui/CardComponent.vue'
+import ButtonComponent from '../components/ui/ButtonComponent.vue'
+import PageHeader from '../components/layout/PageHeader.vue'
+import BreadcrumbNavigation from '../components/layout/BreadcrumbNavigation.vue'
+import LoadingState from '../components/layout/LoadingState.vue'
+import ErrorState from '../components/layout/ErrorState.vue'
 
 // VueDataTable component
 import VueDataTable from '../components/data/VueDataTable.vue';
@@ -26,6 +32,13 @@ const categoriesStore = useCategoriesStore();
 const resultId = computed(() => route.params.resultId as string);
 const isLoading = ref(true);
 const error = ref<string | null>(null);
+
+// Breadcrumb items
+const breadcrumbItems = computed<BreadcrumbItem[]>(() => [
+  { name: $gettext('Home'), to: '/' },
+  { name: $gettext('Categories'), to: { name: 'results', query: { resultId: resultId.value } } },
+  { name: $gettext('Pivot Table'), active: true }
+]);
 
 // Constants
 const ZERO = 0;
@@ -189,39 +202,24 @@ onMounted(() => loadData());
 
 <template>
   <div class="container-fluid">
-    <!-- Breadcrumb -->
-    <nav aria-label="breadcrumb">
-      <ol class="breadcrumb">
-        <li class="breadcrumb-item"><router-link to="/">{{ $gettext('Home') }}</router-link></li>
-        <li class="breadcrumb-item"><router-link :to="{ name: 'results', query: { resultId: resultId } }">{{ $gettext('Categories') }}</router-link></li>
-        <li class="breadcrumb-item active" aria-current="page">{{ $gettext('Pivot Table') }}</li>
-      </ol>
-    </nav>
+    <BreadcrumbNavigation :items="breadcrumbItems" />
 
-    <!-- Loading -->
-    <div v-if="isLoading" class="text-center my-5">
-      <output class="spinner-border text-primary">
-        <span class="mt-2">{{ $gettext('Loading data') }}...</span>
-      </output>
-    </div>
+    <LoadingState v-if="isLoading" />
 
-    <!-- Error -->
-    <div v-else-if="error" class="alert alert-danger">
-      <i class="bi bi-exclamation-triangle-fill me-2"></i>
-      {{ error }}
-    </div>
+    <ErrorState v-else-if="error" :message="error" />
 
     <!-- Main Content -->
     <div v-else-if="resultsData">
-      <!-- Header -->
-      <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1><i class="bi bi-house-heart me-2"></i> {{ $gettext('Pivot Table') }}</h1>
-        <div class="d-flex gap-2">
-          <router-link :to="{ name: 'results', query: { resultId: resultId } }" class="btn btn-secondary">
-            <i class="bi bi-arrow-left me-1"></i> {{ $gettext('Back to Categories') }}
-          </router-link>
-        </div>
-      </div>
+      <PageHeader :title="$gettext('Pivot Table')">
+        <template #actions>
+          <ButtonComponent
+            :text="$gettext('Back to Categories')"
+            :to="{ name: 'results', query: { resultId: resultId } }"
+            variant="secondary"
+            class="mt-3 mb-3"
+          />
+        </template>
+      </PageHeader>
 
       <!-- Account Selector -->
       <div v-if="accounts.length > 1">

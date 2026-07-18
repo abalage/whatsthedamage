@@ -168,6 +168,7 @@ function getAccountHighlights(): Record<string, string[]> {
 }
 
 const getMonthsForAccount = (account: Account) => {
+  if (!account.data) return []
   const monthMap = new Map<number, number>()
   for (const row of account.data) {
     const monthField = row.date
@@ -178,6 +179,8 @@ const getMonthsForAccount = (account: Account) => {
 
 const buildCategoryMonthMap = (account: Account) => {
   const catMonthMap: Record<string, Record<number, any>> = {}
+
+  if (!account.data) return catMonthMap
 
   for (const row of account.data) {
     if (!catMonthMap[row.category_id]) {

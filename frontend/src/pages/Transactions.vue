@@ -79,6 +79,7 @@ const allTransactions = computed(() => {
   const transactions = []
 
   for (const account of resultsData.value.accounts) {
+    if (!account.data) continue
     for (const aggRow of account.data) {
       for (const detail of aggRow.details) {
         transactions.push({

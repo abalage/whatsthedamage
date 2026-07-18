@@ -53,7 +53,7 @@ const getCategoryDisplayName = (categoryId: string): string => categoriesStore.g
         {{ $gettext('Selected') }}: <strong>{{ selectedCount }}</strong> / {{ allCategories.length }}
         <span v-if="selectedCount > 0" class="ms-2">
           | {{ $gettext('Default categories') }}:
-          <span class="badge bg-primary ms-1">{{ defaultCategories.length }}</span>
+          <span class="badge badge-primary ms-1">{{ defaultCategories.length }}</span>
         </span>
       </p>
 

@@ -4,25 +4,13 @@ import { Bar } from 'vue-chartjs';
 import { computed, ref, watch, nextTick } from 'vue';
 import type { ChartOptions, ChartData, ActiveElement, Chart } from 'chart.js';
 import { calculateLinearRegression, REGRESSION_CONFIG } from '../../js/regression.ts';
+import { useThemeStore } from '../../stores/theme';
 
 // Register ChartJS components
 ChartJS.register(Title, Tooltip, Legend, BarElement, LineElement, CategoryScale, LinearScale, PointElement);
 
-// Color palette for categories - consistent colors for visual identity
-const CATEGORY_COLORS = [
-  '#0d6efd', // Blue - primary
-  '#6610f2', // Purple
-  '#dc3545', // Red
-  '#fd7e14', // Orange
-  '#ffc107', // Yellow
-  '#198754', // Green
-  '#20c997', // Teal
-  '#0dcaf0', // Cyan
-  '#6f42c1', // Indigo
-  '#d63384', // Pink
-  '#212529', // Dark
-  '#6c757d', // Gray
-];
+// Use theme store for colors
+const themeStore = useThemeStore();
 
 // Constants
 const ZERO = 0;
@@ -30,9 +18,22 @@ const ONE = 1;
 const TRENDLINE_BORDER_WIDTH = 2;
 const TRENDLINE_DASH_PATTERN = [5, 5];
 
-// Selected label styling
+// Selected label styling - use theme colors
 const SELECTED_LABEL_COLOR = '#000000';
-const NORMAL_LABEL_COLOR = '#6c757d';
+const NORMAL_LABEL_COLOR = (): string => {
+  return themeStore.currentTheme.colors.textSecondary;
+};
+
+// Helper function to get category color from theme
+const getCategoryColor = (index: number): string => {
+  const colors = themeStore.currentTheme.colors.chart.category;
+  return colors[index % colors.length];
+};
+
+// Get trendline color from theme
+const getTrendlineColor = (): string => {
+  return themeStore.currentTheme.colors.chart.trendline;
+};
 
 interface MultiCategoryChartData {
   label: string;
@@ -71,11 +72,6 @@ watch(selectedBarIndices, () => {
     });
   }
 });
-
-// Get color for a category by index
-const getCategoryColor = (index: number): string => {
-  return CATEGORY_COLORS[index % CATEGORY_COLORS.length];
-};
 
 // Build the chart data with stacking
 const chartData = computed<ChartData<'bar'>>(() => {
@@ -129,7 +125,7 @@ const chartData = computed<ChartData<'bar'>>(() => {
     datasets.push({
       label: 'Trend',
       data: trendlineData,
-      borderColor: '#dc3545',
+      borderColor: getTrendlineColor(),
       borderWidth: TRENDLINE_BORDER_WIDTH,
       backgroundColor: 'transparent',
       type: 'line',
@@ -243,7 +239,7 @@ const chartOptions = computed<ChartOptions<'bar'>>(() => ({
       ticks: {
         display: true,
         color: (context: { index: number }) => {
-          return selectedBarIndices.value.includes(context.index) ? SELECTED_LABEL_COLOR : NORMAL_LABEL_COLOR;
+          return selectedBarIndices.value.includes(context.index) ? SELECTED_LABEL_COLOR : NORMAL_LABEL_COLOR();
         },
         font: (context: { index: number }) => {
           return {

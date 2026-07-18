@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute, RouterLink } from 'vue-router'
 import { useLocaleStore } from '../stores/locale.js'
 import { useStatisticalStore } from '../stores/statistical.js'
 import { useFeedbackStore } from '../stores/feedback.js'
+import { useThemeStore } from '../stores/theme.js'
 import { useGettext } from 'vue3-gettext'
 import { recalculateStatistics } from '../js/api.js'
 
@@ -101,15 +102,23 @@ const resetToDefaults = async () => {
 const setLocale = (locale: string) => {
   localeStore.setLocale(locale)
 }
+
+// Theme store
+const themeStore = useThemeStore();
+
+// Initialize theme on component mount
+onMounted(() => {
+  themeStore.initialize();
+})
 </script>
 
 <template>
   <div>
     <header>
-      <nav class="navbar navbar-expand-lg navbar-dark bg-success mb-3">
+      <nav class="navbar navbar-expand-lg navbar-dark mb-3" :style="{ backgroundColor: themeStore.currentTheme.colors.headerBg }">
         <div class="container-fluid">
-          <RouterLink to="/" class="navbar-brand">What's the Damage?</RouterLink>
-          <span class="text-white align-middle">{{ $gettext("Tell me I didn't spend that much…") }}</span>
+          <RouterLink to="/" class="navbar-brand text-header">What's the Damage?</RouterLink>
+          <span class="align-middle text-header">{{ $gettext('Tell me I didn\'t spend that much…') }}</span>
           <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>
           </button>
@@ -210,6 +219,36 @@ const setLocale = (locale: string) => {
                   </li>
                 </ul>
               </li>
+              <li class="nav-item dropdown">
+                <button
+                  id="themeDropdown"
+                  class="nav-link dropdown-toggle"
+                  type="button"
+                  data-bs-toggle="dropdown"
+                  aria-expanded="false"
+                  @keydown.enter.prevent="($event.currentTarget as HTMLButtonElement).click()"
+                  @keydown.space.prevent="($event.currentTarget as HTMLButtonElement).click()"
+                >
+                  {{ $gettext('Themes') }}
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="themeDropdown">
+                  <li v-for="theme in themeStore.allThemes" :key="theme.id">
+                    <button
+                      :class="{ 'active': themeStore.currentThemeId === theme.id }"
+                      class="dropdown-item"
+                      type="button"
+                      @click.prevent="themeStore.setTheme(theme.id)"
+                      @keydown.enter.prevent="themeStore.setTheme(theme.id)"
+                      @keydown.space.prevent="themeStore.setTheme(theme.id)"
+                    >
+                      <span class="theme-preview" :style="{ backgroundColor: theme.colors.headerBg, color: theme.colors.headerText }">
+                        &nbsp;&nbsp;&nbsp;
+                      </span>
+                      {{ theme.name }}
+                    </button>
+                  </li>
+                </ul>
+              </li>
             </ul>
           </div>
         </div>
@@ -221,10 +260,10 @@ const setLocale = (locale: string) => {
       <slot></slot>
     </main>
 
-    <footer class="bg-success text-white text-center py-3 mt-3">
+    <footer class="text-center py-3 mt-3">
       <div class="container-fluid">
-        <a href="https://balagetech.com" class="text-white me-3">@ 2025 Balagetech</a>
-        <span class="text-white me-3">v1.0.0</span>
+        <a href="https://balagetech.com" class="text-white me-3">@ 2026 Balagetech</a>
+        <span class="me-3">v1.0.0</span>
       </div>
     </footer>
   </div>

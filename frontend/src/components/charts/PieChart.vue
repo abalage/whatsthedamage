@@ -2,9 +2,13 @@
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
 import { Pie } from 'vue-chartjs';
 import { computed } from 'vue';
+import { useThemeStore } from '../../stores/theme';
 
 // Register ChartJS components
 ChartJS.register(ArcElement, Tooltip, Legend);
+
+// Use theme store for colors
+const themeStore = useThemeStore();
 
 interface PieChartDataItem {
   label: string;
@@ -21,12 +25,10 @@ interface PieChartProps {
 
 const props = defineProps<PieChartProps>();
 
-// Generate colors for segments
-const colors = [
-  '#0d6efd', '#6610f2', '#6f42c1', '#d63384',
-  '#dc3545', '#fd7e14', '#ffc107', '#198754',
-  '#20c997', '#0dcaf0', '#6c757d', '#17a2b8'
-];
+// Get pie chart colors from current theme
+const pieChartColors = computed(() => {
+  return themeStore.currentTheme.colors.chart.pie;
+});
 
 // Constants
 const ZERO = 0;
@@ -42,7 +44,7 @@ const chartData = computed(() => {
     datasets: [
       {
         data: values,
-        backgroundColor: props.data.map((_, i) => colors[i % colors.length]),
+        backgroundColor: props.data.map((_, i) => pieChartColors.value[i % pieChartColors.value.length]),
         borderWidth: 1,
         borderColor: '#fff'
       }

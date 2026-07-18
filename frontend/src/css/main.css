@@ -1,10 +1,38 @@
 /* Main CSS for What's the Damage */
 
 :root {
+  /* Default theme colors - will be overridden by theme store */
   --primary-color: #28a745;
   --secondary-color: #6c757d;
   --success-color: #28a745;
   --dark-color: #343a40;
+
+  /* Theme-specific colors */
+  --header-bg: #28a745;
+  --header-text: #ffffff;
+  --card-header-bg: #28a745;
+  --card-body-bg: #f8f9fa;
+  --text-primary: #28a745;
+  --text-secondary: #6c757d;
+  --border-color: #dee2e6;
+
+  /* Highlight colors */
+  --highlight-outlier: #ffe6e6;
+  --highlight-pareto: #e6ffe6;
+  --highlight-excluded: #f0f0f0;
+  --highlight-multiple: #ffff99;
+
+  /* Chart colors */
+  --chart-color-1: #0d6efd;
+  --chart-color-2: #6610f2;
+  --chart-color-3: #dc3545;
+  --chart-color-4: #fd7e14;
+  --chart-color-5: #ffc107;
+  --chart-color-6: #198754;
+  --chart-color-7: #20c997;
+  --chart-color-8: #0dcaf0;
+  --chart-color-9: #6f42c1;
+  --chart-color-10: #d63384;
 
   --border-radius: 0.5rem;
   --box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
@@ -13,15 +41,16 @@
 
 /* Header styles */
 header {
-  color: white;
+  color: var(--header-text);
 }
 
 /* Footer styles */
 footer {
-  color: white;
+  color: var(--header-text);
 }
 
 .navbar {
+  background-color: var(--header-bg) !important;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
@@ -31,7 +60,6 @@ footer {
 
 /* Card styles */
 .card {
-  border: 5px black;
   border-radius: var(--border-radius);
   box-shadow: var(--box-shadow);
   transition: var(--transition);
@@ -43,12 +71,14 @@ footer {
 }
 
 .card-header {
+  background-color: var(--card-header-bg) !important;
+  color: var(--header-text) !important;
   border-radius: var(--border-radius) var(--border-radius) 0 0 !important;
-  border: 5px black;
   font-weight: 600;
 }
 
 .card-body {
+  background-color: var(--card-body-bg) !important;
   border-radius: 0 0 var(--border-radius) var(--border-radius);
 }
 
@@ -62,7 +92,11 @@ footer {
 
 /* Text color overrides for Bootstrap utility classes */
 .text-primary {
-  color: var(--primary-color) !important;
+  color: var(--text-primary) !important;
+}
+
+.text-secondary {
+  color: var(--text-secondary) !important;
 }
 
 /* Breadcrumb styling */
@@ -82,7 +116,27 @@ footer {
 }
 
 .breadcrumb-item.active {
-  color: var(--secondary-color);
+  color: var(--text-secondary);
+}
+
+/* Text color for header elements */
+.text-header {
+  color: var(--header-text);
+}
+
+/* Footer styling */
+footer {
+  background-color: var(--header-bg);
+  color: var(--header-text);
+}
+
+/* Badge styling */
+.badge-primary {
+  background-color: var(--primary-color);
+}
+
+.badge-secondary {
+  background-color: var(--secondary-color);
 }
 
 /* Table enhancements */
@@ -114,7 +168,7 @@ footer {
 
 .form-control:focus {
   border-color: var(--primary-color);
-  box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.25);
+  box-shadow: 0 0 0 0.2rem rgba(var(--primary-color-rgb), 0.25);
 }
 
 .form-label {
@@ -132,6 +186,28 @@ footer {
   border-radius: var(--border-radius);
   border: none;
   box-shadow: var(--box-shadow);
+}
+
+/* Highlight classes using theme colors */
+/* !important needed to override any inline or Bootstrap styles */
+.highlight-outlier {
+  background-color: var(--highlight-outlier) !important;
+  color: black !important;
+}
+
+.highlight-pareto {
+  background-color: var(--highlight-pareto) !important;
+  color: black !important;
+}
+
+.highlight-excluded {
+  background-color: var(--highlight-excluded) !important;
+  color: black !important;
+}
+
+.highlight-multiple {
+  background-color: var(--highlight-multiple) !important;
+  color: black !important;
 }
 
 /* Skip to content link */
@@ -169,31 +245,6 @@ footer {
   word-break: break-word;
 }
 
-.highlight-outlier {
-  background-color: #ffe6e6 !important;
-  color: black !important;
-}
-
-.highlight-pareto {
-  background-color: #e6ffe6 !important;
-  color: black !important;
-}
-
-.highlight-excluded {
-  background-color: #f0f0f0 !important;
-  color: black !important;
-}
-
-.highlight-multiple {
-  /* Override individual backgrounds with a distinct multi-highlight color */
-  background-color: #ffff99 !important;  /* Bright yellow */
-  color: black !important;
-  /* Add visual indicators */
-  border: 2px solid #ff9800 !important;  /* Orange border */
-  position: relative;
-  box-shadow: 0 0 5px rgba(255, 152, 0, 0.3);
-}
-
 .clickable {
   cursor: pointer;
   text-decoration: none;
@@ -221,4 +272,15 @@ footer {
   h1 {
     font-size: 1.75rem;
   }
+}
+
+/* Theme switcher preview */
+.theme-preview {
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  border-radius: 0.25rem;
+  margin-right: 0.5rem;
+  border: 1px solid var(--border-color);
+  vertical-align: middle;
 }

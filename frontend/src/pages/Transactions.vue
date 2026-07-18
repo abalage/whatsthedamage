@@ -151,7 +151,7 @@ onMounted(() => {
             wrapper-class="w-auto"
             show-column-filters
             show-pagination
-            :pageSize="100"
+            :page-size="100"
           />
       </CardComponent>
     </div>

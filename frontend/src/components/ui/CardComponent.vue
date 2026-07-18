@@ -37,14 +37,6 @@ const cardStyle = computed(() => {
     : undefined
 })
 
-const headerClasses = computed(() => {
-  return 'card-header bg-success text-white'
-})
-
-const bodyClasses = computed(() => {
-  return 'card-body bg-light'
-})
-
 const showHeader = computed(() => {
   return props.type !== 'simple' && (props.title || props.type === 'account')
 })
@@ -68,28 +60,28 @@ const closeAlert = () => {
 <template>
   <!-- Standard Card -->
   <div v-if="type === 'standard'" :id="id" :class="cardClasses" :style="cardStyle">
-    <div v-if="showHeader" :class="headerClasses">
+    <div v-if="showHeader" class="card-header" >
       {{ title }}
     </div>
-    <div :class="bodyClasses">
+    <div class="card-body" >
       <slot></slot>
     </div>
   </div>
 
   <!-- Simple Card (no header) -->
   <div v-else-if="type === 'simple'" :id="id" :class="cardClasses">
-    <div class="card-body">
+    <div class="card-body" >
       <slot></slot>
     </div>
   </div>
 
   <!-- Account Card -->
   <div v-else-if="type === 'account'" :class="cardClasses">
-    <div :class="headerClasses">
+    <div class="card-header" >
         {{ $gettext('Account') }}: {{ formattedAccountId }}
-        <span v-if="accountCurrency" class="badge bg-info">{{ accountCurrency }}</span>
+        <span v-if="accountCurrency" class="badge badge-secondary">{{ accountCurrency }}</span>
     </div>
-    <div :class="bodyClasses">
+    <div class="card-body" >
       <slot></slot>
     </div>
   </div>

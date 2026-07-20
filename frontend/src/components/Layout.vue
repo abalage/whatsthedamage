@@ -262,7 +262,7 @@ onMounted(() => {
 
     <footer class="text-center py-3 mt-3">
       <div class="container-fluid">
-        <a href="https://balagetech.com" class="text-white me-3">@ 2026 Balagetech</a>
+        <a href="https://balagetech.com" class="theme-text-white me-3">@ 2026 Balagetech</a>
         <span class="me-3">v1.0.0</span>
       </div>
     </footer>

@@ -19,10 +19,8 @@ const TRENDLINE_BORDER_WIDTH = 2;
 const TRENDLINE_DASH_PATTERN = [5, 5];
 
 // Selected label styling - use theme colors
-const SELECTED_LABEL_COLOR = '#000000';
-const NORMAL_LABEL_COLOR = (): string => {
-  return themeStore.currentTheme.colors.textSecondary;
-};
+const SELECTED_LABEL_COLOR = computed(() => themeStore.currentTheme.colors.text.primary);
+const NORMAL_LABEL_COLOR = computed(() => themeStore.currentTheme.colors.text.secondary);
 
 // Helper function to get category color from theme
 const getCategoryColor = (index: number): string => {
@@ -239,7 +237,7 @@ const chartOptions = computed<ChartOptions<'bar'>>(() => ({
       ticks: {
         display: true,
         color: (context: { index: number }) => {
-          return selectedBarIndices.value.includes(context.index) ? SELECTED_LABEL_COLOR : NORMAL_LABEL_COLOR();
+          return selectedBarIndices.value.includes(context.index) ? SELECTED_LABEL_COLOR.value : NORMAL_LABEL_COLOR.value;
         },
         font: (context: { index: number }) => {
           return {

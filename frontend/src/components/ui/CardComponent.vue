@@ -79,7 +79,7 @@ const closeAlert = () => {
   <div v-else-if="type === 'account'" :class="cardClasses">
     <div class="card-header" >
         {{ $gettext('Account') }}: {{ formattedAccountId }}
-        <span v-if="accountCurrency" class="badge badge-secondary">{{ accountCurrency }}</span>
+        <span v-if="accountCurrency" class="theme-badge theme-badge-secondary">{{ accountCurrency }}</span>
     </div>
     <div class="card-body" >
       <slot></slot>
@@ -87,7 +87,7 @@ const closeAlert = () => {
   </div>
 
   <!-- Info Card (Alert-style) -->
-  <div v-else-if="type === 'info'" :class="`alert alert-${classes || 'info'} alert-dismissible fade show`" role="alert">
+  <div v-else-if="type === 'info'" :class="`theme-alert theme-alert-${classes || 'info'} alert-dismissible fade show`" role="alert">
     <strong>{{ title }}:</strong> <slot></slot>
     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close" @click="closeAlert"></button>
   </div>

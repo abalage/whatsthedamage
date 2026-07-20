@@ -119,14 +119,14 @@ onMounted(() => {
 
     <!-- Loading State -->
     <div v-if="isLoading" class="text-center my-5">
-      <output class="spinner-border text-primary">
+      <output class="spinner-border theme-text-white">
         <span class="visually-hidden">{{ $gettext('loading') }}...</span>
       </output>
       <p class="mt-2">{{ $gettext('Loading results') }}...</p>
     </div>
 
     <!-- Error State -->
-    <div v-else-if="error" class="alert alert-danger">
+    <div v-else-if="error" class="theme-alert theme-alert-danger">
       {{ error }}
     </div>
 
@@ -158,7 +158,7 @@ onMounted(() => {
     </div>
 
     <!-- No Data State -->
-    <div v-else class="alert alert-info">
+    <div v-else class="theme-alert theme-alert-info">
       {{ $gettext('No results found') }}
     </div>
   </div>

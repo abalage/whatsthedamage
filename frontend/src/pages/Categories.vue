@@ -230,13 +230,13 @@ onMounted(() => {
     </nav>
 
     <div v-if="isLoading" class="text-center my-5">
-      <output class="spinner-border text-primary">
+      <output class="spinner-border theme-text-white">
         <span class="visually-hidden">{{ $gettext('loading') }}...</span>
       </output>
       <p class="mt-2">{{ $gettext('Loading results') }}...</p>
     </div>
 
-    <div v-else-if="error" class="alert alert-danger">
+    <div v-else-if="error" class="theme-alert theme-alert-danger">
       {{ error }}
     </div>
 
@@ -282,7 +282,7 @@ onMounted(() => {
       </div>
     </div>
 
-    <div v-else class="alert alert-info">
+    <div v-else class="theme-alert theme-alert-info">
       <p>{{ $gettext('No results found') }}</p>
       <p v-if="!resultId">
         {{ $gettext('No result ID was provided.') }}

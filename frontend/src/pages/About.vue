@@ -13,7 +13,7 @@ const { $gettext } = useGettext()
     <p>My bank service provider gives me reports about my finances but they are not detailed enough, so I created my own.</p>
     <p>Also my financial details are a private matter between myself and my chosen bank. To process my bank account exports, I need a solution that ensures only I have access to the data.</p>
 
-    <p class="bg-warning">This application does not keep or sell any of your data. All uploaded content is removed as soon as the report is created.</p>
+    <p class="theme-bg-warning">This application does not keep or sell any of your data. All uploaded content is removed as soon as the report is created.</p>
     <h2>Main Features</h2>
     <ul>
       <li><strong>Automated Categorization:</strong> Categorizes transactions into well-known accounting categories such as deposits and payments, as well as custom categories using regular expressions.</li>

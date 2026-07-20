@@ -6,7 +6,7 @@ const { $gettext } = useGettext()
 
 <template>
   <div class="text-center my-5">
-    <output class="spinner-border text-primary">
+    <output class="spinner-border theme-text-white">
       <span class="visually-hidden">{{ $gettext('loading') }}...</span>
     </output>
     <p class="mt-2">{{ $gettext('Loading data') }}...</p>

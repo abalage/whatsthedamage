@@ -10,7 +10,9 @@ import {
   getThemeById,
   getDefaultTheme,
   type Theme,
-} from '../js/themes.ts';
+} from '../js/themes/index.js';
+
+export type { Theme };
 
 const STORAGE_KEY = 'wtb-theme-preference';
 
@@ -64,26 +66,71 @@ export const useThemeStore = defineStore('theme', () => {
     const root = document.documentElement;
     const colors = theme.colors;
 
-    // Define all CSS variables to apply
-    const cssVars: Record<string, string> = {
-      '--primary-color': colors.primary,
-      '--secondary-color': colors.secondary,
-      '--success-color': colors.success,
-      '--header-bg': colors.headerBg,
-      '--header-text': colors.headerText,
-      '--card-header-bg': colors.cardHeaderBg,
-      '--card-body-bg': colors.cardBodyBg,
-      '--text-primary': colors.textPrimary,
-      '--text-secondary': colors.textSecondary,
-      '--border-color': colors.border,
+    // Semantic CSS variables (new structure)
+    const semanticVars: Record<string, string> = {
+      // Surface colors
+      '--color-surface-primary': colors.surface.primary,
+      '--color-surface-secondary': colors.surface.secondary,
+      '--color-surface-elevated': colors.surface.elevated,
+      '--color-surface-base': colors.surface.base,
+      '--color-surface-primary-10': colors.surface.primary10,
+      
+      // Text colors
+      '--color-text-primary': colors.text.primary,
+      '--color-text-secondary': colors.text.secondary,
+      '--color-text-on-primary': colors.text.onPrimary,
+      '--color-text-on-dark': colors.text.onDark,
+      '--color-text-on-light': colors.text.onLight,
+      '--color-text-on-light-05': colors.text.onLight05,
+      '--color-text-on-light-10': colors.text.onLight10,
+      
+      // Border colors
+      '--color-border-primary': colors.border.primary,
+      '--color-border-secondary': colors.border.secondary,
+      '--color-border-subtle': colors.border.subtle,
+      
+      // Status colors
+      '--color-status-success': colors.status.success,
+      '--color-status-warning': colors.status.warning,
+      '--color-status-danger': colors.status.danger,
+      '--color-status-info': colors.status.info,
+      '--color-status-success-15': colors.status.success15,
+      '--color-status-warning-15': colors.status.warning15,
+      '--color-status-danger-15': colors.status.danger15,
+      '--color-status-info-15': colors.status.info15,
+      
+      // Highlight colors
+      '--color-highlight-outlier': colors.highlight.outlier,
+      '--color-highlight-pareto': colors.highlight.pareto,
+      '--color-highlight-excluded': colors.highlight.excluded,
+      '--color-highlight-multiple': colors.highlight.multiple,
+    };
+
+    // Legacy CSS variables (mapped from semantic structure for backward compatibility)
+    const legacyVars: Record<string, string> = {
+      '--primary-color': colors.surface.primary,
+      '--secondary-color': colors.surface.secondary,
+      '--success-color': colors.status.success,
+      '--warning-color': colors.status.warning,
+      '--danger-color': colors.status.danger,
+      '--info-color': colors.status.info,
+      '--light-color': colors.surface.elevated,
+      '--dark-color': colors.text.onLight,
+      '--header-bg': colors.surface.primary,
+      '--header-text': colors.text.onPrimary,
+      '--card-header-bg': colors.surface.primary,
+      '--card-body-bg': colors.surface.elevated,
+      '--text-primary': colors.text.primary,
+      '--text-secondary': colors.text.secondary,
+      '--border-color': colors.border.subtle,
       '--highlight-outlier': colors.highlight.outlier,
       '--highlight-pareto': colors.highlight.pareto,
       '--highlight-excluded': colors.highlight.excluded,
       '--highlight-multiple': colors.highlight.multiple,
     };
 
-    // Apply each CSS variable
-    Object.entries(cssVars).forEach(([key, value]) => {
+    // Apply all CSS variables
+    Object.entries({ ...semanticVars, ...legacyVars }).forEach(([key, value]) => {
       root.style.setProperty(key, value);
     });
 

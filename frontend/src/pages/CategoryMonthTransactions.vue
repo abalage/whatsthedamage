@@ -95,7 +95,7 @@ const aggregateRows = computed<AggregateRowConfig[]>(() => {
       type: 'custom',
       position: 'footer',
       includeInExport: true,
-      class: 'fw-bold table-light',
+      class: 'fw-bold theme-table-light',
       customCalculator: (data, columnKey) => {
         if (columnKey === 'date') return $gettext('Total')
         if (columnKey === 'amount') {
@@ -159,7 +159,7 @@ onMounted(() => {
     </div>
 
     <!-- No Data State -->
-    <div v-else class="alert alert-info">
+    <div v-else class="theme-alert theme-alert-info">
       {{ $gettext('No transactions found') }}
     </div>
   </div>

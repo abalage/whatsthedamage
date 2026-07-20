@@ -46,7 +46,7 @@ const chartData = computed(() => {
         data: values,
         backgroundColor: props.data.map((_, i) => pieChartColors.value[i % pieChartColors.value.length]),
         borderWidth: 1,
-        borderColor: '#fff'
+        borderColor: themeStore.currentTheme.colors.surface.base
       }
     ]
   };

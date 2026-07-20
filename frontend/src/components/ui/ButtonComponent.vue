@@ -25,21 +25,30 @@ const props = withDefaults(defineProps<ButtonProps>(), {
 const emit = defineEmits(['click'])
 
 const buttonClasses = computed(() => {
-  const classes = []
+  const classes = ['theme-btn']
 
-  // Base button class
-  classes.push('btn')
-
-  // Button variant
-  if (props.variant === 'back') {
-    classes.push('btn-secondary')
-  } else {
-    classes.push(`btn-${props.variant}`)
+  // Button variant - directly map typed variants to theme classes
+  switch (props.variant) {
+    case 'back':
+      classes.push('theme-btn-secondary')
+      break
+    case 'primary':
+      classes.push('theme-btn-primary')
+      break
+    case 'secondary':
+      classes.push('theme-btn-secondary')
+      break
+    case 'outline-primary':
+      classes.push('theme-btn-outline-primary')
+      break
+    case 'outline-secondary':
+      classes.push('theme-btn-outline-secondary')
+      break
   }
 
   // Size
   if (props.size) {
-    classes.push(`btn-${props.size}`)
+    classes.push(`theme-btn-${props.size}`)
   }
 
   // Additional classes
@@ -86,7 +95,3 @@ const isRouterLink = computed(() => {
     {{ text }}
   </button>
 </template>
-
-<style scoped>
-/* Button-specific styles can be added here */
-</style>

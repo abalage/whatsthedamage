@@ -1,30 +1,43 @@
 /* Main CSS for What's the Damage */
+/* Simplified with semantic design tokens - NO legacy code */
 
 :root {
-  /* Default theme colors - will be overridden by theme store */
-  --primary-color: #28a745;
-  --secondary-color: #6c757d;
-  --success-color: #28a745;
-  --warning-color: #ffc107;
-  --danger-color: #dc3545;
-  --info-color: #0d6efd;
-  --light-color: #f8f9fa;
-  --dark-color: #212529;
+  /* Surface colors */
+  --color-surface-primary: #28a745;
+  --color-surface-secondary: #6c757d;
+  --color-surface-elevated: #f8f9fa;
+  --color-surface-base: #ffffff;
+  --color-surface-primary-10: rgba(40, 167, 69, 0.10);
 
-  /* Theme-specific colors */
-  --header-bg: #28a745;
-  --header-text: #ffffff;
-  --card-header-bg: #28a745;
-  --card-body-bg: #f8f9fa;
-  --text-primary: #28a745;
-  --text-secondary: #6c757d;
-  --border-color: #dee2e6;
+  /* Text colors */
+  --color-text-primary: #28a745;
+  --color-text-secondary: #6c757d;
+  --color-text-on-primary: #ffffff;
+  --color-text-on-dark: #ffffff;
+  --color-text-on-light: #212529;
+  --color-text-on-light-05: rgba(33, 37, 41, 0.05);
+  --color-text-on-light-10: rgba(33, 37, 41, 0.10);
+
+  /* Border colors */
+  --color-border-primary: #28a745;
+  --color-border-secondary: #6c757d;
+  --color-border-subtle: #dee2e6;
+
+  /* Status colors */
+  --color-status-success: #28a745;
+  --color-status-warning: #ffc107;
+  --color-status-danger: #dc3545;
+  --color-status-info: #0d6efd;
+  --color-status-success-15: rgba(40, 167, 69, 0.15);
+  --color-status-warning-15: rgba(255, 193, 7, 0.15);
+  --color-status-danger-15: rgba(220, 53, 69, 0.15);
+  --color-status-info-15: rgba(13, 110, 253, 0.15);
 
   /* Highlight colors */
-  --highlight-outlier: #ffe6e6;
-  --highlight-pareto: #e6ffe6;
-  --highlight-excluded: #f0f0f0;
-  --highlight-multiple: #ffff99;
+  --color-highlight-outlier: #ffe6e6;
+  --color-highlight-pareto: #e6ffe6;
+  --color-highlight-excluded: #f0f0f0;
+  --color-highlight-multiple: #ffff99;
 
   /* Chart colors */
   --chart-color-1: #0d6efd;
@@ -38,69 +51,36 @@
   --chart-color-9: #6f42c1;
   --chart-color-10: #d63384;
 
-  /* Semantic design token variables - applied by theme store */
-  /* Surface colors */
-  --color-surface-primary: #28a745;
-  --color-surface-secondary: #6c757d;
-  --color-surface-elevated: #f8f9fa;
-  --color-surface-base: #ffffff;
-  --color-surface-primary-10: rgba(40, 167, 69, 0.10);
-  
-  /* Text colors */
-  --color-text-primary: #28a745;
-  --color-text-secondary: #6c757d;
-  --color-text-on-primary: #ffffff;
-  --color-text-on-dark: #ffffff;
-  --color-text-on-light: #212529;
-  --color-text-on-light-05: rgba(33, 37, 41, 0.05);
-  --color-text-on-light-10: rgba(33, 37, 41, 0.10);
-  
-  /* Border colors */
-  --color-border-primary: #28a745;
-  --color-border-secondary: #6c757d;
-  --color-border-subtle: #dee2e6;
-  
-  /* Status colors */
-  --color-status-success: #28a745;
-  --color-status-warning: #ffc107;
-  --color-status-danger: #dc3545;
-  --color-status-info: #0d6efd;
-  
-  /* Status colors with alpha - set by theme store */
-  --color-status-success-15: rgba(40, 167, 69, 0.15);
-  --color-status-warning-15: rgba(255, 193, 7, 0.15);
-  --color-status-danger-15: rgba(220, 53, 69, 0.15);
-  --color-status-info-15: rgba(13, 110, 253, 0.15);
-  
-  /* Highlight colors */
-  --color-highlight-outlier: #ffe6e6;
-  --color-highlight-pareto: #e6ffe6;
-  --color-highlight-excluded: #f0f0f0;
-  --color-highlight-multiple: #ffff99;
-
+  /* Layout tokens */
   --border-radius: 0.5rem;
   --box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
   --transition: all 0.3s ease;
 }
 
-/* Header styles */
+/* ==========================================================================
+   BASE STYLES
+   ========================================================================== */
+
 header {
-  color: var(--header-text);
+  color: var(--color-text-on-primary);
 }
 
-/* Footer styles */
 footer {
-  color: var(--header-text);
+  color: var(--color-text-on-primary);
 }
 
 .navbar {
-  background-color: var(--header-bg) !important;
+  background-color: var(--color-surface-primary) !important;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .container-fluid {
   padding: 20px;
 }
+
+/* ==========================================================================
+   LAYOUT COMPONENTS
+   ========================================================================== */
 
 /* Card styles */
 .card {
@@ -115,14 +95,14 @@ footer {
 }
 
 .card-header {
-  background-color: var(--card-header-bg) !important;
-  color: var(--header-text) !important;
+  background-color: var(--color-surface-primary) !important;
+  color: var(--color-text-on-primary) !important;
   border-radius: var(--border-radius) var(--border-radius) 0 0 !important;
   font-weight: 600;
 }
 
 .card-body {
-  background-color: var(--card-body-bg) !important;
+  background-color: var(--color-surface-elevated) !important;
   border-radius: 0 0 var(--border-radius) var(--border-radius);
 }
 
@@ -134,85 +114,21 @@ footer {
   transition: var(--transition);
 }
 
-/* Text color overrides for Bootstrap utility classes */
-.text-primary {
-  color: var(--text-primary) !important;
-}
+/* ==========================================================================
+   FORM STYLES
+   ========================================================================== */
 
-.text-secondary {
-  color: var(--text-secondary) !important;
-}
-
-/* Breadcrumb styling */
-.breadcrumb {
-  background: transparent;
-  padding: 0;
-  margin-bottom: 1.5rem;
-}
-
-.breadcrumb-item a {
-  color: var(--primary-color);
-  text-decoration: none;
-}
-
-.breadcrumb-item a:hover {
-  text-decoration: underline;
-}
-
-.breadcrumb-item.active {
-  color: var(--text-secondary);
-}
-
-/* Text color for header elements */
-.text-header {
-  color: var(--header-text);
-}
-
-/* Footer styling */
-footer {
-  background-color: var(--header-bg);
-  color: var(--header-text);
-}
-
-/* Badge styling */
-.badge-primary {
-  background-color: var(--primary-color);
-}
-
-.badge-secondary {
-  background-color: var(--secondary-color);
-}
-
-/* Table enhancements */
-.table {
-  margin-bottom: 0;
-}
-
-.table-bordered {
-  border: 1px solid var(--border-color);
-}
-
-.table-bordered th,
-.table-bordered td {
-  border: 1px solid var(--border-color);
-}
-
-/* .table-hover tbody tr:hover {
-  background-color: rgba(0, 0, 0, 0.025);
-} */
-
-/* Form styles */
 .form-control {
   margin-bottom: 10px;
   border-radius: 0.375rem;
-  border: 1px solid var(--border-color);
+  border: 1px solid var(--color-border-subtle);
   padding: 0.5rem 0.75rem;
   transition: var(--transition);
 }
 
 .form-control:focus {
-  border-color: var(--primary-color);
-  box-shadow: 0 0 0 0.2rem rgba(var(--primary-color-rgb), 0.25);
+  border-color: var(--color-surface-primary);
+  box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.25);
 }
 
 .form-label {
@@ -222,265 +138,74 @@ footer {
 
 .form-text {
   font-size: 0.875em;
-  color: var(--text-secondary);
+  color: var(--color-text-secondary);
 }
 
-/* Alert styles */
+.form-check-label {
+  font-weight: 500;
+}
+
+/* ==========================================================================
+   TABLE STYLES
+   ========================================================================== */
+
+.table {
+  margin-bottom: 0;
+}
+
+.table-bordered {
+  border: 1px solid var(--color-border-secondary);
+}
+
+.table-bordered th,
+.table-bordered td {
+  border: 1px solid var(--color-border-secondary);
+}
+
+/* ==========================================================================
+   BREADCRUMB STYLING
+   ========================================================================== */
+
+.breadcrumb {
+  background: transparent;
+  padding: 0;
+  margin-bottom: 1.5rem;
+}
+
+.breadcrumb-item a {
+  color: var(--color-surface-primary);
+  text-decoration: none;
+}
+
+.breadcrumb-item a:hover {
+  text-decoration: underline;
+}
+
+.breadcrumb-item.active {
+  color: var(--color-text-secondary);
+}
+
+/* ==========================================================================
+   FOOTER STYLING
+   ========================================================================== */
+
+footer {
+  background-color: var(--color-surface-primary);
+  color: var(--color-text-on-primary);
+}
+
+/* ==========================================================================
+   ALERT STYLES
+   ========================================================================== */
+
 .alert {
   border-radius: var(--border-radius);
   border: none;
   box-shadow: var(--box-shadow);
 }
 
-/* Highlight classes using theme colors */
-/* !important needed to override any inline or Bootstrap styles */
-.highlight-outlier {
-  background-color: var(--highlight-outlier) !important;
-  color: black !important;
-}
-
-.highlight-pareto {
-  background-color: var(--highlight-pareto) !important;
-  color: black !important;
-}
-
-.highlight-excluded {
-  background-color: var(--highlight-excluded) !important;
-  color: black !important;
-}
-
-.highlight-multiple {
-  background-color: var(--highlight-multiple) !important;
-  color: black !important;
-}
-
-/* Theme-aware utility classes for Bootstrap compatibility */
-.theme-alert {
-  border-radius: var(--border-radius);
-  border: none;
-  box-shadow: var(--box-shadow);
-  padding: 0.75rem 1.25rem;
-  margin-bottom: 1rem;
-}
-
-.theme-alert-info {
-  background-color: var(--info-color);
-  color: var(--header-text);
-  border: 1px solid var(--info-color);
-}
-
-.theme-alert-danger {
-  background-color: var(--danger-color);
-  color: var(--header-text);
-  border: 1px solid var(--danger-color);
-}
-
-.theme-alert-warning {
-  background-color: var(--warning-color);
-  color: var(--header-text);
-  border: 1px solid var(--warning-color);
-}
-
-.theme-btn {
-  border-radius: 0.375rem;
-  padding: 0.5rem 1.25rem;
-  font-weight: 500;
-  transition: var(--transition);
-  border: 1px solid transparent;
-  text-decoration: none;
-}
-
-.theme-btn-primary {
-  background-color: var(--primary-color);
-  color: var(--header-text);
-  border-color: var(--primary-color);
-}
-
-.theme-btn-primary:hover {
-  background-color: var(--primary-color);
-  color: var(--header-text);
-  opacity: 0.9;
-}
-
-.theme-btn-secondary {
-  background-color: var(--secondary-color);
-  color: var(--header-text);
-  border-color: var(--secondary-color);
-}
-
-.theme-btn-secondary:hover {
-  background-color: var(--secondary-color);
-  color: var(--header-text);
-  opacity: 0.9;
-}
-
-.theme-btn-outline-primary {
-  background-color: transparent;
-  color: var(--primary-color);
-  border-color: var(--primary-color);
-}
-
-.theme-btn-outline-primary:hover {
-  background-color: var(--primary-color);
-  color: var(--header-text);
-}
-
-.theme-btn-outline-secondary {
-  background-color: transparent;
-  color: var(--secondary-color);
-  border-color: var(--secondary-color);
-}
-
-.theme-btn-outline-secondary:hover {
-  background-color: var(--secondary-color);
-  color: var(--header-text);
-}
-
-.theme-btn-outline-success {
-  background-color: transparent;
-  color: var(--success-color);
-  border-color: var(--success-color);
-}
-
-.theme-btn-outline-success:hover {
-  background-color: var(--success-color);
-  color: var(--header-text);
-}
-
-.theme-btn-outline-danger {
-  background-color: transparent;
-  color: var(--danger-color);
-  border-color: var(--danger-color);
-}
-
-.theme-btn-outline-danger:hover {
-  background-color: var(--danger-color);
-  color: var(--header-text);
-}
-
-.theme-btn-sm {
-  padding: 0.25rem 0.5rem;
-  font-size: 0.875rem;
-  border-radius: 0.25rem;
-}
-
-.theme-text-muted {
-  color: var(--text-secondary) !important;
-}
-
-.theme-text-header {
-  color: var(--header-text) !important;
-}
-
-/* Backward compatibility alias */
-.theme-text-white {
-  color: var(--header-text) !important;
-}
-
-.theme-badge {
-  padding: 0.35em 0.65em;
-  border-radius: 0.25rem;
-  font-size: 0.75em;
-}
-
-.theme-badge-primary {
-  background-color: var(--primary-color);
-  color: var(--header-text);
-}
-
-.theme-badge-secondary {
-  background-color: var(--secondary-color);
-  color: var(--header-text);
-}
-
-.theme-bg-warning {
-  background-color: var(--warning-color);
-  color: var(--header-text);
-}
-
-.theme-table-light {
-  background-color: var(--card-header-bg);
-  color: var(--header-text);
-}
-
-/* Skip to content link */
-.sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
-}
-
-.sr-only-focusable:focus {
-  position: static;
-  width: auto;
-  height: auto;
-  margin: 0;
-  overflow: visible;
-  clip: auto;
-  white-space: normal;
-  background-color: var(--primary-color);
-  color: white;
-  padding: 0.5rem 1rem;
-  border-radius: var(--border-radius);
-  z-index: 1000;
-}
-
-/* Results-specific styles */
-.popover-wide {
-  max-width: 400px;
-  min-width: 300px;
-  word-break: break-word;
-}
-
-.clickable {
-  cursor: pointer;
-  text-decoration: none;
-  color: inherit;
-}
-
-.clickable:hover {
-  text-decoration: underline;
-}
-
-/* Responsive adjustments */
-@media (max-width: 768px) {
-  .container-fluid {
-    padding: 10px;
-  }
-
-  header, footer {
-    padding: 10px 0;
-  }
-
-  .card {
-    margin-bottom: 1rem;
-  }
-
-  h1 {
-    font-size: 1.75rem;
-  }
-}
-
-/* Theme switcher preview */
-.theme-preview {
-  display: inline-block;
-  width: 1em;
-  height: 1em;
-  border-radius: 0.25rem;
-  margin-right: 0.5rem;
-  border: 1px solid var(--border-color);
-  vertical-align: middle;
-}
-
 /* ==========================================================================
    SEMANTIC UTILITY CLASSES
-   These use the new semantic design token CSS variables
    ========================================================================== */
 
 /* Surface Background Colors */
@@ -490,11 +215,6 @@ footer {
 .bg-surface-base { background-color: var(--color-surface-base) !important; }
 
 /* Text Colors */
-.text-surface-primary { color: var(--color-surface-primary) !important; }
-.text-surface-secondary { color: var(--color-surface-secondary) !important; }
-.text-surface-elevated { color: var(--color-surface-elevated) !important; }
-.text-surface-base { color: var(--color-surface-base) !important; }
-
 .text-primary { color: var(--color-text-primary) !important; }
 .text-secondary { color: var(--color-text-secondary) !important; }
 .text-on-primary { color: var(--color-text-on-primary) !important; }
@@ -536,7 +256,10 @@ footer {
 .highlight-warning-bg { background-color: var(--color-status-warning-15) !important; }
 .highlight-info-bg { background-color: var(--color-status-info-15) !important; }
 
-/* Hover State Utilities */
+/* ==========================================================================
+   HOVER STATE UTILITIES
+   ========================================================================== */
+
 .hover-bg-surface-primary:hover { background-color: var(--color-surface-primary); }
 .hover-bg-surface-secondary:hover { background-color: var(--color-surface-secondary); }
 .hover-bg-dark-5:hover { background-color: var(--color-text-on-light-05); }
@@ -548,40 +271,119 @@ footer {
 .sortable-hover:hover { background-color: var(--color-text-on-light-05); }
 .sorted-bg { background-color: var(--color-text-on-light-10); }
 
+/* ==========================================================================
+   UTILITY CLASSES
+   ========================================================================== */
+
+.clickable {
+  cursor: pointer;
+  text-decoration: none;
+  color: inherit;
+}
+
+.clickable:hover {
+  text-decoration: underline;
+}
+
+/* Results-specific styles */
+.popover-wide {
+  max-width: 400px;
+  min-width: 300px;
+  word-break: break-word;
+}
+
+/* Skip to content link */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.sr-only-focusable:focus {
+  position: static;
+  width: auto;
+  height: auto;
+  margin: 0;
+  overflow: visible;
+  clip: auto;
+  white-space: normal;
+  background-color: var(--color-surface-primary);
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: var(--border-radius);
+  z-index: 1000;
+}
+
+/* Theme switcher preview */
+.theme-preview {
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  border-radius: 0.25rem;
+  margin-right: 0.5rem;
+  border: 1px solid var(--color-border-subtle);
+  vertical-align: middle;
+}
+
 /* Feedback/Alert box shadow using theme shadow */
 .feedback-container .alert {
   box-shadow: var(--box-shadow);
 }
 
-/* PivotCategorySelector specific hover states */
-.category-label:hover {
-  background-color: var(--color-surface-elevated);
-  border-color: var(--color-text-secondary);
-  color: var(--color-text-on-dark);
-}
-.category-label:focus {
-  outline: 2px solid var(--color-surface-primary);
-  outline-offset: 2px;
+/* ==========================================================================
+   RESPONSIVE ADJUSTMENTS
+   ========================================================================== */
+
+@media (max-width: 768px) {
+  .container-fluid {
+    padding: 10px;
+  }
+
+  header, footer {
+    padding: 10px 0;
+  }
+
+  .card {
+    margin-bottom: 1rem;
+  }
+
+  h1 {
+    font-size: 1.75rem;
+  }
 }
 
-/* Selected state */
-.category-item.selected .category-label {
-  background-color: var(--color-surface-primary) !important;
-  border-color: var(--color-surface-primary) !important;
-  color: var(--color-text-on-primary) !important;
-  opacity: 0.2;
-}
+/* ==========================================================================
+   SPACING AND SIZING UTILITIES
+   ========================================================================== */
 
-/* Default (non-selected) state */
-.category-item.default .category-label {
-  border-style: dashed;
-  background-color: var(--color-status-warning) !important;
-  opacity: 0.3;
-}
+/* Padding X-axis */
+.px-1 { padding-left: 0.25rem !important; padding-right: 0.25rem !important; }
+.px-2 { padding-left: 0.5rem !important; padding-right: 0.5rem !important; }
+.px-3 { padding-left: 0.75rem !important; padding-right: 0.75rem !important; }
+.px-4 { padding-left: 1rem !important; padding-right: 1rem !important; }
 
-/* Selected + Default state */
-.category-item.selected.default .category-label {
-  border-style: dashed;
-  background-color: var(--color-surface-primary) !important;
-  opacity: 0.4;
-}
+/* Padding Y-axis */
+.py-1 { padding-top: 0.25rem !important; padding-bottom: 0.25rem !important; }
+.py-2 { padding-top: 0.5rem !important; padding-bottom: 0.5rem !important; }
+.py-3 { padding-top: 0.75rem !important; padding-bottom: 0.75rem !important; }
+.py-4 { padding-top: 1rem !important; padding-bottom: 1rem !important; }
+
+/* Text sizes */
+.text-xs { font-size: 0.75rem !important; }
+.text-sm { font-size: 0.875rem !important; }
+.text-lg { font-size: 1.125rem !important; }
+
+/* Border radius */
+.rounded { border-radius: 0.25rem !important; }
+.rounded-sm { border-radius: 0.125rem !important; }
+.rounded-lg { border-radius: 0.5rem !important; }
+
+/* Additional hover states for status colors */
+.hover-bg-status-success-15:hover { background-color: var(--color-status-success-15); }
+.hover-bg-status-danger-15:hover { background-color: var(--color-status-danger-15); }

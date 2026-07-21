@@ -808,7 +808,7 @@ defineExpose(tableApi)
         />
         <button
           v-if="searchQuery"
-          class="theme-btn theme-btn-outline-secondary"
+          class="btn bg-surface-base text-secondary border-secondary hover-bg-surface-secondary px-2 py-1 text-sm rounded-sm"
           type="button"
           :aria-label="$gettext('Clear search')"
           @click="clearSearch"
@@ -821,7 +821,7 @@ defineExpose(tableApi)
     <!-- Column filters clear button (shown when any column filter is active) -->
     <div v-if="props.showColumnFilters !== false && Object.keys(columnFilters).length > 0" class="mb-2">
       <button
-        class="theme-btn theme-btn-sm theme-btn-outline-secondary"
+        class="btn bg-surface-base text-secondary border-secondary hover-bg-surface-secondary px-2 py-1 text-sm rounded-sm"
         type="button"
         :aria-label="$gettext('Clear all filters')"
         @click="clearColumnFilters"
@@ -834,13 +834,13 @@ defineExpose(tableApi)
     <div v-if="showExport !== false" class="mb-3">
       <div class="btn-group">
         <button
-          class="theme-btn theme-btn-sm theme-btn-secondary"
+          class="btn bg-surface-secondary text-on-dark border-secondary px-2 py-1 text-sm rounded-sm"
           @click="exportCSV"
         >
           {{ csvText ?? $gettext('Export CSV') }}
         </button>
         <button
-          class="theme-btn theme-btn-sm theme-btn-secondary"
+          class="btn bg-surface-secondary text-on-dark border-secondary px-2 py-1 text-sm rounded-sm"
           @click="exportExcel"
         >
           {{ excelText ?? $gettext('Export Excel') }}
@@ -854,7 +854,7 @@ defineExpose(tableApi)
         :id="id"
         :class="tableClasses"
       >
-        <thead class="theme-table-light">
+        <thead class="bg-surface-primary text-on-primary">
           <tr>
             <th
               v-for="column in columns"
@@ -896,7 +896,7 @@ defineExpose(tableApi)
                     <span v-if="sortColumn === column.key" class="sort-indicator">
                       {{ sortDirection === 'asc' ? '↑' : '↓' }}
                     </span>
-                    <span v-else class="sort-indicator theme-text-muted">↕</span>
+                    <span v-else class="sort-indicator text-secondary">↕</span>
                   </template>
                 </div>
                 <!-- Column-specific filter input -->
@@ -979,7 +979,7 @@ defineExpose(tableApi)
             </td>
           </tr>
           <tr v-if="paginatedData.length === 0">
-            <td :colspan="columns.length" class="text-center theme-text-muted py-4">
+            <td :colspan="columns.length" class="text-center text-secondary py-4">
               {{ $gettext('No data available') }}
             </td>
           </tr>
@@ -1084,7 +1084,7 @@ defineExpose(tableApi)
           </button>
         </li>
       </ul>
-      <div class="text-center theme-text-muted small mt-2">
+      <div class="text-center text-secondary small mt-2">
         {{ $gettext('Showing') }} {{ (currentPage - 1) * pageSize + 1 }}-{{ Math.min(currentPage * pageSize, totalItems) }}
         {{ $gettext('of') }} {{ totalItems }} {{ $gettext('items') }}
       </div>

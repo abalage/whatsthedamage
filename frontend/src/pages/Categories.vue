@@ -230,13 +230,13 @@ onMounted(() => {
     </nav>
 
     <div v-if="isLoading" class="text-center my-5">
-      <output class="spinner-border theme-text-white">
+      <output class="spinner-border text-on-primary">
         <span class="visually-hidden">{{ $gettext('loading') }}...</span>
       </output>
       <p class="mt-2">{{ $gettext('Loading results') }}...</p>
     </div>
 
-    <div v-else-if="error" class="theme-alert theme-alert-danger">
+    <div v-else-if="error" class="bg-status-danger text-on-light alert">
       {{ error }}
     </div>
 
@@ -248,6 +248,7 @@ onMounted(() => {
             :text="$gettext('Back to Form')"
             to="/"
             variant="outline-secondary"
+            type="button"
             class="mt-3 mb-3 me-2"
           />
           <ButtonComponent
@@ -282,7 +283,7 @@ onMounted(() => {
       </div>
     </div>
 
-    <div v-else class="theme-alert theme-alert-info">
+    <div v-else class="bg-status-info text-on-light alert">
       <p>{{ $gettext('No results found') }}</p>
       <p v-if="!resultId">
         {{ $gettext('No result ID was provided.') }}

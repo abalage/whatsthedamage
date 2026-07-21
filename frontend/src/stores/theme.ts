@@ -61,12 +61,13 @@ export const useThemeStore = defineStore('theme', () => {
 
   /**
    * Apply a theme to the document by setting CSS variables
+   * Only uses semantic CSS variables - NO legacy variables
    */
   function applyTheme(theme: Theme): void {
     const root = document.documentElement;
     const colors = theme.colors;
 
-    // Semantic CSS variables (new structure)
+    // Semantic CSS variables only
     const semanticVars: Record<string, string> = {
       // Surface colors
       '--color-surface-primary': colors.surface.primary,
@@ -74,7 +75,7 @@ export const useThemeStore = defineStore('theme', () => {
       '--color-surface-elevated': colors.surface.elevated,
       '--color-surface-base': colors.surface.base,
       '--color-surface-primary-10': colors.surface.primary10,
-      
+
       // Text colors
       '--color-text-primary': colors.text.primary,
       '--color-text-secondary': colors.text.secondary,
@@ -83,12 +84,12 @@ export const useThemeStore = defineStore('theme', () => {
       '--color-text-on-light': colors.text.onLight,
       '--color-text-on-light-05': colors.text.onLight05,
       '--color-text-on-light-10': colors.text.onLight10,
-      
+
       // Border colors
       '--color-border-primary': colors.border.primary,
       '--color-border-secondary': colors.border.secondary,
       '--color-border-subtle': colors.border.subtle,
-      
+
       // Status colors
       '--color-status-success': colors.status.success,
       '--color-status-warning': colors.status.warning,
@@ -98,7 +99,7 @@ export const useThemeStore = defineStore('theme', () => {
       '--color-status-warning-15': colors.status.warning15,
       '--color-status-danger-15': colors.status.danger15,
       '--color-status-info-15': colors.status.info15,
-      
+
       // Highlight colors
       '--color-highlight-outlier': colors.highlight.outlier,
       '--color-highlight-pareto': colors.highlight.pareto,
@@ -106,31 +107,8 @@ export const useThemeStore = defineStore('theme', () => {
       '--color-highlight-multiple': colors.highlight.multiple,
     };
 
-    // Legacy CSS variables (mapped from semantic structure for backward compatibility)
-    const legacyVars: Record<string, string> = {
-      '--primary-color': colors.surface.primary,
-      '--secondary-color': colors.surface.secondary,
-      '--success-color': colors.status.success,
-      '--warning-color': colors.status.warning,
-      '--danger-color': colors.status.danger,
-      '--info-color': colors.status.info,
-      '--light-color': colors.surface.elevated,
-      '--dark-color': colors.text.onLight,
-      '--header-bg': colors.surface.primary,
-      '--header-text': colors.text.onPrimary,
-      '--card-header-bg': colors.surface.primary,
-      '--card-body-bg': colors.surface.elevated,
-      '--text-primary': colors.text.primary,
-      '--text-secondary': colors.text.secondary,
-      '--border-color': colors.border.subtle,
-      '--highlight-outlier': colors.highlight.outlier,
-      '--highlight-pareto': colors.highlight.pareto,
-      '--highlight-excluded': colors.highlight.excluded,
-      '--highlight-multiple': colors.highlight.multiple,
-    };
-
-    // Apply all CSS variables
-    Object.entries({ ...semanticVars, ...legacyVars }).forEach(([key, value]) => {
+    // Apply only semantic CSS variables
+    Object.entries(semanticVars).forEach(([key, value]) => {
       root.style.setProperty(key, value);
     });
 

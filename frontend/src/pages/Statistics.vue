@@ -9,7 +9,7 @@ const { $gettext } = useGettext()
   <div class="container">
     <h1>{{ $gettext('What\'s the Damage') }} - Statistical Analysis</h1>
     <p>This page will display statistical analysis of your transactions.</p>
-    <div class="theme-alert theme-alert-info">
+    <div class="bg-status-info text-on-light alert">
       Statistical analysis will be shown here after processing your data.
     </div>
   </div>

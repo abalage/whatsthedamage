@@ -6,10 +6,11 @@ interface ButtonProps {
   text?: string
   to?: RouteLocationRaw
   type?: 'button' | 'submit' | 'reset'
-  variant?: 'primary' | 'secondary' | 'outline-primary' | 'outline-secondary' | 'back'
+  variant?: 'primary' | 'secondary' | 'outline-primary' | 'outline-secondary' | 'back' | 'success' | 'danger'
   class?: string
   disabled?: boolean
   size?: 'sm' | 'lg'
+  icon?: string
 }
 
 const props = withDefaults(defineProps<ButtonProps>(), {
@@ -19,36 +20,45 @@ const props = withDefaults(defineProps<ButtonProps>(), {
   variant: 'primary',
   class: '',
   disabled: false,
-  size: undefined
+  size: undefined,
+  icon: undefined
 })
 
 const emit = defineEmits(['click'])
 
 const buttonClasses = computed(() => {
-  const classes = ['theme-btn']
+  const classes = ['btn']
 
-  // Button variant - directly map typed variants to theme classes
+  // Button variant - map to semantic utility classes
   switch (props.variant) {
     case 'back':
-      classes.push('theme-btn-secondary')
+      classes.push('bg-surface-secondary', 'text-on-dark', 'border-secondary')
       break
     case 'primary':
-      classes.push('theme-btn-primary')
+      classes.push('bg-surface-primary', 'text-on-primary', 'border-primary')
       break
     case 'secondary':
-      classes.push('theme-btn-secondary')
+      classes.push('bg-surface-secondary', 'text-on-dark', 'border-secondary')
       break
     case 'outline-primary':
-      classes.push('theme-btn-outline-primary')
+      classes.push('bg-surface-base', 'text-primary', 'border-primary', 'hover-bg-surface-primary-10')
       break
     case 'outline-secondary':
-      classes.push('theme-btn-outline-secondary')
+      classes.push('bg-surface-base', 'text-secondary', 'border-secondary', 'hover-bg-surface-secondary')
+      break
+    case 'success':
+      classes.push('bg-surface-base', 'text-success', 'border-success', 'hover-bg-status-success-15')
+      break
+    case 'danger':
+      classes.push('bg-surface-base', 'text-danger', 'border-danger', 'hover-bg-status-danger-15')
       break
   }
 
   // Size
-  if (props.size) {
-    classes.push(`theme-btn-${props.size}`)
+  if (props.size === 'sm') {
+    classes.push('px-2', 'py-1', 'text-sm', 'rounded-sm')
+  } else if (props.size === 'lg') {
+    classes.push('px-4', 'py-2', 'text-lg', 'rounded-lg')
   }
 
   // Additional classes
@@ -81,7 +91,10 @@ const isRouterLink = computed(() => {
     :class="buttonClasses"
     @click="handleClick"
   >
-    {{ text }}
+    <slot>
+      <i v-if="icon" :class="icon" class="me-1"></i>
+      {{ text }}
+    </slot>
   </RouterLink>
 
   <!-- Button Tag -->
@@ -92,6 +105,9 @@ const isRouterLink = computed(() => {
     :disabled="disabled"
     @click="handleClick"
   >
-    {{ text }}
+    <slot>
+      <i v-if="icon" :class="icon" class="me-1"></i>
+      {{ text }}
+    </slot>
   </button>
 </template>

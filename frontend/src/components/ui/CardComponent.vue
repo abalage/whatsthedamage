@@ -11,7 +11,7 @@ interface CardProps {
   id?: string
   type?: 'standard' | 'simple' | 'account' | 'info'
   account?: Account
-  width?: string // Accepts valid CSS width values like '50%', '70%', etc.
+  width?: string
 }
 
 const props = withDefaults(defineProps<CardProps>(), {
@@ -20,7 +20,7 @@ const props = withDefaults(defineProps<CardProps>(), {
   id: undefined,
   type: 'standard',
   account: undefined,
-  width: '100%' // Default width
+  width: '100%'
 })
 
 const emit = defineEmits(['close'])
@@ -55,39 +55,39 @@ const accountCurrency = computed(() => {
 const closeAlert = () => {
   emit('close')
 }
+
+const infoCardClasses = computed(() => {
+  return ['bg-status-info', 'text-on-light', 'alert-dismissible', 'fade', 'show']
+})
 </script>
 
 <template>
-  <!-- Standard Card -->
   <div v-if="type === 'standard'" :id="id" :class="cardClasses" :style="cardStyle">
-    <div v-if="showHeader" class="card-header" >
+    <div v-if="showHeader" class="card-header">
       {{ title }}
     </div>
-    <div class="card-body" >
+    <div class="card-body">
       <slot></slot>
     </div>
   </div>
 
-  <!-- Simple Card (no header) -->
   <div v-else-if="type === 'simple'" :id="id" :class="cardClasses">
-    <div class="card-body" >
+    <div class="card-body">
       <slot></slot>
     </div>
   </div>
 
-  <!-- Account Card -->
   <div v-else-if="type === 'account'" :class="cardClasses">
-    <div class="card-header" >
-        {{ $gettext('Account') }}: {{ formattedAccountId }}
-        <span v-if="accountCurrency" class="theme-badge theme-badge-secondary">{{ accountCurrency }}</span>
+    <div class="card-header">
+      {{ $gettext('Account') }}: {{ formattedAccountId }}
+      <span v-if="accountCurrency" class="bg-surface-secondary text-on-dark px-2 py-1 rounded text-xs">{{ accountCurrency }}</span>
     </div>
-    <div class="card-body" >
+    <div class="card-body">
       <slot></slot>
     </div>
   </div>
 
-  <!-- Info Card (Alert-style) -->
-  <div v-else-if="type === 'info'" :class="`theme-alert theme-alert-${classes || 'info'} alert-dismissible fade show`" role="alert">
+  <div v-else-if="type === 'info'" :class="infoCardClasses" role="alert">
     <strong>{{ title }}:</strong> <slot></slot>
     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close" @click="closeAlert"></button>
   </div>

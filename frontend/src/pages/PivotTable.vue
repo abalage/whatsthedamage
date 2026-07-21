@@ -236,11 +236,11 @@ onMounted(() => loadData());
       <!-- Category Selector -->
       <PivotCategorySelector v-if="availableCategories.length > 0" />
 
-      <div v-else class="theme-alert theme-alert-warning">
+      <div v-else class="bg-status-warning text-on-dark alert">
         <i class="bi bi-exclamation-triangle-fill me-2"></i> {{ $gettext('No categories found in the data') }}
       </div>
 
-      <div v-if="selectedCategories.length === 0 && availableCategories.length > 0" class="theme-alert theme-alert-info mb-4">
+      <div v-if="selectedCategories.length === 0 && availableCategories.length > 0" class="bg-status-info text-on-light alert mb-4">
         <i class="bi bi-info-circle me-2"></i> {{ $gettext('Please select at least one category to see calculations') }}
       </div>
 
@@ -253,7 +253,7 @@ onMounted(() => loadData());
                 <span><i class="bi bi-tags me-2"></i> {{ $gettext('Selected Categories') }}:</span>
                 <strong>{{ selectedCategories.length }}</strong>
               </div>
-              <div class="selected-categories-list small theme-text-muted">{{ selectedCategories.map(getCategoryDisplayName).join(', ') }}</div>
+              <div class="selected-categories-list small text-secondary">{{ selectedCategories.map(getCategoryDisplayName).join(', ') }}</div>
             </div>
             <div class="col-md-6">
               <div class="d-flex justify-content-between mb-2">
@@ -298,7 +298,7 @@ onMounted(() => loadData());
       <!-- Pie Charts -->
       <div v-if="pivotData && selectedCategories.length > 0" class="mb-4">
         <CardComponent :title="$gettext('Category Breakdown by Month')" class="mb-4" width="auto">
-          <p class="theme-text-muted small mb-3"><i class="bi bi-info-circle me-1"></i> {{ $gettext('Each pie chart shows the composition of your selected categories for that month') }}</p>
+          <p class="text-secondary small mb-3"><i class="bi bi-info-circle me-1"></i> {{ $gettext('Each pie chart shows the composition of your selected categories for that month') }}</p>
           <div class="row">
             <div v-for="month in safeMonths" :key="month.month_timestamp" class="col-md-6 col-lg-4 mb-4">
               <CardComponent :title="formatMonthYear(month.month_timestamp)" class="mb-4" width="auto">
@@ -318,7 +318,7 @@ onMounted(() => loadData());
             :columns="tableColumns"
             :data="tableData"
             :aggregate-rows="aggregateRows"
-            aggregate-footer-row-class="theme-table-light fw-bold"
+            aggregate-footer-row-class="bg-surface-primary text-on-primary fw-bold"
             :page-size="25"
             :csv-text="$gettext('Export CSV')"
             :excel-text="$gettext('Export Excel')"
@@ -331,12 +331,12 @@ onMounted(() => loadData());
         </CardComponent>
       </div>
 
-      <div v-if="!pivotData && !isLoading" class="theme-alert theme-alert-info">
+      <div v-if="!pivotData && !isLoading" class="bg-status-info text-on-light alert">
         <i class="bi bi-inbox me-2"></i> {{ $gettext('No data available') }}
       </div>
     </div>
 
-    <div v-else class="theme-alert theme-alert-info">
+    <div v-else class="bg-status-info text-on-light alert">
       <i class="bi bi-inbox me-2"></i> {{ $gettext('No data available') }}
     </div>
   </div>

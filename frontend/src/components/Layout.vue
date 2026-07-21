@@ -115,10 +115,10 @@ onMounted(() => {
 <template>
   <div>
     <header>
-      <nav class="navbar navbar-expand-lg navbar-dark mb-3" :style="{ backgroundColor: themeStore.currentTheme.colors.headerBg }">
+      <nav class="navbar navbar-expand-lg navbar-dark mb-3">
         <div class="container-fluid">
-          <RouterLink to="/" class="navbar-brand text-header">What's the Damage?</RouterLink>
-          <span class="align-middle text-header">{{ $gettext('Tell me I didn\'t spend that much…') }}</span>
+          <RouterLink to="/" class="navbar-brand text-on-primary">What's the Damage?</RouterLink>
+          <span class="align-middle text-on-primary">{{ $gettext('Tell me I didn\'t spend that much…') }}</span>
           <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>
           </button>
@@ -241,7 +241,7 @@ onMounted(() => {
                       @keydown.enter.prevent="themeStore.setTheme(theme.id)"
                       @keydown.space.prevent="themeStore.setTheme(theme.id)"
                     >
-                      <span class="theme-preview" :style="{ backgroundColor: theme.colors.headerBg, color: theme.colors.headerText }">
+                      <span class="theme-preview" :style="{ backgroundColor: theme.colors.surface.primary, color: theme.colors.text.onPrimary }">
                         &nbsp;&nbsp;&nbsp;
                       </span>
                       {{ theme.name }}
@@ -262,7 +262,7 @@ onMounted(() => {
 
     <footer class="text-center py-3 mt-3">
       <div class="container-fluid">
-        <a href="https://balagetech.com" class="theme-text-white me-3">@ 2026 Balagetech</a>
+        <a href="https://balagetech.com" class="text-on-primary me-3">@ 2026 Balagetech</a>
         <span class="me-3">v1.0.0</span>
       </div>
     </footer>

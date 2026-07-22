@@ -38,12 +38,5 @@ export function getDefaultTheme(): Theme {
   return THEMES[0];
 }
 
-/**
- * Get all theme IDs
- */
-export function getAllThemeIds(): string[] {
-  return THEMES.map((t) => t.id);
-}
-
 // Re-export types
-export type { Theme, ThemeColors, ThemeChartColors, ThemeHighlightColors } from './theme.types.js';
+export type { Theme } from './theme.types.js';

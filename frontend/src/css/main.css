@@ -66,6 +66,7 @@ header {
 }
 
 footer {
+  background-color: var(--color-surface-primary);
   color: var(--color-text-on-primary);
 }
 
@@ -186,15 +187,6 @@ footer {
 }
 
 /* ==========================================================================
-   FOOTER STYLING
-   ========================================================================== */
-
-footer {
-  background-color: var(--color-surface-primary);
-  color: var(--color-text-on-primary);
-}
-
-/* ==========================================================================
    ALERT STYLES
    ========================================================================== */
 
@@ -289,7 +281,6 @@ footer {
 .popover-wide {
   max-width: 400px;
   min-width: 300px;
-  word-break: break-word;
 }
 
 /* Skip to content link */

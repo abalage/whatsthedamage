@@ -15,13 +15,10 @@ whatsthedamage/
 │   │   ├── App.vue          # Root Vue component
 │   │   ├── router/
 │   │   │   └── index.ts     # Vue Router configuration
-│   │   ├── components/
+│   │   ├── components/           # Reusable Vue components
 │   │   │   ├── Layout.vue
 │   │   │   ├── ErrorDisplay.vue
-│   │   │   └── ui/          # UI component library
-│   │   │       ├── ButtonComponent.vue
-│   │   │       ├── CardComponent.vue
-│   │   │       └── StatisticalControls.vue
+│   │   │   └── StatisticalControls.vue
 │   │   ├── config/
 │   │   |   └── highlight-config.ts
 │   │   ├── css/
@@ -30,15 +27,16 @@ whatsthedamage/
 │   │   |   └── results.css
 │   │   ├── pages/           # Page-level components (routes)
 │   │   │   ├── About.vue
+│   │   │   ├── Categories.vue
 │   │   │   ├── CategoryMonthsList.vue
 │   │   │   ├── CategoryMonthTransactions.vue
-│   │   │   ├── Details.vue
 │   │   │   ├── Index.vue
 │   │   │   ├── Legal.vue
 │   │   │   ├── MonthCategoriesList.vue
+│   │   │   ├── PivotTable.vue
 │   │   │   ├── Privacy.vue
-│   │   │   ├── Results.vue
-│   │   │   └── Statistics.vue
+│   │   │   ├── Statistics.vue
+│   │   │   └── Transactions.vue
 │   │   ├── stores/          # Pinia state management
 │   │   │   ├── feedback.ts
 │   │   │   ├── form.ts
@@ -52,8 +50,7 @@ whatsthedamage/
 │   │   │   ├── api.ts
 │   │   │   ├── index.ts
 │   │   │   ├── main.ts
-│   │   │   ├── statistical-analysis.ts
-│   │   │   └── utils.ts
+│   │   │   └── statistical-analysis.ts
 │   │   └── types/           # TypeScript type definitions
 │   │       ├── api.ts
 │   │       └── index.ts
@@ -190,7 +187,7 @@ The system follows a layered architecture with clear separation of concerns:
 - **State Management**: Pinia (stores for form, locale, statistical analysis, translations, feedback)
 - **Routing**: Vue Router 4 for client-side navigation
 - **Build Tool**: Vite 8 with ESM modules and HMR
-- **UI Framework**: Bootstrap 5 with custom Vue components
+- **UI Framework**: Bootstrap 5 with native HTML elements + Bootstrap classes
 - **Data Grid**: DataTables.net 2.3.x with Bootstrap 5 integration
 - **Utilities**: jQuery 4.0.x (for DataTables integration)
 
@@ -206,29 +203,54 @@ The system follows a layered architecture with clear separation of concerns:
 - Type-safe development with TypeScript
 - Hot Module Replacement (HMR) in development
 
+**Composables Layer**:
+Reusable stateful logic encapsulated in composable functions using Vue 3's Composition API. Composables follow the principle of single responsibility and are used for cross-cutting concerns that don't require global state.
+
+**Key Composables**:
+- `useRouteParams.ts` - Type-safe route parameter extraction with support for string arrays from route.params
+- `useApiData.ts` - API data fetching with loading/error states and feedback integration
+- `useBreadcrumbs.ts` - Dynamic breadcrumb navigation generation
+- `usePageTitle.ts` - Page title generation with i18n support and multiple format patterns
+- `useDrilldownData.ts` - Composed drilldown page logic that ties together route params, API fetching, page titles, and breadcrumbs
+
+**Design Principles**:
+- Each composable has a single, clear responsibility
+- Composables can be composed together to build complex functionality
+- Use for component-specific logic, not global state
+- Avoid wrapping Pinia stores in composables (use stores directly)
+
+**Usage Guidelines**:
+- Use Pinia stores for **global state** (theme, categories, feedback, locale, statistical preferences)
+- Use composables for **component-specific logic** (data fetching, route handling, title generation)
+- Use native Vue 3 features (`ref`, `computed`, `watch`) for simple reactivity
+
 **Frontend Architecture**:
 ```
 Frontend SPA (Vue 3)
 ├── App.vue              # Root component
 ├── router/              # Vue Router configuration
-├── stores/              # Pinia state management
+├── composables/         # Vue 3 composable functions
+│   ├── useRouteParams.ts    # Route parameter extraction
+│   ├── useApiData.ts        # API data fetching
+│   ├── useBreadcrumbs.ts    # Breadcrumb generation
+│   ├── usePageTitle.ts      # Page title generation
+│   └── useDrilldownData.ts  # Drilldown page logic
+├── stores/              # Pinia state management (global state)
 │   ├── form.ts           # Form state
 │   ├── locale.ts         # Locale/language state
-│   ├── statistical.ts    # Statistical analysis state
-│   ├── translations.ts   # Translation state
-│   └── feedback.ts       # User feedback state
+│   ├── statistical.ts    # Statistical analysis preferences
+│   ├── theme.ts          # Theme management
+│   ├── categories.ts     # Category definitions
+│   ├── pivot.ts          # Pivot table state
+│   └── feedback.ts       # User feedback/notifications
 ├── components/           # Reusable Vue components
 │   ├── Layout.vue
 │   ├── ErrorDisplay.vue
-│   └── ui/               # UI component library
-├── pages/                # Page-level components (routes)
-│   ├── About.vue
-│   ├── Details.vue
-│   ├── Results.vue
-│   └── ...
-└── js/                   # Utility functions
-    ├── api.ts            # API client
-    ├── main.ts           # DataTables initialization
+│   └── StatisticalControls.vue
+└── pages/                # Page-level components (routes)
+    ├── About.vue
+    ├── Details.vue
+    ├── Results.vue
     └── ...
 ```
 
@@ -236,6 +258,13 @@ Frontend SPA (Vue 3)
 - Development: Vite proxies `/api` to `http://localhost:5000/api/v2`
 - Production: Uses `/api/v2` base URL or configurable via `VITE_API_BASE_URL`
 - CORS-enabled for cross-origin requests
+
+**Bootstrap Usage**:
+- Bootstrap 5 CSS is imported globally for styling utilities and components
+- **Component Strategy**: Use native HTML elements with Bootstrap classes directly
+- Do NOT create wrapper components for Bootstrap elements
+- Theme colors are applied via semantic CSS variables (e.g., `bg-surface-primary`, `text-on-primary`)
+- Layout concerns belong in parent components
 
 **Deployment Modes**:
 1. **Integrated**: Backend serves frontend from `view/static/dist/` via `frontend_routes.py`
@@ -583,6 +612,9 @@ Removed.
 **Recent Architectural Improvements**:
 - **Frontend-Backend Decoupling**: Migrated from Jinja2 server-side templates to standalone Vue 3 SPA with complete API-only communication. Frontend moved from `src/whatsthedamage/view/frontend/` to project root `frontend/`. All web templates removed. Added `frontend_routes.py` for integrated deployment support.
 - **Frontend Modernization**: Adopted Vue 3 with Composition API, Vue Router 4, Pinia for state management, TypeScript 5.x, and Vite 8 for building
+- **Removed Wrapper Components**: Eliminated ButtonComponent and CardComponent that added unnecessary abstraction over Bootstrap's native classes. All usages replaced with native HTML elements + Bootstrap classes, improving code clarity and reducing maintenance burden.
+- **Simplified Composables**: Refactored useDrilldownData from a monolithic 375-line file into focused, single-responsibility composables (useRouteParams, useApiData, useBreadcrumbs, usePageTitle) that can be composed together, improving maintainability and testability. Removed deprecated buildEndpoint pattern.
+- **Code Cleanup**: Removed duplicate theme initialization from Layout.vue (theme store already auto-initializes), deleted unused utils.ts file with showNotification function.
 - **Service consolidation**: Merged DataFormattingService and ResponseBuilderService into unified ResponseFormattingService
 - Improved dependency injection patterns with standardized service container
 - Enhanced IdMappingService to use CacheService for consistency

@@ -72,7 +72,7 @@ interface ThemeSurfaceColors {
 /**
  * All theme colors organized by semantic purpose
  */
-export interface ThemeColors {
+interface ThemeColors {
   surface: ThemeSurfaceColors;
   text: ThemeTextColors;
   border: ThemeBorderColors;
@@ -88,12 +88,4 @@ export interface Theme {
   colors: ThemeColors;
 }
 
-// Export sub-interfaces for external use
-export type {
-  ThemeHighlightColors,
-  ThemeChartColors,
-  ThemeStatusColors,
-  ThemeBorderColors,
-  ThemeTextColors,
-  ThemeSurfaceColors,
-};
+

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed } from 'vue'
 import { useRoute, RouterLink } from 'vue-router'
 import { useLocaleStore } from '../stores/locale.js'
 import { useStatisticalStore } from '../stores/statistical.js'
@@ -13,6 +13,7 @@ const route = useRoute()
 const localeStore = useLocaleStore()
 const statisticalStore = useStatisticalStore()
 const feedback = useFeedbackStore()
+const themeStore = useThemeStore()
 
 const isRecalculating = ref(false)
 
@@ -102,14 +103,6 @@ const resetToDefaults = async () => {
 const setLocale = (locale: string) => {
   localeStore.setLocale(locale)
 }
-
-// Theme store
-const themeStore = useThemeStore();
-
-// Initialize theme on component mount
-onMounted(() => {
-  themeStore.initialize();
-})
 </script>
 
 <template>

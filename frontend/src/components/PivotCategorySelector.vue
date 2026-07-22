@@ -3,8 +3,6 @@ import { computed } from 'vue';
 import { useGettext } from 'vue3-gettext';
 import { usePivotStore } from '../stores/pivot.js';
 import { useCategoriesStore } from '../stores/categories.js';
-import CardComponent from '../components/ui/CardComponent.vue'
-import ButtonComponent from '../components/ui/ButtonComponent.vue'
 
 const { $gettext } = useGettext();
 const pivotStore = usePivotStore();
@@ -32,36 +30,43 @@ const getCategoryDisplayName = (categoryId: string): string => categoriesStore.g
 
 <template>
   <div class="category-selector mb-4">
-    <CardComponent :title="$gettext('Select Categories')" class="mb-4" width="auto">
-      <p class="text-secondary small mb-3">
-        {{ $gettext('Select which categories to include in your calculation. Your selection is saved automatically. (Defaults to categories belonging to "Cost of Living")') }}
-      </p>
-
-      <div class="d-flex gap-2 mb-3 flex-wrap">
-        <ButtonComponent
-          icon="bi bi-check-square"
-          :text="$gettext('Select All')"
-          variant="success"
-          size="sm"
-          :disabled="allSelected"
-          @click="selectAll"
-        />
-        <ButtonComponent
-          icon="bi bi-x-square"
-          :text="$gettext('Clear All')"
-          variant="danger"
-          size="sm"
-          :disabled="selectedCount === 0"
-          @click="clearAll"
-        />
-        <ButtonComponent
-          icon="bi bi-arrow-clockwise"
-          :text="$gettext('Reset to Defaults')"
-          variant="outline-secondary"
-          size="sm"
-          @click="resetToDefaults"
-        />
+    <div class="card mb-4" style="width: auto; margin: 0 auto">
+      <div class="card-header">
+        {{ $gettext('Select Categories') }}
       </div>
+      <div class="card-body">
+        <p class="text-secondary small mb-3">
+          {{ $gettext('Select which categories to include in your calculation. Your selection is saved automatically. (Defaults to categories belonging to "Cost of Living")') }}
+        </p>
+
+        <div class="d-flex gap-2 mb-3 flex-wrap">
+          <button
+            type="button"
+            class="btn bg-surface-base text-success border-success hover-bg-surface-primary-10 px-2 py-1 text-sm rounded-sm"
+            :disabled="allSelected"
+            @click="selectAll"
+          >
+            <i class="bi bi-check-square me-1"></i>
+            {{ $gettext('Select All') }}
+          </button>
+          <button
+            type="button"
+            class="btn bg-surface-base text-danger border-danger hover-bg-status-danger-15 px-2 py-1 text-sm rounded-sm"
+            :disabled="selectedCount === 0"
+            @click="clearAll"
+          >
+            <i class="bi bi-x-square me-1"></i>
+            {{ $gettext('Clear All') }}
+          </button>
+          <button
+            type="button"
+            class="btn bg-surface-base text-secondary border-secondary hover-bg-surface-secondary px-2 py-1 text-sm rounded-sm"
+            @click="resetToDefaults"
+          >
+            <i class="bi bi-arrow-clockwise me-1"></i>
+            {{ $gettext('Reset to Defaults') }}
+          </button>
+        </div>
 
       <p class="small text-secondary mb-2">
         <i class="bi bi-info-circle me-1"></i>
@@ -109,7 +114,8 @@ const getCategoryDisplayName = (categoryId: string): string => categoriesStore.g
           </button>
         </div>
       </fieldset>
-    </CardComponent>
+      </div>
+    </div>
   </div>
 </template>
 

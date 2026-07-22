@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, computed, watch } from 'vue';
-import { useRoute } from 'vue-router';
+import { useRoute, RouterLink } from 'vue-router';
 import { fetchResults } from '../js/api.js';
 import { useFeedbackStore } from '../stores/feedback.js';
 import { useGettext } from 'vue3-gettext';
@@ -11,8 +11,6 @@ import type { BreadcrumbItem } from '../composables/useDrilldownData.js';
 import BarChart from '../components/charts/BarChart.vue';
 import PieChart from '../components/charts/PieChart.vue';
 import PivotCategorySelector from '../components/PivotCategorySelector.vue';
-import CardComponent from '../components/ui/CardComponent.vue'
-import ButtonComponent from '../components/ui/ButtonComponent.vue'
 import PageHeader from '../components/layout/PageHeader.vue'
 import BreadcrumbNavigation from '../components/layout/BreadcrumbNavigation.vue'
 import LoadingState from '../components/layout/LoadingState.vue'
@@ -212,25 +210,30 @@ onMounted(() => loadData());
     <div v-else-if="resultsData">
       <PageHeader :title="$gettext('Pivot Table')">
         <template #actions>
-          <ButtonComponent
-            :text="$gettext('Back to Categories')"
+          <RouterLink
             :to="{ name: 'results', query: { resultId: resultId } }"
-            variant="secondary"
-            class="mt-3 mb-3"
-          />
+            class="btn bg-surface-secondary text-on-dark border-secondary mt-3 mb-3"
+          >
+            {{ $gettext('Back to Categories') }}
+          </RouterLink>
         </template>
       </PageHeader>
 
       <!-- Account Selector -->
-      <div v-if="accounts.length > 1">
-        <CardComponent :title="$gettext('Select Account')" class="mb-4" width="auto">
-          <label for="selectedAccountId" class="form-label">{{ $gettext('Account') }}</label>
-          <select id="selectedAccountId" v-model="selectedAccountId" class="form-select">
-            <option v-for="account in accounts" :key="account.id" :value="account.id">
-              {{ account.formatted_id }} ({{ account.currency }})
-            </option>
-          </select>
-        </CardComponent>
+      <div v-if="accounts.length > 1" class="mb-4">
+        <div class="card" style="width: auto; margin: 0 auto">
+          <div class="card-header">
+            {{ $gettext('Select Account') }}
+          </div>
+          <div class="card-body">
+            <label for="selectedAccountId" class="form-label">{{ $gettext('Account') }}</label>
+            <select id="selectedAccountId" v-model="selectedAccountId" class="form-select">
+              <option v-for="account in accounts" :key="account.id" :value="account.id">
+                {{ account.formatted_id }} ({{ account.currency }})
+              </option>
+            </select>
+          </div>
+        </div>
       </div>
 
       <!-- Category Selector -->
@@ -246,89 +249,112 @@ onMounted(() => loadData());
 
       <!-- Summary -->
       <div v-if="pivotData && selectedCategories.length > 0" class="mb-4">
-        <CardComponent :title="$gettext('Summary')" class="mb-4" width="auto">
-          <div class="row">
-            <div class="col-md-6">
-              <div class="d-flex justify-content-between mb-2">
-                <span><i class="bi bi-tags me-2"></i> {{ $gettext('Selected Categories') }}:</span>
-                <strong>{{ selectedCategories.length }}</strong>
+        <div class="card mb-4" style="width: auto; margin: 0 auto">
+          <div class="card-header">
+            {{ $gettext('Summary') }}
+          </div>
+          <div class="card-body">
+            <div class="row">
+              <div class="col-md-6">
+                <div class="d-flex justify-content-between mb-2">
+                  <span><i class="bi bi-tags me-2"></i> {{ $gettext('Selected Categories') }}:</span>
+                  <strong>{{ selectedCategories.length }}</strong>
+                </div>
+                <div class="selected-categories-list small text-secondary">{{ selectedCategories.map(getCategoryDisplayName).join(', ') }}</div>
               </div>
-              <div class="selected-categories-list small text-secondary">{{ selectedCategories.map(getCategoryDisplayName).join(', ') }}</div>
-            </div>
-            <div class="col-md-6">
-              <div class="d-flex justify-content-between mb-2">
-                <span><i class="bi bi-calendar me-2"></i> {{ $gettext('Months Analyzed') }}:</span>
-                <strong>{{ safeMonths.length }}</strong>
-              </div>
-              <div class="d-flex justify-content-between mb-2">
-                <span><i class="bi bi-graph-up me-2"></i> {{ $gettext('Average Monthly') }}:</span>
-                <strong>{{ trendlineValue }}</strong>
-              </div>
-              <div class="d-flex justify-content-between">
-                <span><i class="bi bi-wallet2 me-2"></i> {{ $gettext('Total') }}:</span>
-                <strong>{{ safeMonths.reduce((sum, m) => sum + Math.abs(m.total), 0) }}</strong>
+              <div class="col-md-6">
+                <div class="d-flex justify-content-between mb-2">
+                  <span><i class="bi bi-calendar me-2"></i> {{ $gettext('Months Analyzed') }}:</span>
+                  <strong>{{ safeMonths.length }}</strong>
+                </div>
+                <div class="d-flex justify-content-between mb-2">
+                  <span><i class="bi bi-graph-up me-2"></i> {{ $gettext('Average Monthly') }}:</span>
+                  <strong>{{ trendlineValue }}</strong>
+                </div>
+                <div class="d-flex justify-content-between">
+                  <span><i class="bi bi-wallet2 me-2"></i> {{ $gettext('Total') }}:</span>
+                  <strong>{{ safeMonths.reduce((sum, m) => sum + Math.abs(m.total), 0) }}</strong>
+                </div>
               </div>
             </div>
           </div>
-        </CardComponent>
+        </div>
       </div>
 
       <!-- Bar Chart -->
       <div v-if="pivotData && selectedCategories.length > 0" class="mb-4">
-        <CardComponent :title="$gettext('Monthly breakdown of selected categories')" class="mb-4" width="auto">
-          <div class="form-check form-switch mb-0">
-            <input id="showTrendline" v-model="pivotStore.showTrendline" class="form-check-input" type="checkbox" />
-            <label class="form-check-label" for="showTrendline">{{ $gettext('Show trendline') }}</label>
+        <div class="card mb-4" style="width: auto; margin: 0 auto">
+          <div class="card-header">
+            {{ $gettext('Monthly breakdown of selected categories') }}
           </div>
-        <div class="card-body">
-          <div class="chart-wrapper">
-            <BarChart
-              :data="chartData"
-              :categories="selectedCategories.map(id => ({ id, label: getCategoryDisplayName(id) }))"
-              :title="$gettext('Summaries of selected categories')"
-              :show-trendline="pivotStore.showTrendline"
-              :selectable="true"
-              @selection-changed="handleSelectionChanged"
-            />
+          <div class="card-body">
+            <div class="form-check form-switch mb-0">
+              <input id="showTrendline" v-model="pivotStore.showTrendline" class="form-check-input" type="checkbox" />
+              <label class="form-check-label" for="showTrendline">{{ $gettext('Show trendline') }}</label>
+            </div>
+            <div class="chart-wrapper">
+              <BarChart
+                :data="chartData"
+                :categories="selectedCategories.map(id => ({ id, label: getCategoryDisplayName(id) }))"
+                :title="$gettext('Summaries of selected categories')"
+                :show-trendline="pivotStore.showTrendline"
+                :selectable="true"
+                @selection-changed="handleSelectionChanged"
+              />
+            </div>
           </div>
         </div>
-        </CardComponent>
       </div>
 
       <!-- Pie Charts -->
       <div v-if="pivotData && selectedCategories.length > 0" class="mb-4">
-        <CardComponent :title="$gettext('Category Breakdown by Month')" class="mb-4" width="auto">
-          <p class="text-secondary small mb-3"><i class="bi bi-info-circle me-1"></i> {{ $gettext('Each pie chart shows the composition of your selected categories for that month') }}</p>
-          <div class="row">
-            <div v-for="month in safeMonths" :key="month.month_timestamp" class="col-md-6 col-lg-4 mb-4">
-              <CardComponent :title="formatMonthYear(month.month_timestamp)" class="mb-4" width="auto">
-                <PieChart :data="Object.entries(month.categories).filter(([id]) => selectedCategories.includes(id)).map(([id, d]) => ({ label: getCategoryDisplayName(id), value: d.amount, categoryId: id }))" :total="month.total" />
-              </CardComponent>
+        <div class="card mb-4" style="width: auto; margin: 0 auto">
+          <div class="card-header">
+            {{ $gettext('Category Breakdown by Month') }}
+          </div>
+          <div class="card-body">
+            <p class="text-secondary small mb-3"><i class="bi bi-info-circle me-1"></i> {{ $gettext('Each pie chart shows the composition of your selected categories for that month') }}</p>
+            <div class="row">
+              <div v-for="month in safeMonths" :key="month.month_timestamp" class="col-md-6 col-lg-4 mb-4">
+                <div class="card mb-4" style="width: auto; margin: 0 auto">
+                  <div class="card-header">
+                    {{ formatMonthYear(month.month_timestamp) }}
+                  </div>
+                  <div class="card-body">
+                    <PieChart :data="Object.entries(month.categories).filter(([id]) => selectedCategories.includes(id)).map(([id, d]) => ({ label: getCategoryDisplayName(id), value: d.amount, categoryId: id }))" :total="month.total" />
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
-        </CardComponent>
+        </div>
       </div>
 
       <!-- Data Table - VueDataTable component -->
       <div v-if="pivotData && selectedCategories.length > 0">
-        <CardComponent :title="$gettext('Detailed Monthly Data')" class="mb-4" width="auto">
-          <VueDataTable
-            id="pivot-table"
-            :key="`columns-${selectedCategories.join(',')}-${pivotData?.months.length}`"
-            :columns="tableColumns"
-            :data="tableData"
-            :aggregate-rows="aggregateRows"
-            aggregate-footer-row-class="bg-surface-primary text-on-primary fw-bold"
-            :page-size="25"
-            :csv-text="$gettext('Export CSV')"
-            :excel-text="$gettext('Export Excel')"
-            :search-placeholder="$gettext('Search') + ': '"
-            wrapper-class="w-auto"
-            show-column-filters
-            show-pagination
-            class="small"
-          />
-        </CardComponent>
+        <div class="card mb-4" style="width: auto; margin: 0 auto">
+          <div class="card-header">
+            {{ $gettext('Detailed Monthly Data') }}
+          </div>
+          <div class="card-body">
+            <VueDataTable
+              id="pivot-table"
+              :key="`columns-${selectedCategories.join(',')}-${pivotData?.months.length}`"
+              :columns="tableColumns"
+              :data="tableData"
+              :aggregate-rows="aggregateRows"
+              aggregate-footer-row-class="bg-surface-primary text-on-primary fw-bold"
+              :page-size="25"
+              :csv-text="$gettext('Export CSV')"
+              :excel-text="$gettext('Export Excel')"
+              :search-placeholder="$gettext('Search') + ': '"
+              wrapper-class="w-auto"
+              show-column-filters
+              show-pagination
+              class="small"
+            />
+          </div>
+        </div>
       </div>
 
       <div v-if="!pivotData && !isLoading" class="bg-status-info text-on-light alert">

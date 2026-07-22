@@ -4,8 +4,7 @@ import { useRoute } from 'vue-router'
 import { useGettext } from 'vue3-gettext'
 import { fetchResults } from '../js/api.js'
 import { useCategoriesStore } from '../stores/categories.js'
-import ButtonComponent from '../components/ui/ButtonComponent.vue'
-import CardComponent from '../components/ui/CardComponent.vue'
+import { RouterLink } from 'vue-router'
 import VueDataTable from '../components/data/VueDataTable.vue'
 import TableLink from '../components/data/TableLink.vue'
 import type { Column } from '../components/data/VueDataTable.vue'
@@ -135,16 +134,20 @@ onMounted(() => {
       <div class="d-flex justify-content-between align-items-center mb-3">
         <h1 class="mb-0">{{ $gettext('Transactions') }}</h1>
         <div class="d-flex gap-2">
-          <ButtonComponent
-            :text="$gettext('Back to Categories')"
-            variant="secondary"
+          <RouterLink
             :to="{ name: 'results', query: { resultId: resultId } }"
-            class="mt-3 mb-3"
-          />
+            class="btn bg-surface-secondary text-on-dark border-secondary mt-3 mb-3"
+          >
+            {{ $gettext('Back to Categories') }}
+          </RouterLink>
         </div>
       </div>
 
-      <CardComponent :title="$gettext('Transactions')" class="mb-4" width="fit-content">
+      <div class="card mb-4" style="width: fit-content; margin: 0 auto">
+        <div class="card-header">
+          {{ $gettext('Transactions') }}
+        </div>
+        <div class="card-body">
           <VueDataTable
             id="detail-datatable"
             :data="allTransactions"
@@ -154,7 +157,8 @@ onMounted(() => {
             show-pagination
             :page-size="100"
           />
-      </CardComponent>
+        </div>
+      </div>
     </div>
 
     <!-- No Data State -->

@@ -15,7 +15,7 @@ import type {
 } from '../types/api.js';
 
 // API base URL configuration
-export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '/api/v2';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '/api/v2';
 
 /**
  * Fetch with proper error handling and response wrapping
@@ -59,7 +59,7 @@ async function fetchApi<T>(
  * @returns Promise with parsed data
  * @throws AppError if request fails
  */
-export async function fetchWithErrorHandling<T>(
+async function fetchWithErrorHandling<T>(
   url: string,
   options: RequestInit = {}
 ): Promise<T> {

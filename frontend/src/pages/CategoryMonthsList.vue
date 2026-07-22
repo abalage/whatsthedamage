@@ -3,16 +3,16 @@ import { onMounted, computed, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useGettext } from 'vue3-gettext'
 import { useStatisticalStore } from '../stores/statistical.js'
+import { useCategoriesStore } from '../stores/categories.js'
 import {
   useDrilldownData,
   type BreadcrumbItem
 } from '../composables/useDrilldownData.js'
+import { RouterLink } from 'vue-router'
 import BreadcrumbNavigation from '../components/layout/BreadcrumbNavigation.vue'
 import LoadingState from '../components/layout/LoadingState.vue'
 import ErrorState from '../components/layout/ErrorState.vue'
 import PageHeader from '../components/layout/PageHeader.vue'
-import CardComponent from '../components/ui/CardComponent.vue'
-import ButtonComponent from '../components/ui/ButtonComponent.vue'
 import VueDataTable from '../components/data/VueDataTable.vue'
 import TableLink from '../components/data/TableLink.vue'
 import type { Column, AggregateRowConfig } from '../components/data/VueDataTable.vue'
@@ -24,6 +24,7 @@ const { $gettext } = useGettext()
 
 const route = useRoute()
 const statisticalStore = useStatisticalStore()
+const categoriesStore = useCategoriesStore()
 
 // Helper to safely get route params
 const getRouteParam = (param: string): string | null => {
@@ -89,10 +90,10 @@ const {
   titleExtractor: (data: CategoryMonthsApiResponse) => ({
     categoryId: data.category_id
   }),
-  breadcrumbItems: (): BreadcrumbItem[] => [
+  breadcrumbItems: (data: CategoryMonthsApiResponse | null): BreadcrumbItem[] => [
     { name: $gettext('Home'), to: '/' },
     { name: $gettext('Categories'), to: { name: 'results', query: { resultId: getRouteParam('resultId') } } },
-    { name: $gettext('Category Details'), active: true }
+    { name: data ? categoriesStore.getCategoryDisplayName(data.category_id) : $gettext('Category Details'), active: true }
   ],
   errorMessageKey: 'categoryMonthsLoadError'
 })
@@ -168,30 +169,38 @@ onMounted(() => {
     <div v-else-if="categoryMonthsData">
       <PageHeader :title="pageTitle">
         <template #actions>
-          <ButtonComponent
-            :text="$gettext('Back to Categories')"
+          <RouterLink
             :to="{ name: 'results', query: { resultId: getRouteParam('resultId') } }"
-            variant="secondary"
-            class="mt-3 mb-3"
-          />
+            class="btn bg-surface-secondary text-on-dark border-secondary mt-3 mb-3"
+          >
+            {{ $gettext('Back to Categories') }}
+          </RouterLink>
         </template>
       </PageHeader>
 
       <!-- Account Card -->
-      <CardComponent type="account" :account="{ id: categoryMonthsData.account_id, name: categoryMonthsData.account_name, formatted_id: categoryMonthsData.account_formatted_id, currency: categoryMonthsData.account_currency }" class="mb-4" width="fit-content">
-            <VueDataTable
-              id="datatable-category"
-              :data="tableData"
-              :columns="columns"
-              :aggregate-rows="aggregateRows"
-              :cell-highlights-by-row-id="cellHighlightsByRowId"
-              :csv-text="$gettext('Export CSV')"
-              :excel-text="$gettext('Export Excel')"
-              wrapper-class="w-auto"
-              show-column-filters
-              show-pagination
-            />
-      </CardComponent>
+      <div class="card mb-4" style="width: fit-content; margin: 0 auto">
+        <div class="card-header">
+          {{ $gettext('Account') }}: {{ categoryMonthsData.account_formatted_id }}
+          <span v-if="categoryMonthsData.account_currency" class="bg-surface-secondary text-on-dark px-2 py-1 rounded text-xs">
+            {{ categoryMonthsData.account_currency }}
+          </span>
+        </div>
+        <div class="card-body">
+          <VueDataTable
+            id="datatable-category"
+            :data="tableData"
+            :columns="columns"
+            :aggregate-rows="aggregateRows"
+            :cell-highlights-by-row-id="cellHighlightsByRowId"
+            :csv-text="$gettext('Export CSV')"
+            :excel-text="$gettext('Export Excel')"
+            wrapper-class="w-auto"
+            show-column-filters
+            show-pagination
+          />
+        </div>
+      </div>
     </div>
 
     <!-- No Data State -->

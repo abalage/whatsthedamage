@@ -3,8 +3,6 @@ import { ref, onMounted } from 'vue'
 import { useFormWithNavigation } from '../stores/form.js'
 import { useFeedbackStore } from '../stores/feedback.js'
 import { useGettext } from 'vue3-gettext'
-import CardComponent from '../components/ui/CardComponent.vue'
-import ButtonComponent from '../components/ui/ButtonComponent.vue'
 import ErrorDisplay from '../components/ErrorDisplay.vue'
 
 const { $gettext } = useGettext()
@@ -58,8 +56,12 @@ onMounted(() => {
     <ErrorDisplay />
 
     <form enctype="multipart/form-data" @submit.prevent="submitForm">
-      <CardComponent :title="$gettext('File uploads')" type="standard" width="75%">
-      <div class="row">
+      <div class="card" style="width: 75%; margin: 0 auto">
+        <div class="card-header">
+          {{ $gettext('File uploads') }}
+        </div>
+        <div class="card-body">
+          <div class="row">
           <div class="col-md-12 mb-3">
             <div class="mb-3">
               <label for="filename" class="form-label">{{ $gettext('CSV file') }}:</label>
@@ -126,23 +128,26 @@ onMounted(() => {
       </div>
       <div class="row">
           <div class="col-md-6">
-            <ButtonComponent
-              :text="formStore.isLoading ? $gettext('Processing your transactions...') : $gettext('Submit')"
-              variant="primary"
+            <button
               type="submit"
+              class="btn bg-surface-primary text-on-primary border-primary"
               :disabled="formStore.isLoading"
-            />
+            >
+              {{ formStore.isLoading ? $gettext('Processing your transactions...') : $gettext('Submit') }}
+            </button>
           </div>
           <div class="col-md-6 text-end">
-            <ButtonComponent
-              :text="$gettext('Clear form')"
-              variant="secondary"
+            <button
               type="button"
+              class="btn bg-surface-secondary text-on-dark border-secondary"
               @click="clearForm"
-            />
+            >
+              {{ $gettext('Clear form') }}
+            </button>
           </div>
       </div>
-      </CardComponent>
+        </div>
+      </div>
     </form>
   </div>
 </template>

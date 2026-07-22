@@ -1,22 +1,19 @@
 <script setup lang="ts">
 import { onMounted, computed } from 'vue'
-import { useRoute } from 'vue-router'
 import { useGettext } from 'vue3-gettext'
 import { useCategoriesStore } from '../stores/categories.js'
-import {
-  useDrilldownData,
-  type BreadcrumbItem
-} from '../composables/useDrilldownData.js'
+import { useDrilldownData } from '../composables/useDrilldownData.js'
+import { useRoute, RouterLink } from 'vue-router'
 import BreadcrumbNavigation from '../components/layout/BreadcrumbNavigation.vue'
+import type { BreadcrumbItem } from '../composables/useBreadcrumbs.js'
 import LoadingState from '../components/layout/LoadingState.vue'
 import ErrorState from '../components/layout/ErrorState.vue'
 import PageHeader from '../components/layout/PageHeader.vue'
-import CardComponent from '../components/ui/CardComponent.vue'
-import ButtonComponent from '../components/ui/ButtonComponent.vue'
 import VueDataTable from '../components/data/VueDataTable.vue'
 import type { Column, AggregateRowConfig } from '../components/data/VueDataTable.vue'
 import { fetchCategoryMonthTransactions } from '../js/api.js'
 import type { CategoryMonthTransactionsApiResponse } from '../types/api.js'
+import { formatMonthYear } from '../js/dateUtils.js'
 
 const { $gettext } = useGettext()
 const categoriesStore = useCategoriesStore()
@@ -60,15 +57,19 @@ const {
     categoryId: categoriesStore.extractCategoryIdFromData(data as unknown as Record<string, unknown>),
     monthTimestamp: data.month_timestamp
   }),
-  breadcrumbItems: (): BreadcrumbItem[] => [
-    { name: $gettext('Home'), to: '/' },
-    { name: $gettext('Categories'), to: { name: 'results', query: { resultId: getRouteParam('resultId') } } },
-    {
-      name: $gettext('Category Months'),
-      to: { name: 'category-months', params: { resultId: getRouteParam('resultId'), accountId: getRouteParam('accountId'), categoryId: getRouteParam('categoryId') } }
-    },
-    { name: $gettext('Transaction Details'), active: true }
-  ],
+  breadcrumbItems: (data: CategoryMonthTransactionsApiResponse | null): BreadcrumbItem[] => {
+    const categoryName = data ? categoriesStore.getCategoryDisplayName(categoriesStore.extractCategoryIdFromData(data as unknown as Record<string, unknown>)) : null
+    const monthName = data ? formatMonthYear(data.month_timestamp) : null
+    return [
+      { name: $gettext('Home'), to: '/' },
+      { name: $gettext('Categories'), to: { name: 'results', query: { resultId: getRouteParam('resultId') } } },
+      {
+        name: $gettext('Category Months'),
+        to: { name: 'category-months', params: { resultId: getRouteParam('resultId'), accountId: getRouteParam('accountId'), categoryId: getRouteParam('categoryId') } }
+      },
+      { name: categoryName && monthName ? `${categoryName} - ${monthName}` : $gettext('Transaction Details'), active: true }
+    ]
+  },
   errorMessageKey: 'transactionsLoadError'
 })
 
@@ -126,36 +127,44 @@ onMounted(() => {
       <PageHeader :title="pageTitle">
         <template #actions>
           <div class="d-flex gap-2">
-          <ButtonComponent
-            :text="$gettext('Back to Category Months')"
-            :to="{ name: 'category-months', params: { resultId: getRouteParam('resultId'), accountId: getRouteParam('accountId'), categoryId: getRouteParam('categoryId') } }"
-            variant="outline-secondary"
-            class="mt-3 mb-3"
-          />
-          <ButtonComponent
-            :text="$gettext('Back to Categories')"
-            :to="{ name: 'results', query: { resultId: getRouteParam('resultId') } }"
-            variant="secondary"
-            class="mt-3 mb-3"
-          />
+            <RouterLink
+              :to="{ name: 'category-months', params: { resultId: getRouteParam('resultId'), accountId: getRouteParam('accountId'), categoryId: getRouteParam('categoryId') } }"
+              class="btn bg-surface-base text-secondary border-secondary hover-bg-surface-secondary mt-3 mb-3"
+            >
+              {{ $gettext('Back to Category Months') }}
+            </RouterLink>
+            <RouterLink
+              :to="{ name: 'results', query: { resultId: getRouteParam('resultId') } }"
+              class="btn bg-surface-secondary text-on-dark border-secondary mt-3 mb-3"
+            >
+              {{ $gettext('Back to Categories') }}
+            </RouterLink>
           </div>
         </template>
       </PageHeader>
 
       <!-- Account Card -->
-      <CardComponent type="account" :account="{ id: transactionsData.account_id, name: transactionsData.account_name, formatted_id: transactionsData.account_formatted_id, currency: transactionsData.account_currency }" class="mb-4" width="fit-content">
-            <VueDataTable
-              id="transaction-details-table"
-              :data="tableData"
-              :columns="columns"
-              :aggregate-rows="aggregateRows"
-              :csv-text="$gettext('Export CSV')"
-              :excel-text="$gettext('Export Excel')"
-              wrapper-class="w-auto"
-              show-column-filters
-              show-pagination
-            />
-      </CardComponent>
+      <div class="card mb-4" style="width: fit-content; margin: 0 auto">
+        <div class="card-header">
+          {{ $gettext('Account') }}: {{ transactionsData.account_formatted_id }}
+          <span v-if="transactionsData.account_currency" class="bg-surface-secondary text-on-dark px-2 py-1 rounded text-xs">
+            {{ transactionsData.account_currency }}
+          </span>
+        </div>
+        <div class="card-body">
+          <VueDataTable
+            id="transaction-details-table"
+            :data="tableData"
+            :columns="columns"
+            :aggregate-rows="aggregateRows"
+            :csv-text="$gettext('Export CSV')"
+            :excel-text="$gettext('Export Excel')"
+            wrapper-class="w-auto"
+            show-column-filters
+            show-pagination
+          />
+        </div>
+      </div>
     </div>
 
     <!-- No Data State -->

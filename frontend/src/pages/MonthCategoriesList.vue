@@ -8,12 +8,11 @@ import {
   useDrilldownData,
   type BreadcrumbItem
 } from '../composables/useDrilldownData.js'
+import { RouterLink } from 'vue-router'
 import BreadcrumbNavigation from '../components/layout/BreadcrumbNavigation.vue'
 import LoadingState from '../components/layout/LoadingState.vue'
 import ErrorState from '../components/layout/ErrorState.vue'
 import PageHeader from '../components/layout/PageHeader.vue'
-import CardComponent from '../components/ui/CardComponent.vue'
-import ButtonComponent from '../components/ui/ButtonComponent.vue'
 import VueDataTable from '../components/data/VueDataTable.vue'
 import TableLink from '../components/data/TableLink.vue'
 import type { Column, AggregateRowConfig } from '../components/data/VueDataTable.vue'
@@ -30,6 +29,9 @@ const getRouteParam = (param: string): string | null => {
   const value = route.params[param]
   return typeof value === 'string' ? value : null
 }
+
+// Import formatMonthYear for breadcrumb
+import { formatMonthYear } from '../js/dateUtils.js'
 
 // Table columns
 const columns: Column[] = [
@@ -87,10 +89,10 @@ const {
   titleExtractor: (data: MonthCategoriesApiResponse) => ({
     monthTimestamp: data.month_timestamp
   }),
-  breadcrumbItems: (): BreadcrumbItem[] => [
+  breadcrumbItems: (data: MonthCategoriesApiResponse | null): BreadcrumbItem[] => [
     { name: $gettext('Home'), to: '/' },
     { name: $gettext('Categories'), to: { name: 'results', query: { resultId: getRouteParam('resultId') } } },
-    { name: $gettext('Month Details'), active: true }
+    { name: data ? formatMonthYear(data.month_timestamp) : $gettext('Month Details'), active: true }
   ],
   errorMessageKey: 'monthCategoriesLoadError'
 })
@@ -164,30 +166,38 @@ onMounted(() => {
     <div v-else-if="monthCategoriesData">
       <PageHeader :title="pageTitle">
         <template #actions>
-          <ButtonComponent
-            :text="$gettext('Back to Categories')"
+          <RouterLink
             :to="{ name: 'results', query: { resultId: getRouteParam('resultId') } }"
-            variant="secondary"
-            class="mt-3 mb-3"
-          />
+            class="btn bg-surface-secondary text-on-dark border-secondary mt-3 mb-3"
+          >
+            {{ $gettext('Back to Categories') }}
+          </RouterLink>
         </template>
       </PageHeader>
 
       <!-- Account Card -->
-      <CardComponent type="account" :account="{ id: monthCategoriesData.account_id, name: monthCategoriesData.account_name, formatted_id: monthCategoriesData.account_formatted_id, currency: monthCategoriesData.account_currency }" class="mb-4" width="fit-content">
-            <VueDataTable
-              id="datatable-month"
-              :data="tableData"
-              :columns="columns"
-              :aggregate-rows="aggregateRows"
-              :cell-highlights-by-row-id="cellHighlightsByRowId"
-              :csv-text="$gettext('Export CSV')"
-              :excel-text="$gettext('Export Excel')"
-              wrapper-class="w-auto"
-              show-column-filters
-              show-pagination
-            />
-      </CardComponent>
+      <div class="card mb-4" style="width: fit-content; margin: 0 auto">
+        <div class="card-header">
+          {{ $gettext('Account') }}: {{ monthCategoriesData.account_formatted_id }}
+          <span v-if="monthCategoriesData.account_currency" class="bg-surface-secondary text-on-dark px-2 py-1 rounded text-xs">
+            {{ monthCategoriesData.account_currency }}
+          </span>
+        </div>
+        <div class="card-body">
+          <VueDataTable
+            id="datatable-month"
+            :data="tableData"
+            :columns="columns"
+            :aggregate-rows="aggregateRows"
+            :cell-highlights-by-row-id="cellHighlightsByRowId"
+            :csv-text="$gettext('Export CSV')"
+            :excel-text="$gettext('Export Excel')"
+            wrapper-class="w-auto"
+            show-column-filters
+            show-pagination
+          />
+        </div>
+      </div>
     </div>
 
     <!-- No Data State -->

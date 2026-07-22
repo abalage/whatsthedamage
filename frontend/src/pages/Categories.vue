@@ -6,9 +6,8 @@ import { useFeedbackStore } from '../stores/feedback.js'
 import { useStatisticalStore } from '../stores/statistical.js'
 import { useCategoriesStore } from '../stores/categories.js'
 import { useGettext } from 'vue3-gettext'
+import { RouterLink } from 'vue-router'
 import type { ResultsApiResponse, Account } from '../types/api.js'
-import ButtonComponent from '../components/ui/ButtonComponent.vue'
-import CardComponent from '../components/ui/CardComponent.vue'
 import VueDataTable from '../components/data/VueDataTable.vue'
 import TableLink from '../components/data/TableLink.vue'
 import TableLinkWithPopover from '../components/data/TableLinkWithPopover.vue'
@@ -244,30 +243,36 @@ onMounted(() => {
       <div class="d-flex justify-content-between align-items-center mb-3">
         <h1 class="mb-0">{{ $gettext('Categories') }}</h1>
         <div class="d-flex gap-2">
-          <ButtonComponent
-            :text="$gettext('Back to Form')"
+          <RouterLink
             to="/"
-            variant="outline-secondary"
-            type="button"
-            class="mt-3 mb-3 me-2"
-          />
-          <ButtonComponent
-            :text="$gettext('Transactions')"
+            class="btn bg-surface-base text-secondary border-secondary hover-bg-surface-secondary mt-3 mb-3 me-2"
+          >
+            {{ $gettext('Back to Form') }}
+          </RouterLink>
+          <RouterLink
             :to="{ name: 'details', params: { resultId: resultId } }"
-            variant="secondary"
-            class="mt-3 mb-3 me-2"
-          />
-          <ButtonComponent
-            :text="$gettext('Pivot Table')"
+            class="btn bg-surface-secondary text-on-dark border-secondary mt-3 mb-3 me-2"
+          >
+            {{ $gettext('Transactions') }}
+          </RouterLink>
+          <RouterLink
             :to="{ name: 'pivot', params: { resultId: resultId } }"
-            variant="secondary"
-            class="mt-3 mb-3"
-          />
+            class="btn bg-surface-secondary text-on-dark border-secondary mt-3 mb-3"
+          >
+            {{ $gettext('Pivot Table') }}
+          </RouterLink>
         </div>
       </div>
 
       <div v-for="account in resultsData.accounts" :key="account.id" class="mb-5">
-        <CardComponent type="account" :account="account" class="mb-4" width="100%">
+        <div class="card mb-4" style="width: 100%; margin: 0 auto">
+          <div class="card-header">
+            {{ $gettext('Account') }}: {{ account.formatted_id }}
+            <span v-if="account.currency" class="bg-surface-secondary text-on-dark px-2 py-1 rounded text-xs">
+              {{ account.currency }}
+            </span>
+          </div>
+          <div class="card-body">
             <VueDataTable
               :id="`datatable-${account.id}`"
               :data="buildTableData(account)"
@@ -279,7 +284,8 @@ onMounted(() => {
               show-column-filters
               show-pagination
             />
-        </CardComponent>
+          </div>
+        </div>
       </div>
     </div>
 

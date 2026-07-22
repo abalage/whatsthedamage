@@ -50,7 +50,6 @@ const getIconClass = (type: string) => {
 
 .feedback-container .alert {
   margin-bottom: 10px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 @media (max-width: 768px) {

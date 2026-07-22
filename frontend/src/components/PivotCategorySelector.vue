@@ -4,6 +4,7 @@ import { useGettext } from 'vue3-gettext';
 import { usePivotStore } from '../stores/pivot.js';
 import { useCategoriesStore } from '../stores/categories.js';
 import CardComponent from '../components/ui/CardComponent.vue'
+import ButtonComponent from '../components/ui/ButtonComponent.vue'
 
 const { $gettext } = useGettext();
 const pivotStore = usePivotStore();
@@ -32,28 +33,42 @@ const getCategoryDisplayName = (categoryId: string): string => categoriesStore.g
 <template>
   <div class="category-selector mb-4">
     <CardComponent :title="$gettext('Select Categories')" class="mb-4" width="auto">
-      <p class="text-muted small mb-3">
+      <p class="text-secondary small mb-3">
         {{ $gettext('Select which categories to include in your calculation. Your selection is saved automatically. (Defaults to categories belonging to "Cost of Living")') }}
       </p>
 
       <div class="d-flex gap-2 mb-3 flex-wrap">
-        <button class="btn btn-sm btn-outline-success" :disabled="allSelected" @click="selectAll">
-          <i class="bi bi-check-square me-1"></i> {{ $gettext('Select All') }}
-        </button>
-        <button class="btn btn-sm btn-outline-danger" :disabled="selectedCount === 0" @click="clearAll">
-          <i class="bi bi-x-square me-1"></i> {{ $gettext('Clear All') }}
-        </button>
-        <button class="btn btn-sm btn-outline-secondary" @click="resetToDefaults">
-          <i class="bi bi-arrow-clockwise me-1"></i> {{ $gettext('Reset to Defaults') }}
-        </button>
+        <ButtonComponent
+          icon="bi bi-check-square"
+          :text="$gettext('Select All')"
+          variant="success"
+          size="sm"
+          :disabled="allSelected"
+          @click="selectAll"
+        />
+        <ButtonComponent
+          icon="bi bi-x-square"
+          :text="$gettext('Clear All')"
+          variant="danger"
+          size="sm"
+          :disabled="selectedCount === 0"
+          @click="clearAll"
+        />
+        <ButtonComponent
+          icon="bi bi-arrow-clockwise"
+          :text="$gettext('Reset to Defaults')"
+          variant="outline-secondary"
+          size="sm"
+          @click="resetToDefaults"
+        />
       </div>
 
-      <p class="small text-muted mb-2">
+      <p class="small text-secondary mb-2">
         <i class="bi bi-info-circle me-1"></i>
         {{ $gettext('Selected') }}: <strong>{{ selectedCount }}</strong> / {{ allCategories.length }}
         <span v-if="selectedCount > 0" class="ms-2">
           | {{ $gettext('Default categories') }}:
-          <span class="badge bg-primary ms-1">{{ defaultCategories.length }}</span>
+          <span class="bg-surface-primary text-on-primary px-2 py-1 rounded text-xs ms-1">{{ defaultCategories.length }}</span>
         </span>
       </p>
 
@@ -68,7 +83,11 @@ const getCategoryDisplayName = (categoryId: string): string => categoriesStore.g
           }"
         >
           <button
-            class="category-label"
+            class="btn px-2 py-1 text-sm rounded-sm border-primary bg-surface-elevated text-primary"
+            :class="{
+              'bg-status-success text-on-dark': isSelected(category),
+              'bg-surface-secondary': isDefaultCategory(category) && !isSelected(category)
+            }"
             type="button"
             :aria-pressed="isSelected(category)"
             :aria-label="`${getCategoryDisplayName(category)}, ${isSelected(category) ? $gettext('selected, press to deselect') : $gettext('not selected, press to select')}`"
@@ -81,14 +100,16 @@ const getCategoryDisplayName = (categoryId: string): string => categoriesStore.g
               <i v-if="isSelected(category)" class="bi bi-check-square-fill"></i>
               <i v-else class="bi bi-square"></i>
             </span>
-            <span class="category-name">{{ getCategoryDisplayName(category) }}</span>
-            <span v-if="isDefaultCategory(category)" class="default-badge" :title="$gettext('Default category')">
+            <span class="category-name">
+              {{ getCategoryDisplayName(category) }}
+            </span>
+            <span v-if="isDefaultCategory(category)" class="default-badge text-status-warning" :title="$gettext('Default category')">
               <i class="bi bi-star-fill"></i>
             </span>
           </button>
         </div>
       </fieldset>
-  </CardComponent>
+    </CardComponent>
   </div>
 </template>
 
@@ -108,45 +129,21 @@ const getCategoryDisplayName = (categoryId: string): string => categoriesStore.g
   cursor: pointer;
 }
 
-.category-item.selected .category-label {
-  background-color: #e7f1ff;
-  border-color: #0d6efd;
-  color: #0d6efd;
-}
-
-.category-item.default .category-label {
-  border-style: dashed;
-  background-color: #fff3cd;
-}
-
-.category-item.selected.default .category-label {
-  border-style: dashed;
-  background-color: #d0ebff;
-}
-
-.category-label {
+.category-grid button {
+  display: flex;
   align-items: center;
-  padding: 8px;
-  border: 1px solid #dee2e6;
-  border-radius: 6px;
+  border: 1px solid;
   transition: all 0.2s ease;
-  background-color: white;
-  font-size: 0.875rem;
   cursor: pointer;
+  width: 100%;
 }
 
-.category-label:hover {
-  background-color: #f8f9fa;
-  border-color: #adb5bd;
-}
-
-.category-label:focus {
-  outline: 2px solid #0d6efd;
+.category-grid button:focus {
+  outline: 2px solid;
   outline-offset: 2px;
 }
 
 .category-checkbox {
-  color: #0d6efd;
   font-size: 1.1rem;
   min-width: 20px;
   text-align: center;
@@ -169,7 +166,6 @@ const getCategoryDisplayName = (categoryId: string): string => categoriesStore.g
 }
 
 .default-badge {
-  color: #ffc107;
   font-size: 0.75rem;
 }
 </style>

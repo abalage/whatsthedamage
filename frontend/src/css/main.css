@@ -1,27 +1,76 @@
 /* Main CSS for What's the Damage */
+/* Simplified with semantic design tokens - NO legacy code */
 
 :root {
-  --primary-color: #28a745;
-  --secondary-color: #6c757d;
-  --success-color: #28a745;
-  --dark-color: #343a40;
+  /* Surface colors */
+  --color-surface-primary: #28a745;
+  --color-surface-secondary: #6c757d;
+  --color-surface-elevated: #f8f9fa;
+  --color-surface-base: #ffffff;
+  --color-surface-primary-10: rgba(40, 167, 69, 0.10);
 
+  /* Text colors */
+  --color-text-primary: #28a745;
+  --color-text-secondary: #6c757d;
+  --color-text-on-primary: #ffffff;
+  --color-text-on-dark: #ffffff;
+  --color-text-on-light: #212529;
+  --color-text-on-light-05: rgba(33, 37, 41, 0.05);
+  --color-text-on-light-10: rgba(33, 37, 41, 0.10);
+
+  /* Border colors */
+  --color-border-primary: #28a745;
+  --color-border-secondary: #6c757d;
+  --color-border-subtle: #dee2e6;
+
+  /* Status colors */
+  --color-status-success: #28a745;
+  --color-status-warning: #ffc107;
+  --color-status-danger: #dc3545;
+  --color-status-info: #0d6efd;
+  --color-status-success-15: rgba(40, 167, 69, 0.15);
+  --color-status-warning-15: rgba(255, 193, 7, 0.15);
+  --color-status-danger-15: rgba(220, 53, 69, 0.15);
+  --color-status-info-15: rgba(13, 110, 253, 0.15);
+
+  /* Highlight colors */
+  --color-highlight-outlier: #ffe6e6;
+  --color-highlight-pareto: #e6ffe6;
+  --color-highlight-excluded: #f0f0f0;
+  --color-highlight-multiple: #ffff99;
+
+  /* Chart colors */
+  --chart-color-1: #0d6efd;
+  --chart-color-2: #6610f2;
+  --chart-color-3: #dc3545;
+  --chart-color-4: #fd7e14;
+  --chart-color-5: #ffc107;
+  --chart-color-6: #198754;
+  --chart-color-7: #20c997;
+  --chart-color-8: #0dcaf0;
+  --chart-color-9: #6f42c1;
+  --chart-color-10: #d63384;
+
+  /* Layout tokens */
   --border-radius: 0.5rem;
   --box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
   --transition: all 0.3s ease;
 }
 
-/* Header styles */
+/* ==========================================================================
+   BASE STYLES
+   ========================================================================== */
+
 header {
-  color: white;
+  color: var(--color-text-on-primary);
 }
 
-/* Footer styles */
 footer {
-  color: white;
+  color: var(--color-text-on-primary);
 }
 
 .navbar {
+  background-color: var(--color-surface-primary) !important;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
@@ -29,9 +78,12 @@ footer {
   padding: 20px;
 }
 
+/* ==========================================================================
+   LAYOUT COMPONENTS
+   ========================================================================== */
+
 /* Card styles */
 .card {
-  border: 5px black;
   border-radius: var(--border-radius);
   box-shadow: var(--box-shadow);
   transition: var(--transition);
@@ -43,12 +95,14 @@ footer {
 }
 
 .card-header {
+  background-color: var(--color-surface-primary) !important;
+  color: var(--color-text-on-primary) !important;
   border-radius: var(--border-radius) var(--border-radius) 0 0 !important;
-  border: 5px black;
   font-weight: 600;
 }
 
 .card-body {
+  background-color: var(--color-surface-elevated) !important;
   border-radius: 0 0 var(--border-radius) var(--border-radius);
 }
 
@@ -60,60 +114,20 @@ footer {
   transition: var(--transition);
 }
 
-/* Text color overrides for Bootstrap utility classes */
-.text-primary {
-  color: var(--primary-color) !important;
-}
+/* ==========================================================================
+   FORM STYLES
+   ========================================================================== */
 
-/* Breadcrumb styling */
-.breadcrumb {
-  background: transparent;
-  padding: 0;
-  margin-bottom: 1.5rem;
-}
-
-.breadcrumb-item a {
-  color: var(--primary-color);
-  text-decoration: none;
-}
-
-.breadcrumb-item a:hover {
-  text-decoration: underline;
-}
-
-.breadcrumb-item.active {
-  color: var(--secondary-color);
-}
-
-/* Table enhancements */
-.table {
-  margin-bottom: 0;
-}
-
-.table-bordered {
-  border: 1px solid #dee2e6;
-}
-
-.table-bordered th,
-.table-bordered td {
-  border: 1px solid #dee2e6;
-}
-
-.table-hover tbody tr:hover {
-  background-color: rgba(0, 0, 0, 0.025);
-}
-
-/* Form styles */
 .form-control {
   margin-bottom: 10px;
   border-radius: 0.375rem;
-  border: 1px solid #ced4da;
+  border: 1px solid var(--color-border-subtle);
   padding: 0.5rem 0.75rem;
   transition: var(--transition);
 }
 
 .form-control:focus {
-  border-color: var(--primary-color);
+  border-color: var(--color-surface-primary);
   box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.25);
 }
 
@@ -124,14 +138,158 @@ footer {
 
 .form-text {
   font-size: 0.875em;
-  color: #6c757d;
+  color: var(--color-text-secondary);
 }
 
-/* Alert styles */
+.form-check-label {
+  font-weight: 500;
+}
+
+/* ==========================================================================
+   TABLE STYLES
+   ========================================================================== */
+
+.table {
+  margin-bottom: 0;
+}
+
+.table-bordered {
+  border: 1px solid var(--color-border-secondary);
+}
+
+.table-bordered th,
+.table-bordered td {
+  border: 1px solid var(--color-border-secondary);
+}
+
+/* ==========================================================================
+   BREADCRUMB STYLING
+   ========================================================================== */
+
+.breadcrumb {
+  background: transparent;
+  padding: 0;
+  margin-bottom: 1.5rem;
+}
+
+.breadcrumb-item a {
+  color: var(--color-surface-primary);
+  text-decoration: none;
+}
+
+.breadcrumb-item a:hover {
+  text-decoration: underline;
+}
+
+.breadcrumb-item.active {
+  color: var(--color-text-secondary);
+}
+
+/* ==========================================================================
+   FOOTER STYLING
+   ========================================================================== */
+
+footer {
+  background-color: var(--color-surface-primary);
+  color: var(--color-text-on-primary);
+}
+
+/* ==========================================================================
+   ALERT STYLES
+   ========================================================================== */
+
 .alert {
   border-radius: var(--border-radius);
   border: none;
   box-shadow: var(--box-shadow);
+}
+
+/* ==========================================================================
+   SEMANTIC UTILITY CLASSES
+   ========================================================================== */
+
+/* Surface Background Colors */
+.bg-surface-primary { background-color: var(--color-surface-primary) !important; }
+.bg-surface-secondary { background-color: var(--color-surface-secondary) !important; }
+.bg-surface-elevated { background-color: var(--color-surface-elevated) !important; }
+.bg-surface-base { background-color: var(--color-surface-base) !important; }
+
+/* Text Colors */
+.text-primary { color: var(--color-text-primary) !important; }
+.text-secondary { color: var(--color-text-secondary) !important; }
+.text-on-primary { color: var(--color-text-on-primary) !important; }
+.text-on-dark { color: var(--color-text-on-dark) !important; }
+.text-on-light { color: var(--color-text-on-light) !important; }
+
+/* Border Colors */
+.border-primary { border-color: var(--color-border-primary) !important; }
+.border-secondary { border-color: var(--color-border-secondary) !important; }
+.border-subtle { border-color: var(--color-border-subtle) !important; }
+
+/* Status Background Colors */
+.bg-status-success { background-color: var(--color-status-success) !important; }
+.bg-status-warning { background-color: var(--color-status-warning) !important; }
+.bg-status-danger { background-color: var(--color-status-danger) !important; }
+.bg-status-info { background-color: var(--color-status-info) !important; }
+
+/* Status Text Colors */
+.text-status-success { color: var(--color-status-success) !important; }
+.text-status-warning { color: var(--color-status-warning) !important; }
+.text-status-danger { color: var(--color-status-danger) !important; }
+.text-status-info { color: var(--color-status-info) !important; }
+
+/* Status Background Colors with Alpha */
+.bg-status-success-15 { background-color: var(--color-status-success-15) !important; }
+.bg-status-warning-15 { background-color: var(--color-status-warning-15) !important; }
+.bg-status-danger-15 { background-color: var(--color-status-danger-15) !important; }
+.bg-status-info-15 { background-color: var(--color-status-info-15) !important; }
+
+/* Highlight Utilities */
+.highlight-outlier { background-color: var(--color-highlight-outlier) !important; color: black !important; }
+.highlight-pareto { background-color: var(--color-highlight-pareto) !important; color: black !important; }
+.highlight-excluded { background-color: var(--color-highlight-excluded) !important; color: black !important; }
+.highlight-multiple { background-color: var(--color-highlight-multiple) !important; color: black !important; }
+
+/* Alias for positive/negative highlighting */
+.highlight-positive { background-color: var(--color-status-success-15) !important; }
+.highlight-negative { background-color: var(--color-status-danger-15) !important; }
+.highlight-warning-bg { background-color: var(--color-status-warning-15) !important; }
+.highlight-info-bg { background-color: var(--color-status-info-15) !important; }
+
+/* ==========================================================================
+   HOVER STATE UTILITIES
+   ========================================================================== */
+
+.hover-bg-surface-primary:hover { background-color: var(--color-surface-primary); }
+.hover-bg-surface-secondary:hover { background-color: var(--color-surface-secondary); }
+.hover-bg-dark-5:hover { background-color: var(--color-text-on-light-05); }
+.hover-bg-dark-10:hover { background-color: var(--color-text-on-light-10); }
+.hover-bg-primary-10:hover { background-color: var(--color-surface-primary-10); }
+
+/* Table-specific hover states */
+.table-row-hover:hover td { background-color: var(--color-text-on-light-05); }
+.sortable-hover:hover { background-color: var(--color-text-on-light-05); }
+.sorted-bg { background-color: var(--color-text-on-light-10); }
+
+/* ==========================================================================
+   UTILITY CLASSES
+   ========================================================================== */
+
+.clickable {
+  cursor: pointer;
+  text-decoration: none;
+  color: inherit;
+}
+
+.clickable:hover {
+  text-decoration: underline;
+}
+
+/* Results-specific styles */
+.popover-wide {
+  max-width: 400px;
+  min-width: 300px;
+  word-break: break-word;
 }
 
 /* Skip to content link */
@@ -155,56 +313,33 @@ footer {
   overflow: visible;
   clip: auto;
   white-space: normal;
-  background-color: var(--primary-color);
+  background-color: var(--color-surface-primary);
   color: white;
   padding: 0.5rem 1rem;
   border-radius: var(--border-radius);
   z-index: 1000;
 }
 
-/* Results-specific styles */
-.popover-wide {
-  max-width: 400px;
-  min-width: 300px;
-  word-break: break-word;
+/* Theme switcher preview */
+.theme-preview {
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  border-radius: 0.25rem;
+  margin-right: 0.5rem;
+  border: 1px solid var(--color-border-subtle);
+  vertical-align: middle;
 }
 
-.highlight-outlier {
-  background-color: #ffe6e6 !important;
-  color: black !important;
+/* Feedback/Alert box shadow using theme shadow */
+.feedback-container .alert {
+  box-shadow: var(--box-shadow);
 }
 
-.highlight-pareto {
-  background-color: #e6ffe6 !important;
-  color: black !important;
-}
+/* ==========================================================================
+   RESPONSIVE ADJUSTMENTS
+   ========================================================================== */
 
-.highlight-excluded {
-  background-color: #f0f0f0 !important;
-  color: black !important;
-}
-
-.highlight-multiple {
-  /* Override individual backgrounds with a distinct multi-highlight color */
-  background-color: #ffff99 !important;  /* Bright yellow */
-  color: black !important;
-  /* Add visual indicators */
-  border: 2px solid #ff9800 !important;  /* Orange border */
-  position: relative;
-  box-shadow: 0 0 5px rgba(255, 152, 0, 0.3);
-}
-
-.clickable {
-  cursor: pointer;
-  text-decoration: none;
-  color: inherit;
-}
-
-.clickable:hover {
-  text-decoration: underline;
-}
-
-/* Responsive adjustments */
 @media (max-width: 768px) {
   .container-fluid {
     padding: 10px;
@@ -222,3 +357,33 @@ footer {
     font-size: 1.75rem;
   }
 }
+
+/* ==========================================================================
+   SPACING AND SIZING UTILITIES
+   ========================================================================== */
+
+/* Padding X-axis */
+.px-1 { padding-left: 0.25rem !important; padding-right: 0.25rem !important; }
+.px-2 { padding-left: 0.5rem !important; padding-right: 0.5rem !important; }
+.px-3 { padding-left: 0.75rem !important; padding-right: 0.75rem !important; }
+.px-4 { padding-left: 1rem !important; padding-right: 1rem !important; }
+
+/* Padding Y-axis */
+.py-1 { padding-top: 0.25rem !important; padding-bottom: 0.25rem !important; }
+.py-2 { padding-top: 0.5rem !important; padding-bottom: 0.5rem !important; }
+.py-3 { padding-top: 0.75rem !important; padding-bottom: 0.75rem !important; }
+.py-4 { padding-top: 1rem !important; padding-bottom: 1rem !important; }
+
+/* Text sizes */
+.text-xs { font-size: 0.75rem !important; }
+.text-sm { font-size: 0.875rem !important; }
+.text-lg { font-size: 1.125rem !important; }
+
+/* Border radius */
+.rounded { border-radius: 0.25rem !important; }
+.rounded-sm { border-radius: 0.125rem !important; }
+.rounded-lg { border-radius: 0.5rem !important; }
+
+/* Additional hover states for status colors */
+.hover-bg-status-success-15:hover { background-color: var(--color-status-success-15); }
+.hover-bg-status-danger-15:hover { background-color: var(--color-status-danger-15); }

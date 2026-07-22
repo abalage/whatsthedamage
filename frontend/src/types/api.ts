@@ -97,9 +97,9 @@ export interface Account {
   name: string;
   formatted_id: string;
   currency: string;
-  data: AggregatedRow[];  // Previously was dt_response: { data: AggregatedRow[] }
-  result_id: string;
-  metadata: unknown | null;
+  data?: AggregatedRow[];  // Previously was dt_response: { data: AggregatedRow[] }
+  result_id?: string;
+  metadata?: unknown | null;
 }
 
 // ============================================================================

@@ -12,6 +12,7 @@ import LoadingState from '../components/layout/LoadingState.vue'
 import ErrorState from '../components/layout/ErrorState.vue'
 import PageHeader from '../components/layout/PageHeader.vue'
 import CardComponent from '../components/ui/CardComponent.vue'
+import ButtonComponent from '../components/ui/ButtonComponent.vue'
 import VueDataTable from '../components/data/VueDataTable.vue'
 import type { Column, AggregateRowConfig } from '../components/data/VueDataTable.vue'
 import { fetchCategoryMonthTransactions } from '../js/api.js'
@@ -45,8 +46,7 @@ const {
   error,
   fetchData,
   pageTitle,
-  breadcrumbItems,
-  navButtons
+  breadcrumbItems
 } = useDrilldownData<CategoryMonthTransactionsApiResponse>({
   fetchData: async (params) => {
     if (!params.resultId || !params.accountId || !params.categoryId || !params.monthId) {
@@ -68,18 +68,6 @@ const {
       to: { name: 'category-months', params: { resultId: getRouteParam('resultId'), accountId: getRouteParam('accountId'), categoryId: getRouteParam('categoryId') } }
     },
     { name: $gettext('Transaction Details'), active: true }
-  ],
-  navButtons: [
-    {
-      text: $gettext('Back to Category Months'),
-      to: { name: 'category-months', params: { resultId: getRouteParam('resultId'), accountId: getRouteParam('accountId'), categoryId: getRouteParam('categoryId') } },
-      variant: 'outline-secondary'
-    },
-    {
-      text: $gettext('Back to Categories'),
-      to: { name: 'results', query: { resultId: getRouteParam('resultId') } },
-      variant: 'secondary'
-    }
   ],
   errorMessageKey: 'transactionsLoadError'
 })
@@ -107,7 +95,7 @@ const aggregateRows = computed<AggregateRowConfig[]>(() => {
       type: 'custom',
       position: 'footer',
       includeInExport: true,
-      class: 'fw-bold table-light',
+      class: 'fw-bold bg-surface-primary text-on-primary',
       customCalculator: (data, columnKey) => {
         if (columnKey === 'date') return $gettext('Total')
         if (columnKey === 'amount') {
@@ -135,7 +123,24 @@ onMounted(() => {
 
     <!-- Main Content -->
     <div v-else-if="transactionsData">
-      <PageHeader :title="pageTitle" :buttons="navButtons" />
+      <PageHeader :title="pageTitle">
+        <template #actions>
+          <div class="d-flex gap-2">
+          <ButtonComponent
+            :text="$gettext('Back to Category Months')"
+            :to="{ name: 'category-months', params: { resultId: getRouteParam('resultId'), accountId: getRouteParam('accountId'), categoryId: getRouteParam('categoryId') } }"
+            variant="outline-secondary"
+            class="mt-3 mb-3"
+          />
+          <ButtonComponent
+            :text="$gettext('Back to Categories')"
+            :to="{ name: 'results', query: { resultId: getRouteParam('resultId') } }"
+            variant="secondary"
+            class="mt-3 mb-3"
+          />
+          </div>
+        </template>
+      </PageHeader>
 
       <!-- Account Card -->
       <CardComponent type="account" :account="{ id: transactionsData.account_id, name: transactionsData.account_name, formatted_id: transactionsData.account_formatted_id, currency: transactionsData.account_currency }" class="mb-4" width="fit-content">
@@ -154,7 +159,7 @@ onMounted(() => {
     </div>
 
     <!-- No Data State -->
-    <div v-else class="alert alert-info">
+    <div v-else class="bg-status-info text-on-light alert">
       {{ $gettext('No transactions found') }}
     </div>
   </div>

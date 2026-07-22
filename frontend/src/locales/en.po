@@ -9,186 +9,227 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#: src/components/data/VueDataTable.vue:558
+#: src/components/data/VueDataTable.vue:357 src/pages/PivotTable.vue:164
+#: src/pages/PivotTable.vue:169
+msgid "Average"
+msgstr ""
+
+#: src/components/data/VueDataTable.vue:358
+#, fuzzy
+msgid "Sum"
+msgstr "Submit"
+
+#: src/components/data/VueDataTable.vue:359
+msgid "Min"
+msgstr ""
+
+#: src/components/data/VueDataTable.vue:360
+msgid "Max"
+msgstr ""
+
+#: src/components/data/VueDataTable.vue:361
+#, fuzzy
+msgid "Count"
+msgstr "Amount"
+
+#: src/components/data/VueDataTable.vue:362
+#: src/components/data/VueDataTable.vue:364
+msgid "Aggregate"
+msgstr ""
+
+#: src/components/data/VueDataTable.vue:804
 msgid "Search..."
 msgstr ""
 
-#: src/components/data/VueDataTable.vue:560 src/pages/PivotTable.vue:326
+#: src/components/data/VueDataTable.vue:806 src/pages/PivotTable.vue:327
 msgid "Search"
 msgstr ""
 
-#: src/components/data/VueDataTable.vue:567
+#: src/components/data/VueDataTable.vue:813
 #, fuzzy
 msgid "Clear search"
 msgstr "Clear form"
 
-#: src/components/data/VueDataTable.vue:580
-#: src/components/data/VueDataTable.vue:583
+#: src/components/data/VueDataTable.vue:826
+#: src/components/data/VueDataTable.vue:829
 #, fuzzy
 msgid "Clear all filters"
 msgstr "Category filter"
 
-#: src/components/data/VueDataTable.vue:594 src/pages/Categories.vue:271
-#: src/pages/CategoryMonthsList.vue:199
-#: src/pages/CategoryMonthTransactions.vue:159
-#: src/pages/MonthCategoriesList.vue:188 src/pages/PivotTable.vue:324
+#: src/components/data/VueDataTable.vue:840 src/pages/Categories.vue:272
+#: src/pages/CategoryMonthsList.vue:186
+#: src/pages/CategoryMonthTransactions.vue:147
+#: src/pages/MonthCategoriesList.vue:182 src/pages/PivotTable.vue:325
 msgid "Export CSV"
 msgstr "Export CSV"
 
-#: src/components/data/VueDataTable.vue:600 src/pages/Categories.vue:272
-#: src/pages/CategoryMonthsList.vue:200
-#: src/pages/CategoryMonthTransactions.vue:160
-#: src/pages/MonthCategoriesList.vue:189 src/pages/PivotTable.vue:325
+#: src/components/data/VueDataTable.vue:846 src/pages/Categories.vue:273
+#: src/pages/CategoryMonthsList.vue:187
+#: src/pages/CategoryMonthTransactions.vue:148
+#: src/pages/MonthCategoriesList.vue:183 src/pages/PivotTable.vue:326
 msgid "Export Excel"
 msgstr "Export Excel"
 
-#: src/components/data/VueDataTable.vue:662
+#: src/components/data/VueDataTable.vue:908
 #, fuzzy
 msgid "Filter"
 msgstr "Filters"
 
-#: src/components/data/VueDataTable.vue:663
+#: src/components/data/VueDataTable.vue:909
 #, fuzzy
 msgid "Filter by"
 msgstr "Filters"
 
-#: src/components/data/VueDataTable.vue:703
-#: src/pages/CategoryMonthsList.vue:212 src/pages/MonthCategoriesList.vue:201
-#: src/pages/PivotTable.vue:336 src/pages/PivotTable.vue:341
+#: src/components/data/VueDataTable.vue:983
+#: src/pages/CategoryMonthsList.vue:197 src/pages/MonthCategoriesList.vue:193
+#: src/pages/PivotTable.vue:337 src/pages/PivotTable.vue:342
 msgid "No data available"
 msgstr ""
 
-#: src/components/data/VueDataTable.vue:745
+#: src/components/data/VueDataTable.vue:1033
 msgid "First page"
 msgstr ""
 
-#: src/components/data/VueDataTable.vue:748
+#: src/components/data/VueDataTable.vue:1036
 msgid "First"
 msgstr ""
 
-#: src/components/data/VueDataTable.vue:755
+#: src/components/data/VueDataTable.vue:1043
 msgid "Previous page"
 msgstr ""
 
-#: src/components/data/VueDataTable.vue:758
+#: src/components/data/VueDataTable.vue:1046
 msgid "Previous"
 msgstr ""
 
-#: src/components/data/VueDataTable.vue:771
+#: src/components/data/VueDataTable.vue:1059
 msgid "Page"
 msgstr ""
 
-#: src/components/data/VueDataTable.vue:782
+#: src/components/data/VueDataTable.vue:1070
 msgid "Next page"
 msgstr ""
 
-#: src/components/data/VueDataTable.vue:785
+#: src/components/data/VueDataTable.vue:1073
 msgid "Next"
 msgstr ""
 
-#: src/components/data/VueDataTable.vue:792
+#: src/components/data/VueDataTable.vue:1080
 msgid "Last page"
 msgstr ""
 
-#: src/components/data/VueDataTable.vue:795
+#: src/components/data/VueDataTable.vue:1083
 msgid "Last"
 msgstr ""
 
-#: src/components/data/VueDataTable.vue:800
+#: src/components/data/VueDataTable.vue:1088
 msgid "Showing"
 msgstr ""
 
-#: src/components/data/VueDataTable.vue:801
+#: src/components/data/VueDataTable.vue:1089
 msgid "of"
 msgstr ""
 
-#: src/components/data/VueDataTable.vue:801
+#: src/components/data/VueDataTable.vue:1089
 msgid "items"
 msgstr ""
 
-#: src/components/Layout.vue:112
+#: src/components/Layout.vue:121
 msgid "Tell me I didn't spend that much…"
 msgstr ""
 
-#: src/components/Layout.vue:119 src/pages/Categories.vue:223
-#: src/pages/CategoryMonthsList.vue:94
+#: src/components/Layout.vue:128 src/pages/Categories.vue:224
+#: src/pages/CategoryMonthsList.vue:93
 #: src/pages/CategoryMonthTransactions.vue:64
-#: src/pages/MonthCategoriesList.vue:85 src/pages/PivotTable.vue:194
+#: src/pages/MonthCategoriesList.vue:91 src/pages/PivotTable.vue:195
 #: src/pages/Transactions.vue:113
 msgid "Home"
 msgstr "Home"
 
-#: src/components/Layout.vue:123 src/components/Layout.vue:133
+#: src/components/Layout.vue:132 src/components/Layout.vue:142
 msgid "About"
 msgstr "About"
 
-#: src/components/Layout.vue:127
+#: src/components/Layout.vue:136
 msgid "Privacy"
 msgstr "Privacy"
 
-#: src/components/Layout.vue:130
+#: src/components/Layout.vue:139
 msgid "Legal"
 msgstr "Legal"
 
-#: src/components/Layout.vue:139
+#: src/components/Layout.vue:148
 msgid "Analytics"
 msgstr ""
 
-#: src/components/Layout.vue:143
+#: src/components/Layout.vue:152
 msgid "Analysis direction"
 msgstr "Analysis direction"
 
-#: src/components/Layout.vue:152
+#: src/components/Layout.vue:161
 msgid "columns"
 msgstr "columns"
 
-#: src/components/Layout.vue:153
+#: src/components/Layout.vue:162
 msgid "rows"
 msgstr "rows"
 
-#: src/components/Layout.vue:157
+#: src/components/Layout.vue:166
 msgid "Algorithms"
 msgstr "Algorithms"
 
-#: src/components/Layout.vue:168
+#: src/components/Layout.vue:177
 msgid "IQR Outlier Detection"
 msgstr "IQR Outlier Detection"
 
-#: src/components/Layout.vue:169
+#: src/components/Layout.vue:178
 msgid "Pareto analysis"
 msgstr "Pareto analysis"
 
-#: src/components/Layout.vue:173
+#: src/components/Layout.vue:182
 msgid "Legend"
 msgstr "Legend"
 
-#: src/components/Layout.vue:178
+#: src/components/Layout.vue:187
 msgid "Marked outlier by IQR"
 msgstr ""
 
-#: src/components/Layout.vue:179
+#: src/components/Layout.vue:188
 msgid "Marked outlier by Pareto principle"
 msgstr ""
 
-#: src/components/Layout.vue:180
+#: src/components/Layout.vue:189
 msgid "Excluded from statistics"
 msgstr ""
 
-#: src/components/Layout.vue:181
+#: src/components/Layout.vue:190
 msgid "Matched by multiple algorithms"
 msgstr ""
 
-#: src/components/Layout.vue:195
+#: src/components/Layout.vue:204
 msgid "Reset to defaults"
 msgstr "Reset to defaults"
 
-#: src/components/Layout.vue:202
+#: src/components/Layout.vue:211
 msgid "Languages"
 msgstr "Languages"
 
-#: src/components/Layout.vue:220
+#: src/components/Layout.vue:232
+msgid "Themes"
+msgstr ""
+
+#: src/components/Layout.vue:259
 msgid "Skip to main content"
 msgstr "Skip to main content"
+
+#: src/components/layout/LoadingState.vue:10 src/pages/Categories.vue:231
+#: src/pages/Transactions.vue:122
+msgid "loading"
+msgstr "loading"
+
+#: src/components/layout/LoadingState.vue:12 src/pages/PivotTable.vue:204
+msgid "Loading data"
+msgstr "Loading data"
 
 #: src/components/PivotCategorySelector.vue:34
 #, fuzzy
@@ -237,7 +278,7 @@ msgstr ""
 msgid "Default category"
 msgstr "Details for Category"
 
-#: src/components/ui/CardComponent.vue:89 src/pages/PivotTable.vue:228
+#: src/components/ui/CardComponent.vue:81 src/pages/PivotTable.vue:229
 #: src/pages/Transactions.vue:43
 msgid "Account"
 msgstr "Account"
@@ -335,98 +376,77 @@ msgstr ""
 msgid "What's the Damage"
 msgstr "What's the Damage"
 
-#: src/pages/Categories.vue:67 src/pages/Categories.vue:224
-#: src/pages/CategoryMonthsList.vue:95
+#: src/pages/Categories.vue:67 src/pages/Categories.vue:225
+#: src/pages/Categories.vue:242 src/pages/CategoryMonthsList.vue:94
 #: src/pages/CategoryMonthTransactions.vue:65
-#: src/pages/MonthCategoriesList.vue:86 src/pages/PivotTable.vue:195
+#: src/pages/MonthCategoriesList.vue:92 src/pages/PivotTable.vue:196
 #: src/pages/Transactions.vue:114
 msgid "Categories"
 msgstr "Categories"
 
-#: src/pages/Categories.vue:230 src/pages/CategoryMonthsList.vue:165
-#: src/pages/CategoryMonthTransactions.vue:126
-#: src/pages/MonthCategoriesList.vue:154 src/pages/Transactions.vue:122
-msgid "loading"
-msgstr "loading"
-
-#: src/pages/Categories.vue:232 src/pages/Transactions.vue:124
+#: src/pages/Categories.vue:233 src/pages/Transactions.vue:124
 msgid "Loading results"
 msgstr "Loading results"
 
-#: src/pages/Categories.vue:241
-#, fuzzy
-msgid "Transaction Categories"
-msgstr "Transaction Details"
-
-#: src/pages/Categories.vue:244
+#: src/pages/Categories.vue:245
 msgid "Back to Form"
 msgstr "Back to Form"
 
-#: src/pages/Categories.vue:250 src/pages/Transactions.vue:115
-#: src/pages/Transactions.vue:146
+#: src/pages/Categories.vue:251 src/pages/Transactions.vue:115
+#: src/pages/Transactions.vue:135 src/pages/Transactions.vue:146
 #, fuzzy
 msgid "Transactions"
 msgstr "Transaction Details"
 
-#: src/pages/Categories.vue:256 src/pages/PivotTable.vue:196
-#: src/pages/PivotTable.vue:217
+#: src/pages/Categories.vue:257 src/pages/PivotTable.vue:197
+#: src/pages/PivotTable.vue:218
 msgid "Pivot Table"
 msgstr ""
 
-#: src/pages/Categories.vue:282 src/pages/Transactions.vue:161
+#: src/pages/Categories.vue:283 src/pages/Transactions.vue:161
 msgid "No results found"
 msgstr "No results found"
 
-#: src/pages/Categories.vue:284
+#: src/pages/Categories.vue:285
 msgid "No result ID was provided."
 msgstr "No result ID was provided."
 
-#: src/pages/Categories.vue:285
+#: src/pages/Categories.vue:286
 msgid "Please upload a CSV file first."
 msgstr "Please upload a CSV file first."
 
-#: src/pages/CategoryMonthsList.vue:36 src/pages/PivotTable.vue:107
+#: src/pages/CategoryMonthsList.vue:37 src/pages/PivotTable.vue:107
 msgid "Month"
 msgstr "Month"
 
-#: src/pages/CategoryMonthsList.vue:52 src/pages/MonthCategoriesList.vue:52
-#: src/pages/PivotTable.vue:269
+#: src/pages/CategoryMonthsList.vue:53 src/pages/CategoryMonthsList.vue:138
+#: src/pages/CategoryMonthTransactions.vue:112
+#: src/pages/MonthCategoriesList.vue:54 src/pages/MonthCategoriesList.vue:134
+#: src/pages/PivotTable.vue:270
 msgid "Total"
 msgstr "Total"
 
-#: src/pages/CategoryMonthsList.vue:71
-#: src/pages/CategoryMonthTransactions.vue:44
-#: src/pages/MonthCategoriesList.vue:83
-msgid "Details"
-msgstr "Details"
-
-#: src/pages/CategoryMonthsList.vue:96
+#: src/pages/CategoryMonthsList.vue:95
 msgid "Category Details"
 msgstr "Category Details"
 
-#: src/pages/CategoryMonthsList.vue:100
+#: src/pages/CategoryMonthsList.vue:99
 #: src/pages/CategoryMonthTransactions.vue:79
-#: src/pages/MonthCategoriesList.vue:91 src/pages/PivotTable.vue:220
+#: src/pages/MonthCategoriesList.vue:97 src/pages/PivotTable.vue:221
 #: src/pages/Transactions.vue:138
 #, fuzzy
 msgid "Back to Categories"
 msgstr "Back to Category Months"
 
-#: src/pages/CategoryMonthsList.vue:167
-#: src/pages/CategoryMonthTransactions.vue:128
-#: src/pages/MonthCategoriesList.vue:156 src/pages/PivotTable.vue:203
-msgid "Loading data"
-msgstr "Loading data"
-
-#: src/pages/CategoryMonthTransactions.vue:31 src/pages/Transactions.vue:25
+#: src/pages/CategoryMonthTransactions.vue:33 src/pages/Transactions.vue:25
 msgid "Date"
 msgstr "Date"
 
-#: src/pages/CategoryMonthTransactions.vue:34 src/pages/Transactions.vue:41
+#: src/pages/CategoryMonthTransactions.vue:36 src/pages/Transactions.vue:41
 msgid "Amount"
 msgstr "Amount"
 
-#: src/pages/CategoryMonthTransactions.vue:37 src/pages/Transactions.vue:40
+#: src/pages/CategoryMonthTransactions.vue:39 src/pages/Transactions.vue:40
 msgid "Merchant"
 msgstr "Merchant"
 
@@ -434,7 +454,7 @@ msgstr "Merchant"
 msgid "Category Months"
 msgstr "Category Months"
 
-#: src/pages/CategoryMonthTransactions.vue:70 src/pages/Transactions.vue:135
+#: src/pages/CategoryMonthTransactions.vue:70
 msgid "Transaction Details"
 msgstr "Transaction Details"
 
@@ -442,7 +462,7 @@ msgstr "Transaction Details"
 msgid "Back to Category Months"
 msgstr "Back to Category Months"
 
-#: src/pages/CategoryMonthTransactions.vue:170
+#: src/pages/CategoryMonthTransactions.vue:158
 msgid "No transactions found"
 msgstr "No transactions found"
 
@@ -515,11 +535,11 @@ msgstr "Submit"
 msgid "Clear form"
 msgstr "Clear form"
 
-#: src/pages/MonthCategoriesList.vue:35 src/pages/Transactions.vue:28
+#: src/pages/MonthCategoriesList.vue:37 src/pages/Transactions.vue:28
 msgid "Category"
 msgstr "Category"
 
-#: src/pages/MonthCategoriesList.vue:87
+#: src/pages/MonthCategoriesList.vue:93
 msgid "Month Details"
 msgstr "Month Details"
 
@@ -528,65 +548,61 @@ msgstr "Month Details"
 msgid "Summary of Categories"
 msgstr "Back to Category Months"
 
-#: src/pages/PivotTable.vue:162
-msgid "Average"
-msgstr ""
-
-#: src/pages/PivotTable.vue:227
+#: src/pages/PivotTable.vue:228
 #, fuzzy
 msgid "Select Account"
 msgstr "Account"
 
-#: src/pages/PivotTable.vue:241
+#: src/pages/PivotTable.vue:242
 msgid "No categories found in the data"
 msgstr ""
 
-#: src/pages/PivotTable.vue:245
+#: src/pages/PivotTable.vue:246
 msgid "Please select at least one category to see calculations"
 msgstr ""
 
-#: src/pages/PivotTable.vue:250
+#: src/pages/PivotTable.vue:251
 msgid "Summary"
 msgstr ""
 
-#: src/pages/PivotTable.vue:254
+#: src/pages/PivotTable.vue:255
 #, fuzzy
 msgid "Selected Categories"
 msgstr "Categories"
 
-#: src/pages/PivotTable.vue:261
+#: src/pages/PivotTable.vue:262
 msgid "Months Analyzed"
 msgstr ""
 
-#: src/pages/PivotTable.vue:265
+#: src/pages/PivotTable.vue:266
 msgid "Average Monthly"
 msgstr ""
 
-#: src/pages/PivotTable.vue:279
+#: src/pages/PivotTable.vue:280
 msgid "Monthly breakdown of selected categories"
 msgstr ""
 
-#: src/pages/PivotTable.vue:282
+#: src/pages/PivotTable.vue:283
 msgid "Show trendline"
 msgstr ""
 
-#: src/pages/PivotTable.vue:289
+#: src/pages/PivotTable.vue:290
 #, fuzzy
 msgid "Summaries of selected categories"
 msgstr "Categories"
 
-#: src/pages/PivotTable.vue:301
+#: src/pages/PivotTable.vue:302
 #, fuzzy
 msgid "Category Breakdown by Month"
 msgstr "Category Months"
 
-#: src/pages/PivotTable.vue:302
+#: src/pages/PivotTable.vue:303
 msgid ""
 "Each pie chart shows the composition of your selected categories for that "
 "month"
 msgstr ""
 
-#: src/pages/PivotTable.vue:315
+#: src/pages/PivotTable.vue:316
 #, fuzzy
 msgid "Detailed Monthly Data"
 msgstr "Details for Month"
@@ -606,3 +622,10 @@ msgstr "Confidence"
 #: src/pages/Transactions.vue:46
 msgid "Notice"
 msgstr ""
+
+#, fuzzy
+#~ msgid "Transaction Categories"
+#~ msgstr "Transaction Details"
+
+#~ msgid "Details"
+#~ msgstr "Details"

@@ -808,7 +808,7 @@ defineExpose(tableApi)
         />
         <button
           v-if="searchQuery"
-          class="btn btn-outline-secondary"
+          class="btn bg-surface-base text-secondary border-secondary hover-bg-surface-secondary px-2 py-1 text-sm rounded-sm"
           type="button"
           :aria-label="$gettext('Clear search')"
           @click="clearSearch"
@@ -821,7 +821,7 @@ defineExpose(tableApi)
     <!-- Column filters clear button (shown when any column filter is active) -->
     <div v-if="props.showColumnFilters !== false && Object.keys(columnFilters).length > 0" class="mb-2">
       <button
-        class="btn btn-sm btn-outline-secondary"
+        class="btn bg-surface-base text-secondary border-secondary hover-bg-surface-secondary px-2 py-1 text-sm rounded-sm"
         type="button"
         :aria-label="$gettext('Clear all filters')"
         @click="clearColumnFilters"
@@ -834,13 +834,13 @@ defineExpose(tableApi)
     <div v-if="showExport !== false" class="mb-3">
       <div class="btn-group">
         <button
-          class="btn btn-secondary btn-sm"
+          class="btn bg-surface-secondary text-on-dark border-secondary px-2 py-1 text-sm rounded-sm"
           @click="exportCSV"
         >
           {{ csvText ?? $gettext('Export CSV') }}
         </button>
         <button
-          class="btn btn-secondary btn-sm"
+          class="btn bg-surface-secondary text-on-dark border-secondary px-2 py-1 text-sm rounded-sm"
           @click="exportExcel"
         >
           {{ excelText ?? $gettext('Export Excel') }}
@@ -854,7 +854,7 @@ defineExpose(tableApi)
         :id="id"
         :class="tableClasses"
       >
-        <thead class="table-light">
+        <thead class="bg-surface-primary text-on-primary">
           <tr>
             <th
               v-for="column in columns"
@@ -896,7 +896,7 @@ defineExpose(tableApi)
                     <span v-if="sortColumn === column.key" class="sort-indicator">
                       {{ sortDirection === 'asc' ? '↑' : '↓' }}
                     </span>
-                    <span v-else class="sort-indicator text-muted">↕</span>
+                    <span v-else class="sort-indicator text-secondary">↕</span>
                   </template>
                 </div>
                 <!-- Column-specific filter input -->
@@ -979,7 +979,7 @@ defineExpose(tableApi)
             </td>
           </tr>
           <tr v-if="paginatedData.length === 0">
-            <td :colspan="columns.length" class="text-center text-muted py-4">
+            <td :colspan="columns.length" class="text-center text-secondary py-4">
               {{ $gettext('No data available') }}
             </td>
           </tr>
@@ -1084,7 +1084,7 @@ defineExpose(tableApi)
           </button>
         </li>
       </ul>
-      <div class="text-center text-muted small mt-2">
+      <div class="text-center text-secondary small mt-2">
         {{ $gettext('Showing') }} {{ (currentPage - 1) * pageSize + 1 }}-{{ Math.min(currentPage * pageSize, totalItems) }}
         {{ $gettext('of') }} {{ totalItems }} {{ $gettext('items') }}
       </div>
@@ -1105,7 +1105,7 @@ defineExpose(tableApi)
 }
 
 .table-row-clickable:hover td {
-  background-color: rgba(0, 0, 0, 0.05);
+  background-color: var(--color-text-on-light-05);
 }
 
 .sortable {
@@ -1114,11 +1114,11 @@ defineExpose(tableApi)
 }
 
 .sortable:hover {
-  background-color: rgba(0, 0, 0, 0.05);
+  background-color: var(--color-text-on-light-05);
 }
 
 .sorted {
-  background-color: rgba(0, 0, 0, 0.1);
+  background-color: var(--color-text-on-light-10);
 }
 
 .sort-indicator {
@@ -1137,19 +1137,5 @@ th {
 .header-link:hover {
   color: inherit;
   text-decoration: underline;
-}
-
-/* Highlight classes - these are added dynamically based on cellHighlightsByRowId prop */
-:global(.highlight-positive) {
-  background-color: rgba(40, 167, 69, 0.15);
-}
-:global(.highlight-negative) {
-  background-color: rgba(220, 53, 69, 0.15);
-}
-:global(.highlight-warning) {
-  background-color: rgba(255, 193, 7, 0.15);
-}
-:global(.highlight-info) {
-  background-color: rgba(23, 162, 184, 0.15);
 }
 </style>

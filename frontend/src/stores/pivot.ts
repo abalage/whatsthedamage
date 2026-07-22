@@ -44,7 +44,7 @@ export const usePivotStore = defineStore('pivot', () => {
       (a) => a.id === selectedAccountId.value
     );
 
-    if (!account) return [];
+    if (!account?.data) return [];
 
     const categories: Set<string> = new Set();
     for (const row of account.data) {
@@ -63,7 +63,7 @@ export const usePivotStore = defineStore('pivot', () => {
       (a) => a.id === selectedAccountId.value
     );
 
-    if (!account) return [];
+    if (!account?.data) return [];
 
     // Extract unique months from account data
     const monthMap = new Map<number, { display: string; timestamp: number }>();
@@ -97,7 +97,8 @@ export const usePivotStore = defineStore('pivot', () => {
       (a) => a.id === selectedAccountId.value
     ) as Account | undefined;
 
-    if (!account || account.data.length === ZERO) return null;
+    const accountData = account?.data;
+    if (!accountData?.length) return null;
 
     // Create data for each month
     const monthsData = months.value.map(month => {
@@ -105,7 +106,7 @@ export const usePivotStore = defineStore('pivot', () => {
       const categories: Record<string, { amount: number; display: string }> = {};
 
       // Find all rows for this month
-      for (const row of account.data) {
+      for (const row of accountData) {
         if (row.date.timestamp === month.timestamp && !row.is_calculated) {
           const amount = typeof row.total.raw === 'number'
             ? row.total.raw
@@ -139,13 +140,13 @@ export const usePivotStore = defineStore('pivot', () => {
       : ZERO;
 
     // Get currency from account
-    const currency = account.currency ?? '';
+    const currency = account!.currency ?? '';
 
     return {
       months: monthsData,
       mean,
       currency,
-      accountName: account.name
+      accountName: account!.name
     };
   });
 

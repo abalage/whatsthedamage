@@ -79,6 +79,7 @@ const allTransactions = computed(() => {
   const transactions = []
 
   for (const account of resultsData.value.accounts) {
+    if (!account.data) continue
     for (const aggRow of account.data) {
       for (const detail of aggRow.details) {
         transactions.push({
@@ -118,14 +119,14 @@ onMounted(() => {
 
     <!-- Loading State -->
     <div v-if="isLoading" class="text-center my-5">
-      <output class="spinner-border text-primary">
+      <output class="spinner-border text-on-primary">
         <span class="visually-hidden">{{ $gettext('loading') }}...</span>
       </output>
       <p class="mt-2">{{ $gettext('Loading results') }}...</p>
     </div>
 
     <!-- Error State -->
-    <div v-else-if="error" class="alert alert-danger">
+    <div v-else-if="error" class="bg-status-danger text-on-light alert">
       {{ error }}
     </div>
 
@@ -151,13 +152,13 @@ onMounted(() => {
             wrapper-class="w-auto"
             show-column-filters
             show-pagination
-            :pageSize="100"
+            :page-size="100"
           />
       </CardComponent>
     </div>
 
     <!-- No Data State -->
-    <div v-else class="alert alert-info">
+    <div v-else class="bg-status-info text-on-light alert">
       {{ $gettext('No results found') }}
     </div>
   </div>

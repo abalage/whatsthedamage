@@ -12,6 +12,7 @@ import LoadingState from '../components/layout/LoadingState.vue'
 import ErrorState from '../components/layout/ErrorState.vue'
 import PageHeader from '../components/layout/PageHeader.vue'
 import CardComponent from '../components/ui/CardComponent.vue'
+import ButtonComponent from '../components/ui/ButtonComponent.vue'
 import VueDataTable from '../components/data/VueDataTable.vue'
 import TableLink from '../components/data/TableLink.vue'
 import type { Column, AggregateRowConfig } from '../components/data/VueDataTable.vue'
@@ -75,8 +76,7 @@ const {
   accountId,
   categoryId,
   pageTitle,
-  breadcrumbItems,
-  navButtons
+  breadcrumbItems
 } = useDrilldownData<CategoryMonthsApiResponse>({
   fetchData: async (params) => {
     if (!params.resultId || !params.accountId || !params.categoryId) {
@@ -93,13 +93,6 @@ const {
     { name: $gettext('Home'), to: '/' },
     { name: $gettext('Categories'), to: { name: 'results', query: { resultId: getRouteParam('resultId') } } },
     { name: $gettext('Category Details'), active: true }
-  ],
-  navButtons: [
-    {
-      text: $gettext('Back to Categories'),
-      to: { name: 'results', query: { resultId: getRouteParam('resultId') } },
-      variant: 'secondary'
-    }
   ],
   errorMessageKey: 'categoryMonthsLoadError'
 })
@@ -133,7 +126,7 @@ const aggregateRows = computed<AggregateRowConfig[]>(() => {
       type: 'custom',
       position: 'footer',
       includeInExport: true,
-      class: 'fw-bold table-light',
+      class: 'fw-bold bg-surface-primary text-on-primary',
       customCalculator: (data, columnKey) => {
         if (columnKey === 'month') return $gettext('Total')
         if (columnKey === 'total') {
@@ -173,7 +166,16 @@ onMounted(() => {
 
     <!-- Main Content -->
     <div v-else-if="categoryMonthsData">
-      <PageHeader :title="pageTitle" :buttons="navButtons" />
+      <PageHeader :title="pageTitle">
+        <template #actions>
+          <ButtonComponent
+            :text="$gettext('Back to Categories')"
+            :to="{ name: 'results', query: { resultId: getRouteParam('resultId') } }"
+            variant="secondary"
+            class="mt-3 mb-3"
+          />
+        </template>
+      </PageHeader>
 
       <!-- Account Card -->
       <CardComponent type="account" :account="{ id: categoryMonthsData.account_id, name: categoryMonthsData.account_name, formatted_id: categoryMonthsData.account_formatted_id, currency: categoryMonthsData.account_currency }" class="mb-4" width="fit-content">
@@ -193,7 +195,7 @@ onMounted(() => {
     </div>
 
     <!-- No Data State -->
-    <div v-else class="alert alert-info">
+    <div v-else class="bg-status-info text-on-light alert">
       {{ $gettext('No data available') }}
     </div>
   </div>

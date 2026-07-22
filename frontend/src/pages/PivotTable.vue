@@ -7,10 +7,16 @@ import { useGettext } from 'vue3-gettext';
 import { usePivotStore } from '../stores/pivot.js';
 import { useCategoriesStore } from '../stores/categories.js';
 import type { Account } from '../types/api.js';
+import type { BreadcrumbItem } from '../composables/useDrilldownData.js';
 import BarChart from '../components/charts/BarChart.vue';
 import PieChart from '../components/charts/PieChart.vue';
 import PivotCategorySelector from '../components/PivotCategorySelector.vue';
 import CardComponent from '../components/ui/CardComponent.vue'
+import ButtonComponent from '../components/ui/ButtonComponent.vue'
+import PageHeader from '../components/layout/PageHeader.vue'
+import BreadcrumbNavigation from '../components/layout/BreadcrumbNavigation.vue'
+import LoadingState from '../components/layout/LoadingState.vue'
+import ErrorState from '../components/layout/ErrorState.vue'
 
 // VueDataTable component
 import VueDataTable from '../components/data/VueDataTable.vue';
@@ -26,6 +32,13 @@ const categoriesStore = useCategoriesStore();
 const resultId = computed(() => route.params.resultId as string);
 const isLoading = ref(true);
 const error = ref<string | null>(null);
+
+// Breadcrumb items
+const breadcrumbItems = computed<BreadcrumbItem[]>(() => [
+  { name: $gettext('Home'), to: '/' },
+  { name: $gettext('Categories'), to: { name: 'results', query: { resultId: resultId.value } } },
+  { name: $gettext('Pivot Table'), active: true }
+]);
 
 // Constants
 const ZERO = 0;
@@ -189,39 +202,24 @@ onMounted(() => loadData());
 
 <template>
   <div class="container-fluid">
-    <!-- Breadcrumb -->
-    <nav aria-label="breadcrumb">
-      <ol class="breadcrumb">
-        <li class="breadcrumb-item"><router-link to="/">{{ $gettext('Home') }}</router-link></li>
-        <li class="breadcrumb-item"><router-link :to="{ name: 'results', query: { resultId: resultId } }">{{ $gettext('Categories') }}</router-link></li>
-        <li class="breadcrumb-item active" aria-current="page">{{ $gettext('Pivot Table') }}</li>
-      </ol>
-    </nav>
+    <BreadcrumbNavigation :items="breadcrumbItems" />
 
-    <!-- Loading -->
-    <div v-if="isLoading" class="text-center my-5">
-      <output class="spinner-border text-primary">
-        <span class="mt-2">{{ $gettext('Loading data') }}...</span>
-      </output>
-    </div>
+    <LoadingState v-if="isLoading" />
 
-    <!-- Error -->
-    <div v-else-if="error" class="alert alert-danger">
-      <i class="bi bi-exclamation-triangle-fill me-2"></i>
-      {{ error }}
-    </div>
+    <ErrorState v-else-if="error" :message="error" />
 
     <!-- Main Content -->
     <div v-else-if="resultsData">
-      <!-- Header -->
-      <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1><i class="bi bi-house-heart me-2"></i> {{ $gettext('Pivot Table') }}</h1>
-        <div class="d-flex gap-2">
-          <router-link :to="{ name: 'results', query: { resultId: resultId } }" class="btn btn-secondary">
-            <i class="bi bi-arrow-left me-1"></i> {{ $gettext('Back to Categories') }}
-          </router-link>
-        </div>
-      </div>
+      <PageHeader :title="$gettext('Pivot Table')">
+        <template #actions>
+          <ButtonComponent
+            :text="$gettext('Back to Categories')"
+            :to="{ name: 'results', query: { resultId: resultId } }"
+            variant="secondary"
+            class="mt-3 mb-3"
+          />
+        </template>
+      </PageHeader>
 
       <!-- Account Selector -->
       <div v-if="accounts.length > 1">
@@ -238,11 +236,11 @@ onMounted(() => loadData());
       <!-- Category Selector -->
       <PivotCategorySelector v-if="availableCategories.length > 0" />
 
-      <div v-else class="alert alert-warning">
+      <div v-else class="bg-status-warning text-on-dark alert">
         <i class="bi bi-exclamation-triangle-fill me-2"></i> {{ $gettext('No categories found in the data') }}
       </div>
 
-      <div v-if="selectedCategories.length === 0 && availableCategories.length > 0" class="alert alert-info mb-4">
+      <div v-if="selectedCategories.length === 0 && availableCategories.length > 0" class="bg-status-info text-on-light alert mb-4">
         <i class="bi bi-info-circle me-2"></i> {{ $gettext('Please select at least one category to see calculations') }}
       </div>
 
@@ -255,7 +253,7 @@ onMounted(() => loadData());
                 <span><i class="bi bi-tags me-2"></i> {{ $gettext('Selected Categories') }}:</span>
                 <strong>{{ selectedCategories.length }}</strong>
               </div>
-              <div class="selected-categories-list small text-muted">{{ selectedCategories.map(getCategoryDisplayName).join(', ') }}</div>
+              <div class="selected-categories-list small text-secondary">{{ selectedCategories.map(getCategoryDisplayName).join(', ') }}</div>
             </div>
             <div class="col-md-6">
               <div class="d-flex justify-content-between mb-2">
@@ -300,7 +298,7 @@ onMounted(() => loadData());
       <!-- Pie Charts -->
       <div v-if="pivotData && selectedCategories.length > 0" class="mb-4">
         <CardComponent :title="$gettext('Category Breakdown by Month')" class="mb-4" width="auto">
-          <p class="text-muted small mb-3"><i class="bi bi-info-circle me-1"></i> {{ $gettext('Each pie chart shows the composition of your selected categories for that month') }}</p>
+          <p class="text-secondary small mb-3"><i class="bi bi-info-circle me-1"></i> {{ $gettext('Each pie chart shows the composition of your selected categories for that month') }}</p>
           <div class="row">
             <div v-for="month in safeMonths" :key="month.month_timestamp" class="col-md-6 col-lg-4 mb-4">
               <CardComponent :title="formatMonthYear(month.month_timestamp)" class="mb-4" width="auto">
@@ -320,7 +318,7 @@ onMounted(() => loadData());
             :columns="tableColumns"
             :data="tableData"
             :aggregate-rows="aggregateRows"
-            aggregate-footer-row-class="table-light fw-bold"
+            aggregate-footer-row-class="bg-surface-primary text-on-primary fw-bold"
             :page-size="25"
             :csv-text="$gettext('Export CSV')"
             :excel-text="$gettext('Export Excel')"
@@ -333,12 +331,12 @@ onMounted(() => loadData());
         </CardComponent>
       </div>
 
-      <div v-if="!pivotData && !isLoading" class="alert alert-info">
+      <div v-if="!pivotData && !isLoading" class="bg-status-info text-on-light alert">
         <i class="bi bi-inbox me-2"></i> {{ $gettext('No data available') }}
       </div>
     </div>
 
-    <div v-else class="alert alert-info">
+    <div v-else class="bg-status-info text-on-light alert">
       <i class="bi bi-inbox me-2"></i> {{ $gettext('No data available') }}
     </div>
   </div>

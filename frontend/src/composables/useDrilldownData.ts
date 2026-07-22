@@ -35,16 +35,6 @@ export interface BreadcrumbItem {
 }
 
 /**
- * Navigation button configuration
- */
-export interface NavButton {
-  text: string
-  to: RouteLocationRaw
-  variant?: 'primary' | 'secondary' | 'outline-primary' | 'outline-secondary' | 'back'
-  size?: 'sm' | 'lg'
-}
-
-/**
  * Route parameters type that may contain string arrays from route.params
  */
 type RouteParams = Record<string, string | string[] | null>
@@ -122,10 +112,6 @@ export interface DrilldownPageConfig<T> {
    */
   breadcrumbItems?: BreadcrumbItem[] | ((data: T | null) => BreadcrumbItem[])
   /**
-   * Navigation buttons to display
-   */
-  navButtons?: NavButton[]
-  /**
    * Custom initialization hook called after data is loaded
    * Use this for DataTables initialization or other page-specific setup
    */
@@ -157,7 +143,6 @@ export interface DrilldownResult<T> extends FetchState<T> {
   t: (key: TranslationKeys) => string
   pageTitle: ComputedRef<string>
   breadcrumbItems: ComputedRef<BreadcrumbItem[]>
-  navButtons: NavButton[]
 }
 
 /**
@@ -187,9 +172,6 @@ export interface DrilldownResult<T> extends FetchState<T> {
  *       { name: 'Home', to: '/' },
  *       { name: 'Categories', to: { name: 'results', query: { resultId } } },
  *       { name: 'Category Details', active: true }
- *     ],
- *     navButtons: [
- *       { text: 'Back to Results', to: { name: 'results', query: { resultId } }, variant: 'secondary' }
  *     ]
  *   })
  *
@@ -203,9 +185,6 @@ export interface DrilldownResult<T> extends FetchState<T> {
  *       { name: 'Home', to: '/' },
  *       { name: 'Results', to: { name: 'results', query: { resultId: d?.result_id } } },
  *       { name: 'Category Details' }
- *     ],
- *     navButtons: [
- *       { text: 'Back to Results', to: { name: 'results', query: { resultId } }, variant: 'secondary' }
  *     ],
  *     onDataLoaded: (data) => {
  *       globalThis.exportCsvText = t('Export CSV')
@@ -375,8 +354,7 @@ export function useDrilldownData<T>(
     monthId,
     t,
     pageTitle,
-    breadcrumbItems,
-    navButtons: config.navButtons ?? []
+    breadcrumbItems
   }
 }
 

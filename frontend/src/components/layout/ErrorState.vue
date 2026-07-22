@@ -5,7 +5,7 @@ defineProps<{
 </script>
 
 <template>
-  <div class="alert alert-danger">
+  <div class="bg-status-danger text-on-light alert">
     {{ message }}
   </div>
 </template>

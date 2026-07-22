@@ -168,6 +168,7 @@ function getAccountHighlights(): Record<string, string[]> {
 }
 
 const getMonthsForAccount = (account: Account) => {
+  if (!account.data) return []
   const monthMap = new Map<number, number>()
   for (const row of account.data) {
     const monthField = row.date
@@ -178,6 +179,8 @@ const getMonthsForAccount = (account: Account) => {
 
 const buildCategoryMonthMap = (account: Account) => {
   const catMonthMap: Record<string, Record<number, any>> = {}
+
+  if (!account.data) return catMonthMap
 
   for (const row of account.data) {
     if (!catMonthMap[row.category_id]) {
@@ -227,13 +230,13 @@ onMounted(() => {
     </nav>
 
     <div v-if="isLoading" class="text-center my-5">
-      <output class="spinner-border text-primary">
+      <output class="spinner-border text-on-primary">
         <span class="visually-hidden">{{ $gettext('loading') }}...</span>
       </output>
       <p class="mt-2">{{ $gettext('Loading results') }}...</p>
     </div>
 
-    <div v-else-if="error" class="alert alert-danger">
+    <div v-else-if="error" class="bg-status-danger text-on-light alert">
       {{ error }}
     </div>
 
@@ -245,6 +248,7 @@ onMounted(() => {
             :text="$gettext('Back to Form')"
             to="/"
             variant="outline-secondary"
+            type="button"
             class="mt-3 mb-3 me-2"
           />
           <ButtonComponent
@@ -279,7 +283,7 @@ onMounted(() => {
       </div>
     </div>
 
-    <div v-else class="alert alert-info">
+    <div v-else class="bg-status-info text-on-light alert">
       <p>{{ $gettext('No results found') }}</p>
       <p v-if="!resultId">
         {{ $gettext('No result ID was provided.') }}

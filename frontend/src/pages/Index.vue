@@ -131,7 +131,6 @@ onMounted(() => {
               variant="primary"
               type="submit"
               :disabled="formStore.isLoading"
-              size="lg"
             />
           </div>
           <div class="col-md-6 text-end">
@@ -139,7 +138,6 @@ onMounted(() => {
               :text="$gettext('Clear form')"
               variant="secondary"
               type="button"
-              size="lg"
               @click="clearForm"
             />
           </div>

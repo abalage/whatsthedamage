@@ -1,12 +1,11 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
-import { useRoute } from 'vue-router'
 import { fetchResults as fetchResultsApi } from '../js/api.js'
 import { useFeedbackStore } from '../stores/feedback.js'
 import { useStatisticalStore } from '../stores/statistical.js'
 import { useCategoriesStore } from '../stores/categories.js'
 import { useGettext } from 'vue3-gettext'
-import { RouterLink } from 'vue-router'
+import { useRoute, RouterLink } from 'vue-router'
 import type { ResultsApiResponse, Account } from '../types/api.js'
 import VueDataTable from '../components/data/VueDataTable.vue'
 import TableLink from '../components/data/TableLink.vue'

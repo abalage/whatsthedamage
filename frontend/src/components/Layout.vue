@@ -142,13 +142,15 @@ const setLocale = (locale: string) => {
                 </button>
                 <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="analyticsDropdown">
                   <li>
-                    <div class="dropdown-item-text">{{ $gettext('Analysis direction') }}:</div>
+                    <label for="directionSelect" class="dropdown-item-text">{{ $gettext('Analysis direction') }}:</label>
                   </li>
                   <li>
                     <select
+                      id="directionSelect"
                       v-model="direction"
                       class="form-select form-select-sm mx-4 mb-1 w-75"
                       :disabled="isRecalculating"
+                      aria-label="Analysis direction"
                       @change="handleDirectionChange"
                     >
                       <option value="columns">{{ $gettext('columns') }}</option>
@@ -156,15 +158,17 @@ const setLocale = (locale: string) => {
                     </select>
                   </li>
                   <li>
-                    <div class="dropdown-item-text">{{ $gettext('Algorithms') }}:</div>
+                    <label for="algorithmsSelect" class="dropdown-item-text">{{ $gettext('Algorithms') }}:</label>
                   </li>
                   <li>
                     <select
+                      id="algorithmsSelect"
                       v-model="algorithms"
                       class="form-select form-select-sm mx-4 mb-1 w-75"
                       multiple
                       size="2"
                       :disabled="isRecalculating"
+                      aria-label="Algorithms"
                       @change="handleAlgorithmChange"
                     >
                       <option value="iqr">{{ $gettext('IQR Outlier Detection') }}</option>

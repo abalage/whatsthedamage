@@ -88,7 +88,7 @@ const getCategoryDisplayName = (categoryId: string): string => categoriesStore.g
           }"
         >
           <button
-            class="btn px-2 py-1 text-sm rounded-sm border-primary bg-surface-elevated text-primary"
+            class="btn px-2 py-1 text-sm rounded-sm border-primary bg-surface-base text-primary"
             :class="{
               'bg-status-success text-on-dark': isSelected(category),
               'bg-surface-secondary': isDefaultCategory(category) && !isSelected(category)

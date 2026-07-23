@@ -66,9 +66,9 @@ const pickerTheme: Theme = {
     },
     highlight: {
       outlier: '#ffa600',
-      pareto: '#b2aa00',
-      excluded: '#9090905e',
-      multiple: '#fa5972',
+      pareto: '#ff7a49',
+      excluded: '#b2b2b2',
+      multiple: '#d44e90',
     },
   },
 };

@@ -75,6 +75,14 @@ footer {
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
+.navbar-text-color {
+  color: var(--color-text-on-primary) !important;
+}
+
+.navbar-text-color a {
+  color: var(--color-text-on-secondary) !important;
+}
+
 .container-fluid {
   padding: 20px;
 }

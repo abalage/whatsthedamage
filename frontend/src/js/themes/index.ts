@@ -7,7 +7,6 @@ import type { Theme } from './theme.types.js';
 import defaultTheme from './default.js';
 import softPastelTheme from './soft-pastel.js';
 import earthTonesTheme from './earth-tones.js';
-import mintSkyTheme from './mint-sky.js';
 import corporateTheme from './corporate.js';
 import pickerTheme from './picker.js';
 
@@ -19,7 +18,6 @@ export const THEMES: Theme[] = [
   defaultTheme,
   softPastelTheme,
   earthTonesTheme,
-  mintSkyTheme,
   corporateTheme,
   pickerTheme,
 ];

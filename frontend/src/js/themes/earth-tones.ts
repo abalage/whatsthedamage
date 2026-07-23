@@ -18,8 +18,8 @@ const earthTonesTheme: Theme = {
       primary10: 'rgba(123, 160, 91, 0.10)',
     },
     text: {
-      primary: '#7BA05B',
-      secondary: '#88A47C',
+      primary: '#000000',
+      secondary: '#577240',
       onPrimary: '#FFFFFF',
       onDark: '#FFFFFF',
       onLight: '#4A4238',
@@ -73,10 +73,10 @@ const earthTonesTheme: Theme = {
       trendline: '#8C9B86',
     },
     highlight: {
-      outlier: '#F5E6E8',
-      pareto: '#E8F5E8',
-      excluded: '#F5F5F0',
-      multiple: '#FFF9E6',
+      outlier: '#ffa600', // citrom
+      pareto: '#ffcd60',  //narancs
+      excluded: '#b2b2b2', //szürke
+      multiple: '#B48EAD', //piros
     },
   },
 };

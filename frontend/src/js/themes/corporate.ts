@@ -12,7 +12,7 @@ const corporateTheme: Theme = {
   colors: {
     surface: {
       primary: '#2C5F7A',
-      secondary: '#4A7C59',
+      secondary: '#6B8CAE',
       elevated: '#F8F9FA',
       base: '#FFFFFF',
       primary10: 'rgba(44, 95, 122, 0.10)',
@@ -73,10 +73,10 @@ const corporateTheme: Theme = {
       trendline: '#7B9AA8',
     },
     highlight: {
-      outlier: '#F0D0D0',
-      pareto: '#D0F0D0',
-      excluded: '#F5F5F5',
-      multiple: '#FFFFD0',
+      outlier: '#ffd78d',
+      pareto: '#ffc697',
+      excluded: '#b2b2b2',
+      multiple: '#ff5a5a',
     },
   },
 };

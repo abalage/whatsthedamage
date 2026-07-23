@@ -1,14 +1,11 @@
 <script setup lang="ts">
 import { onMounted, computed, watch } from 'vue'
-import { useRoute } from 'vue-router'
 import { useGettext } from 'vue3-gettext'
 import { useStatisticalStore } from '../stores/statistical.js'
 import { useCategoriesStore } from '../stores/categories.js'
-import {
-  useDrilldownData,
-  type BreadcrumbItem
-} from '../composables/useDrilldownData.js'
-import { RouterLink } from 'vue-router'
+import { useDrilldownData } from '../composables/useDrilldownData.js'
+import { useRoute, RouterLink } from 'vue-router'
+import type { BreadcrumbItem } from '../composables/useBreadcrumbs.js'
 import BreadcrumbNavigation from '../components/layout/BreadcrumbNavigation.vue'
 import LoadingState from '../components/layout/LoadingState.vue'
 import ErrorState from '../components/layout/ErrorState.vue'

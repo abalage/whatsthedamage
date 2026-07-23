@@ -133,6 +133,23 @@ const aggregateRows = computed<AggregateRowConfig[]>(() => {
         }
         return ''
       }
+    },
+    {
+      id: 'total-average',
+      type: 'custom',
+      position: 'footer',
+      includeInExport: true,
+      class: 'fw-bold bg-surface-secondary text-on-dark',
+      customCalculator: (data, columnKey) => {
+        if (columnKey === 'month') return $gettext('Average')
+        if (columnKey === 'total') {
+          const numericValues = data.map(row => Number(row[columnKey])).filter(v => !Number.isNaN(v))
+          return numericValues.length > 0
+            ? numericValues.reduce((sum, val) => sum + val, 0) / numericValues.length
+            : null
+        }
+        return ''
+      }
     }
   ]
 })

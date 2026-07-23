@@ -3,13 +3,13 @@ import { ref } from 'vue'
 import { useGettext } from 'vue3-gettext'
 
 export const useLocaleStore = defineStore('locale', () => {
-  const locale = ref<string>('en')
   const gettext = useGettext()
+  const locale = ref<string>(gettext.current)
 
   const setLocale = (newLocale: string): void => {
     locale.value = newLocale
     gettext.current = newLocale
-    localStorage.setItem('locale', locale.value)
+    localStorage.setItem('locale', newLocale)
   }
 
   const loadLocale = (): void => {
@@ -26,8 +26,6 @@ export const useLocaleStore = defineStore('locale', () => {
    * @returns The translated text
    */
   const translate = (text: string): string => {
-    // The $gettext function is available globally from the vue3-gettext plugin
-    // We need to access it through the injected gettext object
     return gettext.$gettext(text)
   }
 

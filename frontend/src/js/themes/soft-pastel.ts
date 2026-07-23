@@ -11,15 +11,15 @@ const softPastelTheme: Theme = {
   description: 'Professional, calming, trustworthy with sage greens and teals',
   colors: {
     surface: {
-      primary: '#81B29A',
-      secondary: '#61A5C2',
+      primary: '#5A8A72',
+      secondary: '#81B29A',
       elevated: '#F8F9FA',
       base: '#FFFFFF',
       primary10: 'rgba(129, 178, 154, 0.10)',
     },
     text: {
-      primary: '#81B29A',
-      secondary: '#61A5C2',
+      primary: '#151515',
+      secondary: '#5e5e5e',
       onPrimary: '#FFFFFF',
       onDark: '#FFFFFF',
       onLight: '#3A4A52',
@@ -27,8 +27,8 @@ const softPastelTheme: Theme = {
       onLight10: 'rgba(58, 74, 82, 0.10)',
     },
     border: {
-      primary: '#81B29A',
-      secondary: '#61A5C2',
+      primary: '#61A5C2',
+      secondary: '#81B29A',
       subtle: '#E0E0E0',
     },
     status: {
@@ -73,10 +73,10 @@ const softPastelTheme: Theme = {
       trendline: '#6BA3BE',
     },
     highlight: {
-      outlier: '#FFE0E0',
-      pareto: '#E0FFE0',
+      outlier: '#FFFFCC',
+      pareto: '#ffdebe',
       excluded: '#F5F5F5',
-      multiple: '#FFFFCC',
+      multiple: '#ffcaca',
     },
   },
 };

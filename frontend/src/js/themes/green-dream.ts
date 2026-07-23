@@ -3,11 +3,11 @@
  * Original green theme with Bootstrap colors
  */
 
-import type { Theme } from './theme.types.js';
+import type { Theme } from './theme.types.ts';
 
 const defaultTheme: Theme = {
-  id: 'default',
-  name: 'Default',
+  id: 'green-dream',
+  name: 'Green Dream',
   description: 'Original green theme with Bootstrap colors',
   colors: {
     surface: {
@@ -73,10 +73,10 @@ const defaultTheme: Theme = {
       trendline: '#dc3545',
     },
     highlight: {
-      outlier: '#ffe6e6',
-      pareto: '#e6ffe6',
-      excluded: '#f0f0f0',
-      multiple: '#ffff99',
+      outlier: '#ffdb70',
+      pareto: '#ffc697',
+      excluded: '#b2b2b2',
+      multiple: '#e35b69',
     },
   },
 };

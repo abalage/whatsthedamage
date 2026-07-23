@@ -4,24 +4,24 @@
  */
 
 import type { Theme } from './theme.types.js';
-import defaultTheme from './default.js';
+import greenDreamTheme from './green-dream.ts';
 import softPastelTheme from './soft-pastel.js';
 import earthTonesTheme from './earth-tones.js';
-import mintSkyTheme from './mint-sky.js';
 import corporateTheme from './corporate.js';
 import pickerTheme from './picker.js';
+import balticBlueTheme from './baltic-blue.js';
 
 /**
  * All available themes for the application
  * Add new themes by importing them above and adding to this array
  */
 export const THEMES: Theme[] = [
-  defaultTheme,
+  balticBlueTheme,
+  greenDreamTheme,
   softPastelTheme,
   earthTonesTheme,
-  mintSkyTheme,
   corporateTheme,
-  pickerTheme,
+  pickerTheme
 ];
 
 /**

@@ -7,6 +7,7 @@ import { useFeedbackStore } from '../stores/feedback.js'
 import { useThemeStore } from '../stores/theme.js'
 import { useGettext } from 'vue3-gettext'
 import { recalculateStatistics } from '../js/api.js'
+import { APP_VERSION } from '../js/version.js'
 
 const { $gettext } = useGettext()
 const route = useRoute()
@@ -260,7 +261,7 @@ const setLocale = (locale: string) => {
     <footer class="text-center py-3 mt-3">
       <div class="container-fluid">
         <a href="https://balagetech.com" class="text-on-primary me-3">@ 2026 Balagetech</a>
-        <span class="me-3">v1.0.0</span>
+        <span class="me-3">v{{ APP_VERSION }}</span>
       </div>
     </footer>
   </div>

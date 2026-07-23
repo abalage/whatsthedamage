@@ -145,12 +145,6 @@ onMounted(() => {
         <template #actions>
           <div class="d-flex gap-2">
             <RouterLink
-              :to="{ name: 'category-months', params: { resultId: getRouteParam('resultId'), accountId: getRouteParam('accountId'), categoryId: getRouteParam('categoryId') } }"
-              class="btn bg-surface-base text-secondary border-secondary hover-bg-surface-secondary mt-3 mb-3"
-            >
-              {{ $gettext('Back to Category Months') }}
-            </RouterLink>
-            <RouterLink
               :to="{ name: 'results', query: { resultId: getRouteParam('resultId') } }"
               class="btn bg-surface-secondary text-on-dark border-secondary mt-3 mb-3"
             >

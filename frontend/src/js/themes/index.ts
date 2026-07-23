@@ -9,6 +9,12 @@ import softPastelTheme from './soft-pastel.js';
 import earthTonesTheme from './earth-tones.js';
 import corporateTheme from './corporate.js';
 import pickerTheme from './picker.js';
+import malachiteTheme from './malachite.js';
+import limeCreamTheme from './lime-cream.js';
+import balticBlueTheme from './baltic-blue.js';
+import tigerFlameTheme from './tiger-flame.js';
+import powderBlushTheme from './powder-blush.js';
+import royalOrchidTheme from './royal-orchid.js';
 
 /**
  * All available themes for the application
@@ -20,6 +26,12 @@ export const THEMES: Theme[] = [
   earthTonesTheme,
   corporateTheme,
   pickerTheme,
+  malachiteTheme,
+  limeCreamTheme,
+  balticBlueTheme,
+  tigerFlameTheme,
+  powderBlushTheme,
+  royalOrchidTheme,
 ];
 
 /**

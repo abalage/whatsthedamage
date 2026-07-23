@@ -4,34 +4,24 @@
  */
 
 import type { Theme } from './theme.types.js';
-import defaultTheme from './default.js';
+import greenDreamTheme from './green-dream.ts';
 import softPastelTheme from './soft-pastel.js';
 import earthTonesTheme from './earth-tones.js';
 import corporateTheme from './corporate.js';
 import pickerTheme from './picker.js';
-import malachiteTheme from './malachite.js';
-import limeCreamTheme from './lime-cream.js';
 import balticBlueTheme from './baltic-blue.js';
-import tigerFlameTheme from './tiger-flame.js';
-import powderBlushTheme from './powder-blush.js';
-import royalOrchidTheme from './royal-orchid.js';
 
 /**
  * All available themes for the application
  * Add new themes by importing them above and adding to this array
  */
 export const THEMES: Theme[] = [
-  defaultTheme,
+  balticBlueTheme,
+  greenDreamTheme,
   softPastelTheme,
   earthTonesTheme,
   corporateTheme,
-  pickerTheme,
-  malachiteTheme,
-  limeCreamTheme,
-  balticBlueTheme,
-  tigerFlameTheme,
-  powderBlushTheme,
-  royalOrchidTheme,
+  pickerTheme
 ];
 
 /**

@@ -73,10 +73,14 @@ const balticBlueTheme: Theme = {
       trendline: '#679436',
     },
     highlight: {
-      outlier: '#ffdb70',
-      pareto: '#ffc697',
+      outlier: '#679436',
+      pareto: '#a5be00',
       excluded: '#b2b2b2',
       multiple: '#e74c3c',
+      // outlier: '#ffdb70',
+      // pareto: '#ffc697',
+      // excluded: '#b2b2b2',
+      // multiple: '#e74c3c',
     },
   },
 };

@@ -45,12 +45,12 @@ const balticBlueTheme: Theme = {
       category: [
         '#05668d', // baltic-blue
         '#427aa1', // rich-cerulean
-        '#ebf2fa', // alice-blue
+        '#93b7d2', // alice-blue
         '#679436', // sage-green
         '#a5be00', // lime-moss
         '#1a4d68', // baltic-blue darker
         '#346187', // rich-cerulean darker
-        '#c5d9e8', // alice-blue darker
+        '#74a5ca', // alice-blue darker
         '#527a2c', // sage-green darker
         '#8ab300', // lime-moss darker
         '#003d56', // baltic-blue very dark
@@ -59,12 +59,12 @@ const balticBlueTheme: Theme = {
       pie: [
         '#05668d',
         '#427aa1',
-        '#ebf2fa',
+        '#93b7d2',
         '#679436',
         '#a5be00',
         '#1a4d68',
         '#346187',
-        '#c5d9e8',
+        '#74a5ca',
         '#527a2c',
         '#8ab300',
         '#003d56',
@@ -77,10 +77,6 @@ const balticBlueTheme: Theme = {
       pareto: '#a5be00',
       excluded: '#b2b2b2',
       multiple: '#e74c3c',
-      // outlier: '#ffdb70',
-      // pareto: '#ffc697',
-      // excluded: '#b2b2b2',
-      // multiple: '#e74c3c',
     },
   },
 };

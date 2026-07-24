@@ -63,10 +63,6 @@ const {
     return [
       { name: $gettext('Home'), to: '/' },
       { name: $gettext('Categories'), to: { name: 'results', query: { resultId: getRouteParam('resultId') } } },
-      {
-        name: $gettext('Category Months'),
-        to: { name: 'category-months', params: { resultId: getRouteParam('resultId'), accountId: getRouteParam('accountId'), categoryId: getRouteParam('categoryId') } }
-      },
       { name: categoryName && monthName ? `${categoryName} - ${monthName}` : $gettext('Transaction Details'), active: true }
     ]
   },

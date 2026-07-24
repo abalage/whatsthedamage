@@ -7,7 +7,7 @@ import { useGettext } from 'vue3-gettext';
 import { usePivotStore } from '../stores/pivot.js';
 import { useCategoriesStore } from '../stores/categories.js';
 import type { Account } from '../types/api.js';
-import type { BreadcrumbItem } from '../composables/useDrilldownData.js';
+import type { BreadcrumbItem } from '../composables/useBreadcrumbs.js'
 import BarChart from '../components/charts/BarChart.vue';
 import PieChart from '../components/charts/PieChart.vue';
 import PivotCategorySelector from '../components/PivotCategorySelector.vue';

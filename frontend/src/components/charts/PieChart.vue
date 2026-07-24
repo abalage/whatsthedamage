@@ -2,7 +2,7 @@
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
 import { Pie } from 'vue-chartjs';
 import { computed } from 'vue';
-import { useThemeStore } from '../../stores/theme';
+import { useThemeStore } from '../../stores/theme.ts';
 
 // Register ChartJS components
 ChartJS.register(ArcElement, Tooltip, Legend);

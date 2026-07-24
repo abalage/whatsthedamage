@@ -12,6 +12,7 @@ import ErrorState from '../components/layout/ErrorState.vue'
 import PageHeader from '../components/layout/PageHeader.vue'
 import VueDataTable from '../components/data/VueDataTable.vue'
 import TableLink from '../components/data/TableLink.vue'
+import PieChart from '../components/charts/PieChart.vue'
 import type { Column, AggregateRowConfig } from '../components/data/VueDataTable.vue'
 import { fetchMonthCategories } from '../js/api.js'
 import type { MonthCategoriesApiResponse } from '../types/api.js'
@@ -111,6 +112,24 @@ const tableData = computed(() => {
   }))
 })
 
+// Pie chart data for category distribution visualization
+const pieChartData = computed(() => {
+  if (!monthCategoriesData.value) return []
+  return monthCategoriesData.value.data.map(category => ({
+    label: categoriesStore.getCategoryDisplayName(category.category_id),
+    value: category.total.raw as number,
+    categoryId: category.category_id
+  }))
+})
+
+// Total sum for pie chart display
+const totalSum = computed(() => {
+  if (!monthCategoriesData.value) return 0
+  return monthCategoriesData.value.data.reduce((sum, category) => {
+    return sum + (category.total.raw as number)
+  }, 0)
+})
+
 // Aggregate row configuration for the table
 const aggregateRows = computed<AggregateRowConfig[]>(() => {
   if (!monthCategoriesData.value || monthCategoriesData.value.data.length === 0) return []
@@ -172,27 +191,44 @@ onMounted(() => {
         </template>
       </PageHeader>
 
-      <!-- Account Card -->
-      <div class="card mb-4" style="width: fit-content; margin: 0 auto">
-        <div class="card-header">
-          {{ $gettext('Account') }}: {{ monthCategoriesData.account_formatted_id }}
-          <span v-if="monthCategoriesData.account_currency" class="bg-surface-secondary text-on-dark px-2 py-1 rounded text-xs">
-            {{ monthCategoriesData.account_currency }}
-          </span>
+      <!-- Cards Container -->
+      <div class="d-flex flex-wrap gap-4 justify-content-center mb-4">
+        <!-- Account Card -->
+        <div class="card" style="width: fit-content; flex: 1; min-width: 400px">
+          <div class="card-header">
+            {{ $gettext('Account') }}: {{ monthCategoriesData.account_formatted_id }}
+            <span v-if="monthCategoriesData.account_currency" class="bg-surface-secondary text-on-dark px-2 py-1 rounded text-xs">
+              {{ monthCategoriesData.account_currency }}
+            </span>
+          </div>
+          <div class="card-body">
+            <VueDataTable
+              id="datatable-month"
+              :data="tableData"
+              :columns="columns"
+              :aggregate-rows="aggregateRows"
+              :cell-highlights-by-row-id="cellHighlightsByRowId"
+              :csv-text="$gettext('Export CSV')"
+              :excel-text="$gettext('Export Excel')"
+              wrapper-class="w-auto"
+              show-column-filters
+              show-pagination
+            />
+          </div>
         </div>
-        <div class="card-body">
-          <VueDataTable
-            id="datatable-month"
-            :data="tableData"
-            :columns="columns"
-            :aggregate-rows="aggregateRows"
-            :cell-highlights-by-row-id="cellHighlightsByRowId"
-            :csv-text="$gettext('Export CSV')"
-            :excel-text="$gettext('Export Excel')"
-            wrapper-class="w-auto"
-            show-column-filters
-            show-pagination
-          />
+
+        <!-- Category Distribution Chart Card -->
+        <div class="card" style="width: fit-content; flex: 1; min-width: 400px">
+          <div class="card-header">
+            {{ $gettext('Category Distribution') }}
+          </div>
+          <div class="card-body">
+            <PieChart
+              :data="pieChartData"
+              :total="totalSum"
+              :showLegend="true"
+            />
+          </div>
         </div>
       </div>
     </div>

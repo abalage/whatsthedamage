@@ -55,99 +55,123 @@ onMounted(() => {
     <!-- Error Display -->
     <ErrorDisplay />
 
-    <form enctype="multipart/form-data" @submit.prevent="submitForm">
-      <div class="card" style="width: 75%; margin: 0 auto">
-        <div class="card-header">
+    <div class="row">
+      <div class="col-md-9">
+        <form enctype="multipart/form-data" @submit.prevent="submitForm">
+          <div class="card" style="width: 100%">
+            <div class="card-header">
           {{ $gettext('File uploads') }}
         </div>
         <div class="card-body">
           <div class="row">
-          <div class="col-md-12 mb-3">
-            <div class="mb-3">
-              <label for="filename" class="form-label">{{ $gettext('CSV file') }}:</label>
-              <input
-                id="filename"
-                ref="fileInput"
-                type="file"
-                class="form-control"
-                :class="{ 'is-invalid': formStore.getError('csvFile') }"
-                @change="handleCsvChange"
-              />
-              <div v-if="formStore.getError('csvFile')" class="invalid-feedback">
-                {{ formStore.getError('csvFile') }}
+            <div class="col-md-12 mb-3">
+              <div class="mb-3">
+                <label for="filename" class="form-label">{{ $gettext('CSV file') }}:</label>
+                <input
+                  id="filename"
+                  ref="fileInput"
+                  type="file"
+                  class="form-control"
+                  :class="{ 'is-invalid': formStore.getError('csvFile') }"
+                  @change="handleCsvChange"
+                />
+                <div v-if="formStore.getError('csvFile')" class="invalid-feedback">
+                  {{ formStore.getError('csvFile') }}
+                </div>
+                <div id="fileHelp" class="form-text">{{ $gettext('Upload your CSV file containing the exported bank account history') }}</div>
               </div>
-              <div id="fileHelp" class="form-text">{{ $gettext('Upload your CSV file containing the exported bank account history') }}</div>
-            </div>
-            <div class="mb-3">
-              <label for="config" class="form-label">{{ $gettext('Configuration file') }}:</label>
-              <input
-                id="config"
-                ref="configInput"
-                type="file"
-                class="form-control"
-                :class="{ 'is-invalid': formStore.getError('configFile') }"
-                @change="handleConfigChange"
-              />
-              <div v-if="formStore.getError('configFile')" class="invalid-feedback">
-                {{ formStore.getError('configFile') }}
+              <div class="mb-3">
+                <label for="config" class="form-label">{{ $gettext('Configuration file') }}:</label>
+                <input
+                  id="config"
+                  ref="configInput"
+                  type="file"
+                  class="form-control"
+                  :class="{ 'is-invalid': formStore.getError('configFile') }"
+                  @change="handleConfigChange"
+                />
+                <div v-if="formStore.getError('configFile')" class="invalid-feedback">
+                  {{ formStore.getError('configFile') }}
+                </div>
+                <div id="configHelp" class="form-text">{{ $gettext('Upload your configuration file here, or the default configuration will be used') }}</div>
               </div>
-              <div id="configHelp" class="form-text">{{ $gettext('Upload your configuration file here, or the default configuration will be used') }}</div>
-            </div>
-            <label for="ml" class="form-label">{{ $gettext('Advanced settings') }}:</label>
-            <div class="mb-3 form-check">
-              <input
-                id="ml"
-                v-model="formStore.formData.mlEnabled"
-                type="checkbox"
-                class="form-check-input"
-                @change="handleCheckboxChange('mlEnabled', $event)"
-              />
-              <label class="form-check-label" for="ml">
-                {{ $gettext('Use Machine Learning model for categorization') }}
-              </label>
-              <div id="mlHelp" class="form-text">
-                {{ $gettext('Uncheck to use regular expressions instead of the ML model') }}
+              <label for="ml" class="form-label">{{ $gettext('Advanced settings') }}:</label>
+              <div class="mb-3 form-check">
+                <input
+                  id="ml"
+                  v-model="formStore.formData.mlEnabled"
+                  type="checkbox"
+                  class="form-check-input"
+                  @change="handleCheckboxChange('mlEnabled', $event)"
+                />
+                <label class="form-check-label" for="ml">
+                  {{ $gettext('Use Machine Learning model for categorization') }}
+                </label>
+                <div id="mlHelp" class="form-text">
+                  {{ $gettext('Uncheck to use regular expressions instead of the ML model') }}
+                </div>
               </div>
-            </div>
-            <div class="mb-3 form-check">
-              <input
-                id="cacheData"
-                v-model="formStore.formData.cacheEnabled"
-                type="checkbox"
-                class="form-check-input"
-                @change="handleCheckboxChange('cacheEnabled', $event)"
-              />
-              <label class="form-check-label" for="cacheData">
-                {{ $gettext('Cache data with expiry') }} (TTL=30m)
-              </label>
-              <div id="cacheHelp" class="form-text">
-                {{ $gettext('Uncheck to make cache never expire') }}
+              <div class="mb-3 form-check">
+                <input
+                  id="cacheData"
+                  v-model="formStore.formData.cacheEnabled"
+                  type="checkbox"
+                  class="form-check-input"
+                  @change="handleCheckboxChange('cacheEnabled', $event)"
+                />
+                <label class="form-check-label" for="cacheData">
+                  {{ $gettext('Cache data with expiry') }} (TTL=30m)
+                </label>
+                <div id="cacheHelp" class="form-text">
+                  {{ $gettext('Uncheck to make cache never expire') }}
+                </div>
               </div>
             </div>
           </div>
-      </div>
-      <div class="row">
-          <div class="col-md-6">
-            <button
-              type="submit"
-              class="btn bg-surface-primary text-on-primary border-primary"
-              :disabled="formStore.isLoading"
-            >
-              {{ formStore.isLoading ? $gettext('Processing your transactions...') : $gettext('Submit') }}
-            </button>
+          <div class="row">
+            <div class="col-md-6">
+              <button
+                type="submit"
+                class="btn bg-surface-primary text-on-primary border-primary"
+                :disabled="formStore.isLoading"
+              >
+                {{ formStore.isLoading ? $gettext('Processing your transactions...') : $gettext('Submit') }}
+              </button>
+            </div>
+            <div class="col-md-6 text-end">
+              <button
+                type="button"
+                class="btn bg-surface-secondary text-on-dark border-secondary"
+                @click="clearForm"
+              >
+                {{ $gettext('Clear form') }}
+              </button>
+            </div>
           </div>
-          <div class="col-md-6 text-end">
-            <button
-              type="button"
-              class="btn bg-surface-secondary text-on-dark border-secondary"
-              @click="clearForm"
-            >
-              {{ $gettext('Clear form') }}
-            </button>
-          </div>
-      </div>
         </div>
       </div>
-    </form>
+        </form>
+      </div>
+      <div class="col-md-3">
+        <div class="card" style="width: 100%">
+          <div class="card-header">
+            {{ $gettext('How to use the application') }}
+          </div>
+          <div class="card-body">
+            <div class="row">
+              <div class="col-md-12 mb-3">
+                <div class="mb-3">
+                  <p>{{ $gettext("This application categorizes your bank transactions and provide you with insights about where your money goes.") }}</p>
+                  <p>{{ $gettext("To use this application, you need to use your Bank provider's service to save your transactions in CSV format.") }}</p>
+                  <p>{{ $gettext("Then upload your CSV file containing the exported bank account history and optionally a configuration file.") }}</p>
+                  <p>{{ $gettext("You can also choose to enable or disable the Machine Learning model for categorization.") }}</p>
+                  <p><RouterLink to="about" class="navbar-link">{{ $gettext('Learn more about how the application works') }}</RouterLink></p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>

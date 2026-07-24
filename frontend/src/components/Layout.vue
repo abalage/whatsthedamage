@@ -109,7 +109,7 @@ const setLocale = (locale: string) => {
 <template>
   <div>
     <header>
-      <nav class="navbar navbar-expand-lg navbar-dark mb-3">
+      <nav class="navbar navbar-expand-lg navbar-dark mb-3" role="navigation" aria-label="Main navigation">
         <div class="container-fluid">
           <RouterLink to="/" class="navbar-brand text-on-primary">What's the Damage?</RouterLink>
           <span class="align-middle text-on-primary">{{ $gettext('Tell me I didn\'t spend that much…') }}</span>
@@ -121,21 +121,8 @@ const setLocale = (locale: string) => {
               <li class="nav-item">
                 <RouterLink to="/" class="nav-link">{{ $gettext('Home') }}</RouterLink>
               </li>
-              <li class="nav-item dropdown">
-                <button id="aboutDropdown" class="nav-link dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" @keydown.enter.prevent="($event.currentTarget as HTMLButtonElement).click()" @keydown.space.prevent="($event.currentTarget as HTMLButtonElement).click()">
-                  {{ $gettext('About') }}
-                </button>
-                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="aboutDropdown">
-                  <li>
-                    <RouterLink to="privacy" class="dropdown-item">{{ $gettext('Privacy') }}</RouterLink>
-                  </li>
-                  <li>
-                     <RouterLink to="legal" class="dropdown-item">{{ $gettext('Legal') }}</RouterLink>
-                  </li>
-                  <li>
-                     <RouterLink to="about" class="dropdown-item">{{ $gettext('About') }}</RouterLink>
-                  </li>
-                </ul>
+              <li>
+                  <RouterLink to="about" class="nav-link">{{ $gettext('About') }}</RouterLink>
               </li>
               <li v-if="showAnalytics" class="nav-item dropdown">
                 <button id="analyticsDropdown" class="nav-link dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" @keydown.enter.prevent="($event.currentTarget as HTMLButtonElement).click()" @keydown.space.prevent="($event.currentTarget as HTMLButtonElement).click()">
@@ -254,14 +241,23 @@ const setLocale = (locale: string) => {
     </header>
 
     <main id="main-content" class="container-fluid" tabindex="-1">
-      <a class="sr-only sr-only-focusable" href="#main-content">{{ $gettext('Skip to main content') }}</a>
       <slot></slot>
     </main>
 
     <footer class="text-center py-3 mt-3">
       <div class="container-fluid">
-        <a href="https://balagetech.com" class="text-on-primary me-3">@ 2026 Balagetech</a>
-        <span class="me-3">v{{ APP_VERSION }}</span>
+        <div class="row">
+          <div class="col-12">
+            <a href="https://balagetech.com" class="text-on-primary me-3">@ 2026 Balagetech</a>
+            <span class="me-3">v{{ APP_VERSION }}</span>
+          </div>
+          <div class="col-12 mt-2">
+            <nav class="nav justify-content-center" role="navigation" aria-label="Footer navigation">
+              <RouterLink to="privacy" class="nav-link text-on-primary">{{ $gettext('Privacy') }}</RouterLink>
+              <RouterLink to="legal" class="nav-link text-on-primary">{{ $gettext('Legal') }}</RouterLink>
+            </nav>
+          </div>
+        </div>
       </div>
     </footer>
   </div>

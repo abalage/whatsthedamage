@@ -16,6 +16,7 @@ import type { Column, AggregateRowConfig } from '../components/data/VueDataTable
 import { fetchCategoryMonths } from '../js/api.js'
 import type { CategoryMonthsApiResponse } from '../types/api.js'
 import { formatMonthYear } from '../js/dateUtils.js'
+import BarChart from '../components/charts/BarChart.vue'
 
 const { $gettext } = useGettext()
 
@@ -166,6 +167,19 @@ watch(() => categoryMonthsData.value, (newData) => {
   }
 }, { immediate: true })
 
+// Chart data for BarChart
+const chartData = computed(() => {
+  return tableData.value.map(row => ({
+    label: row.month,
+    timestamp: row.month_timestamp as number,
+    values: { total: row.total as number }
+  }))
+})
+
+const chartCategories = computed(() => [
+  { id: 'total', label: $gettext('Amount') }
+])
+
 onMounted(() => {
   fetchData()
 })
@@ -192,27 +206,44 @@ onMounted(() => {
         </template>
       </PageHeader>
 
-      <!-- Account Card -->
-      <div class="card mb-4" style="width: fit-content; margin: 0 auto">
-        <div class="card-header">
-          {{ $gettext('Account') }}: {{ categoryMonthsData.account_formatted_id }}
-          <span v-if="categoryMonthsData.account_currency" class="bg-surface-secondary text-on-dark px-2 py-1 rounded text-xs">
-            {{ categoryMonthsData.account_currency }}
-          </span>
+      <!-- Cards Container -->
+      <div class="d-flex gap-4 flex-wrap justify-content-center">
+        <!-- Account & Table Card -->
+        <div class="card flex-grow-1" style="min-width: 400px">
+          <div class="card-header">
+            {{ $gettext('Account') }}: {{ categoryMonthsData.account_formatted_id }}
+            <span v-if="categoryMonthsData.account_currency" class="bg-surface-secondary text-on-dark px-2 py-1 rounded text-xs">
+              {{ categoryMonthsData.account_currency }}
+            </span>
+          </div>
+          <div class="card-body">
+            <VueDataTable
+              id="datatable-category"
+              :data="tableData"
+              :columns="columns"
+              :aggregate-rows="aggregateRows"
+              :cell-highlights-by-row-id="cellHighlightsByRowId"
+              :csv-text="$gettext('Export CSV')"
+              :excel-text="$gettext('Export Excel')"
+              wrapper-class="w-auto"
+              show-column-filters
+              show-pagination
+            />
+          </div>
         </div>
-        <div class="card-body">
-          <VueDataTable
-            id="datatable-category"
-            :data="tableData"
-            :columns="columns"
-            :aggregate-rows="aggregateRows"
-            :cell-highlights-by-row-id="cellHighlightsByRowId"
-            :csv-text="$gettext('Export CSV')"
-            :excel-text="$gettext('Export Excel')"
-            wrapper-class="w-auto"
-            show-column-filters
-            show-pagination
-          />
+
+        <!-- Chart Card -->
+        <div class="card flex-grow-1" style="min-width: 400px">
+          <div class="card-header">
+            {{ $gettext('Category Details') }}
+          </div>
+          <div class="card-body" style="height: 450px">
+            <BarChart
+              :data="chartData"
+              :categories="chartCategories"
+              show-trendline
+            />
+          </div>
         </div>
       </div>
     </div>

@@ -14,6 +14,7 @@ import type { Column, AggregateRowConfig } from '../components/data/VueDataTable
 import { fetchCategoryMonthTransactions } from '../js/api.js'
 import type { CategoryMonthTransactionsApiResponse } from '../types/api.js'
 import { formatMonthYear } from '../js/dateUtils.js'
+import BarChart from '../components/charts/BarChart.vue'
 
 const { $gettext } = useGettext()
 const categoriesStore = useCategoriesStore()
@@ -122,6 +123,19 @@ const aggregateRows = computed<AggregateRowConfig[]>(() => {
   ]
 })
 
+// Chart data for BarChart
+const chartData = computed(() => {
+  return tableData.value.map(row => ({
+    label: row.date_display,
+    timestamp: row.date as number,
+    values: { amount: row.amount as number }
+  }))
+})
+
+const chartCategories = computed(() => [
+  { id: 'amount', label: $gettext('Amount') }
+])
+
 onMounted(() => {
   fetchData()
 })
@@ -150,26 +164,42 @@ onMounted(() => {
         </template>
       </PageHeader>
 
-      <!-- Account Card -->
-      <div class="card mb-4" style="width: fit-content; margin: 0 auto">
-        <div class="card-header">
-          {{ $gettext('Account') }}: {{ transactionsData.account_formatted_id }}
-          <span v-if="transactionsData.account_currency" class="bg-surface-secondary text-on-dark px-2 py-1 rounded text-xs">
-            {{ transactionsData.account_currency }}
-          </span>
+      <!-- Cards Container -->
+      <div class="d-flex gap-4 flex-wrap justify-content-center">
+        <!-- Account & Table Card -->
+        <div class="card flex-grow-1" style="min-width: 400px">
+          <div class="card-header">
+            {{ $gettext('Account') }}: {{ transactionsData.account_formatted_id }}
+            <span v-if="transactionsData.account_currency" class="bg-surface-secondary text-on-dark px-2 py-1 rounded text-xs">
+              {{ transactionsData.account_currency }}
+            </span>
+          </div>
+          <div class="card-body">
+            <VueDataTable
+              id="transaction-details-table"
+              :data="tableData"
+              :columns="columns"
+              :aggregate-rows="aggregateRows"
+              :csv-text="$gettext('Export CSV')"
+              :excel-text="$gettext('Export Excel')"
+              wrapper-class="w-auto"
+              show-column-filters
+              show-pagination
+            />
+          </div>
         </div>
-        <div class="card-body">
-          <VueDataTable
-            id="transaction-details-table"
-            :data="tableData"
-            :columns="columns"
-            :aggregate-rows="aggregateRows"
-            :csv-text="$gettext('Export CSV')"
-            :excel-text="$gettext('Export Excel')"
-            wrapper-class="w-auto"
-            show-column-filters
-            show-pagination
-          />
+
+        <!-- Chart Card -->
+        <div class="card flex-grow-1" style="min-width: 400px">
+          <div class="card-header">
+            {{ $gettext('Transactions') }}
+          </div>
+          <div class="card-body">
+            <BarChart
+              :data="chartData"
+              :categories="chartCategories"
+            />
+          </div>
         </div>
       </div>
     </div>

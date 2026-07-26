@@ -106,9 +106,9 @@ const tableData = computed(() => {
     row_id: month.row_id,
     cell_url: month.cell_url,
     month_timestamp: month.month_timestamp,
-    resultId,
-    accountId,
-    categoryId,
+    resultId: resultId.value,
+    accountId: accountId.value,
+    categoryId: categoryId.value,
     _rowIds: {
       total: month.row_id // Map total column to its row_id for cell-level highlighting
     }

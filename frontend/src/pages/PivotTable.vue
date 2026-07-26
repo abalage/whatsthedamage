@@ -9,7 +9,6 @@ import { useCategoriesStore } from '../stores/categories.js';
 import type { Account } from '../types/api.js';
 import type { BreadcrumbItem } from '../composables/useBreadcrumbs.js'
 import BarChart from '../components/charts/BarChart.vue';
-import PieChart from '../components/charts/PieChart.vue';
 import PivotCategorySelector from '../components/PivotCategorySelector.vue';
 import PageHeader from '../components/layout/PageHeader.vue'
 import BreadcrumbNavigation from '../components/layout/BreadcrumbNavigation.vue'
@@ -301,30 +300,6 @@ onMounted(() => loadData());
                 :selectable="true"
                 @selection-changed="handleSelectionChanged"
               />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Pie Charts -->
-      <div v-if="pivotData && selectedCategories.length > 0" class="mb-4">
-        <div class="card mb-4" style="width: auto; margin: 0 auto">
-          <div class="card-header">
-            {{ $gettext('Category Breakdown by Month') }}
-          </div>
-          <div class="card-body">
-            <p class="text-secondary small mb-3"><i class="bi bi-info-circle me-1"></i> {{ $gettext('Each pie chart shows the composition of your selected categories for that month') }}</p>
-            <div class="row">
-              <div v-for="month in safeMonths" :key="month.month_timestamp" class="col-md-6 col-lg-4 mb-4">
-                <div class="card mb-4" style="width: auto; margin: 0 auto">
-                  <div class="card-header">
-                    {{ formatMonthYear(month.month_timestamp) }}
-                  </div>
-                  <div class="card-body">
-                    <PieChart :data="Object.entries(month.categories).filter(([id]) => selectedCategories.includes(id)).map(([id, d]) => ({ label: getCategoryDisplayName(id), value: d.amount, categoryId: id }))" :total="month.total" />
-                  </div>
-                </div>
-              </div>
             </div>
           </div>
         </div>

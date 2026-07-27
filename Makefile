@@ -28,7 +28,7 @@ VERSION ?= $(shell set -o pipefail; python3 -m setuptools_scm 2>/dev/null || ech
 # Frontend development server
 frontend: $(FRONTEND_DIR)/node_modules/.installed
 	@echo "Starting frontend development server..."
-	cd $(FRONTEND_DIR) && $(NPM_RUN) dev
+	cd $(FRONTEND_DIR) && VITE_APP_VERSION="$(VERSION)" $(NPM_RUN) dev
 
 # Combined build
 build: dev
@@ -60,7 +60,7 @@ $(FRONTEND_DIR)/node_modules/.installed: $(FRONTEND_DIR)/package.json $(FRONTEND
 
 # Frontend build for production
 frontend-build: $(FRONTEND_DIR)/node_modules/.installed
-	cd $(FRONTEND_DIR) && $(NPM_RUN) build
+	cd $(FRONTEND_DIR) && VITE_APP_VERSION="$(VERSION)" $(NPM_RUN) build
 
 # Frontend test - runs all frontend tests (lint, knip, type-check, test)
 frontend-test: $(FRONTEND_DIR)/node_modules/.installed

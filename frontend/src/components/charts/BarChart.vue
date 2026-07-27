@@ -4,7 +4,7 @@ import { Bar } from 'vue-chartjs';
 import { computed, ref, watch, nextTick } from 'vue';
 import type { ChartOptions, ChartData, ActiveElement, Chart } from 'chart.js';
 import { calculateLinearRegression, REGRESSION_CONFIG } from '../../js/regression.ts';
-import { useThemeStore } from '../../stores/theme';
+import { useThemeStore } from '../../stores/theme.ts';
 
 // Register ChartJS components
 ChartJS.register(Title, Tooltip, Legend, BarElement, LineElement, CategoryScale, LinearScale, PointElement);

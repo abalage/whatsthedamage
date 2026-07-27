@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import { RouterView } from 'vue-router'
 import Layout from './components/Layout.vue'
 import { useLocaleStore } from './stores/locale'
@@ -13,10 +14,13 @@ localeStore.loadLocale()
 if (!localeStore.locale) {
   localeStore.setLocale('en')
 }
+
+// Expose current locale to force reactive updates
+const currentLocale = computed(() => localeStore.locale)
 </script>
 
 <template>
-  <Layout>
+  <Layout :key="currentLocale">
     <RouterView />
   </Layout>
 </template>

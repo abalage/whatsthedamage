@@ -14,6 +14,7 @@ import type { Column, AggregateRowConfig } from '../components/data/VueDataTable
 import { fetchCategoryMonthTransactions } from '../js/api.js'
 import type { CategoryMonthTransactionsApiResponse } from '../types/api.js'
 import { formatMonthYear } from '../js/dateUtils.js'
+import BarChart from '../components/charts/BarChart.vue'
 
 const { $gettext } = useGettext()
 const categoriesStore = useCategoriesStore()
@@ -63,10 +64,6 @@ const {
     return [
       { name: $gettext('Home'), to: '/' },
       { name: $gettext('Categories'), to: { name: 'results', query: { resultId: getRouteParam('resultId') } } },
-      {
-        name: $gettext('Category Months'),
-        to: { name: 'category-months', params: { resultId: getRouteParam('resultId'), accountId: getRouteParam('accountId'), categoryId: getRouteParam('categoryId') } }
-      },
       { name: categoryName && monthName ? `${categoryName} - ${monthName}` : $gettext('Transaction Details'), active: true }
     ]
   },
@@ -105,9 +102,39 @@ const aggregateRows = computed<AggregateRowConfig[]>(() => {
         }
         return ''
       }
+    },
+    {
+      id: 'amount-average',
+      type: 'custom',
+      position: 'footer',
+      includeInExport: true,
+      class: 'fw-bold bg-surface-secondary text-on-dark',
+      customCalculator: (data, columnKey) => {
+        if (columnKey === 'date') return $gettext('Average')
+        if (columnKey === 'amount') {
+          const numericValues = data.map(row => Number(row[columnKey])).filter(v => !Number.isNaN(v))
+          return numericValues.length > 0
+            ? numericValues.reduce((sum, val) => sum + val, 0) / numericValues.length
+            : null
+        }
+        return ''
+      }
     }
   ]
 })
+
+// Chart data for BarChart
+const chartData = computed(() => {
+  return tableData.value.map(row => ({
+    label: row.date_display,
+    timestamp: row.date as number,
+    values: { amount: row.amount as number }
+  }))
+})
+
+const chartCategories = computed(() => [
+  { id: 'amount', label: $gettext('Amount') }
+])
 
 onMounted(() => {
   fetchData()
@@ -128,12 +155,6 @@ onMounted(() => {
         <template #actions>
           <div class="d-flex gap-2">
             <RouterLink
-              :to="{ name: 'category-months', params: { resultId: getRouteParam('resultId'), accountId: getRouteParam('accountId'), categoryId: getRouteParam('categoryId') } }"
-              class="btn bg-surface-base text-secondary border-secondary hover-bg-surface-secondary mt-3 mb-3"
-            >
-              {{ $gettext('Back to Category Months') }}
-            </RouterLink>
-            <RouterLink
               :to="{ name: 'results', query: { resultId: getRouteParam('resultId') } }"
               class="btn bg-surface-secondary text-on-dark border-secondary mt-3 mb-3"
             >
@@ -143,26 +164,42 @@ onMounted(() => {
         </template>
       </PageHeader>
 
-      <!-- Account Card -->
-      <div class="card mb-4" style="width: fit-content; margin: 0 auto">
-        <div class="card-header">
-          {{ $gettext('Account') }}: {{ transactionsData.account_formatted_id }}
-          <span v-if="transactionsData.account_currency" class="bg-surface-secondary text-on-dark px-2 py-1 rounded text-xs">
-            {{ transactionsData.account_currency }}
-          </span>
+      <!-- Cards Container -->
+      <div class="d-flex gap-4 flex-wrap justify-content-center">
+        <!-- Account & Table Card -->
+        <div class="card flex-grow-1" style="min-width: 400px">
+          <div class="card-header">
+            {{ $gettext('Account') }}: {{ transactionsData.account_formatted_id }}
+            <span v-if="transactionsData.account_currency" class="bg-surface-secondary text-on-dark px-2 py-1 rounded text-xs">
+              {{ transactionsData.account_currency }}
+            </span>
+          </div>
+          <div class="card-body">
+            <VueDataTable
+              id="transaction-details-table"
+              :data="tableData"
+              :columns="columns"
+              :aggregate-rows="aggregateRows"
+              :csv-text="$gettext('Export CSV')"
+              :excel-text="$gettext('Export Excel')"
+              wrapper-class="w-auto"
+              show-column-filters
+              show-pagination
+            />
+          </div>
         </div>
-        <div class="card-body">
-          <VueDataTable
-            id="transaction-details-table"
-            :data="tableData"
-            :columns="columns"
-            :aggregate-rows="aggregateRows"
-            :csv-text="$gettext('Export CSV')"
-            :excel-text="$gettext('Export Excel')"
-            wrapper-class="w-auto"
-            show-column-filters
-            show-pagination
-          />
+
+        <!-- Chart Card -->
+        <div class="card flex-grow-1" style="min-width: 400px">
+          <div class="card-header">
+            {{ $gettext('Transactions') }}
+          </div>
+          <div class="card-body">
+            <BarChart
+              :data="chartData"
+              :categories="chartCategories"
+            />
+          </div>
         </div>
       </div>
     </div>

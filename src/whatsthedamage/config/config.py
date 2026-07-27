@@ -7,6 +7,7 @@ from typing import List, Dict, Optional, Any
 from dataclasses import dataclass
 import yaml
 from pydantic import BaseModel, ValidationError, Field
+from whatsthedamage.config import DEFAULT_CONFIG_PATH
 from whatsthedamage.config.ml_config import MLConfig
 from whatsthedamage.utils.logging import get_logger
 
@@ -128,11 +129,8 @@ def load_config(config_path: str | None) -> AppConfig:
     :return: An AppConfig object.
     """
     if not config_path or config_path == "":
-        logger.warning("No configuration file provided, using default settings")
-        return AppConfig(
-            csv=CsvConfig(),
-            enricher_pattern_sets=EnricherPatternSets()
-        )
+        logger.info("No configuration file provided, loading default config from %s", DEFAULT_CONFIG_PATH)
+        config_path = DEFAULT_CONFIG_PATH
     try:
         with open(config_path, 'r', encoding='utf-8') as file:
             config_data = yaml.safe_load(file)

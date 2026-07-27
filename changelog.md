@@ -1,5 +1,41 @@
 # Changelog
 
+## [0.99.0] - 2026-07-27
+
+### BREAKING CHANGES
+- **Backend Localization Removal**: Removed localization support from backend (#114). Localization is now handled exclusively on the frontend.
+- **Category ID Handling**: Transaction category handling now uses 'id' attribute instead of 'name' to avoid localization issues (#113).
+- **DataTables Migration**: Dropped DataTables library and migrated to Vue native data table solution (#111). This affects all frontend data table rendering and functionality.
+- **API Interfaces Cleanup**: Reorganized and standardized API response models, removed ProcessApiResponse, standardized on DetailedResponse (#112).
+- **Data Model Simplification**: Simplified data model boundaries by removing duplicated models related to Account (#116).
+
+### Added
+- **Theme Switcher**: Added theme switcher functionality with support for multiple color themes (#122).
+- **Bootstrap 5 Color Themes**: Added 6 new Bootstrap 5 based color themes (malachite, lime-cream, baltic-blue, tiger-flame, powder-blush, royal-orchid) with semantic colors, chart palettes, and accessibility compliance (#124).
+- **Cost of Living Analysis**: Added comprehensive 'Cost of Living' calculator feature with Chart.js visualization (#110).
+- **Pivot Table Generalization**: Generalized cost of living feature into a reusable pivot table component with stacked bar charts, multi-selection, and data caching (#118).
+- **Frontend Charts**: Added PieChart for monthly category distribution and bar charts to selected drilldown pages (#125).
+- **Vue Native Components**: Migrated to prefer native Vue components over wrapper libraries (#123).
+- **UI Layout Rework**: Reconciled UI layout for better consistency and usability (#115).
+
+### Changed
+- **Frontend Info Extension**: Updated version info on frontend, improved language change rendering, added darker colors for contrast, removed misleading UI elements (#125).
+- **Category ID Mapping**: Fixed mapped category ID usage in API requests and corrected breadcrumb strings (#119).
+- **Component Reusability**: Improved code reusability across frontend components (#120).
+- **Card Component**: Unslopified card component usage and updated related tests (#117).
+
+### Fixed
+- **Pivot Table Sorting**: Enabled sorting on all PivotTable columns by storing primitive numeric values instead of objects (#65d3588).
+- **Column Ordering**: Fixed ordering by columns in pivot tables and added summary/average calculations (#8262919).
+- **Currency Handling**: Fixed issue where transactions without currency now loop through transactions until one with currency is found (#121).
+- **Pagination**: Restored pagination functionality for data tables (#3d03aab).
+- **Progress Bar**: Restored progress bar display on form loading (#a8d0708).
+- **Imports**: Fixed import statements to satisfy SonarQube analysis (#bdf2431).
+- **ML Documentation**: Fixed URL for ML documentation (#9096d40).
+- **Translations**: Fixed various translation issues and corrected translation-related bugs (#e4c499f, #6a1b939).
+- **Linting**: Fixed linting errors across the codebase (#5886acf).
+- **Dead Code**: Removed dead and unused code (#7d533b6).
+
 ## 0.30 - 2026-05-XX
 
 This is a big upgrade which decouples the frontend from Flask + jinja2 to Vue3.

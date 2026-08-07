@@ -19,7 +19,7 @@ from whatsthedamage.config.csv_profiles import (
     get_default_csv_profile,
     get_all_csv_profiles as get_all_csv_profiles_from_config
 )
-from whatsthedamage.config.config import AppConfig, EnricherPatternSets
+from whatsthedamage.config.config import AppConfig, CsvConfig, EnricherPatternSets
 from whatsthedamage.config.ml_config import MLConfig
 from whatsthedamage.utils.logging import get_logger
 
@@ -44,9 +44,7 @@ class CsvProfileService:
 
         Loads all available CSV profiles from the csv_profiles module.
         """
-        self._profiles: List[CsvProfile] = [
-            p for p in get_all_csv_profiles_from_config()
-        ]
+        self._profiles: List[CsvProfile] = list(get_all_csv_profiles_from_config())
 
     def get_profile_by_id(self, profile_id: str) -> Optional[CsvProfile]:
         """Get a CSV profile by its unique identifier.
@@ -137,6 +135,48 @@ class CsvProfileService:
         in default values for other configuration sections (enricher
         patterns, text cleaning, statistical algorithms, cache, ML config).
 
+        Note: This now returns ONLY the AppConfig without csv settings.
+        Use get_csv_config_from_profile() to get the CsvConfig separately.
+
+        Args:
+            profile_id: Optional profile ID to use. If provided, the
+                corresponding built-in profile will be validated (but csv_config not used).
+            custom_profile: Optional custom CsvProfile to use. If provided,
+                it will be validated (but csv_config not used).
+
+        Returns:
+            AppConfig object with defaults for all sections (without csv).
+
+        Raises:
+            ValueError: If profile_id is provided but not found.
+        """
+        # Validate profile_id if provided
+        if profile_id:
+            profile = self.get_profile_by_id(profile_id)
+            if not profile:
+                raise ValueError(f"CSV profile not found: {profile_id}")
+        # Validate custom_profile if provided
+        elif custom_profile:
+            # If custom_profile is provided, we just validate it exists
+            if not isinstance(custom_profile, CsvProfile):
+                raise ValueError("custom_profile must be a CsvProfile object")
+        # If neither is provided, we'll use defaults (no validation needed)
+
+        return AppConfig(
+            enricher_pattern_sets=EnricherPatternSets(),
+            text_cleaning={},
+            enabled_statistical_algorithms=['iqr', 'pareto'],
+            cache_ttl=1800,
+            ml_config=MLConfig()
+        )
+
+    def get_csv_config_from_profile(
+        self,
+        profile_id: Optional[str] = None,
+        custom_profile: Optional[CsvProfile] = None
+    ) -> CsvConfig:
+        """Get CsvConfig from a profile.
+
         Args:
             profile_id: Optional profile ID to use. If provided, the
                 corresponding built-in profile's csv_config will be used.
@@ -144,31 +184,21 @@ class CsvProfileService:
                 its csv_config will be used directly.
 
         Returns:
-            AppConfig object with the profile's csv_config and defaults
-            for all other sections.
+            CsvConfig object from the profile.
 
         Raises:
             ValueError: If profile_id is provided but not found.
         """
         if custom_profile:
-            csv_config = custom_profile.csv_config
+            return custom_profile.csv_config
         elif profile_id:
             profile = self.get_profile_by_id(profile_id)
             if not profile:
                 raise ValueError(f"CSV profile not found: {profile_id}")
-            csv_config = profile.csv_config
+            return profile.csv_config
         else:
             profile = self.get_default_profile()
-            csv_config = profile.csv_config
-
-        return AppConfig(
-            csv=csv_config,
-            enricher_pattern_sets=EnricherPatternSets(),
-            text_cleaning={},
-            enabled_statistical_algorithms=['iqr', 'pareto'],
-            cache_ttl=1800,
-            ml_config=MLConfig()
-        )
+            return profile.csv_config
 
     def resolve_profile(
         self,

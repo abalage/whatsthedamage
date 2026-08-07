@@ -9,7 +9,7 @@ Controllers are responsible for saving uploaded files to disk and passing file p
 from typing import Dict, Optional
 import time
 import uuid
-from whatsthedamage.config.config import AppArgs, AppContext
+from whatsthedamage.config.config import AppArgs, AppContext, CsvConfig
 from whatsthedamage.models.domain.csv_processor import CSVProcessor
 from whatsthedamage.services.configuration_service import ConfigurationService, ConfigLoadResult
 from whatsthedamage.services.statistical_analysis_service import StatisticalAnalysisService
@@ -112,9 +112,21 @@ class ProcessingService:
                 error_msg = f"Failed to load configuration: {config_result.validation_result.error_message}"
                 logger.error(error_msg)
                 raise ValueError(error_msg)
+            # Get csv_config from profile since config file no longer has csv key
+            try:
+                csv_config = self._csv_profile_service.get_csv_config_from_profile(
+                    profile_id=csv_profile_id
+                )
+            except ValueError as e:
+                error_msg = f"CSV profile error: {e}"
+                logger.error(error_msg)
+                raise ValueError(error_msg)
         else:
             try:
                 config = self._csv_profile_service.create_config_from_profile(
+                    profile_id=csv_profile_id
+                )
+                csv_config = self._csv_profile_service.get_csv_config_from_profile(
                     profile_id=csv_profile_id
                 )
             except ValueError as e:
@@ -122,7 +134,7 @@ class ProcessingService:
                 logger.error(error_msg)
                 raise ValueError(error_msg)
 
-        context = AppContext(config, args)
+        context = AppContext(config, args, csv_config)
 
         # Process using existing CSVProcessor
         logger.info("Creating CSV processor and starting row processing")

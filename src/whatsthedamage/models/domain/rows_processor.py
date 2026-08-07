@@ -25,10 +25,10 @@ class RowsProcessor:
         Initializes the RowsProcessor with the application context.
 
         Args:
-            context (AppContext): The application context containing configuration and arguments.
+            context (AppContext): The application context containing configuration, csv_config, and arguments.
         """
         self.context = context
-        self._date_attribute_format: str = context.config.csv.date_attribute_format
+        self._date_attribute_format: str = context.csv_config.date_attribute_format
         self._cfg_pattern_sets: EnricherPatternSets = context.config.enricher_pattern_sets
         self._start_date: Optional[str] = context.args.start_date
         self._start_date_epoch: float = 0

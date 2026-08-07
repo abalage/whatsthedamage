@@ -1,16 +1,3 @@
-csv:
-  dialect: "excel-tab"
-  delimiter: "\t"
-  date_attribute_format: "%Y.%m.%d"
-  attribute_mapping:
-    date: "könyvelés dátuma"
-    type: "típus"
-    partner: "partner elnevezése"
-    amount: "összeg"
-    currency: "összeg devizaneme"
-    account: "könyvelési számla"
-    notice: "közlemény"
-
 enricher_pattern_sets:
   partner:
     grocery:

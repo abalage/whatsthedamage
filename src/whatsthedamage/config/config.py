@@ -102,7 +102,6 @@ class EnricherPatternSets(BaseModel):
 
 
 class AppConfig(BaseModel):
-    csv: CsvConfig
     enricher_pattern_sets: EnricherPatternSets
     text_cleaning: Optional[Dict[str, Any]] = Field(default_factory=dict)
     enabled_statistical_algorithms: List[str] = Field(default_factory=lambda: ['iqr', 'pareto'])
@@ -112,15 +111,17 @@ class AppConfig(BaseModel):
 
 class AppContext:
     """
-    AppContext encapsulates the application configuration and arguments.
+    AppContext encapsulates the application configuration, CSV configuration, and arguments.
 
     Attributes:
         config (AppConfig): The application configuration.
+        csv_config (CsvConfig): The CSV parsing configuration (from profile or config file).
         args (AppArgs): The application arguments.
     """
-    def __init__(self, config: AppConfig, args: AppArgs):
+    def __init__(self, config: AppConfig, args: AppArgs, csv_config: CsvConfig):
         self.config: AppConfig = config
         self.args: AppArgs = args
+        self.csv_config: CsvConfig = csv_config
 
 
 def load_config(config_path: str | None) -> AppConfig:

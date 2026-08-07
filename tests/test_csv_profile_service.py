@@ -32,10 +32,10 @@ class TestProfileRetrieval:
 
     def test_get_profile_by_id(self, csv_profile_service):
         """Test retrieving a profile by ID."""
-        profile = csv_profile_service.get_profile_by_id("otp-hu")
+        profile = csv_profile_service.get_profile_by_id("kh-hu")
         assert profile is not None
-        assert profile.id == "otp-hu"
-        assert profile.name == "OTP Bank"
+        assert profile.id == "kh-hu"
+        assert profile.name == "K&H Bank"
 
     def test_get_profile_by_id_nonexistent(self, csv_profile_service):
         """Test retrieving a non-existent profile."""
@@ -46,7 +46,7 @@ class TestProfileRetrieval:
         """Test retrieving all profiles."""
         profiles = csv_profile_service.get_all_profiles()
         assert len(profiles) > 0
-        assert any(p.id == "otp-hu" for p in profiles)
+        assert any(p.id == "kh-hu" for p in profiles)
 
     def test_get_default_profile(self, csv_profile_service):
         """Test retrieving the default profile."""
@@ -121,8 +121,7 @@ class TestConfigCreation:
         """Test creating AppConfig from a profile ID."""
         config = csv_profile_service.create_config_from_profile(profile_id="kh-hu")
         assert isinstance(config, AppConfig)
-        assert config.csv.dialect == "excel-tab"
-        assert config.csv.delimiter == "\t"
+        # csv field removed from AppConfig - config no longer contains csv settings
         assert config.enabled_statistical_algorithms == ['iqr', 'pareto']
         assert config.cache_ttl == 1800
         assert isinstance(config.ml_config, MLConfig)
@@ -140,8 +139,8 @@ class TestConfigCreation:
             csv_config=csv_config
         )
         config = csv_profile_service.create_config_from_profile(custom_profile=custom_profile)
-        assert config.csv.dialect == "excel-tab"
-        assert config.csv.delimiter == "\t"
+        # csv field removed from AppConfig - config no longer contains csv settings
+        assert isinstance(config, AppConfig)
 
     def test_create_config_from_profile_nonexistent_id(self, csv_profile_service):
         """Test creating AppConfig from non-existent profile ID."""
@@ -152,8 +151,7 @@ class TestConfigCreation:
         """Test creating AppConfig with no arguments (uses default)."""
         config = csv_profile_service.create_config_from_profile()
         assert isinstance(config, AppConfig)
-        # Should use default profile (K&H)
-        assert config.csv.dialect == "excel-tab"
+        # csv field removed from AppConfig - config no longer contains csv settings
 
 
 class TestProfileResolution:

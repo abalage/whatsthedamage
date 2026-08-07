@@ -25,10 +25,9 @@ class CSVProcessor:
         Initializes the CSVProcessor with configuration and arguments.
 
         Args:
-            context (AppContext): The application context containing configuration and arguments.
+            context (AppContext): The application context containing configuration, csv_config, and arguments.
         """
         self.context = context
-        self.config = context.config
         self.args = context.args
         self.processor = RowsProcessor(self.context)
         self._rows: List[CsvRow] = []  # Cache for rows to avoid re-reading
@@ -59,9 +58,9 @@ class CSVProcessor:
         try:
             csv_reader = CsvFileHandler(
                 str(self.args.filename),
-                str(self.config.csv.dialect),
-                str(self.config.csv.delimiter),
-                dict(self.config.csv.attribute_mapping)
+                str(self.context.csv_config.dialect),
+                str(self.context.csv_config.delimiter),
+                dict(self.context.csv_config.attribute_mapping)
             )
             csv_reader.read()
             rows = csv_reader.get_rows()

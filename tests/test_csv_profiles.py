@@ -79,11 +79,11 @@ class TestProfileRetrieval:
 
     def test_get_csv_profile_by_id_existing(self):
         """Test retrieving a profile by valid ID."""
-        # Test with known profile IDs
-        profile = get_csv_profile_by_id("otp-hu")
+        # Test with known profile IDs (currently only kh-hu exists)
+        profile = get_csv_profile_by_id("kh-hu")
         assert profile is not None
-        assert profile.id == "otp-hu"
-        assert profile.name == "OTP Bank"
+        assert profile.id == "kh-hu"
+        assert profile.name == "K&H Bank"
 
     def test_get_csv_profile_by_id_nonexistent(self):
         """Test retrieving a profile by non-existent ID."""
@@ -106,7 +106,7 @@ class TestProfileList:
     def test_available_profiles_list(self):
         """Test that AVAILABLE_CSV_PROFILES contains expected profiles."""
         assert isinstance(AVAILABLE_CSV_PROFILES, list)
-        assert len(AVAILABLE_CSV_PROFILES) >= 5  # We have 5 built-in profiles
+        assert len(AVAILABLE_CSV_PROFILES) >= 1  # We have at least 1 built-in profile
 
     def test_profile_ids_are_unique(self):
         """Test that all profile IDs in AVAILABLE_CSV_PROFILES are unique."""
@@ -115,13 +115,8 @@ class TestProfileList:
 
     def test_expected_profiles_exist(self):
         """Test that expected bank profiles exist."""
-        expected_ids = [
-            "otp-hu",
-            "kh-hu",
-            "erste-hu",
-            "unicredit-hu",
-            "raiffeisen-hu"
-        ]
+        # Currently only kh-hu exists
+        expected_ids = ["kh-hu"]
         available_ids = [p.id for p in AVAILABLE_CSV_PROFILES]
         for expected_id in expected_ids:
             assert expected_id in available_ids, f"Profile {expected_id} not found"
@@ -142,15 +137,6 @@ class TestProfileList:
 class TestProfileConfiguration:
     """Tests for profile CSV configuration values."""
 
-    def test_otp_profile_configuration(self):
-        """Test OTP Bank profile configuration."""
-        profile = get_csv_profile_by_id("otp-hu")
-        assert profile is not None
-        assert profile.csv_config.dialect == "excel-tab"
-        assert profile.csv_config.delimiter == "\t"
-        assert profile.csv_config.date_attribute_format == "%Y.%m.%d"
-        assert "könyvelés dátuma" in profile.csv_config.attribute_mapping.values()
-
     def test_kh_profile_configuration(self):
         """Test K&H Bank profile configuration."""
         profile = get_csv_profile_by_id("kh-hu")
@@ -158,5 +144,6 @@ class TestProfileConfiguration:
         assert profile.csv_config.dialect == "excel-tab"
         assert profile.csv_config.delimiter == "\t"
         assert profile.csv_config.date_attribute_format == "%Y.%m.%d"
+        assert "könyvelés dátuma" in profile.csv_config.attribute_mapping.values()
 
 

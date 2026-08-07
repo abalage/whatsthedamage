@@ -35,6 +35,8 @@ class AppArgs:
     filter: Optional[str] = None
     output: Optional[str] = None
     start_date: Optional[str] = None
+    csv_profile: Optional[str] = None
+    list_csv_profiles: bool = False
 
 class CsvConfig(BaseModel):
     dialect: str = Field(default="excel-tab")

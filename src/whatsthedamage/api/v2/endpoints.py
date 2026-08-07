@@ -66,7 +66,8 @@ def process_transactions() -> tuple[Response, int]:
                 start_date=params.start_date,
                 end_date=params.end_date,
                 ml_enabled=params.ml_enabled,
-                category_filter=params.category_filter
+                category_filter=params.category_filter,
+                csv_profile_id=params.csv_profile_id
             )
 
             # Cache result for drilldown views
@@ -128,12 +129,7 @@ def get_results(result_id: str) -> tuple[Response, int]:
         return handle_error(e, 'get_results')
 
 
-
-
-
 # Drilldown endpoints for category, month, and cell-level navigation
-
-
 @v2_bp.route('/results/<result_id>/accounts/<account_id>/categories/<category_id>/months', methods=['GET'])
 def get_category_months(result_id: str, account_id: str, category_id: str) -> tuple[Response, int]:
     """Get months and totals for a specific category.
@@ -322,3 +318,57 @@ def get_cost_of_living_categories() -> tuple[Response, int]:
     """
     from whatsthedamage.config.config import AVAILABLE_CATEGORIES, COST_OF_LIVING_CATEGORY_IDS
     return jsonify([cat.model_dump() for cat in AVAILABLE_CATEGORIES if cat.id in COST_OF_LIVING_CATEGORY_IDS]), 200
+
+
+# CSV Profile endpoints
+
+from whatsthedamage.services.csv_profile_service import CsvProfileService
+
+_csv_profile_service = CsvProfileService()
+
+
+def _get_csv_profile_service() -> CsvProfileService:
+    """Get CSV profile service instance."""
+    return _csv_profile_service
+
+
+@v2_bp.route('/csv-profiles', methods=['GET'])
+def get_csv_profiles() -> tuple[Response, int]:
+    """GET /api/v2/csv-profiles - List all profiles.
+
+    Returns a list of all available CSV profiles with their metadata.
+
+    Returns:
+        List of CSV profile objects with id, name, description, version, and csv_config.
+
+    Status Codes:
+        200: Successfully retrieved CSV profiles
+        500: Failed to retrieve CSV profiles
+    """
+    try:
+        profiles = _get_csv_profile_service().get_all_profiles()
+        return jsonify([p.model_dump() for p in profiles]), 200
+    except Exception as e:
+        return jsonify({"error": "Failed to retrieve CSV profiles"}), 500
+
+
+@v2_bp.route('/csv-profiles/<profile_id>', methods=['GET'])
+def get_csv_profile(profile_id: str) -> tuple[Response, int]:
+    """GET /api/v2/csv-profiles/<id> - Get specific profile.
+
+    Returns the details of a specific CSV profile by its ID.
+
+    Args:
+        profile_id: The unique identifier of the CSV profile to retrieve.
+
+    Returns:
+        CSV profile object with all configuration details.
+
+    Status Codes:
+        200: Successfully retrieved CSV profile
+        404: CSV profile not found
+    """
+    profile = _get_csv_profile_service().get_profile_by_id(profile_id)
+    if not profile:
+        return jsonify({"error": f"CSV profile not found: {profile_id}"}), 404
+    return jsonify(profile.model_dump()), 200

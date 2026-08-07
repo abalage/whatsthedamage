@@ -4,6 +4,8 @@ import { useFormWithNavigation } from '../stores/form.js'
 import { useFeedbackStore } from '../stores/feedback.js'
 import { useGettext } from 'vue3-gettext'
 import ErrorDisplay from '../components/ErrorDisplay.vue'
+import { fetchAllCsvProfiles } from '../js/api.js'
+import type { CsvProfile } from '../types/api.js'
 
 const { $gettext } = useGettext()
 const { formStore, submitForm: submitFormFn } = useFormWithNavigation()
@@ -13,6 +15,9 @@ const feedback = useFeedbackStore()
 const fileInput = ref<HTMLInputElement | null>(null)
 const configInput = ref<HTMLInputElement | null>(null)
 
+const csvProfiles = ref<CsvProfile[]>([])
+const isLoadingProfiles = ref(false)
+
 const handleCsvChange = (event: Event) => {
   formStore.handleFileChange(event, 'csvFile')
 }
@@ -21,7 +26,7 @@ const handleConfigChange = (event: Event) => {
   formStore.handleFileChange(event, 'configFile')
 }
 
-type InputField = 'mlEnabled' | 'cacheEnabled'
+type InputField = 'mlEnabled' | 'cacheEnabled' | 'csvProfileId'
 
 const handleInputChange = (field: InputField, value: string | boolean) => {
   formStore.handleInputChange(field, value)
@@ -42,11 +47,33 @@ const clearForm = () => {
     feedback.showInfo($gettext('Form cleared'))
     if (fileInput.value) fileInput.value.value = ''
     if (configInput.value) configInput.value.value = ''
+    // Re-set the default profile after clearing
+    const defaultProfile = csvProfiles.value.find(p => p.is_default)
+    if (defaultProfile) {
+      formStore.handleInputChange('csvProfileId', defaultProfile.id)
+    }
+  }
+}
+
+const loadCsvProfiles = async (): Promise<void> => {
+  isLoadingProfiles.value = true
+  try {
+    csvProfiles.value = await fetchAllCsvProfiles()
+    // Set the default profile as the selected value
+    const defaultProfile = csvProfiles.value.find(p => p.is_default)
+    if (defaultProfile) {
+      formStore.handleInputChange('csvProfileId', defaultProfile.id)
+    }
+  } catch (error: unknown) {
+    feedback.showError($gettext('Failed to load CSV profiles'))
+    console.error('Failed to load CSV profiles:', error)
+  } finally {
+    isLoadingProfiles.value = false
   }
 }
 
 onMounted(() => {
-  // Initialize form if needed
+  loadCsvProfiles()
 })
 </script>
 
@@ -94,6 +121,21 @@ onMounted(() => {
                   {{ formStore.getError('configFile') }}
                 </div>
                 <div id="configHelp" class="form-text">{{ $gettext('Upload your configuration file here, or the default configuration will be used') }}</div>
+              </div>
+              <div class="mb-3">
+                <label for="csvProfile" class="form-label">{{ $gettext('CSV Profile') }}:</label>
+                <select
+                  id="csvProfile"
+                  v-model="formStore.formData.csvProfileId"
+                  class="form-select"
+                  :disabled="isLoadingProfiles"
+                  @change="(e) => formStore.handleInputChange('csvProfileId', (e.target as HTMLSelectElement).value)"
+                >
+                  <option v-for="profile in csvProfiles" :key="profile.id" :value="profile.id">
+                    {{ profile.name }} (v{{ profile.version }}){{ profile.is_default ? ' (' + $gettext('Default') + ')' : '' }}
+                  </option>
+                </select>
+                <div class="form-text">{{ $gettext('Select a bank profile') }}</div>
               </div>
               <label for="ml" class="form-label">{{ $gettext('Advanced settings') }}:</label>
               <div class="mb-3 form-check">

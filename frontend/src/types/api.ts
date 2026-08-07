@@ -317,3 +317,44 @@ export interface RecalculateApiResponse {
   direction: 'columns' | 'rows';
 }
 
+// -----------------------------------------------------------------------------
+// CSV Profile Types
+// -----------------------------------------------------------------------------
+
+/**
+ * CSV configuration for a profile
+ */
+export interface CsvConfig {
+  dialect: string;
+  delimiter: string;
+  date_attribute_format: string;
+  attribute_mapping: Record<string, string>;
+}
+
+/**
+ * CSV profile definition with metadata
+ * Fetched via GET /api/v2/csv-profiles
+ */
+export interface CsvProfile {
+  id: string;
+  name: string;
+  description: string;
+  version: string;
+  csv_config: CsvConfig;
+  is_default: boolean;
+}
+
+/**
+ * Schema information for CSV profile format
+ * Fetched via GET /api/v2/csv-profiles/schema
+ */
+export interface CsvProfileSchema {
+  description: string;
+  required_fields: string[];
+  optional_fields: string[];
+  csv_config_required: string[];
+  attribute_mapping_required_keys: string[];
+  example: Record<string, unknown>;
+  notes: string[];
+}
+

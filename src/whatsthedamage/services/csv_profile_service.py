@@ -13,13 +13,14 @@ from typing import Optional, List
 import yaml
 from pydantic import ValidationError
 
+from whatsthedamage.config import DEFAULT_CONFIG_PATH
 from whatsthedamage.config.csv_profiles import (
     CsvProfile,
     get_csv_profile_by_id,
     get_default_csv_profile,
     get_all_csv_profiles as get_all_csv_profiles_from_config
 )
-from whatsthedamage.config.config import AppConfig, CsvConfig, EnricherPatternSets
+from whatsthedamage.config.config import AppConfig, CsvConfig, EnricherPatternSets, load_config
 from whatsthedamage.config.ml_config import MLConfig
 from whatsthedamage.utils.logging import get_logger
 
@@ -138,6 +139,9 @@ class CsvProfileService:
         Note: This now returns ONLY the AppConfig without csv settings.
         Use get_csv_config_from_profile() to get the CsvConfig separately.
 
+        When no profile is specified, loads configuration from the default
+        config file (config.yml.default).
+
         Args:
             profile_id: Optional profile ID to use. If provided, the
                 corresponding built-in profile will be validated (but csv_config not used).
@@ -160,15 +164,12 @@ class CsvProfileService:
             # If custom_profile is provided, we just validate it exists
             if not isinstance(custom_profile, CsvProfile):
                 raise ValueError("custom_profile must be a CsvProfile object")
-        # If neither is provided, we'll use defaults (no validation needed)
 
-        return AppConfig(
-            enricher_pattern_sets=EnricherPatternSets(),
-            text_cleaning={},
-            enabled_statistical_algorithms=['iqr', 'pareto'],
-            cache_ttl=1800,
-            ml_config=MLConfig()
-        )
+        # Load default configuration from config.yml.default
+        # CSV profiles only contain CSV parsing config, not enricher patterns,
+        # so we always load the default config for enricher patterns and text cleaning
+        logger.debug("Loading default configuration from %s", DEFAULT_CONFIG_PATH)
+        return load_config(DEFAULT_CONFIG_PATH)
 
     def get_csv_config_from_profile(
         self,

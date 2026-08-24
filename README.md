@@ -8,7 +8,7 @@ _The slang phrase "what's the damage?" is often used to ask about the cost or pr
 
 1. **Command-Line Interface (CLI)** - For local, interactive use, mostly for troubleshooting.
 2. **Web Interface (SPA)** - For users who prefer browser-based UI, this provides the most features.
-3. **REST API** - See [API.md](API.md).
+3. **REST API** - See [API.md](API.md) for complete endpoint documentation. OpenAPI 3.0.3 specification is available at `/api/v2/openapi.json`.
 
 ## Main Features
  - Process CSV exports. Supports multi-account and multi-currency.

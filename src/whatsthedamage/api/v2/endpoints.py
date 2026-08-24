@@ -372,3 +372,21 @@ def get_csv_profile(profile_id: str) -> tuple[Response, int]:
     if not profile:
         return jsonify({"error": f"CSV profile not found: {profile_id}"}), 404
     return jsonify(profile.model_dump()), 200
+
+
+@v2_bp.route('/openapi.json', methods=['GET'])
+def get_openapi_spec() -> tuple[Response, int]:
+    """GET /api/v2/openapi.json - Get OpenAPI specification.
+
+    Returns the complete OpenAPI 3.0.3 specification for this API.
+    This can be used with OpenAPI-compatible tools for documentation
+    generation, client code generation, or testing.
+
+    Returns:
+        OpenAPI 3.0.3 specification as JSON
+
+    Status Codes:
+        200: Successfully returned OpenAPI specification
+    """
+    from whatsthedamage.api.v2.schema import get_openapi_schema
+    return jsonify(get_openapi_schema()), 200

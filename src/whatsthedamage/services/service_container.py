@@ -17,6 +17,7 @@ from whatsthedamage.services.drilldown_response_service import DrilldownResponse
 from whatsthedamage.services.ml_service import MLService
 from whatsthedamage.services.text_correction_service import TextCorrectionService
 from whatsthedamage.services.smote_service import SmoteService
+from whatsthedamage.services.csv_profile_service import CsvProfileService
 from whatsthedamage.config.config import AppConfig
 from flask_caching import Cache
 
@@ -69,12 +70,14 @@ class ServiceContainer:
         # Service creation registry - maps service classes to their creation functions
         service_creators = {
             ConfigurationService: lambda: ConfigurationService(),
+            CsvProfileService: lambda: CsvProfileService(),
             StatisticalAnalysisService: lambda: StatisticalAnalysisService(
                 enabled_algorithms=self.get_service(ConfigurationService).get_default_config().enabled_statistical_algorithms
             ),
             ProcessingService: lambda: ProcessingService(
                 configuration_service=self.get_service(ConfigurationService),
-                statistical_analysis_service=self.get_service(StatisticalAnalysisService)
+                statistical_analysis_service=self.get_service(StatisticalAnalysisService),
+                csv_profile_service=self.get_service(CsvProfileService)
             ),
             ResponseFormattingService: lambda: ResponseFormattingService(
                 statistical_analysis_service=self.get_service(StatisticalAnalysisService)
@@ -136,6 +139,11 @@ class ServiceContainer:
     def configuration_service(self) -> ConfigurationService:
         """Get ConfigurationService instance."""
         return self.get_service(ConfigurationService)
+
+    @property
+    def csv_profile_service(self) -> CsvProfileService:
+        """Get CsvProfileService instance."""
+        return self.get_service(CsvProfileService)
 
     @property
     def processing_service(self) -> ProcessingService:

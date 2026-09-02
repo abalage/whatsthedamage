@@ -23,7 +23,6 @@ def app_context():
     )
     
     app_config = AppConfig(
-        csv=csv_config,
         enricher_pattern_sets=enricher_pattern_sets
     )
     
@@ -42,7 +41,7 @@ def app_context():
         output="html"
     )
     
-    return AppContext(app_config, app_args)
+    return AppContext(app_config, app_args, csv_config)
 
 
 @pytest.fixture

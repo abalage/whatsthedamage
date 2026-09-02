@@ -60,7 +60,8 @@ def main() -> None:
             ml_enabled=args.ml,
             category_filter=args.filter,
             verbose=args.verbose,
-            training_data=args.training_data
+            training_data=args.training_data,
+            csv_profile_id=args.csv_profile
         )
 
         # Extract Account per account

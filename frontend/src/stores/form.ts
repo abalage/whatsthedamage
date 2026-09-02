@@ -17,6 +17,7 @@ interface FormData {
   verbose: boolean
   mlEnabled: boolean
   cacheEnabled: boolean
+  csvProfileId: string | null
 }
 
 /**
@@ -59,7 +60,8 @@ const useFormStore = defineStore('form', () => {
     categoryFilter: '',
     verbose: false,
     mlEnabled: false,
-    cacheEnabled: true
+    cacheEnabled: true,
+    csvProfileId: null
   })
 
   /**
@@ -94,6 +96,7 @@ const useFormStore = defineStore('form', () => {
     formData.verbose = false
     formData.mlEnabled = false
     formData.cacheEnabled = true
+    formData.csvProfileId = null
     errors.value = {}
     isSubmitted.value = false
   }
@@ -216,6 +219,11 @@ const useFormStore = defineStore('form', () => {
 
       if (formData.categoryFilter) {
         formDataObj.append('category_filter', formData.categoryFilter)
+      }
+
+      // Append CSV profile ID if provided
+      if (formData.csvProfileId) {
+        formDataObj.append('csv_profile_id', formData.csvProfileId)
       }
 
       formDataObj.append('verbose', formData.verbose.toString())

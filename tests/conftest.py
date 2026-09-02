@@ -158,6 +158,7 @@ def pattern_sets():
 @pytest.fixture
 def app_context():
     # Create the CsvConfig object
+    from whatsthedamage.config.config import CsvConfig, EnricherPatternSets
     csv_config = CsvConfig(
         dialect="excel",
         delimiter=",",
@@ -166,15 +167,13 @@ def app_context():
     )
 
     # Create the EnricherPatternSets object
-    from whatsthedamage.config.config import EnricherPatternSets
     enricher_pattern_sets = EnricherPatternSets(
         type={"pattern1": ["value1", "value2"], "pattern2": ["value3", "value4"]},
         partner={}
     )
 
-    # Create the AppConfig object
+    # Create the AppConfig object (without csv field)
     app_config = AppConfig(
-        csv=csv_config,
         enricher_pattern_sets=enricher_pattern_sets
     )
 
@@ -194,8 +193,8 @@ def app_context():
         start_date="2023-01-01"
     )
 
-    # Return the AppContext object
-    return AppContext(config=app_config, args=app_args)
+    # Return the AppContext object with csv_config
+    return AppContext(config=app_config, args=app_args, csv_config=csv_config)
 
 
 @pytest.fixture
@@ -226,15 +225,9 @@ def standard_csv_content():
 @pytest.fixture
 def standard_config_content():
     """Standard config content for testing."""
-    return """csv:
-  dialect: excel
-  delimiter: ','
-  date_attribute_format: '%Y-%m-%d'
-  attribute_mapping:
-    date: date
-    amount: amount
-    currency: currency
-    partner: partner
+    return """enricher_pattern_sets:
+  type: {}
+  partner: {}
 """
 
 @pytest.fixture

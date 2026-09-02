@@ -282,6 +282,29 @@ class MonthCategoriesApiResponse(BaseModel):
         description="Statistical highlights for drilldown rows, mapped by row_id to highlight types"
     )
 
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "result_id": "550e8400-e29b-41d4-a716-446655440000",
+                "account_id": "account_1",
+                "account_name": "Primary Account",
+                "account_formatted_id": "12345678-12345678",
+                "account_currency": "HUF",
+                "month_id": "1672531200",
+                "month_timestamp": 1672531200,
+                "data": [
+                    {
+                        "category_id": "grocery",
+                        "total": {"display": "-150.00", "raw": -150.0},
+                        "row_id": "row_001",
+                        "category_url": "/api/v2/results/.../transactions"
+                    }
+                ],
+                "highlights": None
+            }
+        }
+    )
+
 
 class CategoryMonthTransactionsApiResponse(BaseModel):
     """Response for GET /api/v2/results/<result_id>/accounts/<account_id>/categories/<category_id>/months/<month_id>/transactions endpoint.
@@ -303,6 +326,36 @@ class CategoryMonthTransactionsApiResponse(BaseModel):
     highlights: Optional[Dict[str, List[str]]] = Field(
         default=None,
         description="Statistical highlights for transactions, mapped by row_id to highlight types"
+    )
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "result_id": "550e8400-e29b-41d4-a716-446655440000",
+                "account_id": "account_1",
+                "account_name": "Primary Account",
+                "account_formatted_id": "12345678-12345678",
+                "account_currency": "HUF",
+                "category_id": "grocery",
+                "month_id": "1672531200",
+                "month_timestamp": 1672531200,
+                "data": [
+                    {
+                        "date": {"display": "2023-01-01", "timestamp": 1672531200},
+                        "amount": {"display": "-100.00", "raw": -100.0},
+                        "merchant": "TESCO",
+                        "currency": "HUF",
+                        "type": "card_payment",
+                        "confidence": 0.95,
+                        "notice": "Payment for groceries",
+                        "row_id": "detail_1",
+                        "category_id": "grocery",
+                        "month_id": "1672531200"
+                    }
+                ],
+                "highlights": None
+            }
+        }
     )
 
 

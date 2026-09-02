@@ -9,7 +9,7 @@ class CLIController:
         self.parser = self._setup_parser()
 
     def _setup_parser(self) -> argparse.ArgumentParser:
-        parser = argparse.ArgumentParser(description="A CLI tool to process bank account transaction exports in CSV files.")
+        parser = argparse.ArgumentParser(description="A CLI tool to categorize your bank transactions saved in CSV files.")
         parser.add_argument('filename', type=str, help='The CSV file to read.')
         parser.add_argument('--start-date', type=str, help='Start date (e.g. YYYY.MM.DD.)')
         parser.add_argument('--end-date', type=str, help='End date (e.g. YYYY.MM.DD.)')
@@ -26,10 +26,20 @@ class CLIController:
         parser.add_argument('--log-level', type=str, default='WARN', help='Set the logging level (DEBUG, INFO, WARN, ERROR). Default: WARN')
         parser.add_argument('--log-output', type=str, default='stdout', help='Set the logging output (stdout or filename). Default: stdout')
         parser.add_argument('--log-format', type=str, default='text', help='Set the logging format (text or json). Default: text')
+        parser.add_argument('--csv-profile', type=str, default='kh-hu', help='CSV profile ID (Default: kh-hu)')
+        parser.add_argument('--list-csv-profiles', action='store_true', help='List available CSV profiles and exit')
         return parser
 
     def parse_arguments(self) -> AppArgs:
         parsed_args = self.parser.parse_args()
+
+        # Handle --list-csv-profiles flag
+        if parsed_args.list_csv_profiles:
+            from whatsthedamage.config.csv_profiles import get_all_csv_profiles
+            for p in get_all_csv_profiles():
+                print(f"{p.id:<20} {p.name:<25} v{p.version} {'(default)' if p.is_default else ''}")
+            exit(0)
+
         return AppArgs(
             category_id=parsed_args.category_id,
             config=parsed_args.config,
@@ -45,5 +55,7 @@ class CLIController:
             ml=parsed_args.ml,
             log_level=parsed_args.log_level,
             log_output=parsed_args.log_output,
-            log_format=parsed_args.log_format
+            log_format=parsed_args.log_format,
+            csv_profile=parsed_args.csv_profile,
+            list_csv_profiles=parsed_args.list_csv_profiles
         )

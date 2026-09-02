@@ -5,12 +5,6 @@ from whatsthedamage.config.config import load_config, AppConfig, AppArgs
 
 def test_load_config_valid_file(tmp_path):
     config_data = {
-        "csv": {
-            "dialect": "excel",
-            "delimiter": ",",
-            "date_attribute_format": "%Y-%m-%d",
-            "attribute_mapping": {"date": "date", "amount": "sum"}
-        },
         "enricher_pattern_sets": {
             "type": {
                 "subpattern1": ["value1", "value2"]
@@ -23,7 +17,7 @@ def test_load_config_valid_file(tmp_path):
 
     config = load_config(config_file)
     assert isinstance(config, AppConfig)
-    assert config.csv.dialect == "excel"
+    # csv field removed from AppConfig - config no longer contains csv settings
 
 
 def test_load_config_invalid_yaml(tmp_path):

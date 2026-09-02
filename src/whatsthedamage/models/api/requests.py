@@ -46,6 +46,11 @@ class ProcessingRequest(BaseModel):
         description="Cache TTL in seconds. If None, uses backend default. 0 means never expire.",
         examples=[1800, 0]
     )
+    csv_profile_id: Optional[str] = Field(
+        default=None,
+        description="CSV profile ID to use for parsing (e.g., 'otp-hu', 'kh-hu'). Uses default if not provided.",
+        examples=["otp-hu", "kh-hu"]
+    )
 
     @model_validator(mode='after')
     def validate_date_formats(self) -> 'ProcessingRequest':

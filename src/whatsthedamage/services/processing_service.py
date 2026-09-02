@@ -9,10 +9,11 @@ Controllers are responsible for saving uploaded files to disk and passing file p
 from typing import Dict, Optional
 import time
 import uuid
-from whatsthedamage.config.config import AppArgs, AppContext
+from whatsthedamage.config.config import AppArgs, AppContext, CsvConfig
 from whatsthedamage.models.domain.csv_processor import CSVProcessor
 from whatsthedamage.services.configuration_service import ConfigurationService, ConfigLoadResult
 from whatsthedamage.services.statistical_analysis_service import StatisticalAnalysisService
+from whatsthedamage.services.csv_profile_service import CsvProfileService
 from whatsthedamage.models.domain.dt_models import StatisticalMetadata, ProcessingResponse
 from whatsthedamage.models.domain.account import Account
 from whatsthedamage.models.api.common import ProcessingMetadata
@@ -32,13 +33,15 @@ class ProcessingService:
     def __init__(
         self,
         configuration_service: Optional[ConfigurationService] = None,
-        statistical_analysis_service: Optional[StatisticalAnalysisService] = None
+        statistical_analysis_service: Optional[StatisticalAnalysisService] = None,
+        csv_profile_service: Optional[CsvProfileService] = None
     ) -> None:
         """Initialize the processing service.
 
         Args:
             configuration_service: Service for loading configuration (optional, created if None)
             statistical_analysis_service: Service for statistical analysis (optional, for Web/API only)
+            csv_profile_service: Service for CSV profile management (optional, created if None)
 
         Note:
             Caching is intentionally NOT a dependency here. Caching is a cross-cutting concern
@@ -46,6 +49,7 @@ class ProcessingService:
         """
         self._config_service = configuration_service or ConfigurationService()
         self._statistical_analysis_service = statistical_analysis_service
+        self._csv_profile_service = csv_profile_service or CsvProfileService()
 
     def process_with_details(
         self,
@@ -56,12 +60,17 @@ class ProcessingService:
         ml_enabled: bool = False,
         category_filter: str | None = None,
         verbose: bool = False,
-        training_data: bool = False
+        training_data: bool = False,
+        csv_profile_id: str | None = None
     ) -> ProcessingResponse:
         """Process CSV file and return detailed transaction data.
 
         This method processes a CSV file and returns detailed transaction-level
         data with aggregation by category and month. Used by v2 API.
+
+        Configuration priority (when config_file_path is None):
+        1. Built-in profile ID (csv_profile_id)
+        2. Default profile
 
         Args:
             csv_file_path: Path to CSV file on disk
@@ -72,13 +81,14 @@ class ProcessingService:
             category_filter: Filter results to specific category
             verbose: Print verbose categorized output to stdout
             training_data: Print training data JSON to stderr
+            csv_profile_id: Optional built-in profile ID to use
 
         Returns:
             ProcessingResponse: Contains processed data, metadata, and statistical analysis results
         """
         start_time = time.time()
         logger.info(f"Starting CSV processing: {csv_file_path}")
-        logger.debug(f"Processing parameters: ml_enabled={ml_enabled}, category_filter={category_filter}")
+        logger.debug(f"Processing parameters: ml_enabled={ml_enabled}, category_filter={category_filter}, csv_profile_id={csv_profile_id}")
 
         # Build arguments for CSVProcessor
         args = self._build_args(
@@ -93,15 +103,38 @@ class ProcessingService:
         )
 
         # Load config using ConfigurationService
+        # Priority: config_file > profile_id > default
         logger.info("Loading configuration")
-        config_result: ConfigLoadResult = self._config_service.load_config(config_file_path)
-        config = config_result.config
-        if config is None:
-            error_msg = f"Failed to load configuration: {config_result.validation_result.error_message}"
-            logger.error(error_msg)
-            raise ValueError(error_msg)
+        if config_file_path:
+            config_result: ConfigLoadResult = self._config_service.load_config(config_file_path)
+            config = config_result.config
+            if config is None:
+                error_msg = f"Failed to load configuration: {config_result.validation_result.error_message}"
+                logger.error(error_msg)
+                raise ValueError(error_msg)
+            # Get csv_config from profile since config file no longer has csv key
+            try:
+                csv_config = self._csv_profile_service.get_csv_config_from_profile(
+                    profile_id=csv_profile_id
+                )
+            except ValueError as e:
+                error_msg = f"CSV profile error: {e}"
+                logger.error(error_msg)
+                raise ValueError(error_msg)
+        else:
+            try:
+                config = self._csv_profile_service.create_config_from_profile(
+                    profile_id=csv_profile_id
+                )
+                csv_config = self._csv_profile_service.get_csv_config_from_profile(
+                    profile_id=csv_profile_id
+                )
+            except ValueError as e:
+                error_msg = f"CSV profile error: {e}"
+                logger.error(error_msg)
+                raise ValueError(error_msg)
 
-        context = AppContext(config, args)
+        context = AppContext(config, args, csv_config)
 
         # Process using existing CSVProcessor
         logger.info("Creating CSV processor and starting row processing")

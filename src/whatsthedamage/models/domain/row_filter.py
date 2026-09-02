@@ -13,10 +13,10 @@ class RowFilter:
         Initialize the RowFilter with a list of CsvRow objects and a date format.
 
         :param rows: List of CsvRow objects to filter.
-        :param date_format: The date format to use for filtering.
+        :param context: AppContext containing csv_config with date format.
         """
         self._rows = rows
-        self._date_format = context.config.csv.date_attribute_format
+        self._date_format = context.csv_config.date_attribute_format
 
     def _get_date_field_id(self, date_value: str) -> DateField:
         # FIXME remove added datetime dependency, rework 'display' string creation

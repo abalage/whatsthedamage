@@ -7,6 +7,7 @@ from typing import List, Dict, Optional, Any
 from dataclasses import dataclass
 import yaml
 from pydantic import BaseModel, ValidationError, Field
+from whatsthedamage.config import DEFAULT_CONFIG_PATH
 from whatsthedamage.config.ml_config import MLConfig
 from whatsthedamage.utils.logging import get_logger
 
@@ -34,6 +35,8 @@ class AppArgs:
     filter: Optional[str] = None
     output: Optional[str] = None
     start_date: Optional[str] = None
+    csv_profile: Optional[str] = None
+    list_csv_profiles: bool = False
 
 class CsvConfig(BaseModel):
     dialect: str = Field(default="excel-tab")
@@ -57,28 +60,28 @@ class CategoryDefinition(BaseModel):
 
 
 AVAILABLE_CATEGORIES = [
-    CategoryDefinition(id="grocery", default_name="Grocery", patterns=[]),
+    CategoryDefinition(id="balance", default_name="Balance", patterns=[]),
     CategoryDefinition(id="clothes", default_name="Clothes", patterns=[]),
+    CategoryDefinition(id="cost_of_living", default_name="Cost of Living", patterns=[]),
+    CategoryDefinition(id="deposit", default_name="Deposit", patterns=[]),
     CategoryDefinition(id="dining_out", default_name="Dining Out", patterns=[]),
+    CategoryDefinition(id="electronics_digital_services", default_name="Electronics and Digital Services", patterns=[]),
+    CategoryDefinition(id="entertainment_and_leisure", default_name="Entertainment and Leisure", patterns=[]),
+    CategoryDefinition(id="fee", default_name="Fee", patterns=[]),
+    CategoryDefinition(id="grocery", default_name="Grocery", patterns=[]),
     CategoryDefinition(id="health", default_name="Health", patterns=[]),
+    CategoryDefinition(id="home_maintenance", default_name="Home Maintenance", patterns=[]),
+    CategoryDefinition(id="insurance", default_name="Insurance", patterns=[]),
+    CategoryDefinition(id="interest", default_name="Interest", patterns=[]),
+    CategoryDefinition(id="loan", default_name="Loan", patterns=[]),
+    CategoryDefinition(id="other", default_name="Other", patterns=[]),
     CategoryDefinition(id="payment", default_name="Payment", patterns=[]),
+    CategoryDefinition(id="refund", default_name="Refund", patterns=[]),
+    CategoryDefinition(id="total_spendings", default_name="Total Spendings", patterns=[]),
+    CategoryDefinition(id="transfer", default_name="Transfer", patterns=[]),
     CategoryDefinition(id="transportation", default_name="Transportation", patterns=[]),
     CategoryDefinition(id="utility", default_name="Utility", patterns=[]),
-    CategoryDefinition(id="home_maintenance", default_name="Home Maintenance", patterns=[]),
-    CategoryDefinition(id="entertainment_and_leisure", default_name="Entertainment and Leisure", patterns=[]),
-    CategoryDefinition(id="insurance", default_name="Insurance", patterns=[]),
-    CategoryDefinition(id="loan", default_name="Loan", patterns=[]),
     CategoryDefinition(id="withdrawal", default_name="Withdrawal", patterns=[]),
-    CategoryDefinition(id="fee", default_name="Fee", patterns=[]),
-    CategoryDefinition(id="deposit", default_name="Deposit", patterns=[]),
-    CategoryDefinition(id="refund", default_name="Refund", patterns=[]),
-    CategoryDefinition(id="interest", default_name="Interest", patterns=[]),
-    CategoryDefinition(id="electronics_digital_services", default_name="Electronics and Digital Services", patterns=[]),
-    CategoryDefinition(id="transfer", default_name="Transfer", patterns=[]),
-    CategoryDefinition(id="other", default_name="Other", patterns=[]),
-    CategoryDefinition(id="balance", default_name="Balance", patterns=[]),
-    CategoryDefinition(id="total_spendings", default_name="Total Spendings", patterns=[]),
-    CategoryDefinition(id="cost_of_living", default_name="Cost of Living", patterns=[]),
 ]
 
 # Default categories that constitute Cost of Living
@@ -99,7 +102,6 @@ class EnricherPatternSets(BaseModel):
 
 
 class AppConfig(BaseModel):
-    csv: CsvConfig
     enricher_pattern_sets: EnricherPatternSets
     text_cleaning: Optional[Dict[str, Any]] = Field(default_factory=dict)
     enabled_statistical_algorithms: List[str] = Field(default_factory=lambda: ['iqr', 'pareto'])
@@ -109,15 +111,17 @@ class AppConfig(BaseModel):
 
 class AppContext:
     """
-    AppContext encapsulates the application configuration and arguments.
+    AppContext encapsulates the application configuration, CSV configuration, and arguments.
 
     Attributes:
         config (AppConfig): The application configuration.
+        csv_config (CsvConfig): The CSV parsing configuration (from profile or config file).
         args (AppArgs): The application arguments.
     """
-    def __init__(self, config: AppConfig, args: AppArgs):
+    def __init__(self, config: AppConfig, args: AppArgs, csv_config: CsvConfig):
         self.config: AppConfig = config
         self.args: AppArgs = args
+        self.csv_config: CsvConfig = csv_config
 
 
 def load_config(config_path: str | None) -> AppConfig:
@@ -128,11 +132,8 @@ def load_config(config_path: str | None) -> AppConfig:
     :return: An AppConfig object.
     """
     if not config_path or config_path == "":
-        logger.warning("No configuration file provided, using default settings")
-        return AppConfig(
-            csv=CsvConfig(),
-            enricher_pattern_sets=EnricherPatternSets()
-        )
+        logger.info("No configuration file provided, loading default config from %s", DEFAULT_CONFIG_PATH)
+        config_path = DEFAULT_CONFIG_PATH
     try:
         with open(config_path, 'r', encoding='utf-8') as file:
             config_data = yaml.safe_load(file)

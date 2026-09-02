@@ -12,6 +12,7 @@ import type {
   CategoryMonthTransactionsApiResponse,
   RecalculateApiResponse,
   CategoryDefinition,
+  CsvProfile,
 } from '../types/api.js';
 
 // API base URL configuration
@@ -238,3 +239,12 @@ export async function fetchCostOfLivingCategories(): Promise<CategoryDefinition[
   console.log('Fetching cost of living categories...');
   return fetchWithErrorHandling<CategoryDefinition[]>(getApiUrl('/categories/cost-of-living'));
 }
+
+/**
+ * Fetch all CSV profiles
+ * @returns Promise with array of CsvProfile objects
+ */
+export async function fetchAllCsvProfiles(): Promise<CsvProfile[]> {
+  return fetchWithErrorHandling<CsvProfile[]>(getApiUrl('/csv-profiles'));
+}
+

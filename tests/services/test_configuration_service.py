@@ -15,7 +15,6 @@ class TestConfigLoadResult:
     def test_success_result(self):
         """Test successful config load result."""
         config = AppConfig(
-            csv=CsvConfig(delimiter=','),
             enricher_pattern_sets=EnricherPatternSets(type={}, partner={})
         )
         result = ConfigLoadResult.success(config)
@@ -44,20 +43,11 @@ class TestConfigurationService:
         service = ConfigurationService()
         config = service.get_default_config()
         assert isinstance(config, AppConfig)
-        assert config.csv.delimiter == "\t"  # Default from CsvConfig
+        # csv field removed from AppConfig - config no longer contains csv settings
 
     def test_load_config_with_valid_file(self, tmp_path):
         """Test loading valid config file."""
         config_data = {
-            "csv": {
-                "dialect": "excel",
-                "delimiter": ",",
-                "date_attribute_format": "%Y-%m-%d",
-                "attribute_mapping": {
-                    "date": "date",
-                    "amount": "sum"
-                }
-            },
             "enricher_pattern_sets": {
                 "type": {"food": ["grocery", "restaurant"]},
                 "partner": {}
@@ -71,7 +61,7 @@ class TestConfigurationService:
 
         assert result.config is not None
         assert result.validation_result.is_valid is True
-        assert result.config.csv.delimiter == ","
+        # csv field removed from AppConfig - config no longer contains csv settings
 
     def test_load_config_with_none_returns_defaults(self):
         """Test loading config with None returns defaults."""
@@ -80,7 +70,7 @@ class TestConfigurationService:
 
         assert result.config is not None
         assert result.validation_result.is_valid is True
-        assert result.config.csv.delimiter == "\t"  # Default
+        # csv field removed from AppConfig - config no longer contains csv settings
 
     def test_resolve_config_path_with_user_path(self):
         """Test resolve returns user path when provided."""
@@ -99,6 +89,7 @@ class TestConfigurationService:
         default_config = tmp_path / "default_config.yml"
         default_config.write_text("csv:\n  delimiter: ','")
 
+        default_config.write_text("enricher_pattern_sets:\n  type: {}\n  partner: {}")
         service = ConfigurationService()
         result = service.resolve_config_path(
             "",

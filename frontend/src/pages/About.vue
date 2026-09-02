@@ -16,10 +16,10 @@ const { $gettext } = useGettext()
 
     <h2>{{ $gettext('Main Features') }}</h2>
     <ul>
-      <li><strong>{{ $gettext('Automated Categorization:') }}</strong> {{ $gettext('Categorizes transactions into well-known accounting categories such as deposits, payments, grocery, etc.') }}</li>
-      <li><strong>{{ $gettext('Filtering:') }}</strong> {{ $gettext('Filter transactions by start and end dates, or group them by month for a comprehensive overview of your finances.') }}</li>
-      <li><strong>{{ $gettext('Reporting:') }}</strong> {{ $gettext('Generate summarized reports that provide insights into your spending habits, grouped by transaction categories.') }}</li>
-      <li><strong>{{ $gettext('Pivot table:') }}</strong> {{ $gettext('View your transactions in a pivot table format, allowing you to analyze your spending patterns and trends over time.') }}</li>
+      <li><strong>{{ $gettext('Automated Categorization') }}:</strong> {{ $gettext('Categorizes transactions into well-known accounting categories such as deposits, payments, grocery, etc.') }}</li>
+      <li><strong>{{ $gettext('Filtering') }}:</strong> {{ $gettext('Filter transactions by start and end dates, or group them by month for a comprehensive overview of your finances.') }}</li>
+      <li><strong>{{ $gettext('Reporting') }}:</strong> {{ $gettext('Generate summarized reports that provide insights into your spending habits, grouped by transaction categories.') }}</li>
+      <li><strong>{{ $gettext('Pivot Table') }}:</strong> {{ $gettext('View your transactions in a pivot table format, allowing you to analyze your spending patterns and trends over time.') }}</li>
     </ul>
 
     <h2>{{ $gettext('The technical problem of categorizing transactions') }}</h2>

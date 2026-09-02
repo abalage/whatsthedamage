@@ -4,6 +4,8 @@ import { useFormWithNavigation } from '../stores/form.js'
 import { useFeedbackStore } from '../stores/feedback.js'
 import { useGettext } from 'vue3-gettext'
 import ErrorDisplay from '../components/ErrorDisplay.vue'
+import { fetchAllCsvProfiles } from '../js/api.js'
+import type { CsvProfile } from '../types/api.js'
 
 const { $gettext } = useGettext()
 const { formStore, submitForm: submitFormFn } = useFormWithNavigation()
@@ -13,6 +15,10 @@ const feedback = useFeedbackStore()
 const fileInput = ref<HTMLInputElement | null>(null)
 const configInput = ref<HTMLInputElement | null>(null)
 
+const csvProfiles = ref<CsvProfile[]>([])
+const showAdvanced = ref(false)
+const isLoadingProfiles = ref(false)
+
 const handleCsvChange = (event: Event) => {
   formStore.handleFileChange(event, 'csvFile')
 }
@@ -21,7 +27,7 @@ const handleConfigChange = (event: Event) => {
   formStore.handleFileChange(event, 'configFile')
 }
 
-type InputField = 'mlEnabled' | 'cacheEnabled'
+type InputField = 'mlEnabled' | 'cacheEnabled' | 'csvProfileId'
 
 const handleInputChange = (field: InputField, value: string | boolean) => {
   formStore.handleInputChange(field, value)
@@ -42,11 +48,33 @@ const clearForm = () => {
     feedback.showInfo($gettext('Form cleared'))
     if (fileInput.value) fileInput.value.value = ''
     if (configInput.value) configInput.value.value = ''
+    // Re-set the default profile after clearing
+    const defaultProfile = csvProfiles.value.find(p => p.is_default)
+    if (defaultProfile) {
+      formStore.handleInputChange('csvProfileId', defaultProfile.id)
+    }
+  }
+}
+
+const loadCsvProfiles = async (): Promise<void> => {
+  isLoadingProfiles.value = true
+  try {
+    csvProfiles.value = await fetchAllCsvProfiles()
+    // Set the default profile as the selected value
+    const defaultProfile = csvProfiles.value.find(p => p.is_default)
+    if (defaultProfile) {
+      formStore.handleInputChange('csvProfileId', defaultProfile.id)
+    }
+  } catch (error: unknown) {
+    feedback.showError($gettext('Failed to load CSV profiles'))
+    console.error('Failed to load CSV profiles:', error)
+  } finally {
+    isLoadingProfiles.value = false
   }
 }
 
 onMounted(() => {
-  // Initialize form if needed
+  loadCsvProfiles()
 })
 </script>
 
@@ -60,7 +88,7 @@ onMounted(() => {
         <form enctype="multipart/form-data" @submit.prevent="submitForm">
           <div class="card" style="width: 100%">
             <div class="card-header">
-          {{ $gettext('File uploads') }}
+          {{ $gettext('Processing CSV export file') }}
         </div>
         <div class="card-body">
           <div class="row">
@@ -81,49 +109,77 @@ onMounted(() => {
                 <div id="fileHelp" class="form-text">{{ $gettext('Upload your CSV file containing the exported bank account history') }}</div>
               </div>
               <div class="mb-3">
-                <label for="config" class="form-label">{{ $gettext('Configuration file') }}:</label>
-                <input
-                  id="config"
-                  ref="configInput"
-                  type="file"
-                  class="form-control"
-                  :class="{ 'is-invalid': formStore.getError('configFile') }"
-                  @change="handleConfigChange"
-                />
-                <div v-if="formStore.getError('configFile')" class="invalid-feedback">
-                  {{ formStore.getError('configFile') }}
-                </div>
-                <div id="configHelp" class="form-text">{{ $gettext('Upload your configuration file here, or the default configuration will be used') }}</div>
+                <label for="csvProfile" class="form-label">{{ $gettext('CSV Profile') }}:</label>
+                <select
+                  id="csvProfile"
+                  v-model="formStore.formData.csvProfileId"
+                  class="form-select"
+                  :disabled="isLoadingProfiles"
+                  @change="(e) => formStore.handleInputChange('csvProfileId', (e.target as HTMLSelectElement).value)"
+                >
+                  <option v-for="profile in csvProfiles" :key="profile.id" :value="profile.id">
+                    {{ profile.name }} (v{{ profile.version }}){{ profile.is_default ? ' (' + $gettext('default') + ')' : '' }}
+                  </option>
+                </select>
+                <div class="form-text">{{ $gettext('Select a bank profile') }}</div>
               </div>
-              <label for="ml" class="form-label">{{ $gettext('Advanced settings') }}:</label>
-              <div class="mb-3 form-check">
-                <input
-                  id="ml"
-                  v-model="formStore.formData.mlEnabled"
-                  type="checkbox"
-                  class="form-check-input"
-                  @change="handleCheckboxChange('mlEnabled', $event)"
-                />
-                <label class="form-check-label" for="ml">
-                  {{ $gettext('Use Machine Learning model for categorization') }}
-                </label>
-                <div id="mlHelp" class="form-text">
-                  {{ $gettext('Uncheck to use regular expressions instead of the ML model') }}
-                </div>
+              <div class="px-0">
+                <button
+                  @click="showAdvanced = !showAdvanced"
+                  class="btn btn-link p-0 mb-3 text-black text-decoration-none"
+                  type="button"
+                  aria-controls="advancedSettings"
+                  :aria-expanded="showAdvanced"
+                >
+                  <span>{{ showAdvanced ? '▼' : '▶' }}</span>
+                  {{ $gettext('Advanced settings') }}
+                </button>
               </div>
-              <div class="mb-3 form-check">
-                <input
-                  id="cacheData"
-                  v-model="formStore.formData.cacheEnabled"
-                  type="checkbox"
-                  class="form-check-input"
-                  @change="handleCheckboxChange('cacheEnabled', $event)"
-                />
-                <label class="form-check-label" for="cacheData">
-                  {{ $gettext('Cache data with expiry') }} (TTL=30m)
-                </label>
-                <div id="cacheHelp" class="form-text">
-                  {{ $gettext('Uncheck to make cache never expire') }}
+              <div id="advancedSettings" class="collapse" :class="{ show: showAdvanced }">
+                <div class="mb-3">
+                  <label for="config" class="form-label">{{ $gettext('Configuration file') }}:</label>
+                  <input
+                    id="config"
+                    ref="configInput"
+                    type="file"
+                    class="form-control"
+                    :class="{ 'is-invalid': formStore.getError('configFile') }"
+                    @change="handleConfigChange"
+                  />
+                  <div v-if="formStore.getError('configFile')" class="invalid-feedback">
+                    {{ formStore.getError('configFile') }}
+                  </div>
+                  <div id="configHelp" class="form-text">{{ $gettext('Upload your custom configuration file, or leave it blank to use the default') }}</div>
+                </div>
+                <div class="mb-3 form-check">
+                  <input
+                    id="ml"
+                    v-model="formStore.formData.mlEnabled"
+                    type="checkbox"
+                    class="form-check-input"
+                    @change="handleCheckboxChange('mlEnabled', $event)"
+                  />
+                  <label class="form-check-label" for="ml">
+                    {{ $gettext('Use Machine Learning model for categorization') }}
+                  </label>
+                  <div id="mlHelp" class="form-text">
+                    {{ $gettext('Uncheck to use regular expressions instead') }}
+                  </div>
+                </div>
+                <div class="mb-3 form-check">
+                  <input
+                    id="cacheData"
+                    v-model="formStore.formData.cacheEnabled"
+                    type="checkbox"
+                    class="form-check-input"
+                    @change="handleCheckboxChange('cacheEnabled', $event)"
+                  />
+                  <label class="form-check-label" for="cacheData">
+                    {{ $gettext('Delete cached data after expiration') }} ({{ $gettext('default')}} 30m)
+                  </label>
+                  <div id="cacheHelp" class="form-text">
+                    {{ $gettext('Uncheck to make cache never expire') }}
+                  </div>
                 </div>
               </div>
             </div>
@@ -144,7 +200,7 @@ onMounted(() => {
                 class="btn bg-surface-secondary text-on-dark border-secondary"
                 @click="clearForm"
               >
-                {{ $gettext('Clear form') }}
+                {{ $gettext('Reset to defaults') }}
               </button>
             </div>
           </div>
@@ -159,14 +215,11 @@ onMounted(() => {
           </div>
           <div class="card-body">
             <div class="row">
-              <div class="col-md-12 mb-3">
-                <div class="mb-3">
-                  <p>{{ $gettext("This application categorizes your bank transactions and provide you with insights about where your money goes.") }}</p>
-                  <p>{{ $gettext("To use this application, you need to use your Bank provider's service to save your transactions in CSV format.") }}</p>
-                  <p>{{ $gettext("Then upload your CSV file containing the exported bank account history and optionally a configuration file.") }}</p>
-                  <p>{{ $gettext("You can also choose to enable or disable the Machine Learning model for categorization.") }}</p>
-                  <p><RouterLink to="about" class="navbar-link">{{ $gettext('Learn more about how the application works') }}</RouterLink></p>
-                </div>
+              <div class="col-md-12">
+                <p>{{ $gettext("This application categorizes your bank transactions and provide you with insights about where your money goes.") }}</p>
+                <p>{{ $gettext("To use this application, you need to use your Bank provider's service to save your transactions in CSV format.") }}</p>
+                <p>{{ $gettext("Upload your CSV file containing the exported bank account history.") }}</p>
+                <p><RouterLink to="about" class="navbar-link">{{ $gettext('Learn more about how the application works') }}</RouterLink></p>
               </div>
             </div>
           </div>

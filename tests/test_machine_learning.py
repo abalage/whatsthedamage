@@ -225,7 +225,7 @@ class TestUtilityFunctions:
             "version": "test_v1",
             "model_type": "RandomForestClassifier",
             "language": "test",
-            "license": "MIT",
+            "license": "GPL-3.0",
             "developer": "test",
             "repository": "https://github.com/test/test",
             "format": "skops",

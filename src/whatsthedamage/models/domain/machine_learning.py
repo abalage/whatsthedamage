@@ -580,7 +580,7 @@ class Train:
             "version": self._config.model_version,
             "model_type": "RandomForestClassifier",
             "language": "Hungarian",
-            "license": "MIT",
+            "license": "GPL-3.0",
             "developer": "whatsthedamage",
             "repository": "https://github.com/abalage/whatsthedamage",
             "format": "skops",

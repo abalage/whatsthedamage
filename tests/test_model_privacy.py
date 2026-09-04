@@ -200,7 +200,7 @@ class TestDistributionPrivacy:
             "version": "v1.0",
             "model_type": "RandomForestClassifier",
             "language": "Hungarian",
-            "license": "MIT",
+            "license": "GPL-3.0",
             "developer": "test",
             "repository": "https://github.com/test/test",
             "format": "skops",

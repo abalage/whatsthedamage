@@ -2,7 +2,7 @@
 """
 Unit tests for machine_learning.py module.
 
-Tests cover all major components while ensuring existing joblib models
+Tests cover all major components while ensuring existing models
 are never overwritten by using temporary directories and files.
 """
 
@@ -33,10 +33,21 @@ def ml_config_temp():
     with tempfile.TemporaryDirectory() as temp_dir:
         # Create a custom MLConfig with temporary paths
         config = MLConfig(test_size=0.3)  # Test size that ensures at least 2 samples per class
-        # Override the properties to use temp directory
-        config.__class__.model_path = property(lambda self: os.path.join(temp_dir, "test-model.joblib"))
-        config.__class__.manifest_path = property(lambda self: os.path.join(temp_dir, "test-model.manifest.json"))
-        config.__class__.test_data_path = property(lambda self: os.path.join(temp_dir, "test-model.testdata.json"))
+
+        # Create properties for skops-based model paths
+        def get_model_path(self):
+            return os.path.join(temp_dir, "test-model.skops")
+
+        def get_model_card_path(self):
+            return os.path.join(temp_dir, "test-model.modelcard.json")
+
+        def get_test_data_path(self):
+            return os.path.join(temp_dir, "test-model.testdata.json")
+
+        # Override the properties
+        config.__class__.model_path = property(get_model_path)
+        config.__class__.model_card_path = property(get_model_card_path)
+        config.__class__.test_data_path = property(get_test_data_path)
         yield config
 
 
@@ -208,21 +219,46 @@ class TestUtilityFunctions:
         y_train = ["cat1", "cat2"]
         pipeline.fit(X_train, y_train)
 
-        manifest = {
-            "model_version": "test_v1",
-            "training_date": "2023-01-01"
+        # Create Model Card instead of manifest
+        model_card = {
+            "model_name": "test_model",
+            "version": "test_v1",
+            "model_type": "RandomForestClassifier",
+            "language": "test",
+            "license": "MIT",
+            "developer": "test",
+            "repository": "https://github.com/test/test",
+            "format": "skops",
+            "parameters": {
+                "model_version": "test_v1",
+                "training_date": "2023-01-01"
+            },
+            "training_info": {
+                "training_data_size": "2 transactions",
+                "category_count": 2,
+            },
+            "evaluation": {},
+            "privacy": {
+                "safe_for_public_use": False,
+                "vocabulary_stored": True,
+                "test_data_included": False,
+                "training_data_paths_exposed": False,
+            },
+            "environment": {"sklearn_version": "1.7.2"},
+            "created_date": "2023-01-01"
         }
 
         # Test save
-        save(pipeline, manifest, ml_config_temp)
+        save(pipeline, model_card, ml_config_temp)
 
         # Verify files were created
         assert os.path.exists(ml_config_temp.model_path)
-        assert os.path.exists(ml_config_temp.manifest_path)
+        # Now we save Model Card instead of manifest
+        assert os.path.exists(ml_config_temp.model_card_path)
 
         # Test load
-        loaded_manifest = json.load(open(ml_config_temp.manifest_path, 'r', encoding='utf-8'))
-        assert loaded_manifest["model_version"] == "test_v1"
+        loaded_model_card = json.load(open(ml_config_temp.model_card_path, 'r', encoding='utf-8'))
+        assert loaded_model_card["version"] == "test_v1"
 
     def test_validate_model_for_inference_with_fitted_model(self):
         """Test validation with a properly fitted model."""
@@ -335,8 +371,9 @@ class TestTrainClass:
 
         # Verify expected transformers are present
         transformer_names = [name for name, _, _ in preprocessor.transformers]
-        assert "type_tfidf" in transformer_names
-        assert "partner_tfidf" in transformer_names
+        # With HashingVectorizer, transformers are named type_vec and partner_vec
+        assert "type_vec" in transformer_names
+        assert "partner_vec" in transformer_names
         assert "amount_sign" in transformer_names
 
     def test_create_pipeline(self, ml_config_temp):
@@ -363,8 +400,8 @@ class TestTrainClass:
         finally:
             train_instance._config.enable_calibration = original_calibration
 
-    def test_create_manifest(self, ml_config_temp):
-        """Test manifest creation."""
+    def test_create_model_card(self, ml_config_temp):
+        """Test Model Card creation."""
         train_instance = Train.__new__(Train)
         train_instance._config = ml_config_temp
         train_instance._training_data_path = "test_data.json"
@@ -390,18 +427,26 @@ class TestTrainClass:
             # Add required attributes
             train_instance._df = train_instance._x_train.copy()
             train_instance._df["category"] = "TestCategory"
+            train_instance._y = train_instance._df["category"]
+            train_instance._df_test = train_instance._x_train.copy()
+            train_instance._y_test = pd.Series(["TestCategory"])
 
             pipeline = Pipeline([("preprocessor", preprocessor), ("classifier", RandomForestClassifier())], memory=None)
 
-            manifest = train_instance._create_manifest(pipeline)
+            model_card = train_instance._create_model_card(pipeline)
 
-            # Verify manifest structure
-            assert "model_file" in manifest
-            assert "model_version" in manifest
-            assert "training_data" in manifest
-            assert "training_date" in manifest
-            assert "data_info" in manifest
-            assert "parameters" in manifest
+            # Verify Model Card structure (HuggingFace standard)
+            assert "model_name" in model_card
+            assert "version" in model_card
+            assert "model_type" in model_card
+            assert "language" in model_card
+            assert "license" in model_card
+            assert "parameters" in model_card
+            assert "training_info" in model_card
+            assert "evaluation" in model_card
+            assert "privacy" in model_card
+            # Verify privacy settings
+            assert model_card["privacy"]["training_data_paths_exposed"] == False
         finally:
             train_instance._config.enable_calibration = original_calibration
 
@@ -441,7 +486,7 @@ class TestMetricsClass:
     def test_initialization_with_existing_model(self):
         """Test Metrics initialization with existing model file."""
         # Use the existing model file
-        existing_model_path = "src/whatsthedamage/static/model-rf-v6alpha_en.joblib"
+        existing_model_path = "src/whatsthedamage/static/model-rf-v6alpha_en.skops"
         existing_test_data_path = "src/whatsthedamage/static/model-rf-v6alpha_en.testdata.json"
 
         if os.path.exists(existing_model_path) and os.path.exists(existing_test_data_path):
@@ -463,7 +508,7 @@ class TestMetricsClass:
 
     def test_get_metrics_data(self):
         """Test metrics data retrieval."""
-        existing_model_path = "src/whatsthedamage/static/model-rf-v6alpha_en.joblib"
+        existing_model_path = "src/whatsthedamage/static/model-rf-v6alpha_en.skops"
         existing_test_data_path = "src/whatsthedamage/static/model-rf-v6alpha_en.testdata.json"
 
         if os.path.exists(existing_model_path) and os.path.exists(existing_test_data_path):
@@ -492,7 +537,7 @@ class TestInferenceClass:
 
     def test_initialization_with_existing_model(self):
         """Test Inference initialization with existing model."""
-        existing_model_path = "src/whatsthedamage/static/model-rf-v6alpha_en.joblib"
+        existing_model_path = "src/whatsthedamage/static/model-rf-v6alpha_en.skops"
 
         if os.path.exists(existing_model_path):
             # Sample input data as JSON string (file path)
@@ -528,7 +573,7 @@ class TestInferenceClass:
 
     def test_get_predictions(self):
         """Test get_predictions method."""
-        existing_model_path = "src/whatsthedamage/static/model-rf-v6alpha_en.joblib"
+        existing_model_path = "src/whatsthedamage/static/model-rf-v6alpha_en.skops"
 
         if os.path.exists(existing_model_path):
             # Sample input data as JSON string (file path)
@@ -565,7 +610,7 @@ class TestInferenceClass:
 
     def test_prepare_input_data_with_csv_rows(self, csv_rows):
         """Test input data preparation with CsvRow objects."""
-        existing_model_path = "src/whatsthedamage/static/model-rf-v6alpha_en.joblib"
+        existing_model_path = "src/whatsthedamage/static/model-rf-v6alpha_en.skops"
 
         if os.path.exists(existing_model_path):
             # Inference expects either file path or List[CsvRow] - use the CsvRow list directly
@@ -623,7 +668,7 @@ class TestIntegration:
             ]
 
             # Use existing model for inference test
-            existing_model_path = "src/whatsthedamage/static/model-rf-v6alpha_en.joblib"
+            existing_model_path = "src/whatsthedamage/static/model-rf-v6alpha_en.skops"
             if os.path.exists(existing_model_path):
                 with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f2:
                     json.dump(test_data, f2)
@@ -644,7 +689,7 @@ class TestIntegration:
             os.unlink(temp_training_path)
 
     def test_model_saving_loading_cycle(self, ml_config_temp):
-        """Test model saving and loading cycle."""
+        """Test model saving and loading cycle with Model Card."""
         # Create a simple pipeline
         preprocessor = ColumnTransformer([
             ("test", TfidfVectorizer(), "test_col")
@@ -657,9 +702,20 @@ class TestIntegration:
         y_train = ["cat1", "cat2"]
         pipeline.fit(X_train, y_train)
 
-        # Save the model
-        manifest = {"model_version": "test_v1", "training_date": "2023-01-01"}
-        save(pipeline, manifest, ml_config_temp)
+        # Create Model Card
+        model_card = {
+            "model_name": "test_model",
+            "version": "test_v1",
+            "model_type": "RandomForestClassifier",
+            "training_date": "2023-01-01",
+            "privacy": {"safe_for_public_use": False, "vocabulary_stored": True, "test_data_included": False, "training_data_paths_exposed": False},
+            "parameters": {},
+            "training_info": {},
+            "evaluation": {},
+            "environment": {"sklearn_version": "1.7.2"},
+            "created_date": "2023-01-01"
+        }
+        save(pipeline, model_card, ml_config_temp)
 
         # Load the model
         loaded_pipeline = load(ml_config_temp.model_path)
@@ -668,10 +724,10 @@ class TestIntegration:
         predictions = loaded_pipeline.predict(X_train)
         assert len(predictions) == 2
 
-        # Verify manifest was saved correctly
-        with open(ml_config_temp.manifest_path, 'r', encoding='utf-8') as f:
-            loaded_manifest = json.load(f)
-        assert loaded_manifest["model_version"] == "test_v1"
+        # Verify Model Card was saved correctly
+        with open(ml_config_temp.model_card_path, 'r', encoding='utf-8') as f:
+            loaded_model_card = json.load(f)
+        assert loaded_model_card["version"] == "test_v1"
 
 
 # Error Handling Tests
@@ -692,7 +748,7 @@ class TestErrorHandling:
 
     def test_metrics_with_missing_columns(self, ml_config_temp):
         """Test metrics with missing required columns."""
-        existing_model_path = "src/whatsthedamage/static/model-rf-v6alpha_en.joblib"
+        existing_model_path = "src/whatsthedamage/static/model-rf-v6alpha_en.skops"
 
         if os.path.exists(existing_model_path):
             # Create test data with missing columns
@@ -711,7 +767,7 @@ class TestErrorHandling:
 
     def test_inference_with_empty_data(self, ml_config_temp):
         """Test inference with empty input data."""
-        existing_model_path = "src/whatsthedamage/static/model-rf-v6alpha_en.joblib"
+        existing_model_path = "src/whatsthedamage/static/model-rf-v6alpha_en.skops"
 
         if os.path.exists(existing_model_path):
             with pytest.raises(ValueError, match="Input DataFrame is empty"):

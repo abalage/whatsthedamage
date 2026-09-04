@@ -182,7 +182,7 @@ make lang                         # Extract translatable texts
 - **Error Handling**: Don't expose internal errors or stack traces
 - **File Uploads**: Validate MIME types and extensions
 - **CORS**: Cross-Origin Resource Sharing enabled for frontend-backend communication; development CORS for `http://localhost:3000` and `http://127.0.0.1:3000`; production configurable via Flask-CORS
-- **Model Loading**: joblib model loading can execute arbitrary code - only use trusted models
+- **Model Loading**: skops provides secure model serialization with type verification
 
 ## Example Code Documentation
 

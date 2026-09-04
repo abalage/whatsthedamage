@@ -187,4 +187,4 @@ memory-bank/
 .clinerules
 
 # ML test data
-src/whatsthedamage/static/model-*
+src/whatsthedamage/static/model-rf-*

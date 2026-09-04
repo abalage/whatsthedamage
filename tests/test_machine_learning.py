@@ -11,7 +11,6 @@ import tempfile
 import os
 import json
 import pandas as pd
-import numpy as np
 from unittest.mock import patch
 from sklearn.pipeline import Pipeline
 from sklearn.ensemble import RandomForestClassifier
@@ -19,7 +18,7 @@ from sklearn.compose import ColumnTransformer
 from sklearn.feature_extraction.text import TfidfVectorizer
 
 from whatsthedamage.models.domain.machine_learning import (
-    AmountSignTransformer, Train, Metrics, Inference,
+    Train, Metrics, Inference,
     save, load, validate_model_for_inference, apply_ml_text_cleaning
 )
 from whatsthedamage.config.ml_config import MLConfig
@@ -154,54 +153,6 @@ def sample_test_data():
 
 
 # Test Classes
-class TestAmountSignTransformer:
-    """Test the AmountSignTransformer class."""
-
-    def test_fit_returns_self(self):
-        """Test that fit() method returns self."""
-        transformer = AmountSignTransformer()
-        result = transformer.fit(None)
-        assert result is transformer
-
-    def test_transform_positive_values(self):
-        """Test transform with positive values."""
-        transformer = AmountSignTransformer()
-        transformer.fit(None)
-
-        # Test with numpy array
-        result = transformer.transform(np.array([100.0, 50.0, 25.0]))
-        expected = np.array([[1.0], [1.0], [1.0]])
-        np.testing.assert_array_equal(result, expected)
-
-    def test_transform_negative_values(self):
-        """Test transform with negative values."""
-        transformer = AmountSignTransformer()
-        transformer.fit(None)
-
-        result = transformer.transform(np.array([-100.0, -50.0, -25.0]))
-        expected = np.array([[-1.0], [-1.0], [-1.0]])
-        np.testing.assert_array_equal(result, expected)
-
-    def test_transform_mixed_values(self):
-        """Test transform with mixed positive, negative, and zero values."""
-        transformer = AmountSignTransformer()
-        transformer.fit(None)
-
-        result = transformer.transform(np.array([100.0, -50.0, 0.0, 25.0, -10.0]))
-        expected = np.array([[1.0], [-1.0], [0.0], [1.0], [-1.0]])
-        np.testing.assert_array_equal(result, expected)
-
-    def test_transform_with_pandas_series(self):
-        """Test transform with pandas Series input."""
-        transformer = AmountSignTransformer()
-        transformer.fit(None)
-
-        series = pd.Series([100.0, -50.0, 0.0])
-        result = transformer.transform(series)
-        expected = np.array([[1.0], [-1.0], [0.0]])
-        np.testing.assert_array_equal(result, expected)
-
-
 class TestUtilityFunctions:
     """Test utility functions."""
 

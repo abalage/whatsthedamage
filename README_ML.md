@@ -32,7 +32,7 @@ The following transformers are used for feature engineering, also referenced in 
 	 - Description: Text feature representing the transaction partner, processed with TF-IDF and custom stop words. The text undergoes ML-specific cleaning using the self-contained `TextCorrectionService` for consistent preprocessing.
 
 3. `amount`:
-	 - Transformation: `AmountSignTransformer` (custom transformer)
+	 - Transformation: [FunctionTransformer](https://scikit-learn.org/stable/modules/generated/sklearn.preprocessing.FunctionTransformer.html) with `numpy.sign`
 	 - Description: Categorical feature extracting the sign (positive/negative/zero) from transaction amounts, representing the direction of cash flow.
 
 ### New Features and Improvements

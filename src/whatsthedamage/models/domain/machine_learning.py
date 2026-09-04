@@ -1,13 +1,12 @@
 import json
 import os
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Tuple, Union, cast
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import skops.io as sio
 from jinja2 import Template
 import numpy as np
 import pandas as pd
-from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.calibration import CalibratedClassifierCV
 from sklearn.compose import ColumnTransformer
 from sklearn.ensemble import RandomForestClassifier
@@ -16,6 +15,7 @@ from sklearn.feature_extraction.text import HashingVectorizer, TfidfVectorizer
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
 from sklearn.model_selection import GridSearchCV, RandomizedSearchCV, train_test_split
 from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import FunctionTransformer
 from sklearn.utils.validation import check_is_fitted
 
 from whatsthedamage.config.ml_config import MLConfig
@@ -63,9 +63,9 @@ def generate_model_card_markdown(model_card: Dict[str, Any]) -> str:
 
     if use_hashing:
         hashing_n_features = params.get('hashing_n_features', 1024)
-        preprocessing_text = f"Text cleaning, HashingVectorizer ({hashing_n_features} features) + AmountSignTransformer"
+        preprocessing_text = f"Text cleaning, HashingVectorizer ({hashing_n_features} features) + FunctionTransformer(np.sign)"
     else:
-        preprocessing_text = "Text cleaning, TfidfVectorizer + AmountSignTransformer"
+        preprocessing_text = "Text cleaning, TfidfVectorizer + FunctionTransformer(np.sign)"
 
     model_name = model_card.get('model_name', 'transaction-classifier')
     model_type = model_card.get('model_type', 'RandomForestClassifier')
@@ -80,6 +80,7 @@ def generate_model_card_markdown(model_card: Dict[str, Any]) -> str:
     category_count = training.get('category_count', 'unknown')
     test_data_size = eval_data.get('test_data_size', 'unknown')
     accuracy = eval_data.get('accuracy', 'N/A')
+    macro_f1 = eval_data.get('macro_f1', 'N/A')
     n_estimators = params.get('n_estimators', 200)
     max_depth = params.get('max_depth', 'None')
     min_samples_split = params.get('min_samples_split', 10)
@@ -101,13 +102,13 @@ def generate_model_card_markdown(model_card: Dict[str, Any]) -> str:
         'preprocessing': preprocessing_text,
         'training_regime': "CPU",
         'testing_data': f"{test_data_size} transactions (stratified by category)",
-        'testing_metrics': f"- **Accuracy**: {accuracy}",
-        'results_summary': f"Model achieves {accuracy} accuracy on test data. Uses HashingVectorizer for privacy.",
+        'testing_metrics': f"- **Accuracy**: {accuracy}\n- **Macro F1**: {macro_f1}",
+        'results_summary': f"Model achieves {accuracy} accuracy (macro F1: {macro_f1}) on test data. Uses HashingVectorizer for privacy.",
         'model_specs': f"Random Forest with {n_estimators} estimators, max_depth={max_depth}, min_samples_split={min_samples_split}",
         'compute_infrastructure': "Training performed on local CPU",
         'hardware_type': "CPU",
         'sklearn_version': f"scikit-learn {sklearn_version}",
-        'get_started_code': f'from skops.io import load\nfrom whatsthedamage.models.domain.machine_learning import Inference\n\n# Load model securely\nmodel = load("{model_name}.skops")\n\n# Use for inference\ninference = Inference(model, new_data)\npredictions = inference.get_predictions()',
+        'get_started_code': f'import skops.io as sio\nimport pandas as pd\n\n# Load the model. Only scikit-learn built-in types are required (no\n# whatsthedamage code needed). Calibration internals must be trusted\n# explicitly; omit them if the model was trained without calibration.\ntrusted = [\n    "sklearn.pipeline.Pipeline",\n    "sklearn.compose.ColumnTransformer",\n    "sklearn.feature_extraction.text.HashingVectorizer",\n    "sklearn.ensemble.RandomForestClassifier",\n    "sklearn.preprocessing.FunctionTransformer",\n    "sklearn.calibration.CalibratedClassifierCV",\n    "sklearn.calibration._CalibratedClassifier",\n    "sklearn.calibration._SigmoidCalibration",\n]\nmodel = sio.load("{model_name}.skops", trusted=trusted)\n\n# Predict on new transactions. Apply the documented text-cleaning\n# preprocessing to the "partner" field before prediction (see Model Card).\nX = pd.DataFrame({{\n    "type": ["Payment"],\n    "partner": ["Cleaned Partner Name"],\n    "amount": [-100.0],\n}})\npredictions = model.predict(X)\nprint(predictions)',
         'model_card_contact': f"For questions, please open an issue at: {repository}/issues",
     }
 
@@ -196,7 +197,7 @@ def load(model_path: str) -> Pipeline:
                     'sklearn.calibration.CalibratedClassifierCV',
                     'sklearn.calibration._CalibratedClassifier',
                     'sklearn.calibration._SigmoidCalibration',
-                    'whatsthedamage.models.domain.machine_learning.AmountSignTransformer',
+                    'sklearn.preprocessing.FunctionTransformer',
                 ]
                 return sio.load(model_path, trusted=trusted_types)
         return sio.load(model_path)
@@ -271,33 +272,6 @@ def apply_ml_text_cleaning(df: pd.DataFrame) -> pd.DataFrame:
 
     logger.info(f"Applied ML-specific text cleaning to {len(df_cleaned)} samples")
     return df_cleaned
-
-class AmountSignTransformer(BaseEstimator, TransformerMixin):
-    """Custom transformer to extract sign (positive/negative) from amount values."""
-
-    def fit(self, X: Any, y: Optional[Any] = None) -> 'AmountSignTransformer':  # noqa: F841
-        """Fit method (no operation needed for this transformer)."""
-        return self
-
-    def transform(self, X: Any) -> np.ndarray:
-        """
-        Transform amount values to their sign (1 for positive, 0 for zero, -1 for negative).
-
-        Args:
-            X: Input array of amount values
-
-        Returns:
-            Array of sign values (-1, 0, 1)
-        """
-        # Convert to numpy array directly (handles both pandas and numpy inputs)
-        x_array = np.asarray(X)
-
-        # Extract sign: 1 for positive, 0 for zero, -1 for negative
-        signs = np.sign(x_array)
-
-        # Reshape to 2D array as expected by scikit-learn
-        result = signs.reshape(-1, 1).astype(float)
-        return cast(np.ndarray, result)
 
 class Train:
     """Prepare data and pipeline for model training."""
@@ -489,7 +463,7 @@ class Train:
             transformers=[
                 ("type_vec", type_vectorizer, "type"),
                 ("partner_vec", partner_vectorizer, "partner"),
-                ("amount_sign", AmountSignTransformer(), ["amount"]),
+                ("amount_sign", FunctionTransformer(np.sign, validate=False), ["amount"]),
             ],
             n_jobs=self._config.n_jobs
         )
@@ -603,8 +577,8 @@ class Train:
                 "category_count": category_count,
                 "feature_columns": self._config.feature_columns,
                 "feature_matrix_shape": list(processed_shape),
-                "preprocessing": "TextCorrectionService + HashingVectorizer + AmountSignTransformer" if self._config.use_hashing_vectorizer
-                               else "TextCorrectionService + TfidfVectorizer + AmountSignTransformer",
+                "preprocessing": "TextCorrectionService + HashingVectorizer + FunctionTransformer(np.sign)" if self._config.use_hashing_vectorizer
+                               else "TextCorrectionService + TfidfVectorizer + FunctionTransformer(np.sign)",
             },
             "evaluation": {
                 "test_data_size": f"{len(self._df_test)} transactions",
@@ -639,6 +613,43 @@ class Train:
 
         return model_card
 
+    def _compute_evaluation_metrics(self, model: Pipeline) -> Dict[str, Any]:
+        """Compute evaluation metrics on the held-out test set.
+
+        This is computed before the test data is potentially discarded in
+        distribution mode, so the public Model Card carries real performance
+        numbers without shipping the test data itself.
+
+        Args:
+            model: The trained (fitted) pipeline model
+
+        Returns:
+            Dictionary with accuracy, macro_f1, and classification_report.
+        """
+        try:
+            y_pred = model.predict(self._x_test)
+            accuracy = float(accuracy_score(self._y_test, y_pred))
+            report = classification_report(
+                self._y_test, y_pred, output_dict=True, zero_division=0
+            )
+            macro_f1 = float(report.get("macro avg", {}).get("f1-score", 0.0))
+            logger.info(
+                f"Evaluation metrics on held-out test set: accuracy={accuracy:.4f}, "
+                f"macro_f1={macro_f1:.4f}"
+            )
+            return {
+                "accuracy": accuracy,
+                "macro_f1": macro_f1,
+                "classification_report": report,
+            }
+        except Exception as e:
+            logger.warning(f"Could not compute evaluation metrics: {e}")
+            return {
+                "accuracy": None,
+                "macro_f1": None,
+                "classification_report": None,
+            }
+
     def _save_model(
         self, model: Pipeline, tuning_method: Optional[str] = None, best_params: Optional[Dict[str, Any]] = None
     ) -> None:
@@ -646,6 +657,9 @@ class Train:
 
         Uses skops.io for secure serialization and Model Card for standardized metadata.
         Test data is excluded when in distribution mode for privacy protection.
+        Evaluation metrics are always recorded in the Model Card so that
+        distribution-ready cards carry real performance numbers without the
+        test data.
 
         Args:
             model: The trained pipeline model
@@ -654,6 +668,12 @@ class Train:
         """
         # Create Model Card using new method
         model_card = self._create_model_card(model, tuning_method, best_params)
+
+        # Record evaluation metrics before test data is potentially discarded
+        eval_metrics = self._compute_evaluation_metrics(model)
+        model_card["evaluation"]["accuracy"] = eval_metrics["accuracy"]
+        model_card["evaluation"]["macro_f1"] = eval_metrics["macro_f1"]
+        model_card["evaluation"]["classification_report"] = eval_metrics["classification_report"]
 
         # Prepare test data for saving (add category_id labels)
         test_data_with_labels = self._df_test.copy()

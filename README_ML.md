@@ -24,16 +24,16 @@ The ML module follows a layered architecture with significant improvements:
 The following transformers are used for feature engineering, also referenced in the source code as feature columns:
 
 1. `type`:
-   - Transformation: [TfidfVectorizer](https://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.text.TfidfVectorizer.html)
-   - Description: Text feature representing the transaction type, processed with TF-IDF and Hungarian stop words.
+	- Transformation: [TfidfVectorizer](https://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.text.TfidfVectorizer.html)
+	- Description: Text feature representing the transaction type, processed with TF-IDF and Hungarian stop words.
 
 2. `partner`:
-   - Transformation: [TfidfVectorizer](https://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.text.TfidfVectorizer.html)
-   - Description: Text feature representing the transaction partner, processed with TF-IDF and custom stop words. The text undergoes ML-specific cleaning using the self-contained `TextCorrectionService` for consistent preprocessing.
+	 - Transformation: [TfidfVectorizer](https://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.text.TfidfVectorizer.html)
+	 - Description: Text feature representing the transaction partner, processed with TF-IDF and custom stop words. The text undergoes ML-specific cleaning using the self-contained `TextCorrectionService` for consistent preprocessing.
 
 3. `amount`:
-   - Transformation: `AmountSignTransformer` (custom transformer)
-   - Description: Categorical feature extracting the sign (positive/negative/zero) from transaction amounts, representing the direction of cash flow.
+	 - Transformation: [FunctionTransformer](https://scikit-learn.org/stable/modules/generated/sklearn.preprocessing.FunctionTransformer.html) with `numpy.sign`
+	 - Description: Categorical feature extracting the sign (positive/negative/zero) from transaction amounts, representing the direction of cash flow.
 
 ### New Features and Improvements
 
@@ -108,31 +108,31 @@ Model Evaluation Metrics:
 Accuracy: 0.9724
 
 Classification Report:
-                                  precision    recall  f1-score   support
+                              precision    recall  f1-score   support
 
-                         Clothes       0.95      0.96      0.95        99
-                         Deposit       1.00      1.00      1.00       163
-                      Dining Out       0.99      0.96      0.97        93
-Electronics and Digital Services       1.00      0.91      0.95        23
-       Entertainment and Leisure       1.00      0.85      0.92        79
-                             Fee       1.00      1.00      1.00       339
-                         Grocery       1.00      1.00      1.00       628
-                          Health       1.00      0.96      0.98        71
-                Home Maintenance       0.94      0.95      0.95       100
-                       Insurance       1.00      0.67      0.80         9
-                        Interest       1.00      1.00      1.00        66
-                            Loan       1.00      1.00      1.00        26
-                           Other       0.82      0.95      0.88       176
-                         Payment       0.99      1.00      0.99        84
-                          Refund       1.00      1.00      1.00        50
-                        Transfer       1.00      1.00      1.00        48
-                  Transportation       1.00      0.96      0.98       180
-                         Utility       0.99      0.98      0.98       165
-                      Withdrawal       1.00      1.00      1.00        28
+                     clothes       0.94      0.94      0.94       103
+                     deposit       1.00      1.00      1.00       166
+                  dining_out       0.92      0.86      0.89        96
+electronics_digital_services       0.90      0.78      0.84        23
+   entertainment_and_leisure       0.86      0.85      0.85        86
+                         fee       1.00      1.00      1.00       348
+                     grocery       0.99      0.99      0.99       640
+                      health       1.00      0.90      0.95        73
+            home_maintenance       0.83      0.84      0.83       105
+                   insurance       1.00      1.00      1.00         9
+                    interest       1.00      1.00      1.00        66
+                        loan       1.00      1.00      1.00        27
+                       other       0.76      0.86      0.81       173
+                     payment       1.00      1.00      1.00        87
+                      refund       1.00      1.00      1.00        51
+                    transfer       1.00      0.98      0.99        48
+              transportation       0.99      0.97      0.98       182
+                     utility       0.99      0.98      0.98       167
+                  withdrawal       1.00      1.00      1.00        28
 
-                        accuracy                           0.98      2427
-                       macro avg       0.98      0.95      0.97      2427
-                    weighted avg       0.98      0.98      0.98      2427
+                    accuracy                           0.96      2478
+                   macro avg       0.96      0.95      0.95      2478
+                weighted avg       0.96      0.96      0.96      2478
 
 ```
 
@@ -148,9 +148,9 @@ The `Metrics` class evaluates performance on **unseen test data only** to preven
 1. **Accuracy & Classification Report**: Standard scikit-learn metrics
 2. **Confusion Matrix**: With automatic class abbreviation generation for readability
 3. **Confused Pairs Analysis**: Identifies the most frequently misclassified category pairs
-4. **Confidence Analysis**: 
-   - Low confidence errors (confidence < 0.7)
-   - High confidence errors (confidence ≥ 0.9) - potential data issues
+4. **Confidence Analysis**:
+	 - Low confidence errors (confidence < 0.7)
+	 - High confidence errors (confidence ≥ 0.9) - potential data issues
 5. **Merchant Error Analysis**: Top 10 merchants causing classification errors
 6. **Automatic Test Set Validation**: Warns about small or imbalanced test sets
 
@@ -195,20 +195,20 @@ Data objects are based on [CsvRow](../models/csv_row.py) objects.
 Example:
 ```json
 [
-  {
-    "amount": -11111,
-    "category": "Loan",
-    "currency": "HUF",
-    "partner": "",
-    "type": "Hitel törlesztés"
-  },
-  {
-    "amount": -22222,
-    "category": "Loan",
-    "currency": "HUF",
-    "partner": "",
-    "type": "Hitelkamat törlesztés"
-  }
+	{
+		"amount": -11111,
+		"category": "Loan",
+		"currency": "HUF",
+		"partner": "",
+		"type": "Hitel törlesztés"
+	},
+	{
+		"amount": -22222,
+		"category": "Loan",
+		"currency": "HUF",
+		"partner": "",
+		"type": "Hitelkamat törlesztés"
+	}
 ]
 ```
 
@@ -252,49 +252,49 @@ usage: ml_cli.py [-h] {train,predict,metrics} ...
 Train or test transaction categorizer model (modular version).
 
 positional arguments:
-  {train,predict,metrics}
-    train          Train the model
-    predict        Predict categories for new data
-    metrics        Calculate model evaluation metrics
+	{train,predict,metrics}
+		train          Train the model
+		predict        Predict categories for new data
+		metrics        Calculate model evaluation metrics
 
 options:
-  -h, --help       show this help message and exit
+	-h, --help       show this help message and exit
 
 $ python3 src/whatsthedamage/controllers/ml_cli.py train -h
 usage: ml_cli.py train [-h] [--data DATA] [--gridsearch] [--randomsearch] [--smote] [--verbose]
 
 positional arguments:
-  training_data    Path to training data JSON file
+	training_data    Path to training data JSON file
 
 options:
-  -h, --help       show this help message and exit
-  --data DATA      Path to training data JSON file
-  --gridsearch     Use GridSearchCV for hyperparameter tuning
-  --randomsearch   Use RandomizedSearchCV for hyperparameter tuning
-  --smote          Enable SMOTE for synthetic data generation on rare categories
-  --verbose, -v    Enable verbose output during training
+	-h, --help       show this help message and exit
+	--data DATA      Path to training data JSON file
+	--gridsearch     Use GridSearchCV for hyperparameter tuning
+	--randomsearch   Use RandomizedSearchCV for hyperparameter tuning
+	--smote          Enable SMOTE for synthetic data generation on rare categories
+	--verbose, -v    Enable verbose output during training
 
 $ python3 src/whatsthedamage/controllers/ml_cli.py predict -h
 usage: ml_cli.py predict [-h] [--model MODEL] [--data DATA] [--confidence]
 
 positional arguments:
-  model         Path to trained model file
-  new_data      Path to new data JSON file
+	model         Path to trained model file
+	new_data      Path to new data JSON file
 
 options:
-  -h, --help    show this help message and exit
-  --model MODEL        Path to trained model file
-  --data DATA          Path to new data JSON file
-  --confidence  Show prediction confidence scores and verbose data
+	-h, --help    show this help message and exit
+	--model MODEL        Path to trained model file
+	--data DATA          Path to new data JSON file
+	--confidence  Show prediction confidence scores and verbose data
 
 $ python3 src/whatsthedamage/controllers/ml_cli.py metrics -h
 usage: ml_cli.py metrics [-h] [--model MODEL] [--data DATA] [--verbose]
 
 options:
-  -h, --help           show this help message and exit
-  --model MODEL        Path to trained model file
-  --data DATA          Path to test data JSON file
-  --verbose, -v        Enable verbose output during metrics calculation
+	-h, --help           show this help message and exit
+	--model MODEL        Path to trained model file
+	--data DATA          Path to test data JSON file
+	--verbose, -v        Enable verbose output during metrics calculation
 ```
 
 ## Model Improvement and Troubleshooting
@@ -311,70 +311,70 @@ The comprehensive metrics provided by the `Metrics` class can help identify area
 **Recommended approaches:**
 
 1. **Using Train Class** (recommended):
-   The `Train` class handles everything in one streamlined operation - training, saving the model, manifest, and automatically exporting test data:
-   ```bash
-   # Train and save everything automatically (model, manifest, and test data)
-   python3 src/whatsthedamage/controllers/ml_cli.py train your_full_data.json
-   
-   # For programmatic use:
-   python3 -c "
-   from whatsthedamage.models.domain.machine_learning import Train, TrainingData, Metrics
-   from whatsthedamage.config.ml_config import MLConfig
-   
-   config = MLConfig()
-   training_data = TrainingData('your_full_data.json', config)
-   train = Train(training_data=training_data, config=config)
-   train.train()  # Automatically saves model, manifest, AND test data
-   
-   # All files are now available at MLConfig paths
-   # Immediately evaluate using the automatically saved test data
-   metrics = Metrics(config.model_path, config.test_data_path)
-   print(f'Accuracy: {metrics.get_metrics_data()[\"accuracy\"]}')
-   "
+	 The `Train` class handles everything in one streamlined operation - training, saving the model, manifest, and automatically exporting test data:
+	 ```bash
+	 # Train and save everything automatically (model, manifest, and test data)
+	 python3 src/whatsthedamage/controllers/ml_cli.py train your_full_data.json
+
+	 # For programmatic use:
+	 python3 -c "
+	 from whatsthedamage.models.domain.machine_learning import Train, TrainingData, Metrics
+	 from whatsthedamage.config.ml_config import MLConfig
+
+	 config = MLConfig()
+	 training_data = TrainingData('your_full_data.json', config)
+	 train = Train(training_data=training_data, config=config)
+	 train.train()  # Automatically saves model, manifest, AND test data
+
+	 # All files are now available at MLConfig paths
+	 # Immediately evaluate using the automatically saved test data
+	 metrics = Metrics(config.model_path, config.test_data_path)
+	 print(f'Accuracy: {metrics.get_metrics_data()[\"accuracy\"]}')
+	 "
 
 2. **Manual Splitting** (for full control):
-   ```python
-   from sklearn.model_selection import train_test_split
-   import pandas as pd
-   
-   # Load your full dataset
-   full_data = pd.read_json('full_data.json')
-   
-   # Split into training and test sets
-   train_df, test_df = train_test_split(
-       full_data, 
-       test_size=0.2, 
-       random_state=42,
-       stratify=full_data['category']  # Maintain class distribution
-   )
-   
-   # Save the splits
-   train_df.to_json('train_data.json', orient='records')
-   test_df.to_json('test_data.json', orient='records')
-   
-   # Train and evaluate
-   python3 src/whatsthedamage/controllers/ml_cli.py train train_data.json
-   python3 src/whatsthedamage/controllers/ml_cli.py metrics --model model.joblib --data test_data.json
-   ```
+	 ```python
+	 from sklearn.model_selection import train_test_split
+	 import pandas as pd
+
+	 # Load your full dataset
+	 full_data = pd.read_json('full_data.json')
+
+	 # Split into training and test sets
+	 train_df, test_df = train_test_split(
+			 full_data,
+			 test_size=0.2,
+			 random_state=42,
+			 stratify=full_data['category']  # Maintain class distribution
+	 )
+
+	 # Save the splits
+	 train_df.to_json('train_data.json', orient='records')
+	 test_df.to_json('test_data.json', orient='records')
+
+	 # Train and evaluate
+	 python3 src/whatsthedamage/controllers/ml_cli.py train train_data.json
+	 python3 src/whatsthedamage/controllers/ml_cli.py metrics --model model.skops --data test_data.json
+	 ```
 
 3. **For Small Datasets** (<1000 samples):
-   - Use **cross-validation** during training
-   - Still hold out a small test set (10-20%) for final evaluation
-   - Consider collecting more data if possible
+	 - Use **cross-validation** during training
+	 - Still hold out a small test set (10-20%) for final evaluation
+	 - Consider collecting more data if possible
 
 **Pro Tip:** Always use `random_state` for reproducible splits!
 
 ### Interpreting Confidence Analysis
 
 - **Low Confidence Errors** (confidence < 0.7): These transactions are genuinely ambiguous and may require:
-  - Additional features to better distinguish between categories
-  - Manual review and potential category reassignment
-  - Rule-based post-processing for specific edge cases
+	- Additional features to better distinguish between categories
+	- Manual review and potential category reassignment
+	- Rule-based post-processing for specific edge cases
 
 - **High Confidence Errors** (confidence ≥ 0.9): These indicate potential data quality issues:
-  - Incorrect labels in the training data
-  - Inconsistent category naming conventions
-  - Transactions that should be excluded from training
+	- Incorrect labels in the training data
+	- Inconsistent category naming conventions
+	- Transactions that should be excluded from training
 
 ### Using Merchant Analysis
 

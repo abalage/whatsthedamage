@@ -21,8 +21,14 @@ class MLConfig(BaseModel):
     max_depth: Union[int, None] = None
     n_jobs: int = 1 # Number of jobs for parallel processing (-1 = use all cores)
     test_size: float = 0.2
-    model_version: str = "v6alpha_en"
+    model_version: str = "v1.0"
     feature_columns: List[str] = ["type", "partner", "amount"]
+    # HashingVectorizer settings (for privacy-preserving text features)
+    use_hashing_vectorizer: bool = True  # Use HashingVectorizer instead of TfidfVectorizer
+    hashing_n_features: int = 1024  # 2^10 features
+    hashing_alternate_sign: bool = False
+    # skops.io settings (for secure model serialization)
+    is_distribution: bool = False  # When True, skip saving test data for public distribution
     # Confidence calibration settings
     enable_calibration: bool = True
     calibration_method: str = "sigmoid"  # Options: 'sigmoid', 'isotonic'
@@ -45,18 +51,18 @@ class MLConfig(BaseModel):
         return os.path.abspath(
             os.path.join(
                 static_dir,
-                f"model-{self.classifier_short_name}-{self.model_version}.joblib"
+                f"model-{self.classifier_short_name}-{self.model_version}.skops"
             )
         )
 
     @property
-    def manifest_path(self) -> str:
+    def model_card_path(self) -> str:
         base_dir = os.path.dirname(os.path.abspath(__file__))
         static_dir = os.path.join(base_dir, "..", "static")
         return os.path.abspath(
             os.path.join(
                 static_dir,
-                f"model-{self.classifier_short_name}-{self.model_version}.manifest.json"
+                f"model-{self.classifier_short_name}-{self.model_version}.modelcard.json"
             )
         )
 

@@ -13,6 +13,7 @@ def main() -> None:
     train_parser.add_argument("--gridsearch", action="store_true", help="Use GridSearchCV for hyperparameter tuning")  # noqa: E501
     train_parser.add_argument("--randomsearch", action="store_true", help="Use RandomizedSearchCV for hyperparameter tuning")  # noqa: E501
     train_parser.add_argument("--smote", action="store_true", help="Enable SMOTE for synthetic data generation on rare categories")  # noqa: E501
+    train_parser.add_argument("--distribution", action="store_true", help="Create distribution-ready model with privacy protections (HashingVectorizer + skops + no test data)")  # noqa: E501
     # Add logging arguments to train subcommand
     train_parser.add_argument('--log-level', type=str, default='WARN', help='Set the logging level (DEBUG, INFO, WARN, ERROR). Default: WARN')
     train_parser.add_argument('--log-output', type=str, default='stdout', help='Set the logging output (stdout or filename). Default: stdout')
@@ -51,7 +52,8 @@ def main() -> None:
             training_data_path=args.data,
             gridsearch=args.gridsearch,
             randomsearch=args.randomsearch,
-            enable_smote=args.smote
+            enable_smote=args.smote,
+            is_distribution=args.distribution
         )
 
     elif args.command == "predict":

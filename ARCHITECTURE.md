@@ -69,12 +69,12 @@ whatsthedamage/
 │   │   └── helpers.py       # API helper functions
 │   ├── config/              # Configuration classes
 │   │   ├── config.py        # Central configuration
-|   │   ├── config.yml.default   # Default configuration template
+│   │   ├── config.yml.default   # Default configuration template
 │   │   ├── dt_models.py     # Data models for API responses
 │   │   ├── exclusions.json  # ExclusionService configuration
 │   │   ├── flask_config.py  # Flask-specific configuration
-│   │   └── ml_config.py     # ML configuration
-│   │   └── text_config.py     # TextCorrectionService configuration
+│   │   ├── ml_config.py     # ML configuration
+│   │   └── text_config.py   # TextCorrectionService configuration
 │   ├── controllers/         # Request handling
 │   │   ├── cli_controller.py # CLI argument parsing
 │   │   ├── ml_cli.py         # ML CLI interface
@@ -127,6 +127,8 @@ whatsthedamage/
 │   │   ├── logging.py          # Centralized logging utils
 │   │   ├── validation.py      # Validation utilities
 │   │   └── version.py         # Version management
+│   ├── static/               # Backend static assets
+│   │   ├── model-card-template.md # Jinja2 template for Model Card generation
 │   ├── view/                 # Presentation layer (legacy CLI output only)
 │   │   ├── static/           # Flask static files
 │   │   │   └── dist/         # Frontend build output (when served from backend)
@@ -135,6 +137,7 @@ whatsthedamage/
 │   └── uploads/              # File uploads
 ├── tests/                    # Backend tests
 │   ├── services/             # Service layer tests
+│   ├── test_model_privacy.py # Privacy and security tests for ML models
 │   └── ...                   # Other test files
 ├── .github/                  # GitHub configurations
 ├── .gitignore                # Git ignore patterns
@@ -354,7 +357,7 @@ Frontend SPA (Vue 3)
 
 **Description**: Core business logic service for machine learning operations. Orchestrates model training, prediction, and evaluation. Provides a unified interface for ML operations including hyperparameter tuning, confidence calibration, and SMOTE support.
 
-**Technologies**: Python, scikit-learn, joblib
+**Technologies**: Python, scikit-learn, skops
 
 **Deployment**: Part of the Flask application
 
@@ -447,9 +450,9 @@ Frontend SPA (Vue 3)
 
 **Service Name**: Random Forest Model with Confidence Calibration
 
-**Purpose**: Provides ML-based transaction categorization as an alternative to regex-based categorization. The model is trained on historical transaction data and includes advanced features like confidence calibration, SMOTE for rare categories, and multi-CPU training support.
+**Purpose**: Provides ML-based transaction categorization as an alternative to regex-based categorization. The model is trained on historical transaction data and includes advanced features like confidence calibration, SMOTE for rare categories, multi-CPU training support, and privacy-preserving text feature extraction.
 
-**Integration Method**: joblib model loading (security warning: only use trusted models)
+**Integration Method**: skops model loading (secure serialization with type verification)
 
 **Key Features**:
 - Random Forest classifier with 200 estimators
@@ -458,11 +461,8 @@ Frontend SPA (Vue 3)
 - Multi-CPU parallel processing
 - Confidence threshold for categorization
 - Comprehensive metrics and evaluation
-
-**Model Files**:
-- `model-rf-v6alpha_en.joblib`: Trained model with calibration
-- `model-rf-v6alpha_en.manifest.json`: Training metadata and parameters
-- `model-rf-v6alpha_en.testdata.json`: Test data for validation
+- HashingVectorizer for text features (no vocabulary storage)
+- Secure serialization with skops.io
 
 ### 5.2. Localization
 
@@ -525,6 +525,7 @@ Removed.
 - Gunicorn for production deployment (backend)
 - Vite for frontend bundling and optimization
 - npm for frontend dependency management
+- **ML Dependencies**: scikit-learn, skops (v0.14.0) for secure model serialization, imbalanced-learn for SMOTE
 
 **CI/CD Pipeline**: Makefile-based automation with commands like:
 - `make dev`: Set up development environment (Python venv + npm dependencies)
@@ -567,7 +568,6 @@ Removed.
 - Error handling without exposing internal errors
 
 **Known Security Issues**:
-- joblib model loading can execute arbitrary code (only use trusted models)
 - File uploads require validation of MIME types and extensions
 
 ## 8. Development & Testing Environment
@@ -616,6 +616,11 @@ Removed.
 - **Simplified Composables**: Refactored useDrilldownData from a monolithic 375-line file into focused, single-responsibility composables (useRouteParams, useApiData, useBreadcrumbs, usePageTitle) that can be composed together, improving maintainability and testability. Removed deprecated buildEndpoint pattern.
 - **Code Cleanup**: Removed duplicate theme initialization from Layout.vue (theme store already auto-initializes), deleted unused utils.ts file with showNotification function.
 - **Service consolidation**: Merged DataFormattingService and ResponseBuilderService into unified ResponseFormattingService
+- **ML Serialization Migration**: Complete migration from joblib to skops.io for secure model serialization with type verification. Added comprehensive privacy protections for distribution-ready models.
+- **CLI Distribution Mode**: Added `--distribution` flag to ML CLI for creating privacy-protected, public-ready models with HashingVectorizer and no test data.
+- **Privacy-Enhanced ML**: Implemented HashingVectorizer for text features (no vocabulary storage), distribution mode for public-ready models, and HuggingFace Model Card standardization with privacy guarantees.
+- **Model Card Generation**: Added Jinja2-based Model Card generation from HuggingFace official template with comprehensive metadata and privacy information.
+- **Comprehensive Privacy Testing**: Added test suite (`test_model_privacy.py`) verifying no vocabulary storage, no private paths exposure, secure serialization, and distribution mode compliance.
 - Improved dependency injection patterns with standardized service container
 - Enhanced IdMappingService to use CacheService for consistency
 - Simplified service registration and usage across CLI and web contexts
@@ -630,7 +635,7 @@ Removed.
 
 **Primary Contact/Team**: Balage Abalage
 
-**Date of Last Update**: 2026-06-10
+**Date of Last Update**: 2026-09-02
 
 ## 11. Glossary / Acronyms
 

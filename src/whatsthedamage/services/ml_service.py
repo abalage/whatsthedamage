@@ -14,10 +14,24 @@ class MLService:
         training_data_path: str,
         gridsearch: bool = False,
         randomsearch: bool = False,
-        enable_smote: bool = False
+        enable_smote: bool = False,
+        is_distribution: bool = False
     ) -> None:
-        """Train the model."""
-        config = MLConfig(enable_smote=enable_smote)
+        """Train the model.
+
+        Args:
+            training_data_path: Path to training data JSON file
+            gridsearch: Use GridSearchCV for hyperparameter tuning
+            randomsearch: Use RandomizedSearchCV for hyperparameter tuning
+            enable_smote: Enable SMOTE for synthetic data generation
+            is_distribution: If True, create distribution-ready model with privacy protections
+        """
+        # When in distribution mode, ensure privacy settings are enabled
+        config = MLConfig(
+            enable_smote=enable_smote,
+            is_distribution=is_distribution,
+            use_hashing_vectorizer=True,  # Always use HashingVectorizer for distribution
+        )
         train = Train(
             training_data_path=training_data_path,
             config=config,

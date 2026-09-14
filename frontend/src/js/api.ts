@@ -14,6 +14,14 @@ import type {
   CategoryDefinition,
   CsvProfile,
 } from '../types/api.js';
+import type {
+  RegisterRequest,
+  RegisterResponse,
+  LoginRequest,
+  LoginResponse,
+  LogoutResponse,
+  MeResponse,
+} from '../types/auth.js';
 
 // API base URL configuration
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '/api/v2';
@@ -117,6 +125,7 @@ export async function processTransactions(formData: FormData): Promise<DetailedR
     const response = await fetch(`${API_BASE_URL}/process`, {
       method: 'POST',
       body: formData,
+      credentials: 'include',
       // Don't set Content-Type header - let browser set it with boundary for multipart
     });
 
@@ -246,5 +255,145 @@ export async function fetchCostOfLivingCategories(): Promise<CategoryDefinition[
  */
 export async function fetchAllCsvProfiles(): Promise<CsvProfile[]> {
   return fetchWithErrorHandling<CsvProfile[]>(getApiUrl('/csv-profiles'));
+}
+
+// Authentication API functions
+
+/**
+ * Register a new user
+ * @param username - User's username
+ * @param password - User's password
+ * @returns Promise with registration response
+ */
+export async function register(username: string, password: string): Promise<RegisterResponse> {
+  const requestData: RegisterRequest = { username, password };
+  return fetchWithCsrf<RegisterResponse>(getApiUrl('/auth/register'), {
+    method: 'POST',
+    body: JSON.stringify(requestData)
+  });
+}
+
+/**
+ * Login a user
+ * @param username - User's username
+ * @param password - User's password
+ * @param rememberMe - Whether to remember the session
+ * @returns Promise with login response
+ */
+export async function login(username: string, password: string, rememberMe: boolean = false): Promise<LoginResponse> {
+  const requestData: LoginRequest = { username, password, rememberMe };
+  return fetchWithCsrf<LoginResponse>(getApiUrl('/auth/login'), {
+    method: 'POST',
+    body: JSON.stringify(requestData)
+  });
+}
+
+/**
+ * Logout the current user
+ * @returns Promise with logout response
+ */
+export async function logout(): Promise<LogoutResponse> {
+  return fetchWithCsrf<LogoutResponse>(getApiUrl('/auth/logout'), {
+    method: 'POST',
+    body: JSON.stringify({})
+  });
+}
+
+/**
+ * Get current user information and CSRF token
+ * @returns Promise with user info and CSRF token
+ */
+export async function getMe(): Promise<MeResponse> {
+  return fetchWithErrorHandling<MeResponse>(getApiUrl('/auth/me'), {
+    credentials: 'include'
+  });
+}
+
+/**
+ * Fetch with automatic inclusion of credentials (cookies)
+ * @param url - API endpoint URL
+ * @param options - Fetch options
+ * @returns Promise with parsed data
+ */
+async function fetchWithCredentials<T>(
+  url: string,
+  options: RequestInit = {}
+): Promise<T> {
+  return fetchWithErrorHandling<T>(url, {
+    ...options,
+    credentials: 'include'
+  });
+}
+
+/**
+ * State-changing HTTP methods that require CSRF protection
+ */
+const CSRF_METHODS = new Set(['POST', 'PUT', 'DELETE', 'PATCH']);
+
+/**
+ * Get CSRF token from auth store
+ * @returns CSRF token string or null
+ */
+async function getCsrfTokenFromStore(): Promise<string | null> {
+  try {
+    // Import dynamically to avoid circular dependencies
+    const { useAuthStore } = await import('../stores/auth.js');
+    const authStore = useAuthStore();
+    return authStore.getCsrfToken?.() ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Fetch with automatic CSRF token inclusion for state-changing requests
+ * @param url - API endpoint URL
+ * @param options - Fetch options
+ * @returns Promise with parsed data
+ */
+async function fetchWithCsrf<T>(
+  url: string,
+  options: RequestInit = {}
+): Promise<T> {
+  // Only add CSRF token for state-changing methods
+  const method = (options.method?.toUpperCase() ?? 'GET');
+  
+  if (CSRF_METHODS.has(method)) {
+    const csrfToken = await getCsrfTokenFromStore();
+    
+    // Build headers - only include CSRF token if available
+    // This allows auth endpoints (register/login) to work without CSRF
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+    
+    // Safely merge headers from options
+    if (options.headers) {
+      if (options.headers instanceof Headers) {
+        options.headers.forEach((value, key) => {
+          headers[key] = value;
+        });
+      } else if (Array.isArray(options.headers)) {
+        for (const [key, value] of options.headers) {
+          headers[key] = value;
+        }
+      } else {
+        Object.assign(headers, options.headers);
+      }
+    }
+    
+    if (csrfToken) {
+      headers['X-CSRF-Token'] = csrfToken;
+    }
+    
+    return fetchWithErrorHandling<T>(url, {
+      ...options,
+      credentials: 'include',
+      headers
+    });
+  }
+  
+  // For non-state-changing requests, just use credentials
+  return fetchWithCredentials<T>(url, options);
 }
 

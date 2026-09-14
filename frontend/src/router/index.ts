@@ -1,4 +1,4 @@
-import { createRouter, createWebHistory } from 'vue-router'
+import { createRouter, createWebHistory, type RouteLocationNormalized } from 'vue-router'
 import Index from '../pages/Index.vue'
 import About from '../pages/About.vue'
 import Legal from '../pages/Legal.vue'
@@ -10,6 +10,9 @@ import CategoryMonthsList from '../pages/CategoryMonthsList.vue'
 import MonthCategoriesList from '../pages/MonthCategoriesList.vue'
 import CategoryMonthTransactions from '../pages/CategoryMonthTransactions.vue'
 import PivotTable from '../pages/PivotTable.vue'
+import Login from '../pages/Login.vue'
+import Register from '../pages/Register.vue'
+import { useAuthStore } from '../stores/auth.js'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -17,7 +20,8 @@ const router = createRouter({
     {
       path: '/',
       name: 'index',
-      component: Index
+      component: Index,
+      meta: { requiresAuth: true }
     },
     {
       path: '/about',
@@ -37,27 +41,32 @@ const router = createRouter({
     {
       path: '/results',
       name: 'results',
-      component: Categories
+      component: Categories,
+      meta: { requiresAuth: true }
     },
     {
       path: '/results/:resultId/accounts/:accountId/categories/:categoryId/months',
       name: 'category-months',
-      component: CategoryMonthsList
+      component: CategoryMonthsList,
+      meta: { requiresAuth: true }
     },
     {
       path: '/results/:resultId/accounts/:accountId/months/:monthId/categories',
       name: 'month-categories',
-      component: MonthCategoriesList
+      component: MonthCategoriesList,
+      meta: { requiresAuth: true }
     },
     {
       path: '/results/:resultId/accounts/:accountId/categories/:categoryId/months/:monthId/transactions',
       name: 'category-month-transactions',
-      component: CategoryMonthTransactions
+      component: CategoryMonthTransactions,
+      meta: { requiresAuth: true }
     },
     {
       path: '/results/:resultId',
       name: 'details',
-      component: Transactions
+      component: Transactions,
+      meta: { requiresAuth: true }
     },
     {
       path: '/details',
@@ -67,15 +76,87 @@ const router = createRouter({
     {
       path: '/statistics',
       name: 'statistics',
-      component: Statistics
+      component: Statistics,
+      meta: { requiresAuth: true }
     },
     {
       path: '/results/:resultId/pivot',
       name: 'pivot',
       component: PivotTable,
-      props: true
+      props: true,
+      meta: { requiresAuth: true }
+    },
+    // Authentication routes
+    {
+      path: '/login',
+      name: 'login',
+      component: Login,
+      meta: { requiresGuest: true, public: true }
+    },
+    {
+      path: '/register',
+      name: 'register',
+      component: Register,
+      meta: { requiresGuest: true, public: true }
+    },
+    {
+      path: '/logout',
+      name: 'logout',
+      component: Login,
+      beforeEnter: async (to: RouteLocationNormalized, from: RouteLocationNormalized, next) => {
+        const authStore = useAuthStore();
+        try {
+          await authStore.logout();
+        } finally {
+          next({ name: 'login', query: { loggedOut: 'true' } });
+        }
+      },
+      meta: { public: true }
     }
   ]
-})
+});
+
+// Navigation guards for authentication
+router.beforeEach(async (to, from, next) => {
+  const authStore = useAuthStore();
+  
+  // Initialize auth state if not already done
+  // Only initialize for routes that might need auth (not for public routes like login/register)
+  if (!to.meta.public && !authStore.isAuthenticated && !authStore.isLoading) {
+    try {
+      await authStore.initialize();
+    } catch {
+      // Initialization failed - not authenticated
+    }
+  }
+  
+  // Check if route requires authentication
+  if (to.meta.requiresAuth && !authStore.isAuthenticated) {
+    // Save the route the user was trying to visit for redirect after login
+    next({ 
+      name: 'login', 
+      query: { redirect: to.fullPath } 
+    });
+    return;
+  }
+  
+  // Check if route requires guest (not authenticated)
+  if (to.meta.requiresGuest && authStore.isAuthenticated) {
+    next({ name: 'index' });
+    return;
+  }
+  
+  // Default: allow navigation
+  next();
+});
+
+// Add public meta to routes that don't have explicit auth configuration
+const routes = router.getRoutes();
+routes.forEach(route => {
+  if (!route.meta.public && !route.meta.requiresAuth && !route.meta.requiresGuest) {
+    // Routes without explicit auth meta are public by default
+    route.meta.public = true;
+  }
+});
 
 export default router

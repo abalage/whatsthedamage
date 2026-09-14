@@ -10,7 +10,7 @@ response format with metadata and hypermedia links.
 """
 from pydantic import BaseModel, Field, ConfigDict
 from typing import Dict, List, Optional, Any, Generic, TypeVar
-from datetime import datetime
+from datetime import datetime, UTC
 from whatsthedamage.models.domain.account import Account
 from whatsthedamage.models.domain.dt_models import TransactionDetail
 from whatsthedamage.models.common.display_fields import DisplayRawField
@@ -70,7 +70,7 @@ class ApiEnvelope(BaseModel, Generic[T]):
         description="Hypermedia links for navigation (self, related, etc.)"
     )
     timestamp: datetime = Field(
-        default_factory=datetime.utcnow,
+        default_factory=lambda: datetime.now(UTC),
         description="Response generation timestamp in UTC"
     )
 

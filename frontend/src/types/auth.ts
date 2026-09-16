@@ -1,6 +1,6 @@
 /**
  * Authentication-related TypeScript types and interfaces.
- * 
+ *
  * Defines the data structures used for authentication API requests and responses.
  */
 

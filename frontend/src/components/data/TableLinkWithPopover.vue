@@ -1,10 +1,10 @@
 <script setup lang="ts">
 /**
  * TableLinkWithPopover - A link component with Bootstrap popover support.
- * 
+ *
  * Combines TableLink functionality with Bootstrap popover for displaying
  * additional information on hover/focus. Designed for use in VueDataTable cells.
- * 
+ *
  * Usage:
  *   In VueDataTable column definition:
  *   {

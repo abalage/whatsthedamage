@@ -1,9 +1,9 @@
 <!--
   Forgot Password Page Component
-  
+
   Provides password reset functionality using recovery codes.
   Users can reset their password using the recovery code they saved during registration.
-  
+
   This component orchestrates between the password reset form and the recovery code display.
 -->
 
@@ -47,11 +47,11 @@ async function handleResetPassword(
 
   } catch (err: unknown) {
     const errorMessage = err instanceof Error ? err.message : String(err);
-    
+
     // Handle specific error cases
     if (errorMessage.toLowerCase().includes('password must be at least')) {
       error.value = errorMessage;
-    } else if (errorMessage.toLowerCase().includes('rate limit') || 
+    } else if (errorMessage.toLowerCase().includes('rate limit') ||
                errorMessage.toLowerCase().includes('too many')) {
       error.value = 'Too many attempts. Please try again later.';
     } else {
@@ -84,7 +84,7 @@ function handleContinue() {
     <!-- Password Reset Form -->
     <template v-if="!showSuccessState">
       <h2>Reset Password</h2>
-      
+
       <p class="instructions">
         Enter your username and the recovery code you saved during registration
         to reset your password.
@@ -100,11 +100,11 @@ function handleContinue() {
       <!-- Links -->
       <div class="auth-links">
         <p>
-          Remember your password? 
+          Remember your password?
           <router-link to="/login" @click="clearError">Login</router-link>
         </p>
         <p>
-          Don't have an account? 
+          Don't have an account?
           <router-link to="/register" @click="clearError">Register</router-link>
         </p>
       </div>

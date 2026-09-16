@@ -18,7 +18,7 @@ def test_handle_bad_request(client):
     with client.application.app_context():
         error = BadRequest("Invalid data")
         response, status_code = handle_bad_request(error)
-        
+
         assert status_code == 400
         data = response.get_json()
         assert data['code'] == 400
@@ -31,7 +31,7 @@ def test_handle_file_not_found(client):
     with client.application.app_context():
         error = FileNotFoundError("config.yml not found")
         response, status_code = handle_file_not_found(error)
-        
+
         assert status_code == 400
         data = response.get_json()
         assert data['code'] == 400
@@ -44,15 +44,15 @@ def test_handle_validation_error(client):
     with client.application.app_context():
         # Create a simple Pydantic model that will fail validation
         from pydantic import BaseModel, Field
-        
+
         class TestModel(BaseModel):
             age: int = Field(gt=0)
-        
+
         try:
             TestModel(age=-1)
         except ValidationError as e:
             response, status_code = handle_validation_error(e)
-            
+
             assert status_code == 400
             data = response.get_json()
             assert data['code'] == 400
@@ -66,7 +66,7 @@ def test_handle_value_error(client):
     with client.application.app_context():
         error = ValueError("CSV file is empty")
         response, status_code = handle_value_error(error)
-        
+
         assert status_code == 422
         data = response.get_json()
         assert data['code'] == 422
@@ -79,7 +79,7 @@ def test_handle_request_entity_too_large(client):
     with client.application.app_context():
         error = RequestEntityTooLarge("File too large")
         response, status_code = handle_request_entity_too_large(error)
-        
+
         assert status_code == 413
         data = response.get_json()
         assert data['code'] == 413
@@ -91,7 +91,7 @@ def test_handle_generic_exception(client):
     with client.application.app_context():
         error = RuntimeError("Something went wrong")
         response, status_code = handle_generic_exception(error)
-        
+
         assert status_code == 500
         data = response.get_json()
         assert data['code'] == 500

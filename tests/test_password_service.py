@@ -86,7 +86,7 @@ class TestPasswordServiceRehash:
         password = "test_password"
         hash = password_service.hash_password(password)
         info = password_service.get_hash_info(hash)
-        
+
         assert info is not None
         assert 'type' in info
         assert info['type'] == 'argon2id'

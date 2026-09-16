@@ -69,7 +69,7 @@ class TestDistributionPrivacy:
         ])
         classifier = RandomForestClassifier(random_state=42, n_estimators=2)
         pipeline = Pipeline([("preprocessor", preprocessor), ("classifier", classifier)])
-        
+
         # Fit with sample data
         X_train = pd.DataFrame({
             "type": ["Payment", "Deposit", "Withdrawal"],
@@ -77,7 +77,7 @@ class TestDistributionPrivacy:
         })
         y_train = ["cat1", "cat2", "cat3"]
         pipeline.fit(X_train, y_train)
-        
+
         # Check that HashingVectorizer has no vocabulary_ attribute
         fitted_preprocessor = pipeline.named_steps["preprocessor"]
         for name, transformer, column in fitted_preprocessor.transformers_:
@@ -92,14 +92,14 @@ class TestDistributionPrivacy:
         ])
         classifier = RandomForestClassifier(random_state=42, n_estimators=2)
         pipeline = Pipeline([("preprocessor", preprocessor), ("classifier", classifier)])
-        
+
         # Fit with sample data
         X_train = pd.DataFrame({
             "type": ["Payment", "Deposit", "Withdrawal"]
         })
         y_train = ["cat1", "cat2", "cat3"]
         pipeline.fit(X_train, y_train)
-        
+
         # Check that TfidfVectorizer has vocabulary_ attribute
         fitted_preprocessor = pipeline.named_steps["preprocessor"]
         type_vec = fitted_preprocessor.named_transformers_["type_vec"]
@@ -115,11 +115,11 @@ class TestDistributionPrivacy:
         with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
             json.dump(sample_training_data, f)
             temp_path = f.name
-        
+
         try:
             # Create Train instance with distribution config
             train = Train(training_data_path=temp_path, config=distribution_config)
-            
+
             # Check that preprocessor uses HashingVectorizer
             preprocessor = train._preprocessor
             # Access the transformers attribute (available before and after fitting)
@@ -137,22 +137,22 @@ class TestDistributionPrivacy:
         with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
             json.dump(sample_training_data, f)
             temp_path = f.name
-        
+
         try:
             # Create and train model
             train = Train(training_data_path=temp_path, config=distribution_config)
-            
+
             # Train the model first so the pipeline is fitted
             train.train()
-            
+
             # Create Model Card
             model_card = train._create_model_card(train._model)
-            
+
             # Check for private path patterns
             assert 'training_data' not in model_card or \
                    temp_path not in str(model_card.get('training_data', '')), \
                 "Model Card should not contain training data path"
-            
+
             # Check privacy flags
             assert model_card["privacy"]["safe_for_public_use"] == True, \
                 "Distribution Model Card should be marked as safe for public use"
@@ -173,20 +173,20 @@ class TestDistributionPrivacy:
             config.__class__.model_path = property(lambda self: os.path.join(temp_dir, "test.skops"))
             config.__class__.model_card_path = property(lambda self: os.path.join(temp_dir, "test.modelcard.json"))
             config.__class__.test_data_path = property(lambda self: os.path.join(temp_dir, "test.testdata.json"))
-            
+
             # Create temporary training data file
             training_path = os.path.join(temp_dir, "training.json")
             with open(training_path, 'w') as f:
                 json.dump(sample_training_data, f)
-            
+
             # Train and save
             train = Train(training_data_path=training_path, config=config)
             train.train()
-            
+
             # Check that test data was NOT saved
             assert not os.path.exists(config.test_data_path), \
                 "Distribution mode should not save test data"
-            
+
             # Check that model and Model Card were saved
             assert os.path.exists(config.model_path), \
                 "Model should be saved"
@@ -232,16 +232,16 @@ class TestDistributionPrivacy:
             },
             "created_date": "2023-01-01T00:00:00"
         }
-        
+
         md = generate_model_card_markdown(model_card)
-        
+
         # Check that markdown contains expected sections (HuggingFace template structure)
         assert "# Model Card for test_model" in md
         assert "## Model Details" in md
         assert "## Training Details" in md or "## Training Data" in md
         assert "## Evaluation" in md
         assert "## How to Get Started" in md or "## How to Get Started with the Model" in md
-        
+
         # Check privacy guarantees are mentioned (current implementation mentions HashingVectorizer for privacy)
         assert "HashingVectorizer for privacy" in md
 
@@ -260,25 +260,25 @@ class TestDistributionPrivacy:
             config.__class__.model_path = property(lambda self: os.path.join(temp_dir, "test.skops"))
             config.__class__.model_card_path = property(lambda self: os.path.join(temp_dir, "test.modelcard.json"))
             config.__class__.test_data_path = property(lambda self: os.path.join(temp_dir, "test.testdata.json"))
-            
+
             # Create temporary training data file
             training_path = os.path.join(temp_dir, "training.json")
             with open(training_path, 'w') as f:
                 json.dump(sample_training_data, f)
-            
+
             # Train and save
             train = Train(training_data_path=training_path, config=config)
             train.train()
-            
+
             # Load and verify Model Card JSON
             with open(config.model_card_path, 'r', encoding='utf-8') as f:
                 model_card = json.load(f)
-            
+
             # Verify required fields exist
             required_fields = ["model_name", "version", "model_type", "language", "parameters", "training_info", "evaluation", "privacy"]
             for field in required_fields:
                 assert field in model_card, f"Model Card should contain {field}"
-            
+
             # Verify privacy settings
             assert model_card["privacy"]["safe_for_public_use"] == True
             assert model_card["privacy"]["vocabulary_stored"] == False
@@ -301,10 +301,10 @@ class TestBackwardCompatibility:
     def test_load_existing_skops_model(self):
         """Test that existing .skops models can be loaded."""
         from whatsthedamage.models.domain.machine_learning import load
-        
+
         # Use the existing model file (now in skops format)
         existing_model_path = "src/whatsthedamage/static/model-rf-v6alpha_en.skops"
-        
+
         if os.path.exists(existing_model_path):
             # Should be able to load with skops
             model = load(existing_model_path)

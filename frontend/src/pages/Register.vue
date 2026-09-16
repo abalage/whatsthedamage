@@ -1,6 +1,6 @@
 <!--
   Register Page Component
-  
+
   Provides user registration with form validation,
   password strength checking, and recovery code display.
 -->
@@ -51,7 +51,7 @@ async function handleRegister() {
 
   try {
     await authStore.register(username.value.trim(), password.value);
-    
+
     // Show recovery code
     showRecoveryCode.value = true;
     recoveryCodeAcknowledged.value = false;
@@ -68,7 +68,7 @@ async function handleRegister() {
 function handleAcknowledgeAndProceed() {
   recoveryCodeAcknowledged.value = true;
   authStore.acknowledgeRecoveryCode();
-  
+
   // Redirect to login
   router.push({ name: 'login', query: { registered: 'true' } });
 }
@@ -91,7 +91,7 @@ async function copyRecoveryCode() {
 // Initialize - check if already authenticated
 onMounted(async () => {
   await authStore.initialize();
-  
+
   // If already authenticated, redirect to home
   if (authStore.isAuthenticated) {
     await router.push({ name: 'index' });
@@ -104,13 +104,13 @@ onMounted(async () => {
     <!-- Registration form -->
     <template v-if="!showRecoveryCode">
       <h2>Create Account</h2>
-      
+
       <form @submit.prevent="handleRegister" class="auth-form">
         <!-- Error message display -->
         <div v-if="authStore.error" class="error-message">
           <p>{{ authStore.error }}</p>
-          <button 
-            type="button" 
+          <button
+            type="button"
             @click="authStore.clearError"
             class="error-close"
             aria-label="Clear error"
@@ -147,7 +147,7 @@ onMounted(async () => {
             @focus="authStore.clearError"
           />
           <div class="password-hint">
-            <span 
+            <span
               :class="password.length >= 12 ? 'valid' : 'invalid'"
             >
               {{ password.length }}/12 characters
@@ -168,7 +168,7 @@ onMounted(async () => {
             @focus="authStore.clearError"
           />
           <div class="password-hint">
-            <span 
+            <span
               :class="passwordsMatch() ? 'valid' : 'invalid'"
             >
               {{ passwordsMatch() ? 'Passwords match' : 'Passwords do not match' }}
@@ -177,8 +177,8 @@ onMounted(async () => {
         </div>
 
         <!-- Submit button -->
-        <button 
-          type="submit" 
+        <button
+          type="submit"
           :disabled="isSubmitting || !formValid()"
           class="btn btn-primary"
         >
@@ -190,7 +190,7 @@ onMounted(async () => {
       <!-- Links -->
       <div class="auth-links">
         <p>
-          Already have an account? 
+          Already have an account?
           <router-link to="/login" @click="authStore.clearError">Login</router-link>
         </p>
       </div>
@@ -199,7 +199,7 @@ onMounted(async () => {
     <!-- Recovery code display -->
     <template v-else>
       <h2>Save Your Recovery Code</h2>
-      
+
       <div class="recovery-code-container">
         <p class="recovery-instructions">
           This code is displayed only once. Save it securely to reset your
@@ -208,7 +208,7 @@ onMounted(async () => {
 
         <div class="recovery-code-display">
           <code class="recovery-code">{{ authStore.recoveryCode }}</code>
-          <button 
+          <button
             @click="copyRecoveryCode"
             class="copy-btn"
             type="button"
@@ -227,16 +227,16 @@ onMounted(async () => {
 
         <div class="form-group form-checkbox">
           <label>
-            <input 
-              v-model="recoveryCodeAcknowledged" 
-              type="checkbox" 
+            <input
+              v-model="recoveryCodeAcknowledged"
+              type="checkbox"
               :disabled="!authStore.recoveryCode"
             />
             I have saved my recovery code
           </label>
         </div>
 
-        <button 
+        <button
           @click="handleAcknowledgeAndProceed"
           :disabled="!recoveryCodeAcknowledged || !authStore.recoveryCode"
           class="btn btn-primary"

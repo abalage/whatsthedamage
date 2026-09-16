@@ -15,7 +15,7 @@ class MockProcessor:
     """Mock processor that provides currency information."""
     def get_currency(self):
         return 'EUR'
-    
+
     def get_currency_from_rows(self, rows):
         """Get currency from rows."""
         return "EUR"
@@ -25,7 +25,7 @@ class MockCSVProcessor:
     """Mock CSV processor with nested processor."""
     def __init__(self):
         self.processor = MockProcessor()
-    
+
     def _read_csv_file(self):
         """Mock method to read CSV file and return rows."""
         from whatsthedamage.models.domain.csv_row import CsvRow

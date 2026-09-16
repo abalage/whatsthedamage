@@ -62,13 +62,13 @@ class TestUserRepository:
         """Test creating a new user."""
         password_hash = password_service.hash_password('test_password')
         recovery_code_hash = password_service.hash_password('ABCD-EFGH-IJKL-MNOP')
-        
+
         user = user_repository.create(
             username='testuser',
             password_hash=password_hash,
             recovery_code_hash=recovery_code_hash
         )
-        
+
         assert user is not None
         assert user.id is not None
         assert user.username == 'testuser'
@@ -82,14 +82,14 @@ class TestUserRepository:
         """Test creating a user with duplicate username raises error."""
         password_hash = password_service.hash_password('test_password')
         recovery_code_hash = password_service.hash_password('ABCD-EFGH-IJKL-MNOP')
-        
+
         # Create first user
         user_repository.create(
             username='testuser',
             password_hash=password_hash,
             recovery_code_hash=recovery_code_hash
         )
-        
+
         # Try to create duplicate
         with pytest.raises(ValueError, match="already exists"):
             user_repository.create(
@@ -102,17 +102,17 @@ class TestUserRepository:
         """Test finding user by username."""
         password_hash = password_service.hash_password('test_password')
         recovery_code_hash = password_service.hash_password('ABCD-EFGH-IJKL-MNOP')
-        
+
         # Create user
         created_user = user_repository.create(
             username='finduser',
             password_hash=password_hash,
             recovery_code_hash=recovery_code_hash
         )
-        
+
         # Find user
         found_user = user_repository.find_by_username('finduser')
-        
+
         assert found_user is not None
         assert found_user.id == created_user.id
         assert found_user.username == 'finduser'
@@ -126,17 +126,17 @@ class TestUserRepository:
         """Test finding user by ID."""
         password_hash = password_service.hash_password('test_password')
         recovery_code_hash = password_service.hash_password('ABCD-EFGH-IJKL-MNOP')
-        
+
         # Create user
         created_user = user_repository.create(
             username='findbyid',
             password_hash=password_hash,
             recovery_code_hash=recovery_code_hash
         )
-        
+
         # Find user
         found_user = user_repository.find_by_id(created_user.id)
-        
+
         assert found_user is not None
         assert found_user.id == created_user.id
 
@@ -149,17 +149,17 @@ class TestUserRepository:
         """Test updating user's last login timestamp."""
         password_hash = password_service.hash_password('test_password')
         recovery_code_hash = password_service.hash_password('ABCD-EFGH-IJKL-MNOP')
-        
+
         # Create user
         user = user_repository.create(
             username='loginuser',
             password_hash=password_hash,
             recovery_code_hash=recovery_code_hash
         )
-        
+
         # Update last login
         user_repository.update_last_login(user.id)
-        
+
         # Verify update
         updated_user = user_repository.find_by_id(user.id)
         assert updated_user.last_login_at is not None
@@ -168,24 +168,24 @@ class TestUserRepository:
         """Test setting user's active status."""
         password_hash = password_service.hash_password('test_password')
         recovery_code_hash = password_service.hash_password('ABCD-EFGH-IJKL-MNOP')
-        
+
         # Create user
         user = user_repository.create(
             username='activeuser',
             password_hash=password_hash,
             recovery_code_hash=recovery_code_hash
         )
-        
+
         # Deactivate user
         user_repository.set_active(user.id, False)
-        
+
         # Verify deactivation
         updated_user = user_repository.find_by_id(user.id)
         assert updated_user.is_active is False
-        
+
         # Reactivate user
         user_repository.set_active(user.id, True)
-        
+
         # Verify reactivation
         updated_user = user_repository.find_by_id(user.id)
         assert updated_user.is_active is True
@@ -194,7 +194,7 @@ class TestUserRepository:
         """Test finding all users."""
         password_hash = password_service.hash_password('test_password')
         recovery_code_hash = password_service.hash_password('ABCD-EFGH-IJKL-MNOP')
-        
+
         # Create multiple users
         user_repository.create(
             username='user1',
@@ -206,10 +206,10 @@ class TestUserRepository:
             password_hash=password_hash,
             recovery_code_hash=recovery_code_hash
         )
-        
+
         # Find all
         users = user_repository.find_all()
-        
+
         assert len(users) == 2
 
     def test_update_password_and_recovery_code_success(
@@ -219,25 +219,25 @@ class TestUserRepository:
         # Create a user
         password_hash = password_service.hash_password('old_password')
         recovery_code_hash = password_service.hash_password('OLD-CODE-1234-5678')
-        
+
         user = user_repository.create(
             username='updateuser',
             password_hash=password_hash,
             recovery_code_hash=recovery_code_hash
         )
-        
+
         # Update both fields atomically
         new_password_hash = password_service.hash_password('new_password')
         new_recovery_code_hash = password_service.hash_password('NEW-CODE-9876-5432')
-        
+
         result = user_repository.update_password_and_recovery_code(
             user_id=user.id,
             new_password_hash=new_password_hash,
             new_recovery_code_hash=new_recovery_code_hash
         )
-        
+
         assert result is True
-        
+
         # Verify both fields were updated
         updated_user = user_repository.find_by_id(user.id)
         assert updated_user.password_hash == new_password_hash
@@ -249,13 +249,13 @@ class TestUserRepository:
         """Test update fails gracefully for non-existent user."""
         new_password_hash = password_service.hash_password('new_password')
         new_recovery_code_hash = password_service.hash_password('NEW-CODE-1234')
-        
+
         result = user_repository.update_password_and_recovery_code(
             user_id=99999,
             new_password_hash=new_password_hash,
             new_recovery_code_hash=new_recovery_code_hash
         )
-        
+
         assert result is False
 
     def test_update_password_and_recovery_code_atomicity(
@@ -265,30 +265,30 @@ class TestUserRepository:
         # Create a user
         password_hash = password_service.hash_password('old_password')
         recovery_code_hash = password_service.hash_password('OLD-CODE-1234')
-        
+
         user = user_repository.create(
             username='atomicuser',
             password_hash=password_hash,
             recovery_code_hash=recovery_code_hash
         )
-        
+
         # Update both fields
         new_password_hash = password_service.hash_password('new_password')
         new_recovery_code_hash = password_service.hash_password('NEW-CODE-5678')
-        
+
         result = user_repository.update_password_and_recovery_code(
             user_id=user.id,
             new_password_hash=new_password_hash,
             new_recovery_code_hash=new_recovery_code_hash
         )
-        
+
         assert result is True
-        
+
         # Verify both were updated - if atomic, both should be new values
         updated_user = user_repository.find_by_id(user.id)
         assert updated_user.password_hash == new_password_hash
         assert updated_user.recovery_code_hash == new_recovery_code_hash
-        
+
         # Verify neither is the old value
         assert updated_user.password_hash != password_hash
         assert updated_user.recovery_code_hash != recovery_code_hash
@@ -300,32 +300,32 @@ class TestUserRepository:
         # Create a user
         password_hash = password_service.hash_password('old_password')
         recovery_code_hash = password_service.hash_password('OLD-CODE-1234')
-        
+
         user = user_repository.create(
             username='rollbackuser',
             password_hash=password_hash,
             recovery_code_hash=recovery_code_hash
         )
-        
+
         # Get the original values
         original_password_hash = user.password_hash
         original_recovery_hash = user.recovery_code_hash
-        
+
         # Try to update with a database error - we need to simulate this
         # For SQLite in-memory, this is hard to simulate, but we can verify
         # that the method returns False for non-existent user
         new_password_hash = password_service.hash_password('new_password')
         new_recovery_code_hash = password_service.hash_password('NEW-CODE-5678')
-        
+
         # Non-existent user should return False
         result = user_repository.update_password_and_recovery_code(
             user_id=99999,
             new_password_hash=new_password_hash,
             new_recovery_code_hash=new_recovery_code_hash
         )
-        
+
         assert result is False
-        
+
         # Verify original user is unchanged
         unchanged_user = user_repository.find_by_id(user.id)
         assert unchanged_user.password_hash == original_password_hash
@@ -345,7 +345,7 @@ class TestSessionRepository:
             password_hash=password_hash,
             recovery_code_hash=recovery_code_hash
         )
-        
+
         # Create session
         expires_at = datetime.now(UTC) + timedelta(hours=1)
         session = session_repository.create(
@@ -356,7 +356,7 @@ class TestSessionRepository:
             ip_address='127.0.0.1',
             user_agent='Test Agent'
         )
-        
+
         assert session is not None
         assert session.id is not None
         assert session.user_id == user.id
@@ -377,7 +377,7 @@ class TestSessionRepository:
             password_hash=password_hash,
             recovery_code_hash=recovery_code_hash
         )
-        
+
         expires_at = datetime.now(UTC) + timedelta(hours=1)
         session_repository.create(
             user_id=user.id,
@@ -385,10 +385,10 @@ class TestSessionRepository:
             token_hash_prefix='find_pre',
             expires_at=expires_at
         )
-        
+
         # Find session
         found_session = session_repository.find_by_token_hash('find_by_hash')
-        
+
         assert found_session is not None
         assert found_session.token_hash == 'find_by_hash'
 
@@ -407,7 +407,7 @@ class TestSessionRepository:
             password_hash=password_hash,
             recovery_code_hash=recovery_code_hash
         )
-        
+
         expires_at = datetime.now(UTC) + timedelta(hours=1)
         session_repository.create(
             user_id=user.id,
@@ -415,10 +415,10 @@ class TestSessionRepository:
             token_hash_prefix='prefix_ha',
             expires_at=expires_at
         )
-        
+
         # Find session by prefix
         found_session = session_repository.find_by_token_hash_prefix('prefix_ha')
-        
+
         assert found_session is not None
         assert found_session.token_hash_prefix == 'prefix_ha'
 
@@ -432,7 +432,7 @@ class TestSessionRepository:
             password_hash=password_hash,
             recovery_code_hash=recovery_code_hash
         )
-        
+
         # Create multiple sessions for the user
         expires_at = datetime.now(UTC) + timedelta(hours=1)
         session_repository.create(
@@ -447,10 +447,10 @@ class TestSessionRepository:
             token_hash_prefix='sess_pre2',
             expires_at=expires_at
         )
-        
+
         # Find sessions
         sessions = session_repository.find_by_user_id(user.id)
-        
+
         assert len(sessions) == 2
         assert all(s.user_id == user.id for s in sessions)
 
@@ -464,7 +464,7 @@ class TestSessionRepository:
             password_hash=password_hash,
             recovery_code_hash=recovery_code_hash
         )
-        
+
         expires_at = datetime.now(UTC) + timedelta(hours=1)
         session_repository.create(
             user_id=user.id,
@@ -472,12 +472,12 @@ class TestSessionRepository:
             token_hash_prefix='revoke_p',
             expires_at=expires_at
         )
-        
+
         # Revoke session
         result = session_repository.revoke_by_token_hash('revoke_hash')
-        
+
         assert result is True
-        
+
         # Verify revocation
         session = session_repository.find_by_token_hash('revoke_hash')
         assert session.is_revoked is True
@@ -497,7 +497,7 @@ class TestSessionRepository:
             password_hash=password_hash,
             recovery_code_hash=recovery_code_hash
         )
-        
+
         # Create multiple sessions
         expires_at = datetime.now(UTC) + timedelta(hours=1)
         session_repository.create(
@@ -512,12 +512,12 @@ class TestSessionRepository:
             token_hash_prefix='sess_pre2',
             expires_at=expires_at
         )
-        
+
         # Revoke all sessions
         count = session_repository.revoke_by_user_id(user.id)
-        
+
         assert count == 2
-        
+
         # Verify all are revoked
         sessions = session_repository.find_by_user_id(user.id)
         assert all(s.is_revoked is True for s in sessions)
@@ -532,7 +532,7 @@ class TestSessionRepository:
             password_hash=password_hash,
             recovery_code_hash=recovery_code_hash
         )
-        
+
         # Create an expired session
         expires_at = datetime.now(UTC) - timedelta(hours=1)
         session_repository.create(
@@ -541,7 +541,7 @@ class TestSessionRepository:
             token_hash_prefix='exp_pre',
             expires_at=expires_at
         )
-        
+
         # Create a valid session
         future_expires = datetime.now(UTC) + timedelta(hours=1)
         session_repository.create(
@@ -550,12 +550,12 @@ class TestSessionRepository:
             token_hash_prefix='val_pre',
             expires_at=future_expires
         )
-        
+
         # Revoke expired sessions
         count = session_repository.revoke_expired()
-        
+
         assert count == 1
-        
+
         # Verify only expired is revoked
         expired_session = session_repository.find_by_token_hash('expired_hash')
         valid_session = session_repository.find_by_token_hash('valid_hash')
@@ -572,7 +572,7 @@ class TestSessionRepository:
             password_hash=password_hash,
             recovery_code_hash=recovery_code_hash
         )
-        
+
         # Create 5 sessions (the limit)
         expires_at = datetime.now(UTC) + timedelta(hours=1)
         for i in range(5):
@@ -582,7 +582,7 @@ class TestSessionRepository:
                 token_hash_prefix=f'sess_{i}',
                 expires_at=expires_at
             )
-        
+
         # Create 6th session - should revoke oldest
         session_repository.create(
             user_id=user.id,
@@ -590,15 +590,15 @@ class TestSessionRepository:
             token_hash_prefix='sess_new',
             expires_at=expires_at
         )
-        
+
         # Verify only 5 active sessions
         active_sessions = session_repository.find_by_user_id(user.id)
         assert len(active_sessions) == 6  # Total sessions
-        
+
         # Count non-revoked sessions
         non_revoked = [s for s in active_sessions if not s.is_revoked]
         assert len(non_revoked) == 5  # Only 5 active (oldest was revoked)
-        
+
         # Verify oldest is revoked
         oldest = session_repository.find_by_token_hash('session_hash_0')
         assert oldest.is_revoked is True
@@ -613,7 +613,7 @@ class TestSessionRepository:
             password_hash=password_hash,
             recovery_code_hash=recovery_code_hash
         )
-        
+
         # Create expired session
         expires_at = datetime.now(UTC) - timedelta(hours=1)
         session_repository.create(
@@ -622,7 +622,7 @@ class TestSessionRepository:
             token_hash_prefix='exp_pre',
             expires_at=expires_at
         )
-        
+
         # Create a session and mark it as revoked
         future_expires = datetime.now(UTC) + timedelta(hours=1)
         session_repository.create(
@@ -633,7 +633,7 @@ class TestSessionRepository:
         )
         # Revoke it using the repository method
         session_repository.revoke_by_token_hash('revoked_hash')
-        
+
         # Create valid session
         session_repository.create(
             user_id=user.id,
@@ -641,13 +641,13 @@ class TestSessionRepository:
             token_hash_prefix='val_pre',
             expires_at=future_expires
         )
-        
+
         # Cleanup
         count = session_repository.cleanup_expired_and_revoked()
-        
+
         # Should cleanup expired (1) + revoked (1) = 2
         assert count == 2
-        
+
         # Verify only valid remains
         all_sessions = session_repository.find_by_user_id(user.id)
         assert len(all_sessions) == 1

@@ -42,10 +42,10 @@ export const useAuthStore = defineStore('auth', () => {
    */
   async function initialize(): Promise<void> {
     if (isLoading.value) return;
-    
+
     isLoading.value = true;
     error.value = null;
-    
+
     try {
       const response = await getMe();
       user.value = response.user;
@@ -62,7 +62,7 @@ export const useAuthStore = defineStore('auth', () => {
 
   /**
    * Register a new user account.
-   * 
+   *
    * @param username - User's desired username
    * @param password - User's password
    * @returns Promise with user and recovery code
@@ -72,17 +72,17 @@ export const useAuthStore = defineStore('auth', () => {
     error.value = null;
     showRecoveryCode.value = false;
     recoveryCodeAcknowledged.value = false;
-    
+
     try {
       const response = await register(username, password);
       user.value = response.user;
       recoveryCode.value = response.recovery_code;
       showRecoveryCode.value = true;
-      
+
       // CSRF token is now fetched separately from /auth/me endpoint
       // after the user is authenticated (session cookie is set)
       await refreshCsrfToken();
-      
+
       return { user: response.user, recoveryCode: response.recovery_code };
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : String(err);
@@ -95,7 +95,7 @@ export const useAuthStore = defineStore('auth', () => {
 
   /**
    * Login with username and password.
-   * 
+   *
    * @param username - User's username
    * @param password - User's password
    * @param rememberMe - Whether to remember the session
@@ -104,15 +104,15 @@ export const useAuthStore = defineStore('auth', () => {
   async function loginUser(username: string, password: string, rememberMe: boolean = false): Promise<User> {
     isLoading.value = true;
     error.value = null;
-    
+
     try {
       const response = await login(username, password, rememberMe);
       user.value = response.user;
-      
+
       // CSRF token is now fetched separately from /auth/me endpoint
       // after the user is authenticated (session cookie is set)
       await refreshCsrfToken();
-      
+
       return response.user;
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : String(err);
@@ -129,7 +129,7 @@ export const useAuthStore = defineStore('auth', () => {
   async function logoutUser(): Promise<void> {
     isLoading.value = true;
     error.value = null;
-    
+
     try {
       await logout();
     } finally {
@@ -149,7 +149,7 @@ export const useAuthStore = defineStore('auth', () => {
 
   /**
    * Acknowledge that the recovery code has been saved.
-   * 
+   *
    * This must be called before allowing the user to proceed after registration.
    */
   function acknowledgeRecoveryCode(): void {
@@ -183,7 +183,7 @@ export const useAuthStore = defineStore('auth', () => {
     recoveryCode,
     showRecoveryCode,
     recoveryCodeAcknowledged,
-    
+
     // Actions
     initialize,
     register: registerUser,
@@ -192,7 +192,7 @@ export const useAuthStore = defineStore('auth', () => {
     clearError,
     acknowledgeRecoveryCode,
     refreshCsrfToken,
-    
+
     // Getters
     getUser: () => user.value,
     getCsrfToken: () => csrfToken.value

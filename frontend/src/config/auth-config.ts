@@ -1,6 +1,6 @@
 /**
  * Authentication configuration for frontend.
- * 
+ *
  * Centralized configuration values for authentication-related settings.
  * These should match the backend configuration values.
  */
@@ -21,10 +21,10 @@ interface AuthConfig {
 const authConfig: AuthConfig = {
   // Minimum password length - should match backend PASSWORD_MIN_LENGTH
   passwordMinLength: 12,
-  
+
   // Recovery code length - should match backend RECOVERY_CODE_LENGTH
   recoveryCodeLength: 16,
-  
+
   // Maximum username length
   usernameMaxLength: 255,
 };

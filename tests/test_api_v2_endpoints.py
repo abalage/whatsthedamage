@@ -262,7 +262,7 @@ class TestAPIv2CacheTtl:
     def test_process_with_cache_ttl_1800(self, api_test_helper, mock_processing_service, sample_csv_file):
         """Test processing with cache_ttl=1800 parameter."""
         response = api_test_helper.post_csv('/api/v2/process', sample_csv_file, cache_ttl='1800')
-        
+
         data = api_test_helper.assert_success(response)
         assert 'metadata' in data
         assert 'result_id' in data['metadata']
@@ -270,7 +270,7 @@ class TestAPIv2CacheTtl:
     def test_process_with_cache_ttl_0(self, api_test_helper, mock_processing_service, sample_csv_file):
         """Test processing with cache_ttl=0 (never expire)."""
         response = api_test_helper.post_csv('/api/v2/process', sample_csv_file, cache_ttl='0')
-        
+
         data = api_test_helper.assert_success(response)
         assert 'metadata' in data
         assert 'result_id' in data['metadata']
@@ -278,28 +278,28 @@ class TestAPIv2CacheTtl:
     def test_process_without_cache_ttl_uses_default(self, api_test_helper, mock_processing_service, sample_csv_file):
         """Test processing without cache_ttl parameter uses default."""
         response = api_test_helper.post_csv('/api/v2/process', sample_csv_file)
-        
+
         data = api_test_helper.assert_success(response)
         assert 'metadata' in data
         assert 'result_id' in data['metadata']
 
     @pytest.mark.parametrize('cache_ttl_value', ['0', '1800', '3600', '60'])
-    def test_process_with_various_cache_ttl_values(self, api_test_helper, mock_processing_service, 
+    def test_process_with_various_cache_ttl_values(self, api_test_helper, mock_processing_service,
                                                   sample_csv_file, cache_ttl_value):
         """Test processing with various cache_ttl values."""
         response = api_test_helper.post_csv('/api/v2/process', sample_csv_file, cache_ttl=cache_ttl_value)
-        
+
         data = api_test_helper.assert_success(response)
         assert 'metadata' in data
         assert 'result_id' in data['metadata']
 
     def test_process_with_cache_ttl_and_other_params(self, api_test_helper, mock_processing_service, sample_csv_file):
         """Test processing with cache_ttl combined with other parameters."""
-        response = api_test_helper.post_csv('/api/v2/process', sample_csv_file, 
-                                           cache_ttl='1800', 
+        response = api_test_helper.post_csv('/api/v2/process', sample_csv_file,
+                                           cache_ttl='1800',
                                            ml_enabled='true',
                                            start_date='2024.01.01')
-        
+
         data = api_test_helper.assert_success(response)
         assert 'metadata' in data
         # Verify other params were processed

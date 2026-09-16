@@ -41,15 +41,15 @@ class TestGetHighlightsLookup:
             CellHighlight(row_id='row1', highlight_types=['pareto']),
             CellHighlight(row_id='row2', highlight_types=['iqr']),
         ]
-        
+
         processing_response = create_processing_response_with_highlights(highlight_list)
-        
+
         result = drilldown_service._get_highlights_lookup(processing_response)
-        
+
         # row1 should have both 'iqr' and 'pareto'
         assert 'row1' in result
         assert set(result['row1']) == {'iqr', 'pareto'}
-        
+
         # row2 should have 'iqr'
         assert 'row2' in result
         assert result['row2'] == ['iqr']
@@ -57,9 +57,9 @@ class TestGetHighlightsLookup:
     def test_handles_empty_highlights(self, drilldown_service):
         """Test that empty highlights list returns empty dict."""
         processing_response = create_processing_response_with_highlights([])
-        
+
         result = drilldown_service._get_highlights_lookup(processing_response)
-        
+
         assert result == {}
 
     def test_handles_no_statistical_metadata(self, drilldown_service):
@@ -71,9 +71,9 @@ class TestGetHighlightsLookup:
             metadata={},
             statistical_metadata=None  # type: ignore
         )
-        
+
         result = drilldown_service._get_highlights_lookup(processing_response)
-        
+
         assert result == {}
 
     def test_handles_no_highlights_in_metadata(self, drilldown_service):
@@ -84,9 +84,9 @@ class TestGetHighlightsLookup:
             metadata={},
             statistical_metadata=StatisticalMetadata(highlights=[])  # type: ignore
         )
-        
+
         result = drilldown_service._get_highlights_lookup(processing_response)
-        
+
         assert result == {}
 
     def test_merges_multiple_highlights_for_same_row(self, drilldown_service):
@@ -96,11 +96,11 @@ class TestGetHighlightsLookup:
             CellHighlight(row_id='row1', highlight_types=['pareto']),
             CellHighlight(row_id='row1', highlight_types=['outlier']),
         ]
-        
+
         processing_response = create_processing_response_with_highlights(highlight_list)
-        
+
         result = drilldown_service._get_highlights_lookup(processing_response)
-        
+
         assert 'row1' in result
         assert set(result['row1']) == {'iqr', 'pareto', 'outlier'}
         assert len(result['row1']) == 3
@@ -112,11 +112,11 @@ class TestGetHighlightsLookup:
             CellHighlight(row_id='row1', highlight_types=['iqr']),
             CellHighlight(row_id='row1', highlight_types=['outlier']),
         ]
-        
+
         processing_response = create_processing_response_with_highlights(highlight_list)
-        
+
         result = drilldown_service._get_highlights_lookup(processing_response)
-        
+
         # Order should be: pareto (first), iqr (second), outlier (third)
         assert result['row1'] == ['pareto', 'iqr', 'outlier']
 
@@ -126,11 +126,11 @@ class TestGetHighlightsLookup:
             CellHighlight(row_id='row1', highlight_types=['iqr', 'pareto']),
             CellHighlight(row_id='row1', highlight_types=['pareto', 'iqr']),
         ]
-        
+
         processing_response = create_processing_response_with_highlights(highlight_list)
-        
+
         result = drilldown_service._get_highlights_lookup(processing_response)
-        
+
         # Both lists are extended, so we get ['iqr', 'pareto', 'pareto', 'iqr']
         assert 'row1' in result
         assert result['row1'] == ['iqr', 'pareto', 'pareto', 'iqr']
@@ -141,13 +141,13 @@ class TestGetHighlightsLookup:
         highlight_list = [
             CellHighlight(row_id='row1', highlight_types=original_list),
         ]
-        
+
         processing_response = create_processing_response_with_highlights(highlight_list)
-        
+
         result = drilldown_service._get_highlights_lookup(processing_response)
-        
+
         # Modify the returned list
         result['row1'].append('modified')
-        
+
         # Original should not be modified
         assert original_list == ['iqr', 'pareto']

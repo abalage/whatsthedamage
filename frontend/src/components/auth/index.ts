@@ -1,6 +1,6 @@
 /**
  * Auth component exports.
- * 
+ *
  * Re-exports auth-related components for cleaner imports.
  */
 

@@ -28,7 +28,7 @@ class TestRateLimitServiceLogin:
             username='testuser',
             ip_address='127.0.0.1'
         )
-        
+
         assert is_rate_limited is False
         assert retry_after == 0
 
@@ -41,13 +41,13 @@ class TestRateLimitServiceLogin:
                 ip_address='127.0.0.1'
             )
             assert is_rate_limited is False
-        
+
         # 6th attempt should be rate limited
         is_rate_limited, retry_after = rate_limit_service.check_login_rate_limit(
             username='testuser',
             ip_address='127.0.0.1'
         )
-        
+
         assert is_rate_limited is True
         assert retry_after > 0
         assert retry_after <= 900  # Within the window
@@ -60,13 +60,13 @@ class TestRateLimitServiceLogin:
                 username='testuser',
                 ip_address='127.0.0.1'
             )
-        
+
         # Second IP should not be rate limited
         is_rate_limited, retry_after = rate_limit_service.check_login_rate_limit(
             username='testuser',
             ip_address='127.0.0.2'
         )
-        
+
         assert is_rate_limited is False
         assert retry_after == 0
 
@@ -78,13 +78,13 @@ class TestRateLimitServiceLogin:
                 username='user1',
                 ip_address='127.0.0.1'
             )
-        
+
         # Second username should not be rate limited
         is_rate_limited, retry_after = rate_limit_service.check_login_rate_limit(
             username='user2',
             ip_address='127.0.0.1'
         )
-        
+
         assert is_rate_limited is False
         assert retry_after == 0
 
@@ -96,17 +96,17 @@ class TestRateLimitServiceLogin:
                 username='testuser',
                 ip_address='127.0.0.1'
             )
-        
+
         # Should be rate limited
         is_rate_limited, _ = rate_limit_service.check_login_rate_limit(
             username='testuser',
             ip_address='127.0.0.1'
         )
         assert is_rate_limited is True
-        
+
         # Reset the rate limit
         rate_limit_service.reset_rate_limit('testuser', '127.0.0.1')
-        
+
         # Should no longer be rate limited
         is_rate_limited, retry_after = rate_limit_service.check_login_rate_limit(
             username='testuser',
@@ -120,7 +120,7 @@ class TestRateLimitServiceLogin:
         # Initially should have all attempts available
         remaining = rate_limit_service.get_remaining_attempts('testuser', '127.0.0.1')
         assert remaining == 5
-        
+
         # After one attempt, should have 4 remaining
         rate_limit_service.check_login_rate_limit('testuser', '127.0.0.1')
         remaining = rate_limit_service.get_remaining_attempts('testuser', '127.0.0.1')
@@ -131,7 +131,7 @@ class TestRateLimitServiceLogin:
         # Initially should have 0 attempts
         attempts = rate_limit_service.get_attempts('testuser', '127.0.0.1')
         assert attempts == 0
-        
+
         # After one attempt, should have 1
         rate_limit_service.check_login_rate_limit('testuser', '127.0.0.1')
         attempts = rate_limit_service.get_attempts('testuser', '127.0.0.1')
@@ -146,7 +146,7 @@ class TestRateLimitServiceRecovery:
         is_rate_limited, retry_after = rate_limit_service.check_recovery_rate_limit(
             ip_address='127.0.0.1'
         )
-        
+
         assert is_rate_limited is False
         assert retry_after == 0
 
@@ -158,12 +158,12 @@ class TestRateLimitServiceRecovery:
                 ip_address='127.0.0.1'
             )
             assert is_rate_limited is False
-        
+
         # 6th attempt should be rate limited
         is_rate_limited, retry_after = rate_limit_service.check_recovery_rate_limit(
             ip_address='127.0.0.1'
         )
-        
+
         assert is_rate_limited is True
         assert retry_after > 0
         assert retry_after <= 900
@@ -173,12 +173,12 @@ class TestRateLimitServiceRecovery:
         # Max out attempts for first IP
         for _ in range(5):
             rate_limit_service.check_recovery_rate_limit(ip_address='127.0.0.1')
-        
+
         # Second IP should not be rate limited
         is_rate_limited, retry_after = rate_limit_service.check_recovery_rate_limit(
             ip_address='127.0.0.2'
         )
-        
+
         assert is_rate_limited is False
         assert retry_after == 0
 
@@ -187,16 +187,16 @@ class TestRateLimitServiceRecovery:
         # Max out attempts
         for _ in range(5):
             rate_limit_service.check_recovery_rate_limit(ip_address='127.0.0.1')
-        
+
         # Should be rate limited
         is_rate_limited, _ = rate_limit_service.check_recovery_rate_limit(
             ip_address='127.0.0.1'
         )
         assert is_rate_limited is True
-        
+
         # Reset the rate limit
         rate_limit_service.reset_recovery_rate_limit('127.0.0.1')
-        
+
         # Should no longer be rate limited
         is_rate_limited, retry_after = rate_limit_service.check_recovery_rate_limit(
             ip_address='127.0.0.1'
@@ -209,12 +209,12 @@ class TestRateLimitServiceRecovery:
         # Initially should have all attempts available
         remaining = rate_limit_service.get_remaining_recovery_attempts('127.0.0.1')
         assert remaining == 5
-        
+
         # After one attempt, should have 4 remaining
         rate_limit_service.check_recovery_rate_limit('127.0.0.1')
         remaining = rate_limit_service.get_remaining_recovery_attempts('127.0.0.1')
         assert remaining == 4
-        
+
         # After 5 attempts, should have 0 remaining
         for _ in range(4):
             rate_limit_service.check_recovery_rate_limit('127.0.0.1')
@@ -231,11 +231,11 @@ class TestRateLimitServiceRecovery:
         # Max out attempts
         for _ in range(5):
             rate_limit_service.check_recovery_rate_limit(ip_address='127.0.0.1')
-        
+
         # Manually expire the window by setting the expires_at to past
         key = "recovery:127.0.0.1"
         rate_limit_service.storage[key]['expires_at'] = time.time() - 1
-        
+
         # Should return max attempts for expired window
         remaining = rate_limit_service.get_remaining_recovery_attempts('127.0.0.1')
         assert remaining == 5
@@ -248,18 +248,18 @@ class TestRateLimitServiceEdgeCases:
         """Test that usernames are case-insensitive."""
         # First attempt with lowercase
         rate_limit_service.check_login_rate_limit('TestUser', '127.0.0.1')
-        
+
         # Second attempt with uppercase should count as same user
         is_rate_limited, _ = rate_limit_service.check_login_rate_limit(
             'testuser',
             '127.0.0.1'
         )
-        
+
         # Should have 1 attempt (not 2) because usernames are case-insensitive
         attempts = rate_limit_service.get_attempts('TestUser', '127.0.0.1')
         # Note: The key is created with lowercased username, so both should use the same key
         # But we need to check the actual implementation
-        
+
         # For now, just verify no error is raised
         assert is_rate_limited is False
 
@@ -268,18 +268,18 @@ class TestRateLimitServiceEdgeCases:
         # Make 5 attempts to max out
         for _ in range(5):
             rate_limit_service.check_login_rate_limit('testuser', '127.0.0.1')
-        
+
         # Should be rate limited
         is_rate_limited, _ = rate_limit_service.check_login_rate_limit(
             'testuser',
             '127.0.0.1'
         )
         assert is_rate_limited is True
-        
+
         # Manually expire the window
         key = rate_limit_service._make_key('testuser', '127.0.0.1')
         rate_limit_service.storage[key]['expires_at'] = time.time() - 1
-        
+
         # Should no longer be rate limited (window reset)
         is_rate_limited, retry_after = rate_limit_service.check_login_rate_limit(
             'testuser',
@@ -294,11 +294,11 @@ class TestRateLimitServiceEdgeCases:
             max_attempts=3,
             window_seconds=60
         )
-        
+
         # After 3 attempts, should be rate limited
         for _ in range(3):
             custom_service.check_login_rate_limit('testuser', '127.0.0.1')
-        
+
         is_rate_limited, _ = custom_service.check_login_rate_limit(
             'testuser',
             '127.0.0.1'
@@ -311,17 +311,17 @@ class TestRateLimitServiceEdgeCases:
             max_attempts=5,
             window_seconds=60  # 1 minute
         )
-        
+
         # Make 5 attempts
         for _ in range(5):
             custom_service.check_login_rate_limit('testuser', '127.0.0.1')
-        
+
         # Should be rate limited
         is_rate_limited, retry_after = custom_service.check_login_rate_limit(
             'testuser',
             '127.0.0.1'
         )
-        
+
         assert is_rate_limited is True
         # Retry after should be approximately 60 seconds (the window)
         assert retry_after <= 60

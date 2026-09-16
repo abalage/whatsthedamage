@@ -114,7 +114,7 @@ def _set_session_cookie(
         Response with session cookie set.
     """
     auth_config = get_auth_config()
-    
+
     # Calculate max age based on expiration
     max_age_seconds = (expires - datetime.now(UTC)).total_seconds()
     max_age = int(max_age_seconds)

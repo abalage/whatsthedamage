@@ -148,11 +148,11 @@ class TokenService:
         try:
             computed_hash = self.hash_token(token)
             computed_prefix = computed_hash[:8]
-            
+
             # Quick rejection if prefix doesn't match
             if not secrets.compare_digest(computed_prefix, prefix):
                 return False
-            
+
             # Full hash comparison
             return secrets.compare_digest(computed_hash, stored_hash)
         except Exception:

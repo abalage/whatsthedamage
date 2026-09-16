@@ -65,14 +65,14 @@ def _init_database(app: Flask) -> None:
     engine: Engine
     session_factory: Any
     engine, session_factory = db_config.init_db()
-    
+
     # Import models to ensure they're registered with SQLAlchemy metadata
     from whatsthedamage.models.database.user import User as UserDB
     from whatsthedamage.models.database.session import Session as SessionDB
-    
+
     # Create all tables (Users and Sessions only for auth)
     Base.metadata.create_all(engine)
-    
+
     # Store engine in app for later use
     app.extensions['db_engine'] = engine
     app.extensions['db_session_factory'] = session_factory
@@ -85,14 +85,14 @@ def _init_auth_services(app: Flask, service_container: ServiceContainer) -> Serv
     if not session_factory:
         _init_database(app)
         session_factory = app.extensions['db_session_factory']
-    
+
     # Create repositories
     from whatsthedamage.models.repositories.user_repository import SqlAlchemyUserRepository
     from whatsthedamage.models.repositories.session_repository import SqlAlchemySessionRepository
-    
+
     user_repo = SqlAlchemyUserRepository(cast(Any, session_factory))
     session_repo = SqlAlchemySessionRepository(cast(Any, session_factory))
-    
+
     # Create auth services
     from whatsthedamage.services.password_service import PasswordService
     from whatsthedamage.services.token_service import TokenService
@@ -100,9 +100,9 @@ def _init_auth_services(app: Flask, service_container: ServiceContainer) -> Serv
     from whatsthedamage.services.csrf_service import CsrfService
     from whatsthedamage.services.rate_limit_service import RateLimitService
     from whatsthedamage.services.authentication_service import AuthenticationService
-    
+
     auth_config = get_auth_config()
-    
+
     password_service = PasswordService(
         time_cost=auth_config.PASSWORD_HASH_PARAMETERS['time_cost'],
         memory_cost=auth_config.PASSWORD_HASH_PARAMETERS['memory_cost'],
@@ -110,7 +110,7 @@ def _init_auth_services(app: Flask, service_container: ServiceContainer) -> Serv
         hash_len=auth_config.PASSWORD_HASH_PARAMETERS['hash_len'],
         salt_len=auth_config.PASSWORD_HASH_PARAMETERS['salt_len']
     )
-    
+
     token_service = TokenService(auth_config.SESSION_TOKEN_LENGTH)
     recovery_code_service = RecoveryCodeService(
         code_length=auth_config.RECOVERY_CODE_LENGTH,
@@ -118,7 +118,7 @@ def _init_auth_services(app: Flask, service_container: ServiceContainer) -> Serv
     )
     csrf_service = CsrfService(auth_config.CSRF_TOKEN_LENGTH)
     rate_limit_service = RateLimitService()
-    
+
     auth_service = AuthenticationService(
         user_repository=user_repo,
         session_repository=session_repo,
@@ -131,11 +131,11 @@ def _init_auth_services(app: Flask, service_container: ServiceContainer) -> Serv
         remember_me_duration=auth_config.SESSION_REMEMBER_ME_DURATION,
         max_concurrent_sessions=auth_config.SESSION_MAX_CONCURRENT
     )
-    
+
     # Initialize auth endpoints with services
     from whatsthedamage.api.v2.auth.endpoints import init_auth_services
     init_auth_services(auth_service, rate_limit_service)
-    
+
     # Store services in app extensions
     app.extensions['auth_service'] = auth_service
     app.extensions['rate_limit_service'] = rate_limit_service
@@ -143,7 +143,7 @@ def _init_auth_services(app: Flask, service_container: ServiceContainer) -> Serv
     app.extensions['token_service'] = token_service
     app.extensions['user_repository'] = user_repo
     app.extensions['session_repository'] = session_repo
-    
+
     return service_container
 
 
@@ -165,7 +165,7 @@ def _initialize_service_container(
     app.extensions['file_upload_service'] = service_container.file_upload_service
     app.extensions['session_service'] = service_container.session_service
     app.extensions['drilldown_response_service'] = service_container.drilldown_response_service
-    
+
     # Initialize authentication services
     _init_auth_services(app, service_container)
 

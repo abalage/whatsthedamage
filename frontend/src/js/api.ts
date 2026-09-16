@@ -393,16 +393,16 @@ async function fetchWithCsrf<T>(
 ): Promise<T> {
   // Only add CSRF token for state-changing methods
   const method = (options.method?.toUpperCase() ?? 'GET');
-  
+
   if (CSRF_METHODS.has(method)) {
     const csrfToken = await getCsrfTokenFromStore();
-    
+
     // Build headers - only include CSRF token if available
     // This allows auth endpoints (register/login) to work without CSRF
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
     };
-    
+
     // Safely merge headers from options
     if (options.headers) {
       if (options.headers instanceof Headers) {
@@ -417,18 +417,18 @@ async function fetchWithCsrf<T>(
         Object.assign(headers, options.headers);
       }
     }
-    
+
     if (csrfToken) {
       headers['X-CSRF-Token'] = csrfToken;
     }
-    
+
     return fetchWithErrorHandling<T>(url, {
       ...options,
       credentials: 'include',
       headers
     });
   }
-  
+
   // For non-state-changing requests, just use credentials
   return fetchWithCredentials<T>(url, options);
 }

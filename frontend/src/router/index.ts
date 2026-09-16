@@ -126,7 +126,7 @@ const router = createRouter({
 // Navigation guards for authentication
 router.beforeEach(async (to, from, next) => {
   const authStore = useAuthStore();
-  
+
   // Initialize auth state if not already done
   // Only initialize for routes that might need auth (not for public routes like login/register)
   if (!to.meta.public && !authStore.isAuthenticated && !authStore.isLoading) {
@@ -136,23 +136,23 @@ router.beforeEach(async (to, from, next) => {
       // Initialization failed - not authenticated
     }
   }
-  
+
   // Check if route requires authentication
   if (to.meta.requiresAuth && !authStore.isAuthenticated) {
     // Save the route the user was trying to visit for redirect after login
-    next({ 
-      name: 'login', 
-      query: { redirect: to.fullPath } 
+    next({
+      name: 'login',
+      query: { redirect: to.fullPath }
     });
     return;
   }
-  
+
   // Check if route requires guest (not authenticated)
   if (to.meta.requiresGuest && authStore.isAuthenticated) {
     next({ name: 'index' });
     return;
   }
-  
+
   // Default: allow navigation
   next();
 });

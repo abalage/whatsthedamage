@@ -36,7 +36,7 @@ class TestOpenApiSchemaStructure:
         schema = get_openapi_schema()
         assert "paths" in schema
         paths = schema["paths"]
-        
+
         # Check all 11 endpoints are present
         expected_paths = [
             "/process",
@@ -51,7 +51,7 @@ class TestOpenApiSchemaStructure:
             "/csv-profiles/{profile_id}",
             "/openapi.json"
         ]
-        
+
         for path in expected_paths:
             assert path in paths, f"Path {path} not found in schema"
 
@@ -60,7 +60,7 @@ class TestOpenApiSchemaStructure:
         schema = get_openapi_schema()
         assert "components" in schema
         assert "schemas" in schema["components"]
-        
+
         schemas = schema["components"]["schemas"]
         # Check key schemas are present
         expected_schemas = [
@@ -80,7 +80,7 @@ class TestOpenApiSchemaStructure:
             "CategoryMonthTransactionsApiResponse",
             "RecalculateApiResponse"
         ]
-        
+
         for schema_name in expected_schemas:
             assert schema_name in schemas, f"Schema {schema_name} not found in components"
 
@@ -101,13 +101,13 @@ class TestOpenApiSchemaContent:
     def test_drilldown_endpoints_have_get_method(self):
         """Test that all drilldown endpoints have GET method."""
         schema = get_openapi_schema()
-        
+
         drilldown_paths = [
             "/results/{result_id}/accounts/{account_id}/categories/{category_id}/months",
             "/results/{result_id}/accounts/{account_id}/months/{month_id}/categories",
             "/results/{result_id}/accounts/{account_id}/categories/{category_id}/months/{month_id}/transactions"
         ]
-        
+
         for path in drilldown_paths:
             assert "get" in schema["paths"][path], f"GET method not found for {path}"
 
@@ -132,10 +132,10 @@ class TestOpenApiSchemaContent:
         """Test that ProcessingRequest schema has all required fields."""
         schema = get_openapi_schema()
         processing_request = schema["components"]["schemas"]["ProcessingRequest"]
-        
+
         required_fields = ["csv_file"]
         assert processing_request["required"] == required_fields
-        
+
         all_fields = [
             "csv_file",
             "config_file",
@@ -147,7 +147,7 @@ class TestOpenApiSchemaContent:
             "cache_ttl",
             "csv_profile_id"
         ]
-        
+
         for field in all_fields:
             assert field in processing_request["properties"], f"Field {field} not found in ProcessingRequest"
 
@@ -155,11 +155,11 @@ class TestOpenApiSchemaContent:
         """Test that ErrorResponse schema has correct structure."""
         schema = get_openapi_schema()
         error_response = schema["components"]["schemas"]["ErrorResponse"]
-        
+
         assert error_response["required"] == ["status", "error"]
         assert "status" in error_response["properties"]
         assert "error" in error_response["properties"]
-        
+
         error_properties = error_response["properties"]["error"]
         assert error_properties["required"] == ["code", "message"]
         assert "code" in error_properties["properties"]
@@ -195,13 +195,13 @@ class TestOpenApiEndpoint:
         """Test that GET /api/v2/openapi.json returns complete schema."""
         response = api_client_with_mock.get('/api/v2/openapi.json')
         data = response.get_json()
-        
+
         # Verify basic structure
         assert data["openapi"] == "3.0.3"
         assert "info" in data
         assert "paths" in data
         assert "components" in data
-        
+
         # Verify all endpoints are present
         assert "/process" in data["paths"]
         assert "/results/{result_id}" in data["paths"]
@@ -213,16 +213,16 @@ class TestOpenApiEndpoint:
         """Test that GET /api/v2/openapi.json returns valid OpenAPI spec."""
         response = api_client_with_mock.get('/api/v2/openapi.json')
         data = response.get_json()
-        
+
         # Check OpenAPI version
         assert data.get("openapi") == "3.0.3"
-        
+
         # Check info section
         info = data.get("info", {})
         assert "title" in info
         assert "version" in info
         assert "description" in info
-        
+
         # Check servers
         servers = data.get("servers", [])
         assert len(servers) > 0
@@ -232,9 +232,9 @@ class TestOpenApiEndpoint:
         # Get schema from endpoint
         response = api_client_with_mock.get('/api/v2/openapi.json')
         endpoint_schema = response.get_json()
-        
+
         # Get schema from function
         function_schema = get_openapi_schema()
-        
+
         # They should be identical
         assert endpoint_schema == function_schema

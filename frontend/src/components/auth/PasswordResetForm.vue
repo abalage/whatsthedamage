@@ -1,6 +1,6 @@
 <!--
   Password Reset Form Component
-  
+
   Form for resetting password using recovery code.
   Handles form state, validation, and submission.
 -->

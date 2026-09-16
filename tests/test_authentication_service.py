@@ -87,7 +87,7 @@ class TestAuthenticationServiceRegistration:
             username='newuser',
             created_at=datetime.now(UTC)
         )
-        
+
         # Register user
         user, recovery_code, session_token, session_expiry = (
             authentication_service.register_user(
@@ -97,7 +97,7 @@ class TestAuthenticationServiceRegistration:
                 user_agent='Test Agent'
             )
         )
-        
+
         # Assertions
         assert user is not None
         assert user.username == 'newuser'
@@ -110,7 +110,7 @@ class TestAuthenticationServiceRegistration:
     def test_register_user_duplicate_username(self, authentication_service, mock_user_repository):
         """Test registration with duplicate username."""
         mock_user_repository.find_by_username.return_value = Mock(id=1, username='existing')
-        
+
         with pytest.raises(ValueError, match="already exists"):
             authentication_service.register_user(
                 username='existing',
@@ -156,7 +156,7 @@ class TestAuthenticationServiceLogin:
             last_login_at=None
         )
         mock_user_repository.find_by_username.return_value = mock_user
-        
+
         # Mock password verification
         with patch.object(
             authentication_service.password_service,
@@ -170,7 +170,7 @@ class TestAuthenticationServiceLogin:
                 ip_address='127.0.0.1',
                 user_agent='Test Agent'
             )
-        
+
         assert user is not None
         assert user.username == 'testuser'
         assert len(session_token) > 0
@@ -181,7 +181,7 @@ class TestAuthenticationServiceLogin:
     def test_login_user_invalid_username(self, authentication_service, mock_user_repository):
         """Test login with invalid username."""
         mock_user_repository.find_by_username.return_value = None
-        
+
         with pytest.raises(ValueError, match="Invalid username or password"):
             authentication_service.login_user(
                 username='nonexistent',
@@ -197,7 +197,7 @@ class TestAuthenticationServiceLogin:
             is_active=True
         )
         mock_user_repository.find_by_username.return_value = mock_user
-        
+
         with patch.object(
             authentication_service.password_service,
             'verify_password',
@@ -218,7 +218,7 @@ class TestAuthenticationServiceLogin:
             is_active=False
         )
         mock_user_repository.find_by_username.return_value = mock_user
-        
+
         with patch.object(
             authentication_service.password_service,
             'verify_password',
@@ -239,7 +239,7 @@ class TestAuthenticationServiceLogin:
             is_active=True
         )
         mock_user_repository.find_by_username.return_value = mock_user
-        
+
         with patch.object(
             authentication_service.password_service,
             'verify_password',
@@ -257,7 +257,7 @@ class TestAuthenticationServiceLogin:
                     ip_address='127.0.0.1',
                     user_agent='Test Agent'
                 )
-                
+
                 # Remember me should use 7 days expiration
                 expected_expiry = datetime.now(UTC) + timedelta(days=7)
                 # Allow for small time differences
@@ -271,26 +271,26 @@ class TestAuthenticationServiceLogout:
     def test_logout_user_success(self, authentication_service, mock_session_repository):
         """Test successful user logout."""
         mock_session_repository.revoke_by_token_hash.return_value = True
-        
+
         result = authentication_service.logout_user('valid_token')
-        
+
         assert result is True
         assert mock_session_repository.revoke_by_token_hash.called
 
     def test_logout_user_invalid_session(self, authentication_service, mock_session_repository):
         """Test logout with invalid session."""
         mock_session_repository.revoke_by_token_hash.return_value = False
-        
+
         result = authentication_service.logout_user('invalid_token')
-        
+
         assert result is False
 
     def test_logout_all_user_sessions(self, authentication_service, mock_session_repository):
         """Test logout all sessions for a user."""
         mock_session_repository.revoke_by_user_id.return_value = 3
-        
+
         result = authentication_service.logout_all_user_sessions(1)
-        
+
         assert result == 3
 
 
@@ -307,17 +307,17 @@ class TestAuthenticationServiceSessionValidation:
             is_revoked=False,
             expires_at=datetime.now(UTC) + timedelta(hours=1)
         )
-        
+
         mock_session_repository.find_by_token_hash.return_value = mock_session
         mock_user_repository.find_by_id.return_value = mock_user
-        
+
         with patch.object(
             authentication_service.token_service,
             'hash_token',
             return_value='test_hash'
         ):
             result = authentication_service.validate_session('valid_token')
-        
+
         assert result is not None
         user, session = result
         assert user.id == 1
@@ -326,14 +326,14 @@ class TestAuthenticationServiceSessionValidation:
     def test_validate_session_invalid_token(self, authentication_service, mock_session_repository):
         """Test session validation with invalid token."""
         mock_session_repository.find_by_token_hash.return_value = None
-        
+
         with patch.object(
             authentication_service.token_service,
             'hash_token',
             return_value='invalid_hash'
         ):
             result = authentication_service.validate_session('invalid_token')
-        
+
         assert result is None
 
     def test_validate_session_revoked(self, authentication_service, mock_session_repository):
@@ -345,14 +345,14 @@ class TestAuthenticationServiceSessionValidation:
             expires_at=datetime.now(UTC) + timedelta(hours=1)
         )
         mock_session_repository.find_by_token_hash.return_value = mock_session
-        
+
         with patch.object(
             authentication_service.token_service,
             'hash_token',
             return_value='test_hash'
         ):
             result = authentication_service.validate_session('valid_token')
-        
+
         assert result is None
 
     def test_validate_session_expired(self, authentication_service, mock_session_repository):
@@ -364,14 +364,14 @@ class TestAuthenticationServiceSessionValidation:
             expires_at=datetime.now(UTC) - timedelta(hours=1)
         )
         mock_session_repository.find_by_token_hash.return_value = mock_session
-        
+
         with patch.object(
             authentication_service.token_service,
             'hash_token',
             return_value='test_hash'
         ):
             result = authentication_service.validate_session('valid_token')
-        
+
         assert result is None
 
     def test_validate_session_inactive_user(self, authentication_service, mock_session_repository, mock_user_repository):
@@ -383,17 +383,17 @@ class TestAuthenticationServiceSessionValidation:
             expires_at=datetime.now(UTC) + timedelta(hours=1)
         )
         mock_user = Mock(id=1, is_active=False)
-        
+
         mock_session_repository.find_by_token_hash.return_value = mock_session
         mock_user_repository.find_by_id.return_value = mock_user
-        
+
         with patch.object(
             authentication_service.token_service,
             'hash_token',
             return_value='test_hash'
         ):
             result = authentication_service.validate_session('valid_token')
-        
+
         assert result is None
 
 
@@ -403,14 +403,14 @@ class TestAuthenticationServiceCsrf:
     def test_generate_csrf_token(self, authentication_service):
         """Test CSRF token generation."""
         csrf_token, csrf_token_hash = authentication_service.generate_csrf_token()
-        
+
         assert len(csrf_token) > 0
         assert len(csrf_token_hash) == 64  # SHA-256 hash
 
     def test_validate_csrf_token(self, authentication_service):
         """Test CSRF token validation."""
         csrf_token, csrf_token_hash = authentication_service.generate_csrf_token()
-        
+
         assert authentication_service.validate_csrf_token(csrf_token, csrf_token_hash) is True
         assert authentication_service.validate_csrf_token('invalid', csrf_token_hash) is False
 
@@ -427,17 +427,17 @@ class TestAuthenticationServiceGetMe:
             is_revoked=False,
             expires_at=datetime.now(UTC) + timedelta(hours=1)
         )
-        
+
         mock_session_repository.find_by_token_hash.return_value = mock_session
         mock_user_repository.find_by_id.return_value = mock_user
-        
+
         with patch.object(
             authentication_service.token_service,
             'hash_token',
             return_value='test_hash'
         ):
             result = authentication_service.get_me('valid_token')
-        
+
         assert result is not None
         user, session, csrf_token = result
         assert user.id == 1
@@ -447,9 +447,9 @@ class TestAuthenticationServiceGetMe:
     def test_get_me_unauthenticated(self, authentication_service, mock_session_repository):
         """Test get_me with invalid session."""
         mock_session_repository.find_by_token_hash.return_value = None
-        
+
         result = authentication_service.get_me('invalid_token')
-        
+
         assert result is None
 
 
@@ -465,7 +465,7 @@ class TestAuthenticationServicePasswordReset:
         recovery_code_raw = 'ABCDEFGHIJKLMNOP'
         recovery_code_hash = password_service.hash_password(recovery_code_raw)
         password_hash = password_service.hash_password('old_password')
-        
+
         mock_user = Mock(
             id=1,
             username='testuser',
@@ -479,14 +479,14 @@ class TestAuthenticationServicePasswordReset:
         mock_recovery_code_service.parse_code.return_value = recovery_code_raw
         mock_recovery_code_service.generate_code.return_value = 'NEWABCDEFGHIJKLMN'
         mock_recovery_code_service.format_code.return_value = 'NEW-ABCD-EFGH-IJKL-MN'
-        
+
         # Reset password
         user, new_formatted_recovery_code = authentication_service.reset_password_with_recovery_code(
             username='testuser',
             recovery_code='ABCD-EFGH-IJKL-MNOP',
             new_password='new_secure_password_1234'
         )
-        
+
         assert user is not None
         assert user.id == 1
         assert new_formatted_recovery_code == 'NEW-ABCD-EFGH-IJKL-MN'
@@ -499,7 +499,7 @@ class TestAuthenticationServicePasswordReset:
     ):
         """Test password reset with invalid username."""
         mock_user_repository.find_by_username.return_value = None
-        
+
         with pytest.raises(ValueError, match="Invalid username or recovery code"):
             authentication_service.reset_password_with_recovery_code(
                 username='nonexistent',
@@ -512,7 +512,7 @@ class TestAuthenticationServicePasswordReset:
     ):
         """Test password reset with invalid recovery code."""
         password_service = authentication_service.password_service
-        
+
         mock_user = Mock(
             id=1,
             username='testuser',
@@ -522,7 +522,7 @@ class TestAuthenticationServicePasswordReset:
         )
         mock_user_repository.find_by_username.return_value = mock_user
         mock_recovery_code_service.parse_code.return_value = 'WRONG-CODE-ABCD'
-        
+
         with pytest.raises(ValueError, match="Invalid username or recovery code"):
             authentication_service.reset_password_with_recovery_code(
                 username='testuser',
@@ -537,7 +537,7 @@ class TestAuthenticationServicePasswordReset:
         password_service = authentication_service.password_service
         recovery_code_raw = 'ABCDEFGHIJKLMNOP'
         recovery_code_hash = password_service.hash_password(recovery_code_raw)
-        
+
         mock_user = Mock(
             id=1,
             username='testuser',
@@ -547,7 +547,7 @@ class TestAuthenticationServicePasswordReset:
         )
         mock_user_repository.find_by_username.return_value = mock_user
         mock_recovery_code_service.parse_code.return_value = recovery_code_raw
-        
+
         with pytest.raises(ValueError, match="Password must be at least 12 characters"):
             authentication_service.reset_password_with_recovery_code(
                 username='testuser',
@@ -562,7 +562,7 @@ class TestAuthenticationServicePasswordReset:
         password_service = authentication_service.password_service
         recovery_code_raw = 'ABCDEFGHIJKLMNOP'
         recovery_code_hash = password_service.hash_password(recovery_code_raw)
-        
+
         mock_user = Mock(
             id=1,
             username='testuser',
@@ -576,13 +576,13 @@ class TestAuthenticationServicePasswordReset:
         mock_recovery_code_service.parse_code.return_value = recovery_code_raw
         mock_recovery_code_service.generate_code.return_value = 'NEWABCDEFGHIJKLMN'
         mock_recovery_code_service.format_code.return_value = 'NEW-ABCD-EFGH-IJKL-MN'
-        
+
         user, new_formatted_recovery_code = authentication_service.reset_password_with_recovery_code(
             username='testuser',
             recovery_code='ABCD-EFGH-IJKL-MNOP',
             new_password='new_secure_password_1234'
         )
-        
+
         # Verify new recovery code was generated
         assert mock_recovery_code_service.generate_code.called
         assert new_formatted_recovery_code == 'NEW-ABCD-EFGH-IJKL-MN'
@@ -594,7 +594,7 @@ class TestAuthenticationServicePasswordReset:
         password_service = authentication_service.password_service
         recovery_code_raw = 'ABCDEFGHIJKLMNOP'
         recovery_code_hash = password_service.hash_password(recovery_code_raw)
-        
+
         mock_user = Mock(
             id=1,
             username='testuser',
@@ -609,13 +609,13 @@ class TestAuthenticationServicePasswordReset:
         mock_recovery_code_service.parse_code.return_value = recovery_code_raw
         mock_recovery_code_service.generate_code.return_value = 'NEWABCDEFGHIJKLMN'
         mock_recovery_code_service.format_code.return_value = 'NEW-ABCD-EFGH-IJKL-MN'
-        
+
         authentication_service.reset_password_with_recovery_code(
             username='testuser',
             recovery_code='ABCD-EFGH-IJKL-MNOP',
             new_password='new_secure_password_1234'
         )
-        
+
         # Verify session invalidation was called
         mock_session_repository.revoke_by_user_id.assert_called_once_with(1)
 
@@ -626,7 +626,7 @@ class TestAuthenticationServicePasswordReset:
         password_service = authentication_service.password_service
         recovery_code_raw = 'ABCDEFGHIJKLMNOP'
         recovery_code_hash = password_service.hash_password(recovery_code_raw)
-        
+
         mock_user = Mock(
             id=1,
             username='testuser',
@@ -640,14 +640,14 @@ class TestAuthenticationServicePasswordReset:
         mock_recovery_code_service.parse_code.return_value = recovery_code_raw
         mock_recovery_code_service.generate_code.return_value = 'NEWABCDEFGHIJKLMN'
         mock_recovery_code_service.format_code.return_value = 'NEW-ABCD-EFGH-IJKL-MN'
-        
+
         # Call with formatted recovery code (with hyphens)
         user, new_formatted_recovery_code = authentication_service.reset_password_with_recovery_code(
             username='testuser',
             recovery_code='ABCD-EFGH-IJKL-MNOP',
             new_password='new_secure_password_1234'
         )
-        
+
         # Verify parse_code was called to normalize the input
         mock_recovery_code_service.parse_code.assert_called_once()
         assert user is not None
@@ -659,7 +659,7 @@ class TestAuthenticationServicePasswordReset:
         password_service = authentication_service.password_service
         recovery_code_raw = 'ABCDEFGHIJKLMNOP'
         recovery_code_hash = password_service.hash_password(recovery_code_raw)
-        
+
         mock_user = Mock(
             id=1,
             username='testuser',
@@ -673,14 +673,14 @@ class TestAuthenticationServicePasswordReset:
         mock_recovery_code_service.parse_code.return_value = recovery_code_raw
         mock_recovery_code_service.generate_code.return_value = 'NEWABCDEFGHIJKLMN'
         mock_recovery_code_service.format_code.return_value = 'NEW-ABCD-EFGH-IJKL-MN'
-        
+
         # Call with unformatted recovery code (no hyphens)
         user, new_formatted_recovery_code = authentication_service.reset_password_with_recovery_code(
             username='testuser',
             recovery_code='ABCDEFGHIJKLMNOP',
             new_password='new_secure_password_1234'
         )
-        
+
         assert user is not None
         assert new_formatted_recovery_code == 'NEW-ABCD-EFGH-IJKL-MN'
 
@@ -692,7 +692,7 @@ class TestAuthenticationServicePasswordReset:
         old_recovery_code_raw = 'ABCDEFGHIJKLMNOP'
         old_recovery_code_hash = password_service.hash_password(old_recovery_code_raw)
         password_hash = password_service.hash_password('old_password')
-        
+
         # Create mock user with old recovery code
         mock_user = Mock(
             id=1,
@@ -703,29 +703,29 @@ class TestAuthenticationServicePasswordReset:
         )
         # Store the original recovery code hash for later verification
         original_recovery_hash = old_recovery_code_hash
-        
+
         mock_user_repository.find_by_username.return_value = mock_user
         mock_user_repository.find_by_id.return_value = mock_user
         mock_user_repository.update_password_and_recovery_code.return_value = True
         mock_recovery_code_service.parse_code.return_value = old_recovery_code_raw
         mock_recovery_code_service.generate_code.return_value = 'NEWABCDEFGHIJKLMN'
         mock_recovery_code_service.format_code.return_value = 'NEW-ABCD-EFGH-IJKL-MN'
-        
+
         # Reset password
         user, new_formatted_recovery_code = authentication_service.reset_password_with_recovery_code(
             username='testuser',
             recovery_code='ABCD-EFGH-IJKL-MNOP',
             new_password='new_secure_password_1234'
         )
-        
+
         # Verify update was called with new hashes
         assert mock_user_repository.update_password_and_recovery_code.called
         call_args = mock_user_repository.update_password_and_recovery_code.call_args
         new_recovery_hash = call_args[1]['new_recovery_code_hash']
-        
+
         # Old recovery code should no longer work
         assert new_recovery_hash != original_recovery_hash
-        
+
         # Verify that the old code would not match the new hash
         # (simulating verification with old code)
         assert not password_service.verify_password(old_recovery_code_raw, new_recovery_hash)
@@ -737,7 +737,7 @@ class TestAuthenticationServicePasswordReset:
         password_service = authentication_service.password_service
         recovery_code_raw = 'ABCDEFGHIJKLMNOP'
         recovery_code_hash = password_service.hash_password(recovery_code_raw)
-        
+
         mock_user = Mock(
             id=1,
             username='testuser',
@@ -745,12 +745,12 @@ class TestAuthenticationServicePasswordReset:
             recovery_code_hash=recovery_code_hash,
             is_active=True
         )
-        
+
         mock_user_repository.find_by_username.return_value = mock_user
         # Update returns False (user not found or database error)
         mock_user_repository.update_password_and_recovery_code.return_value = False
         mock_recovery_code_service.parse_code.return_value = recovery_code_raw
-        
+
         with pytest.raises(ValueError, match="Invalid username or recovery code"):
             authentication_service.reset_password_with_recovery_code(
                 username='testuser',

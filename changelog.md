@@ -79,7 +79,7 @@ This is a big upgrade which decouples the frontend from Flask + jinja2 to Vue3.
 - **ML Metrics**: Enhanced `Metrics` class with detailed analysis including confusion matrix, confidence analysis, and merchant error analysis.
 
 ### Changed
-- **ML Model**: New model version built on more data. The model's features have been also reviwed and optimized to improve its accuracy. 
+- **ML Model**: New model version built on more data. The model's features have been also reviwed and optimized to improve its accuracy.
 - **ML Training**: Training now automatically splits data, validates class distribution, and exports test data for metrics validation.
 - **ML Configuration**: Moved from hardcoded values to centralized `MLConfig` with sensible defaults and validation.
 - **ML Text Processing**: Integrated `TextCorrectionService` for consistent partner field cleaning between training and inference. Regexp engine also uses it.

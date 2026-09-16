@@ -137,13 +137,13 @@ class PasswordService:
             parts = hash.split('$')
             if len(parts) < 6:
                 return None
-            
+
             info: dict[str, Any] = {'type': parts[1]}
-            
+
             # Parse version
             if '=' in parts[2]:
                 info['version'] = parts[2].split('=')[1]
-            
+
             # Parse parameters (m, t, p)
             params_part = parts[3]
             param_pairs = params_part.split(',')
@@ -156,7 +156,7 @@ class PasswordService:
                         info['time_cost'] = int(value)
                     elif key == 'p':
                         info['parallelism'] = int(value)
-            
+
             return info
         except Exception:
             return None

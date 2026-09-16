@@ -40,7 +40,7 @@ def mock_dependencies(mock_processor):
     mock_config_result = Mock()
     mock_config_result.config = {'csv': {'delimiter': ','}}
     mock_config_service.load_config.return_value = mock_config_result
-    
+
     with patch('whatsthedamage.services.processing_service.CSVProcessor') as mock_class, \
          patch('whatsthedamage.services.processing_service.AppContext'):
         mock_class.return_value = mock_processor

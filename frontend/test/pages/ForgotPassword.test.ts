@@ -66,10 +66,10 @@ describe('ForgotPassword.vue', () => {
 
     const wrapper = mount(ForgotPassword, mountOptions);
     const vm = wrapper.vm as any;
-    
+
     await vm.handleResetPassword('testuser', 'ABCD-EFGH-IJKL-MNOP', 'new_secure_password_1234');
     await new Promise(setImmediate);
-    
+
     expect(resetPassword).toHaveBeenCalledWith(
       'testuser',
       'ABCD-EFGH-IJKL-MNOP',
@@ -85,7 +85,7 @@ describe('ForgotPassword.vue', () => {
 
     const wrapper = mount(ForgotPassword, mountOptions);
     const vm = wrapper.vm as any;
-    
+
     await vm.handleResetPassword('testuser', 'ABCD-EFGH-IJKL-MNOP', 'new_secure_password_1234');
     await new Promise(setImmediate);
     await wrapper.vm.$nextTick();
@@ -99,7 +99,7 @@ describe('ForgotPassword.vue', () => {
 
     const wrapper = mount(ForgotPassword, mountOptions);
     const vm = wrapper.vm as any;
-    
+
     await vm.handleResetPassword('testuser', 'WRONG-CODE', 'new_secure_password_1234');
     await new Promise(setImmediate);
     await wrapper.vm.$nextTick();
@@ -113,7 +113,7 @@ describe('ForgotPassword.vue', () => {
 
     const wrapper = mount(ForgotPassword, mountOptions);
     const vm = wrapper.vm as any;
-    
+
     await vm.handleResetPassword('testuser', 'ABCD-EFGH-IJKL-MNOP', 'short');
     await new Promise(setImmediate);
     await wrapper.vm.$nextTick();
@@ -129,7 +129,7 @@ describe('ForgotPassword.vue', () => {
 
     const wrapper = mount(ForgotPassword, mountOptions);
     const vm = wrapper.vm as any;
-    
+
     await vm.handleResetPassword('testuser', 'ABCD-EFGH-IJKL-MNOP', 'new_secure_password_1234');
     await new Promise(setImmediate);
     await wrapper.vm.$nextTick();
@@ -144,7 +144,7 @@ describe('ForgotPassword.vue', () => {
 
     const wrapper = mount(ForgotPassword, mountOptions);
     const vm = wrapper.vm as any;
-    
+
     await vm.handleResetPassword('testuser', 'WRONG-CODE', 'new_secure_password_1234');
     await new Promise(setImmediate);
     await wrapper.vm.$nextTick();
@@ -159,7 +159,7 @@ describe('ForgotPassword.vue', () => {
   it('passes isLoading and error props to child form', () => {
     const wrapper = mount(ForgotPassword, mountOptions);
     const vm = wrapper.vm as any;
-    
+
     expect(vm.isLoading).toBe(false);
     expect(vm.error).toBe(null);
   });

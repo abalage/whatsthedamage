@@ -1,6 +1,6 @@
 <!--
   Authentication Layout Component
-  
+
   Wrapper component for authentication pages (Login, Register).
   Provides consistent styling and layout for auth-related views.
 -->
@@ -15,11 +15,11 @@
       <div class="auth-header">
         <h1 class="app-title">What's the Damage</h1>
       </div>
-      
+
       <main class="auth-main">
         <slot></slot>
       </main>
-      
+
       <div class="auth-footer">
         <p class="footer-text">
           &copy; {{ new Date().getFullYear() }} What's the Damage

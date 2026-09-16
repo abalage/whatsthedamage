@@ -1,6 +1,6 @@
 <!--
   Login Page Component
-  
+
   Provides user login functionality with form validation,
   error handling, and rate limit feedback.
 -->
@@ -44,7 +44,7 @@ async function handleLogin() {
       password.value,
       rememberMe.value
     );
-    
+
     // Redirect based on query parameter or to home
     const redirect = route.query.redirect as string | undefined;
     if (redirect && redirect !== '/login') {
@@ -54,9 +54,9 @@ async function handleLogin() {
     }
   } catch (err: unknown) {
     const errorMessage = err instanceof Error ? err.message : String(err);
-    
+
     // Check for rate limiting in error message
-    if (errorMessage.toLowerCase().includes('rate limit') || 
+    if (errorMessage.toLowerCase().includes('rate limit') ||
         errorMessage.toLowerCase().includes('too many')) {
       // Extract retry after from error if available
       // This would be better handled with proper error typing
@@ -78,7 +78,7 @@ function clearError() {
 // Initialize - check if already authenticated
 onMounted(async () => {
   await authStore.initialize();
-  
+
   // If already authenticated, redirect to home
   if (authStore.isAuthenticated) {
     await router.push({ name: 'index' });
@@ -89,7 +89,7 @@ onMounted(async () => {
 <template>
   <AuthLayout>
     <h2>Login</h2>
-    
+
     <form @submit.prevent="handleLogin" class="auth-form">
       <!-- Error message display -->
       <div v-if="authStore.error || hasRateLimitInfo()" class="error-message">
@@ -97,9 +97,9 @@ onMounted(async () => {
         <p v-if="rateLimitRetryAfter !== null">
           Try again in {{ Math.ceil(rateLimitRetryAfter / 60) }} minutes.
         </p>
-        <button 
-          type="button" 
-          @click="clearError" 
+        <button
+          type="button"
+          @click="clearError"
           class="error-close"
           aria-label="Clear error"
         >
@@ -144,8 +144,8 @@ onMounted(async () => {
       </div>
 
       <!-- Submit button -->
-      <button 
-        type="submit" 
+      <button
+        type="submit"
         :disabled="isSubmitting || !username.trim() || !password.trim()"
         class="btn btn-primary"
       >
@@ -167,7 +167,7 @@ onMounted(async () => {
         <router-link to="/forgot-password" @click="clearError">Forgot password?</router-link>
       </p>
       <p>
-        Don't have an account? 
+        Don't have an account?
         <router-link to="/register" @click="clearError">Register</router-link>
       </p>
     </div>

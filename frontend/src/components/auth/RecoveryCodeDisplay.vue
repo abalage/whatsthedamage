@@ -1,6 +1,6 @@
 <!--
   Recovery Code Display Component
-  
+
   Displays the new recovery code after successful password reset.
   Requires user acknowledgment before continuing.
 -->

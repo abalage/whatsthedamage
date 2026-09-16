@@ -76,6 +76,30 @@ class UserRepository(Protocol):
         """
         ...
 
+    def update_password_and_recovery_code(
+        self,
+        user_id: int,
+        new_password_hash: str,
+        new_recovery_code_hash: str
+    ) -> bool:
+        """Atomic update of both password and recovery code hashes for a user.
+
+        Updates both the password hash and recovery code hash in a single
+        database transaction to ensure atomicity.
+
+        Args:
+            user_id: User identifier.
+            new_password_hash: New Argon2id hashed password.
+            new_recovery_code_hash: New Argon2id hashed recovery code.
+
+        Returns:
+            True if update was successful, False if user not found.
+
+        Raises:
+            Exception: On database errors (rollback performed automatically).
+        """
+        ...
+
 
 class SqlAlchemyUserRepository(SqlAlchemyBaseRepository[UserDB]):
     """SQLAlchemy implementation of UserRepository.
@@ -196,6 +220,45 @@ class SqlAlchemyUserRepository(SqlAlchemyBaseRepository[UserDB]):
             if user:
                 user.is_active = cast(Any, is_active)
                 session.commit()
+        except Exception:
+            session.rollback()
+            raise
+        finally:
+            session.close()
+
+    def update_password_and_recovery_code(
+        self,
+        user_id: int,
+        new_password_hash: str,
+        new_recovery_code_hash: str
+    ) -> bool:
+        """Atomic update of both password and recovery code hashes for a user.
+
+        Updates both the password hash and recovery code hash in a single
+        database transaction to ensure atomicity.
+
+        Args:
+            user_id: User identifier.
+            new_password_hash: New Argon2id hashed password.
+            new_recovery_code_hash: New Argon2id hashed recovery code.
+
+        Returns:
+            True if update was successful, False if user not found.
+
+        Raises:
+            Exception: On database errors (rollback performed automatically).
+        """
+        session = self._get_session()
+        try:
+            user = session.query(UserDB).filter(
+                UserDB.id == user_id
+            ).first()
+            if user:
+                user.password_hash = new_password_hash
+                user.recovery_code_hash = new_recovery_code_hash
+                session.commit()
+                return True
+            return False
         except Exception:
             session.rollback()
             raise

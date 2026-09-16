@@ -71,6 +71,14 @@ export interface MeResponse {
 }
 
 /**
+ * Response from /auth/csrf-token endpoint.
+ * Contains only a CSRF token.
+ */
+export interface CsrfTokenResponse {
+  csrf_token: string;
+}
+
+/**
  * Authentication state stored in Pinia.
  */
 export interface AuthState {
@@ -82,4 +90,67 @@ export interface AuthState {
   recoveryCode: string | null;
   showRecoveryCode: boolean;
   recoveryCodeAcknowledged: boolean;
+}
+
+/**
+ * API error response structure.
+ */
+interface AuthError {
+  error: string;
+  code?: string;
+  retryAfter?: number;
+}
+
+/**
+ * Combined API response wrapper.
+ */
+interface ApiAuthResponse<T> {
+  data?: T;
+  error?: string;
+  code?: string;
+  retryAfter?: number;
+}
+
+/**
+ * Credentials for login/register forms.
+ */
+interface Credentials {
+  username: string;
+  password: string;
+}
+
+/**
+ * Form data for registration with password confirmation.
+ */
+interface RegistrationForm {
+  username: string;
+  password: string;
+  confirmPassword: string;
+}
+
+/**
+ * Form data for login with remember me option.
+ */
+interface LoginForm {
+  username: string;
+  password: string;
+  rememberMe: boolean;
+}
+
+/**
+ * Request body for password reset using recovery code.
+ */
+export interface PasswordResetRequest {
+  username: string;
+  recoveryCode: string;
+  newPassword: string;
+}
+
+/**
+ * Response from successful password reset.
+ * Contains user data and the new recovery code (displayed once).
+ */
+export interface PasswordResetResponse {
+  user: User;
+  new_recovery_code: string;
 }

@@ -8,9 +8,11 @@ Provides the main business logic for authentication operations including:
 """
 
 import os
+import logging
 from datetime import datetime, timedelta, UTC
 from typing import Any, Optional, Tuple, cast
 from flask import Flask, request
+from whatsthedamage.utils.logging import get_logger
 
 from whatsthedamage.models.database.user import User as UserDB
 from whatsthedamage.models.database.session import Session as SessionDB
@@ -41,6 +43,7 @@ class AuthenticationService:
             (default 604800 = 7 days).
         max_concurrent_sessions: Maximum concurrent sessions per user
             (default 5).
+        logger: Logger instance for audit logging.
     """
 
     def __init__(
@@ -80,6 +83,7 @@ class AuthenticationService:
         self.session_timeout = session_timeout
         self.remember_me_duration = remember_me_duration
         self.max_concurrent_sessions = max_concurrent_sessions
+        self.logger = get_logger(__name__)
 
     def register_user(
         self,
@@ -245,6 +249,90 @@ class AuthenticationService:
             Number of sessions revoked.
         """
         return self.session_repository.revoke_by_user_id(user_id)
+
+    def reset_password_with_recovery_code(
+        self,
+        username: str,
+        recovery_code: str,
+        new_password: str
+    ) -> Tuple[UserDB, str]:
+        """Reset a user's password using their recovery code.
+
+        Validates the username and recovery code, then updates both the
+        password and recovery code atomically. Invalidates all existing
+        sessions for security.
+
+        Args:
+            username: User's username.
+            recovery_code: Recovery code provided by user (formatted or raw).
+            new_password: New plain text password (minimum length enforced).
+
+        Returns:
+            Tuple of (user, new_formatted_recovery_code).
+            The new recovery code is displayed once and must be saved.
+
+        Raises:
+            ValueError: If username not found, recovery code is invalid,
+                or new password is too short.
+                Uses generic message "Invalid username or recovery code" to
+                prevent username enumeration attacks.
+        """
+        # Find user by username
+        user = self.user_repository.find_by_username(username)
+        if not user:
+            self.logger.warning("Password reset attempt failed: username not found", extra={"context": {"action": "password_reset", "status": "failed", "reason": "username_not_found"}})
+            raise ValueError("Invalid username or recovery code")
+
+        # Parse and normalize the recovery code input (handles both formatted and unformatted)
+        parsed_recovery_code = self.recovery_code_service.parse_code(recovery_code)
+
+        # Verify the recovery code
+        if not self.password_service.verify_password(
+            parsed_recovery_code, user.recovery_code_hash
+        ):
+            self.logger.warning("Password reset attempt failed: invalid recovery code", extra={"context": {"action": "password_reset", "status": "failed", "reason": "invalid_recovery_code", "user_id": user.id}})
+            raise ValueError("Invalid username or recovery code")
+
+        # Validate new password meets minimum length
+        if len(new_password) < self.password_min_length:
+            self.logger.warning("Password reset attempt failed: password too short", extra={"context": {"action": "password_reset", "status": "failed", "reason": "password_too_short", "user_id": user.id, "password_length": len(new_password), "min_length": self.password_min_length}})
+            raise ValueError(
+                f"Password must be at least {self.password_min_length} characters"
+            )
+
+        # Hash new password
+        new_password_hash = self.password_service.hash_password(new_password)
+
+        # Generate new recovery code
+        new_raw_code = self.recovery_code_service.generate_code()
+        new_formatted_recovery_code = self.recovery_code_service.format_code(new_raw_code)
+        new_recovery_code_hash = self.password_service.hash_password(new_raw_code)
+
+        # Atomic update of both password and recovery code
+        success = self.user_repository.update_password_and_recovery_code(
+            user_id=user.id,
+            new_password_hash=new_password_hash,
+            new_recovery_code_hash=new_recovery_code_hash
+        )
+
+        if not success:
+            self.logger.error("Password reset failed: database update failed", extra={"context": {"action": "password_reset", "status": "failed", "reason": "database_update_failed", "user_id": user.id}})
+            raise ValueError("Invalid username or recovery code")
+
+        # Invalidate all existing sessions for security
+        self.logout_all_user_sessions(user.id)
+
+        # Update user's last login timestamp for auditing
+        self.user_repository.update_last_login(user.id)
+
+        # Audit log successful password reset (without sensitive data)
+        self.logger.info("Password reset successful", extra={"context": {"action": "password_reset", "status": "success", "user_id": user.id, "username": user.username}})
+
+        # Return the updated user and new formatted recovery code
+        # Reload user to get fresh data
+        updated_user = self.user_repository.find_by_id(user.id)
+        assert updated_user is not None, "User should exist after successful update"
+        return updated_user, new_formatted_recovery_code
 
     def validate_session(self, session_token: str) -> Optional[Tuple[UserDB, SessionDB]]:
         """Validate a session token and return the associated user and session.

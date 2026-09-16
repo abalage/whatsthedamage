@@ -12,6 +12,7 @@ import CategoryMonthTransactions from '../pages/CategoryMonthTransactions.vue'
 import PivotTable from '../pages/PivotTable.vue'
 import Login from '../pages/Login.vue'
 import Register from '../pages/Register.vue'
+import ForgotPassword from '../pages/ForgotPassword.vue'
 import { useAuthStore } from '../stores/auth.js'
 
 const router = createRouter({
@@ -97,6 +98,12 @@ const router = createRouter({
       path: '/register',
       name: 'register',
       component: Register,
+      meta: { requiresGuest: true, public: true }
+    },
+    {
+      path: '/forgot-password',
+      name: 'forgot-password',
+      component: ForgotPassword,
       meta: { requiresGuest: true, public: true }
     },
     {

@@ -45,7 +45,17 @@ def mock_session_repository():
 
 
 @pytest.fixture
-def authentication_service(mock_user_repository, mock_session_repository):
+def mock_recovery_code_service():
+    """Create a mock RecoveryCodeService for testing."""
+    mock = Mock()
+    mock.generate_code.return_value = 'ABCDEFGHIJKLMNOP'
+    mock.format_code.return_value = 'ABCD-EFGH-IJKL-MNOP'
+    mock.parse_code.return_value = 'ABCDEFGHIJKLMNOP'
+    return mock
+
+
+@pytest.fixture
+def authentication_service(mock_user_repository, mock_session_repository, mock_recovery_code_service):
     """Create an AuthenticationService instance for testing."""
     return AuthenticationService(
         user_repository=mock_user_repository,
@@ -56,7 +66,7 @@ def authentication_service(mock_user_repository, mock_session_repository):
             parallelism=1
         ),
         token_service=TokenService(),
-        recovery_code_service=RecoveryCodeService(),
+        recovery_code_service=mock_recovery_code_service,
         csrf_service=CsrfService(),
         password_min_length=12,
         session_timeout=3600,
@@ -441,3 +451,309 @@ class TestAuthenticationServiceGetMe:
         result = authentication_service.get_me('invalid_token')
         
         assert result is None
+
+
+class TestAuthenticationServicePasswordReset:
+    """Tests for password reset using recovery code functionality."""
+
+    def test_reset_password_with_recovery_code_success(
+        self, authentication_service, mock_user_repository, mock_session_repository, mock_recovery_code_service
+    ):
+        """Test successful password reset with valid recovery code."""
+        # Setup mock user with recovery code hash
+        password_service = authentication_service.password_service
+        recovery_code_raw = 'ABCDEFGHIJKLMNOP'
+        recovery_code_hash = password_service.hash_password(recovery_code_raw)
+        password_hash = password_service.hash_password('old_password')
+        
+        mock_user = Mock(
+            id=1,
+            username='testuser',
+            password_hash=password_hash,
+            recovery_code_hash=recovery_code_hash,
+            is_active=True
+        )
+        mock_user_repository.find_by_username.return_value = mock_user
+        mock_user_repository.find_by_id.return_value = mock_user
+        mock_user_repository.update_password_and_recovery_code.return_value = True
+        mock_recovery_code_service.parse_code.return_value = recovery_code_raw
+        mock_recovery_code_service.generate_code.return_value = 'NEWABCDEFGHIJKLMN'
+        mock_recovery_code_service.format_code.return_value = 'NEW-ABCD-EFGH-IJKL-MN'
+        
+        # Reset password
+        user, new_formatted_recovery_code = authentication_service.reset_password_with_recovery_code(
+            username='testuser',
+            recovery_code='ABCD-EFGH-IJKL-MNOP',
+            new_password='new_secure_password_1234'
+        )
+        
+        assert user is not None
+        assert user.id == 1
+        assert new_formatted_recovery_code == 'NEW-ABCD-EFGH-IJKL-MN'
+        assert mock_user_repository.update_password_and_recovery_code.called
+        assert mock_session_repository.revoke_by_user_id.called
+        assert mock_user_repository.update_last_login.called
+
+    def test_reset_password_with_recovery_code_invalid_username(
+        self, authentication_service, mock_user_repository
+    ):
+        """Test password reset with invalid username."""
+        mock_user_repository.find_by_username.return_value = None
+        
+        with pytest.raises(ValueError, match="Invalid username or recovery code"):
+            authentication_service.reset_password_with_recovery_code(
+                username='nonexistent',
+                recovery_code='ABCD-EFGH-IJKL-MNOP',
+                new_password='new_secure_password_1234'
+            )
+
+    def test_reset_password_with_recovery_code_invalid_recovery_code(
+        self, authentication_service, mock_user_repository, mock_recovery_code_service
+    ):
+        """Test password reset with invalid recovery code."""
+        password_service = authentication_service.password_service
+        
+        mock_user = Mock(
+            id=1,
+            username='testuser',
+            password_hash=password_service.hash_password('old_password'),
+            recovery_code_hash=password_service.hash_password('DIFFERENT-CODE'),
+            is_active=True
+        )
+        mock_user_repository.find_by_username.return_value = mock_user
+        mock_recovery_code_service.parse_code.return_value = 'WRONG-CODE-ABCD'
+        
+        with pytest.raises(ValueError, match="Invalid username or recovery code"):
+            authentication_service.reset_password_with_recovery_code(
+                username='testuser',
+                recovery_code='WRONG-CODE',
+                new_password='new_secure_password_1234'
+            )
+
+    def test_reset_password_with_recovery_code_short_password(
+        self, authentication_service, mock_user_repository, mock_recovery_code_service
+    ):
+        """Test password reset with password too short."""
+        password_service = authentication_service.password_service
+        recovery_code_raw = 'ABCDEFGHIJKLMNOP'
+        recovery_code_hash = password_service.hash_password(recovery_code_raw)
+        
+        mock_user = Mock(
+            id=1,
+            username='testuser',
+            password_hash=password_service.hash_password('old_password'),
+            recovery_code_hash=recovery_code_hash,
+            is_active=True
+        )
+        mock_user_repository.find_by_username.return_value = mock_user
+        mock_recovery_code_service.parse_code.return_value = recovery_code_raw
+        
+        with pytest.raises(ValueError, match="Password must be at least 12 characters"):
+            authentication_service.reset_password_with_recovery_code(
+                username='testuser',
+                recovery_code='ABCD-EFGH-IJKL-MNOP',
+                new_password='short'
+            )
+
+    def test_reset_password_with_recovery_code_regenerates_code(
+        self, authentication_service, mock_user_repository, mock_session_repository, mock_recovery_code_service
+    ):
+        """Test that a new recovery code is generated after password reset."""
+        password_service = authentication_service.password_service
+        recovery_code_raw = 'ABCDEFGHIJKLMNOP'
+        recovery_code_hash = password_service.hash_password(recovery_code_raw)
+        
+        mock_user = Mock(
+            id=1,
+            username='testuser',
+            password_hash=password_service.hash_password('old_password'),
+            recovery_code_hash=recovery_code_hash,
+            is_active=True
+        )
+        mock_user_repository.find_by_username.return_value = mock_user
+        mock_user_repository.find_by_id.return_value = mock_user
+        mock_user_repository.update_password_and_recovery_code.return_value = True
+        mock_recovery_code_service.parse_code.return_value = recovery_code_raw
+        mock_recovery_code_service.generate_code.return_value = 'NEWABCDEFGHIJKLMN'
+        mock_recovery_code_service.format_code.return_value = 'NEW-ABCD-EFGH-IJKL-MN'
+        
+        user, new_formatted_recovery_code = authentication_service.reset_password_with_recovery_code(
+            username='testuser',
+            recovery_code='ABCD-EFGH-IJKL-MNOP',
+            new_password='new_secure_password_1234'
+        )
+        
+        # Verify new recovery code was generated
+        assert mock_recovery_code_service.generate_code.called
+        assert new_formatted_recovery_code == 'NEW-ABCD-EFGH-IJKL-MN'
+
+    def test_reset_password_with_recovery_code_invalidates_sessions(
+        self, authentication_service, mock_user_repository, mock_session_repository, mock_recovery_code_service
+    ):
+        """Test that all user sessions are invalidated on password reset."""
+        password_service = authentication_service.password_service
+        recovery_code_raw = 'ABCDEFGHIJKLMNOP'
+        recovery_code_hash = password_service.hash_password(recovery_code_raw)
+        
+        mock_user = Mock(
+            id=1,
+            username='testuser',
+            password_hash=password_service.hash_password('old_password'),
+            recovery_code_hash=recovery_code_hash,
+            is_active=True
+        )
+        mock_user_repository.find_by_username.return_value = mock_user
+        mock_user_repository.find_by_id.return_value = mock_user
+        mock_user_repository.update_password_and_recovery_code.return_value = True
+        mock_session_repository.revoke_by_user_id.return_value = 3
+        mock_recovery_code_service.parse_code.return_value = recovery_code_raw
+        mock_recovery_code_service.generate_code.return_value = 'NEWABCDEFGHIJKLMN'
+        mock_recovery_code_service.format_code.return_value = 'NEW-ABCD-EFGH-IJKL-MN'
+        
+        authentication_service.reset_password_with_recovery_code(
+            username='testuser',
+            recovery_code='ABCD-EFGH-IJKL-MNOP',
+            new_password='new_secure_password_1234'
+        )
+        
+        # Verify session invalidation was called
+        mock_session_repository.revoke_by_user_id.assert_called_once_with(1)
+
+    def test_reset_password_with_recovery_code_formatted_input(
+        self, authentication_service, mock_user_repository, mock_session_repository, mock_recovery_code_service
+    ):
+        """Test password reset accepts formatted recovery code with hyphens."""
+        password_service = authentication_service.password_service
+        recovery_code_raw = 'ABCDEFGHIJKLMNOP'
+        recovery_code_hash = password_service.hash_password(recovery_code_raw)
+        
+        mock_user = Mock(
+            id=1,
+            username='testuser',
+            password_hash=password_service.hash_password('old_password'),
+            recovery_code_hash=recovery_code_hash,
+            is_active=True
+        )
+        mock_user_repository.find_by_username.return_value = mock_user
+        mock_user_repository.find_by_id.return_value = mock_user
+        mock_user_repository.update_password_and_recovery_code.return_value = True
+        mock_recovery_code_service.parse_code.return_value = recovery_code_raw
+        mock_recovery_code_service.generate_code.return_value = 'NEWABCDEFGHIJKLMN'
+        mock_recovery_code_service.format_code.return_value = 'NEW-ABCD-EFGH-IJKL-MN'
+        
+        # Call with formatted recovery code (with hyphens)
+        user, new_formatted_recovery_code = authentication_service.reset_password_with_recovery_code(
+            username='testuser',
+            recovery_code='ABCD-EFGH-IJKL-MNOP',
+            new_password='new_secure_password_1234'
+        )
+        
+        # Verify parse_code was called to normalize the input
+        mock_recovery_code_service.parse_code.assert_called_once()
+        assert user is not None
+
+    def test_reset_password_with_recovery_code_unformatted_input(
+        self, authentication_service, mock_user_repository, mock_session_repository, mock_recovery_code_service
+    ):
+        """Test password reset accepts unformatted recovery code without hyphens."""
+        password_service = authentication_service.password_service
+        recovery_code_raw = 'ABCDEFGHIJKLMNOP'
+        recovery_code_hash = password_service.hash_password(recovery_code_raw)
+        
+        mock_user = Mock(
+            id=1,
+            username='testuser',
+            password_hash=password_service.hash_password('old_password'),
+            recovery_code_hash=recovery_code_hash,
+            is_active=True
+        )
+        mock_user_repository.find_by_username.return_value = mock_user
+        mock_user_repository.find_by_id.return_value = mock_user
+        mock_user_repository.update_password_and_recovery_code.return_value = True
+        mock_recovery_code_service.parse_code.return_value = recovery_code_raw
+        mock_recovery_code_service.generate_code.return_value = 'NEWABCDEFGHIJKLMN'
+        mock_recovery_code_service.format_code.return_value = 'NEW-ABCD-EFGH-IJKL-MN'
+        
+        # Call with unformatted recovery code (no hyphens)
+        user, new_formatted_recovery_code = authentication_service.reset_password_with_recovery_code(
+            username='testuser',
+            recovery_code='ABCDEFGHIJKLMNOP',
+            new_password='new_secure_password_1234'
+        )
+        
+        assert user is not None
+        assert new_formatted_recovery_code == 'NEW-ABCD-EFGH-IJKL-MN'
+
+    def test_reset_password_with_recovery_code_old_code_invalidated(
+        self, authentication_service, mock_user_repository, mock_session_repository, mock_recovery_code_service
+    ):
+        """Test that old recovery code is invalidated after password reset."""
+        password_service = authentication_service.password_service
+        old_recovery_code_raw = 'ABCDEFGHIJKLMNOP'
+        old_recovery_code_hash = password_service.hash_password(old_recovery_code_raw)
+        password_hash = password_service.hash_password('old_password')
+        
+        # Create mock user with old recovery code
+        mock_user = Mock(
+            id=1,
+            username='testuser',
+            password_hash=password_hash,
+            recovery_code_hash=old_recovery_code_hash,
+            is_active=True
+        )
+        # Store the original recovery code hash for later verification
+        original_recovery_hash = old_recovery_code_hash
+        
+        mock_user_repository.find_by_username.return_value = mock_user
+        mock_user_repository.find_by_id.return_value = mock_user
+        mock_user_repository.update_password_and_recovery_code.return_value = True
+        mock_recovery_code_service.parse_code.return_value = old_recovery_code_raw
+        mock_recovery_code_service.generate_code.return_value = 'NEWABCDEFGHIJKLMN'
+        mock_recovery_code_service.format_code.return_value = 'NEW-ABCD-EFGH-IJKL-MN'
+        
+        # Reset password
+        user, new_formatted_recovery_code = authentication_service.reset_password_with_recovery_code(
+            username='testuser',
+            recovery_code='ABCD-EFGH-IJKL-MNOP',
+            new_password='new_secure_password_1234'
+        )
+        
+        # Verify update was called with new hashes
+        assert mock_user_repository.update_password_and_recovery_code.called
+        call_args = mock_user_repository.update_password_and_recovery_code.call_args
+        new_recovery_hash = call_args[1]['new_recovery_code_hash']
+        
+        # Old recovery code should no longer work
+        assert new_recovery_hash != original_recovery_hash
+        
+        # Verify that the old code would not match the new hash
+        # (simulating verification with old code)
+        assert not password_service.verify_password(old_recovery_code_raw, new_recovery_hash)
+
+    def test_reset_password_with_recovery_code_update_failed(
+        self, authentication_service, mock_user_repository, mock_recovery_code_service
+    ):
+        """Test that appropriate error is raised when update fails."""
+        password_service = authentication_service.password_service
+        recovery_code_raw = 'ABCDEFGHIJKLMNOP'
+        recovery_code_hash = password_service.hash_password(recovery_code_raw)
+        
+        mock_user = Mock(
+            id=1,
+            username='testuser',
+            password_hash=password_service.hash_password('old_password'),
+            recovery_code_hash=recovery_code_hash,
+            is_active=True
+        )
+        
+        mock_user_repository.find_by_username.return_value = mock_user
+        # Update returns False (user not found or database error)
+        mock_user_repository.update_password_and_recovery_code.return_value = False
+        mock_recovery_code_service.parse_code.return_value = recovery_code_raw
+        
+        with pytest.raises(ValueError, match="Invalid username or recovery code"):
+            authentication_service.reset_password_with_recovery_code(
+                username='testuser',
+                recovery_code='ABCD-EFGH-IJKL-MNOP',
+                new_password='new_secure_password_1234'
+            )

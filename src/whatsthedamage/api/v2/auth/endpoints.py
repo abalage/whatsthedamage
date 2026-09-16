@@ -342,7 +342,7 @@ def login() -> Tuple[Response, int]:
 
         username = data.get('username')
         password = data.get('password')
-        remember_me = data.get('remember_me', False)
+        remember_me = data.get('rememberMe') or data.get('remember_me', False)
 
         if not username or not isinstance(username, str):
             return jsonify(_create_error_response(
@@ -552,6 +552,157 @@ def get_me() -> Tuple[Response, int]:
     except Exception as e:
         return jsonify(_create_error_response(
             "Failed to get user information",
+            500,
+            "INTERNAL_ERROR"
+        )[0]), 500
+
+
+@auth_bp.route('/reset-password', methods=['POST'])
+def reset_password() -> Tuple[Response, int]:
+    """Reset user password using recovery code.
+
+    Allows users to reset their password using the recovery code provided
+    during registration. This is a public endpoint that does not require
+    authentication. The recovery code is single-use and a new one is generated
+    after successful reset.
+
+    Request JSON:
+        {
+            "username": "string",
+            "recovery_code": "string",
+            "new_password": "string"
+        }
+
+    Response JSON:
+        {
+            "user": {
+                "id": int,
+                "username": "string",
+                "created_at": "ISO8601 timestamp",
+                "last_login_at": "ISO8601 timestamp or null",
+                "is_active": boolean,
+                "opt_in_sharing": boolean
+            },
+            "new_recovery_code": "string"
+        }
+
+    Status Codes:
+        200: Password successfully reset
+        400: Validation error (missing fields, invalid input)
+        401: Invalid username or recovery code
+        422: Password too weak
+        429: Too many attempts (rate limited)
+        500: Internal server error
+
+    Rate Limiting:
+        Limited to 5 attempts per 15 minutes per IP address.
+        Returns 429 with Retry-After header when limit is exceeded.
+
+    Security:
+        - No CSRF token required (public endpoint)
+        - Generic error messages prevent username enumeration
+        - All existing sessions are invalidated on password reset
+        - Recovery code is single-use (old code invalidated, new one generated)
+        - New recovery code displayed once and must be saved by user
+    """
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify(_create_error_response(
+                "Request body is required",
+                400,
+                "MISSING_BODY"
+            )[0]), 400
+
+        username = data.get('username')
+        recovery_code = data.get('recoveryCode')
+        new_password = data.get('newPassword')
+
+        # Validate all fields are present and non-empty strings
+        if not username or not isinstance(username, str) or not username.strip():
+            return jsonify(_create_error_response(
+                "Username is required",
+                400,
+                "MISSING_USERNAME"
+            )[0]), 400
+
+        if not recovery_code or not isinstance(recovery_code, str) or not recovery_code.strip():
+            return jsonify(_create_error_response(
+                "Recovery code is required",
+                400,
+                "MISSING_RECOVERY_CODE"
+            )[0]), 400
+
+        if not new_password or not isinstance(new_password, str) or not new_password.strip():
+            return jsonify(_create_error_response(
+                "New password is required",
+                400,
+                "MISSING_NEW_PASSWORD"
+            )[0]), 400
+
+        # Check rate limiting (by IP address only, since username may not be valid)
+        rate_limit_exceeded, retry_after = _get_rate_limit_service().check_recovery_rate_limit(
+            ip_address=_get_client_ip()
+        )
+        if rate_limit_exceeded:
+            error_response_data = _create_error_response(
+                f"Too many attempts. Try again in {retry_after} seconds.",
+                429,
+                "RATE_LIMIT_EXCEEDED",
+                retry_after
+            )
+            response = jsonify(error_response_data[0])
+            response.headers['Retry-After'] = str(retry_after)
+            return response, 429
+
+        # Reset password using recovery code
+        user, new_formatted_recovery_code = _get_auth_service().reset_password_with_recovery_code(
+            username=username.strip(),
+            recovery_code=recovery_code.strip(),
+            new_password=new_password
+        )
+
+        # Reset rate limit on successful recovery
+        _get_rate_limit_service().reset_recovery_rate_limit(_get_client_ip())
+
+        # Build response
+        response_data = {
+            'user': {
+                'id': user.id,
+                'username': user.username,
+                'created_at': user.created_at.isoformat() if user.created_at else None,
+                'last_login_at': user.last_login_at.isoformat() if user.last_login_at else None,
+                'is_active': user.is_active,
+                'opt_in_sharing': user.opt_in_sharing
+            },
+            'new_recovery_code': new_formatted_recovery_code
+        }
+
+        return jsonify(response_data), 200
+
+    except ValueError as e:
+        error_message = str(e)
+        if "password must be at least" in error_message.lower():
+            return jsonify(_create_error_response(
+                error_message,
+                422,
+                "PASSWORD_TOO_WEAK"
+            )[0]), 422
+        elif "invalid username or recovery code" in error_message.lower():
+            return jsonify(_create_error_response(
+                "Invalid username or recovery code",
+                401,
+                "INVALID_CREDENTIALS"
+            )[0]), 401
+        else:
+            return jsonify(_create_error_response(
+                "Password reset failed",
+                401,
+                "AUTHENTICATION_FAILED"
+            )[0]), 401
+    except Exception as e:
+        return jsonify(_create_error_response(
+            "Password reset failed",
             500,
             "INTERNAL_ERROR"
         )[0]), 500

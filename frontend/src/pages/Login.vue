@@ -164,6 +164,9 @@ onMounted(async () => {
     <!-- Links -->
     <div class="auth-links">
       <p>
+        <router-link to="/forgot-password" @click="clearError">Forgot password?</router-link>
+      </p>
+      <p>
         Don't have an account? 
         <router-link to="/register" @click="clearError">Register</router-link>
       </p>

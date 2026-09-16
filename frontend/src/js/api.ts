@@ -21,6 +21,9 @@ import type {
   LoginResponse,
   LogoutResponse,
   MeResponse,
+  CsrfTokenResponse,
+  PasswordResetRequest,
+  PasswordResetResponse,
 } from '../types/auth.js';
 
 // API base URL configuration
@@ -306,6 +309,39 @@ export async function logout(): Promise<LogoutResponse> {
 export async function getMe(): Promise<MeResponse> {
   return fetchWithErrorHandling<MeResponse>(getApiUrl('/auth/me'), {
     credentials: 'include'
+  });
+}
+
+/**
+ * Get a new CSRF token
+ * @returns Promise with CSRF token
+ */
+async function getCsrfToken(): Promise<CsrfTokenResponse> {
+  return fetchWithErrorHandling<CsrfTokenResponse>(getApiUrl('/auth/csrf-token'), {
+    credentials: 'include'
+  });
+}
+
+/**
+ * Reset password using recovery code
+ * @param username - User's username
+ * @param recoveryCode - Recovery code
+ * @param newPassword - New password
+ * @returns Promise with password reset response containing user and new recovery code
+ */
+export async function resetPassword(
+  username: string,
+  recoveryCode: string,
+  newPassword: string
+): Promise<PasswordResetResponse> {
+  const requestData: PasswordResetRequest = {
+    username,
+    recoveryCode,
+    newPassword
+  };
+  return fetchWithCsrf<PasswordResetResponse>(getApiUrl('/auth/reset-password'), {
+    method: 'POST',
+    body: JSON.stringify(requestData)
   });
 }
 

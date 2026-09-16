@@ -8,6 +8,7 @@ from datetime import datetime, UTC
 from typing import Any, Optional
 
 from whatsthedamage.services.password_service import PasswordService
+from whatsthedamage.services.recovery_code_service import RecoveryCodeService
 
 
 class User:
@@ -125,6 +126,33 @@ class User:
         if self._recovery_code_hash is None:
             return False
         return password_service.verify_password(code, self._recovery_code_hash)
+
+    def regenerate_recovery_code(
+        self,
+        recovery_code_service: RecoveryCodeService,
+        password_service: PasswordService
+    ) -> str:
+        """Regenerate a new recovery code and return it in canonical format.
+
+        Generates a new recovery code, formats it for display, hashes it,
+        and sets the internal recovery code hash. Returns the formatted
+        code suitable for display to the user.
+
+        Args:
+            recovery_code_service: RecoveryCodeService instance for generation.
+            password_service: PasswordService instance for hashing.
+
+        Returns:
+            Formatted recovery code string in canonical format (with hyphens).
+        """
+        # Generate new recovery code
+        raw_code = recovery_code_service.generate_code()
+        formatted_code = recovery_code_service.format_code(raw_code)
+
+        # Hash and set the new recovery code
+        self._recovery_code_hash = password_service.hash_password(raw_code)
+
+        return formatted_code
 
     def to_dict(self) -> dict[str, Any]:
         """Convert user to dictionary (excluding sensitive hashes).

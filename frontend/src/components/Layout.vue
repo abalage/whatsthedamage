@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useRoute, RouterLink } from 'vue-router'
+import { useAuthStore } from '../stores/auth.js'
 import { useLocaleStore } from '../stores/locale.js'
 import { useStatisticalStore } from '../stores/statistical.js'
 import { useFeedbackStore } from '../stores/feedback.js'
@@ -11,6 +12,7 @@ import { APP_VERSION } from '../js/version.js'
 
 const { $gettext } = useGettext()
 const route = useRoute()
+const authStore = useAuthStore()
 const localeStore = useLocaleStore()
 const statisticalStore = useStatisticalStore()
 const feedback = useFeedbackStore()
@@ -233,6 +235,14 @@ const setLocale = (locale: string) => {
                     </button>
                   </li>
                 </ul>
+              </li>
+              <li class="nav-item">
+                <RouterLink v-if="!authStore.isAuthenticated" to="login" class="nav-link">
+                  {{ $gettext('Login') }}
+                </RouterLink>
+                <RouterLink v-else to="logout" class="nav-link">
+                  {{ $gettext('Logout') }}
+                </RouterLink>
               </li>
             </ul>
           </div>

@@ -11,10 +11,12 @@ This document enables AI coding agents to be immediately productive in the `what
 - Answer in the same language as the question
 - Use English for generated content (code, comments, documentation)
 - Do not create summary Markdown files unless it is explicitly asked for.
-- Local terminal uses ZSH and not BASH. Keep in mind when executing shell commands.
+- Local terminal uses ZSH and not BASH.
 - In case you need a temporary directory create one in project root instead of using /tmp directory.
+- Never commit to git.
 
 ### Project Overview
+- **Git**: monorepository.
 - **Decoupled architecture**: Backend and frontend are independent, communicating via REST API v2
 - **Backend**: Python (Flask) located in `src/whatsthedamage/` - API-only, no server-side templates
 - **Frontend**: Vue 3 SPA with TypeScript, located in `frontend/` at project root
@@ -120,6 +122,41 @@ make lang                         # Extract translatable texts
 - **Integrated**: Backend serves frontend from `view/static/dist/` via `frontend_routes.py` catch-all route
 - **Standalone**: Frontend hosted separately on static hosting; backend API must be CORS-enabled
 - **Development**: Vite dev server (port 3000) with `/api` proxy to `http://localhost:5000/api/v2`
+
+### Post-Development Verification
+After completing any development work, **you MUST run all quality checks and fix all reported errors before considering the task complete**. Do not stop until all errors are resolved.
+
+Run the following commands in sequence:
+
+```bash
+# Full stack verification (recommended)
+make test
+```
+
+Or run checks separately for more granular control:
+
+```bash
+# Backend quality checks
+make lint             # Runs Ruff (Python linter) + mypy (type checker)
+# OR individually:
+tox -e lint           # Python linting with Ruff
+tox -e type           # Python type checking with mypy
+
+# Backend tests
+pytest                # Run backend tests
+# OR
+make backend-test     # Same as above via tox
+
+# Frontend quality checks (from frontend/ directory or via make)
+make frontend-test    # Runs ESLint, TypeScript check, Knip, and Vitest
+# OR individually from frontend/:
+npm run lint          # ESLint for TypeScript/JavaScript/Vue
+npm run type-check    # TypeScript compiler check
+npm run knip          # Detect unused files and exports
+npm run test          # Run Vitest tests
+```
+
+**Critical requirement**: All linter errors, type checker errors, and test failures must be fixed. Warnings should be addressed unless explicitly approved by the user. Do not proceed to commit or consider the task finished until all quality gates pass.
 
 ## Coding Guidelines
 

@@ -36,15 +36,32 @@ def _create_test_client(processing_service=None):
 
     # Now create service container with the Flask app and register our test processing service
     from whatsthedamage.services.service_container import ServiceContainer
+    from whatsthedamage.services.authentication_service import AuthenticationService
+    from unittest.mock import MagicMock
+
     service_container = ServiceContainer(flask_app=app)
     service_container._services[ProcessingService] = processing_service
 
-    # Update Flask extensions with our test service
+    # Update Flask extensions with our test services
     app.extensions['processing_service'] = processing_service
+
+    # Mock authentication service to avoid 401 errors in tests
+    mock_auth_service = MagicMock()
+    mock_user = MagicMock()
+    mock_user.id = 1
+    mock_session = MagicMock()
+    mock_session.csrf_token_hash = 'test_csrf_hash'
+    mock_auth_service.validate_session.return_value = (mock_user, mock_session)
+    mock_auth_service.validate_csrf_token.return_value = True
+    app.extensions['auth_service'] = mock_auth_service
+
     app.config.from_mapping(config)
 
     try:
+        # Create test client with a session cookie
         with app.test_client() as client:
+            # Set a session cookie to pass authentication
+            client.set_cookie('session_token', 'test_session_token')
             with app.app_context():
                 yield client
     finally:

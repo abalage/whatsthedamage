@@ -254,8 +254,8 @@ class SqlAlchemyUserRepository(SqlAlchemyBaseRepository[UserDB]):
                 UserDB.id == user_id
             ).first()
             if user:
-                user.password_hash = new_password_hash
-                user.recovery_code_hash = new_recovery_code_hash
+                user.password_hash = cast(Any, new_password_hash)
+                user.recovery_code_hash = cast(Any, new_recovery_code_hash)
                 session.commit()
                 return True
             return False

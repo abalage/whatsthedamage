@@ -148,10 +148,14 @@ class AuthenticationService:
             seconds=self.session_timeout
         )
 
+        # Generate CSRF token and hash for the session
+        csrf_token, csrf_token_hash = self.generate_csrf_token()
+
         session = self.session_repository.create(
             user_id=cast(int, user.id),
             token_hash=session_token_hash,
             token_hash_prefix=session_token_prefix,
+            csrf_token_hash=csrf_token_hash,
             expires_at=session_expiry,
             ip_address=ip_address,
             user_agent=user_agent
@@ -215,10 +219,14 @@ class AuthenticationService:
                 seconds=self.session_timeout
             )
 
+        # Generate CSRF token and hash for the session
+        csrf_token, csrf_token_hash = self.generate_csrf_token()
+
         session = self.session_repository.create(
             user_id=cast(int, user.id),
             token_hash=session_token_hash,
             token_hash_prefix=session_token_prefix,
+            csrf_token_hash=csrf_token_hash,
             expires_at=session_expiry,
             ip_address=ip_address,
             user_agent=user_agent
@@ -288,7 +296,7 @@ class AuthenticationService:
 
         # Verify the recovery code
         if not self.password_service.verify_password(
-            parsed_recovery_code, user.recovery_code_hash
+            parsed_recovery_code, cast(str, user.recovery_code_hash)
         ):
             self.logger.warning("Password reset attempt failed: invalid recovery code", extra={"context": {"action": "password_reset", "status": "failed", "reason": "invalid_recovery_code", "user_id": user.id}})
             raise ValueError("Invalid username or recovery code")
@@ -310,7 +318,7 @@ class AuthenticationService:
 
         # Atomic update of both password and recovery code
         success = self.user_repository.update_password_and_recovery_code(
-            user_id=user.id,
+            user_id=cast(int, user.id),
             new_password_hash=new_password_hash,
             new_recovery_code_hash=new_recovery_code_hash
         )
@@ -320,17 +328,17 @@ class AuthenticationService:
             raise ValueError("Invalid username or recovery code")
 
         # Invalidate all existing sessions for security
-        self.logout_all_user_sessions(user.id)
+        self.logout_all_user_sessions(cast(int, user.id))
 
         # Update user's last login timestamp for auditing
-        self.user_repository.update_last_login(user.id)
+        self.user_repository.update_last_login(cast(int, user.id))
 
         # Audit log successful password reset (without sensitive data)
         self.logger.info("Password reset successful", extra={"context": {"action": "password_reset", "status": "success", "user_id": user.id, "username": user.username}})
 
         # Return the updated user and new formatted recovery code
         # Reload user to get fresh data
-        updated_user = self.user_repository.find_by_id(user.id)
+        updated_user = self.user_repository.find_by_id(cast(int, user.id))
         assert updated_user is not None, "User should exist after successful update"
         return updated_user, new_formatted_recovery_code
 
@@ -355,11 +363,18 @@ class AuthenticationService:
         if session.is_revoked:
             return None
 
-        if session.expires_at < datetime.now(UTC):
+        # Ensure both datetimes are timezone-aware for comparison
+        now = datetime.now(UTC)
+        expires_at = session.expires_at
+        # If expires_at is naive (no timezone), assume it's UTC
+        if expires_at.tzinfo is None:
+            expires_at = expires_at.replace(tzinfo=UTC)
+
+        if expires_at < now:
             return None
 
         # Find user
-        user = self.user_repository.find_by_id(cast(int, session.user_id))
+        user = self.user_repository.find_by_id(cast(int, session.user_id))  # type: ignore[arg-type]
         if not user or not user.is_active:
             return None
 
@@ -394,11 +409,18 @@ class AuthenticationService:
         if session.is_revoked:
             return None
 
-        if session.expires_at < datetime.now(UTC):
+        # Ensure both datetimes are timezone-aware for comparison
+        now = datetime.now(UTC)
+        expires_at = session.expires_at
+        # If expires_at is naive (no timezone), assume it's UTC
+        if expires_at.tzinfo is None:
+            expires_at = expires_at.replace(tzinfo=UTC)
+
+        if expires_at < now:
             return None
 
         # Find user
-        user = self.user_repository.find_by_id(cast(int, session.user_id))
+        user = self.user_repository.find_by_id(cast(int, session.user_id))  # type: ignore[arg-type]
         if not user or not user.is_active:
             return None
 
@@ -464,7 +486,14 @@ class AuthenticationService:
 
         user, session = result
 
-        # Generate CSRF token
-        csrf_token, _ = self.generate_csrf_token()
+        # Generate new CSRF token and update session
+        csrf_token, csrf_token_hash = self.generate_csrf_token()
+
+        # Update session with new CSRF token hash
+        self.session_repository.update_csrf_token_hash(
+            int(session.id), csrf_token_hash  # type: ignore[arg-type]
+        )
+        # Update the session object in memory with the new hash
+        session.csrf_token_hash = csrf_token_hash  # type: ignore[assignment]
 
         return user, session, csrf_token

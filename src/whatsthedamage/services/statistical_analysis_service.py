@@ -6,12 +6,15 @@ to transaction data, providing highlight metadata for visualization.
 Now includes exclusion management functionality that was previously in ExclusionService.
 """
 import json
-from typing import Dict, List, Tuple, Optional, Any
+from typing import Dict, List, Tuple, Optional, Any, TYPE_CHECKING
 from enum import Enum
 from pathlib import Path
 from whatsthedamage.models.domain.dt_models import CellHighlight, StatisticalMetadata, AggregatedRow, SummaryData, ProcessingResponse
 from whatsthedamage.models.domain.account import Account
 from whatsthedamage.models.api.responses import RecalculateApiResponse
+
+if TYPE_CHECKING:
+    from whatsthedamage.models.database.transaction import Transaction as TransactionDB
 from whatsthedamage.models.domain.statistical_algorithms import (
     StatisticalAlgorithm,
     IQROutlierDetection,
@@ -554,3 +557,81 @@ class StatisticalAnalysisService(IStatisticalAnalysisService):
         )
 
         return response, updated_metadata
+
+    def calculate_highlights(
+        self,
+        transactions: list[Any],
+        category_filter: Optional[str] = None
+    ) -> dict[str, Any]:
+        """Calculate statistical highlights from Transaction entities.
+
+        Args:
+            transactions: List of Transaction DB entities.
+            category_filter: Optional category to filter highlights by.
+
+        Returns:
+            Dictionary with highlights data.
+        """
+        # Filter by category if specified
+        if category_filter:
+            transactions = [
+                t for t in transactions
+                if t.category_id == category_filter
+            ]
+
+        if not transactions:
+            return {}
+
+        # Extract amounts for calculations
+        amounts = [t.amount for t in transactions if t.amount is not None]
+
+        if not amounts:
+            return {}
+
+        # Calculate statistics
+        total = sum(amounts)
+        count = len(amounts)
+        average = total / count if count > 0 else 0
+        min_amount = min(amounts)
+        max_amount = max(amounts)
+
+        # Calculate IQR (Interquartile Range)
+        sorted_amounts = sorted(amounts)
+        q1 = sorted_amounts[count // 4] if count > 0 else 0
+        q3 = sorted_amounts[(3 * count) // 4] if count > 0 else 0
+        iqr = q3 - q1
+
+        # Detect outliers (1.5 * IQR rule)
+        lower_bound = q1 - 1.5 * iqr
+        upper_bound = q3 + 1.5 * iqr
+        outliers = [a for a in amounts if a < lower_bound or a > upper_bound]
+
+        # Pareto analysis (80/20 rule)
+        # Group by category and calculate percentages
+        category_totals: dict[str, float] = {}
+        for t in transactions:
+            cat = t.category_id or 'uncategorized'
+            category_totals[cat] = category_totals.get(cat, 0) + (t.amount or 0)
+
+        total_by_category: float = sum(category_totals.values())
+        pareto_categories = []
+        for cat, amount in sorted(category_totals.items(), key=lambda x: x[1], reverse=True):
+            percentage = (amount / total_by_category * 100) if total_by_category > 0 else 0
+            pareto_categories.append({
+                'category': cat,
+                'amount': amount,
+                'percentage': percentage
+            })
+
+        return {
+            'total': total,
+            'count': count,
+            'average': average,
+            'min': min_amount,
+            'max': max_amount,
+            'iqr': iqr,
+            'outliers_count': len(outliers),
+            'outliers': outliers,
+            'pareto': pareto_categories,
+            # Add more statistical data as needed
+        }

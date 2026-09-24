@@ -13,6 +13,10 @@ import type {
   RecalculateApiResponse,
   CategoryDefinition,
   CsvProfile,
+  ProcessingResultListItem,
+  ProcessingResultMetadata,
+  AggregatedTransactionsResponse,
+  TransactionListResponse,
 } from '../types/api.js';
 import type {
   RegisterRequest,
@@ -97,7 +101,7 @@ async function postData<T>(
   url: string,
   data: unknown
 ): Promise<T> {
-  return fetchWithErrorHandling<T>(url, {
+  return fetchWithCsrf<T>(url, {
     method: 'POST',
     body: JSON.stringify(data),
   });
@@ -113,7 +117,7 @@ function getApiUrl(endpoint: string): string {
 }
 
 /**
- * Process transactions via API
+ * Process transactions via API (new RESTful endpoint)
  * Note: This uses direct fetch (not fetchWithErrorHandling) because:
  * 1. It's a multipart form upload (FormData)
  * 2. Content-Type must be set by the browser with boundary
@@ -123,12 +127,22 @@ function getApiUrl(endpoint: string): string {
  * @returns Promise with processing result
  * @throws AppError if processing fails
  */
-export async function processTransactions(formData: FormData): Promise<DetailedResponse> {
+export async function createTransaction(formData: FormData): Promise<DetailedResponse> {
   try {
-    const response = await fetch(`${API_BASE_URL}/process`, {
+    // Get CSRF token from store for state-changing POST request
+    const csrfToken = await getCsrfTokenFromStore();
+    
+    // Build headers manually - let browser set Content-Type for multipart
+    const headers: Record<string, string> = {};
+    if (csrfToken) {
+      headers['X-CSRF-Token'] = csrfToken;
+    }
+    
+    const response = await fetch(`${API_BASE_URL}/processing-results`, {
       method: 'POST',
       body: formData,
       credentials: 'include',
+      headers,
       // Don't set Content-Type header - let browser set it with boundary for multipart
     });
 
@@ -156,6 +170,14 @@ export async function processTransactions(formData: FormData): Promise<DetailedR
       { originalError: error }
     )
   }
+}
+
+/**
+ * DEPRECATED: Use createTransaction instead.
+ * Kept for backward compatibility.
+ */
+export async function processTransactions(formData: FormData): Promise<DetailedResponse> {
+  return createTransaction(formData)
 }
 
 /**
@@ -189,50 +211,49 @@ export async function fetchResults(resultId: string): Promise<ResultsApiResponse
 /**
  * Fetch category months data (drilldown)
  * @param params - Route parameters containing resultId, accountId, categoryId
- * @returns Promise with category months data
+ * @returns Promise with aggregated transactions data
  */
 export async function fetchCategoryMonths(
   params: Record<string, string | null>
-): Promise<CategoryMonthsApiResponse> {
-  const resultId = params.resultId ?? ''
-  const accountId = params.accountId ?? ''
-  const categoryId = params.categoryId ?? ''
-  return fetchWithErrorHandling<CategoryMonthsApiResponse>(
-    getApiUrl(`/results/${resultId}/accounts/${accountId}/categories/${categoryId}/months`)
-  );
+): Promise<AggregatedTransactionsResponse> {
+  return fetchAggregatedTransactions({
+    result_id: params.resultId ?? '',
+    account: params.accountId ?? '',
+    category_id: params.categoryId ?? '',
+    group_by: 'month'
+  });
 }
 
 /**
  * Fetch month categories data (drilldown)
  * @param params - Route parameters containing resultId, accountId, monthId
- * @returns Promise with month categories data
+ * @returns Promise with aggregated transactions data
  */
 export async function fetchMonthCategories(
   params: Record<string, string | null>
-): Promise<MonthCategoriesApiResponse> {
-  const resultId = params.resultId ?? ''
-  const accountId = params.accountId ?? ''
-  const monthId = params.monthId ?? ''
-  return fetchWithErrorHandling<MonthCategoriesApiResponse>(
-    getApiUrl(`/results/${resultId}/accounts/${accountId}/months/${monthId}/categories`)
-  );
+): Promise<AggregatedTransactionsResponse> {
+  return fetchAggregatedTransactions({
+    result_id: params.resultId ?? '',
+    account: params.accountId ?? '',
+    month: params.monthId ?? '',
+    group_by: 'category'
+  });
 }
 
 /**
  * Fetch category month transactions data (drilldown)
  * @param params - Route parameters containing resultId, accountId, categoryId, monthId
- * @returns Promise with category month transactions data
+ * @returns Promise with transaction list data
  */
 export async function fetchCategoryMonthTransactions(
   params: Record<string, string | null>
-): Promise<CategoryMonthTransactionsApiResponse> {
-  const resultId = params.resultId ?? ''
-  const accountId = params.accountId ?? ''
-  const categoryId = params.categoryId ?? ''
-  const monthId = params.monthId ?? ''
-  return fetchWithErrorHandling<CategoryMonthTransactionsApiResponse>(
-    getApiUrl(`/results/${resultId}/accounts/${accountId}/categories/${categoryId}/months/${monthId}/transactions`)
-  );
+): Promise<TransactionListResponse> {
+  return fetchTransactionsByResult(params.resultId ?? '', {
+    account: params.accountId ?? '',
+    categoryId: params.categoryId ?? '',
+    month: params.monthId ?? '',
+    limit: 1000
+  });
 }
 
 /**
@@ -258,6 +279,86 @@ export async function fetchCostOfLivingCategories(): Promise<CategoryDefinition[
  */
 export async function fetchAllCsvProfiles(): Promise<CsvProfile[]> {
   return fetchWithErrorHandling<CsvProfile[]>(getApiUrl('/csv-profiles'));
+}
+
+/**
+ * Fetch all processing results for the authenticated user
+ * @returns Promise with array of ProcessingResultListItem objects
+ */
+export async function fetchProcessingResults(): Promise<ProcessingResultListItem[]> {
+  return fetchWithErrorHandling<ProcessingResultListItem[]>(getApiUrl('/processing-results'), {
+    credentials: 'include'
+  });
+}
+
+/**
+ * Fetch processing result metadata
+ * @param resultId - Result ID
+ * @returns Promise with ProcessingResultMetadata
+ */
+export async function fetchProcessingResultMetadata(resultId: string): Promise<ProcessingResultMetadata> {
+  return fetchWithErrorHandling<ProcessingResultMetadata>(getApiUrl(`/processing-results/${resultId}`), {
+    credentials: 'include'
+  });
+}
+
+/**
+ * Fetch transactions for a specific processing result
+ * @param resultId - Result ID
+ * @param options - Filter and pagination options
+ * @returns Promise with TransactionListResponse
+ */
+export async function fetchTransactionsByResult(
+  resultId: string,
+  options: {
+    limit?: number;
+    offset?: number;
+    account?: string;
+    categoryId?: string;
+    month?: string;
+    sortBy?: string;
+    sortOrder?: string;
+  } = {}
+): Promise<TransactionListResponse> {
+  const params = new URLSearchParams();
+  params.append('result_id', resultId);
+  if (options.limit !== undefined) params.append('limit', options.limit.toString());
+  if (options.offset !== undefined) params.append('offset', options.offset.toString());
+  if (options.account) params.append('account', options.account);
+  if (options.categoryId) params.append('category_id', options.categoryId);
+  if (options.month) params.append('month', options.month);
+  if (options.sortBy) params.append('sort_by', options.sortBy);
+  if (options.sortOrder) params.append('sort_order', options.sortOrder);
+  
+  return fetchWithErrorHandling<TransactionListResponse>(
+    getApiUrl(`/transactions?${params.toString()}`),
+    { credentials: 'include' }
+  );
+}
+
+/**
+ * Fetch aggregated transaction data for drilldown views
+ * @param params - Aggregation parameters
+ * @returns Promise with AggregatedTransactionsResponse
+ */
+export async function fetchAggregatedTransactions(params: {
+  result_id: string;
+  account?: string;
+  category_id?: string;
+  month?: string;
+  group_by: string;
+}): Promise<AggregatedTransactionsResponse> {
+  const searchParams = new URLSearchParams();
+  searchParams.append('result_id', params.result_id);
+  if (params.account) searchParams.append('account', params.account);
+  if (params.category_id) searchParams.append('category_id', params.category_id);
+  if (params.month) searchParams.append('month', params.month);
+  searchParams.append('group_by', params.group_by);
+  
+  return fetchWithErrorHandling<AggregatedTransactionsResponse>(
+    getApiUrl(`/transactions/aggregate?${searchParams.toString()}`),
+    { credentials: 'include' }
+  );
 }
 
 // Authentication API functions

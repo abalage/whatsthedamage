@@ -73,11 +73,21 @@ class MockProcessingService:
         # Create StatisticalMetadata with empty highlights
         statistical_metadata = StatisticalMetadata(highlights=[])
 
+        # Create ProcessingMetadata
+        from whatsthedamage.models.common.processing_metadata import ProcessingMetadata
+        result_id = str(uuid.uuid4())
+        processing_metadata = ProcessingMetadata(
+            row_count=row_count,
+            processing_time=0.1,
+            ml_enabled=False,
+            result_id=result_id
+        )
+
         # Return ProcessingResponse object
         return ProcessingResponse(
-            result_id=str(uuid.uuid4()),
+            result_id=result_id,
             data={"": dt_response},  # Empty string for default/single account
-            metadata={'row_count': row_count},  # Simplified metadata
+            metadata=processing_metadata,
             statistical_metadata=statistical_metadata
         )
 
@@ -127,7 +137,8 @@ class APITestClient:
             Flask response object
         """
         data = {'csv_file': csv_file, **params}
-        return self.client.post(endpoint, data=data, content_type='multipart/form-data')
+        headers = {'X-CSRF-Token': 'test_csrf_token'}
+        return self.client.post(endpoint, data=data, content_type='multipart/form-data', headers=headers)
 
     def assert_success(self, response, expected_row_count: Optional[int] = None) -> Dict:
         """Assert successful response and return parsed JSON.
@@ -139,7 +150,8 @@ class APITestClient:
         Returns:
             Parsed JSON response data
         """
-        assert response.status_code == 200
+        # Accept both 200 and 201 as success codes (201 for POST /transactions)
+        assert response.status_code in [200, 201]
         data = response.get_json()
         assert 'data' in data
         assert 'metadata' in data

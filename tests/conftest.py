@@ -313,6 +313,13 @@ def db_engine():
     """Create an in-memory SQLite database engine for auth testing."""
     from sqlalchemy import create_engine
     from whatsthedamage.models.database.base import Base
+    # Import all models to ensure they're registered with SQLAlchemy metadata
+    from whatsthedamage.models.database.user import User  # noqa: F401
+    from whatsthedamage.models.database.session import Session  # noqa: F401
+    from whatsthedamage.models.database.transaction import Transaction  # noqa: F401
+    from whatsthedamage.models.database.processing_result import ProcessingResult  # noqa: F401
+    from whatsthedamage.models.database.correction import Correction  # noqa: F401
+    from whatsthedamage.models.database.shared_correction import SharedCorrection  # noqa: F401
     engine = create_engine('sqlite:///:memory:')
     Base.metadata.create_all(engine)
     yield engine

@@ -14,6 +14,15 @@ from sqlalchemy.engine import Engine, URL
 # Import Base from models to ensure consistency across the application
 from whatsthedamage.models.database.base import Base
 
+# Import all models to ensure they're registered with SQLAlchemy metadata
+# This is necessary to resolve circular dependencies in relationships
+from whatsthedamage.models.database.user import User  # noqa: F401
+from whatsthedamage.models.database.session import Session  # noqa: F401
+from whatsthedamage.models.database.transaction import Transaction  # noqa: F401
+from whatsthedamage.models.database.processing_result import ProcessingResult  # noqa: F401
+from whatsthedamage.models.database.correction import Correction  # noqa: F401
+from whatsthedamage.models.database.shared_correction import SharedCorrection  # noqa: F401
+
 __all__ = ['DatabaseConfig', 'get_database_config', 'Base']
 
 

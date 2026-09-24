@@ -11,6 +11,10 @@ from sqlalchemy.orm import sessionmaker
 from whatsthedamage.models.database.base import Base
 from whatsthedamage.models.database.user import User as UserDB
 from whatsthedamage.models.database.session import Session as SessionDB
+from whatsthedamage.models.database.transaction import Transaction as TransactionDB
+from whatsthedamage.models.database.processing_result import ProcessingResult as ProcessingResultDB
+from whatsthedamage.models.database.correction import Correction as CorrectionDB
+from whatsthedamage.models.database.shared_correction import SharedCorrection as SharedCorrectionDB
 from whatsthedamage.models.repositories.user_repository import SqlAlchemyUserRepository
 from whatsthedamage.models.repositories.session_repository import SqlAlchemySessionRepository
 from whatsthedamage.services.password_service import PasswordService

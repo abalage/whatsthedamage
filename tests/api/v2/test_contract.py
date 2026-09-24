@@ -49,78 +49,74 @@ def _setup_mock_with_data(mock_processing_service):
 # =============================================================================
 
 class TestProcessEndpoint:
-    """Contract tests for POST /api/v2/process endpoint."""
+    """Contract tests for POST /api/v2/processing-results endpoint."""
 
-    def test_process_returns_valid_detailed_response_schema(
+    def test_process_returns_valid_metadata_response(
         self, api_client_with_mock, mock_processing_service, sample_csv_file
     ):
-        """Verify /process returns valid DetailedResponse schema."""
+        """Verify /processing-results returns metadata only (new schema)."""
         _setup_mock_with_data(mock_processing_service)
         response = api_client_with_mock.post(
-            '/api/v2/process',
+            '/api/v2/processing-results',
             data={'csv_file': sample_csv_file},
             content_type='multipart/form-data',
         )
 
-        assert response.status_code == 200
+        assert response.status_code == 201
         data = response.get_json()
 
-        # Validate against Pydantic model
-        validated = DetailedResponse.model_validate(data)
+        # Verify new metadata-only response format
+        assert 'result_id' in data
+        assert 'user_id' in data
+        assert 'csv_profile_id' in data
+        assert 'row_count' in data
+        assert 'processing_time' in data
+        assert 'ml_enabled' in data
+        assert 'start_date' in data
+        assert 'end_date' in data
+        assert 'created_at' in data
 
-        # Verify required fields exist
-        assert validated.data is not None
-        assert isinstance(validated.data, list)
-        assert len(validated.data) > 0
+        # Verify no old fields are present
+        assert len(data['result_id']) > 0
 
-        # Verify metadata exists and has required fields
-        assert validated.metadata is not None
-        assert validated.metadata.result_id is not None
-        assert isinstance(validated.metadata.result_id, str)
-        assert len(validated.metadata.result_id) > 0
-
-    def test_process_response_has_correct_structure(
+    def test_process_response_has_metadata_only_structure(
         self, api_client_with_mock, mock_processing_service, sample_csv_file
     ):
-        """Verify /process response has all required fields with correct types."""
+        """Verify /processing-results response has metadata only (new schema)."""
         _setup_mock_with_data(mock_processing_service)
         response = api_client_with_mock.post(
-            '/api/v2/process',
+            '/api/v2/processing-results',
             data={'csv_file': sample_csv_file},
             content_type='multipart/form-data',
         )
 
         data = response.get_json()
 
-        # Check top-level structure
-        assert 'data' in data
-        assert 'metadata' in data
+        # Check metadata-only structure (new schema)
+        assert 'result_id' in data
+        assert 'user_id' in data
+        assert 'csv_profile_id' in data
+        assert 'row_count' in data
+        assert 'processing_time' in data
+        assert 'ml_enabled' in data
+        assert 'start_date' in data
+        assert 'end_date' in data
+        assert 'created_at' in data
+        assert 'transactions_count' in data
 
-        # Check data is an array
-        assert isinstance(data['data'], list)
-
-        # Check metadata structure
-        assert 'result_id' in data['metadata']
-        assert 'row_count' in data['metadata']
-        assert 'processing_time' in data['metadata']
-        assert 'ml_enabled' in data['metadata']
-
-        # Check first data item has required fields
-        if data['data']:
-            first_item = data['data'][0]
-            assert 'row_id' in first_item
-            assert 'category_id' in first_item
-            assert 'total' in first_item
-            assert 'date' in first_item
-            assert 'details' in first_item
+        # Ensure no old fields
+        assert 'data' not in data
+        assert 'metadata' not in data
+        assert 'statistical_metadata' not in data
+        assert 'processing_metadata' not in data
 
     def test_process_response_metadata_types(
         self, api_client_with_mock, mock_processing_service, sample_csv_file
     ):
-        """Verify /process response metadata has correct types."""
+        """Verify /processing-results response has correct metadata types."""
         _setup_mock_with_data(mock_processing_service)
         response = api_client_with_mock.post(
-            '/api/v2/process',
+            '/api/v2/processing-results',
             data={'csv_file': sample_csv_file},
             content_type='multipart/form-data',
         )
@@ -129,136 +125,103 @@ class TestProcessEndpoint:
         metadata = data['metadata']
 
         # Verify types
-        assert isinstance(metadata['result_id'], str)
-        assert isinstance(metadata['row_count'], int)
-        assert isinstance(metadata['processing_time'], float)
-        assert isinstance(metadata['ml_enabled'], bool)
+        assert isinstance(data['result_id'], str)
+        assert isinstance(data['row_count'], int)
+        assert isinstance(data['processing_time'], float)
+        assert isinstance(data['ml_enabled'], bool)
 
 
 # =============================================================================
-# Results Endpoint Contract Tests
+# Processing Results Endpoint Contract Tests
 # =============================================================================
 
-class TestResultsEndpoint:
-    """Contract tests for GET /api/v2/results/<result_id> endpoint."""
+class TestProcessingResultsEndpoint:
+    """Contract tests for GET /api/v2/processing-results/<result_id> endpoint."""
 
-    def test_results_returns_valid_results_api_response_schema(
+    def test_processing_results_returns_metadata_only(
         self, api_client_with_mock, mock_processing_service, sample_csv_file
     ):
-        """Verify /results/<id> returns valid ResultsApiResponse schema."""
+        """Verify /processing-results/<id> returns metadata only."""
         _setup_mock_with_data(mock_processing_service)
         # First process a file to get a result_id
         process_response = api_client_with_mock.post(
-            '/api/v2/process',
+            '/api/v2/processing-results',
             data={'csv_file': sample_csv_file},
             content_type='multipart/form-data',
         )
         process_data = process_response.get_json()
-        result_id = process_data['metadata']['result_id']
+        result_id = process_data['result_id']
 
-        # Now fetch results
-        response = api_client_with_mock.get(f'/api/v2/results/{result_id}')
+        # Now fetch processing result metadata
+        response = api_client_with_mock.get(f'/api/v2/processing-results/{result_id}')
 
         assert response.status_code == 200
         data = response.get_json()
 
-        # Validate against Pydantic model
-        validated = ResultsApiResponse.model_validate(data)
+        # Verify metadata-only response
+        assert data['result_id'] == result_id
+        assert 'user_id' in data
+        assert 'csv_profile_id' in data
+        assert 'row_count' in data
+        assert 'processing_time' in data
+        assert 'ml_enabled' in data
+        assert 'start_date' in data
+        assert 'end_date' in data
+        assert 'created_at' in data
+        assert 'transactions_url' in data
 
-        # Verify required fields
-        assert validated.result_id == result_id
-        assert validated.accounts is not None
+        # Verify no transaction data in response
+        assert 'data' not in data
+        assert 'accounts' not in data
+        assert 'statistical_metadata' not in data
 
-    def test_results_response_has_correct_structure(
-        self, api_client_with_mock, mock_processing_service, sample_csv_file
-    ):
-        """Verify /results/<id> response has all required fields."""
-        _setup_mock_with_data(mock_processing_service)
-        process_response = api_client_with_mock.post(
-            '/api/v2/process',
-            data={'csv_file': sample_csv_file},
-            content_type='multipart/form-data',
-        )
-        process_data = process_response.get_json()
-        result_id = process_data['metadata']['result_id']
-
-        response = api_client_with_mock.get(f'/api/v2/results/{result_id}')
-        data = response.get_json()
-
-        # Check top-level structure
-        assert 'result_id' in data
-        assert 'accounts' in data
-        assert 'highlights' in data
-        assert 'drilldown_urls_by_account' in data
-        assert isinstance(data['accounts'], list)
-
-    def test_results_404_for_nonexistent_id(self, api_client_with_mock):
-        """Verify /results/<id> returns error for non-existent result_id."""
-        response = api_client_with_mock.get('/api/v2/results/nonexistent-id-12345')
+    def test_processing_results_404_for_nonexistent_id(self, api_client_with_mock):
+        """Verify /processing-results/<id> returns error for non-existent result_id."""
+        response = api_client_with_mock.get('/api/v2/processing-results/nonexistent-id-12345')
         # The endpoint may return 404 or 422 depending on error handling
         assert response.status_code in [404, 422]
 
         # Verify error response structure
         data = response.get_json()
-        assert 'code' in data
-        assert 'message' in data
+        assert 'error' in data
 
 
 # =============================================================================
-# Drilldown Endpoints Contract Tests
+# Drilldown Endpoints Contract Tests (Updated to use new /transactions/aggregate endpoint)
 # =============================================================================
 
 class TestDrilldownEndpoints:
-    """Contract tests for drilldown endpoints."""
+    """Contract tests for new drilldown endpoints using /transactions/aggregate."""
 
-    def test_category_months_returns_valid_schema(
+    def test_aggregate_transactions_by_category(
         self, api_client_with_mock, mock_processing_service, sample_csv_file
     ):
-        """Verify category months drilldown returns valid CategoryMonthsApiResponse schema."""
+        """Verify /transactions/aggregate returns valid data when grouped by category."""
         _setup_mock_with_data(mock_processing_service)
         # Process and get result_id
         process_response = api_client_with_mock.post(
-            '/api/v2/process',
+            '/api/v2/processing-results',
             data={'csv_file': sample_csv_file},
             content_type='multipart/form-data',
         )
         process_data = process_response.get_json()
-        result_id = process_data['metadata']['result_id']
+        result_id = process_data['result_id']
 
-        # Get first account with non-empty id from results
-        results_response = api_client_with_mock.get(f'/api/v2/results/{result_id}')
-        results_data = results_response.get_json()
+        # Fetch aggregated transactions grouped by category
+        response = api_client_with_mock.get(
+            f'/api/v2/transactions/aggregate?result_id={result_id}&group_by=category'
+        )
 
-        # Find first account with valid id and data
-        account = None
-        for acc in results_data.get('accounts', []):
-            if acc.get('id') and acc.get('data'):
-                account = acc
-                break
+        assert response.status_code == 200
+        data = response.get_json()
 
-        if account:
-            account_id = account['id']
-
-            # Get first category_id from account data
-            first_row = account['data'][0]
-            category_id = first_row['category_id']
-
-            # Fetch category months
-            response = api_client_with_mock.get(
-                f'/api/v2/results/{result_id}/accounts/{account_id}/categories/{category_id}/months'
-            )
-
-            assert response.status_code == 200
-            data = response.get_json()
-
-            # Validate against Pydantic model
-            validated = CategoryMonthsApiResponse.model_validate(data)
-
-            # Verify required fields
-            assert validated.result_id == result_id
-            assert validated.account_id == account_id
-            assert validated.category_id == category_id
-            assert validated.data is not None
+        # Verify response structure
+        assert 'result_id' in data
+        assert 'group_by' in data
+        assert data['group_by'] == 'category'
+        assert 'groups' in data
+        assert 'highlights' in data
+        assert 'total_count' in data
 
     def test_month_categories_returns_valid_schema(
         self, api_client_with_mock, mock_processing_service, sample_csv_file
@@ -266,7 +229,7 @@ class TestDrilldownEndpoints:
         """Verify month categories drilldown returns valid MonthCategoriesApiResponse schema."""
         _setup_mock_with_data(mock_processing_service)
         process_response = api_client_with_mock.post(
-            '/api/v2/process',
+            '/api/v2/transactions',
             data={'csv_file': sample_csv_file},
             content_type='multipart/form-data',
         )
@@ -310,7 +273,7 @@ class TestDrilldownEndpoints:
         """Verify cell transactions drilldown returns valid CategoryMonthTransactionsApiResponse schema."""
         _setup_mock_with_data(mock_processing_service)
         process_response = api_client_with_mock.post(
-            '/api/v2/process',
+            '/api/v2/transactions',
             data={'csv_file': sample_csv_file},
             content_type='multipart/form-data',
         )
@@ -351,89 +314,6 @@ class TestDrilldownEndpoints:
 
 
 # =============================================================================
-# Recalculate Statistics Endpoint Contract Tests
-# =============================================================================
-
-class TestRecalculateStatisticsEndpoint:
-    """Contract tests for POST /api/v2/recalculate-statistics endpoint."""
-
-    def test_recalculate_returns_valid_schema(
-        self, api_client_with_mock, mock_processing_service, sample_csv_file
-    ):
-        """Verify /recalculate-statistics returns valid RecalculateApiResponse schema."""
-        _setup_mock_with_data(mock_processing_service)
-        # First process a file
-        process_response = api_client_with_mock.post(
-            '/api/v2/process',
-            data={'csv_file': sample_csv_file},
-            content_type='multipart/form-data',
-        )
-        process_data = process_response.get_json()
-        result_id = process_data['metadata']['result_id']
-
-        # Recalculate statistics
-        response = api_client_with_mock.post(
-            '/api/v2/recalculate-statistics',
-            json={
-                'result_id': result_id,
-                'algorithms': ['iqr', 'pareto'],
-                'direction': 'columns',
-            },
-        )
-
-        assert response.status_code == 200
-        data = response.get_json()
-
-        # Validate against Pydantic model
-        validated = RecalculateApiResponse.model_validate(data)
-
-        # Verify required fields
-        assert validated.status == 'success'
-        assert validated.result_id == result_id
-        assert validated.algorithms == ['iqr', 'pareto']
-        assert validated.direction == 'columns'
-        assert validated.highlights is not None
-
-    def test_recalculate_response_has_correct_structure(
-        self, api_client_with_mock, mock_processing_service, sample_csv_file
-    ):
-        """Verify /recalculate-statistics response has all required fields."""
-        _setup_mock_with_data(mock_processing_service)
-        process_response = api_client_with_mock.post(
-            '/api/v2/process',
-            data={'csv_file': sample_csv_file},
-            content_type='multipart/form-data',
-        )
-        process_data = process_response.get_json()
-        result_id = process_data['metadata']['result_id']
-
-        response = api_client_with_mock.post(
-            '/api/v2/recalculate-statistics',
-            json={
-                'result_id': result_id,
-                'algorithms': ['iqr'],
-                'direction': 'rows',
-            },
-        )
-
-        data = response.get_json()
-
-        # Check structure
-        assert 'status' in data
-        assert 'result_id' in data
-        assert 'highlights' in data
-        assert 'algorithms' in data
-        assert 'direction' in data
-
-        # Check types
-        assert isinstance(data['status'], str)
-        assert isinstance(data['result_id'], str)
-        assert isinstance(data['highlights'], dict)
-        assert isinstance(data['algorithms'], list)
-        assert isinstance(data['direction'], str)
-
-
-# =============================================================================
 # Error Response Contract Tests
 # =============================================================================
 
@@ -443,7 +323,7 @@ class TestErrorResponses:
     def test_missing_file_returns_error_response(self, api_client_with_mock):
         """Verify missing file error returns valid ErrorResponse format."""
         response = api_client_with_mock.post(
-            '/api/v2/process',
+            '/api/v2/transactions',
             data={},  # No csv_file
             content_type='multipart/form-data',
         )

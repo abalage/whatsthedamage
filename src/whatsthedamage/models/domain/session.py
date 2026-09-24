@@ -78,7 +78,13 @@ class Session:
         """
         if self.expires_at is None:
             return True
-        return datetime.now(UTC) > self.expires_at
+        # Ensure both datetimes are timezone-aware for comparison
+        now = datetime.now(UTC)
+        expires_at = self.expires_at
+        # If expires_at is naive (no timezone), assume it's UTC
+        if expires_at.tzinfo is None:
+            expires_at = expires_at.replace(tzinfo=UTC)
+        return now > expires_at
 
     def revoke(self) -> None:
         """Mark the session as revoked."""

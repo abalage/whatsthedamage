@@ -1,8 +1,9 @@
 import { defineStore } from 'pinia'
 import { ref, reactive, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { processTransactions } from '../js/api.js'
+import { createTransaction } from '../js/api.js'
 import { useFeedbackStore } from './feedback.js'
+import { useAuthStore } from './auth.js'
 import type { DetailedResponse } from '../types/api.js'
 
 /**
@@ -16,7 +17,6 @@ interface FormData {
   categoryFilter: string
   verbose: boolean
   mlEnabled: boolean
-  cacheEnabled: boolean
   csvProfileId: string | null
 }
 
@@ -60,7 +60,6 @@ const useFormStore = defineStore('form', () => {
     categoryFilter: '',
     verbose: false,
     mlEnabled: false,
-    cacheEnabled: true,
     csvProfileId: null
   })
 
@@ -95,7 +94,6 @@ const useFormStore = defineStore('form', () => {
     formData.categoryFilter = ''
     formData.verbose = false
     formData.mlEnabled = false
-    formData.cacheEnabled = true
     formData.csvProfileId = null
     errors.value = {}
     isSubmitted.value = false
@@ -189,6 +187,13 @@ const useFormStore = defineStore('form', () => {
    * @returns Promise with result containing resultId or error
    */
   const prepareSubmit = async (): Promise<SubmitResult> => {
+    // Check if user is authenticated
+    const authStore = useAuthStore()
+    if (!authStore.isAuthenticated) {
+      feedback.showError('Please login to process transactions')
+      return { success: false, error: 'Not authenticated' }
+    }
+    
     if (!validateForm()) {
       feedback.showError('Please fix the form errors before submitting')
       return { success: false, error: 'Validation failed' }
@@ -228,10 +233,9 @@ const useFormStore = defineStore('form', () => {
 
       formDataObj.append('verbose', formData.verbose.toString())
       formDataObj.append('ml_enabled', formData.mlEnabled.toString())
-      formDataObj.append('cache_ttl', formData.cacheEnabled ? '1800' : '0')
 
       // Call API
-      const response: DetailedResponse = await processTransactions(formDataObj)
+      const response: DetailedResponse = await createTransaction(formDataObj)
 
       // Extract result_id from metadata
       const resultId = response.metadata.result_id
@@ -326,8 +330,8 @@ export const useFormWithNavigation = () => {
 
   return {
     formStore,
-    submitForm
-  }
+    submitForm,
+  } as const
 }
 
 

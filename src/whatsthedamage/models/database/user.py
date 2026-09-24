@@ -13,6 +13,9 @@ from whatsthedamage.models.database.base import Base
 
 if TYPE_CHECKING:
     from whatsthedamage.models.database.session import Session
+    from whatsthedamage.models.database.processing_result import ProcessingResult
+    from whatsthedamage.models.database.correction import Correction
+    from whatsthedamage.models.database.transaction import Transaction
 
 
 class User(Base):
@@ -32,6 +35,9 @@ class User(Base):
         is_active: Whether the account is active (default True).
         opt_in_sharing: Whether user opts in to sharing corrections (default False).
         sessions: One-to-many relationship with Session model.
+        processing_results: One-to-many relationship with ProcessingResult model.
+        corrections: One-to-many relationship with Correction model.
+        transactions: One-to-many relationship with Transaction model.
     """
 
     __tablename__ = 'users'
@@ -48,6 +54,30 @@ class User(Base):
     # Relationship to sessions (one-to-many)
     sessions = relationship(
         'Session',
+        back_populates='user',
+        cascade='all, delete-orphan',
+        passive_deletes=True
+    )
+
+    # Relationship to processing results (one-to-many)
+    processing_results = relationship(
+        'ProcessingResult',
+        back_populates='user',
+        cascade='all, delete-orphan',
+        passive_deletes=True
+    )
+
+    # Relationship to corrections (one-to-many)
+    corrections = relationship(
+        'Correction',
+        back_populates='user',
+        cascade='all, delete-orphan',
+        passive_deletes=True
+    )
+
+    # Relationship to transactions (one-to-many)
+    transactions = relationship(
+        'Transaction',
         back_populates='user',
         cascade='all, delete-orphan',
         passive_deletes=True

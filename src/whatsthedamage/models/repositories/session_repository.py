@@ -27,7 +27,8 @@ class SessionRepository(Protocol):
         token_hash_prefix: str,
         expires_at: datetime,
         ip_address: Optional[str] = None,
-        user_agent: Optional[str] = None
+        user_agent: Optional[str] = None,
+        csrf_token_hash: Optional[str] = None
     ) -> SessionDB:
         """Create a new session.
 
@@ -38,6 +39,7 @@ class SessionRepository(Protocol):
             expires_at: Token expiration timestamp.
             ip_address: Client IP address.
             user_agent: Client user agent.
+            csrf_token_hash: SHA-256 hash of the CSRF token.
 
         Returns:
             The created Session entity.
@@ -107,6 +109,29 @@ class SessionRepository(Protocol):
         """
         ...
 
+    def update_csrf_token_hash(self, session_id: int, csrf_token_hash: str) -> bool:
+        """Update the CSRF token hash for a session.
+
+        Args:
+            session_id: The session identifier.
+            csrf_token_hash: The new CSRF token hash.
+
+        Returns:
+            True if session was found and updated, False otherwise.
+        """
+        ...
+
+    def find_by_id(self, session_id: int) -> Optional[SessionDB]:
+        """Find session by ID.
+
+        Args:
+            session_id: The session identifier.
+
+        Returns:
+            Session entity if found, None otherwise.
+        """
+        ...
+
 
 class SqlAlchemySessionRepository(SqlAlchemyBaseRepository[SessionDB]):
     """SQLAlchemy implementation of SessionRepository.
@@ -136,7 +161,8 @@ class SqlAlchemySessionRepository(SqlAlchemyBaseRepository[SessionDB]):
         token_hash_prefix: str,
         expires_at: datetime,
         ip_address: Optional[str] = None,
-        user_agent: Optional[str] = None
+        user_agent: Optional[str] = None,
+        csrf_token_hash: Optional[str] = None
     ) -> SessionDB:
         """Create a new session in the database.
 
@@ -147,6 +173,7 @@ class SqlAlchemySessionRepository(SqlAlchemyBaseRepository[SessionDB]):
             expires_at: Token expiration timestamp.
             ip_address: Client IP address.
             user_agent: Client user agent.
+            csrf_token_hash: SHA-256 hash of the CSRF token.
 
         Returns:
             The created Session entity.
@@ -164,6 +191,7 @@ class SqlAlchemySessionRepository(SqlAlchemyBaseRepository[SessionDB]):
                 user_id=user_id,
                 token_hash=token_hash,
                 token_hash_prefix=token_hash_prefix,
+                csrf_token_hash=csrf_token_hash,
                 expires_at=expires_at,
                 created_at=datetime.now(UTC),
                 ip_address=ip_address,
@@ -344,6 +372,35 @@ class SqlAlchemySessionRepository(SqlAlchemyBaseRepository[SessionDB]):
             ).delete()
             session.commit()
             return result  # type: ignore[no-any-return]
+        except Exception:
+            session.rollback()
+            raise
+        finally:
+            session.close()
+
+    def find_by_id(self, session_id: int) -> Optional[SessionDB]:
+        """Find session by ID."""
+        session = self._get_session()
+        try:
+            result = session.query(SessionDB).filter(
+                SessionDB.id == session_id
+            ).first()
+            return result  # type: ignore[no-any-return]
+        finally:
+            session.close()
+
+    def update_csrf_token_hash(self, session_id: int, csrf_token_hash: str) -> bool:
+        """Update the CSRF token hash for a session."""
+        session = self._get_session()
+        try:
+            db_session = session.query(SessionDB).filter(
+                SessionDB.id == session_id
+            ).first()
+            if db_session:
+                db_session.csrf_token_hash = csrf_token_hash  # type: ignore[assignment]
+                session.commit()
+                return True
+            return False
         except Exception:
             session.rollback()
             raise

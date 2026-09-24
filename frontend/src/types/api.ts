@@ -23,6 +23,8 @@ export interface DisplayRawField {
 
 /**
  * Date with display format and timestamp
+ * @deprecated Use ISO 8601 date strings directly instead.
+ * This type is kept for backward compatibility but is no longer used in API responses.
  */
 export interface DateField {
   display: string;
@@ -36,10 +38,11 @@ export interface DateField {
 /**
  * Unified transaction detail model - consolidates DetailRow and TransactionDetail.
  * Replaces the previous DetailRow and TransactionDetailResponse interfaces.
+ * Uses ISO 8601 date strings instead of DateField objects.
  */
 export interface TransactionDetail {
   row_id: string;
-  date: DateField;
+  date: string; // ISO 8601 date string (YYYY-MM-DD or YYYY-MM-DDTHH:MM:SS)
   amount: DisplayRawField;
   merchant: string;
   currency: string;
@@ -54,12 +57,13 @@ export interface TransactionDetail {
 
 /**
  * Aggregated row: transactions grouped by category and date
+ * Uses ISO 8601 date strings instead of DateField objects.
  */
 export interface AggregatedRow {
   row_id: string;
   category_id: string;
   total: DisplayRawField;
-  date: DateField;
+  date: string; // ISO 8601 date string (YYYY-MM-DD or YYYY-MM-DDTHH:MM:SS)
   details: TransactionDetail[];
   is_calculated?: boolean;
 }
@@ -107,11 +111,11 @@ export interface Account {
 // ============================================================================
 
 // -----------------------------------------------------------------------------
-// Process Endpoint: POST /api/v2/process
+// Transactions Endpoint: POST /api/v2/transactions
 // -----------------------------------------------------------------------------
 
 /**
- * Response from POST /api/v2/process
+ * Response from POST /api/v2/transactions
  *
  * Contains processed transaction data grouped by category and month,
  * plus processing metadata.
@@ -228,10 +232,10 @@ export interface CategoryDefinition {
 
 /**
  * Data for a single month in category months response
- * Frontend should use month_timestamp to format the month display name.
+ * Uses ISO 8601 date string instead of timestamp.
  */
 export interface MonthData {
-  month_timestamp: number;
+  month_date: string; // ISO 8601 date string (YYYY-MM-DD)
   total: DisplayRawField;
   row_id: string;
   cell_url: string;
@@ -241,6 +245,7 @@ export interface MonthData {
  * Response from GET /api/v2/results/<r>/accounts/<a>/categories/<c>/months
  *
  * Returns month-by-month aggregation for a specific category.
+ * Uses ISO 8601 date strings instead of timestamps.
  */
 export interface CategoryMonthsApiResponse {
   result_id: string;
@@ -267,7 +272,7 @@ export interface CategoryData {
  * Response from GET /api/v2/results/<r>/accounts/<a>/months/<m>/categories
  *
  * Returns category-by-category aggregation for a specific month.
- * Frontend should use month_timestamp to format the month display name.
+ * Uses ISO 8601 date string instead of timestamp.
  */
 export interface MonthCategoriesApiResponse {
   result_id: string;
@@ -276,7 +281,7 @@ export interface MonthCategoriesApiResponse {
   account_formatted_id: string;
   account_currency: string;
   month_id: string;
-  month_timestamp: number;
+  month_date: string; // ISO 8601 date string (YYYY-MM-DD)
   data: CategoryData[];
   highlights?: StatisticalHighlights;
 }
@@ -285,7 +290,7 @@ export interface MonthCategoriesApiResponse {
  * Response from GET /api/v2/results/<r>/accounts/<a>/categories/<c>/months/<m>/transactions
  *
  * Returns individual transaction details for a specific category and month.
- * Frontend should use month_timestamp to format the month display name.
+ * Uses ISO 8601 date string instead of timestamp.
  */
 export interface CategoryMonthTransactionsApiResponse {
   result_id: string;
@@ -295,7 +300,7 @@ export interface CategoryMonthTransactionsApiResponse {
   account_currency: string;
   category_id: string;
   month_id: string;
-  month_timestamp: number;
+  month_date: string; // ISO 8601 date string (YYYY-MM-DD)
   data: TransactionDetail[];
   highlights?: StatisticalHighlights;
 }
@@ -356,5 +361,88 @@ export interface CsvProfileSchema {
   attribute_mapping_required_keys: string[];
   example: Record<string, unknown>;
   notes: string[];
+}
+
+// -----------------------------------------------------------------------------
+// Processing Results Endpoint: GET /api/v2/processing-results
+// -----------------------------------------------------------------------------
+
+/**
+ * List item for user's processing results
+ * Fetched via GET /api/v2/processing-results
+ */
+export interface ProcessingResultListItem {
+  id: string;  // This is result_id
+  csv_profile_id: string | null;
+  row_count: number | null;
+  processing_time: number | null;
+  ml_enabled: boolean;
+  start_date: string | null;
+  end_date: string | null;
+  created_at: string | null;
+  // updated_at removed as per requirement
+}
+
+/**
+ * Processing result metadata (replaces ResultsApiResponse data structure)
+ * Fetched via GET /api/v2/processing-results/<result_id>
+ */
+export interface ProcessingResultMetadata {
+  result_id: string;
+  user_id: number;
+  csv_profile_id: string | null;
+  row_count: number | null;
+  processing_time: number | null;
+  ml_enabled: boolean;
+  start_date: string | null;
+  end_date: string | null;
+  created_at: string | null;
+  transactions_url: string;  // Link to /transactions endpoint
+}
+
+/**
+ * Transaction entity for list responses
+ */
+export interface TransactionListItem {
+  id: number;
+  user_id: number;
+  result_id: string | null;
+  date: string; // ISO 8601 date-time string (YYYY-MM-DDTHH:MM:SS or YYYY-MM-DD)
+  transaction_type: string;
+  original_partner: string;
+  amount: number;
+  currency: string;
+  account: string;
+  deduplication_hash: string;
+  category_id: string | null;
+  partner: string | null;
+  notice: string | null;
+  confidence: number | null;
+  created_at: string | null;
+  updated_at: string | null;
+}
+
+/**
+ * Transaction list response with pagination
+ */
+export interface TransactionListResponse {
+  transactions: TransactionListItem[];
+  total_count: number;
+  limit: number;
+  offset: number;
+}
+
+/**
+ * Aggregated transaction data for drilldown views
+ */
+export interface AggregatedTransactionsResponse {
+  result_id: string;
+  account?: string;
+  category_id?: string;
+  month?: string;
+  group_by: string;
+  groups: Record<string, TransactionListItem[]>;
+  highlights: Record<string, any>;
+  total_count: number;
 }
 

@@ -39,16 +39,17 @@ def get_openapi_schema() -> dict[str, Any]:
             }
         ],
         "paths": {
-            "/process": {
+            "/transactions": {
                 "post": {
-                    "summary": "Process CSV transaction file",
+                    "summary": "Create transaction processing result",
                     "description": (
                         "Upload a CSV file containing bank transactions "
                         "and receive detailed transaction data grouped by "
-                        "category and month."
+                        "category and month. Requires authentication."
                     ),
-                    "operationId": "processTransactions",
-                    "tags": ["Processing"],
+                    "operationId": "createTransaction",
+                    "tags": ["Transactions"],
+                    "security": [{"cookieAuth": []}],
                     "requestBody": {
                         "required": True,
                         "content": {
@@ -60,8 +61,8 @@ def get_openapi_schema() -> dict[str, Any]:
                         }
                     },
                     "responses": {
-                        "200": {
-                            "description": "Success",
+                        "201": {
+                            "description": "Transaction processing result created",
                             "content": {
                                 "application/json": {
                                     "schema": {
@@ -80,8 +81,151 @@ def get_openapi_schema() -> dict[str, Any]:
                                 }
                             }
                         },
+                        "401": {
+                            "description": "Not authenticated",
+                            "content": {
+                                "application/json": {
+                                    "schema": {
+                                        "$ref": "#/components/schemas/ErrorResponse"
+                                    }
+                                }
+                            }
+                        },
                         "422": {
                             "description": "Unprocessable entity",
+                            "content": {
+                                "application/json": {
+                                    "schema": {
+                                        "$ref": "#/components/schemas/ErrorResponse"
+                                    }
+                                }
+                            }
+                        },
+                        "500": {
+                            "description": "Server error",
+                            "content": {
+                                "application/json": {
+                                    "schema": {
+                                        "$ref": "#/components/schemas/ErrorResponse"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "get": {
+                    "summary": "List transaction processing results",
+                    "description": "Get a paginated list of processing results for the authenticated user.",
+                    "operationId": "listTransactions",
+                    "tags": ["Transactions"],
+                    "security": [{"cookieAuth": []}],
+                    "parameters": [
+                        {
+                            "name": "limit",
+                            "in": "query",
+                            "required": False,
+                            "schema": {
+                                "type": "integer",
+                                "default": 100
+                            }
+                        },
+                        {
+                            "name": "offset",
+                            "in": "query",
+                            "required": False,
+                            "schema": {
+                                "type": "integer",
+                                "default": 0
+                            }
+                        }
+                    ],
+                    "responses": {
+                        "200": {
+                            "description": "List of processing results",
+                            "content": {
+                                "application/json": {
+                                    "schema": {
+                                        "type": "array",
+                                        "items": {
+                                            "$ref": "#/components/schemas/ProcessingResultListItem"
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "401": {
+                            "description": "Not authenticated",
+                            "content": {
+                                "application/json": {
+                                    "schema": {
+                                        "$ref": "#/components/schemas/ErrorResponse"
+                                    }
+                                }
+                            }
+                        },
+                        "500": {
+                            "description": "Server error",
+                            "content": {
+                                "application/json": {
+                                    "schema": {
+                                        "$ref": "#/components/schemas/ErrorResponse"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "/transactions/{result_id}": {
+                "get": {
+                    "summary": "Get transaction processing result",
+                    "description": "Get a specific processing result by ID.",
+                    "operationId": "getTransaction",
+                    "tags": ["Transactions"],
+                    "security": [{"cookieAuth": []}],
+                    "parameters": [
+                        {
+                            "name": "result_id",
+                            "in": "path",
+                            "required": True,
+                            "schema": {
+                                "type": "string"
+                            }
+                        }
+                    ],
+                    "responses": {
+                        "200": {
+                            "description": "Processing result",
+                            "content": {
+                                "application/json": {
+                                    "schema": {
+                                        "$ref": "#/components/schemas/ResultsApiResponse"
+                                    }
+                                }
+                            }
+                        },
+                        "401": {
+                            "description": "Not authenticated",
+                            "content": {
+                                "application/json": {
+                                    "schema": {
+                                        "$ref": "#/components/schemas/ErrorResponse"
+                                    }
+                                }
+                            }
+                        },
+                        "403": {
+                            "description": "Forbidden (not your result)",
+                            "content": {
+                                "application/json": {
+                                    "schema": {
+                                        "$ref": "#/components/schemas/ErrorResponse"
+                                    }
+                                }
+                            }
+                        },
+                        "404": {
+                            "description": "Not found",
                             "content": {
                                 "application/json": {
                                     "schema": {
@@ -553,6 +697,13 @@ def get_openapi_schema() -> dict[str, Any]:
             }
         },
         "components": {
+            "securitySchemes": {
+                "cookieAuth": {
+                    "type": "apiKey",
+                    "in": "cookie",
+                    "name": "session_token"
+                }
+            },
             "schemas": {
                 "CategoryDefinition": {
                     "type": "object",
@@ -627,11 +778,13 @@ def get_openapi_schema() -> dict[str, Any]:
                         },
                         "start_date": {
                             "type": "string",
-                            "example": "2024.01.01"
+                            "format": "date",
+                            "example": "2024-01-01"
                         },
                         "end_date": {
                             "type": "string",
-                            "example": "2024.12.31"
+                            "format": "date",
+                            "example": "2024-12-31"
                         },
                         "date_format": {
                             "type": "string",
@@ -645,14 +798,38 @@ def get_openapi_schema() -> dict[str, Any]:
                             "type": "string",
                             "example": "grocery"
                         },
-                        "cache_ttl": {
-                            "type": "integer",
-                            "nullable": True,
-                            "example": 1800
-                        },
                         "csv_profile_id": {
                             "type": "string",
                             "example": "otp-hu"
+                        }
+                    }
+                },
+                "ProcessingResultListItem": {
+                    "type": "object",
+                    "required": ["id"],
+                    "properties": {
+                        "id": {
+                            "type": "string",
+                            "description": "Unique identifier for the processing result",
+                            "example": "550e8400-e29b-41d4-a716-446655440000"
+                        },
+                        "csv_profile_id": {
+                            "type": "string",
+                            "nullable": True,
+                            "description": "CSV profile ID used for processing",
+                            "example": "otp-hu"
+                        },
+                        "created_at": {
+                            "type": "string",
+                            "format": "date-time",
+                            "nullable": True,
+                            "description": "When the processing result was created"
+                        },
+                        "updated_at": {
+                            "type": "string",
+                            "format": "date-time",
+                            "nullable": True,
+                            "description": "When the processing result was last updated"
                         }
                     }
                 },
@@ -1108,6 +1285,126 @@ def get_openapi_schema() -> dict[str, Any]:
                         "highlights": {
                             "type": "object"
                         }
+                    }
+                },
+                "TransactionApiResponse": {
+                    "type": "object",
+                    "properties": {
+                        "id": {"type": "integer"},
+                        "user_id": {"type": "integer"},
+                        "date": {"type": "string", "format": "date-time"},
+                        "transaction_type": {"type": "string"},
+                        "original_partner": {"type": "string"},
+                        "amount": {"type": "number"},
+                        "currency": {"type": "string"},
+                        "account": {"type": "string"},
+                        "deduplication_hash": {"type": "string"},
+                        "category_id": {"type": "string", "nullable": True},
+                        "partner": {"type": "string", "nullable": True},
+                        "notice": {"type": "string", "nullable": True},
+                        "confidence": {"type": "number", "nullable": True},
+                        "created_at": {"type": "string", "format": "date-time"},
+                        "updated_at": {"type": "string", "format": "date-time"}
+                    },
+                    "required": ["id", "user_id", "date", "transaction_type", "original_partner", "amount", "currency", "account", "deduplication_hash"]
+                },
+                "CreateTransactionRequest": {
+                    "type": "object",
+                    "properties": {
+                        "date": {"type": "string", "format": "date"},
+                        "transaction_type": {"type": "string"},
+                        "original_partner": {"type": "string"},
+                        "amount": {"type": "number"},
+                        "currency": {"type": "string"},
+                        "account": {"type": "string"},
+                        "category_id": {"type": "string", "nullable": True},
+                        "partner": {"type": "string", "nullable": True},
+                        "notice": {"type": "string", "nullable": True},
+                        "confidence": {"type": "number", "nullable": True}
+                    },
+                    "required": ["date", "transaction_type", "original_partner", "amount", "currency", "account"]
+                },
+                "UpdateTransactionRequest": {
+                    "type": "object",
+                    "properties": {
+                        "category_id": {"type": "string", "nullable": True},
+                        "partner": {"type": "string", "nullable": True},
+                        "notice": {"type": "string", "nullable": True},
+                        "confidence": {"type": "number", "nullable": True}
+                    }
+                },
+                "ListTransactionsQueryParams": {
+                    "type": "object",
+                    "properties": {
+                        "limit": {"type": "integer", "default": 100},
+                        "offset": {"type": "integer", "default": 0},
+                        "start_date": {"type": "string", "format": "date", "nullable": True},
+                        "end_date": {"type": "string", "format": "date", "nullable": True},
+                        "category_id": {"type": "string", "nullable": True},
+                        "account": {"type": "string", "nullable": True},
+                        "partner": {"type": "string", "nullable": True},
+                        "transaction_type": {"type": "string", "nullable": True},
+                        "month": {"type": "string", "nullable": True},
+                        "min_amount": {"type": "number", "nullable": True},
+                        "max_amount": {"type": "number", "nullable": True},
+                        "sort_by": {"type": "string", "default": "date", "enum": ["date", "amount", "partner", "account", "category"]},
+                        "sort_order": {"type": "string", "enum": ["asc", "desc"], "default": "desc"}
+                    }
+                },
+                "ListTransactionsResponse": {
+                    "type": "object",
+                    "properties": {
+                        "transactions": {
+                            "type": "array",
+                            "items": {"$ref": "#/components/schemas/TransactionApiResponse"}
+                        },
+                        "total_count": {"type": "integer"},
+                        "limit": {"type": "integer"},
+                        "offset": {"type": "integer"}
+                    }
+                },
+                "CorrectionApiResponse": {
+                    "type": "object",
+                    "properties": {
+                        "id": {"type": "integer"},
+                        "user_id": {"type": "integer"},
+                        "original_partner": {"type": "string"},
+                        "corrected_partner": {"type": "string", "nullable": True},
+                        "corrected_category_id": {"type": "string", "nullable": True},
+                        "corrected_notice": {"type": "string", "nullable": True},
+                        "created_at": {"type": "string", "format": "date-time"},
+                        "updated_at": {"type": "string", "format": "date-time"}
+                    },
+                    "required": ["id", "user_id", "original_partner"]
+                },
+                "CreateCorrectionRequest": {
+                    "type": "object",
+                    "properties": {
+                        "original_partner": {"type": "string"},
+                        "corrected_partner": {"type": "string", "nullable": True},
+                        "corrected_category_id": {"type": "string", "nullable": True},
+                        "corrected_notice": {"type": "string", "nullable": True}
+                    },
+                    "required": ["original_partner"]
+                },
+                "UpdateCorrectionRequest": {
+                    "type": "object",
+                    "properties": {
+                        "corrected_partner": {"type": "string", "nullable": True},
+                        "corrected_category_id": {"type": "string", "nullable": True},
+                        "corrected_notice": {"type": "string", "nullable": True}
+                    }
+                },
+                "ListCorrectionsResponse": {
+                    "type": "object",
+                    "properties": {
+                        "corrections": {
+                            "type": "array",
+                            "items": {"$ref": "#/components/schemas/CorrectionApiResponse"}
+                        },
+                        "total_count": {"type": "integer"},
+                        "limit": {"type": "integer"},
+                        "offset": {"type": "integer"}
                     }
                 }
             }

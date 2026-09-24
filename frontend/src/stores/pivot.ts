@@ -66,12 +66,21 @@ export const usePivotStore = defineStore('pivot', () => {
     if (!account?.data) return [];
 
     // Extract unique months from account data
-    const monthMap = new Map<number, { display: string; timestamp: number }>();
+    // row.date is now an ISO 8601 string (YYYY-MM-DD)
+    const monthMap = new Map<string, { display: string; timestamp: number }>();
     for (const row of account.data) {
-      monthMap.set(row.date.timestamp, {
-        display: row.date.display,
-        timestamp: row.date.timestamp
-      });
+      const dateStr = row.date as string;
+      // Extract YYYY-MM from ISO date string
+      const monthKey = dateStr?.substring(0, 7) || 'unknown';
+      // Convert to timestamp for sorting
+      const timestamp = dateStr ? Math.floor(new Date(dateStr).getTime() / 1000) : 0;
+      
+      if (!monthMap.has(monthKey)) {
+        monthMap.set(monthKey, {
+          display: monthKey,  // Use YYYY-MM as display
+          timestamp: timestamp
+        });
+      }
     }
 
     // Sort by timestamp descending (most recent first)
@@ -107,7 +116,10 @@ export const usePivotStore = defineStore('pivot', () => {
 
       // Find all rows for this month
       for (const row of accountData) {
-        if (row.date.timestamp === month.timestamp && !row.is_calculated) {
+        // row.date is now an ISO 8601 string (YYYY-MM-DD)
+        const rowTimestamp = row.date ? Math.floor(new Date(row.date as string).getTime() / 1000) : 0;
+        
+        if (rowTimestamp === month.timestamp && !row.is_calculated) {
           const amount = typeof row.total.raw === 'number'
             ? row.total.raw
             : Number.parseFloat(row.total.raw as string);

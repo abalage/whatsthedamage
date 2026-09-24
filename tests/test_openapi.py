@@ -39,7 +39,7 @@ class TestOpenApiSchemaStructure:
 
         # Check all 11 endpoints are present
         expected_paths = [
-            "/process",
+            "/transactions",
             "/results/{result_id}",
             "/results/{result_id}/accounts/{account_id}/categories/{category_id}/months",
             "/results/{result_id}/accounts/{account_id}/months/{month_id}/categories",
@@ -89,9 +89,9 @@ class TestOpenApiSchemaContent:
     """Test suite for OpenAPI schema content validation."""
 
     def test_process_endpoint_has_post_method(self):
-        """Test that /process endpoint has POST method."""
+        """Test that /transactions endpoint has POST method."""
         schema = get_openapi_schema()
-        assert "post" in schema["paths"]["/process"]
+        assert "post" in schema["paths"]["/transactions"]
 
     def test_results_endpoint_has_get_method(self):
         """Test that /results/{result_id} endpoint has GET method."""
@@ -144,7 +144,6 @@ class TestOpenApiSchemaContent:
             "date_format",
             "ml_enabled",
             "category_filter",
-            "cache_ttl",
             "csv_profile_id"
         ]
 
@@ -203,7 +202,7 @@ class TestOpenApiEndpoint:
         assert "components" in data
 
         # Verify all endpoints are present
-        assert "/process" in data["paths"]
+        assert "/transactions" in data["paths"]
         assert "/results/{result_id}" in data["paths"]
         assert "/categories" in data["paths"]
         assert "/csv-profiles" in data["paths"]

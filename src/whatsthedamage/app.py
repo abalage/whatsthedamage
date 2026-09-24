@@ -69,8 +69,12 @@ def _init_database(app: Flask) -> None:
     # Import models to ensure they're registered with SQLAlchemy metadata
     from whatsthedamage.models.database.user import User as UserDB
     from whatsthedamage.models.database.session import Session as SessionDB
+    from whatsthedamage.models.database.transaction import Transaction as TransactionDB
+    from whatsthedamage.models.database.processing_result import ProcessingResult as ProcessingResultDB
+    from whatsthedamage.models.database.correction import Correction as CorrectionDB
+    from whatsthedamage.models.database.shared_correction import SharedCorrection as SharedCorrectionDB
 
-    # Create all tables (Users and Sessions only for auth)
+    # Create all tables (Users, Sessions, Transactions, ProcessingResults, Corrections)
     Base.metadata.create_all(engine)
 
     # Store engine in app for later use
@@ -132,10 +136,6 @@ def _init_auth_services(app: Flask, service_container: ServiceContainer) -> Serv
         max_concurrent_sessions=auth_config.SESSION_MAX_CONCURRENT
     )
 
-    # Initialize auth endpoints with services
-    from whatsthedamage.api.v2.auth.endpoints import init_auth_services
-    init_auth_services(auth_service, rate_limit_service)
-
     # Store services in app extensions
     app.extensions['auth_service'] = auth_service
     app.extensions['rate_limit_service'] = rate_limit_service
@@ -143,6 +143,52 @@ def _init_auth_services(app: Flask, service_container: ServiceContainer) -> Serv
     app.extensions['token_service'] = token_service
     app.extensions['user_repository'] = user_repo
     app.extensions['session_repository'] = session_repo
+
+    return service_container
+
+
+def _init_transaction_services(app: Flask, service_container: ServiceContainer) -> ServiceContainer:
+    """Initialize transaction-related services."""
+    # Get database session factory
+    session_factory = app.extensions.get('db_session_factory')
+    if not session_factory:
+        _init_database(app)
+        session_factory = app.extensions['db_session_factory']
+
+    # Create repositories
+    from whatsthedamage.models.repositories.transaction_repository import SqlAlchemyTransactionRepository
+    from whatsthedamage.models.repositories.processing_result_repository import SqlAlchemyProcessingResultRepository
+    from whatsthedamage.models.repositories.correction_repository import SqlAlchemyCorrectionRepository
+    from whatsthedamage.models.repositories.shared_correction_repository import SqlAlchemySharedCorrectionRepository
+
+    transaction_repo = SqlAlchemyTransactionRepository(cast(Any, session_factory))
+    processing_result_repo = SqlAlchemyProcessingResultRepository(cast(Any, session_factory))
+    correction_repo = SqlAlchemyCorrectionRepository(cast(Any, session_factory))
+    shared_correction_repo = SqlAlchemySharedCorrectionRepository(cast(Any, session_factory))
+
+    # Create services
+    from whatsthedamage.services.deduplication_service import DeduplicationService
+    from whatsthedamage.services.correction_service import CorrectionService
+    from whatsthedamage.services.transaction_persistence_service import TransactionPersistenceService
+
+    dedup_service = DeduplicationService()
+    transaction_persistence_service = TransactionPersistenceService(
+        transaction_repo=transaction_repo,
+        correction_repo=correction_repo
+    )
+    correction_service = CorrectionService(
+        correction_repo=correction_repo,
+        transaction_repo=transaction_repo
+    )
+
+    # Store repositories and services in app extensions
+    app.extensions['transaction_repository'] = transaction_repo
+    app.extensions['processing_result_repository'] = processing_result_repo
+    app.extensions['correction_repository'] = correction_repo
+    app.extensions['shared_correction_repository'] = shared_correction_repo
+    app.extensions['deduplication_service'] = dedup_service
+    app.extensions['transaction_persistence_service'] = transaction_persistence_service
+    app.extensions['correction_service'] = correction_service
 
     return service_container
 
@@ -168,6 +214,9 @@ def _initialize_service_container(
 
     # Initialize authentication services
     _init_auth_services(app, service_container)
+
+    # Initialize transaction services
+    _init_transaction_services(app, service_container)
 
     return service_container
 

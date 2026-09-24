@@ -27,6 +27,7 @@ class Session(Base):
         user_id: Foreign key to User (required).
         token_hash: SHA-256 hash of the session token (64 char hex).
         token_hash_prefix: First 8 characters of token_hash for fast lookup.
+        csrf_token_hash: SHA-256 hash of the CSRF token (64 char hex).
         expires_at: Token expiration timestamp.
         created_at: Token creation timestamp.
         ip_address: IP address of the client that created the session.
@@ -41,6 +42,7 @@ class Session(Base):
     user_id = Column(Integer, ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
     token_hash = Column(String(64), nullable=False)
     token_hash_prefix = Column(String(8), nullable=False)
+    csrf_token_hash = Column(String(64), nullable=True)
     expires_at = Column(DateTime, nullable=False)
     created_at = Column(DateTime, nullable=False, default=lambda: datetime.now(UTC))
     ip_address = Column(String(45), nullable=True)

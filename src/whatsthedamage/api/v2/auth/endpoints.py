@@ -8,65 +8,48 @@ Provides REST API endpoints for user authentication including:
 - CSRF token (GET /api/v2/auth/csrf-token)
 """
 
-import os
 from datetime import datetime, UTC
-from flask import Blueprint, request, jsonify, make_response, Response
+from flask import Blueprint, current_app, request, jsonify, Response
 from typing import Any, Optional, Tuple, cast
 from werkzeug.exceptions import BadRequest
 
 from whatsthedamage.services.authentication_service import AuthenticationService
 from whatsthedamage.services.rate_limit_service import RateLimitService
 from whatsthedamage.config.auth_config import get_auth_config
+from whatsthedamage.api.auth_decorators import require_auth_and_csrf
 
 # Create auth blueprint
 auth_bp = Blueprint('auth', __name__, url_prefix='/api/v2/auth')
 
-# Global storage for services (initialized in app factory)
-_auth_service: Optional[AuthenticationService] = None
-_rate_limit_service: Optional[RateLimitService] = None
-
-
-def init_auth_services(
-    auth_service: AuthenticationService,
-    rate_limit_service: RateLimitService
-) -> None:
-    """Initialize authentication services for the blueprint.
-
-    Args:
-        auth_service: AuthenticationService instance.
-        rate_limit_service: RateLimitService instance.
-    """
-    global _auth_service, _rate_limit_service
-    _auth_service = auth_service
-    _rate_limit_service = rate_limit_service
-
 
 def _get_auth_service() -> AuthenticationService:
-    """Get the AuthenticationService instance.
+    """Get the AuthenticationService instance from Flask extensions.
 
     Returns:
         AuthenticationService instance.
 
     Raises:
-        RuntimeError: If authentication service is not initialized.
+        RuntimeError: If authentication service is not available.
     """
-    if _auth_service is None:
-        raise RuntimeError("Authentication service not initialized")
-    return _auth_service
+    auth_service = current_app.extensions.get('auth_service')
+    if auth_service is None:
+        raise RuntimeError("Authentication service not available")
+    return cast(AuthenticationService, auth_service)
 
 
 def _get_rate_limit_service() -> RateLimitService:
-    """Get the RateLimitService instance.
+    """Get the RateLimitService instance from Flask extensions.
 
     Returns:
         RateLimitService instance.
 
     Raises:
-        RuntimeError: If rate limit service is not initialized.
+        RuntimeError: If rate limit service is not available.
     """
-    if _rate_limit_service is None:
-        raise RuntimeError("Rate limit service not initialized")
-    return _rate_limit_service
+    rate_limit_service = current_app.extensions.get('rate_limit_service')
+    if rate_limit_service is None:
+        raise RuntimeError("Rate limit service not available")
+    return cast(RateLimitService, rate_limit_service)
 
 
 def _get_client_ip() -> str:
@@ -121,16 +104,39 @@ def _set_session_cookie(
     if max_age <= 0:
         max_age = auth_config.SESSION_TOKEN_LENGTH
 
+    # Determine domain for cookie - use 'localhost' for development
+    # This allows cookies to work across different ports (3000, 5000) on localhost
+    domain = None
+    try:
+        from flask import request as flask_request
+        host = flask_request.host
+        if host and (host.startswith('localhost:') or host == 'localhost'):
+            domain = 'localhost'
+    except (RuntimeError, ImportError):
+        pass
+
+    # Use SameSite=Lax for development to work with local proxy setup
+    # SameSite=None requires Secure=true which doesn't work for HTTP in development
+    # With Vite proxy, frontend and backend appear as same-origin to browser, so Lax is sufficient
+    samesite = auth_config.SESSION_COOKIE_SAMESITE
+    secure = auth_config.SESSION_COOKIE_SECURE
+
+    # For localhost development, use Lax and non-secure cookies
+    # This works because Vite proxy makes frontend and backend same-origin from browser's perspective
+    if domain == 'localhost':
+        samesite = 'Lax'
+        secure = False
+
     response.set_cookie(
         'session_token',
         value=token,
         httponly=True,
-        secure=auth_config.SESSION_COOKIE_SECURE,
-        samesite=auth_config.SESSION_COOKIE_SAMESITE,
+        secure=secure,
+        samesite=samesite,
         max_age=max_age,
         expires=expires,
         path='/',
-        domain=None
+        domain=domain
     )
     return response
 
@@ -145,13 +151,31 @@ def _clear_session_cookie(response: Response) -> Response:
         Response with session cookie cleared.
     """
     auth_config = get_auth_config()
+
+    # Determine domain for cookie - use 'localhost' for development
+    domain = None
+    try:
+        from flask import request as flask_request
+        host = flask_request.host
+        if host and (host.startswith('localhost:') or host == 'localhost'):
+            domain = 'localhost'
+    except (RuntimeError, ImportError):
+        pass
+
+    # For localhost development, use Lax and non-secure cookies
+    samesite = auth_config.SESSION_COOKIE_SAMESITE
+    secure = auth_config.SESSION_COOKIE_SECURE
+    if domain == 'localhost':
+        samesite = 'Lax'
+        secure = False
+
     response.delete_cookie(
         'session_token',
         path='/',
-        domain=None,
+        domain=domain,
         httponly=True,
-        secure=auth_config.SESSION_COOKIE_SECURE,
-        samesite=auth_config.SESSION_COOKIE_SAMESITE
+        secure=secure,
+        samesite=samesite
     )
     return response
 
@@ -428,20 +452,25 @@ def login() -> Tuple[Response, int]:
             )[0]), 401
     except Exception as e:
         return jsonify(_create_error_response(
-            "Login failed",
+            "Login failed " + e.__class__.__name__ + ": " + str(e),
             500,
             "INTERNAL_ERROR"
         )[0]), 500
 
 
 @auth_bp.route('/logout', methods=['POST'])
+@require_auth_and_csrf
 def logout() -> Tuple[Response, int]:
     """Log out the current user.
 
     Revokes the current session and clears the session cookie.
+    Requires authentication and CSRF token validation.
 
     Request JSON:
         {} (empty body allowed)
+
+    Request Headers:
+        X-CSRF-Token: Valid CSRF token for the current session
 
     Response JSON:
         {
@@ -451,19 +480,17 @@ def logout() -> Tuple[Response, int]:
     Status Codes:
         200: Successfully logged out
         401: Not authenticated
+        403: Invalid or missing CSRF token
     """
     try:
-        # Get session token from cookie
+        # Get session token from cookie (already validated by decorator)
         session_token = request.cookies.get('session_token')
-        if not session_token:
-            return jsonify(_create_error_response(
-                "No session found",
-                401,
-                "NOT_AUTHENTICATED"
-            )[0]), 401
 
         # Logout user
-        success = _get_auth_service().logout_user(session_token)
+        if session_token:
+            success = _get_auth_service().logout_user(session_token)
+        else:
+            success = False
 
         if not success:
             return jsonify(_create_error_response(

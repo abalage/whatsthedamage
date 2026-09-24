@@ -2,13 +2,14 @@
 import { ref, onMounted, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { useGettext } from 'vue3-gettext'
-import { fetchResults } from '../js/api.js'
+import { fetchProcessingResultMetadata, fetchTransactionsByResult } from '../js/api.js'
 import { useCategoriesStore } from '../stores/categories.js'
 import { RouterLink } from 'vue-router'
+import { formatDateISO } from '../js/dateUtils.js'
 import VueDataTable from '../components/data/VueDataTable.vue'
 import TableLink from '../components/data/TableLink.vue'
 import type { Column } from '../components/data/VueDataTable.vue'
-import type { ResultsApiResponse } from '../types/api.js'
+import type { ProcessingResultMetadata, TransactionListItem } from '../types/api.js'
 
 const { $gettext } = useGettext()
 const categoriesStore = useCategoriesStore()
@@ -45,7 +46,8 @@ const columns: Column[] = [
   { key: 'notice', title: $gettext('Notice') },
 ]
 
-const resultsData = ref<ResultsApiResponse | null>(null)
+const metadata = ref<ProcessingResultMetadata | null>(null)
+const transactions = ref<TransactionListItem[]>([])
 const isLoading = ref(true)
 const error = ref<string | null>(null)
 
@@ -60,9 +62,12 @@ const loadResults = async () => {
     isLoading.value = true
     error.value = null
 
-    const response = await fetchResults(resultId.value)
-
-    resultsData.value = response
+    // Fetch metadata
+    metadata.value = await fetchProcessingResultMetadata(resultId.value)
+    
+    // Fetch all transactions for this result
+    const response = await fetchTransactionsByResult(resultId.value, { limit: 10000 })
+    transactions.value = response.transactions
 
     isLoading.value = false
   } catch (err) {
@@ -71,33 +76,26 @@ const loadResults = async () => {
   }
 }
 
+// Helper function to format transaction date from ISO string or timestamp
+// Uses the new utility function that handles both ISO strings and epoch timestamps
+function formatDateForDisplay(dateValue: string | undefined): string {
+  return formatDateISO(dateValue)
+}
+
 // Flatten all transactions for the data table
 const allTransactions = computed(() => {
-  if (!resultsData.value) return []
-
-  const transactions = []
-
-  for (const account of resultsData.value.accounts) {
-    if (!account.data) continue
-    for (const aggRow of account.data) {
-      for (const detail of aggRow.details) {
-        transactions.push({
-          date: detail.date.display,
-          category_id: aggRow.category_id,
-          merchant: detail.merchant,
-          amount: detail.amount.display,
-          currency: detail.currency,
-          account: account.formatted_id,
-          type: detail.type || '',
-          confidence: detail.confidence?.toString() ?? '',
-          notice: detail.notice || '',
-          row_id: detail.row_id
-        })
-      }
-    }
-  }
-
-  return transactions
+  return transactions.value.map(txn => ({
+    date: formatDateForDisplay(txn.date),
+    category_id: txn.category_id || 'uncategorized',
+    merchant: txn.original_partner || txn.partner || '',
+    amount: txn.amount?.toFixed(2) || '',
+    currency: txn.currency || '',
+    account: txn.account,
+    type: txn.transaction_type || '',
+    confidence: txn.confidence?.toString() ?? '',
+    notice: txn.notice || '',
+    row_id: String(txn.id)
+  }))
 })
 
 onMounted(() => {
@@ -130,7 +128,7 @@ onMounted(() => {
     </div>
 
     <!-- Main Content -->
-    <div v-else-if="resultsData">
+    <div v-else-if="metadata || transactions.length > 0">
       <div class="d-flex justify-content-between align-items-center mb-3">
         <h1 class="mb-0">{{ $gettext('Transactions') }}</h1>
         <div class="d-flex gap-2">

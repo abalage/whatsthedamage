@@ -13,6 +13,7 @@ import PivotTable from '../pages/PivotTable.vue'
 import Login from '../pages/Login.vue'
 import Register from '../pages/Register.vue'
 import ForgotPassword from '../pages/ForgotPassword.vue'
+import Import from '../pages/Import.vue'
 import { useAuthStore } from '../stores/auth.js'
 
 const router = createRouter({
@@ -22,6 +23,12 @@ const router = createRouter({
       path: '/',
       name: 'index',
       component: Index,
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/import',
+      name: 'import',
+      component: Import,
       meta: { requiresAuth: true }
     },
     {

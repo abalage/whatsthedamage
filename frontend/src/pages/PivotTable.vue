@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { ref, onMounted, computed, watch } from 'vue';
 import { useRoute, RouterLink } from 'vue-router';
-import { fetchResults } from '../js/api.js';
+import { fetchTransactionsByResult } from '../js/api.js';
 import { useFeedbackStore } from '../stores/feedback.js';
 import { useGettext } from 'vue3-gettext';
 import { usePivotStore } from '../stores/pivot.js';
 import { useCategoriesStore } from '../stores/categories.js';
-import type { Account } from '../types/api.js';
+import type { Account, TransactionListItem, ResultsApiResponse } from '../types/api.js';
 import type { BreadcrumbItem } from '../composables/useBreadcrumbs.js'
 import BarChart from '../components/charts/BarChart.vue';
 import PivotCategorySelector from '../components/PivotCategorySelector.vue';
@@ -18,7 +18,7 @@ import ErrorState from '../components/layout/ErrorState.vue'
 // VueDataTable component
 import VueDataTable from '../components/data/VueDataTable.vue';
 import type { Column, AggregateRowConfig } from '../components/data/VueDataTable.vue';
-import { formatMonthYear } from '../js/dateUtils.js';
+import { createMonthDate, getMonthKey } from '../js/dateUtils.js';
 
 const { $gettext } = useGettext();
 const feedback = useFeedbackStore();
@@ -28,6 +28,12 @@ const categoriesStore = useCategoriesStore();
 
 const resultId = computed(() => route.params.resultId as string);
 const isLoading = ref(true);
+
+// Helper to extract month key from transaction date (handles both ISO string and timestamp)
+// Uses the new utility function that handles both formats
+function getMonthKeyFromTxnDate(dateValue: string | undefined): string {
+  return getMonthKey(dateValue)
+}
 const error = ref<string | null>(null);
 
 // Breadcrumb items
@@ -40,6 +46,104 @@ const breadcrumbItems = computed<BreadcrumbItem[]>(() => [
 // Constants
 const ZERO = 0;
 
+/**
+ * Transform flat transaction list into ResultsApiResponse format for pivot store
+ */
+function transformToResultsApiResponse(
+  transactions: TransactionListItem[],
+  resultId: string
+): ResultsApiResponse {
+  // Group transactions by account
+  const accountsMap = new Map<string, TransactionListItem[]>();
+  for (const txn of transactions) {
+    const accountId = txn.account;
+    if (!accountsMap.has(accountId)) {
+      accountsMap.set(accountId, []);
+    }
+    accountsMap.get(accountId)!.push(txn);
+  }
+
+  // Build accounts array
+  const accounts: Account[] = [];
+  for (const [accountId, accountTransactions] of accountsMap) {
+    // Get account info from first transaction
+    const firstTxn = accountTransactions[0];
+    const account: Account = {
+      id: accountId,
+      name: accountId,
+      formatted_id: accountId,
+      currency: firstTxn.currency || '',
+      data: [],
+      result_id: resultId,
+      metadata: null
+    };
+
+    // Group transactions by category_id and month (YYYY-MM)
+    const categoryMonthMap = new Map<string, Map<string, TransactionListItem[]>>();
+    for (const txn of accountTransactions) {
+      const categoryId = txn.category_id || 'uncategorized';
+      const monthKey = getMonthKeyFromTxnDate(txn.date);
+
+      if (!categoryMonthMap.has(categoryId)) {
+        categoryMonthMap.set(categoryId, new Map());
+      }
+      const monthMap = categoryMonthMap.get(categoryId)!;
+      if (!monthMap.has(monthKey)) {
+        monthMap.set(monthKey, []);
+      }
+      monthMap.get(monthKey)!.push(txn);
+    }
+
+    // Build aggregated rows
+    for (const [categoryId, monthMap] of categoryMonthMap) {
+      for (const [monthKey, monthTransactions] of monthMap) {
+        const totalAmount = monthTransactions.reduce((sum, txn) => sum + (txn.amount || 0), 0);
+        const monthDate = createMonthDate(monthKey);
+
+        if (!monthDate) {
+          continue; // Skip invalid dates
+        }
+
+        account.data!.push({
+          row_id: `${accountId}-${categoryId}-${monthKey}`,
+          category_id: categoryId,
+          total: {
+            display: `${firstTxn.currency || ''} ${totalAmount.toFixed(2)}`,
+            raw: totalAmount
+          },
+          date: monthKey,  // ISO date string (YYYY-MM-DD)
+          details: monthTransactions.map(txn => ({
+            row_id: String(txn.id),
+            date: txn.date || '',  // ISO date string from API
+            amount: {
+              display: `${txn.currency || ''} ${(txn.amount || 0).toFixed(2)}`,
+              raw: txn.amount || 0
+            },
+            merchant: txn.original_partner || txn.partner || '',
+            currency: txn.currency || '',
+            account: txn.account,
+            type: txn.transaction_type || null,
+            confidence: txn.confidence || null,
+            notice: txn.notice || null,
+            category_id: txn.category_id || null,
+            month_id: monthKey
+          })),
+          is_calculated: false
+        });
+      }
+    }
+
+    accounts.push(account);
+  }
+
+  return {
+    result_id: resultId,
+    accounts,
+    highlights: {},
+    drilldown_urls_by_account: {}
+  };
+}
+
 const loadData = async () => {
   if (!resultId.value) {
     error.value = 'Missing result ID';
@@ -48,15 +152,20 @@ const loadData = async () => {
   }
 
   try {
-    const response = await fetchResults(resultId.value);
+    // Fetch all transactions for this result
+    const response = await fetchTransactionsByResult(resultId.value, { limit: 10000 });
+    
+    // Transform to ResultsApiResponse format for pivot store
+    const resultsData = transformToResultsApiResponse(response.transactions, resultId.value);
+    
     await categoriesStore.loadCategories();
     await categoriesStore.loadCostOfLivingCategories();
-    pivotStore.setResultsData(response);
+    pivotStore.setResultsData(resultsData);
     pivotStore.loadSettings();
 
     // If no account is selected, select the first one
-    if (!selectedAccountId.value && response.accounts.length > ZERO) {
-      pivotStore.setSelectedAccountId(response.accounts[ZERO].id);
+    if (!selectedAccountId.value && resultsData.accounts.length > ZERO) {
+      pivotStore.setSelectedAccountId(resultsData.accounts[ZERO].id);
     }
 
     isLoading.value = false;
@@ -82,7 +191,7 @@ const accounts = computed<Account[]>(() => resultsData.value?.accounts || []);
 const chartData = computed(() => {
   if (!pivotData.value) return [];
   return pivotData.value.months.map(month => ({
-    label: formatMonthYear(month.month_timestamp),
+    label: month.month,  // month is already formatted (YYYY-MM)
     timestamp: month.month_timestamp,
     values: Object.fromEntries(
       Object.entries(month.categories).map(([catId, data]) => [
@@ -150,7 +259,7 @@ const tableData = computed<Record<string, unknown>[]>(() => {
 
   return pivotData.value.months.map(month => {
     const row: Record<string, unknown> = {
-      month: formatMonthYear(month.month_timestamp),
+      month: month.month,  // month is already formatted (YYYY-MM)
       total: month.total,
       row_id: month.month_timestamp // Use timestamp as row_id for highlighting
     };

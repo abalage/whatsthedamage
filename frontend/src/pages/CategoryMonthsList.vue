@@ -159,7 +159,7 @@ const tableData = computed(() => {
 
 // Aggregate row configuration for the table
 const aggregateRows = computed<AggregateRowConfig[]>(() => {
-  if (!categoryMonthsData.value || categoryMonthsData.value.data.length === 0) return []
+  if (!categoryMonthsData.value || !categoryMonthsData.value.groups || Object.keys(categoryMonthsData.value.groups).length === 0) return []
 
   return [
     {

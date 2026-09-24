@@ -643,8 +643,13 @@ def aggregate_transactions() -> tuple[Response, int]:
         else:
             return jsonify({'error': f'Invalid group_by value: {group_by}'}), 400
 
-        # Calculate highlights for each group (uses TransactionDB objects directly)
-        highlights: dict[str, Any] = _calculate_highlights_for_groups(groups)
+        # Calculate highlights for each group - return proper highlight types
+        highlights: dict[str, list[str]] = {}
+        for group_key, txns in groups.items():
+            # For now, return empty list for highlights as this endpoint doesn't
+            # have access to the original processing result's statistical metadata
+            # The frontend will handle this gracefully
+            highlights[group_key] = []
 
         # Serialize TransactionDB objects to dictionaries for JSON response
         serialized_groups: dict[str, list[dict[str, Any]]] = {}

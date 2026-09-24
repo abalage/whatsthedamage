@@ -442,7 +442,7 @@ export interface AggregatedTransactionsResponse {
   month?: string;
   group_by: string;
   groups: Record<string, TransactionListItem[]>;
-  highlights: Record<string, any>;
+  highlights: Record<string, string[]>;
   total_count: number;
 }
 

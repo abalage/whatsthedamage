@@ -28,8 +28,8 @@ const getRouteParam = (param: string): string | null => {
   return typeof value === 'string' ? value : null
 }
 
-// Import formatMonthYear for breadcrumb
-import { formatMonthYear } from '../js/dateUtils.js'
+// Import formatMonthYear and date utilities for breadcrumb
+import { formatMonthYear, createMonthDate } from '../js/dateUtils.js'
 
 // Table columns
 const columns: Column[] = [
@@ -85,14 +85,19 @@ const {
   },
   titleBaseKey: 'Month Details',
   titleFormat: 'month',
-  titleExtractor: (data: AggregatedTransactionsResponse) => ({
-    monthTimestamp: Number(data.month || 0)
-  }),
-  breadcrumbItems: (data: AggregatedTransactionsResponse | null): BreadcrumbItem[] => [
-    { name: $gettext('Home'), to: '/' },
-    { name: $gettext('Categories'), to: { name: 'results', query: { resultId: getRouteParam('resultId') } } },
-    { name: data ? formatMonthYear(Number(data.month || 0)) : $gettext('Month Details'), active: true }
-  ],
+  titleExtractor: (data: AggregatedTransactionsResponse) => {
+    const monthDate = createMonthDate(data.month || '')
+    return { monthTimestamp: monthDate ? monthDate.getTime() / 1000 : 0 }
+  },
+  breadcrumbItems: (data: AggregatedTransactionsResponse | null): BreadcrumbItem[] => {
+    const monthDate = data ? createMonthDate(data.month || '') : null
+    const monthName = monthDate ? formatMonthYear(monthDate.getTime() / 1000) : $gettext('Month Details')
+    return [
+      { name: $gettext('Home'), to: '/' },
+      { name: $gettext('Categories'), to: { name: 'results', query: { resultId: getRouteParam('resultId') } } },
+      { name: monthName, active: true }
+    ]
+  },
   errorMessageKey: 'monthCategoriesLoadError'
 })
 
@@ -195,10 +200,11 @@ const cellHighlightsByRowId = computed(() => {
 })
 
 // Initialize highlights from API when data loads
-watch(() => monthCategoriesData.value, (newData) => {
-  if (newData?.highlights) {
-    statisticalStore.setHighlights(newData.highlights)
-  }
+// Note: The aggregate endpoint returns statistical data, not highlight types
+// So we don't set highlights here - they should come from the main results endpoint
+watch(() => monthCategoriesData.value, () => {
+  // Clear highlights for this drilldown view
+  statisticalStore.setHighlights({})
 }, { immediate: true })
 
 onMounted(() => {

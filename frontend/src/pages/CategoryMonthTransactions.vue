@@ -13,7 +13,7 @@ import VueDataTable from '../components/data/VueDataTable.vue'
 import type { Column, AggregateRowConfig } from '../components/data/VueDataTable.vue'
 import { fetchCategoryMonthTransactions } from '../js/api.js'
 import type { TransactionListResponse } from '../types/api.js'
-import { formatMonthYear, formatDateISO } from '../js/dateUtils.js'
+import { formatMonthYear, formatDateISO, toEpoch } from '../js/dateUtils.js'
 import BarChart from '../components/charts/BarChart.vue'
 
 const { $gettext } = useGettext()
@@ -55,15 +55,20 @@ const {
   },
   titleBaseKey: 'Transactions',
   titleFormat: 'category-month',
-  titleExtractor: (data: TransactionListResponse) => ({
-    categoryId: categoriesStore.extractCategoryIdFromData(data as unknown as Record<string, unknown>),
-    monthTimestamp: 0  // Will be extracted from transactions
-  }),
+  titleExtractor: (data: TransactionListResponse) => {
+    const firstTxn = data.transactions[0]
+    const monthTimestamp = firstTxn ? toEpoch(firstTxn.date) : 0
+    return {
+      categoryId: categoriesStore.extractCategoryIdFromData(data as unknown as Record<string, unknown>),
+      monthTimestamp
+    }
+  },
   breadcrumbItems: (data: TransactionListResponse | null): BreadcrumbItem[] => {
     // Extract category and month from first transaction
     const firstTxn = data?.transactions[0]
     const categoryName = firstTxn ? categoriesStore.getCategoryDisplayName(firstTxn.category_id || '') : null
-    const monthName = firstTxn ? formatMonthYear(Number(firstTxn.date || 0)) : null
+    const monthTimestamp = firstTxn ? toEpoch(firstTxn.date) : null
+    const monthName = monthTimestamp !== null ? formatMonthYear(monthTimestamp) : null
     return [
       { name: $gettext('Home'), to: '/' },
       { name: $gettext('Categories'), to: { name: 'results', query: { resultId: getRouteParam('resultId') } } },

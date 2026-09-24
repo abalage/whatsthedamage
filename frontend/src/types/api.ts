@@ -401,6 +401,24 @@ export interface ProcessingResultMetadata {
 }
 
 /**
+ * Response from POST /api/v2/processing-results
+ * Contains processing metadata (flat structure, not wrapped in metadata)
+ */
+export interface ProcessingResultCreationResponse {
+  result_id: string;
+  user_id: number | string;
+  csv_profile_id: string | null;
+  row_count: number | null;
+  processing_time: number;
+  ml_enabled: boolean;
+  start_date: string | null;
+  end_date: string | null;
+  created_at: string;
+  transactions_count: number;
+  message: string;
+}
+
+/**
  * Transaction entity for list responses
  */
 export interface TransactionListItem {

@@ -5,17 +5,17 @@
 
 import { AppError, ApiResponse } from '../types/index.js';
 import type {
-  DetailedResponse,
-  ResultsApiResponse,
-  CategoryMonthsApiResponse,
-  MonthCategoriesApiResponse,
-  CategoryMonthTransactionsApiResponse,
-  RecalculateApiResponse,
+  AggregatedTransactionsResponse,
   CategoryDefinition,
+  CategoryMonthTransactionsApiResponse,
+  CategoryMonthsApiResponse,
   CsvProfile,
+  MonthCategoriesApiResponse,
+  ProcessingResultCreationResponse,
   ProcessingResultListItem,
   ProcessingResultMetadata,
-  AggregatedTransactionsResponse,
+  RecalculateApiResponse,
+  ResultsApiResponse,
   TransactionListResponse,
 } from '../types/api.js';
 import type {
@@ -124,10 +124,10 @@ function getApiUrl(endpoint: string): string {
  * 3. We need to handle the response differently (no JSON in body for multipart)
  *
  * @param formData - Form data containing CSV and config files
- * @returns Promise with processing result
+ * @returns Promise with processing result metadata (flat structure)
  * @throws AppError if processing fails
  */
-export async function createTransaction(formData: FormData): Promise<DetailedResponse> {
+export async function createTransaction(formData: FormData): Promise<ProcessingResultCreationResponse> {
   try {
     // Get CSRF token from store for state-changing POST request
     const csrfToken = await getCsrfTokenFromStore();
@@ -176,7 +176,7 @@ export async function createTransaction(formData: FormData): Promise<DetailedRes
  * DEPRECATED: Use createTransaction instead.
  * Kept for backward compatibility.
  */
-export async function processTransactions(formData: FormData): Promise<DetailedResponse> {
+export async function processTransactions(formData: FormData): Promise<ProcessingResultCreationResponse> {
   return createTransaction(formData)
 }
 
@@ -197,15 +197,6 @@ export async function recalculateStatistics(
     algorithms,
     direction,
   });
-}
-
-/**
- * Fetch results data
- * @param resultId - Result ID
- * @returns Promise with results data
- */
-export async function fetchResults(resultId: string): Promise<ResultsApiResponse> {
-  return fetchWithErrorHandling<ResultsApiResponse>(getApiUrl(`/results/${resultId}`));
 }
 
 /**

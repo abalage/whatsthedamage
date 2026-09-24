@@ -21,7 +21,7 @@ const NEGATIVE_ONE = -1;
 export const usePivotStore = defineStore('pivot', () => {
   const categoriesStore = useCategoriesStore();
 
-  // Results data from backend (via fetchResults)
+  // Results data from backend (via fetchTransactionsByResult + transform)
   const resultsData = ref<ResultsApiResponse | null>(null);
 
   // Selected account ID (for multi-account support)

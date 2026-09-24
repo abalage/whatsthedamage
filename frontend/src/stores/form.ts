@@ -4,7 +4,7 @@ import { useRouter } from 'vue-router'
 import { createTransaction } from '../js/api.js'
 import { useFeedbackStore } from './feedback.js'
 import { useAuthStore } from './auth.js'
-import type { DetailedResponse } from '../types/api.js'
+import type { ProcessingResultCreationResponse } from '../types/api.js'
 
 /**
  * Form data interface for transaction processing
@@ -235,10 +235,10 @@ const useFormStore = defineStore('form', () => {
       formDataObj.append('ml_enabled', formData.mlEnabled.toString())
 
       // Call API
-      const response: DetailedResponse = await createTransaction(formDataObj)
+      const response: ProcessingResultCreationResponse = await createTransaction(formDataObj)
 
-      // Extract result_id from metadata
-      const resultId = response.metadata.result_id
+      // Extract result_id from response (flat structure, not nested in metadata)
+      const resultId = response.result_id
 
       // Debug: Check if we have a valid result ID
       if (!resultId) {

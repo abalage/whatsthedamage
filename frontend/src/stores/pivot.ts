@@ -74,7 +74,7 @@ export const usePivotStore = defineStore('pivot', () => {
       const monthKey = dateStr?.substring(0, 7) || 'unknown';
       // Convert to timestamp for sorting
       const timestamp = dateStr ? Math.floor(new Date(dateStr).getTime() / 1000) : 0;
-      
+
       if (!monthMap.has(monthKey)) {
         monthMap.set(monthKey, {
           display: monthKey,  // Use YYYY-MM as display
@@ -118,7 +118,7 @@ export const usePivotStore = defineStore('pivot', () => {
       for (const row of accountData) {
         // row.date is now an ISO 8601 string (YYYY-MM-DD)
         const rowTimestamp = row.date ? Math.floor(new Date(row.date as string).getTime() / 1000) : 0;
-        
+
         if (rowTimestamp === month.timestamp && !row.is_calculated) {
           const amount = typeof row.total.raw === 'number'
             ? row.total.raw

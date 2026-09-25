@@ -1,16 +1,17 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
-import { 
-  fetchProcessingResultMetadata, 
+import { ref, onMounted, computed, watch } from 'vue'
+import {
+  fetchProcessingResultMetadata,
   fetchTransactionsByResult
 } from '../js/api.js'
+import { buildResultQuery } from '../js/routeUtils.js'
 import { useFeedbackStore } from '../stores/feedback.js'
 import { useStatisticalStore } from '../stores/statistical.js'
 import { useCategoriesStore } from '../stores/categories.js'
 import { useGettext } from 'vue3-gettext'
 import { useRoute, RouterLink } from 'vue-router'
-import type { 
-  ProcessingResultMetadata, 
+import type {
+  ProcessingResultMetadata,
   TransactionListItem
 } from '../types/api.js'
 import VueDataTable from '../components/data/VueDataTable.vue'
@@ -57,7 +58,7 @@ interface AccountData {
 // Build account structure from transactions
 const buildAccountsFromTransactions = (txns: TransactionListItem[]): AccountData[] => {
   const accountMap = new Map<string, AccountData>()
-  
+
   for (const txn of txns) {
     const accountId = txn.account
     if (!accountMap.has(accountId)) {
@@ -69,32 +70,25 @@ const buildAccountsFromTransactions = (txns: TransactionListItem[]): AccountData
       })
     }
   }
-  
+
   // For now, we'll create a simplified structure
   // The full implementation would group transactions by account, category, and month
   return Array.from(accountMap.values())
 }
 
 const loadResults = async () => {
-  if (!resultId.value) {
-    error.value = 'No result ID provided'
-    isLoading.value = false
-    return
-  }
-
   try {
-    // Fetch metadata
-    metadata.value = await fetchProcessingResultMetadata(resultId.value)
-    
-    // Fetch all transactions for this result
-    const response = await fetchTransactionsByResult(resultId.value, { limit: 10000 })
+    // Fetch metadata only when scoped to a specific result
+    metadata.value = resultId.value
+      ? await fetchProcessingResultMetadata(resultId.value)
+      : null
+
+    // Fetch transactions, optionally filtered by result
+    const response = await fetchTransactionsByResult(resultId.value ?? undefined, { limit: 10000 })
     transactions.value = response.transactions
-    
+
     // Initialize highlights in Pinia store
-    if (metadata.value) {
-      // For now, set empty highlights - they will be fetched per-group in the drilldown
-      statisticalStore.setHighlights({})
-    }
+    statisticalStore.setHighlights({})
 
     error.value = null
     isLoading.value = false
@@ -126,7 +120,11 @@ function buildTableColumns(account: AccountData): Column[] {
           return { to: '#', class: 'clickable', children: categoryDisplayName }
         }
         return {
-          to: { name: 'category-months', params: { resultId: resultId.value, accountId, categoryId: category_id } },
+          to: {
+            name: 'category-months',
+            params: { accountId, categoryId: category_id },
+            query: buildResultQuery(resultId.value)
+          },
           class: 'clickable',
           children: categoryDisplayName
         }
@@ -141,7 +139,11 @@ function buildTableColumns(account: AccountData): Column[] {
       key: `month-${monthKey}`,
       title: formatMonthKey(monthKey),
       sortable: true,
-      headerTo: { name: 'month-categories', params: { resultId: resultId.value, accountId, monthId } },
+      headerTo: {
+        name: 'month-categories',
+        params: { accountId, monthId },
+        query: buildResultQuery(resultId.value)
+      },
       component: TableLinkWithPopover,
       componentProps: (value: unknown, row?: Record<string, unknown>) => {
         const category_id = String(row?.category_id ?? '')
@@ -156,7 +158,11 @@ function buildTableColumns(account: AccountData): Column[] {
           return { to: '#', class: 'clickable', children: total }
         }
 
-        const linkUrl = { name: 'category-month-transactions', params: { resultId: resultId.value, accountId, categoryId: category_id, monthId } }
+        const linkUrl = {
+          name: 'category-month-transactions',
+          params: { accountId, categoryId: category_id, monthId },
+          query: buildResultQuery(resultId.value)
+        }
 
         // For popover - get details for this category and month
         const details = getTransactionDetailsForCategoryMonth(accountId, category_id, monthKey)
@@ -235,24 +241,24 @@ function getCategoriesFromTransactions(txns: TransactionListItem[]): string[] {
 
 function getMonthTotalForCategory(accountId: string, categoryId: string, monthKey: string): number | null {
   const accountTxns = transactions.value.filter(
-    t => t.account === accountId && 
+    t => t.account === accountId &&
          (t.category_id || 'uncategorized') === categoryId &&
          getMonthKeyFromTransactionDate(t.date) === monthKey
   )
-  
+
   if (accountTxns.length === 0) return null
-  
+
   const total = accountTxns.reduce((sum, txn) => sum + (txn.amount || 0), 0)
   return total
 }
 
 function getTransactionDetailsForCategoryMonth(accountId: string, categoryId: string, monthKey: string) {
   const accountTxns = transactions.value.filter(
-    t => t.account === accountId && 
+    t => t.account === accountId &&
          (t.category_id || 'uncategorized') === categoryId &&
          getMonthKeyFromTransactionDate(t.date) === monthKey
   )
-  
+
   return accountTxns.map(txn => ({
     date: { display: formatTransactionDate(txn.date) },
     amount: { display: formatAmount(txn.amount, txn.currency), raw: txn.amount || 0 },
@@ -265,7 +271,7 @@ function formatTransactionDate(dateValue: string | undefined): string {
   if (!dateValue || typeof dateValue !== 'string') {
     return ''
   }
-  
+
   // If it's a numeric string (timestamp), convert to locale date string
   if (/^\d+$/.test(dateValue)) {
     const timestamp = parseInt(dateValue, 10)
@@ -274,7 +280,7 @@ function formatTransactionDate(dateValue: string | undefined): string {
       return formatMonthYear(timestamp)
     }
   }
-  
+
   // Otherwise, return as-is (it's already a formatted string)
   return dateValue
 }
@@ -299,6 +305,11 @@ const getDetailsString = (details: Array<{ date: { display: string }, amount: { 
 onMounted(() => {
   loadResults()
 })
+
+// Reload when the resultId query filter changes while the page is reused
+watch(resultId, () => {
+  loadResults()
+})
 </script>
 
 <template>
@@ -321,9 +332,12 @@ onMounted(() => {
       {{ error }}
     </div>
 
-    <div v-else-if="metadata">
+    <div v-else-if="metadata || transactions.length > 0">
       <div class="d-flex justify-content-between align-items-center mb-3">
-        <h1 class="mb-0">{{ $gettext('Categories') }}</h1>
+        <h1 class="mb-0">
+          {{ $gettext('Categories') }}
+          <span v-if="!resultId" class="text-secondary fs-5">({{ $gettext('All Transactions') }})</span>
+        </h1>
         <div class="d-flex gap-2">
           <RouterLink
             to="/"
@@ -332,13 +346,13 @@ onMounted(() => {
             {{ $gettext('Back to Form') }}
           </RouterLink>
           <RouterLink
-            :to="{ name: 'details', params: { resultId: resultId } }"
+            :to="{ name: 'details', query: buildResultQuery(resultId) }"
             class="btn bg-surface-secondary text-on-dark border-secondary mt-3 mb-3 me-2"
           >
             {{ $gettext('Transactions') }}
           </RouterLink>
           <RouterLink
-            :to="{ name: 'pivot', params: { resultId: resultId } }"
+            :to="{ name: 'pivot', query: buildResultQuery(resultId) }"
             class="btn bg-surface-secondary text-on-dark border-secondary mt-3 mb-3"
           >
             {{ $gettext('Pivot Table') }}
@@ -372,10 +386,9 @@ onMounted(() => {
     </div>
 
     <div v-else class="bg-status-info text-on-light alert">
-      <p>{{ $gettext('No results found') }}</p>
-      <p v-if="!resultId">
-        {{ $gettext('No result ID was provided.') }}
-        <router-link to="/" class="alert-link">{{ $gettext('Please upload a CSV file first.') }}</router-link>
+      <p>{{ $gettext('No transactions found') }}</p>
+      <p>
+        <router-link to="/import" class="alert-link">{{ $gettext('Please upload a CSV file first.') }}</router-link>
       </p>
     </div>
   </div>

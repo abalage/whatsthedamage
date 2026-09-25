@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useGettext } from 'vue3-gettext'
 import { fetchProcessingResultMetadata, fetchTransactionsByResult } from '../js/api.js'
+import { buildResultQuery } from '../js/routeUtils.js'
 import { useCategoriesStore } from '../stores/categories.js'
 import { RouterLink } from 'vue-router'
 import { formatDateISO } from '../js/dateUtils.js'
@@ -16,8 +17,8 @@ const categoriesStore = useCategoriesStore()
 const route = useRoute()
 
 const resultId = computed(() => {
-  const id = route.params.resultId
-  return typeof id === 'string' ? id : null
+  const id = route.query.resultId ?? route.query.result_id
+  return typeof id === 'string' && id !== '' ? id : null
 })
 
 // Table columns definition
@@ -52,21 +53,17 @@ const isLoading = ref(true)
 const error = ref<string | null>(null)
 
 const loadResults = async () => {
-  if (!resultId.value) {
-    error.value = 'No result ID provided'
-    isLoading.value = false
-    return
-  }
-
   try {
     isLoading.value = true
     error.value = null
 
-    // Fetch metadata
-    metadata.value = await fetchProcessingResultMetadata(resultId.value)
-    
-    // Fetch all transactions for this result
-    const response = await fetchTransactionsByResult(resultId.value, { limit: 10000 })
+    // Fetch metadata only when scoped to a specific result
+    metadata.value = resultId.value
+      ? await fetchProcessingResultMetadata(resultId.value)
+      : null
+
+    // Fetch transactions, optionally filtered by result
+    const response = await fetchTransactionsByResult(resultId.value ?? undefined, { limit: 10000 })
     transactions.value = response.transactions
 
     isLoading.value = false
@@ -101,6 +98,11 @@ const allTransactions = computed(() => {
 onMounted(() => {
   loadResults()
 })
+
+// Reload when the resultId query filter changes while the page is reused
+watch(resultId, () => {
+  loadResults()
+})
 </script>
 
 <template>
@@ -109,7 +111,7 @@ onMounted(() => {
     <nav aria-label="breadcrumb">
       <ol class="breadcrumb">
         <li class="breadcrumb-item"><router-link to="/">{{ $gettext('Home') }}</router-link></li>
-        <li class="breadcrumb-item"><router-link :to="{ name: 'results', query: { resultId: resultId } }">{{ $gettext('Categories') }}</router-link></li>
+        <li class="breadcrumb-item"><router-link :to="{ name: 'results', query: buildResultQuery(resultId) }">{{ $gettext('Categories') }}</router-link></li>
         <li class="breadcrumb-item active" aria-current="page">{{ $gettext('Transactions') }}</li>
       </ol>
     </nav>
@@ -130,10 +132,13 @@ onMounted(() => {
     <!-- Main Content -->
     <div v-else-if="metadata || transactions.length > 0">
       <div class="d-flex justify-content-between align-items-center mb-3">
-        <h1 class="mb-0">{{ $gettext('Transactions') }}</h1>
+        <h1 class="mb-0">
+          {{ $gettext('Transactions') }}
+          <span v-if="!resultId" class="text-secondary fs-5">({{ $gettext('All Transactions') }})</span>
+        </h1>
         <div class="d-flex gap-2">
           <RouterLink
-            :to="{ name: 'results', query: { resultId: resultId } }"
+            :to="{ name: 'results', query: buildResultQuery(resultId) }"
             class="btn bg-surface-secondary text-on-dark border-secondary mt-3 mb-3"
           >
             {{ $gettext('Back to Categories') }}
@@ -161,7 +166,7 @@ onMounted(() => {
 
     <!-- No Data State -->
     <div v-else class="bg-status-info text-on-light alert">
-      {{ $gettext('No results found') }}
+      {{ $gettext('No transactions found') }}
     </div>
   </div>
 </template>

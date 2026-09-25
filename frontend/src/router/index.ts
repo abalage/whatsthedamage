@@ -53,28 +53,71 @@ const router = createRouter({
       meta: { requiresAuth: true }
     },
     {
-      path: '/results/:resultId/accounts/:accountId/categories/:categoryId/months',
+      path: '/results/accounts/:accountId/categories/:categoryId/months',
       name: 'category-months',
       component: CategoryMonthsList,
       meta: { requiresAuth: true }
     },
     {
-      path: '/results/:resultId/accounts/:accountId/months/:monthId/categories',
+      path: '/results/accounts/:accountId/months/:monthId/categories',
       name: 'month-categories',
       component: MonthCategoriesList,
       meta: { requiresAuth: true }
     },
     {
-      path: '/results/:resultId/accounts/:accountId/categories/:categoryId/months/:monthId/transactions',
+      path: '/results/accounts/:accountId/categories/:categoryId/months/:monthId/transactions',
       name: 'category-month-transactions',
       component: CategoryMonthTransactions,
       meta: { requiresAuth: true }
     },
     {
-      path: '/results/:resultId',
+      path: '/transactions',
       name: 'details',
       component: Transactions,
       meta: { requiresAuth: true }
+    },
+    {
+      path: '/pivot',
+      name: 'pivot',
+      component: PivotTable,
+      meta: { requiresAuth: true }
+    },
+    // Legacy result_id path-based routes, kept as redirects for backward compatibility
+    {
+      path: '/results/:resultId',
+      redirect: to => ({ name: 'details', query: { resultId: String(to.params.resultId) } })
+    },
+    {
+      path: '/results/:resultId/pivot',
+      redirect: to => ({ name: 'pivot', query: { resultId: String(to.params.resultId) } })
+    },
+    {
+      path: '/results/:resultId/accounts/:accountId/categories/:categoryId/months',
+      redirect: to => ({
+        name: 'category-months',
+        params: { accountId: String(to.params.accountId), categoryId: String(to.params.categoryId) },
+        query: { resultId: String(to.params.resultId) }
+      })
+    },
+    {
+      path: '/results/:resultId/accounts/:accountId/months/:monthId/categories',
+      redirect: to => ({
+        name: 'month-categories',
+        params: { accountId: String(to.params.accountId), monthId: String(to.params.monthId) },
+        query: { resultId: String(to.params.resultId) }
+      })
+    },
+    {
+      path: '/results/:resultId/accounts/:accountId/categories/:categoryId/months/:monthId/transactions',
+      redirect: to => ({
+        name: 'category-month-transactions',
+        params: {
+          accountId: String(to.params.accountId),
+          categoryId: String(to.params.categoryId),
+          monthId: String(to.params.monthId)
+        },
+        query: { resultId: String(to.params.resultId) }
+      })
     },
     {
       path: '/details',
@@ -85,13 +128,6 @@ const router = createRouter({
       path: '/statistics',
       name: 'statistics',
       component: Statistics,
-      meta: { requiresAuth: true }
-    },
-    {
-      path: '/results/:resultId/pivot',
-      name: 'pivot',
-      component: PivotTable,
-      props: true,
       meta: { requiresAuth: true }
     },
     // Authentication routes

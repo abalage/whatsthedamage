@@ -171,7 +171,7 @@ interface DrilldownUrls {
  * Now uses simplified structure with direct Account array instead of nested wrappers.
  */
 export interface ResultsApiResponse {
-  result_id: string;
+  result_id: string | null;
   accounts: Account[];  // Changed from accounts_data: AccountsDataResponse
   highlights: StatisticalHighlights;
   drilldown_urls_by_account: Record<string, DrilldownUrls>;
@@ -454,7 +454,7 @@ export interface TransactionListResponse {
  * Aggregated transaction data for drilldown views
  */
 export interface AggregatedTransactionsResponse {
-  result_id: string;
+  result_id: string | null;
   account?: string;
   category_id?: string;
   month?: string;

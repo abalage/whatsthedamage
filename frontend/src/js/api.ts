@@ -131,13 +131,13 @@ export async function createTransaction(formData: FormData): Promise<ProcessingR
   try {
     // Get CSRF token from store for state-changing POST request
     const csrfToken = await getCsrfTokenFromStore();
-    
+
     // Build headers manually - let browser set Content-Type for multipart
     const headers: Record<string, string> = {};
     if (csrfToken) {
       headers['X-CSRF-Token'] = csrfToken;
     }
-    
+
     const response = await fetch(`${API_BASE_URL}/processing-results`, {
       method: 'POST',
       body: formData,
@@ -173,14 +173,6 @@ export async function createTransaction(formData: FormData): Promise<ProcessingR
 }
 
 /**
- * DEPRECATED: Use createTransaction instead.
- * Kept for backward compatibility.
- */
-export async function processTransactions(formData: FormData): Promise<ProcessingResultCreationResponse> {
-  return createTransaction(formData)
-}
-
-/**
  * Recalculate statistics
  * @param resultId - Result ID
  * @param algorithms - Algorithms to use
@@ -200,22 +192,6 @@ export async function recalculateStatistics(
 }
 
 /**
- * Fetch category months data (drilldown)
- * @param params - Route parameters containing resultId, accountId, categoryId
- * @returns Promise with aggregated transactions data
- */
-export async function fetchCategoryMonths(
-  params: Record<string, string | null>
-): Promise<AggregatedTransactionsResponse> {
-  return fetchAggregatedTransactions({
-    result_id: params.resultId ?? '',
-    account: params.accountId ?? '',
-    category_id: params.categoryId ?? '',
-    group_by: 'month'
-  });
-}
-
-/**
  * Fetch month categories data (drilldown)
  * @param params - Route parameters containing resultId, accountId, monthId
  * @returns Promise with aggregated transactions data
@@ -224,9 +200,9 @@ export async function fetchMonthCategories(
   params: Record<string, string | null>
 ): Promise<AggregatedTransactionsResponse> {
   return fetchAggregatedTransactions({
-    result_id: params.resultId ?? '',
-    account: params.accountId ?? '',
-    month: params.monthId ?? '',
+    result_id: params.resultId ?? undefined,
+    account: params.accountId ?? undefined,
+    month: params.monthId ?? undefined,
     group_by: 'category'
   });
 }
@@ -239,10 +215,10 @@ export async function fetchMonthCategories(
 export async function fetchCategoryMonthTransactions(
   params: Record<string, string | null>
 ): Promise<TransactionListResponse> {
-  return fetchTransactionsByResult(params.resultId ?? '', {
-    account: params.accountId ?? '',
-    categoryId: params.categoryId ?? '',
-    month: params.monthId ?? '',
+  return fetchTransactionsByResult(params.resultId ?? undefined, {
+    account: params.accountId ?? undefined,
+    categoryId: params.categoryId ?? undefined,
+    month: params.monthId ?? undefined,
     limit: 1000
   });
 }
@@ -284,23 +260,26 @@ export async function fetchProcessingResults(): Promise<ProcessingResultListItem
 
 /**
  * Fetch processing result metadata
- * @param resultId - Result ID
- * @returns Promise with ProcessingResultMetadata
+ * @param resultId - Result ID, or undefined to skip the lookup
+ * @returns Promise with ProcessingResultMetadata, or null when no resultId is given
  */
-export async function fetchProcessingResultMetadata(resultId: string): Promise<ProcessingResultMetadata> {
+export async function fetchProcessingResultMetadata(resultId?: string): Promise<ProcessingResultMetadata | null> {
+  if (!resultId) {
+    return null
+  }
   return fetchWithErrorHandling<ProcessingResultMetadata>(getApiUrl(`/processing-results/${resultId}`), {
     credentials: 'include'
   });
 }
 
 /**
- * Fetch transactions for a specific processing result
- * @param resultId - Result ID
+ * Fetch transactions, optionally limited to a specific processing result
+ * @param resultId - Result ID, or undefined to fetch transactions across all results
  * @param options - Filter and pagination options
  * @returns Promise with TransactionListResponse
  */
 export async function fetchTransactionsByResult(
-  resultId: string,
+  resultId?: string,
   options: {
     limit?: number;
     offset?: number;
@@ -312,7 +291,7 @@ export async function fetchTransactionsByResult(
   } = {}
 ): Promise<TransactionListResponse> {
   const params = new URLSearchParams();
-  params.append('result_id', resultId);
+  if (resultId) params.append('result_id', resultId);
   if (options.limit !== undefined) params.append('limit', options.limit.toString());
   if (options.offset !== undefined) params.append('offset', options.offset.toString());
   if (options.account) params.append('account', options.account);
@@ -320,9 +299,11 @@ export async function fetchTransactionsByResult(
   if (options.month) params.append('month', options.month);
   if (options.sortBy) params.append('sort_by', options.sortBy);
   if (options.sortOrder) params.append('sort_order', options.sortOrder);
-  
+
+  const query = params.toString();
+
   return fetchWithErrorHandling<TransactionListResponse>(
-    getApiUrl(`/transactions?${params.toString()}`),
+    getApiUrl(query ? `/transactions?${query}` : '/transactions'),
     { credentials: 'include' }
   );
 }
@@ -333,19 +314,19 @@ export async function fetchTransactionsByResult(
  * @returns Promise with AggregatedTransactionsResponse
  */
 export async function fetchAggregatedTransactions(params: {
-  result_id: string;
+  result_id?: string;
   account?: string;
   category_id?: string;
   month?: string;
   group_by: string;
 }): Promise<AggregatedTransactionsResponse> {
   const searchParams = new URLSearchParams();
-  searchParams.append('result_id', params.result_id);
+  if (params.result_id) searchParams.append('result_id', params.result_id);
   if (params.account) searchParams.append('account', params.account);
   if (params.category_id) searchParams.append('category_id', params.category_id);
   if (params.month) searchParams.append('month', params.month);
   searchParams.append('group_by', params.group_by);
-  
+
   return fetchWithErrorHandling<AggregatedTransactionsResponse>(
     getApiUrl(`/transactions/aggregate?${searchParams.toString()}`),
     { credentials: 'include' }

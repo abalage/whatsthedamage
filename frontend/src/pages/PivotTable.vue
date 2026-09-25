@@ -2,6 +2,7 @@
 import { ref, onMounted, computed, watch } from 'vue';
 import { useRoute, RouterLink } from 'vue-router';
 import { fetchTransactionsByResult } from '../js/api.js';
+import { buildResultQuery, extractResultId } from '../js/routeUtils.js';
 import { useFeedbackStore } from '../stores/feedback.js';
 import { useGettext } from 'vue3-gettext';
 import { usePivotStore } from '../stores/pivot.js';
@@ -26,7 +27,7 @@ const route = useRoute();
 const pivotStore = usePivotStore();
 const categoriesStore = useCategoriesStore();
 
-const resultId = computed(() => route.params.resultId as string);
+const resultId = computed(() => extractResultId(route.query as Record<string, unknown>));
 const isLoading = ref(true);
 
 // Helper to extract month key from transaction date (handles both ISO string and timestamp)
@@ -39,7 +40,7 @@ const error = ref<string | null>(null);
 // Breadcrumb items
 const breadcrumbItems = computed<BreadcrumbItem[]>(() => [
   { name: $gettext('Home'), to: '/' },
-  { name: $gettext('Categories'), to: { name: 'results', query: { resultId: resultId.value } } },
+  { name: $gettext('Categories'), to: { name: 'results', query: buildResultQuery(resultId.value) } },
   { name: $gettext('Pivot Table'), active: true }
 ]);
 
@@ -51,7 +52,7 @@ const ZERO = 0;
  */
 function transformToResultsApiResponse(
   transactions: TransactionListItem[],
-  resultId: string
+  resultId: string | null
 ): ResultsApiResponse {
   // Group transactions by account
   const accountsMap = new Map<string, TransactionListItem[]>();
@@ -74,7 +75,7 @@ function transformToResultsApiResponse(
       formatted_id: accountId,
       currency: firstTxn.currency || '',
       data: [],
-      result_id: resultId,
+      result_id: resultId ?? undefined,
       metadata: null
     };
 
@@ -145,19 +146,13 @@ function transformToResultsApiResponse(
 }
 
 const loadData = async () => {
-  if (!resultId.value) {
-    error.value = 'Missing result ID';
-    isLoading.value = false;
-    return;
-  }
-
   try {
-    // Fetch all transactions for this result
-    const response = await fetchTransactionsByResult(resultId.value, { limit: 10000 });
-    
+    // Fetch transactions, optionally filtered by result
+    const response = await fetchTransactionsByResult(resultId.value ?? undefined, { limit: 10000 });
+
     // Transform to ResultsApiResponse format for pivot store
     const resultsData = transformToResultsApiResponse(response.transactions, resultId.value);
-    
+
     await categoriesStore.loadCategories();
     await categoriesStore.loadCostOfLivingCategories();
     pivotStore.setResultsData(resultsData);
@@ -303,6 +298,18 @@ watch(() => [pivotStore.selectedCategoryIds, pivotStore.showTrendline], () => {
   pivotStore.saveSettings();
 }, { deep: true });
 
+// Header title reflects whether all transactions or a specific result is shown
+const headerTitle = computed(() =>
+  resultId.value
+    ? $gettext('Pivot Table')
+    : `${$gettext('Pivot Table')} (${$gettext('All Transactions')})`
+);
+
+// Reload when the resultId query filter changes while the page is reused
+watch(resultId, () => {
+  loadData();
+});
+
 onMounted(() => loadData());
 </script>
 
@@ -316,10 +323,10 @@ onMounted(() => loadData());
 
     <!-- Main Content -->
     <div v-else-if="resultsData">
-      <PageHeader :title="$gettext('Pivot Table')">
+      <PageHeader :title="headerTitle">
         <template #actions>
           <RouterLink
-            :to="{ name: 'results', query: { resultId: resultId } }"
+            :to="{ name: 'results', query: buildResultQuery(resultId) }"
             class="btn bg-surface-secondary text-on-dark border-secondary mt-3 mb-3"
           >
             {{ $gettext('Back to Categories') }}

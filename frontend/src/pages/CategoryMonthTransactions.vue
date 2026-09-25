@@ -12,6 +12,7 @@ import PageHeader from '../components/layout/PageHeader.vue'
 import VueDataTable from '../components/data/VueDataTable.vue'
 import type { Column, AggregateRowConfig } from '../components/data/VueDataTable.vue'
 import { fetchCategoryMonthTransactions } from '../js/api.js'
+import { buildResultQuery, extractResultId } from '../js/routeUtils.js'
 import type { TransactionListResponse } from '../types/api.js'
 import { formatMonthYear, formatDateISO, toEpoch } from '../js/dateUtils.js'
 import BarChart from '../components/charts/BarChart.vue'
@@ -21,11 +22,9 @@ const categoriesStore = useCategoriesStore()
 const route = useRoute()
 
 
-// Helper to safely get route params
-const getRouteParam = (param: string): string | null => {
-  const value = route.params[param]
-  return typeof value === 'string' ? value : null
-}
+// Optional resultId filter, carried in the query string
+const resultQuery = (): { resultId?: string } =>
+  buildResultQuery(extractResultId(route.query as Record<string, unknown>))
 
 // Table columns
 const columns: Column[] = [
@@ -48,7 +47,7 @@ const {
   breadcrumbItems
 } = useDrilldownData<TransactionListResponse>({
   fetchData: async (params) => {
-    if (!params.resultId || !params.accountId || !params.categoryId || !params.monthId) {
+    if (!params.accountId || !params.categoryId || !params.monthId) {
       throw new Error('Missing required parameters for category month transactions fetch')
     }
     return fetchCategoryMonthTransactions(params)
@@ -71,7 +70,7 @@ const {
     const monthName = monthTimestamp !== null ? formatMonthYear(monthTimestamp) : null
     return [
       { name: $gettext('Home'), to: '/' },
-      { name: $gettext('Categories'), to: { name: 'results', query: { resultId: getRouteParam('resultId') } } },
+      { name: $gettext('Categories'), to: { name: 'results', query: resultQuery() } },
       { name: categoryName && monthName ? `${categoryName} - ${monthName}` : $gettext('Transaction Details'), active: true }
     ]
   },
@@ -184,7 +183,7 @@ onMounted(() => {
         <template #actions>
           <div class="d-flex gap-2">
             <RouterLink
-              :to="{ name: 'results', query: { resultId: getRouteParam('resultId') } }"
+              :to="{ name: 'results', query: resultQuery() }"
               class="btn bg-surface-secondary text-on-dark border-secondary mt-3 mb-3"
             >
               {{ $gettext('Back to Categories') }}

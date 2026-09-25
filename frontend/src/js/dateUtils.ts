@@ -45,18 +45,18 @@ export function extractMonthKey(dateString: string | undefined): string {
   // Try to parse as ISO date first (YYYY-MM-DD or YYYY-MM)
   // Also handles YYYY.MM.DD format (Hungarian banks)
   // The strategy: extract first 4 chars as year, then find the month part
-  
+
   // Clean the string and try to extract year and month
   const trimmed = dateString.trim()
-  
+
   // Try to split by common separators
   const parts = trimmed.split(/[\s./-]/)
-  
+
   if (parts.length >= 3 && parts[0] && parts[1]) {
     // Assume format is year, month, day (in any order, but year is usually first)
     const year = parts[0]
     const month = parts[1].padStart(2, '0')
-    
+
     if (year.length === 4 && month.length <= 2) {
       return `${year}-${month}`
     }
@@ -64,22 +64,22 @@ export function extractMonthKey(dateString: string | undefined): string {
     // Might be YYYY-MM or similar
     const year = parts[0]
     const month = parts[1].padStart(2, '0')
-    
+
     if (year.length === 4 && month.length <= 2) {
       return `${year}-${month}`
     }
   }
-  
+
   // Fallback: try to extract YYYY and MM from start of string
   // Works for formats like YYYYMMDD, YYYY.MM.DD, YYYY-MM-DD
   if (trimmed.length >= 7) {
     const year = trimmed.substring(0, 4)
     const monthChar = trimmed.charAt(4)
-    
+
     // If separator is a digit, it's likely YYYYMMDD format
     if (year && /\d{4}/.test(year)) {
       let month: string
-      
+
       // Check the 5th character (index 4)
       if (/\d/.test(monthChar)) {
         // Format: YYYYMMDD
@@ -97,13 +97,13 @@ export function extractMonthKey(dateString: string | undefined): string {
       } else {
         month = ''
       }
-      
+
       if (month && month.length <= 2) {
         return `${year}-${month.padStart(2, '0')}`
       }
     }
   }
-  
+
   return 'unknown'
 }
 
@@ -117,19 +117,19 @@ export function extractMonthKey(dateString: string | undefined): string {
 export function createMonthDate(monthKey: string): Date | undefined {
   // Ensure monthKey is in YYYY-MM format
   const normalized = extractMonthKey(monthKey)
-  
+
   if (normalized === 'unknown') {
     return undefined
   }
-  
+
   // Create date string in ISO format
   const dateString = `${normalized}-01T00:00:00Z`
   const date = new Date(dateString)
-  
+
   if (Number.isNaN(date.getTime())) {
     return undefined
   }
-  
+
   return date
 }
 
@@ -141,9 +141,9 @@ export function createMonthDate(monthKey: string): Date | undefined {
  * @param dateString - ISO 8601 date string or epoch timestamp string
  * @returns Date object (local timezone) or null if invalid
  */
-export function parseDate(dateString: string | null | undefined): Date | null {
+function parseDate(dateString: string | null | undefined): Date | null {
   if (!dateString) return null;
-  
+
   // Try to parse as ISO date string first
   try {
     const date = new Date(dateString);
@@ -153,7 +153,7 @@ export function parseDate(dateString: string | null | undefined): Date | null {
   } catch {
     // Fall through to try other formats
   }
-  
+
   // Fallback: try parsing as epoch timestamp string
   if (typeof dateString === 'string' && /^\d+$/.test(dateString)) {
     const timestamp = parseInt(dateString, 10);
@@ -161,27 +161,8 @@ export function parseDate(dateString: string | null | undefined): Date | null {
       return new Date(timestamp * 1000);
     }
   }
-  
-  return null;
-}
 
-/**
- * Format date for display.
- * Accepts Date objects or ISO date strings.
- *
- * @param date - Date object or ISO string
- * @param locale - BCP 47 language tag (e.g., 'en-US', 'hu-HU')
- * @returns Formatted date string
- */
-export function formatDate(date: Date | string | null, locale: string = 'en-US'): string {
-  if (!date) return '';
-  const dateObj = date instanceof Date ? date : parseDate(date);
-  if (!dateObj) return '';
-  return dateObj.toLocaleDateString(locale, {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric'
-  });
+  return null;
 }
 
 /**
@@ -226,22 +207,4 @@ export function toEpoch(date: Date | string | null): number | null {
   const dateObj = date instanceof Date ? date : parseDate(date);
   if (!dateObj) return null;
   return Math.floor(dateObj.getTime() / 1000);
-}
-
-/**
- * Check if two dates are the same day.
- * Accepts Date objects or ISO date strings.
- *
- * @param date1 - First date
- * @param date2 - Second date
- * @returns true if same day
- */
-export function isSameDay(date1: Date | string | null, date2: Date | string | null): boolean {
-  if (!date1 || !date2) return false;
-  const d1 = date1 instanceof Date ? date1 : parseDate(date1);
-  const d2 = date2 instanceof Date ? date2 : parseDate(date2);
-  if (!d1 || !d2) return false;
-  return d1.getFullYear() === d2.getFullYear() &&
-         d1.getMonth() === d2.getMonth() &&
-         d1.getDate() === d2.getDate();
 }

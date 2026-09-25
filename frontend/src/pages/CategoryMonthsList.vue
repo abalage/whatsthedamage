@@ -14,6 +14,7 @@ import VueDataTable from '../components/data/VueDataTable.vue'
 import TableLink from '../components/data/TableLink.vue'
 import type { Column, AggregateRowConfig } from '../components/data/VueDataTable.vue'
 import { fetchAggregatedTransactions } from '../js/api.js'
+import { buildResultQuery, extractResultId } from '../js/routeUtils.js'
 import type { AggregatedTransactionsResponse, TransactionListItem } from '../types/api.js'
 import { formatMonthYear, extractMonthKey, createMonthDate } from '../js/dateUtils.js'
 import BarChart from '../components/charts/BarChart.vue'
@@ -32,11 +33,9 @@ const route = useRoute()
 const statisticalStore = useStatisticalStore()
 const categoriesStore = useCategoriesStore()
 
-// Helper to safely get route params
-const getRouteParam = (param: string): string | null => {
-  const value = route.params[param]
-  return typeof value === 'string' ? value : null
-}
+// Optional resultId filter, carried in the query string
+const resultQuery = (): { resultId?: string } =>
+  buildResultQuery(extractResultId(route.query as Record<string, unknown>))
 
 // Table columns
 const columns: Column[] = [
@@ -45,12 +44,15 @@ const columns: Column[] = [
     title: $gettext('Month'),
     component: TableLink,
     componentProps: (value: unknown, row?: Record<string, unknown>) => {
-      const resultId = String(row?.resultId || '')
       const accountId = String(row?.accountId || '')
       const categoryId = String(row?.categoryId || '')
       const monthId = extractMonthIdFromData(row ?? {})
       return {
-        to: { name: 'category-month-transactions', params: { resultId, accountId, categoryId, monthId } },
+        to: {
+          name: 'category-month-transactions',
+          params: { accountId, categoryId, monthId },
+          query: buildResultQuery(String(row?.resultId || ''))
+        },
         class: 'clickable',
         children: String(value)
       }
@@ -66,12 +68,12 @@ const columns: Column[] = [
 // Extract month_id from row data
 function extractMonthIdFromData(row: Record<string, unknown>): string {
   const rowId = row.row_id as string | undefined
-  
+
   // Use row_id (which is the month key in YYYY-MM format) as the month_id
   if (rowId) {
     return rowId
   }
-  
+
   // Fallback to month_timestamp if row_id is not available
   const monthTimestamp = row.month_timestamp as number | string | undefined
   return String(monthTimestamp || '')
@@ -89,11 +91,11 @@ const {
   breadcrumbItems
 } = useDrilldownData<AggregatedTransactionsResponse>({
   fetchData: async (params) => {
-    if (!params.resultId || !params.accountId || !params.categoryId) {
+    if (!params.accountId || !params.categoryId) {
       throw new Error('Missing required parameters for category months fetch')
     }
     return fetchAggregatedTransactions({
-      result_id: params.resultId,
+      result_id: params.resultId ?? undefined,
       account: params.accountId,
       category_id: params.categoryId,
       group_by: 'month'
@@ -106,7 +108,7 @@ const {
   }),
   breadcrumbItems: (data: AggregatedTransactionsResponse | null): BreadcrumbItem[] => [
     { name: $gettext('Home'), to: '/' },
-    { name: $gettext('Categories'), to: { name: 'results', query: { resultId: getRouteParam('resultId') } } },
+    { name: $gettext('Categories'), to: { name: 'results', query: resultQuery() } },
     { name: data ? categoriesStore.getCategoryDisplayName(data.category_id || '') : $gettext('Category Details'), active: true }
   ],
   errorMessageKey: 'categoryMonthsLoadError'
@@ -131,15 +133,15 @@ function calculateTotalForTransactions(txns: TransactionListItem[]): number {
 // Table data
 const tableData = computed(() => {
   if (!categoryMonthsData.value) return []
-  
+
   const groups = categoryMonthsData.value.groups || {}
-  
+
   return Object.entries(groups).map(([monthKey, txns]) => {
     const total = calculateTotalForTransactions(txns)
     const normalizedMonthKey = extractMonthKey(monthKey)
     const monthDate = createMonthDate(normalizedMonthKey)
     const monthTimestamp = monthDate ? monthDate.getTime() / 1000 : 0
-    
+
     return {
       month: formatMonthKey(monthKey),
       total: total,
@@ -240,7 +242,7 @@ onMounted(() => {
       <PageHeader :title="pageTitle">
         <template #actions>
           <RouterLink
-            :to="{ name: 'results', query: { resultId: getRouteParam('resultId') } }"
+            :to="{ name: 'results', query: buildResultQuery(resultId) }"
             class="btn bg-surface-secondary text-on-dark border-secondary mt-3 mb-3"
           >
             {{ $gettext('Back to Categories') }}

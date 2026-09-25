@@ -193,7 +193,7 @@ const useFormStore = defineStore('form', () => {
       feedback.showError('Please login to process transactions')
       return { success: false, error: 'Not authenticated' }
     }
-    
+
     if (!validateForm()) {
       feedback.showError('Please fix the form errors before submitting')
       return { success: false, error: 'Validation failed' }

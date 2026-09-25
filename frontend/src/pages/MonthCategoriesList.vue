@@ -15,6 +15,7 @@ import TableLink from '../components/data/TableLink.vue'
 import PieChart from '../components/charts/PieChart.vue'
 import type { Column, AggregateRowConfig } from '../components/data/VueDataTable.vue'
 import { fetchMonthCategories } from '../js/api.js'
+import { buildResultQuery, extractResultId } from '../js/routeUtils.js'
 import type { AggregatedTransactionsResponse, TransactionListItem } from '../types/api.js'
 
 const { $gettext } = useGettext()
@@ -22,11 +23,9 @@ const categoriesStore = useCategoriesStore()
 const route = useRoute()
 const statisticalStore = useStatisticalStore()
 
-// Helper to safely get route params
-const getRouteParam = (param: string): string | null => {
-  const value = route.params[param]
-  return typeof value === 'string' ? value : null
-}
+// Optional resultId filter, carried in the query string
+const resultQuery = (): { resultId?: string } =>
+  buildResultQuery(extractResultId(route.query as Record<string, unknown>))
 
 // Import formatMonthYear and date utilities for breadcrumb
 import { formatMonthYear, createMonthDate } from '../js/dateUtils.js'
@@ -40,11 +39,14 @@ const columns: Column[] = [
     componentProps: (value: unknown, row?: Record<string, unknown>) => {
       const accountId = String(route.params.accountId || '')
       const monthId = String(route.params.monthId || '')
-      const resultId = String(route.params.resultId || '')
       const categoryId = extractCategoryIdFromData(row ?? {})
       const categoryDisplayName = categoriesStore.getCategoryDisplayName(String(row?.category_id ?? ''))
       return {
-        to: { name: 'category-month-transactions', params: { resultId, accountId, categoryId, monthId } },
+        to: {
+          name: 'category-month-transactions',
+          params: { accountId, categoryId, monthId },
+          query: resultQuery()
+        },
         class: 'clickable',
         children: categoryDisplayName
       }
@@ -78,7 +80,7 @@ const {
   accountId
 } = useDrilldownData<AggregatedTransactionsResponse>({
   fetchData: async (params) => {
-    if (!params.resultId || !params.accountId || !params.monthId) {
+    if (!params.accountId || !params.monthId) {
       throw new Error('Missing required parameters for month categories fetch')
     }
     return fetchMonthCategories(params)
@@ -94,7 +96,7 @@ const {
     const monthName = monthDate ? formatMonthYear(monthDate.getTime() / 1000) : $gettext('Month Details')
     return [
       { name: $gettext('Home'), to: '/' },
-      { name: $gettext('Categories'), to: { name: 'results', query: { resultId: getRouteParam('resultId') } } },
+      { name: $gettext('Categories'), to: { name: 'results', query: resultQuery() } },
       { name: monthName, active: true }
     ]
   },
@@ -132,7 +134,7 @@ const accountCurrency = computed(() => {
 const tableData = computed(() => {
   if (!monthCategoriesData.value) return []
   const groups = monthCategoriesData.value.groups || {}
-  
+
   return Object.entries(groups).map(([categoryKey, txns]) => {
     const total = calculateTotalForTransactions(txns)
     const firstTxn = txns[0]
@@ -225,7 +227,7 @@ onMounted(() => {
       <PageHeader :title="pageTitle">
         <template #actions>
           <RouterLink
-            :to="{ name: 'results', query: { resultId: getRouteParam('resultId') } }"
+            :to="{ name: 'results', query: resultQuery() }"
             class="btn bg-surface-secondary text-on-dark border-secondary mt-3 mb-3"
           >
             {{ $gettext('Back to Categories') }}

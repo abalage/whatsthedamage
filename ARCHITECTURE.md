@@ -202,6 +202,7 @@ The system follows a layered architecture with clear separation of concerns:
 - Independent build and deployment pipeline
 - CORS-enabled communication with backend
 - Client-side routing with Vue Router
+- Optional `resultId` query parameter filters transaction views (Categories, Transactions, Pivot Table, drilldowns) to a single processing result; when absent, all transactions are shown (legacy path-based result URLs are redirected to the query-based form)
 - State management with Pinia stores
 - Type-safe development with TypeScript
 - Hot Module Replacement (HMR) in development
@@ -210,7 +211,7 @@ The system follows a layered architecture with clear separation of concerns:
 Reusable stateful logic encapsulated in composable functions using Vue 3's Composition API. Composables follow the principle of single responsibility and are used for cross-cutting concerns that don't require global state.
 
 **Key Composables**:
-- `useRouteParams.ts` - Type-safe route parameter extraction with support for string arrays from route.params
+- `useRouteParams.ts` - Type-safe route parameter extraction; reads `resultId` from route params or the query string so drilldown pages work with and without a result filter
 - `useApiData.ts` - API data fetching with loading/error states and feedback integration
 - `useBreadcrumbs.ts` - Dynamic breadcrumb navigation generation
 - `usePageTitle.ts` - Page title generation with i18n support and multiple format patterns
@@ -401,7 +402,7 @@ Frontend SPA (Vue 3)
 - Catch-all route for all non-API paths
 - Serves pre-built frontend from `view/static/dist/`
 - Enables Vue Router client-side navigation
-- Supports direct URL access to drilldown pages (e.g., `/results/abc123/`)
+- Supports direct URL access to drilldown pages (e.g., `/results?resultId=abc123`)
 - Supports opening links in new tabs
 - Supports browser refresh on drilldown pages
 - Fallback to API error if frontend not built

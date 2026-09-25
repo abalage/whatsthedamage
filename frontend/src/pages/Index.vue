@@ -3,6 +3,7 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter, RouterLink } from 'vue-router'
 import { useAuthStore } from '../stores/auth.js'
 import { useFeedbackStore } from '../stores/feedback.js'
+import { useLocaleStore } from '../stores/locale.js'
 import { useGettext } from 'vue3-gettext'
 import { fetchProcessingResults, fetchTransactionsByResult } from '../js/api.js'
 import { buildResultQuery } from '../js/routeUtils.js'
@@ -12,8 +13,10 @@ const { $gettext } = useGettext()
 const router = useRouter()
 const authStore = useAuthStore()
 const feedback = useFeedbackStore()
+const localeStore = useLocaleStore()
 
 const isLoading = ref(true)
+const loadError = ref<string | null>(null)
 const processingResults = ref<ProcessingResultListItem[]>([])
 const totalTransactionCount = ref(0)
 
@@ -31,7 +34,9 @@ const formatResultLabel = (result: ProcessingResultListItem): string => {
     return result.id
   }
   const date = new Date(result.created_at)
-  return Number.isNaN(date.getTime()) ? result.id : date.toLocaleString()
+  return Number.isNaN(date.getTime())
+    ? result.id
+    : date.toLocaleString(localeStore.locale)
 }
 
 const sortResultsByNewest = (results: ProcessingResultListItem[]): ProcessingResultListItem[] => {
@@ -57,6 +62,8 @@ const loadProcessingResults = async (): Promise<void> => {
   }
 
   try {
+    loadError.value = null
+    isLoading.value = true
     const [results, transactions] = await Promise.all([
       fetchProcessingResults(),
       fetchTransactionsByResult(undefined, { limit: 1 })
@@ -66,6 +73,7 @@ const loadProcessingResults = async (): Promise<void> => {
     restoreSelectedResult()
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error)
+    loadError.value = message
     feedback.showError(`${$gettext('Failed to load your transactions')}: ${message}`)
     console.error('Failed to load processing results:', error)
   } finally {
@@ -101,6 +109,24 @@ onMounted(() => {
         <span class="visually-hidden">{{ $gettext('Loading') }}...</span>
       </output>
       <p class="mt-2">{{ $gettext('Loading your transactions') }}...</p>
+    </div>
+
+    <div v-else-if="loadError" class="text-center my-5">
+      <div class="card mx-auto" style="max-width: 600px;">
+        <div class="card-header">
+          {{ $gettext('Failed to load your transactions') }}
+        </div>
+        <div class="card-body">
+          <p class="text-secondary">{{ loadError }}</p>
+          <button
+            type="button"
+            class="btn bg-surface-primary text-on-primary border-primary"
+            @click="loadProcessingResults"
+          >
+            {{ $gettext('Try again') }}
+          </button>
+        </div>
+      </div>
     </div>
 
     <div v-else-if="hasNoTransactions" class="text-center my-5">

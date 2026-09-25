@@ -2,8 +2,8 @@
 import { ref, onMounted, computed, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useGettext } from 'vue3-gettext'
-import { fetchProcessingResultMetadata, fetchTransactionsByResult } from '../js/api.js'
-import { buildResultQuery } from '../js/routeUtils.js'
+import { fetchAllTransactions, fetchProcessingResultMetadata } from '../js/api.js'
+import { buildResultQuery, extractResultId } from '../js/routeUtils.js'
 import { useCategoriesStore } from '../stores/categories.js'
 import { RouterLink } from 'vue-router'
 import { formatDateISO } from '../js/dateUtils.js'
@@ -16,10 +16,8 @@ const { $gettext } = useGettext()
 const categoriesStore = useCategoriesStore()
 const route = useRoute()
 
-const resultId = computed(() => {
-  const id = route.query.resultId ?? route.query.result_id
-  return typeof id === 'string' && id !== '' ? id : null
-})
+// Optional resultId filter, carried in the query string
+const resultId = computed(() => extractResultId(route.query as Record<string, unknown>))
 
 // Table columns definition
 const columns: Column[] = [
@@ -49,8 +47,12 @@ const columns: Column[] = [
 
 const metadata = ref<ProcessingResultMetadata | null>(null)
 const transactions = ref<TransactionListItem[]>([])
+const totalTransactionCount = ref(0)
 const isLoading = ref(true)
 const error = ref<string | null>(null)
+
+// The unfiltered view fetches with a limit; warn when rows were left out
+const isTruncated = computed(() => totalTransactionCount.value > transactions.value.length)
 
 const loadResults = async () => {
   try {
@@ -62,9 +64,10 @@ const loadResults = async () => {
       ? await fetchProcessingResultMetadata(resultId.value)
       : null
 
-    // Fetch transactions, optionally filtered by result
-    const response = await fetchTransactionsByResult(resultId.value ?? undefined, { limit: 10000 })
+    // Fetch the complete dataset, optionally filtered by result
+    const response = await fetchAllTransactions(resultId.value ?? undefined)
     transactions.value = response.transactions
+    totalTransactionCount.value = response.total_count
 
     isLoading.value = false
   } catch (err) {
@@ -131,6 +134,10 @@ watch(resultId, () => {
 
     <!-- Main Content -->
     <div v-else-if="metadata || transactions.length > 0">
+      <div v-if="isTruncated" class="bg-status-warning text-on-dark alert" role="alert">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+        {{ $gettext('Too many transactions to display') }} — {{ $gettext('showing') }} {{ transactions.length }} / {{ totalTransactionCount }}. {{ $gettext('Select a result to see the rest.') }}
+      </div>
       <div class="d-flex justify-content-between align-items-center mb-3">
         <h1 class="mb-0">
           {{ $gettext('Transactions') }}

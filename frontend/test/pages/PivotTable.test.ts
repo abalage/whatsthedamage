@@ -9,7 +9,7 @@ import { createPinia, setActivePinia } from 'pinia';
 import { reactive } from 'vue';
 import PivotTable from '../../src/pages/PivotTable.vue';
 import {
-  fetchTransactionsByResult,
+  fetchAllTransactions,
   fetchCategories,
   fetchCostOfLivingCategories,
 } from '../../src/js/api.js';
@@ -32,7 +32,7 @@ vi.mock('vue3-gettext', (): Record<string, unknown> => ({
 }));
 
 vi.mock('../../src/js/api.js', () => ({
-  fetchTransactionsByResult: vi.fn(),
+  fetchAllTransactions: vi.fn(),
   fetchCategories: vi.fn(),
   fetchCostOfLivingCategories: vi.fn(),
 }));
@@ -70,7 +70,7 @@ describe('PivotTable.vue', () => {
   const mountPage = (): VueWrapper => shallowMount(PivotTable, { global: { plugins: [createPinia()] } });
 
   it('fetches all transactions without result_id when resultId is undefined', async () => {
-    vi.mocked(fetchTransactionsByResult).mockResolvedValue({
+    vi.mocked(fetchAllTransactions).mockResolvedValue({
       transactions: [makeTransaction(1)],
       total_count: 1,
       limit: 10000,
@@ -80,12 +80,12 @@ describe('PivotTable.vue', () => {
     await mountPage();
     await flushPromises();
 
-    expect(fetchTransactionsByResult).toHaveBeenCalledWith(undefined, { limit: 10000 });
+    expect(fetchAllTransactions).toHaveBeenCalledWith(undefined);
   });
 
   it('fetches filtered transactions when resultId is defined', async () => {
     mockRoute.query = { resultId: 'r1' };
-    vi.mocked(fetchTransactionsByResult).mockResolvedValue({
+    vi.mocked(fetchAllTransactions).mockResolvedValue({
       transactions: [makeTransaction(1)],
       total_count: 1,
       limit: 10000,
@@ -95,12 +95,12 @@ describe('PivotTable.vue', () => {
     const wrapper = await mountPage();
     await flushPromises();
 
-    expect(fetchTransactionsByResult).toHaveBeenCalledWith('r1', { limit: 10000 });
+    expect(fetchAllTransactions).toHaveBeenCalledWith('r1');
     expect(wrapper.text()).not.toContain('All Transactions');
   });
 
   it('shows the "All Transactions" title hint when no resultId is given', async () => {
-    vi.mocked(fetchTransactionsByResult).mockResolvedValue({
+    vi.mocked(fetchAllTransactions).mockResolvedValue({
       transactions: [makeTransaction(1)],
       total_count: 1,
       limit: 10000,
@@ -112,5 +112,20 @@ describe('PivotTable.vue', () => {
 
     expect((wrapper.vm as unknown as { headerTitle: string }).headerTitle)
       .toContain('All Transactions');
+  });
+
+  it('shows a truncation warning when total_count exceeds the fetched rows', async () => {
+    vi.mocked(fetchAllTransactions).mockResolvedValue({
+      transactions: [makeTransaction(1)],
+      total_count: 500,
+      limit: 10000,
+      offset: 0,
+    });
+
+    const wrapper = await mountPage();
+    await flushPromises();
+
+    expect(wrapper.text()).toContain('Too many transactions to display');
+    expect(wrapper.text()).toContain('1 / 500');
   });
 });

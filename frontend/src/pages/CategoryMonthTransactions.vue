@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { onMounted, computed } from 'vue'
+import { onMounted, computed, watch } from 'vue'
 import { useGettext } from 'vue3-gettext'
 import { useCategoriesStore } from '../stores/categories.js'
 import { useDrilldownData } from '../composables/useDrilldownData.js'
-import { useRoute, RouterLink } from 'vue-router'
+import { RouterLink } from 'vue-router'
 import BreadcrumbNavigation from '../components/layout/BreadcrumbNavigation.vue'
 import type { BreadcrumbItem } from '../composables/useBreadcrumbs.js'
 import LoadingState from '../components/layout/LoadingState.vue'
@@ -12,19 +12,16 @@ import PageHeader from '../components/layout/PageHeader.vue'
 import VueDataTable from '../components/data/VueDataTable.vue'
 import type { Column, AggregateRowConfig } from '../components/data/VueDataTable.vue'
 import { fetchCategoryMonthTransactions } from '../js/api.js'
-import { buildResultQuery, extractResultId } from '../js/routeUtils.js'
+import { useResultQuery } from '../composables/useResultQuery.js'
 import type { TransactionListResponse } from '../types/api.js'
 import { formatMonthYear, formatDateISO, toEpoch } from '../js/dateUtils.js'
 import BarChart from '../components/charts/BarChart.vue'
 
 const { $gettext } = useGettext()
 const categoriesStore = useCategoriesStore()
-const route = useRoute()
-
 
 // Optional resultId filter, carried in the query string
-const resultQuery = (): { resultId?: string } =>
-  buildResultQuery(extractResultId(route.query as Record<string, unknown>))
+const resultQuery = useResultQuery()
 
 // Table columns
 const columns: Column[] = [
@@ -42,6 +39,7 @@ const {
   isLoading,
   error,
   fetchData,
+  resultId,
   accountId,
   pageTitle,
   breadcrumbItems
@@ -165,6 +163,11 @@ const chartCategories = computed(() => [
 ])
 
 onMounted(() => {
+  fetchData()
+})
+
+// Refetch when the resultId query filter changes while the page is reused
+watch(resultId, () => {
   fetchData()
 })
 </script>

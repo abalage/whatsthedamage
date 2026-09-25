@@ -215,11 +215,10 @@ export async function fetchMonthCategories(
 export async function fetchCategoryMonthTransactions(
   params: Record<string, string | null>
 ): Promise<TransactionListResponse> {
-  return fetchTransactionsByResult(params.resultId ?? undefined, {
+  return fetchAllTransactions(params.resultId ?? undefined, {
     account: params.accountId ?? undefined,
     categoryId: params.categoryId ?? undefined,
-    month: params.monthId ?? undefined,
-    limit: 1000
+    month: params.monthId ?? undefined
   });
 }
 
@@ -267,7 +266,7 @@ export async function fetchProcessingResultMetadata(resultId?: string): Promise<
   if (!resultId) {
     return null
   }
-  return fetchWithErrorHandling<ProcessingResultMetadata>(getApiUrl(`/processing-results/${resultId}`), {
+  return fetchWithErrorHandling<ProcessingResultMetadata>(getApiUrl(`/processing-results/${encodeURIComponent(resultId)}`), {
     credentials: 'include'
   });
 }
@@ -306,6 +305,67 @@ export async function fetchTransactionsByResult(
     getApiUrl(query ? `/transactions?${query}` : '/transactions'),
     { credentials: 'include' }
   );
+}
+
+/**
+ * Page size used when fetching the complete dataset with paginated requests
+ */
+const TRANSACTION_PAGE_SIZE = 2000;
+
+/**
+ * Safety cap for fetch-all queries; the transaction views show a truncation
+ * warning when a dataset reaches this size
+ */
+const MAX_FETCHED_TRANSACTIONS = 50000;
+
+/**
+ * Fetch the complete transaction dataset, optionally limited to a specific
+ * processing result, by paging through the transactions endpoint until
+ * total_count rows are collected (or MAX_FETCHED_TRANSACTIONS is reached).
+ * Intended for views that aggregate transactions client-side, where a single
+ * limited request would silently drop rows.
+ * @param resultId - Result ID, or undefined to fetch transactions across all results
+ * @param options - Filter options (sorting applies to every page request)
+ * @returns Promise with the complete TransactionListResponse
+ */
+export async function fetchAllTransactions(
+  resultId?: string,
+  options: {
+    account?: string;
+    categoryId?: string;
+    month?: string;
+    sortBy?: string;
+    sortOrder?: string;
+  } = {}
+): Promise<TransactionListResponse> {
+  const firstPage = await fetchTransactionsByResult(resultId, {
+    ...options,
+    limit: TRANSACTION_PAGE_SIZE,
+    offset: 0
+  });
+
+  const transactions = [...firstPage.transactions];
+  const targetCount = Math.min(firstPage.total_count, MAX_FETCHED_TRANSACTIONS);
+
+  while (transactions.length < targetCount) {
+    const page = await fetchTransactionsByResult(resultId, {
+      ...options,
+      limit: TRANSACTION_PAGE_SIZE,
+      offset: transactions.length
+    });
+    if (page.transactions.length === 0) {
+      // The dataset shrank between requests; stop with what we have
+      break;
+    }
+    transactions.push(...page.transactions);
+  }
+
+  return {
+    transactions,
+    total_count: firstPage.total_count,
+    limit: transactions.length,
+    offset: 0
+  };
 }
 
 /**

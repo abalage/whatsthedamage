@@ -6,6 +6,8 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import {
   fetchTransactionsByResult,
+  fetchAllTransactions,
+  fetchCategoryMonthTransactions,
   fetchAggregatedTransactions,
   fetchProcessingResultMetadata,
 } from '../src/js/api.js';
@@ -18,6 +20,32 @@ const stubFetch = (data: unknown, ok = true): void => {
     json: async () => data,
   } as Response)));
 };
+
+/**
+ * Stub fetch with a sequence of page responses, one per request
+ */
+const stubFetchSequence = (pages: unknown[]): void => {
+  const mock = vi.fn();
+  for (const data of pages) {
+    mock.mockImplementationOnce(async () => ({
+      ok: true,
+      status: 200,
+      statusText: 'OK',
+      json: async () => data,
+    } as Response));
+  }
+  vi.stubGlobal('fetch', mock);
+};
+
+/**
+ * Build a transaction list page response with placeholder transactions
+ */
+const makePage = (count: number, totalCount: number, offset: number): unknown => ({
+  transactions: Array.from({ length: count }, (_, i) => ({ id: offset + i + 1 })),
+  total_count: totalCount,
+  limit: 2000,
+  offset,
+});
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -117,5 +145,109 @@ describe('fetchProcessingResultMetadata', () => {
     expect(result).toEqual(metadata);
     const url = vi.mocked(globalThis.fetch).mock.calls[0][0] as string;
     expect(url).toBe('/api/v2/processing-results/123');
+  });
+
+  it('URL-encodes the resultId in the metadata endpoint', async () => {
+    stubFetch({});
+
+    await fetchProcessingResultMetadata('a b/c?d');
+
+    const url = vi.mocked(globalThis.fetch).mock.calls[0][0] as string;
+    expect(url).toBe('/api/v2/processing-results/a%20b%2Fc%3Fd');
+  });
+});
+
+describe('fetchAllTransactions', () => {
+  it('returns a single page without further requests when all rows fit', async () => {
+    stubFetchSequence([makePage(5, 5, 0)]);
+
+    const result = await fetchAllTransactions();
+
+    expect(result.transactions).toHaveLength(5);
+    expect(result.total_count).toBe(5);
+    expect(globalThis.fetch).toHaveBeenCalledTimes(1);
+    const url = vi.mocked(globalThis.fetch).mock.calls[0][0] as string;
+    expect(url).toBe('/api/v2/transactions?limit=2000&offset=0');
+  });
+
+  it('pages through the endpoint until total_count rows are collected', async () => {
+    stubFetchSequence([
+      makePage(2000, 2500, 0),
+      makePage(500, 2500, 2000),
+    ]);
+
+    const result = await fetchAllTransactions('r1');
+
+    expect(result.transactions).toHaveLength(2500);
+    expect(result.total_count).toBe(2500);
+    const urls = vi.mocked(globalThis.fetch).mock.calls.map(call => call[0] as string);
+    expect(urls[0]).toBe('/api/v2/transactions?result_id=r1&limit=2000&offset=0');
+    expect(urls[1]).toBe('/api/v2/transactions?result_id=r1&limit=2000&offset=2000');
+  });
+
+  it('stops at the safety cap and reports the real total_count', async () => {
+    stubFetchSequence(Array.from({ length: 25 }, (_, i) => makePage(2000, 60000, i * 2000)));
+
+    const result = await fetchAllTransactions();
+
+    expect(result.transactions).toHaveLength(50000);
+    expect(result.total_count).toBe(60000);
+    expect(globalThis.fetch).toHaveBeenCalledTimes(25);
+  });
+
+  it('stops early when a page comes back empty', async () => {
+    stubFetchSequence([
+      makePage(2000, 2500, 0),
+      { transactions: [], total_count: 2500, limit: 2000, offset: 2000 },
+    ]);
+
+    const result = await fetchAllTransactions();
+
+    expect(result.transactions).toHaveLength(2000);
+    expect(globalThis.fetch).toHaveBeenCalledTimes(2);
+  });
+
+  it('carries filter options on every page request', async () => {
+    stubFetchSequence([makePage(2, 2, 0)]);
+
+    await fetchAllTransactions(undefined, {
+      account: 'acc1',
+      categoryId: 'food',
+      month: '2026-01'
+    });
+
+    const url = vi.mocked(globalThis.fetch).mock.calls[0][0] as string;
+    expect(url).toBe('/api/v2/transactions?limit=2000&offset=0&account=acc1&category_id=food&month=2026-01');
+  });
+});
+
+describe('fetchCategoryMonthTransactions', () => {
+  it('passes route filters through as paginated query parameters', async () => {
+    stubFetchSequence([makePage(2, 2, 0)]);
+
+    const result = await fetchCategoryMonthTransactions({
+      resultId: 'r1',
+      accountId: 'acc1',
+      categoryId: 'food',
+      monthId: '2026-01'
+    });
+
+    expect(result.transactions).toHaveLength(2);
+    const url = vi.mocked(globalThis.fetch).mock.calls[0][0] as string;
+    expect(url).toBe('/api/v2/transactions?result_id=r1&limit=2000&offset=0&account=acc1&category_id=food&month=2026-01');
+  });
+
+  it('omits result_id from the request when the route has none', async () => {
+    stubFetchSequence([makePage(0, 0, 0)]);
+
+    await fetchCategoryMonthTransactions({
+      resultId: null,
+      accountId: 'acc1',
+      categoryId: 'food',
+      monthId: '2026-01'
+    });
+
+    const url = vi.mocked(globalThis.fetch).mock.calls[0][0] as string;
+    expect(url).not.toContain('result_id');
   });
 });

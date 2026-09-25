@@ -15,7 +15,7 @@ import TableLink from '../components/data/TableLink.vue'
 import PieChart from '../components/charts/PieChart.vue'
 import type { Column, AggregateRowConfig } from '../components/data/VueDataTable.vue'
 import { fetchMonthCategories } from '../js/api.js'
-import { buildResultQuery, extractResultId } from '../js/routeUtils.js'
+import { useResultQuery } from '../composables/useResultQuery.js'
 import type { AggregatedTransactionsResponse, TransactionListItem } from '../types/api.js'
 
 const { $gettext } = useGettext()
@@ -24,8 +24,7 @@ const route = useRoute()
 const statisticalStore = useStatisticalStore()
 
 // Optional resultId filter, carried in the query string
-const resultQuery = (): { resultId?: string } =>
-  buildResultQuery(extractResultId(route.query as Record<string, unknown>))
+const resultQuery = useResultQuery()
 
 // Import formatMonthYear and date utilities for breadcrumb
 import { formatMonthYear, createMonthDate } from '../js/dateUtils.js'
@@ -75,6 +74,7 @@ const {
   isLoading,
   error,
   fetchData,
+  resultId,
   pageTitle,
   breadcrumbItems,
   accountId
@@ -210,6 +210,11 @@ watch(() => monthCategoriesData.value, () => {
 }, { immediate: true })
 
 onMounted(() => {
+  fetchData()
+})
+
+// Refetch when the resultId query filter changes while the page is reused
+watch(resultId, () => {
   fetchData()
 })
 </script>

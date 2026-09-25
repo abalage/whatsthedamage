@@ -203,6 +203,7 @@ The system follows a layered architecture with clear separation of concerns:
 - CORS-enabled communication with backend
 - Client-side routing with Vue Router
 - Optional `resultId` query parameter filters transaction views (Categories, Transactions, Pivot Table, drilldowns) to a single processing result; when absent, all transactions are shown (legacy path-based result URLs are redirected to the query-based form)
+- Transaction views fetch the complete dataset through `fetchAllTransactions`, which pages the `/api/v2/transactions` endpoint (2,000-row pages) until `total_count` rows are collected, capped at 50,000 rows with a visible truncation warning
 - State management with Pinia stores
 - Type-safe development with TypeScript
 - Hot Module Replacement (HMR) in development
@@ -212,6 +213,7 @@ Reusable stateful logic encapsulated in composable functions using Vue 3's Compo
 
 **Key Composables**:
 - `useRouteParams.ts` - Type-safe route parameter extraction; reads `resultId` from route params or the query string so drilldown pages work with and without a result filter
+- `useResultQuery.ts` - Builds navigation queries carrying the optional `resultId` filter for drilldown links and breadcrumbs
 - `useApiData.ts` - API data fetching with loading/error states and feedback integration
 - `useBreadcrumbs.ts` - Dynamic breadcrumb navigation generation
 - `usePageTitle.ts` - Page title generation with i18n support and multiple format patterns

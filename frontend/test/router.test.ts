@@ -67,40 +67,74 @@ describe('resultId query param routes', () => {
 });
 
 describe('legacy path-based redirects', () => {
+  const UUID = '123e4567-e89b-12d3-a456-426614174000';
+
   it('redirects /results/:resultId to the details route with query', async () => {
-    await router.push('/results/abc');
+    await router.push(`/results/${UUID}`);
     expect(router.currentRoute.value.name).toBe('details');
-    expect(router.currentRoute.value.query.resultId).toBe('abc');
+    expect(router.currentRoute.value.query.resultId).toBe(UUID);
+  });
+
+  it('drops a non-UUID resultId in the single-segment legacy redirect', async () => {
+    await router.push('/results/not-a-uuid');
+    expect(router.currentRoute.value.name).toBe('details');
+    expect(router.currentRoute.value.query.resultId).toBeUndefined();
+  });
+
+  it('does not treat the shadowed "accounts" segment as a resultId', async () => {
+    await router.push('/results/accounts');
+    expect(router.currentRoute.value.name).toBe('details');
+    expect(router.currentRoute.value.query.resultId).toBeUndefined();
+  });
+
+  it('does not treat the shadowed "pivot" segment as a resultId', async () => {
+    await router.push('/results/pivot');
+    expect(router.currentRoute.value.name).toBe('details');
+    expect(router.currentRoute.value.query.resultId).toBeUndefined();
   });
 
   it('redirects /results/:resultId/pivot to the pivot route with query', async () => {
-    await router.push('/results/abc/pivot');
+    await router.push(`/results/${UUID}/pivot`);
     expect(router.currentRoute.value.name).toBe('pivot');
-    expect(router.currentRoute.value.query.resultId).toBe('abc');
+    expect(router.currentRoute.value.query.resultId).toBe(UUID);
+  });
+
+  it('drops a non-UUID resultId in the legacy pivot redirect', async () => {
+    await router.push('/results/not-a-uuid/pivot');
+    expect(router.currentRoute.value.name).toBe('pivot');
+    expect(router.currentRoute.value.query.resultId).toBeUndefined();
   });
 
   it('redirects the legacy category months drilldown', async () => {
-    await router.push('/results/r1/accounts/a1/categories/c1/months');
+    await router.push(`/results/${UUID}/accounts/a1/categories/c1/months`);
     expect(router.currentRoute.value.name).toBe('category-months');
     expect(router.currentRoute.value.params.accountId).toBe('a1');
     expect(router.currentRoute.value.params.categoryId).toBe('c1');
-    expect(router.currentRoute.value.query.resultId).toBe('r1');
+    expect(router.currentRoute.value.query.resultId).toBe(UUID);
+  });
+
+  it('drops a non-UUID resultId in the legacy category months drilldown', async () => {
+    await router.push('/results/not-a-uuid/accounts/a1/categories/c1/months');
+    expect(router.currentRoute.value.name).toBe('category-months');
+    expect(router.currentRoute.value.params.accountId).toBe('a1');
+    expect(router.currentRoute.value.params.categoryId).toBe('c1');
+    expect(router.currentRoute.value.query.resultId).toBeUndefined();
   });
 
   it('redirects the legacy month categories drilldown', async () => {
-    await router.push('/results/r1/accounts/a1/months/m1/categories');
+    await router.push(`/results/${UUID}/accounts/a1/months/m1/categories`);
     expect(router.currentRoute.value.name).toBe('month-categories');
     expect(router.currentRoute.value.params.accountId).toBe('a1');
     expect(router.currentRoute.value.params.monthId).toBe('m1');
-    expect(router.currentRoute.value.query.resultId).toBe('r1');
+    expect(router.currentRoute.value.query.resultId).toBe(UUID);
   });
 
   it('redirects the legacy category month transactions drilldown', async () => {
-    await router.push('/results/r1/accounts/a1/categories/c1/months/m1/transactions');
+    await router.push(`/results/${UUID}/accounts/a1/categories/c1/months/m1/transactions`);
     expect(router.currentRoute.value.name).toBe('category-month-transactions');
     expect(router.currentRoute.value.params.accountId).toBe('a1');
     expect(router.currentRoute.value.params.categoryId).toBe('c1');
     expect(router.currentRoute.value.params.monthId).toBe('m1');
-    expect(router.currentRoute.value.query.resultId).toBe('r1');
+    expect(router.currentRoute.value.query.resultId).toBe(UUID);
   });
 });

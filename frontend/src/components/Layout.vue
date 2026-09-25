@@ -8,6 +8,7 @@ import { useFeedbackStore } from '../stores/feedback.js'
 import { useThemeStore } from '../stores/theme.js'
 import { useGettext } from 'vue3-gettext'
 import { recalculateStatistics } from '../js/api.js'
+import { extractResultId } from '../js/routeUtils.js'
 import { APP_VERSION } from '../js/version.js'
 
 const { $gettext } = useGettext()
@@ -21,10 +22,7 @@ const themeStore = useThemeStore()
 const isRecalculating = ref(false)
 
 // Get current resultId from route
-const resultId = computed(() => {
-  const id = route.query.resultId ?? route.query.result_id
-  return typeof id === 'string' ? id : null
-})
+const resultId = computed(() => extractResultId(route.query as Record<string, unknown>))
 
 // Show Analytics dropdown only when there's a resultId
 const showAnalytics = computed(() => resultId.value !== null)

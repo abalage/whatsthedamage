@@ -33,6 +33,10 @@ describe('extractResultId', () => {
     expect(extractResultId({ resultId: ['r1', 'r2'] })).toBe('r1');
   });
 
+  it('ignores the snake_case result_id key', () => {
+    expect(extractResultId({ result_id: 'r1' })).toBe(null);
+  });
+
   it('returns null when resultId is missing', () => {
     expect(extractResultId({})).toBe(null);
   });

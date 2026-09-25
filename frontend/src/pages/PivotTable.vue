@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, computed, watch } from 'vue';
 import { useRoute, RouterLink } from 'vue-router';
-import { fetchTransactionsByResult } from '../js/api.js';
+import { fetchAllTransactions } from '../js/api.js';
 import { buildResultQuery, extractResultId } from '../js/routeUtils.js';
 import { useFeedbackStore } from '../stores/feedback.js';
 import { useGettext } from 'vue3-gettext';
@@ -29,6 +29,11 @@ const categoriesStore = useCategoriesStore();
 
 const resultId = computed(() => extractResultId(route.query as Record<string, unknown>));
 const isLoading = ref(true);
+const fetchedCount = ref(0);
+const totalTransactionCount = ref(0);
+
+// The unfiltered view fetches with a limit; warn when rows were left out
+const isTruncated = computed(() => totalTransactionCount.value > fetchedCount.value);
 
 // Helper to extract month key from transaction date (handles both ISO string and timestamp)
 // Uses the new utility function that handles both formats
@@ -147,8 +152,10 @@ function transformToResultsApiResponse(
 
 const loadData = async () => {
   try {
-    // Fetch transactions, optionally filtered by result
-    const response = await fetchTransactionsByResult(resultId.value ?? undefined, { limit: 10000 });
+    // Fetch the complete dataset, optionally filtered by result
+    const response = await fetchAllTransactions(resultId.value ?? undefined);
+    fetchedCount.value = response.transactions.length;
+    totalTransactionCount.value = response.total_count;
 
     // Transform to ResultsApiResponse format for pivot store
     const resultsData = transformToResultsApiResponse(response.transactions, resultId.value);
@@ -323,6 +330,10 @@ onMounted(() => loadData());
 
     <!-- Main Content -->
     <div v-else-if="resultsData">
+      <div v-if="isTruncated" class="bg-status-warning text-on-dark alert" role="alert">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+        {{ $gettext('Too many transactions to display') }} — {{ $gettext('showing') }} {{ fetchedCount }} / {{ totalTransactionCount }}. {{ $gettext('Select a result to see the rest.') }}
+      </div>
       <PageHeader :title="headerTitle">
         <template #actions>
           <RouterLink

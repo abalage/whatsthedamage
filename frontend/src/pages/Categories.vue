@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { ref, onMounted, computed, watch } from 'vue'
 import {
-  fetchProcessingResultMetadata,
-  fetchTransactionsByResult
+  fetchAllTransactions,
+  fetchProcessingResultMetadata
 } from '../js/api.js'
-import { buildResultQuery } from '../js/routeUtils.js'
+import { buildResultQuery, extractResultId } from '../js/routeUtils.js'
 import { useFeedbackStore } from '../stores/feedback.js'
 import { useStatisticalStore } from '../stores/statistical.js'
 import { useCategoriesStore } from '../stores/categories.js'
@@ -37,15 +37,16 @@ const statisticalStore = useStatisticalStore()
 const categoriesStore = useCategoriesStore()
 const route = useRoute()
 
-// Try both camelCase and snake_case for the query parameter
-const resultId = computed(() => {
-  const id = route.query.resultId ?? route.query.result_id
-  return typeof id === 'string' ? id : null
-})
+// Optional resultId filter, carried in the query string
+const resultId = computed(() => extractResultId(route.query as Record<string, unknown>))
 const metadata = ref<ProcessingResultMetadata | null>(null)
 const transactions = ref<TransactionListItem[]>([])
+const totalTransactionCount = ref(0)
 const isLoading = ref(true)
 const error = ref<string | null>(null)
+
+// The unfiltered view fetches with a limit; warn when rows were left out
+const isTruncated = computed(() => totalTransactionCount.value > transactions.value.length)
 
 // Interface for account data structure
 interface AccountData {
@@ -83,9 +84,10 @@ const loadResults = async () => {
       ? await fetchProcessingResultMetadata(resultId.value)
       : null
 
-    // Fetch transactions, optionally filtered by result
-    const response = await fetchTransactionsByResult(resultId.value ?? undefined, { limit: 10000 })
+    // Fetch the complete dataset, optionally filtered by result
+    const response = await fetchAllTransactions(resultId.value ?? undefined)
     transactions.value = response.transactions
+    totalTransactionCount.value = response.total_count
 
     // Initialize highlights in Pinia store
     statisticalStore.setHighlights({})
@@ -333,6 +335,10 @@ watch(resultId, () => {
     </div>
 
     <div v-else-if="metadata || transactions.length > 0">
+      <div v-if="isTruncated" class="bg-status-warning text-on-dark alert" role="alert">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+        {{ $gettext('Too many transactions to display') }} — {{ $gettext('showing') }} {{ transactions.length }} / {{ totalTransactionCount }}. {{ $gettext('Select a result to see the rest.') }}
+      </div>
       <div class="d-flex justify-content-between align-items-center mb-3">
         <h1 class="mb-0">
           {{ $gettext('Categories') }}

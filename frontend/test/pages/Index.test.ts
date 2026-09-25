@@ -182,4 +182,33 @@ describe('Index.vue result selector', () => {
     expect(wrapper.text()).toContain('You have no transactions yet.');
     expect(wrapper.find('#result-selector').exists()).toBe(false);
   });
+
+  it('shows an error card with retry when loading fails', async () => {
+    vi.mocked(fetchProcessingResults).mockRejectedValue(new Error('Network down'));
+    vi.mocked(fetchTransactionsByResult).mockResolvedValue(emptyTransactionList);
+
+    const wrapper = await mountPage();
+    await flushPromises();
+
+    expect(wrapper.text()).toContain('Failed to load your transactions');
+    expect(wrapper.text()).toContain('Network down');
+    expect(wrapper.text()).toContain('Try again');
+    expect(wrapper.find('#result-selector').exists()).toBe(false);
+    expect(wrapper.text()).not.toContain('You have no transactions yet.');
+  });
+
+  it('recovers with the selector after a successful retry', async () => {
+    vi.mocked(fetchProcessingResults).mockRejectedValue(new Error('Network down'));
+    vi.mocked(fetchTransactionsByResult).mockResolvedValue(emptyTransactionList);
+
+    const wrapper = await mountPage();
+    await flushPromises();
+
+    vi.mocked(fetchProcessingResults).mockResolvedValue([makeResult('r1', '2026-01-01T00:00:00Z')]);
+    vi.mocked(fetchTransactionsByResult).mockResolvedValue({ ...emptyTransactionList, total_count: 3 });
+    await wrapper.find('button').trigger('click');
+    await flushPromises();
+
+    expect(wrapper.find('#result-selector').exists()).toBe(true);
+  });
 });

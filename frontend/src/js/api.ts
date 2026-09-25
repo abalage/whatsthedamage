@@ -7,10 +7,7 @@ import { AppError, ApiResponse } from '../types/index.js';
 import type {
   AggregatedTransactionsResponse,
   CategoryDefinition,
-  CategoryMonthTransactionsApiResponse,
-  CategoryMonthsApiResponse,
   CsvProfile,
-  MonthCategoriesApiResponse,
   ProcessingResultCreationResponse,
   ProcessingResultListItem,
   ProcessingResultMetadata,

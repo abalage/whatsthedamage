@@ -202,7 +202,8 @@ The system follows a layered architecture with clear separation of concerns:
 - Independent build and deployment pipeline
 - CORS-enabled communication with backend
 - Client-side routing with Vue Router
-- Optional `resultId` query parameter filters transaction views (Categories, Transactions, Pivot Table, drilldowns) to a single processing result; when absent, all transactions are shown (legacy path-based result URLs are redirected to the query-based form)
+- Optional `resultId` query parameter filters transaction views (Categories, Transactions, Pivot Table, drilldowns) to a single processing result; when absent, all transactions are shown
+- Unknown paths are redirected to the index page by a catch-all route
 - Transaction views fetch the complete dataset through `fetchAllTransactions`, which pages the `/api/v2/transactions` endpoint (2,000-row pages) until `total_count` rows are collected, capped at 50,000 rows with a visible truncation warning
 - State management with Pinia stores
 - Type-safe development with TypeScript

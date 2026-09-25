@@ -72,17 +72,6 @@ export interface AggregatedRow {
 export type DetailRow = TransactionDetail;
 
 /**
- * Processing metadata
- */
-interface ProcessingMetadata {
-  result_id: string;
-  row_count: number;
-  processing_time: number;
-  ml_enabled: boolean;
-  date_range?: string;
-}
-
-/**
  * Statistical highlights for a single cell/row
  * Maps row_id to list of highlight types (e.g., ['outlier', 'pareto'])
  */
@@ -102,114 +91,17 @@ export interface Account {
   formatted_id: string;
   currency: string;
   data?: AggregatedRow[];  // Previously was dt_response: { data: AggregatedRow[] }
-  result_id?: string;
   metadata?: unknown | null;
 }
 
-// ============================================================================
-// API Response Types (matching backend Pydantic models from api_responses.py)
-// ============================================================================
-
-// -----------------------------------------------------------------------------
-// Transactions Endpoint: POST /api/v2/transactions
-// -----------------------------------------------------------------------------
-
 /**
- * Response from POST /api/v2/transactions
- *
- * Contains processed transaction data grouped by category and month,
- * plus processing metadata.
- */
-export interface DetailedResponse {
-  data: AggregatedRow[];
-  metadata: ProcessingMetadata;
-}
-
-// -----------------------------------------------------------------------------
-// Results Endpoint: GET /api/v2/results/<result_id>
-// -----------------------------------------------------------------------------
-
-/**
- * URL info for category drilldown
- */
-interface DrilldownUrlInfo {
-  category_url: string;
-  category_id: string;
-}
-
-/**
- * URL info for month drilldown
- */
-interface MonthUrlInfo {
-  month_url: string;
-  month_id: string;
-}
-
-/**
- * URL info for cell/transaction drilldown
- */
-interface CellUrlInfo {
-  cell_url: string;
-  category_id: string;
-  month_id: string;
-}
-
-/**
- * All drilldown URLs for a single account
- */
-interface DrilldownUrls {
-  account_id: string | null;
-  category_urls: Record<string, DrilldownUrlInfo>;
-  month_urls: Record<string, MonthUrlInfo>;
-  cell_urls: Record<string, CellUrlInfo>;
-}
-
-/**
- * Response from GET /api/v2/results/<result_id>
- *
- * Contains cached processing results with accounts data and drilldown URLs.
- * Now uses simplified structure with direct Account array instead of nested wrappers.
+ * Shape used by the pivot store to hold transaction data grouped by
+ * account, category, and month. Built client-side in PivotTable from
+ * the /api/v2/transactions endpoint.
  */
 export interface ResultsApiResponse {
-  result_id: string | null;
-  accounts: Account[];  // Changed from accounts_data: AccountsDataResponse
+  accounts: Account[];
   highlights: StatisticalHighlights;
-  drilldown_urls_by_account: Record<string, DrilldownUrls>;
-}
-
-/**
- * URL info for category drilldown
- */
-interface DrilldownUrlInfo {
-  category_url: string;
-  category_id: string;
-}
-
-/**
- * URL info for month drilldown
- */
-interface MonthUrlInfo {
-  month_url: string;
-  month_id: string;
-}
-
-/**
- * URL info for cell/transaction drilldown
- */
-interface CellUrlInfo {
-  cell_url: string;
-  category_id: string;
-  month_id: string;
-}
-
-/**
- * All drilldown URLs for a single account
- */
-interface DrilldownUrls {
-  account_id: string | null;
-  category_urls: Record<string, DrilldownUrlInfo>;
-  month_urls: Record<string, MonthUrlInfo>;
-  cell_urls: Record<string, CellUrlInfo>;
 }
 
 // -----------------------------------------------------------------------------
@@ -224,85 +116,6 @@ export interface CategoryDefinition {
   id: string;
   default_name: string;
   patterns: string[];
-}
-
-// -----------------------------------------------------------------------------
-// Drilldown Endpoints
-// -----------------------------------------------------------------------------
-
-/**
- * Data for a single month in category months response
- * Uses ISO 8601 date string instead of timestamp.
- */
-export interface MonthData {
-  month_date: string; // ISO 8601 date string (YYYY-MM-DD)
-  total: DisplayRawField;
-  row_id: string;
-  cell_url: string;
-}
-
-/**
- * Response from GET /api/v2/results/<r>/accounts/<a>/categories/<c>/months
- *
- * Returns month-by-month aggregation for a specific category.
- * Uses ISO 8601 date strings instead of timestamps.
- */
-export interface CategoryMonthsApiResponse {
-  result_id: string;
-  account_id: string;
-  account_name: string;
-  account_formatted_id: string;
-  account_currency: string;
-  category_id: string;
-  data: MonthData[];
-  highlights?: StatisticalHighlights;
-}
-
-/**
- * Data for a single category in month categories response
- */
-export interface CategoryData {
-  category_id: string;
-  total: DisplayRawField;
-  row_id: string;
-  category_url: string;
-}
-
-/**
- * Response from GET /api/v2/results/<r>/accounts/<a>/months/<m>/categories
- *
- * Returns category-by-category aggregation for a specific month.
- * Uses ISO 8601 date string instead of timestamp.
- */
-export interface MonthCategoriesApiResponse {
-  result_id: string;
-  account_id: string;
-  account_name: string;
-  account_formatted_id: string;
-  account_currency: string;
-  month_id: string;
-  month_date: string; // ISO 8601 date string (YYYY-MM-DD)
-  data: CategoryData[];
-  highlights?: StatisticalHighlights;
-}
-
-/**
- * Response from GET /api/v2/results/<r>/accounts/<a>/categories/<c>/months/<m>/transactions
- *
- * Returns individual transaction details for a specific category and month.
- * Uses ISO 8601 date string instead of timestamp.
- */
-export interface CategoryMonthTransactionsApiResponse {
-  result_id: string;
-  account_id: string;
-  account_name: string;
-  account_formatted_id: string;
-  account_currency: string;
-  category_id: string;
-  month_id: string;
-  month_date: string; // ISO 8601 date string (YYYY-MM-DD)
-  data: TransactionDetail[];
-  highlights?: StatisticalHighlights;
 }
 
 // -----------------------------------------------------------------------------

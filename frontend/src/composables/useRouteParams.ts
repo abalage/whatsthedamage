@@ -14,8 +14,7 @@ export type StringRouteParams = Record<string, string | null>
 
 /**
  * Extracts common route parameters with type safety
- * The resultId is read from route params first, then from the query string,
- * so both path-based and query-based result filtering are supported
+ * The resultId filter is carried in the query string
  * @returns Object with computed refs for resultId, accountId, categoryId, and monthId
  */
 export function useRouteParams(): {
@@ -28,10 +27,7 @@ export function useRouteParams(): {
 } {
   const route = useRoute()
 
-  const resultId = computed(() => {
-    const paramId = extractResultId(route.params as Record<string, unknown>)
-    return paramId ?? extractResultId(route.query as Record<string, unknown>)
-  })
+  const resultId = computed(() => extractResultId(route.query as Record<string, unknown>))
 
   const accountId = computed(() => {
     const value = route.params.accountId
@@ -69,13 +65,12 @@ export function useRouteParams(): {
 
   /**
    * Gets all route params as StringRouteParams, including the resultId
-   * from either path params or the query string
+   * from the query string
    */
-  const stringParams = computed<StringRouteParams>(() => {
-    const params = convertParamsToString(route.params)
-    params.resultId ??= resultId.value
-    return params
-  })
+  const stringParams = computed<StringRouteParams>(() => ({
+    ...convertParamsToString(route.params),
+    resultId: resultId.value
+  }))
 
   return {
     resultId,

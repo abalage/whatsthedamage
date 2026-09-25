@@ -43,13 +43,7 @@ describe('useRouteParams', () => {
     mockRoute.query = {};
   });
 
-  it('reads resultId from route params', () => {
-    mockRoute.params = { resultId: 'from-params' };
-    const harness = mountHarness();
-    expect(harness.resultId()).toBe('from-params');
-  });
-
-  it('falls back to the resultId query when not in params', () => {
+  it('reads resultId from the query string', () => {
     mockRoute.query = { resultId: 'from-query' };
     const harness = mountHarness();
     expect(harness.resultId()).toBe('from-query');

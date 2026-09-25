@@ -56,8 +56,7 @@ const ZERO = 0;
  * Transform flat transaction list into ResultsApiResponse format for pivot store
  */
 function transformToResultsApiResponse(
-  transactions: TransactionListItem[],
-  resultId: string | null
+  transactions: TransactionListItem[]
 ): ResultsApiResponse {
   // Group transactions by account
   const accountsMap = new Map<string, TransactionListItem[]>();
@@ -80,7 +79,6 @@ function transformToResultsApiResponse(
       formatted_id: accountId,
       currency: firstTxn.currency || '',
       data: [],
-      result_id: resultId ?? undefined,
       metadata: null
     };
 
@@ -143,10 +141,8 @@ function transformToResultsApiResponse(
   }
 
   return {
-    result_id: resultId,
     accounts,
-    highlights: {},
-    drilldown_urls_by_account: {}
+    highlights: {}
   };
 }
 
@@ -158,7 +154,7 @@ const loadData = async () => {
     totalTransactionCount.value = response.total_count;
 
     // Transform to ResultsApiResponse format for pivot store
-    const resultsData = transformToResultsApiResponse(response.transactions, resultId.value);
+    const resultsData = transformToResultsApiResponse(response.transactions);
 
     await categoriesStore.loadCategories();
     await categoriesStore.loadCostOfLivingCategories();

@@ -13,8 +13,8 @@ export function buildResultQuery(resultId: string | null | undefined): { resultI
 }
 
 /**
- * Extract an optional resultId from route query or params
- * @param source - Object containing route query or params values
+ * Extract an optional resultId from the route query
+ * @param source - Object containing route query values
  * @returns Result ID string, or null when absent
  */
 export function extractResultId(source: Record<string, unknown>): string | null {

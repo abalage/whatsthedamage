@@ -263,7 +263,7 @@ function getTransactionDetailsForCategoryMonth(accountId: string, categoryId: st
 
   return accountTxns.map(txn => ({
     date: { display: formatTransactionDate(txn.date) },
-    amount: { display: formatAmount(txn.amount, txn.currency), raw: txn.amount || 0 },
+    amount: { display: formatAmount(txn.amount), raw: txn.amount || 0 },
     merchant: txn.original_partner || txn.partner || ''
   }))
 }
@@ -287,9 +287,9 @@ function formatTransactionDate(dateValue: string | undefined): string {
   return dateValue
 }
 
-function formatAmount(amount: number | null | undefined, currency: string | null | undefined): string {
+function formatAmount(amount: number | null | undefined): string {
   if (amount === null || amount === undefined) return ''
-  return `${currency || ''} ${amount.toFixed(2)}`
+  return amount.toFixed(2)
 }
 
 // Get highlights for an account's table from Pinia store

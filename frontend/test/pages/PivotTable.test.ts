@@ -5,9 +5,10 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { shallowMount, flushPromises, type VueWrapper } from '@vue/test-utils';
-import { createPinia, setActivePinia } from 'pinia';
+import { createPinia, setActivePinia, type Pinia } from 'pinia';
 import { reactive } from 'vue';
 import PivotTable from '../../src/pages/PivotTable.vue';
+import { usePivotStore } from '../../src/stores/pivot.js';
 import {
   fetchAllTransactions,
   fetchCategories,
@@ -57,17 +58,20 @@ const makeTransaction = (id: number): TransactionListItem => ({
 });
 
 describe('PivotTable.vue', () => {
+  let pinia: Pinia;
+
   beforeEach(() => {
     vi.clearAllMocks();
     localStorage.clear();
     mockRoute.params = {};
     mockRoute.query = {};
-    setActivePinia(createPinia());
+    pinia = createPinia();
+    setActivePinia(pinia);
     vi.mocked(fetchCategories).mockResolvedValue([]);
     vi.mocked(fetchCostOfLivingCategories).mockResolvedValue([]);
   });
 
-  const mountPage = (): VueWrapper => shallowMount(PivotTable, { global: { plugins: [createPinia()] } });
+  const mountPage = (): VueWrapper => shallowMount(PivotTable, { global: { plugins: [pinia] } });
 
   it('fetches all transactions without result_id when resultId is undefined', async () => {
     vi.mocked(fetchAllTransactions).mockResolvedValue({
@@ -127,5 +131,28 @@ describe('PivotTable.vue', () => {
 
     expect(wrapper.text()).toContain('Too many transactions to display');
     expect(wrapper.text()).toContain('1 / 500');
+  });
+
+  it('stores display values without currency prefix', async () => {
+    vi.mocked(fetchAllTransactions).mockResolvedValue({
+      transactions: [makeTransaction(1)],
+      total_count: 1,
+      limit: 10000,
+      offset: 0,
+    });
+
+    await mountPage();
+    await flushPromises();
+
+    const pivotStore = usePivotStore();
+    const accounts = pivotStore.resultsData?.accounts ?? [];
+    expect(accounts).toHaveLength(1);
+
+    const rows = accounts[0].data ?? [];
+    expect(rows).toHaveLength(1);
+    expect(rows[0].total.display).toBe('-10.50');
+    expect(rows[0].total.display).not.toContain('EUR');
+    expect(rows[0].details[0].amount.display).toBe('-10.50');
+    expect(rows[0].details[0].amount.display).not.toContain('EUR');
   });
 });

@@ -110,14 +110,6 @@ function calculateTotalForTransactions(txns: TransactionListItem[]): number {
   return txns.reduce((sum, txn) => sum + (txn.amount || 0), 0)
 }
 
-// Helper function to format amount with currency
-function formatAmount(amount: number, currency: string | undefined): string {
-  if (currency) {
-    return `${currency} ${amount.toFixed(2)}`
-  }
-  return amount.toFixed(2)
-}
-
 // Extract account currency from first transaction
 const accountCurrency = computed(() => {
   if (!monthCategoriesData.value?.groups) return null
@@ -137,11 +129,10 @@ const tableData = computed(() => {
 
   return Object.entries(groups).map(([categoryKey, txns]) => {
     const total = calculateTotalForTransactions(txns)
-    const firstTxn = txns[0]
     return {
       category_id: categoryKey,
       total: total,
-      total_display: formatAmount(total, firstTxn?.currency),
+      total_display: total.toFixed(2),
       row_id: categoryKey,
       _rowIds: {
         total: categoryKey // Map total column to its row_id for cell-level highlighting

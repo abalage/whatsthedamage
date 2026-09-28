@@ -168,4 +168,37 @@ describe('Categories.vue', () => {
     expect(wrapper.text()).toContain('Too many transactions to display');
     expect(wrapper.text()).toContain('1 / 500');
   });
+
+  it('renders popover amounts without currency next to the numbers', async () => {
+    vi.mocked(fetchProcessingResultMetadata).mockResolvedValue(null);
+    vi.mocked(fetchAllTransactions).mockResolvedValue({
+      transactions: [makeTransaction(1)],
+      total_count: 1,
+      limit: 10000,
+      offset: 0,
+    });
+
+    const wrapper = await mountPage();
+    await flushPromises();
+
+    const vm = wrapper.vm as unknown as {
+      buildTableColumns: (account: { id: string }) => Array<{
+        key: string;
+        componentProps: (value: unknown, row?: Record<string, unknown>) => Record<string, unknown>;
+      }>;
+      buildTableData: (account: { id: string }) => Record<string, unknown>[];
+    };
+    const account = { id: 'acc1' };
+    const columns = vm.buildTableColumns(account);
+    const rows = vm.buildTableData(account);
+
+    const monthColumn = columns.find(column => column.key === 'month-2026-01');
+    if (!monthColumn) {
+      throw new Error('Expected the month column to be defined');
+    }
+
+    const props = monthColumn.componentProps(rows[0]['month-2026-01'], rows[0]);
+    expect(props.popoverContent).toContain('-10.50');
+    expect(props.popoverContent).not.toContain('EUR');
+  });
 });

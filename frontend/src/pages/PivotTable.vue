@@ -112,7 +112,7 @@ function transformToResultsApiResponse(
           row_id: `${accountId}-${categoryId}-${monthKey}`,
           category_id: categoryId,
           total: {
-            display: `${firstTxn.currency || ''} ${totalAmount.toFixed(2)}`,
+            display: totalAmount.toFixed(2),
             raw: totalAmount
           },
           date: monthKey,  // ISO date string (YYYY-MM-DD)
@@ -120,7 +120,7 @@ function transformToResultsApiResponse(
             row_id: String(txn.id),
             date: txn.date || '',  // ISO date string from API
             amount: {
-              display: `${txn.currency || ''} ${(txn.amount || 0).toFixed(2)}`,
+              display: (txn.amount || 0).toFixed(2),
               raw: txn.amount || 0
             },
             merchant: txn.original_partner || txn.partner || '',

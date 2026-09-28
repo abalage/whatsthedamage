@@ -20,14 +20,6 @@ import type { AggregatedTransactionsResponse, TransactionListItem } from '../typ
 import { formatMonthYear, extractMonthKey, createMonthDate } from '../js/dateUtils.js'
 import BarChart from '../components/charts/BarChart.vue'
 
-// Helper function to format amount with currency
-function formatAmount(amount: number, currency: string | undefined): string {
-  if (currency) {
-    return `${currency} ${amount.toFixed(2)}`
-  }
-  return amount.toFixed(2)
-}
-
 const { $gettext } = useGettext()
 
 const statisticalStore = useStatisticalStore()
@@ -144,7 +136,7 @@ const tableData = computed(() => {
     return {
       month: formatMonthKey(monthKey),
       total: total,
-      total_display: formatAmount(total, txns[0]?.currency),
+      total_display: total.toFixed(2),
       row_id: normalizedMonthKey,
       cell_url: `#`,
       month_timestamp: monthTimestamp,

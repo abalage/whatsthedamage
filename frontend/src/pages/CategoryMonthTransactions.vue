@@ -75,14 +75,6 @@ const {
   errorMessageKey: 'transactionsLoadError'
 })
 
-// Helper function to format amount with currency
-function formatAmount(amount: number, currency: string | undefined): string {
-  if (currency) {
-    return `${currency} ${amount.toFixed(2)}`
-  }
-  return amount.toFixed(2)
-}
-
 // Helper function to format transaction date from ISO string or timestamp
 // Uses the new utility function that handles both formats
 function formatTransactionDateForDisplay(dateValue: string | undefined): string {
@@ -103,7 +95,7 @@ const tableData = computed(() => {
     date: t.date,
     date_display: formatTransactionDateForDisplay(t.date),
     amount: t.amount,
-    amount_display: formatAmount(t.amount, t.currency),
+    amount_display: t.amount.toFixed(2),
     merchant: t.original_partner || t.partner || '',
     row_id: String(t.id)
   }))

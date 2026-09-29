@@ -14,14 +14,14 @@ import pytest
 
 from whatsthedamage.models.api.responses import (
     ResultsApiResponse,
-    CategoryMonthsApiResponse,
-    MonthCategoriesApiResponse,
-    CategoryMonthTransactionsApiResponse,
     RecalculateApiResponse,
 )
 from whatsthedamage.models.common.error_models import ErrorResponse
 from whatsthedamage.models.domain.dt_models import DetailedResponse
 from tests.api_test_utils import MockProcessingService
+
+
+CSRF_HEADERS = {'X-CSRF-Token': 'test_csrf_token'}
 
 
 @pytest.fixture
@@ -60,6 +60,7 @@ class TestProcessEndpoint:
             '/api/v2/processing-results',
             data={'csv_file': sample_csv_file},
             content_type='multipart/form-data',
+            headers=CSRF_HEADERS,
         )
 
         assert response.status_code == 201
@@ -88,6 +89,7 @@ class TestProcessEndpoint:
             '/api/v2/processing-results',
             data={'csv_file': sample_csv_file},
             content_type='multipart/form-data',
+            headers=CSRF_HEADERS,
         )
 
         data = response.get_json()
@@ -119,10 +121,10 @@ class TestProcessEndpoint:
             '/api/v2/processing-results',
             data={'csv_file': sample_csv_file},
             content_type='multipart/form-data',
+            headers=CSRF_HEADERS,
         )
 
         data = response.get_json()
-        metadata = data['metadata']
 
         # Verify types
         assert isinstance(data['result_id'], str)
@@ -148,6 +150,7 @@ class TestProcessingResultsEndpoint:
             '/api/v2/processing-results',
             data={'csv_file': sample_csv_file},
             content_type='multipart/form-data',
+            headers=CSRF_HEADERS,
         )
         process_data = process_response.get_json()
         result_id = process_data['result_id']
@@ -203,6 +206,7 @@ class TestDrilldownEndpoints:
             '/api/v2/processing-results',
             data={'csv_file': sample_csv_file},
             content_type='multipart/form-data',
+            headers=CSRF_HEADERS,
         )
         process_data = process_response.get_json()
         result_id = process_data['result_id']
@@ -223,94 +227,59 @@ class TestDrilldownEndpoints:
         assert 'highlights' in data
         assert 'total_count' in data
 
-    def test_month_categories_returns_valid_schema(
+    def test_aggregate_month_grouping_returns_valid_schema(
         self, api_client_with_mock, mock_processing_service, sample_csv_file
     ):
-        """Verify month categories drilldown returns valid MonthCategoriesApiResponse schema."""
+        """Verify month drilldown grouping returns a valid aggregate response."""
         _setup_mock_with_data(mock_processing_service)
         process_response = api_client_with_mock.post(
-            '/api/v2/transactions',
+            '/api/v2/processing-results',
             data={'csv_file': sample_csv_file},
             content_type='multipart/form-data',
+            headers=CSRF_HEADERS,
         )
         process_data = process_response.get_json()
-        result_id = process_data['metadata']['result_id']
+        result_id = process_data['result_id']
 
-        results_response = api_client_with_mock.get(f'/api/v2/results/{result_id}')
-        results_data = results_response.get_json()
+        response = api_client_with_mock.get(
+            f'/api/v2/transactions/aggregate?result_id={result_id}&group_by=month'
+        )
 
-        # Find first account with valid id and data
-        account = None
-        for acc in results_data.get('accounts', []):
-            if acc.get('id') and acc.get('data'):
-                account = acc
-                break
+        assert response.status_code == 200
+        data = response.get_json()
 
-        if account:
-            account_id = account['id']
+        assert data['result_id'] == result_id
+        assert data['group_by'] == 'month'
+        assert isinstance(data['groups'], dict)
+        assert isinstance(data['highlights'], dict)
+        assert isinstance(data['total_count'], int)
 
-            # Get first month from account data
-            first_row = account['data'][0]
-            month_id = first_row['date']['display']
-
-            response = api_client_with_mock.get(
-                f'/api/v2/results/{result_id}/accounts/{account_id}/months/{month_id}/categories'
-            )
-
-            assert response.status_code == 200
-            data = response.get_json()
-
-            validated = MonthCategoriesApiResponse.model_validate(data)
-
-            assert validated.result_id == result_id
-            assert validated.account_id == account_id
-            assert validated.month_id == month_id
-            assert validated.data is not None
-
-    def test_category_month_transactions_returns_valid_schema(
+    def test_aggregate_category_month_grouping_returns_valid_schema(
         self, api_client_with_mock, mock_processing_service, sample_csv_file
     ):
-        """Verify cell transactions drilldown returns valid CategoryMonthTransactionsApiResponse schema."""
+        """Verify category-month cell grouping returns a valid aggregate response."""
         _setup_mock_with_data(mock_processing_service)
         process_response = api_client_with_mock.post(
-            '/api/v2/transactions',
+            '/api/v2/processing-results',
             data={'csv_file': sample_csv_file},
             content_type='multipart/form-data',
+            headers=CSRF_HEADERS,
         )
         process_data = process_response.get_json()
-        result_id = process_data['metadata']['result_id']
+        result_id = process_data['result_id']
 
-        results_response = api_client_with_mock.get(f'/api/v2/results/{result_id}')
-        results_data = results_response.get_json()
+        response = api_client_with_mock.get(
+            f'/api/v2/transactions/aggregate?result_id={result_id}&group_by=category_month'
+        )
 
-        # Find first account with valid id and data
-        account = None
-        for acc in results_data.get('accounts', []):
-            if acc.get('id') and acc.get('data'):
-                account = acc
-                break
+        assert response.status_code == 200
+        data = response.get_json()
 
-        if account:
-            account_id = account['id']
-
-            first_row = account['data'][0]
-            category_id = first_row['category_id']
-            month_id = first_row['date']['display']
-
-            response = api_client_with_mock.get(
-                f'/api/v2/results/{result_id}/accounts/{account_id}/categories/{category_id}/months/{month_id}/transactions'
-            )
-
-            assert response.status_code == 200
-            data = response.get_json()
-
-            validated = CategoryMonthTransactionsApiResponse.model_validate(data)
-
-            assert validated.result_id == result_id
-            assert validated.account_id == account_id
-            assert validated.category_id == category_id
-            assert validated.month_id == month_id
-            assert validated.data is not None
+        assert data['result_id'] == result_id
+        assert data['group_by'] == 'category_month'
+        assert isinstance(data['groups'], dict)
+        assert isinstance(data['highlights'], dict)
+        assert isinstance(data['total_count'], int)
 
 
 # =============================================================================
@@ -323,9 +292,10 @@ class TestErrorResponses:
     def test_missing_file_returns_error_response(self, api_client_with_mock):
         """Verify missing file error returns valid ErrorResponse format."""
         response = api_client_with_mock.post(
-            '/api/v2/transactions',
+            '/api/v2/processing-results',
             data={},  # No csv_file
             content_type='multipart/form-data',
+            headers=CSRF_HEADERS,
         )
 
         assert response.status_code == 400
@@ -339,23 +309,21 @@ class TestErrorResponses:
         assert len(validated.message) > 0
 
     def test_nonexistent_result_returns_error_response(self, api_client_with_mock):
-        """Verify non-existent result error returns valid ErrorResponse format."""
-        response = api_client_with_mock.get('/api/v2/results/nonexistent-id')
+        """Verify non-existent result error returns an error response."""
+        response = api_client_with_mock.get('/api/v2/processing-results/nonexistent-id-12345')
 
-        # The endpoint may return 404 or 422 depending on error handling
-        assert response.status_code in [404, 422]
+        assert response.status_code == 404
         data = response.get_json()
 
-        validated = ErrorResponse.model_validate(data)
-
-        assert validated.code in [404, 422]
-        assert validated.message is not None
+        assert 'error' in data
+        assert len(data['error']) > 0
 
     def test_invalid_recalculate_payload_returns_error_response(self, api_client_with_mock):
         """Verify invalid recalculate payload returns valid ErrorResponse format."""
         response = api_client_with_mock.post(
             '/api/v2/recalculate-statistics',
-            json={},  # Missing required fields
+            json={'direction': 'invalid'},  # Invalid direction
+            headers={'X-CSRF-Token': 'test_csrf_token'},
         )
 
         assert response.status_code == 400

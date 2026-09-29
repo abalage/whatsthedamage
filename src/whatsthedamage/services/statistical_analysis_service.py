@@ -558,80 +558,170 @@ class StatisticalAnalysisService(IStatisticalAnalysisService):
 
         return response, updated_metadata
 
-    def calculate_highlights(
+    def compute_highlights_from_transactions(
         self,
-        transactions: list[Any],
-        category_filter: Optional[str] = None
-    ) -> dict[str, Any]:
-        """Calculate statistical highlights from Transaction entities.
+        transactions: List['TransactionDB'],
+        algorithms: Optional[List[str]] = None,
+        direction: Optional[str] = None
+    ) -> Dict[str, List[str]]:
+        """Compute statistical highlights from Transaction entities.
+
+        Rebuilds the month x category matrix per account from persisted
+        transactions and applies the statistical algorithms. Cell IDs are
+        the coordinates of the matrix view:
+        '{account}|{month}|{category}' (month as YYYY-MM).
 
         Args:
-            transactions: List of Transaction DB entities.
-            category_filter: Optional category to filter highlights by.
+            transactions: List of Transaction database entities
+            algorithms: Optional list of algorithm names to use
+                        (None = enabled_algorithms)
+            direction: Analysis direction ('columns' or 'rows',
+                       default 'columns')
 
         Returns:
-            Dictionary with highlights data.
+            Dictionary mapping cell IDs to highlight types
         """
-        # Filter by category if specified
-        if category_filter:
-            transactions = [
-                t for t in transactions
-                if t.category_id == category_filter
-            ]
+        analysis_direction = (
+            AnalysisDirection.COLUMNS
+            if direction is None
+            else AnalysisDirection(direction)
+        )
+        algos_to_use = (
+            algorithms if algorithms is not None else self.enabled_algorithms
+        )
+        excluded_categories = self._get_excluded_categories()
 
-        if not transactions:
-            return {}
+        by_account: Dict[str, List['TransactionDB']] = {}
+        for transaction in transactions:
+            account = str(transaction.account or 'unknown')
+            by_account.setdefault(account, []).append(transaction)
 
-        # Extract amounts for calculations
-        amounts = [t.amount for t in transactions if t.amount is not None]
+        highlights: Dict[str, List[str]] = {}
+        for account, account_transactions in by_account.items():
+            self._analyze_account_transactions(
+                highlights,
+                account,
+                account_transactions,
+                algos_to_use,
+                analysis_direction,
+                excluded_categories
+            )
 
-        if not amounts:
-            return {}
+        return highlights
 
-        # Calculate statistics
-        total = sum(amounts)
-        count = len(amounts)
-        average = total / count if count > 0 else 0
-        min_amount = min(amounts)
-        max_amount = max(amounts)
+    def _analyze_account_transactions(
+        self,
+        highlights: Dict[str, List[str]],
+        account: str,
+        transactions: List['TransactionDB'],
+        algorithms: List[str],
+        direction: AnalysisDirection,
+        excluded_categories: set[str]
+    ) -> None:
+        """Analyze one account's transactions and add cell highlights.
 
-        # Calculate IQR (Interquartile Range)
-        sorted_amounts = sorted(amounts)
-        q1 = sorted_amounts[count // 4] if count > 0 else 0
-        q3 = sorted_amounts[(3 * count) // 4] if count > 0 else 0
-        iqr = q3 - q1
+        Args:
+            highlights: Accumulated highlights dictionary to extend
+            account: Account identifier
+            transactions: Transactions of this account
+            algorithms: Algorithm names to apply
+            direction: Analysis direction
+            excluded_categories: Categories excluded from analysis
+        """
+        matrix, excluded_cells = self._build_expense_matrix(
+            account, transactions, excluded_categories
+        )
+        for cell_id in excluded_cells:
+            self._add_highlight(highlights, cell_id, 'excluded')
 
-        # Detect outliers (1.5 * IQR rule)
-        lower_bound = q1 - 1.5 * iqr
-        upper_bound = q3 + 1.5 * iqr
-        outliers = [a for a in amounts if a < lower_bound or a > upper_bound]
+        if not matrix:
+            return
 
-        # Pareto analysis (80/20 rule)
-        # Group by category and calculate percentages
-        category_totals: dict[str, float] = {}
-        for t in transactions:
-            cat = t.category_id or 'uncategorized'
-            category_totals[cat] = category_totals.get(cat, 0) + (t.amount or 0)
+        summary = SummaryData(
+            summary=matrix,
+            currency='',
+            account_id=account
+        )
+        transformed = self._transform_data_for_analysis(summary, direction)
 
-        total_by_category: float = sum(category_totals.values())
-        pareto_categories = []
-        for cat, amount in sorted(category_totals.items(), key=lambda x: x[1], reverse=True):
-            percentage = (amount / total_by_category * 100) if total_by_category > 0 else 0
-            pareto_categories.append({
-                'category': cat,
-                'amount': amount,
-                'percentage': percentage
-            })
+        for algo_name in algorithms:
+            if algo_name not in self.algorithms:
+                continue
+            algo = self.algorithms[algo_name]
+            for outer_key, inner_data in transformed:
+                algo_highlights = algo.analyze(inner_data)
+                for inner_key, highlight_type in (
+                    algo_highlights.items()
+                ):
+                    if direction == AnalysisDirection.COLUMNS:
+                        month_key, category_key = outer_key, inner_key
+                    else:
+                        category_key, month_key = outer_key, inner_key
+                    self._add_highlight(
+                        highlights,
+                        f"{account}|{month_key}|{category_key}",
+                        highlight_type
+                    )
 
-        return {
-            'total': total,
-            'count': count,
-            'average': average,
-            'min': min_amount,
-            'max': max_amount,
-            'iqr': iqr,
-            'outliers_count': len(outliers),
-            'outliers': outliers,
-            'pareto': pareto_categories,
-            # Add more statistical data as needed
-        }
+    def _build_expense_matrix(
+        self,
+        account: str,
+        transactions: List['TransactionDB'],
+        excluded_categories: set[str]
+    ) -> Tuple[Dict[str, Dict[str, float]], List[str]]:
+        """Build the month x category expense matrix for one account.
+
+        Applies the same filtering semantics as _filter_data_for_analysis:
+        excluded categories are reported as excluded cell IDs and skipped,
+        non-expenses are skipped when filter_expenses_only is enabled.
+
+        Args:
+            account: Account identifier
+            transactions: Transactions of this account
+            excluded_categories: Categories excluded from analysis
+
+        Returns:
+            Tuple of (matrix, excluded cell IDs)
+        """
+        matrix: Dict[str, Dict[str, float]] = {}
+        excluded_cells: List[str] = []
+
+        for transaction in transactions:
+            category = str(transaction.category_id or 'uncategorized')
+            month = (
+                transaction.date.strftime('%Y-%m')
+                if transaction.date else 'unknown'
+            )
+            cell_id = f"{account}|{month}|{category}"
+            if category in excluded_categories:
+                if cell_id not in excluded_cells:
+                    excluded_cells.append(cell_id)
+                continue
+            if self.filter_expenses_only and (
+                transaction.amount is None
+                or float(transaction.amount) >= 0
+            ):
+                continue
+            month_data = matrix.setdefault(month, {})
+            month_data[category] = (
+                month_data.get(category, 0.0) + float(transaction.amount)
+            )
+
+        return matrix, excluded_cells
+
+    @staticmethod
+    def _add_highlight(
+        highlights: Dict[str, List[str]],
+        cell_id: str,
+        highlight_type: str
+    ) -> None:
+        """Append a highlight type to a cell, avoiding duplicates.
+
+        Args:
+            highlights: Accumulated highlights dictionary
+            cell_id: Cell identifier
+            highlight_type: Highlight type to add
+        """
+        types = highlights.setdefault(cell_id, [])
+        if highlight_type not in types:
+            types.append(highlight_type)

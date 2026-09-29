@@ -125,11 +125,10 @@ class APITestClient:
     def __init__(self, client):
         self.client = client
 
-    def post_csv(self, endpoint: str, csv_file: tuple, **params) -> Any:
-        """Post CSV file to an API endpoint.
+    def post_processing_result(self, csv_file: tuple, **params) -> Any:
+        """Post a CSV file to POST /api/v2/processing-results.
 
         Args:
-            endpoint: API endpoint path (e.g., '/api/v1/process')
             csv_file: Tuple of (BytesIO, filename)
             **params: Additional form parameters
 
@@ -138,26 +137,28 @@ class APITestClient:
         """
         data = {'csv_file': csv_file, **params}
         headers = {'X-CSRF-Token': 'test_csrf_token'}
-        return self.client.post(endpoint, data=data, content_type='multipart/form-data', headers=headers)
+        return self.client.post(
+            '/api/v2/processing-results',
+            data=data,
+            content_type='multipart/form-data',
+            headers=headers
+        )
 
-    def assert_success(self, response, expected_row_count: Optional[int] = None) -> Dict:
-        """Assert successful response and return parsed JSON.
+    def assert_created(self, response) -> Dict:
+        """Assert a successful processing result creation (201) and return it.
 
         Args:
             response: Flask response object
-            expected_row_count: Optional expected row count to verify
 
         Returns:
             Parsed JSON response data
         """
-        # Accept both 200 and 201 as success codes (201 for POST /transactions)
-        assert response.status_code in [200, 201]
+        assert response.status_code == 201
         data = response.get_json()
-        assert 'data' in data
-        assert 'metadata' in data
 
-        if expected_row_count is not None:
-            assert data['metadata']['row_count'] == expected_row_count
+        for key in ('result_id', 'user_id', 'csv_profile_id', 'row_count',
+                    'processing_time', 'ml_enabled', 'transactions_count'):
+            assert key in data
 
         return data
 

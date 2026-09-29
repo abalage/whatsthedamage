@@ -504,6 +504,18 @@ Removed.
 | GET | `/api/v2/results/<r>/accounts/<a>/categories/<c>/months/<m>/transactions` | Transaction details | `CategoryMonthTransactionsApiResponse` |
 | POST | `/api/v2/recalculate-statistics` | Recalculate statistical highlights | `RecalculateApiResponse` |
 
+**Statistical Highlights Contract:**
+- `POST /api/v2/recalculate-statistics` computes highlights from persisted
+  `Transaction` entities. `result_id` is optional (omitted = all of the user's
+  transactions). Highlights are keyed by matrix-view cell ID:
+  `{account}|{month}|{category}` (month as `YYYY-MM`, category as `category_id`
+  or `uncategorized`).
+- `GET /api/v2/transactions/aggregate` accepts `algorithms` (comma-separated)
+  and `direction` (`columns`|`rows`) query parameters and returns highlights
+  keyed by the same `group_key` values as its `groups` — view-relative cell IDs,
+  consistent with the parent matrix analysis scope.
+
+
 **API Contract Standardization:**
 - All endpoints return validated Pydantic models
 - Frontend TypeScript interfaces match backend models 1:1

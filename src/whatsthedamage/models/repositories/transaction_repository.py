@@ -7,9 +7,9 @@ Implements the repository pattern for transaction persistence and retrieval.
 from datetime import datetime, UTC
 from typing import Any, Optional, Protocol, runtime_checkable
 from sqlalchemy import or_, func, extract
+from sqlalchemy.orm import Query, Session as SqlAlchemySession
 
 from whatsthedamage.utils.date_converter import DateConverter
-from sqlalchemy.orm import Session as SqlAlchemySession
 
 from whatsthedamage.models.database.transaction import Transaction as TransactionDB
 from whatsthedamage.models.repositories.base_repository import SqlAlchemyBaseRepository
@@ -166,6 +166,24 @@ class TransactionRepository(Protocol):
         Args:
             result_id: The processing result ID to filter by.
             user_id: Optional user ID for additional filtering (security).
+
+        Returns:
+            List of Transaction entities.
+        """
+        ...
+
+    def find_all_by_user(
+        self,
+        user_id: int,
+        result_id: Optional[str] = None,
+        account: Optional[str] = None
+    ) -> list[TransactionDB]:
+        """Find all transactions for a user without pagination.
+
+        Args:
+            user_id: User identifier.
+            result_id: Optional processing result filter.
+            account: Optional account filter.
 
         Returns:
             List of Transaction entities.
@@ -493,6 +511,145 @@ class SqlAlchemyTransactionRepository(SqlAlchemyBaseRepository[TransactionDB]):
         finally:
             session.close()
 
+    def find_all_by_user(
+        self,
+        user_id: int,
+        result_id: Optional[str] = None,
+        account: Optional[str] = None
+    ) -> list[TransactionDB]:
+        """Find all transactions for a user without pagination.
+
+        Used by statistical analysis, which requires the complete dataset.
+
+        Args:
+            user_id: User identifier.
+            result_id: Optional processing result filter.
+            account: Optional account filter.
+
+        Returns:
+            List of Transaction entities.
+        """
+        session = self._get_session()
+        try:
+            query = session.query(TransactionDB).filter(
+                TransactionDB.user_id == user_id
+            )
+            if result_id:
+                query = query.filter(TransactionDB.result_id == result_id)
+            if account:
+                query = query.filter(TransactionDB.account == account)
+            return query.all()  # type: ignore[no-any-return]
+        finally:
+            session.close()
+
+    def _apply_account_filter(
+        self,
+        query: 'Query[Any]',
+        account: Optional[str] = None
+    ) -> 'Query[Any]':
+        """Apply the account filter to a transaction query.
+
+        The 'unknown' account also covers legacy rows persisted with an
+        empty account.
+
+        Args:
+            query: Query to filter.
+            account: Filter by account.
+
+        Returns:
+            The filtered query.
+        """
+        if not account:
+            return query
+        if account == 'unknown':
+            return query.filter(
+                or_(
+                    TransactionDB.account == 'unknown',
+                    TransactionDB.account == ''
+                )
+            )
+        return query.filter(TransactionDB.account == account)
+
+    def _apply_result_filters(
+        self,
+        query: 'Query[Any]',
+        start_date: Optional[str] = None,
+        end_date: Optional[str] = None,
+        category_id: Optional[str] = None,
+        account: Optional[str] = None,
+        partner: Optional[str] = None,
+        transaction_type: Optional[str] = None,
+        month: Optional[str] = None,
+        min_amount: Optional[float] = None,
+        max_amount: Optional[float] = None,
+        result_id: Optional[str] = None
+    ) -> 'Query[Any]':
+        """Apply the optional filters of find_by_user_with_filters to a query.
+
+        Args:
+            query: Query already filtered by user.
+            start_date: Start date filter (inclusive, YYYY-MM-DD format).
+            end_date: End date filter (inclusive, YYYY-MM-DD format).
+            category_id: Filter by category ID.
+            account: Filter by account.
+            partner: Filter by partner name (searches both original_partner
+                and partner).
+            transaction_type: Filter by transaction type (debit/credit).
+            month: Filter by month (YYYY-MM format).
+            min_amount: Minimum amount filter.
+            max_amount: Maximum amount filter.
+            result_id: Filter by processing result.
+
+        Returns:
+            The query with all applicable filters applied.
+        """
+        for column, value in (
+            (TransactionDB.category_id, category_id),
+            (TransactionDB.transaction_type, transaction_type),
+            (TransactionDB.result_id, result_id),
+        ):
+            if value:
+                query = query.filter(column == value)
+
+        query = self._apply_account_filter(query, account)
+
+        if min_amount is not None:
+            query = query.filter(TransactionDB.amount >= min_amount)
+        if max_amount is not None:
+            query = query.filter(TransactionDB.amount <= max_amount)
+
+        if start_date:
+            try:
+                start_dt = DateConverter.parse_to_datetime_utc(start_date)
+                query = query.filter(TransactionDB.date >= start_dt)
+            except ValueError:
+                pass
+        if end_date:
+            try:
+                end_dt = DateConverter.parse_to_datetime_utc(end_date)
+                query = query.filter(TransactionDB.date <= end_dt)
+            except ValueError:
+                pass
+
+        if month:
+            # Filter by month (supports both YYYY-MM and YYYY.MM formats)
+            # Normalize month format to YYYY-MM
+            normalized_month = month.replace('.', '-') if '.' in month else month
+            query = query.filter(
+                extract('year', TransactionDB.date) == int(normalized_month[:4]),
+                extract('month', TransactionDB.date) == int(normalized_month[5:7])
+            )
+        if partner:
+            # Search in both original_partner and partner fields
+            query = query.filter(
+                or_(
+                    TransactionDB.original_partner.ilike(f'%{partner}%'),
+                    TransactionDB.partner.ilike(f'%{partner}%')
+                )
+            )
+
+        return query
+
     def find_by_user_with_filters(
         self,
         user_id: int,
@@ -536,51 +693,24 @@ class SqlAlchemyTransactionRepository(SqlAlchemyBaseRepository[TransactionDB]):
         session = self._get_session()
         try:
             # Build query with user filter
-            query = session.query(TransactionDB).filter(
+            query: Query[Any] = session.query(TransactionDB).filter(
                 TransactionDB.user_id == user_id
             )
 
             # Apply filters
-            if start_date:
-                try:
-                    start_dt = DateConverter.parse_to_datetime_utc(start_date)
-                    query = query.filter(TransactionDB.date >= start_dt)
-                except ValueError:
-                    pass
-            if end_date:
-                try:
-                    end_dt = DateConverter.parse_to_datetime_utc(end_date)
-                    query = query.filter(TransactionDB.date <= end_dt)
-                except ValueError:
-                    pass
-            if category_id:
-                query = query.filter(TransactionDB.category_id == category_id)
-            if account:
-                query = query.filter(TransactionDB.account == account)
-            if transaction_type:
-                query = query.filter(TransactionDB.transaction_type == transaction_type)
-            if min_amount is not None:
-                query = query.filter(TransactionDB.amount >= min_amount)
-            if max_amount is not None:
-                query = query.filter(TransactionDB.amount <= max_amount)
-            if result_id:
-                query = query.filter(TransactionDB.result_id == result_id)
-            if month:
-                # Filter by month (supports both YYYY-MM and YYYY.MM formats)
-                # Normalize month format to YYYY-MM
-                normalized_month = month.replace('.', '-') if '.' in month else month
-                query = query.filter(
-                    extract('year', TransactionDB.date) == int(normalized_month[:4]),
-                    extract('month', TransactionDB.date) == int(normalized_month[5:7])
-                )
-            if partner:
-                # Search in both original_partner and partner fields
-                query = query.filter(
-                    or_(
-                        TransactionDB.original_partner.ilike(f'%{partner}%'),
-                        TransactionDB.partner.ilike(f'%{partner}%')
-                    )
-                )
+            query = self._apply_result_filters(
+                query,
+                start_date=start_date,
+                end_date=end_date,
+                category_id=category_id,
+                account=account,
+                partner=partner,
+                transaction_type=transaction_type,
+                month=month,
+                min_amount=min_amount,
+                max_amount=max_amount,
+                result_id=result_id
+            )
 
             # Get total count for pagination
             total_count = query.count()

@@ -5,10 +5,11 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { shallowMount, flushPromises, type VueWrapper } from '@vue/test-utils';
-import { createPinia, setActivePinia } from 'pinia';
+import { createPinia, setActivePinia, type Pinia } from 'pinia';
 import { reactive } from 'vue';
 import Categories from '../../src/pages/Categories.vue';
-import { fetchProcessingResultMetadata, fetchAllTransactions } from '../../src/js/api.js';
+import { fetchProcessingResultMetadata, fetchAllTransactions, recalculateStatistics } from '../../src/js/api.js';
+import { useStatisticalStore } from '../../src/stores/statistical.js';
 import type { ProcessingResultMetadata, TransactionListItem } from '../../src/types/api.js';
 
 const mockRoute = reactive<{ params: Record<string, unknown>; query: Record<string, unknown> }>({
@@ -30,6 +31,7 @@ vi.mock('vue3-gettext', (): Record<string, unknown> => ({
 vi.mock('../../src/js/api.js', () => ({
   fetchProcessingResultMetadata: vi.fn(),
   fetchAllTransactions: vi.fn(),
+  recalculateStatistics: vi.fn(),
 }));
 
 const metadata: ProcessingResultMetadata = {
@@ -65,14 +67,17 @@ const makeTransaction = (id: number): TransactionListItem => ({
 });
 
 describe('Categories.vue', () => {
+  let pinia: Pinia;
+
   beforeEach(() => {
     vi.clearAllMocks();
     mockRoute.params = {};
     mockRoute.query = {};
-    setActivePinia(createPinia());
+    pinia = createPinia();
+    setActivePinia(pinia);
   });
 
-  const mountPage = (): VueWrapper => shallowMount(Categories, { global: { plugins: [createPinia()] } });
+  const mountPage = (): VueWrapper => shallowMount(Categories, { global: { plugins: [pinia] } });
 
   it('renders without error when resultId is undefined', async () => {
     vi.mocked(fetchProcessingResultMetadata).mockResolvedValue(null);
@@ -138,6 +143,25 @@ describe('Categories.vue', () => {
     expect(wrapper.text()).toContain('(All Transactions)');
   });
 
+  it('groups transactions with an empty account under the unknown account', async () => {
+    vi.mocked(fetchProcessingResultMetadata).mockResolvedValue(null);
+    const withoutAccount = { ...makeTransaction(2), account: '' };
+    vi.mocked(fetchAllTransactions).mockResolvedValue({
+      transactions: [makeTransaction(1), withoutAccount],
+      total_count: 2,
+      limit: 10000,
+      offset: 0,
+    });
+
+    const wrapper = await mountPage();
+    await flushPromises();
+
+    // The fallback keeps the route param non-empty so vue-router can
+    // resolve the drilldown links of the account tables
+    expect(wrapper.text()).toContain('Account: acc1');
+    expect(wrapper.text()).toContain('Account: unknown');
+  });
+
   it('shows the empty state when no transactions are found', async () => {
     vi.mocked(fetchProcessingResultMetadata).mockResolvedValue(null);
     vi.mocked(fetchAllTransactions).mockResolvedValue({
@@ -200,5 +224,68 @@ describe('Categories.vue', () => {
     const props = monthColumn.componentProps(rows[0]['month-2026-01'], rows[0]);
     expect(props.popoverContent).toContain('-10.50');
     expect(props.popoverContent).not.toContain('EUR');
+  });
+
+  it('recalculates statistics and stores highlights after loading transactions', async () => {
+    vi.mocked(fetchProcessingResultMetadata).mockResolvedValue(null);
+    vi.mocked(fetchAllTransactions).mockResolvedValue({
+      transactions: [makeTransaction(1)],
+      total_count: 1,
+      limit: 10000,
+      offset: 0,
+    });
+    vi.mocked(recalculateStatistics).mockResolvedValue({
+      status: 'success',
+      result_id: null,
+      highlights: { 'acc1|2026-01|food': ['pareto'] },
+      algorithms: ['iqr', 'pareto'],
+      direction: 'columns',
+    });
+
+    await mountPage();
+    await flushPromises();
+
+    expect(recalculateStatistics).toHaveBeenCalledWith(
+      undefined,
+      ['iqr', 'pareto'],
+      'columns'
+    );
+    const store = useStatisticalStore();
+    expect(store.highlights).toEqual({ 'acc1|2026-01|food': ['pareto'] });
+  });
+
+  it('skips highlight loading when there are no transactions', async () => {
+    vi.mocked(fetchProcessingResultMetadata).mockResolvedValue(null);
+    vi.mocked(fetchAllTransactions).mockResolvedValue({
+      transactions: [],
+      total_count: 0,
+      limit: 10000,
+      offset: 0,
+    });
+
+    await mountPage();
+    await flushPromises();
+
+    expect(recalculateStatistics).not.toHaveBeenCalled();
+  });
+
+  it('builds cell IDs for each month column of a row', async () => {
+    vi.mocked(fetchProcessingResultMetadata).mockResolvedValue(null);
+    vi.mocked(fetchAllTransactions).mockResolvedValue({
+      transactions: [makeTransaction(1)],
+      total_count: 1,
+      limit: 10000,
+      offset: 0,
+    });
+
+    const wrapper = await mountPage();
+    await flushPromises();
+
+    const vm = wrapper.vm as unknown as {
+      buildTableData: (account: { id: string }) => Record<string, unknown>[];
+    };
+    const rows = vm.buildTableData({ id: 'acc1' });
+    const rowIds = rows[0]._rowIds as Record<string, string>;
+    expect(rowIds['month-2026-01']).toBe('acc1|2026-01|food');
   });
 });

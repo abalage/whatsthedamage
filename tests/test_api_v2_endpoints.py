@@ -1,41 +1,33 @@
 """Unit tests for API v2 endpoints.
 
 Tests verify HTTP request/response handling, validation, and error codes
-for the v2 API (detailed transaction responses). Uses mocked ProcessingService
-to isolate API layer behavior.
+for the v2 API. Uses mocked ProcessingService to isolate API layer behavior.
 """
 import pytest
 from tests.api_test_utils import MockProcessingService
 
 
 class TestAPIv2Process:
-    """Test suite for /api/v2/process endpoint - happy path scenarios."""
+    """Test suite for POST /api/v2/processing-results - happy path scenarios."""
 
-    def test_process_valid_csv_returns_200(self, api_test_helper, mock_processing_service, sample_csv_file):
-        """Test successful CSV processing returns 200 with detailed JSON structure."""
-        # Override default mock with detailed data
+    def test_process_valid_csv_returns_201(self, api_test_helper, mock_processing_service, sample_csv_file):
+        """Test successful CSV processing returns 201 with metadata-only structure."""
         detail_row = MockProcessingService.create_detail_row('grocery', 300.0, 'bank')
         mock_processing_service.process_with_details.return_value = \
             MockProcessingService.create_detailed_result([detail_row], row_count=2)
 
-        response = api_test_helper.post_csv('/api/v2/transactions', sample_csv_file)
+        response = api_test_helper.post_processing_result(sample_csv_file)
 
-        data = api_test_helper.assert_success(response, expected_row_count=2)
-        assert isinstance(data['data'], list)
-        assert len(data['data']) > 0
+        data = api_test_helper.assert_created(response)
+        assert data['row_count'] == 2
+        assert len(data['result_id']) > 0
 
-        # Verify detailed structure
-        first_row = data['data'][0]
-        assert 'category_id' in first_row
-        assert 'total' in first_row
-        assert 'date' in first_row
-        assert 'details' in first_row
-        assert 'display' in first_row['total']
-        assert 'raw' in first_row['total']
+        # Metadata-only response: no transaction payload
+        assert 'data' not in data
+        assert 'metadata' not in data
 
     def test_process_with_config_file(self, api_test_helper, mock_processing_service, sample_csv_file):
         """Test processing with both CSV and config file."""
-        # Create a minimal config file for testing
         import tempfile
         from io import BytesIO
         with tempfile.NamedTemporaryFile(mode='w', suffix='.yml', delete=False) as config_file:
@@ -45,25 +37,25 @@ class TestAPIv2Process:
         with open(config_file_path, 'rb') as f:
             config_file = (BytesIO(f.read()), 'config.yml')
 
-        response = api_test_helper.post_csv('/api/v2/transactions', sample_csv_file, config_file=config_file)
+        response = api_test_helper.post_processing_result(sample_csv_file, config_file=config_file)
 
-        api_test_helper.assert_success(response)
+        api_test_helper.assert_created(response)
         call_kwargs = mock_processing_service.process_with_details.call_args.kwargs
         assert call_kwargs.get('config_file_path') is not None
 
-    @pytest.mark.parametrize('param_name,param_value,expected_metadata', [
-        ('start_date', '2023.01.01', None),  # Metadata checked separately
-        ('ml_enabled', 'true', {'ml_enabled': True}),
+    @pytest.mark.parametrize('param_name,param_value,expected_response', [
+        ('start_date', '2023.01.01', None),  # Response value checked separately
+        ('ml_enabled', 'true', True),
         ('category_filter', 'grocery', None)
     ])
     def test_process_with_parameters(self, api_test_helper, mock_processing_service, sample_csv_file,
-                                     param_name, param_value, expected_metadata):
-        """Test processing with various query parameters."""
+                                     param_name, param_value, expected_response):
+        """Test processing with various form parameters."""
         kwargs = {param_name: param_value}
 
-        response = api_test_helper.post_csv('/api/v2/transactions', sample_csv_file, **kwargs)
+        response = api_test_helper.post_processing_result(sample_csv_file, **kwargs)
 
-        data = api_test_helper.assert_success(response)
+        data = api_test_helper.assert_created(response)
 
         # Verify parameter was passed to service
         call_kwargs = mock_processing_service.process_with_details.call_args.kwargs
@@ -72,10 +64,9 @@ class TestAPIv2Process:
         else:
             assert call_kwargs[param_name] == param_value
 
-        # Verify metadata if expected
-        if expected_metadata:
-            for key, value in expected_metadata.items():
-                assert data['metadata'][key] == value
+        # Verify response value when expected
+        if expected_response is not None:
+            assert data[param_name] == expected_response
 
 
 class TestAPIv2ValidationErrors:
@@ -92,7 +83,7 @@ class TestAPIv2ValidationErrors:
             data['csv_file'] = (BytesIO(b''), '')
 
         headers = {'X-CSRF-Token': 'test_csrf_token'}
-        response = api_client_with_mock.post('/api/v2/transactions', data=data, content_type=content_type, headers=headers)
+        response = api_client_with_mock.post('/api/v2/processing-results', data=data, content_type=content_type, headers=headers)
 
         assert response.status_code == 400
         response_data = response.get_json()
@@ -100,7 +91,7 @@ class TestAPIv2ValidationErrors:
 
     def test_invalid_date_format_returns_400(self, api_test_helper, sample_csv_file):
         """Test that invalid date format returns 400 validation error."""
-        response = api_test_helper.post_csv('/api/v2/transactions', sample_csv_file, start_date='not-a-date')
+        response = api_test_helper.post_processing_result(sample_csv_file, start_date='not-a-date')
 
         data = api_test_helper.assert_error(response, 400)
         assert 'details' in data
@@ -119,7 +110,7 @@ class TestAPIv2ProcessingErrors:
         """Test that different processing errors return appropriate status codes."""
         mock_processing_service.process_with_details.side_effect = exception
 
-        response = api_test_helper.post_csv('/api/v2/transactions', sample_csv_file)
+        response = api_test_helper.post_processing_result(sample_csv_file)
 
         api_test_helper.assert_error(response, expected_status)
 
@@ -128,6 +119,7 @@ class TestAPIv2FileCleanup:
     """Test suite for file cleanup in v2 API."""
 
     def test_files_cleaned_up_after_success(self, api_test_helper, mock_processing_service, sample_csv_file, monkeypatch):
+
         """Test that uploaded files are cleaned up after successful processing."""
         cleanup_called = {'called': False}
 
@@ -142,10 +134,9 @@ class TestAPIv2FileCleanup:
 
         monkeypatch.setattr('whatsthedamage.api.v2.endpoints.cleanup_files', mock_cleanup)
 
-        response = api_test_helper.post_csv('/api/v2/transactions', sample_csv_file)
+        response = api_test_helper.post_processing_result(sample_csv_file)
 
-        # POST /transactions returns 201 Created, but 200 is also acceptable for backward compatibility
-        assert response.status_code in [200, 201]
+        api_test_helper.assert_created(response)
         assert cleanup_called['called'] is True
 
     def test_files_cleaned_up_after_error(self, api_test_helper, mock_processing_service, sample_csv_file, monkeypatch):
@@ -161,78 +152,88 @@ class TestAPIv2FileCleanup:
         mock_processing_service.process_with_details.side_effect = ValueError("Processing failed")
         monkeypatch.setattr('whatsthedamage.api.v2.endpoints.cleanup_files', mock_cleanup)
 
-        response = api_test_helper.post_csv('/api/v2/transactions', sample_csv_file)
+        response = api_test_helper.post_processing_result(sample_csv_file)
 
         assert response.status_code == 422
         assert cleanup_called['called'] is True
 
 
-class TestAPIv2DetailedResponseStructure:
-    """Test suite for verifying v2 detailed response structure."""
-
-    def test_detailed_response_has_nested_structures(self, api_test_helper, mock_processing_service, sample_csv_file):
-        """Test that detailed response includes proper nested data structures."""
-        # Create detailed mock data
-        detail_row = {
-            'category': 'grocery',
-            'total': {'display': '-45,000.00 HUF', 'raw': -45000.0},
-            'details': [
-                {
-                    'date': {'display': '2024-01-15', 'timestamp': 1705276800},
-                    'amount': {'display': '-12,500.00', 'raw': -12500.0},
-                    'merchant': 'TESCO',
-                    'currency': 'HUF',
-                    'account': ''
-                },
-                {
-                    'date': {'display': '2024-01-20', 'timestamp': 1705708800},
-                    'amount': {'display': '-32,500.00', 'raw': -32500.0},
-                    'merchant': 'ALDI',
-                    'currency': 'HUF',
-                    'account': ''
-                }
-            ]
-        }
-
-        mock_processing_service.process_with_details.return_value = \
-            MockProcessingService.create_detailed_result([detail_row], row_count=2)
-
-        response = api_test_helper.post_csv('/api/v2/transactions', sample_csv_file)
-
-        data = api_test_helper.assert_success(response)
-
-        # Verify nested structure
-        assert len(data['data']) == 1
-        row = data['data'][0]
-
-        assert row['category_id'] == 'grocery'
-        assert row['total']['display'] == '-45,000.00 HUF'
-        assert 'display' in row['details'][0]['date']
-        assert 'timestamp' in row['details'][0]['date']
-        assert len(row['details']) == 2
-        assert row['details'][0]['merchant'] == 'TESCO'
-        assert 'display' in row['details'][0]['amount']
-        assert 'raw' in row['details'][0]['amount']
-
-
 class TestAPIv2RecalculateStatistics:
     """Test suite for /api/v2/recalculate-statistics endpoint."""
 
-    def test_recalculate_statistics_missing_data(self, api_client_with_mock):
-        """Test that missing data returns 400 error."""
+    @staticmethod
+    def _make_transactions():
+        """Create Transaction-like objects for statistical analysis."""
+        from datetime import datetime
+        from types import SimpleNamespace
+        return [
+            SimpleNamespace(account='acc1', category_id='grocery',
+                            amount=-100.0, date=datetime(2024, 1, 15)),
+            SimpleNamespace(account='acc1', category_id='utilities',
+                            amount=-50.0, date=datetime(2024, 1, 15)),
+            SimpleNamespace(account='acc1', category_id='entertainment',
+                            amount=-200.0, date=datetime(2024, 1, 15)),
+            # Income is filtered out of expense analysis
+            SimpleNamespace(account='acc1', category_id='salary',
+                            amount=1000.0, date=datetime(2024, 1, 15)),
+        ]
+
+    def _patch_transaction_repo(self, monkeypatch):
+        """Patch the transaction repository to return fixed transactions."""
+        from whatsthedamage.models.repositories.transaction_repository import (
+            SqlAlchemyTransactionRepository,
+        )
+        transactions = self._make_transactions()
+        monkeypatch.setattr(
+            SqlAlchemyTransactionRepository,
+            'find_all_by_user',
+            lambda self, user_id, result_id=None, account=None: transactions,
+        )
+
+    def test_recalculate_statistics_defaults(self, api_client_with_mock, monkeypatch):
+        """Test that an empty body uses defaults (all enabled algorithms, columns)."""
+        self._patch_transaction_repo(monkeypatch)
         headers = {'X-CSRF-Token': 'test_csrf_token'}
         response = api_client_with_mock.post('/api/v2/recalculate-statistics', json={}, headers=headers)
-        assert response.status_code == 400
+        assert response.status_code == 200
         data = response.get_json()
-        assert 'No data provided' in data.get('error', '') or 'No data provided' in data.get('message', '')
+        assert data['status'] == 'success'
+        assert data['algorithms'] == ['iqr', 'pareto']
+        assert data['direction'] == 'columns'
+        assert data['result_id'] is None
+        assert isinstance(data['highlights'], dict)
 
-    def test_recalculate_statistics_missing_result_id(self, api_client_with_mock):
-        """Test that missing result_id returns 400 error."""
+    def test_recalculate_statistics_result_id_optional(self, api_client_with_mock, monkeypatch):
+        """Test that a missing result_id means all of the user's transactions."""
+        self._patch_transaction_repo(monkeypatch)
         headers = {'X-CSRF-Token': 'test_csrf_token'}
-        response = api_client_with_mock.post('/api/v2/recalculate-statistics', json={'algorithms': ['iqr']}, headers=headers)
-        assert response.status_code == 400
+        response = api_client_with_mock.post('/api/v2/recalculate-statistics', json={
+            'algorithms': ['pareto'],
+            'direction': 'columns'
+        }, headers=headers)
+        assert response.status_code == 200
         data = response.get_json()
-        assert 'result_id is required' in data.get('error', '') or 'result_id is required' in data.get('message', '')
+        assert data['result_id'] is None
+
+    def test_recalculate_statistics_returns_highlights(self, api_client_with_mock, monkeypatch):
+        """Test that highlights are keyed by '{account}|{month}|{category}' cell IDs."""
+        self._patch_transaction_repo(monkeypatch)
+        headers = {'X-CSRF-Token': 'test_csrf_token'}
+        response = api_client_with_mock.post('/api/v2/recalculate-statistics', json={
+            'result_id': 'test123',
+            'algorithms': ['pareto'],
+            'direction': 'columns'
+        }, headers=headers)
+        assert response.status_code == 200
+        data = response.get_json()
+        assert data['status'] == 'success'
+        assert data['result_id'] == 'test123'
+        # Pareto on {grocery: -100, utilities: -50, entertainment: -200}
+        # marks entertainment (200) and grocery (100) as top contributors
+        assert data['highlights'].get('acc1|2024-01|entertainment') == ['pareto']
+        assert data['highlights'].get('acc1|2024-01|grocery') == ['pareto']
+        # Income cells are not analyzed
+        assert 'acc1|2024-01|salary' not in data['highlights']
 
     def test_recalculate_statistics_invalid_algorithms(self, api_client_with_mock):
         """Test that invalid algorithms (not a list) returns 400 error."""
@@ -256,9 +257,89 @@ class TestAPIv2RecalculateStatistics:
         assert response.status_code == 400
         data = response.get_json()
         error_msg = data.get('error', '') or data.get('message', '')
-        assert 'direction must be either' in error_msg
-        assert 'columns' in error_msg
-        assert 'rows' in error_msg
+        assert "direction must be 'columns' or 'rows'" in error_msg
+
+
+class TestAPIv2AggregateTransactions:
+    """Test suite for /api/v2/transactions/aggregate endpoint highlights."""
+
+    @staticmethod
+    def _make_transactions():
+        """Create Transaction entities for aggregation tests."""
+        from datetime import datetime, UTC
+        from whatsthedamage.models.database.transaction import Transaction
+
+        def make(category, amount, month):
+            return Transaction(
+                user_id=1,
+                result_id='test123',
+                date=datetime(2024, month, 15, tzinfo=UTC),
+                transaction_type='debit',
+                original_partner='Test Partner',
+                amount=amount,
+                currency='HUF',
+                account='acc1',
+                deduplication_hash=f'hash-{category}-{month}',
+                category_id=category,
+                created_at=datetime.now(UTC),
+                updated_at=datetime.now(UTC),
+            )
+
+        return [
+            make('grocery', -100.0, 1),
+            make('utilities', -50.0, 1),
+            make('entertainment', -200.0, 1),
+            # Different month: must not leak into the fixed-month analysis
+            make('grocery', -100.0, 2),
+        ]
+
+    def _patch_transaction_repo(self, monkeypatch):
+        """Patch the transaction repository to return fixed transactions."""
+        from whatsthedamage.models.repositories.transaction_repository import (
+            SqlAlchemyTransactionRepository,
+        )
+        transactions = self._make_transactions()
+        monkeypatch.setattr(
+            SqlAlchemyTransactionRepository,
+            'find_by_user_with_filters',
+            lambda self, **kwargs: (
+                [t for t in transactions
+                 if kwargs.get('month') is None
+                 or t.date.strftime('%Y-%m') == kwargs.get('month')],
+                0,
+            ),
+        )
+        monkeypatch.setattr(
+            SqlAlchemyTransactionRepository,
+            'find_all_by_user',
+            lambda self, user_id, result_id=None, account=None: transactions,
+        )
+
+    def test_aggregate_returns_highlights_per_group(self, api_client_with_mock, monkeypatch):
+        """Test that group highlights come from the parent matrix analysis."""
+        self._patch_transaction_repo(monkeypatch)
+        response = api_client_with_mock.get(
+            '/api/v2/transactions/aggregate'
+            '?account=acc1&month=2024-01&group_by=category&algorithms=pareto'
+        )
+        assert response.status_code == 200
+        data = response.get_json()
+        # Pareto on the January categories marks entertainment and grocery
+        assert data['highlights'].get('entertainment') == ['pareto']
+        assert data['highlights'].get('grocery') == ['pareto']
+        assert data['highlights'].get('utilities') == []
+
+    def test_aggregate_invalid_direction_returns_400(self, api_client_with_mock):
+        """Test that an invalid direction returns 400 error."""
+        response = api_client_with_mock.get(
+            '/api/v2/transactions/aggregate?group_by=category&direction=invalid'
+        )
+        assert response.status_code == 400
+
+    def test_aggregate_missing_group_by_returns_400(self, api_client_with_mock):
+        """Test that a missing group_by returns 400 error."""
+        response = api_client_with_mock.get('/api/v2/transactions/aggregate')
+        assert response.status_code == 400
 
 
 class TestAPIv2CsvProfileId:
@@ -266,48 +347,108 @@ class TestAPIv2CsvProfileId:
 
     def test_process_with_csv_profile_id_1800(self, api_test_helper, mock_processing_service, sample_csv_file):
         """Test processing with csv_profile_id=1800 parameter."""
-        response = api_test_helper.post_csv('/api/v2/transactions', sample_csv_file, csv_profile_id='1800')
+        response = api_test_helper.post_processing_result(sample_csv_file, csv_profile_id='1800')
 
-        data = api_test_helper.assert_success(response)
-        assert 'metadata' in data
-        assert 'result_id' in data['metadata']
+        data = api_test_helper.assert_created(response)
+        assert data['csv_profile_id'] == '1800'
 
     def test_process_with_csv_profile_id_0(self, api_test_helper, mock_processing_service, sample_csv_file):
         """Test processing with csv_profile_id=0 (never expire)."""
-        response = api_test_helper.post_csv('/api/v2/transactions', sample_csv_file, csv_profile_id='0')
+        response = api_test_helper.post_processing_result(sample_csv_file, csv_profile_id='0')
 
-        data = api_test_helper.assert_success(response)
-        assert 'metadata' in data
-        assert 'result_id' in data['metadata']
+        data = api_test_helper.assert_created(response)
+        assert data['csv_profile_id'] == '0'
 
     def test_process_without_csv_profile_id_uses_default(self, api_test_helper, mock_processing_service, sample_csv_file):
         """Test processing without csv_profile_id parameter uses default."""
-        response = api_test_helper.post_csv('/api/v2/transactions', sample_csv_file)
+        response = api_test_helper.post_processing_result(sample_csv_file)
 
-        data = api_test_helper.assert_success(response)
-        assert 'metadata' in data
-        assert 'result_id' in data['metadata']
+        api_test_helper.assert_created(response)
 
     @pytest.mark.parametrize('csv_profile_id_value', ['0', '1800', '3600', '60'])
     def test_process_with_various_csv_profile_id_values(self, api_test_helper, mock_processing_service,
                                                   sample_csv_file, csv_profile_id_value):
         """Test processing with various csv_profile_id values."""
-        response = api_test_helper.post_csv('/api/v2/transactions', sample_csv_file, csv_profile_id=csv_profile_id_value)
+        response = api_test_helper.post_processing_result(sample_csv_file, csv_profile_id=csv_profile_id_value)
 
-        data = api_test_helper.assert_success(response)
-        assert 'metadata' in data
-        assert 'result_id' in data['metadata']
+        data = api_test_helper.assert_created(response)
+        assert data['csv_profile_id'] == csv_profile_id_value
 
     def test_process_with_csv_profile_id_and_other_params(self, api_test_helper, mock_processing_service, sample_csv_file):
         """Test processing with csv_profile_id combined with other parameters."""
-        response = api_test_helper.post_csv('/api/v2/transactions', sample_csv_file,
-                                           csv_profile_id='1800',
-                                           ml_enabled='true',
-                                           start_date='2024.01.01')
+        response = api_test_helper.post_processing_result(sample_csv_file,
+                                                          csv_profile_id='1800',
+                                                          ml_enabled='true',
+                                                          start_date='2024.01.01')
 
-        data = api_test_helper.assert_success(response)
-        assert 'metadata' in data
+        api_test_helper.assert_created(response)
         # Verify other params were processed
         call_kwargs = mock_processing_service.process_with_details.call_args.kwargs
         assert call_kwargs['ml_enabled'] is True
         assert call_kwargs['start_date'] == '2024.01.01'
+
+
+class TestAPIv2EmptyAccountFallback:
+    """Test suite for the 'unknown' fallback of transactions without an account."""
+
+    @staticmethod
+    def _make_transactions():
+        """Create Transaction entities, one with an empty account."""
+        from datetime import datetime, UTC
+        from whatsthedamage.models.database.transaction import Transaction
+
+        def make(account):
+            return Transaction(
+                user_id=1,
+                result_id='test123',
+                date=datetime(2024, 1, 15, tzinfo=UTC),
+                transaction_type='debit',
+                original_partner='Test Partner',
+                amount=-100.0,
+                currency='HUF',
+                account=account,
+                deduplication_hash=f'hash-{account}',
+                created_at=datetime.now(UTC),
+                updated_at=datetime.now(UTC),
+            )
+
+        return [make('acc1'), make('')]
+
+    def _patch_transaction_repo(self, monkeypatch):
+        """Patch the transaction repository to return fixed transactions."""
+        from whatsthedamage.models.repositories.transaction_repository import (
+            SqlAlchemyTransactionRepository,
+        )
+        transactions = self._make_transactions()
+        monkeypatch.setattr(
+            SqlAlchemyTransactionRepository,
+            'find_by_user_with_filters',
+            lambda self, **kwargs: (transactions, len(transactions)),
+        )
+
+    def test_list_transactions_serializes_empty_account_as_unknown(
+        self, api_client_with_mock, monkeypatch
+    ):
+        """Transactions without an account are exposed as 'unknown' so that
+        route params and drilldown filters stay valid."""
+        self._patch_transaction_repo(monkeypatch)
+        response = api_client_with_mock.get('/api/v2/transactions')
+
+        assert response.status_code == 200
+        data = response.get_json()
+        accounts = [t['account'] for t in data['transactions']]
+        assert accounts == ['acc1', 'unknown']
+
+    def test_aggregate_groups_empty_account_as_unknown(
+        self, api_client_with_mock, monkeypatch
+    ):
+        """Aggregation by account groups empty-account transactions under
+        the 'unknown' key."""
+        self._patch_transaction_repo(monkeypatch)
+        response = api_client_with_mock.get(
+            '/api/v2/transactions/aggregate?group_by=account'
+        )
+
+        assert response.status_code == 200
+        data = response.get_json()
+        assert sorted(data['groups'].keys()) == ['acc1', 'unknown']

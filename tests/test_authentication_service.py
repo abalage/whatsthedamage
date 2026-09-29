@@ -89,7 +89,7 @@ class TestAuthenticationServiceRegistration:
         )
 
         # Register user
-        user, recovery_code, session_token, session_expiry = (
+        user, recovery_code, session_token, session_expiry, csrf_token = (
             authentication_service.register_user(
                 username='newuser',
                 password='secure_password_1234',
@@ -104,8 +104,14 @@ class TestAuthenticationServiceRegistration:
         assert len(recovery_code) == 19  # Formatted recovery code (16 chars + 3 hyphens)
         assert len(session_token) > 0
         assert session_expiry > datetime.now(UTC)
+        assert len(csrf_token) > 0
         assert mock_user_repository.create.called
         assert mock_session_repository.create.called
+        # The returned token must match the hash persisted with the session
+        assert authentication_service.validate_csrf_token(
+            csrf_token,
+            mock_session_repository.create.call_args.kwargs['csrf_token_hash']
+        )
 
     def test_register_user_duplicate_username(self, authentication_service, mock_user_repository):
         """Test registration with duplicate username."""
@@ -163,20 +169,28 @@ class TestAuthenticationServiceLogin:
             'verify_password',
             return_value=True
         ):
-            user, session_token, session_expiry = authentication_service.login_user(
-                username='testuser',
-                password='correct_password',
-                remember_me=False,
-                ip_address='127.0.0.1',
-                user_agent='Test Agent'
+            user, session_token, session_expiry, csrf_token = (
+                authentication_service.login_user(
+                    username='testuser',
+                    password='correct_password',
+                    remember_me=False,
+                    ip_address='127.0.0.1',
+                    user_agent='Test Agent'
+                )
             )
 
         assert user is not None
         assert user.username == 'testuser'
         assert len(session_token) > 0
         assert session_expiry > datetime.now(UTC)
+        assert len(csrf_token) > 0
         assert mock_user_repository.update_last_login.called
         assert mock_session_repository.create.called
+        # The returned token must match the hash persisted with the session
+        assert authentication_service.validate_csrf_token(
+            csrf_token,
+            mock_session_repository.create.call_args.kwargs['csrf_token_hash']
+        )
 
     def test_login_user_invalid_username(self, authentication_service, mock_user_repository):
         """Test login with invalid username."""
@@ -250,12 +264,14 @@ class TestAuthenticationServiceLogin:
                 'generate_token_and_hash',
                 return_value=('token', 'hash', 'prefix')
             ):
-                user, session_token, session_expiry = authentication_service.login_user(
-                    username='testuser',
-                    password='correct_password',
-                    remember_me=True,
-                    ip_address='127.0.0.1',
-                    user_agent='Test Agent'
+                user, session_token, session_expiry, csrf_token = (
+                    authentication_service.login_user(
+                        username='testuser',
+                        password='correct_password',
+                        remember_me=True,
+                        ip_address='127.0.0.1',
+                        user_agent='Test Agent'
+                    )
                 )
 
                 # Remember me should use 7 days expiration
@@ -418,13 +434,21 @@ class TestAuthenticationServiceCsrf:
 class TestAuthenticationServiceGetMe:
     """Tests for get_me functionality."""
 
-    def test_get_me_authenticated(self, authentication_service, mock_session_repository, mock_user_repository):
-        """Test get_me with authenticated user."""
+    def test_get_me_does_not_rotate_existing_token(
+        self, authentication_service, mock_session_repository, mock_user_repository
+    ):
+        """Test get_me keeps an existing CSRF token untouched.
+
+        Repeat /auth/me calls must not invalidate tokens already held
+        by clients.
+        """
         mock_user = Mock(id=1, username='testuser', is_active=True)
+        existing_hash = authentication_service.generate_csrf_token()[1]
         mock_session = Mock(
             id=1,
             user_id=1,
             is_revoked=False,
+            csrf_token_hash=existing_hash,
             expires_at=datetime.now(UTC) + timedelta(hours=1)
         )
 
@@ -442,7 +466,39 @@ class TestAuthenticationServiceGetMe:
         user, session, csrf_token = result
         assert user.id == 1
         assert session.id == 1
+        assert csrf_token is None
+        mock_session_repository.update_csrf_token_hash.assert_not_called()
+
+    def test_get_me_mints_token_when_session_has_none(
+        self, authentication_service, mock_session_repository, mock_user_repository
+    ):
+        """Test get_me mints a CSRF token for a session without one."""
+        mock_user = Mock(id=1, username='testuser', is_active=True)
+        mock_session = Mock(
+            id=1,
+            user_id=1,
+            is_revoked=False,
+            csrf_token_hash=None,
+            expires_at=datetime.now(UTC) + timedelta(hours=1)
+        )
+
+        mock_session_repository.find_by_token_hash.return_value = mock_session
+        mock_user_repository.find_by_id.return_value = mock_user
+
+        with patch.object(
+            authentication_service.token_service,
+            'hash_token',
+            return_value='test_hash'
+        ):
+            result = authentication_service.get_me('valid_token')
+
+        assert result is not None
+        user, session, csrf_token = result
+        assert user.id == 1
         assert len(csrf_token) > 0
+        mock_session_repository.update_csrf_token_hash.assert_called_once()
+        stored_hash = mock_session_repository.update_csrf_token_hash.call_args[0][1]
+        assert authentication_service.validate_csrf_token(csrf_token, stored_hash)
 
     def test_get_me_unauthenticated(self, authentication_service, mock_session_repository):
         """Test get_me with invalid session."""
@@ -451,6 +507,20 @@ class TestAuthenticationServiceGetMe:
         result = authentication_service.get_me('invalid_token')
 
         assert result is None
+
+    def test_refresh_csrf_token_persists_hash(
+        self, authentication_service, mock_session_repository
+    ):
+        """Test refresh_csrf_token returns a token whose hash is stored."""
+        mock_session = Mock(id=1, csrf_token_hash=None)
+
+        csrf_token = authentication_service.refresh_csrf_token(mock_session)
+
+        assert len(csrf_token) > 0
+        mock_session_repository.update_csrf_token_hash.assert_called_once()
+        stored_hash = mock_session_repository.update_csrf_token_hash.call_args[0][1]
+        assert authentication_service.validate_csrf_token(csrf_token, stored_hash)
+        assert mock_session.csrf_token_hash == stored_hash
 
 
 class TestAuthenticationServicePasswordReset:

@@ -12,7 +12,6 @@ import type {
   ProcessingResultListItem,
   ProcessingResultMetadata,
   RecalculateApiResponse,
-  ResultsApiResponse,
   TransactionListResponse,
 } from '../types/api.js';
 import type {
@@ -171,13 +170,13 @@ export async function createTransaction(formData: FormData): Promise<ProcessingR
 
 /**
  * Recalculate statistics
- * @param resultId - Result ID
+ * @param resultId - Result ID, or undefined to use all of the user's transactions
  * @param algorithms - Algorithms to use
  * @param direction - Direction (columns/rows)
  * @returns Promise with statistics result
  */
 export async function recalculateStatistics(
-  resultId: string,
+  resultId: string | undefined,
   algorithms: string[],
   direction: 'columns' | 'rows'
 ): Promise<RecalculateApiResponse> {
@@ -191,16 +190,19 @@ export async function recalculateStatistics(
 /**
  * Fetch month categories data (drilldown)
  * @param params - Route parameters containing resultId, accountId, monthId
+ * @param options - Statistical analysis options (algorithms, direction)
  * @returns Promise with aggregated transactions data
  */
 export async function fetchMonthCategories(
-  params: Record<string, string | null>
+  params: Record<string, string | null>,
+  options: StatisticalAnalysisOptions = {}
 ): Promise<AggregatedTransactionsResponse> {
   return fetchAggregatedTransactions({
     result_id: params.resultId ?? undefined,
     account: params.accountId ?? undefined,
     month: params.monthId ?? undefined,
-    group_by: 'category'
+    group_by: 'category',
+    ...options
   });
 }
 
@@ -232,7 +234,6 @@ export async function fetchCategories(): Promise<CategoryDefinition[]> {
  * @returns Promise with array of CategoryDefinition objects
  */
 export async function fetchCostOfLivingCategories(): Promise<CategoryDefinition[]> {
-  console.log('Fetching cost of living categories...');
   return fetchWithErrorHandling<CategoryDefinition[]>(getApiUrl('/categories/cost-of-living'));
 }
 
@@ -366,6 +367,14 @@ export async function fetchAllTransactions(
 }
 
 /**
+ * Statistical analysis options for aggregation and recalculation endpoints
+ */
+export interface StatisticalAnalysisOptions {
+  algorithms?: string[];
+  direction?: 'columns' | 'rows';
+}
+
+/**
  * Fetch aggregated transaction data for drilldown views
  * @param params - Aggregation parameters
  * @returns Promise with AggregatedTransactionsResponse
@@ -376,6 +385,8 @@ export async function fetchAggregatedTransactions(params: {
   category_id?: string;
   month?: string;
   group_by: string;
+  algorithms?: string[];
+  direction?: 'columns' | 'rows';
 }): Promise<AggregatedTransactionsResponse> {
   const searchParams = new URLSearchParams();
   if (params.result_id) searchParams.append('result_id', params.result_id);
@@ -383,6 +394,8 @@ export async function fetchAggregatedTransactions(params: {
   if (params.category_id) searchParams.append('category_id', params.category_id);
   if (params.month) searchParams.append('month', params.month);
   searchParams.append('group_by', params.group_by);
+  if (params.algorithms) searchParams.append('algorithms', params.algorithms.join(','));
+  if (params.direction) searchParams.append('direction', params.direction);
 
   return fetchWithErrorHandling<AggregatedTransactionsResponse>(
     getApiUrl(`/transactions/aggregate?${searchParams.toString()}`),
@@ -444,9 +457,12 @@ export async function getMe(): Promise<MeResponse> {
 
 /**
  * Get a new CSRF token
+ * The backend persists the token's hash, so the returned token is valid
+ * for subsequent state-changing requests (it replaces the previously
+ * issued one).
  * @returns Promise with CSRF token
  */
-async function getCsrfToken(): Promise<CsrfTokenResponse> {
+export async function fetchCsrfToken(): Promise<CsrfTokenResponse> {
   return fetchWithErrorHandling<CsrfTokenResponse>(getApiUrl('/auth/csrf-token'), {
     credentials: 'include'
   });
@@ -512,14 +528,44 @@ async function getCsrfTokenFromStore(): Promise<string | null> {
 }
 
 /**
- * Fetch with automatic CSRF token inclusion for state-changing requests
+ * Mint a fresh CSRF token via the auth store so every consumer sees it
+ * @returns The new CSRF token, or null when the refresh failed
+ */
+async function refreshCsrfTokenViaStore(): Promise<string | null> {
+  try {
+    const { useAuthStore } = await import('../stores/auth.js');
+    const authStore = useAuthStore();
+    await authStore.refreshCsrfToken();
+    return authStore.getCsrfToken?.() ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Whether an error is a rejected CSRF token (the sent token no longer
+ * matches the hash stored for the session)
+ */
+function isInvalidCsrfTokenError(error: unknown): boolean {
+  if (!(error instanceof AppError)) return false;
+  const context = error.context as { status?: number } | undefined;
+  return context?.status === 403 && /invalid csrf token/i.test(error.message);
+}
+
+/**
+ * Fetch with automatic CSRF token inclusion for state-changing requests.
+ * When the server rejects the token as invalid (e.g. it was superseded by
+ * a token minted in another tab), a fresh token is minted and the request
+ * is retried once.
  * @param url - API endpoint URL
  * @param options - Fetch options
+ * @param allowCsrfRetry - Whether a rejected CSRF token may be retried
  * @returns Promise with parsed data
  */
 async function fetchWithCsrf<T>(
   url: string,
-  options: RequestInit = {}
+  options: RequestInit = {},
+  allowCsrfRetry = true
 ): Promise<T> {
   // Only add CSRF token for state-changing methods
   const method = (options.method?.toUpperCase() ?? 'GET');
@@ -552,11 +598,21 @@ async function fetchWithCsrf<T>(
       headers['X-CSRF-Token'] = csrfToken;
     }
 
-    return fetchWithErrorHandling<T>(url, {
-      ...options,
-      credentials: 'include',
-      headers
-    });
+    try {
+      return await fetchWithErrorHandling<T>(url, {
+        ...options,
+        credentials: 'include',
+        headers
+      });
+    } catch (error) {
+      if (allowCsrfRetry && isInvalidCsrfTokenError(error)) {
+        const refreshedToken = await refreshCsrfTokenViaStore();
+        if (refreshedToken) {
+          return fetchWithCsrf<T>(url, options, false);
+        }
+      }
+      throw error;
+    }
   }
 
   // For non-state-changing requests, just use credentials

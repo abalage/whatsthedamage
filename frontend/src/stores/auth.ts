@@ -7,8 +7,15 @@
 
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
-import type { User, AuthState, RegisterRequest, LoginRequest } from '../types/auth.js';
-import { register, login, logout, getMe } from '../js/api.js';
+import type { User } from '../types/auth.js';
+import { register, login, logout, getMe, fetchCsrfToken } from '../js/api.js';
+
+/**
+ * localStorage key for the persisted CSRF token.
+ * Persisting it lets page reloads and tabs reuse the same token instead
+ * of forcing the backend to mint (and rotate) a new one.
+ */
+const CSRF_TOKEN_STORAGE_KEY = 'csrfToken';
 
 /**
  * Use the authentication store.
@@ -18,7 +25,7 @@ import { register, login, logout, getMe } from '../js/api.js';
  * - isAuthenticated: Whether user is logged in
  * - isLoading: Loading state for auth operations
  * - error: Current error message
- * - csrfToken: Current CSRF token
+ * - csrfToken: Current CSRF token (persisted in localStorage)
  * - recoveryCode: Recovery code shown after registration
  * - showRecoveryCode: Whether to display recovery code
  * - recoveryCodeAcknowledged: Whether user has acknowledged saving recovery code
@@ -28,13 +35,27 @@ export const useAuthStore = defineStore('auth', () => {
   const user = ref<User | null>(null);
   const isLoading = ref<boolean>(false);
   const error = ref<string | null>(null);
-  const csrfToken = ref<string | null>(null);
+  const csrfToken = ref<string | null>(localStorage.getItem(CSRF_TOKEN_STORAGE_KEY));
   const recoveryCode = ref<string | null>(null);
   const showRecoveryCode = ref<boolean>(false);
   const recoveryCodeAcknowledged = ref<boolean>(false);
 
   // Computed properties
   const isAuthenticated = computed(() => user.value !== null);
+
+  /**
+   * Set the CSRF token in state and persist it.
+   *
+   * @param token - New CSRF token, or null to clear it
+   */
+  function setCsrfToken(token: string | null): void {
+    csrfToken.value = token;
+    if (token) {
+      localStorage.setItem(CSRF_TOKEN_STORAGE_KEY, token);
+    } else {
+      localStorage.removeItem(CSRF_TOKEN_STORAGE_KEY);
+    }
+  }
 
   /**
    * Initialize auth state by checking current session.
@@ -49,11 +70,17 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       const response = await getMe();
       user.value = response.user;
-      csrfToken.value = response.csrf_token;
-    } catch (err: unknown) {
+      if (response.csrf_token) {
+        setCsrfToken(response.csrf_token);
+      } else if (!csrfToken.value) {
+        // The session has a token but this client does not (fresh
+        // storage); mint one via the explicit token endpoint
+        await refreshCsrfToken();
+      }
+    } catch {
       // Not authenticated - clear any existing state
       user.value = null;
-      csrfToken.value = null;
+      setCsrfToken(null);
       // Don't set error for 401 (not authenticated)
     } finally {
       isLoading.value = false;
@@ -78,10 +105,7 @@ export const useAuthStore = defineStore('auth', () => {
       user.value = response.user;
       recoveryCode.value = response.recovery_code;
       showRecoveryCode.value = true;
-
-      // CSRF token is now fetched separately from /auth/me endpoint
-      // after the user is authenticated (session cookie is set)
-      await refreshCsrfToken();
+      setCsrfToken(response.csrf_token);
 
       return { user: response.user, recoveryCode: response.recovery_code };
     } catch (err: unknown) {
@@ -108,10 +132,7 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       const response = await login(username, password, rememberMe);
       user.value = response.user;
-
-      // CSRF token is now fetched separately from /auth/me endpoint
-      // after the user is authenticated (session cookie is set)
-      await refreshCsrfToken();
+      setCsrfToken(response.csrf_token);
 
       return response.user;
     } catch (err: unknown) {
@@ -135,7 +156,7 @@ export const useAuthStore = defineStore('auth', () => {
     } finally {
       // Clear state regardless of success
       user.value = null;
-      csrfToken.value = null;
+      setCsrfToken(null);
       isLoading.value = false;
     }
   }
@@ -158,17 +179,16 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   /**
-   * Refresh the CSRF token from the backend.
-   * Called after login/register to get a fresh CSRF token.
+   * Mint a fresh CSRF token from the backend and persist it.
+   * The new token supersedes any previously issued one for this session.
    */
   async function refreshCsrfToken(): Promise<void> {
     try {
-      // getMe() returns user info + csrf_token for authenticated users
-      const response = await getMe();
-      csrfToken.value = response.csrf_token;
+      const response = await fetchCsrfToken();
+      setCsrfToken(response.csrf_token);
     } catch {
       // If we can't get a new CSRF token, just clear it
-      csrfToken.value = null;
+      setCsrfToken(null);
     }
   }
 
@@ -194,7 +214,7 @@ export const useAuthStore = defineStore('auth', () => {
     refreshCsrfToken,
 
     // Getters
-    getUser: () => user.value,
-    getCsrfToken: () => csrfToken.value
+    getUser: (): User | null => user.value,
+    getCsrfToken: (): string | null => csrfToken.value
   };
 });

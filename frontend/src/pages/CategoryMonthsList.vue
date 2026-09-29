@@ -89,7 +89,9 @@ const {
       result_id: params.resultId ?? undefined,
       account: params.accountId,
       category_id: params.categoryId,
-      group_by: 'month'
+      group_by: 'month',
+      algorithms: statisticalStore.algorithms,
+      direction: statisticalStore.direction
     })
   },
   titleBaseKey: 'Category Details',

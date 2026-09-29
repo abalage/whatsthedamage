@@ -91,7 +91,7 @@ class AuthenticationService:
         password: str,
         ip_address: Optional[str] = None,
         user_agent: Optional[str] = None
-    ) -> Tuple[UserDB, str, str, datetime]:
+    ) -> Tuple[UserDB, str, str, datetime, str]:
         """Register a new user account.
 
         Creates a new user with hashed password and recovery code.
@@ -104,7 +104,8 @@ class AuthenticationService:
             user_agent: Client user agent.
 
         Returns:
-            Tuple of (user, recovery_code, session_token, session_expiry).
+            Tuple of (user, recovery_code, session_token, session_expiry,
+            csrf_token).
 
         Raises:
             ValueError: If username already exists, password is too short,
@@ -161,7 +162,7 @@ class AuthenticationService:
             user_agent=user_agent
         )
 
-        return user, formatted_recovery_code, session_token, session_expiry
+        return user, formatted_recovery_code, session_token, session_expiry, csrf_token
 
     def login_user(
         self,
@@ -170,7 +171,7 @@ class AuthenticationService:
         remember_me: bool = False,
         ip_address: Optional[str] = None,
         user_agent: Optional[str] = None
-    ) -> Tuple[UserDB, str, datetime]:
+    ) -> Tuple[UserDB, str, datetime, str]:
         """Authenticate a user and create a new session.
 
         Verifies the username and password, updates the last login timestamp,
@@ -184,7 +185,7 @@ class AuthenticationService:
             user_agent: Client user agent.
 
         Returns:
-            Tuple of (user, session_token, session_expiry).
+            Tuple of (user, session_token, session_expiry, csrf_token).
 
         Raises:
             ValueError: If username or password is incorrect, or user is inactive.
@@ -232,7 +233,7 @@ class AuthenticationService:
             user_agent=user_agent
         )
 
-        return user, session_token, session_expiry
+        return user, session_token, session_expiry, csrf_token
 
     def logout_user(self, session_token: str) -> bool:
         """Log out a user by revoking their session.
@@ -445,6 +446,23 @@ class AuthenticationService:
         """
         return self.csrf_service.generate_token_and_hash()
 
+    def refresh_csrf_token(self, session: SessionDB) -> str:
+        """Mint a new CSRF token for a session and persist its hash.
+
+        Args:
+            session: The authenticated session entity.
+
+        Returns:
+            The new CSRF token. Its hash replaces the stored one, so any
+            previously issued token for this session becomes invalid.
+        """
+        csrf_token, csrf_token_hash = self.generate_csrf_token()
+        self.session_repository.update_csrf_token_hash(
+            int(session.id), csrf_token_hash  # type: ignore[arg-type]
+        )
+        session.csrf_token_hash = csrf_token_hash  # type: ignore[assignment]
+        return csrf_token
+
     def validate_csrf_token(self, token: str, stored_hash: str) -> bool:
         """Validate a CSRF token.
 
@@ -459,10 +477,12 @@ class AuthenticationService:
 
     def get_me(
         self, session_token: Optional[str] = None
-    ) -> Optional[Tuple[UserDB, SessionDB, str]]:
+    ) -> Optional[Tuple[UserDB, SessionDB, Optional[str]]]:
         """Get current user and session information.
 
-        Also generates a new CSRF token for the session.
+        Returns a CSRF token only when the session does not have one yet;
+        this call never rotates an existing token, so tokens already held
+        by clients stay valid.
 
         Args:
             session_token: Optional session token. If None, attempts to
@@ -470,7 +490,8 @@ class AuthenticationService:
 
         Returns:
             Tuple of (user, session, csrf_token) if authenticated,
-            None otherwise.
+            None otherwise. csrf_token is None when the session already
+            has a CSRF token hash.
         """
         # Try to get session token from request if not provided
         if session_token is None:
@@ -486,14 +507,11 @@ class AuthenticationService:
 
         user, session = result
 
-        # Generate new CSRF token and update session
-        csrf_token, csrf_token_hash = self.generate_csrf_token()
+        # Only mint a token when the session has none; existing tokens
+        # must not be invalidated by this idempotent probe
+        if session.csrf_token_hash:
+            return user, session, None
 
-        # Update session with new CSRF token hash
-        self.session_repository.update_csrf_token_hash(
-            int(session.id), csrf_token_hash  # type: ignore[arg-type]
-        )
-        # Update the session object in memory with the new hash
-        session.csrf_token_hash = csrf_token_hash  # type: ignore[assignment]
+        csrf_token = self.refresh_csrf_token(session)
 
         return user, session, csrf_token

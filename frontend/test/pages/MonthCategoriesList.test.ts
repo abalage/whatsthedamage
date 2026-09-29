@@ -5,10 +5,11 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { shallowMount, flushPromises, type VueWrapper } from '@vue/test-utils';
-import { createPinia, setActivePinia } from 'pinia';
+import { createPinia, setActivePinia, type Pinia } from 'pinia';
 import { reactive } from 'vue';
 import MonthCategoriesList from '../../src/pages/MonthCategoriesList.vue';
 import { fetchMonthCategories } from '../../src/js/api.js';
+import { useStatisticalStore } from '../../src/stores/statistical.js';
 import type { AggregatedTransactionsResponse, TransactionListItem } from '../../src/types/api.js';
 
 const mockRoute = reactive<{ params: Record<string, unknown>; query: Record<string, unknown> }>({
@@ -63,6 +64,8 @@ const makeResponse = (): AggregatedTransactionsResponse => ({
 });
 
 describe('MonthCategoriesList.vue', () => {
+  let pinia: Pinia;
+
   beforeEach(() => {
     vi.clearAllMocks();
     mockRoute.params = {
@@ -70,10 +73,11 @@ describe('MonthCategoriesList.vue', () => {
       monthId: '2026-01',
     };
     mockRoute.query = {};
-    setActivePinia(createPinia());
+    pinia = createPinia();
+    setActivePinia(pinia);
   });
 
-  const mountPage = (): VueWrapper => shallowMount(MonthCategoriesList, { global: { plugins: [createPinia()] } });
+  const mountPage = (): VueWrapper => shallowMount(MonthCategoriesList, { global: { plugins: [pinia] } });
 
   it('renders category totals without currency next to the numbers', async () => {
     vi.mocked(fetchMonthCategories).mockResolvedValue(makeResponse());
@@ -105,5 +109,32 @@ describe('MonthCategoriesList.vue', () => {
       tableData: Array<{ total_display: string }>;
     }).tableData;
     expect(tableData[0].total_display).toBe('-30.50');
+  });
+
+  it('stores highlights from the aggregate response', async () => {
+    const response = makeResponse();
+    response.highlights = { grocery: ['pareto'] };
+    vi.mocked(fetchMonthCategories).mockResolvedValue(response);
+
+    await mountPage();
+    await flushPromises();
+
+    const store = useStatisticalStore();
+    expect(store.highlights).toEqual({ grocery: ['pareto'] });
+  });
+
+  it('passes the statistical settings to the fetch', async () => {
+    vi.mocked(fetchMonthCategories).mockResolvedValue(makeResponse());
+
+    await mountPage();
+    await flushPromises();
+
+    expect(fetchMonthCategories).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        algorithms: ['iqr', 'pareto'],
+        direction: 'columns'
+      })
+    );
   });
 });

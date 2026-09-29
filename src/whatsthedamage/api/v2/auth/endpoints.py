@@ -226,7 +226,7 @@ def register() -> Tuple[Response, int]:
                 "created_at": "ISO8601 timestamp"
             },
             "recovery_code": "string",
-            "session_token": "string",
+            "csrf_token": "string",
             "session_expires_at": "ISO8601 timestamp"
         }
 
@@ -270,7 +270,7 @@ def register() -> Tuple[Response, int]:
         user_agent = _get_user_agent()
 
         # Register user
-        user, recovery_code, session_token, session_expiry = (
+        user, recovery_code, session_token, session_expiry, csrf_token = (
             _get_auth_service().register_user(
                 username=username.strip(),
                 password=password,
@@ -289,6 +289,7 @@ def register() -> Tuple[Response, int]:
                 'created_at': created_at_str
             },
             'recovery_code': recovery_code,
+            'csrf_token': csrf_token,
             'session_expires_at': session_expiry.isoformat()
         }
 
@@ -341,7 +342,7 @@ def login() -> Tuple[Response, int]:
                 "username": "string",
                 "last_login_at": "ISO8601 timestamp or null"
             },
-            "session_token": "string",
+            "csrf_token": "string",
             "session_expires_at": "ISO8601 timestamp"
         }
 
@@ -402,12 +403,14 @@ def login() -> Tuple[Response, int]:
         user_agent = _get_user_agent()
 
         # Login user
-        user, session_token, session_expiry = _get_auth_service().login_user(
-            username=username.strip(),
-            password=password,
-            remember_me=remember_me,
-            ip_address=ip_address,
-            user_agent=user_agent
+        user, session_token, session_expiry, csrf_token = (
+            _get_auth_service().login_user(
+                username=username.strip(),
+                password=password,
+                remember_me=remember_me,
+                ip_address=ip_address,
+                user_agent=user_agent
+            )
         )
 
         # Build response (session_token removed for security - only in HttpOnly cookie)
@@ -419,6 +422,7 @@ def login() -> Tuple[Response, int]:
                 'username': user.username,
                 'last_login_at': last_login_str
             },
+            'csrf_token': csrf_token,
             'session_expires_at': session_expiry.isoformat()
         }
 
@@ -518,7 +522,8 @@ def get_me() -> Tuple[Response, int]:
     """Get current user information.
 
     Returns information about the currently authenticated user.
-    Also returns a CSRF token for use in subsequent requests.
+    Includes a CSRF token only when the session does not have one yet;
+    repeat calls do not rotate an existing token.
 
     Response JSON:
         {
@@ -530,7 +535,7 @@ def get_me() -> Tuple[Response, int]:
                 "is_active": boolean,
                 "opt_in_sharing": boolean
             },
-            "csrf_token": "string"
+            "csrf_token": "string or null"
         }
 
     Status Codes:
@@ -765,7 +770,8 @@ def get_csrf_token() -> Tuple[Response, int]:
                 "NOT_AUTHENTICATED"
             )[0]), 401
 
-        # Validate session exists (don't need to check user for CSRF token)
+        # Validate session and mint a token whose hash is persisted, so the
+        # returned token actually validates on subsequent requests
         result = _get_auth_service().validate_session(session_token)
         if not result:
             return jsonify(_create_error_response(
@@ -774,7 +780,8 @@ def get_csrf_token() -> Tuple[Response, int]:
                 "INVALID_SESSION"
             )[0]), 401
 
-        csrf_token, _ = _get_auth_service().generate_csrf_token()
+        user, session = result
+        csrf_token = _get_auth_service().refresh_csrf_token(session)
         return jsonify({'csrf_token': csrf_token}), 200
     except Exception as e:
         return jsonify(_create_error_response(

@@ -107,4 +107,18 @@ describe('CategoryMonthsList.vue', () => {
     }).tableData;
     expect(tableData[0].total_display).toBe('-30.50');
   });
+
+  it('passes the statistical settings to the fetch', async () => {
+    vi.mocked(fetchAggregatedTransactions).mockResolvedValue(makeResponse());
+
+    await mountPage();
+    await flushPromises();
+
+    expect(fetchAggregatedTransactions).toHaveBeenCalledWith(
+      expect.objectContaining({
+        algorithms: ['iqr', 'pareto'],
+        direction: 'columns'
+      })
+    );
+  });
 });

@@ -2,7 +2,8 @@
 import { ref, onMounted, computed, watch } from 'vue'
 import {
   fetchAllTransactions,
-  fetchProcessingResultMetadata
+  fetchProcessingResultMetadata,
+  recalculateStatistics
 } from '../js/api.js'
 import { buildResultQuery, extractResultId } from '../js/routeUtils.js'
 import { useFeedbackStore } from '../stores/feedback.js'
@@ -61,7 +62,9 @@ const buildAccountsFromTransactions = (txns: TransactionListItem[]): AccountData
   const accountMap = new Map<string, AccountData>()
 
   for (const txn of txns) {
-    const accountId = txn.account
+    // vue-router rejects empty route params, so transactions without an
+    // account are grouped under the backend's 'unknown' fallback ID
+    const accountId = txn.account || 'unknown'
     if (!accountMap.has(accountId)) {
       accountMap.set(accountId, {
         id: accountId,
@@ -89,15 +92,35 @@ const loadResults = async () => {
     transactions.value = response.transactions
     totalTransactionCount.value = response.total_count
 
-    // Initialize highlights in Pinia store
-    statisticalStore.setHighlights({})
-
     error.value = null
     isLoading.value = false
+
+    await loadHighlights()
   } catch (err) {
     error.value = err instanceof Error ? err.message : 'Failed to load results'
     feedback.showError('Failed to load results: ' + error.value)
     isLoading.value = false
+  }
+}
+
+// Fetch statistical highlights for the matrix cells from the recalculate
+// endpoint, keyed by cell ID '{account}|{month}|{category}'
+const loadHighlights = async () => {
+  statisticalStore.setHighlights({})
+  if (transactions.value.length === 0) return
+
+  try {
+    const response = await recalculateStatistics(
+      resultId.value ?? undefined,
+      statisticalStore.algorithms,
+      statisticalStore.direction
+    )
+    if (response?.highlights) {
+      statisticalStore.setHighlights(response.highlights)
+    }
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err)
+    feedback.showError($gettext('Failed to load highlights') + ': ' + message)
   }
 }
 
@@ -207,6 +230,7 @@ function buildTableData(account: AccountData): Record<string, unknown>[] {
       const columnKey = `month-${monthKey}`
       const monthTotal = getMonthTotalForCategory(account.id, category, monthKey)
       row[columnKey] = monthTotal ?? 0
+      row._rowIds[columnKey] = `${account.id}|${monthKey}|${category}`
     }
 
     data.push(row)

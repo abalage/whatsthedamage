@@ -129,7 +129,7 @@ export interface CategoryDefinition {
  */
 export interface RecalculateApiResponse {
   status: string;
-  result_id: string;
+  result_id: string | null;
   highlights: StatisticalHighlights;
   algorithms: string[];
   direction: 'columns' | 'rows';

@@ -83,7 +83,10 @@ const {
     if (!params.accountId || !params.monthId) {
       throw new Error('Missing required parameters for month categories fetch')
     }
-    return fetchMonthCategories(params)
+    return fetchMonthCategories(params, {
+      algorithms: statisticalStore.algorithms,
+      direction: statisticalStore.direction
+    })
   },
   titleBaseKey: 'Month Details',
   titleFormat: 'month',
@@ -193,11 +196,10 @@ const cellHighlightsByRowId = computed(() => {
 })
 
 // Initialize highlights from API when data loads
-// Note: The aggregate endpoint returns statistical data, not highlight types
-// So we don't set highlights here - they should come from the main results endpoint
-watch(() => monthCategoriesData.value, () => {
-  // Clear highlights for this drilldown view
-  statisticalStore.setHighlights({})
+watch(() => monthCategoriesData.value, (newData) => {
+  if (newData?.highlights) {
+    statisticalStore.setHighlights(newData.highlights)
+  }
 }, { immediate: true })
 
 onMounted(() => {

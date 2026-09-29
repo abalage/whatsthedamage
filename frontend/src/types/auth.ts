@@ -32,6 +32,7 @@ export interface RegisterRequest {
 export interface RegisterResponse {
   user: User;
   recovery_code: string;
+  csrf_token: string;
   session_expires_at: string;
 }
 
@@ -51,6 +52,7 @@ export interface LoginRequest {
  */
 export interface LoginResponse {
   user: User;
+  csrf_token: string;
   session_expires_at: string;
 }
 
@@ -63,11 +65,12 @@ export interface LogoutResponse {
 
 /**
  * Response from /auth/me endpoint.
- * Contains current user info and a CSRF token.
+ * Contains current user info and a CSRF token, or null when the session
+ * already has one (the client keeps the token it holds).
  */
 export interface MeResponse {
   user: User;
-  csrf_token: string;
+  csrf_token: string | null;
 }
 
 /**
@@ -76,65 +79,6 @@ export interface MeResponse {
  */
 export interface CsrfTokenResponse {
   csrf_token: string;
-}
-
-/**
- * Authentication state stored in Pinia.
- */
-export interface AuthState {
-  user: User | null;
-  isAuthenticated: boolean;
-  isLoading: boolean;
-  error: string | null;
-  csrfToken: string | null;
-  recoveryCode: string | null;
-  showRecoveryCode: boolean;
-  recoveryCodeAcknowledged: boolean;
-}
-
-/**
- * API error response structure.
- */
-interface AuthError {
-  error: string;
-  code?: string;
-  retryAfter?: number;
-}
-
-/**
- * Combined API response wrapper.
- */
-interface ApiAuthResponse<T> {
-  data?: T;
-  error?: string;
-  code?: string;
-  retryAfter?: number;
-}
-
-/**
- * Credentials for login/register forms.
- */
-interface Credentials {
-  username: string;
-  password: string;
-}
-
-/**
- * Form data for registration with password confirmation.
- */
-interface RegistrationForm {
-  username: string;
-  password: string;
-  confirmPassword: string;
-}
-
-/**
- * Form data for login with remember me option.
- */
-interface LoginForm {
-  username: string;
-  password: string;
-  rememberMe: boolean;
 }
 
 /**

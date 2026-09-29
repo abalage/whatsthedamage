@@ -12,6 +12,7 @@ from datetime import datetime, UTC
 from typing import TYPE_CHECKING, Any, Optional, cast
 
 from whatsthedamage.models.domain.dt_models import ProcessingResponse
+from whatsthedamage.models.api.responses import RecalculateApiResponse
 from whatsthedamage.utils.date_converter import DateConverter
 from whatsthedamage.models.database.user import User as UserDB
 from whatsthedamage.models.database.transaction import Transaction as TransactionDB
@@ -25,7 +26,6 @@ from whatsthedamage.api.helpers import (
     _get_response_formatting_service,
     _get_processing_service,
     _get_statistical_service,
-    _get_drilldown_response_service,
     _get_processing_result_repository,
     _get_transaction_repository,
     _get_correction_repository,
@@ -43,8 +43,6 @@ v2_bp = Blueprint('api_v2', __name__, url_prefix='/api/v2')
 # - /processing-results/<result_id>/accounts/<account_id>/categories/<category_id>/months
 # - /processing-results/<result_id>/accounts/<account_id>/months/<month_id>/categories
 # - /processing-results/<result_id>/accounts/<account_id>/categories/<category_id>/months/<month_id>/transactions
-
-# Removed recalculate-statistics endpoint - statistics now calculated on-demand from Transaction entities
 
 @v2_bp.route('/categories', methods=['GET'])
 def get_categories() -> tuple[Response, int]:
@@ -152,16 +150,141 @@ def get_openapi_spec() -> tuple[Response, int]:
 
 
 # Transaction endpoints - RESTful design for authenticated users only
-from whatsthedamage.api.helpers import (
-    _get_processing_result_repository,
-    _get_transaction_persistence_service,
-    _get_deduplication_service,
-    _get_correction_service,
-)
-from whatsthedamage.models.database.processing_result import ProcessingResult as ProcessingResultDB
-from whatsthedamage.services.transaction_persistence_service import TransactionPersistenceService
-from whatsthedamage.services.deduplication_service import DeduplicationService
-from typing import List
+
+
+def _parse_result_date(value: Any) -> Optional[datetime]:
+    """Parse a date filter string into a datetime for persistence.
+
+    Args:
+        value: Date value (string or datetime); may be None.
+
+    Returns:
+        Parsed datetime, or None when the value is missing or unparseable.
+    """
+    if isinstance(value, datetime) or not value:
+        return value
+    try:
+        return DateConverter.parse_to_datetime_utc(value)
+    except ValueError:
+        pass
+    try:
+        from dateutil import parser as dateutil_parser
+        return dateutil_parser.parse(str(value))
+    except (ValueError, OverflowError):
+        return None
+
+
+def _extract_result_date_range(
+    metadata: Any,
+    params: Any
+) -> tuple[Optional[datetime], Optional[datetime]]:
+    """Resolve the processing result date range.
+
+    Prefers dates reported in the processing metadata, falling back to the
+    request parameters. Values are parsed into datetimes for persistence
+    in the processing result's DateTime columns.
+
+    Args:
+        metadata: Processing metadata from the processing response.
+        params: Validated request parameters.
+
+    Returns:
+        Tuple of (start_date, end_date), either may be None.
+    """
+    start_date_val = None
+    end_date_val = None
+    date_range = getattr(metadata, 'date_range', None)
+    if date_range:
+        start_date_val = getattr(date_range, 'start', None)
+        end_date_val = getattr(date_range, 'end', None)
+    if start_date_val is None:
+        start_date_val = params.start_date or None
+    if end_date_val is None:
+        end_date_val = params.end_date or None
+    return _parse_result_date(start_date_val), _parse_result_date(end_date_val)
+
+
+def _extract_csv_rows_from_result(result: ProcessingResponse) -> list[Any]:
+    """Collect the individual CSV rows of a processing response.
+
+    Args:
+        result: Complete processing response with per-account data.
+
+    Returns:
+        List of CsvRow objects, one per transaction detail.
+    """
+    from whatsthedamage.models.domain.csv_row import CsvRow
+
+    all_csv_rows: list[Any] = []
+    for account in result.data.values():
+        if hasattr(account, 'data') and account.data:
+            for agg_row in account.data:
+                if hasattr(agg_row, 'details') and agg_row.details:
+                    for detail in agg_row.details:
+                        csv_row_dict: dict[str, str] = {
+                            'date': datetime.fromtimestamp(
+                                detail.date.timestamp, tz=UTC
+                            ).strftime('%Y-%m-%d'),
+                            'type': detail.type or '',
+                            'partner': detail.merchant or '',
+                            'amount': str(detail.amount.raw),
+                            'currency': detail.currency or '',
+                            'category_id': detail.category_id or '',
+                            'account': detail.account or '',
+                            'notice': detail.notice or '',
+                            'confidence': (
+                                str(detail.confidence)
+                                if detail.confidence is not None
+                                else ''
+                            )
+                        }
+                        all_csv_rows.append(CsvRow(csv_row_dict,
+                            {'date': 'date', 'type': 'type', 'partner': 'partner',
+                             'amount': 'amount', 'currency': 'currency',
+                             'category_id': 'category_id', 'account': 'account',
+                             'notice': 'notice'}))
+    return all_csv_rows
+
+
+def _persist_result_transactions(
+    user_id: int,
+    result_id: str,
+    csv_rows: list[Any]
+) -> None:
+    """Persist transaction entities, skipping deduplication duplicates.
+
+    Args:
+        user_id: User identifier owning the transactions.
+        result_id: Processing result the transactions belong to.
+        csv_rows: CSV rows to persist.
+    """
+    dedup_service = _get_deduplication_service()
+    transaction_repo = _get_transaction_repository()
+
+    for csv_row in csv_rows:
+        dedup_hash = dedup_service.generate_dedup_hash_from_row(csv_row)
+        existing = transaction_repo.find_by_dedup_hash(dedup_hash)
+        if existing:
+            continue
+
+        transaction_db = TransactionDB(
+            user_id=user_id,
+            result_id=result_id,
+            date=DateConverter.parse_to_datetime_utc(csv_row.date),
+            transaction_type=csv_row.type,
+            original_partner=csv_row.partner,
+            amount=float(csv_row.amount),
+            currency=csv_row.currency,
+            account=csv_row.account or 'unknown',
+            deduplication_hash=dedup_hash,
+            category_id=getattr(csv_row, 'category_id', None),
+            partner=None,
+            notice=getattr(csv_row, 'notice', None),
+            confidence=getattr(csv_row, 'confidence', None),
+            created_at=datetime.now(UTC),
+            updated_at=datetime.now(UTC)
+        )
+        transaction_repo.create(transaction_db)
 
 
 @v2_bp.route('/processing-results', methods=['POST'])
@@ -198,15 +321,7 @@ def create_processing_result() -> tuple[Response, int]:
         500: Internal server error
     """
     from whatsthedamage.models.database.processing_result import ProcessingResult as ProcessingResultDB
-    from whatsthedamage.models.database.transaction import Transaction as TransactionDB
-    from whatsthedamage.api.helpers import (
-        _get_processing_result_repository,
-        _get_transaction_persistence_service,
-        _get_deduplication_service,
-        _get_correction_service,
-        _get_transaction_repository,
-    )
-    from whatsthedamage.models.domain.csv_row import CsvRow
+    from whatsthedamage.api.helpers import _get_processing_result_repository
 
     start_time = time.time()
     user = cast(UserDB, request.user)  # type: ignore[attr-defined]
@@ -232,21 +347,7 @@ def create_processing_result() -> tuple[Response, int]:
         processing_result_repo = _get_processing_result_repository()
 
         metadata = result.metadata
-        # Parse start_date and end_date from params or metadata
-        start_date_val = None
-        end_date_val = None
-        if hasattr(metadata, 'date_range') and metadata.date_range:
-            # Extract from date_range if available in metadata
-            date_range = getattr(metadata, 'date_range', None)
-            if date_range and hasattr(date_range, 'start'):
-                start_date_val = date_range.start
-            if date_range and hasattr(date_range, 'end'):
-                end_date_val = date_range.end
-        # Fallback to params
-        if start_date_val is None and params.start_date:
-            start_date_val = params.start_date
-        if end_date_val is None and params.end_date:
-            end_date_val = params.end_date
+        start_date_val, end_date_val = _extract_result_date_range(metadata, params)
 
         processing_result_db = ProcessingResultDB(
             result_id=result.result_id,
@@ -264,61 +365,10 @@ def create_processing_result() -> tuple[Response, int]:
         processing_result_repo.create(processing_result_db)
 
         # Save individual transactions with result_id
-        transaction_persistence_service = _get_transaction_persistence_service()
-        dedup_service = _get_deduplication_service()
-
-        # Extract all CSV rows from the result
-        all_csv_rows = []
-        for account in result.data.values():
-            if hasattr(account, 'data') and account.data:
-                for agg_row in account.data:
-                    if hasattr(agg_row, 'details') and agg_row.details:
-                        for detail in agg_row.details:
-                            csv_row_dict: dict[str, str] = {
-                                'date': datetime.fromtimestamp(detail.date.timestamp, tz=UTC).strftime('%Y-%m-%d'),
-                                'type': detail.type or '',
-                                'partner': detail.merchant or '',
-                                'amount': str(detail.amount.raw),
-                                'currency': detail.currency or '',
-                                'category_id': detail.category_id or '',
-                                'account': detail.account or '',
-                                'notice': detail.notice or '',
-                                'confidence': str(detail.confidence) if detail.confidence is not None else ''
-                            }
-                            all_csv_rows.append(CsvRow(csv_row_dict,
-                                {'date': 'date', 'type': 'type', 'partner': 'partner',
-                                 'amount': 'amount', 'currency': 'currency',
-                                 'category_id': 'category_id', 'account': 'account',
-                                 'notice': 'notice'}))
-
-        # Save transactions to database with result_id
-        transaction_repo = _get_transaction_repository()
-
-        for csv_row in all_csv_rows:
-            # Check for duplicate
-            dedup_hash = dedup_service.generate_dedup_hash_from_row(csv_row)
-            existing = transaction_repo.find_by_dedup_hash(dedup_hash)
-            if existing:
-                continue
-
-            transaction_db = TransactionDB(
-                user_id=cast(int, user.id),
-                result_id=result.result_id,  # NEW: Link to processing result
-                date=DateConverter.parse_to_datetime_utc(csv_row.date),
-                transaction_type=csv_row.type,
-                original_partner=csv_row.partner,
-                amount=float(csv_row.amount),
-                currency=csv_row.currency,
-                account=csv_row.account,
-                deduplication_hash=dedup_hash,
-                category_id=getattr(csv_row, 'category_id', None),
-                partner=None,
-                notice=getattr(csv_row, 'notice', None),
-                confidence=getattr(csv_row, 'confidence', None),
-                created_at=datetime.now(UTC),
-                updated_at=datetime.now(UTC)
-            )
-            transaction_repo.create(transaction_db)
+        all_csv_rows = _extract_csv_rows_from_result(result)
+        _persist_result_transactions(
+            cast(int, user.id), result.result_id, all_csv_rows
+        )
 
         processing_time = time.time() - start_time
 
@@ -558,7 +608,7 @@ def list_transaction_entities() -> tuple[Response, int]:
                     'original_partner': t.original_partner,
                     'amount': t.amount,
                     'currency': t.currency,
-                    'account': t.account,
+                    'account': t.account or 'unknown',
                     'deduplication_hash': t.deduplication_hash,
                     'category_id': t.category_id,
                     'partner': t.partner,
@@ -596,6 +646,8 @@ def aggregate_transactions() -> tuple[Response, int]:
         category_id: Filter by category
         month: Filter by month
         group_by: How to group results (category, month, account, category_month)
+        algorithms: Comma-separated algorithm names (default: iqr,pareto)
+        direction: Analysis direction ('columns' default or 'rows')
 
     Returns:
         Aggregated transaction data with groups and highlights
@@ -643,13 +695,29 @@ def aggregate_transactions() -> tuple[Response, int]:
         else:
             return jsonify({'error': f'Invalid group_by value: {group_by}'}), 400
 
-        # Calculate highlights for each group - return proper highlight types
-        highlights: dict[str, list[str]] = {}
-        for group_key, txns in groups.items():
-            # For now, return empty list for highlights as this endpoint doesn't
-            # have access to the original processing result's statistical metadata
-            # The frontend will handle this gracefully
-            highlights[group_key] = []
+        # Calculate highlights over the full analysis scope (the parent
+        # month x category matrix for user/result/account), then map them
+        # onto this view's groups so drilldowns stay consistent with the
+        # Categories matrix view
+        algorithms_param = request.args.get('algorithms')
+        algorithms = (
+            [a.strip() for a in algorithms_param.split(',') if a.strip()]
+            if algorithms_param else None
+        )
+        direction = request.args.get('direction') or 'columns'
+        if direction not in ('columns', 'rows'):
+            return jsonify(
+                {'error': "direction must be 'columns' or 'rows'"}
+            ), 400
+
+        highlights = _compute_group_highlights(
+            user_id=cast(int, user.id),  # type: ignore[arg-type]
+            result_id=result_id,
+            account=account,
+            algorithms=algorithms,
+            direction=direction,
+            groups=groups
+        )
 
         # Serialize TransactionDB objects to dictionaries for JSON response
         serialized_groups: dict[str, list[dict[str, Any]]] = {}
@@ -718,6 +786,65 @@ def _group_transactions_by_category_and_month(transactions: list[TransactionDB])
     return groups
 
 
+def _compute_group_highlights(
+    user_id: int,
+    result_id: Optional[str],
+    account: Optional[str],
+    algorithms: Optional[list[str]],
+    direction: str,
+    groups: dict[str, list[TransactionDB]]
+) -> dict[str, list[str]]:
+    """Compute statistical highlights mapped onto grouped transactions.
+
+    Highlights are computed over the full month x category matrix for
+    user/result/account (the parent matrix view's scope), then each group
+    receives the union of the highlight types of the matrix cells its
+    transactions cover. This keeps drilldown views consistent with the
+    Categories matrix view.
+
+    Args:
+        user_id: User identifier
+        result_id: Optional processing result filter
+        account: Optional account filter
+        algorithms: Optional algorithm names (None = enabled algorithms)
+        direction: Analysis direction ('columns' or 'rows')
+        groups: Transactions grouped by the view's grouping dimension
+
+    Returns:
+        Dictionary mapping group keys to highlight types
+    """
+    transaction_repo = _get_transaction_repository()
+    scope_transactions = transaction_repo.find_all_by_user(
+        user_id=user_id,
+        result_id=result_id,
+        account=account
+    )
+    statistical_service = _get_statistical_service()
+    cell_highlights = (
+        statistical_service.compute_highlights_from_transactions(
+            scope_transactions,
+            algorithms=algorithms,
+            direction=direction
+        )
+    )
+
+    highlights: dict[str, list[str]] = {}
+    for group_key, txns in groups.items():
+        group_types: list[str] = []
+        for t in txns:
+            month = t.date.strftime('%Y-%m') if t.date else 'unknown'
+            cell_id = (
+                f"{t.account or 'unknown'}|{month}"
+                f"|{t.category_id or 'uncategorized'}"
+            )
+            for highlight_type in cell_highlights.get(cell_id, []):
+                if highlight_type not in group_types:
+                    group_types.append(highlight_type)
+        highlights[group_key] = group_types
+
+    return highlights
+
+
 def _transaction_to_dict(t: TransactionDB) -> dict[str, Any]:
     """Convert TransactionDB object to serializable dictionary.
 
@@ -733,7 +860,7 @@ def _transaction_to_dict(t: TransactionDB) -> dict[str, Any]:
         'original_partner': t.original_partner,
         'amount': t.amount,
         'currency': t.currency,
-        'account': t.account,
+        'account': t.account or 'unknown',
         'deduplication_hash': t.deduplication_hash,
         'category_id': t.category_id,
         'partner': t.partner,
@@ -745,17 +872,75 @@ def _transaction_to_dict(t: TransactionDB) -> dict[str, Any]:
     return result
 
 
-def _calculate_highlights_for_groups(groups: dict[str, list[TransactionDB]]) -> dict[str, Any]:
-    """Calculate statistical highlights for grouped transactions."""
-    from whatsthedamage.services.statistical_analysis_service import StatisticalAnalysisService
+@v2_bp.route('/recalculate-statistics', methods=['POST'])
+@require_authentication
+@require_csrf
+def recalculate_statistics() -> tuple[Response, int]:
+    """POST /api/v2/recalculate-statistics - Recalculate statistical highlights.
 
-    statistical_service = StatisticalAnalysisService()
-    highlights = {}
+    Computes statistical highlights from persisted Transaction entities for
+    the authenticated user, optionally scoped to a processing result.
 
-    for group_key, transactions in groups.items():
-        highlights[group_key] = statistical_service.calculate_highlights(transactions)
+    Request Body (JSON):
+        result_id (str, optional): Processing result to scope to.
+            Omitted = all of the user's transactions.
+        algorithms (list[str], optional): Algorithm names to apply
+            (default: all enabled algorithms, e.g. ['iqr', 'pareto']).
+        direction (str, optional): Analysis direction
+            ('columns' default or 'rows').
 
-    return highlights
+    Returns:
+        Highlights keyed by cell ID '{account}|{month}|{category}', the
+        coordinates of the Categories matrix view.
+
+    Status Codes:
+        200: Successfully recalculated highlights.
+        400: Bad request (invalid algorithms or direction).
+        401: Not authenticated.
+        500: Internal server error.
+    """
+    user = cast(UserDB, request.user)  # type: ignore[attr-defined]
+
+    try:
+        data = request.get_json(silent=True) or {}
+
+        result_id = data.get('result_id')
+        algorithms = data.get('algorithms')
+        direction = data.get('direction') or 'columns'
+
+        if algorithms is not None and not isinstance(algorithms, list):
+            raise BadRequest('algorithms must be a list')
+        if direction not in ('columns', 'rows'):
+            raise BadRequest("direction must be 'columns' or 'rows'")
+
+        transaction_repo = _get_transaction_repository()
+        transactions = transaction_repo.find_all_by_user(
+            user_id=cast(int, user.id),  # type: ignore[arg-type]
+            result_id=result_id
+        )
+
+        statistical_service = _get_statistical_service()
+        highlights = statistical_service.compute_highlights_from_transactions(
+            transactions,
+            algorithms=algorithms,
+            direction=direction
+        )
+        applied_algorithms = (
+            algorithms if algorithms is not None
+            else list(statistical_service.enabled_algorithms)
+        )
+
+        response = RecalculateApiResponse(
+            result_id=result_id,
+            highlights=highlights,
+            algorithms=applied_algorithms,
+            direction=direction
+        )
+
+        return jsonify(response.model_dump()), 200
+
+    except Exception as e:
+        return handle_error(e)
 
 
 @v2_bp.route('/transactions/<int:transaction_id>', methods=['GET'])
@@ -799,7 +984,7 @@ def get_transaction_entity(transaction_id: int) -> tuple[Response, int]:
             'original_partner': transaction.original_partner,
             'amount': transaction.amount,
             'currency': transaction.currency,
-            'account': transaction.account,
+            'account': transaction.account or 'unknown',
             'deduplication_hash': transaction.deduplication_hash,
             'category_id': transaction.category_id,
             'partner': transaction.partner,
@@ -907,7 +1092,7 @@ def create_transaction_entity() -> tuple[Response, int]:
             original_partner=data['original_partner'],
             amount=data['amount'],
             currency=data['currency'],
-            account=data['account'],
+            account=data['account'] or 'unknown',
             deduplication_hash=dedup_hash,
             category_id=data.get('category_id'),
             partner=data.get('partner'),
@@ -964,7 +1149,7 @@ def create_transaction_entity() -> tuple[Response, int]:
             'original_partner': saved_transaction.original_partner,
             'amount': saved_transaction.amount,
             'currency': saved_transaction.currency,
-            'account': saved_transaction.account,
+            'account': saved_transaction.account or 'unknown',
             'deduplication_hash': saved_transaction.deduplication_hash,
             'category_id': saved_transaction.category_id,
             'partner': saved_transaction.partner,
@@ -1069,7 +1254,7 @@ def _format_transaction_response(transaction: TransactionDB) -> dict[str, Any]:
         'original_partner': transaction.original_partner,
         'amount': transaction.amount,
         'currency': transaction.currency,
-        'account': transaction.account,
+        'account': transaction.account or 'unknown',
         'deduplication_hash': transaction.deduplication_hash,
         'category_id': transaction.category_id,
         'partner': transaction.partner,

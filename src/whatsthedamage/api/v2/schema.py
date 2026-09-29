@@ -835,10 +835,11 @@ def get_openapi_schema() -> dict[str, Any]:
                 },
                 "RecalculateStatisticsRequest": {
                     "type": "object",
-                    "required": ["result_id", "algorithms", "direction"],
+                    "required": ["algorithms", "direction"],
                     "properties": {
                         "result_id": {
-                            "type": "string"
+                            "type": "string",
+                            "description": "Optional processing result to scope to. Omitted = all user transactions."
                         },
                         "algorithms": {
                             "type": "array",
@@ -860,10 +861,12 @@ def get_openapi_schema() -> dict[str, Any]:
                             "default": "success"
                         },
                         "result_id": {
-                            "type": "string"
+                            "type": ["string", "null"],
+                            "description": "Processing result identifier (null = all user transactions)"
                         },
                         "highlights": {
-                            "type": "object"
+                            "type": "object",
+                            "description": "Statistical highlights keyed by cell ID '{account}|{month}|{category}'"
                         },
                         "algorithms": {
                             "type": "array",

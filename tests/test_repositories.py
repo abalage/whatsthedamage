@@ -656,3 +656,61 @@ class TestSessionRepository:
         all_sessions = session_repository.find_by_user_id(user.id)
         assert len(all_sessions) == 1
         assert all_sessions[0].token_hash == 'valid_hash'
+
+
+class TestTransactionRepositoryFilters:
+    """Tests for SqlAlchemyTransactionRepository.find_by_user_with_filters."""
+
+    @pytest.fixture
+    def transaction_repository(self, db_session_factory):
+        """Create a TransactionRepository for testing."""
+        from whatsthedamage.models.repositories.transaction_repository import (
+            SqlAlchemyTransactionRepository,
+        )
+        return SqlAlchemyTransactionRepository(db_session_factory)
+
+    @staticmethod
+    def _make_transaction(account):
+        """Create a Transaction entity with the given account."""
+        return TransactionDB(
+            user_id=1,
+            result_id='result-1',
+            date=datetime(2024, 1, 15, tzinfo=UTC),
+            transaction_type='debit',
+            original_partner='Test Partner',
+            amount=-100.0,
+            currency='HUF',
+            account=account,
+            deduplication_hash=f'hash-{account}',
+            created_at=datetime.now(UTC),
+            updated_at=datetime.now(UTC),
+        )
+
+    def _seed(self, transaction_repository):
+        """Seed one transaction per account variant."""
+        for account in ('acc1', 'unknown', ''):
+            transaction_repository.create(self._make_transaction(account))
+
+    def test_unknown_account_filter_matches_empty_accounts(self, transaction_repository):
+        """Filtering by the 'unknown' account also matches legacy rows
+        persisted with an empty account."""
+        self._seed(transaction_repository)
+
+        transactions, total_count = transaction_repository.find_by_user_with_filters(
+            user_id=1, account='unknown'
+        )
+
+        accounts = {t.account for t in transactions}
+        assert accounts == {'unknown', ''}
+        assert total_count == 2
+
+    def test_account_filter_returns_only_matching_account(self, transaction_repository):
+        """Filtering by a concrete account returns only its rows."""
+        self._seed(transaction_repository)
+
+        transactions, total_count = transaction_repository.find_by_user_with_filters(
+            user_id=1, account='acc1'
+        )
+
+        assert [t.account for t in transactions] == ['acc1']
+        assert total_count == 1

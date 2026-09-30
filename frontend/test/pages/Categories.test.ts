@@ -68,6 +68,25 @@ const makeTransaction = (id: number): TransactionListItem => ({
   updated_at: null,
 });
 
+// Shape of one precomputed account table exposed by the page
+type AccountTable = {
+  account: { id: string };
+  columns: Array<{
+    key: string;
+    componentProps: (value: unknown, row?: Record<string, unknown>) => Record<string, unknown>;
+  }>;
+  rows: Record<string, unknown>[];
+};
+
+const getAccountTable = (wrapper: VueWrapper, accountId: string): AccountTable => {
+  const vm = wrapper.vm as unknown as { accountTables: AccountTable[] };
+  const table = vm.accountTables.find(candidate => candidate.account.id === accountId);
+  if (!table) {
+    throw new Error(`Expected a table for account ${accountId}`);
+  }
+  return table;
+};
+
 describe('Categories.vue', () => {
   let pinia: Pinia;
 
@@ -207,16 +226,9 @@ describe('Categories.vue', () => {
     const wrapper = await mountPage();
     await flushPromises();
 
-    const vm = wrapper.vm as unknown as {
-      buildTableColumns: (account: { id: string }) => Array<{
-        key: string;
-        componentProps: (value: unknown, row?: Record<string, unknown>) => Record<string, unknown>;
-      }>;
-      buildTableData: (account: { id: string }) => Record<string, unknown>[];
-    };
-    const account = { id: 'acc1' };
-    const columns = vm.buildTableColumns(account);
-    const rows = vm.buildTableData(account);
+    const table = getAccountTable(wrapper, 'acc1');
+    const columns = table.columns;
+    const rows = table.rows;
 
     const monthColumn = columns.find(column => column.key === 'month-2026-01');
     if (!monthColumn) {
@@ -283,11 +295,134 @@ describe('Categories.vue', () => {
     const wrapper = await mountPage();
     await flushPromises();
 
-    const vm = wrapper.vm as unknown as {
-      buildTableData: (account: { id: string }) => Record<string, unknown>[];
-    };
-    const rows = vm.buildTableData({ id: 'acc1' });
+    const rows = getAccountTable(wrapper, 'acc1').rows;
     const rowIds = rows[0]._rowIds as Record<string, string>;
     expect(rowIds['month-2026-01']).toBe('acc1|2026-01|food');
+  });
+
+  it('sums monthly totals per category across transactions', async () => {
+    vi.mocked(fetchProcessingResultMetadata).mockResolvedValue(null);
+    vi.mocked(fetchAllTransactions).mockResolvedValue({
+      transactions: [
+        makeTransaction(1),
+        { ...makeTransaction(2), amount: -20.25 },
+        { ...makeTransaction(3), date: '2026-02-10' }
+      ],
+      total_count: 3,
+      limit: 10000,
+      offset: 0,
+    });
+
+    const wrapper = await mountPage();
+    await flushPromises();
+
+    const rows = getAccountTable(wrapper, 'acc1').rows;
+    const foodRow = rows.find(row => row.category_id === 'food');
+    expect(foodRow).toBeDefined();
+    expect(foodRow?.['month-2026-01']).toBe(-30.75);
+    expect(foodRow?.['month-2026-02']).toBe(-10.5);
+  });
+
+  it('keeps month columns scoped to their own account', async () => {
+    vi.mocked(fetchProcessingResultMetadata).mockResolvedValue(null);
+    vi.mocked(fetchAllTransactions).mockResolvedValue({
+      transactions: [
+        makeTransaction(1),
+        { ...makeTransaction(2), account: 'acc2', date: '2026-03-01' }
+      ],
+      total_count: 2,
+      limit: 10000,
+      offset: 0,
+    });
+
+    const wrapper = await mountPage();
+    await flushPromises();
+
+    const acc1Rows = getAccountTable(wrapper, 'acc1').rows;
+    const acc2Rows = getAccountTable(wrapper, 'acc2').rows;
+    expect(acc1Rows[0]['month-2026-01']).toBe(-10.5);
+    expect(acc1Rows[0]['month-2026-03']).toBeUndefined();
+    expect(acc2Rows[0]['month-2026-03']).toBe(-10.5);
+    expect(acc2Rows[0]['month-2026-01']).toBeUndefined();
+  });
+
+  it('groups transactions without a category under the uncategorized fallback', async () => {
+    vi.mocked(fetchProcessingResultMetadata).mockResolvedValue(null);
+    vi.mocked(fetchAllTransactions).mockResolvedValue({
+      transactions: [{ ...makeTransaction(2), category_id: '' }],
+      total_count: 1,
+      limit: 10000,
+      offset: 0,
+    });
+
+    const wrapper = await mountPage();
+    await flushPromises();
+
+    const rows = getAccountTable(wrapper, 'acc1').rows;
+    const uncategorizedRow = rows.find(row => row.category_id === 'uncategorized');
+    expect(uncategorizedRow).toBeDefined();
+    const rowIds = uncategorizedRow?._rowIds as Record<string, string>;
+    expect(rowIds['month-2026-01']).toBe('acc1|2026-01|uncategorized');
+  });
+
+  it('renders empty cells without links', async () => {
+    vi.mocked(fetchProcessingResultMetadata).mockResolvedValue(null);
+    vi.mocked(fetchAllTransactions).mockResolvedValue({
+      transactions: [
+        makeTransaction(1),
+        { ...makeTransaction(2), category_id: 'travel', date: '2026-02-10' }
+      ],
+      total_count: 2,
+      limit: 10000,
+      offset: 0,
+    });
+
+    const wrapper = await mountPage();
+    await flushPromises();
+
+    const table = getAccountTable(wrapper, 'acc1');
+    const columns = table.columns;
+    const rows = table.rows;
+    const foodRow = rows.find(row => row.category_id === 'food');
+    const februaryColumn = columns.find(column => column.key === 'month-2026-02');
+    if (!februaryColumn) {
+      throw new Error('Expected the february column to be defined');
+    }
+
+    // The food row has no transactions in February: zero value, no link
+    expect(foodRow?.['month-2026-02']).toBe(0);
+    expect(februaryColumn.componentProps(foodRow?.['month-2026-02'], foodRow)).toEqual({
+      to: '#',
+      children: ''
+    });
+  });
+
+  it('joins popover detail lines of all transactions of a cell', async () => {
+    vi.mocked(fetchProcessingResultMetadata).mockResolvedValue(null);
+    vi.mocked(fetchAllTransactions).mockResolvedValue({
+      transactions: [
+        makeTransaction(1),
+        { ...makeTransaction(2), original_partner: 'Market' }
+      ],
+      total_count: 2,
+      limit: 10000,
+      offset: 0,
+    });
+
+    const wrapper = await mountPage();
+    await flushPromises();
+
+    const table = getAccountTable(wrapper, 'acc1');
+    const columns = table.columns;
+    const rows = table.rows;
+    const januaryColumn = columns.find(column => column.key === 'month-2026-01');
+    if (!januaryColumn) {
+      throw new Error('Expected the january column to be defined');
+    }
+
+    const props = januaryColumn.componentProps(rows[0]['month-2026-01'], rows[0]);
+    expect(props.popoverContent).toContain('2026-01-15: -10.50 - Store');
+    expect(props.popoverContent).toContain('2026-01-15: -10.50 - Market');
+    expect(props.popoverContent).toContain('<br>');
   });
 });

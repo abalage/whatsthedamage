@@ -49,35 +49,108 @@ const error = ref<string | null>(null)
 // The unfiltered view fetches with a limit; warn when rows were left out
 const isTruncated = computed(() => totalTransactionCount.value > transactions.value.length)
 
-// Interface for account data structure
+// Account shape consumed by the template and the table builder helpers
 interface AccountData {
   id: string
   formatted_id: string
   currency: string
-  data: any[]
 }
 
-// Build account structure from transactions
-const buildAccountsFromTransactions = (txns: TransactionListItem[]): AccountData[] => {
-  const accountMap = new Map<string, AccountData>()
+// Month/category cell aggregate: running total plus popover detail lines
+interface CellAggregate {
+  total: number
+  detailLines: string[]
+}
 
-  for (const txn of txns) {
+// Precomputed account/category/month matrix for one account
+interface AccountAggregate {
+  id: string
+  formatted_id: string
+  currency: string
+  months: string[]
+  categories: string[]
+  cells: Map<string, CellAggregate>
+}
+
+// Table columns and rows derived for one account
+interface AccountTable {
+  account: AccountData
+  columns: Column[]
+  rows: Record<string, unknown>[]
+}
+
+// Build the account/category/month matrix in a single pass over the
+// transactions. Recomputed only when the transaction list changes;
+// replaces per-cell filtering of the full dataset during rendering.
+const accountAggregates = computed<AccountAggregate[]>(() => {
+  const byAccount = new Map<string, {
+    currency: string
+    months: Set<string>
+    categories: Set<string>
+    cells: Map<string, CellAggregate>
+  }>()
+
+  for (const txn of transactions.value) {
     // vue-router rejects empty route params, so transactions without an
     // account are grouped under the backend's 'unknown' fallback ID
     const accountId = txn.account || 'unknown'
-    if (!accountMap.has(accountId)) {
-      accountMap.set(accountId, {
-        id: accountId,
-        formatted_id: accountId,
+    const categoryId = txn.category_id || 'uncategorized'
+    const monthKey = getMonthKey(txn.date)
+
+    let account = byAccount.get(accountId)
+    if (!account) {
+      account = {
         currency: txn.currency,
-        data: []
-      })
+        months: new Set(),
+        categories: new Set(),
+        cells: new Map()
+      }
+      byAccount.set(accountId, account)
     }
+
+    account.months.add(monthKey)
+    account.categories.add(categoryId)
+
+    const cellKey = `${categoryId}|${monthKey}`
+    let cell = account.cells.get(cellKey)
+    if (!cell) {
+      cell = { total: 0, detailLines: [] }
+      account.cells.set(cellKey, cell)
+    }
+    cell.total += txn.amount || 0
+    cell.detailLines.push(
+      `${formatTransactionDate(txn.date)}: ${formatAmount(txn.amount)} - ${txn.original_partner || txn.partner || ''}`
+    )
   }
 
-  // For now, we'll create a simplified structure
-  // The full implementation would group transactions by account, category, and month
-  return Array.from(accountMap.values())
+  return Array.from(byAccount.entries()).map(([id, account]) => ({
+    id,
+    formatted_id: id,
+    currency: account.currency,
+    // Newest month first, categories in default sort order
+    months: Array.from(account.months).sort((a, b) => b.localeCompare(a)),
+    categories: Array.from(account.categories).sort(),
+    cells: account.cells
+  }))
+})
+
+// Month/category cell total from the precomputed matrix, or null when the
+// cell has no transactions
+function getCellTotal(
+  aggregate: AccountAggregate,
+  categoryId: string,
+  monthKey: string
+): number | null {
+  return aggregate.cells.get(`${categoryId}|${monthKey}`)?.total ?? null
+}
+
+// Popover detail lines for a month/category cell as a single string
+function getCellDetailsString(
+  aggregate: AccountAggregate,
+  categoryId: string,
+  monthKey: string
+): string {
+  return aggregate.cells.get(`${categoryId}|${monthKey}`)?.detailLines.join('<br>') ?? ''
 }
 
 const loadResults = async () => {
@@ -125,12 +198,8 @@ const loadHighlights = async () => {
 }
 
 // Build column definitions for an account's table
-function buildTableColumns(account: AccountData): Column[] {
-  const accountId = account.id
-
-  // Get all unique months from transactions for this account
-  const accountTransactions = transactions.value.filter(t => t.account === accountId)
-  const months = getMonthsFromTransactions(accountTransactions)
+function buildTableColumnsFor(aggregate: AccountAggregate): Column[] {
+  const accountId = aggregate.id
 
   const columns: Column[] = [
     {
@@ -158,7 +227,7 @@ function buildTableColumns(account: AccountData): Column[] {
   ]
 
   // Add month columns
-  for (const monthKey of months) {
+  for (const monthKey of aggregate.months) {
     const monthId = monthKey
     columns.push({
       key: `month-${monthKey}`,
@@ -172,15 +241,14 @@ function buildTableColumns(account: AccountData): Column[] {
       component: TableLinkWithPopover,
       componentProps: (value: unknown, row?: Record<string, unknown>) => {
         const category_id = String(row?.category_id ?? '')
-        const monthTotal = getMonthTotalForCategory(accountId, category_id, monthKey)
+        const monthTotal = getCellTotal(aggregate, category_id, monthKey)
 
-        if (monthTotal === undefined || monthTotal === null) {
+        if (monthTotal === null) {
           return { to: '#', children: '' }
         }
 
-        const total = monthTotal
         if (!category_id) {
-          return { to: '#', class: 'clickable', children: total }
+          return { to: '#', class: 'clickable', children: monthTotal }
         }
 
         const linkUrl = {
@@ -189,14 +257,14 @@ function buildTableColumns(account: AccountData): Column[] {
           query: buildResultQuery(resultId.value)
         }
 
-        // For popover - get details for this category and month
-        const details = getTransactionDetailsForCategoryMonth(accountId, category_id, monthKey)
-        const detailsContent = details.length > 0 ? getDetailsString(details) : ''
+        // For popover - details for this category and month are
+        // precomputed with the cell aggregate
+        const detailsContent = getCellDetailsString(aggregate, category_id, monthKey)
 
         return {
           to: linkUrl,
           class: 'clickable',
-          children: total,
+          children: monthTotal,
           popoverContent: detailsContent || undefined,
           popoverPlacement: 'top',
           popoverCustomClass: 'popover-wide'
@@ -209,28 +277,25 @@ function buildTableColumns(account: AccountData): Column[] {
 }
 
 // Build table data for an account
-function buildTableData(account: AccountData): Record<string, unknown>[] {
+function buildTableRowsFor(aggregate: AccountAggregate): Record<string, unknown>[] {
   const data: Record<string, unknown>[] = []
-  const accountTransactions = transactions.value.filter(t => t.account === account.id)
-  const categories = getCategoriesFromTransactions(accountTransactions)
-  const months = getMonthsFromTransactions(accountTransactions)
 
-  for (const category of categories.sort()) {
-    interface TableRow extends Record<string, unknown> {
-      _rowIds: Record<string, string>
-    }
+  interface TableRow extends Record<string, unknown> {
+    _rowIds: Record<string, string>
+  }
+
+  for (const category of aggregate.categories) {
     const row: TableRow = {
       category,
       category_id: category,
-      accountId: account.id,
+      accountId: aggregate.id,
       _rowIds: {}
     }
 
-    for (const monthKey of months) {
+    for (const monthKey of aggregate.months) {
       const columnKey = `month-${monthKey}`
-      const monthTotal = getMonthTotalForCategory(account.id, category, monthKey)
-      row[columnKey] = monthTotal ?? 0
-      row._rowIds[columnKey] = `${account.id}|${monthKey}|${category}`
+      row[columnKey] = getCellTotal(aggregate, category, monthKey) ?? 0
+      row._rowIds[columnKey] = `${aggregate.id}|${monthKey}|${category}`
     }
 
     data.push(row)
@@ -239,58 +304,17 @@ function buildTableData(account: AccountData): Record<string, unknown>[] {
   return data
 }
 
-// Helper functions for new data structure
-function getMonthsFromTransactions(txns: TransactionListItem[]): string[] {
-  const months = new Set<string>()
-  for (const txn of txns) {
-    // Extract YYYY-MM from date (handle both timestamp and ISO format)
-    const monthKey = getMonthKeyFromTransactionDate(txn.date)
-    months.add(monthKey)
-  }
-  return Array.from(months).sort((a, b) => b.localeCompare(a)) // Newest first
-}
-
-// Helper to extract month key from transaction date (handles both ISO string and timestamp)
-// Uses the new utility function that handles both formats
-function getMonthKeyFromTransactionDate(dateValue: string | undefined): string {
-  return getMonthKey(dateValue)
-}
-
-function getCategoriesFromTransactions(txns: TransactionListItem[]): string[] {
-  const categories = new Set<string>()
-  for (const txn of txns) {
-    const cat = txn.category_id || 'uncategorized'
-    categories.add(cat)
-  }
-  return Array.from(categories)
-}
-
-function getMonthTotalForCategory(accountId: string, categoryId: string, monthKey: string): number | null {
-  const accountTxns = transactions.value.filter(
-    t => t.account === accountId &&
-         (t.category_id || 'uncategorized') === categoryId &&
-         getMonthKeyFromTransactionDate(t.date) === monthKey
-  )
-
-  if (accountTxns.length === 0) return null
-
-  const total = accountTxns.reduce((sum, txn) => sum + (txn.amount || 0), 0)
-  return total
-}
-
-function getTransactionDetailsForCategoryMonth(accountId: string, categoryId: string, monthKey: string) {
-  const accountTxns = transactions.value.filter(
-    t => t.account === accountId &&
-         (t.category_id || 'uncategorized') === categoryId &&
-         getMonthKeyFromTransactionDate(t.date) === monthKey
-  )
-
-  return accountTxns.map(txn => ({
-    date: { display: formatTransactionDate(txn.date) },
-    amount: { display: formatAmount(txn.amount), raw: txn.amount || 0 },
-    merchant: txn.original_partner || txn.partner || ''
-  }))
-}
+// Fully precomputed tables per account; the template renders directly
+// from this cached structure
+const accountTables = computed<AccountTable[]>(() => accountAggregates.value.map(aggregate => ({
+  account: {
+    id: aggregate.id,
+    formatted_id: aggregate.formatted_id,
+    currency: aggregate.currency
+  },
+  columns: buildTableColumnsFor(aggregate),
+  rows: buildTableRowsFor(aggregate)
+})))
 
 // Helper to format transaction date for display (handle timestamp or ISO string)
 function formatTransactionDate(dateValue: string | undefined): string {
@@ -319,13 +343,6 @@ function formatAmount(amount: number | null | undefined): string {
 // Get highlights for an account's table from Pinia store
 function getAccountHighlights(): Record<string, string[]> {
   return statisticalStore.highlights || {}
-}
-
-// Keep the old getDetailsString for compatibility
-const getDetailsString = (details: Array<{ date: { display: string }, amount: { display: string }, merchant: string }>): string => {
-  return details
-    .map(detail => `${detail.date.display}: ${detail.amount.display} - ${detail.merchant}`)
-    .join('<br>')
 }
 
 onMounted(() => {
@@ -390,7 +407,7 @@ watch(resultId, () => {
         </div>
       </div>
 
-      <div v-for="account in buildAccountsFromTransactions(transactions)" :key="account.id" class="mb-5">
+      <div v-for="{ account, columns, rows } in accountTables" :key="account.id" class="mb-5">
         <div class="card mb-4" style="width: 100%; margin: 0 auto">
           <div class="card-header">
             {{ $gettext('Account') }}: {{ account.formatted_id }}
@@ -401,8 +418,8 @@ watch(resultId, () => {
           <div class="card-body">
             <VueDataTable
               :id="`datatable-${account.id}`"
-              :data="buildTableData(account)"
-              :columns="buildTableColumns(account)"
+              :data="rows"
+              :columns="columns"
               :cell-highlights-by-row-id="getAccountHighlights()"
               :csv-text="$gettext('Export CSV')"
               :excel-text="$gettext('Export Excel')"

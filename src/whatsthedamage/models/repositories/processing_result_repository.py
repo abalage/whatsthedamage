@@ -29,6 +29,17 @@ class ProcessingResultRepository(Protocol):
         """
         ...
 
+    def add(self, processing_result: ProcessingResultDB) -> ProcessingResultDB:
+        """Add a processing result without committing.
+
+        Args:
+            processing_result: ProcessingResult entity to add.
+
+        Returns:
+            The added ProcessingResult entity.
+        """
+        ...
+
     def find_by_id(self, result_id: str) -> Optional[ProcessingResultDB]:
         """Find processing result by ID.
 
@@ -158,6 +169,24 @@ class SqlAlchemyProcessingResultRepository(SqlAlchemyBaseRepository[ProcessingRe
             raise
         finally:
             session.close()
+
+    def add(self, processing_result: ProcessingResultDB) -> ProcessingResultDB:
+        """Add a processing result to the session without committing.
+
+        Intended for use inside a unit of work, which owns the session
+        and controls commit and rollback so multi-entity writes stay
+        atomic. The session is not closed here.
+
+        Args:
+            processing_result: ProcessingResult entity to add.
+
+        Returns:
+            The added ProcessingResult entity.
+        """
+        session = self._get_session()
+        session.add(processing_result)
+        session.flush()
+        return processing_result
 
     def find_by_id(self, result_id: str) -> Optional[ProcessingResultDB]:
         """Find processing result by result_id.

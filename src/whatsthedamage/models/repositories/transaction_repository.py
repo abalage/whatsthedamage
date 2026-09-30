@@ -33,6 +33,28 @@ class TransactionRepository(Protocol):
         """
         ...
 
+    def add_all(self, transactions: list[TransactionDB]) -> list[TransactionDB]:
+        """Add transactions to the session without committing.
+
+        Args:
+            transactions: Transaction entities to add.
+
+        Returns:
+            The added Transaction entities.
+        """
+        ...
+
+    def find_existing_dedup_hashes(self, dedup_hashes: list[str]) -> set[str]:
+        """Find which deduplication hashes already exist in the database.
+
+        Args:
+            dedup_hashes: SHA-256 deduplication hashes to check.
+
+        Returns:
+            The subset of hashes that already exist.
+        """
+        ...
+
     def find_by_id(self, transaction_id: int) -> Optional[TransactionDB]:
         """Find transaction by ID.
 
@@ -293,6 +315,52 @@ class SqlAlchemyTransactionRepository(SqlAlchemyBaseRepository[TransactionDB]):
             raise
         finally:
             session.close()
+
+    def add_all(self, transactions: list[TransactionDB]) -> list[TransactionDB]:
+        """Add transactions to the session without committing.
+
+        Intended for use inside a unit of work, which owns the session
+        and controls commit and rollback so multi-entity writes stay
+        atomic. The session is not closed here.
+
+        Args:
+            transactions: Transaction entities to add.
+
+        Returns:
+            The added Transaction entities.
+        """
+        session = self._get_session()
+        session.add_all(transactions)
+        return transactions
+
+    def find_existing_dedup_hashes(self, dedup_hashes: list[str]) -> set[str]:
+        """Find which deduplication hashes already exist in the database.
+
+        Replaces one lookup per transaction with a single batched query
+        (chunked to respect SQLite's variable limit). Matches the global
+        scope of find_by_dedup_hash. The session is not closed so the
+        method can run inside a unit of work.
+
+        Args:
+            dedup_hashes: SHA-256 deduplication hashes to check.
+
+        Returns:
+            The subset of hashes that already exist.
+        """
+        existing: set[str] = set()
+        unique_hashes = list(set(dedup_hashes))
+        if not unique_hashes:
+            return existing
+
+        session = self._get_session()
+        chunk_size = 500
+        for start in range(0, len(unique_hashes), chunk_size):
+            chunk = unique_hashes[start:start + chunk_size]
+            rows = session.query(TransactionDB.deduplication_hash).filter(
+                TransactionDB.deduplication_hash.in_(chunk)
+            ).all()
+            existing.update(cast(str, row[0]) for row in rows)
+        return existing
 
     def find_by_id(self, transaction_id: int) -> Optional[TransactionDB]:
         """Find transaction by ID.

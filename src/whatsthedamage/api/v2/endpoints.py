@@ -5,7 +5,7 @@ with detailed transaction-level data for DataTables rendering.
 """
 from __future__ import annotations
 
-from flask import Blueprint, jsonify, Response, request
+from flask import Blueprint, jsonify, Response, request, current_app
 from werkzeug.exceptions import BadRequest
 import time
 from datetime import datetime, UTC
@@ -32,6 +32,9 @@ from whatsthedamage.api.helpers import (
     _get_deduplication_service,
 )
 from whatsthedamage.api.auth_decorators import require_authentication, require_csrf
+
+if TYPE_CHECKING:
+    from whatsthedamage.models.repositories.unit_of_work import SqlAlchemyUnitOfWork
 
 
 # Create Blueprint
@@ -270,25 +273,36 @@ def _extract_csv_rows_from_result(result: ProcessingResponse) -> list[Any]:
 def _persist_result_transactions(
     user_id: int,
     result_id: str,
-    csv_rows: list[Any]
+    csv_rows: list[Any],
+    uow: 'SqlAlchemyUnitOfWork'
 ) -> None:
     """Persist transaction entities, skipping deduplication duplicates.
+
+    Runs inside the given unit of work without committing; rows already
+    present in the database and rows repeated within the batch are
+    skipped.
 
     Args:
         user_id: User identifier owning the transactions.
         result_id: Processing result the transactions belong to.
         csv_rows: CSV rows to persist.
+        uow: Unit of work providing the transaction repository and
+            controlling commit/rollback.
     """
     dedup_service = _get_deduplication_service()
-    transaction_repo = _get_transaction_repository()
 
-    for csv_row in csv_rows:
-        dedup_hash = dedup_service.generate_dedup_hash_from_row(csv_row)
-        existing = transaction_repo.find_by_dedup_hash(dedup_hash)
-        if existing:
+    dedup_hashes = [
+        dedup_service.generate_dedup_hash_from_row(csv_row) for csv_row in csv_rows
+    ]
+    existing_hashes = uow.transactions.find_existing_dedup_hashes(dedup_hashes)
+
+    new_transactions: list[TransactionDB] = []
+    batch_hashes: set[str] = set()
+    for csv_row, dedup_hash in zip(csv_rows, dedup_hashes):
+        if dedup_hash in existing_hashes or dedup_hash in batch_hashes:
             continue
-
-        transaction_db = TransactionDB(
+        batch_hashes.add(dedup_hash)
+        new_transactions.append(TransactionDB(
             user_id=user_id,
             result_id=result_id,
             date=DateConverter.parse_to_datetime_utc(csv_row.date),
@@ -304,8 +318,9 @@ def _persist_result_transactions(
             confidence=getattr(csv_row, 'confidence', None),
             created_at=datetime.now(UTC),
             updated_at=datetime.now(UTC)
-        )
-        transaction_repo.create(transaction_db)
+        ))
+
+    uow.transactions.add_all(new_transactions)
 
 
 @v2_bp.route('/processing-results', methods=['POST'])
@@ -365,8 +380,6 @@ def create_processing_result() -> tuple[Response, int]:
         )
 
         # Create ProcessingResultDB with new schema (metadata only)
-        processing_result_repo = _get_processing_result_repository()
-
         metadata = result.metadata
         start_date_val, end_date_val = _extract_result_date_range(metadata, params)
 
@@ -382,14 +395,17 @@ def create_processing_result() -> tuple[Response, int]:
             created_at=datetime.now(UTC)
         )
 
-        # Save processing result (metadata only)
-        processing_result_repo.create(processing_result_db)
+        # Persist the processing result and its transactions in a single
+        # transaction so a failure cannot leave a partial import behind
+        from whatsthedamage.models.repositories.unit_of_work import SqlAlchemyUnitOfWork
 
-        # Save individual transactions with result_id
         all_csv_rows = _extract_csv_rows_from_result(result)
-        _persist_result_transactions(
-            cast(int, user.id), result.result_id, all_csv_rows
-        )
+        with SqlAlchemyUnitOfWork(current_app.extensions['db_session_factory']) as uow:
+            uow.processing_results.add(processing_result_db)
+            _persist_result_transactions(
+                cast(int, user.id), result.result_id, all_csv_rows, uow
+            )
+            uow.commit()
 
         processing_time = time.time() - start_time
 

@@ -264,6 +264,17 @@ export interface TransactionListResponse {
 }
 
 /**
+ * Correctable transaction attributes
+ * Sent via PUT /api/v2/transactions/<id>
+ */
+export interface TransactionUpdatePayload {
+  /** null clears the category */
+  category_id?: string | null;
+  partner?: string;
+  notice?: string;
+}
+
+/**
  * Aggregated transaction data for drilldown views
  */
 export interface AggregatedTransactionsResponse {

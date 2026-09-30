@@ -2,22 +2,45 @@
 import { ref, onMounted, computed, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useGettext } from 'vue3-gettext'
-import { fetchAllTransactions, fetchProcessingResultMetadata } from '../js/api.js'
+import { fetchAllTransactions, fetchProcessingResultMetadata, updateTransaction } from '../js/api.js'
 import { buildResultQuery, extractResultId } from '../js/routeUtils.js'
-import { useCategoriesStore } from '../stores/categories.js'
+import { useFeedbackStore } from '../stores/feedback.js'
 import { RouterLink } from 'vue-router'
 import { formatDateISO } from '../js/dateUtils.js'
 import VueDataTable from '../components/data/VueDataTable.vue'
-import TableLink from '../components/data/TableLink.vue'
+import EditableCategoryCell from '../components/data/EditableCategoryCell.vue'
+import EditableTextCell from '../components/data/EditableTextCell.vue'
 import type { Column } from '../components/data/VueDataTable.vue'
-import type { ProcessingResultMetadata, TransactionListItem } from '../types/api.js'
+import type {
+  ProcessingResultMetadata,
+  TransactionListItem,
+  TransactionUpdatePayload
+} from '../types/api.js'
 
 const { $gettext } = useGettext()
-const categoriesStore = useCategoriesStore()
+const feedbackStore = useFeedbackStore()
 const route = useRoute()
+
+// Length limits matching the backend column sizes
+const PARTNER_MAX_LENGTH = 255
+const NOTICE_MAX_LENGTH = 500
 
 // Optional resultId filter, carried in the query string
 const resultId = computed(() => extractResultId(route.query as Record<string, unknown>))
+
+// Persist a correction, refresh the local row, and confirm the outcome.
+// Errors are rethrown so the editing cell can display them inline.
+const saveCorrection = async (
+  transactionId: number,
+  payload: TransactionUpdatePayload
+): Promise<void> => {
+  const transaction = await updateTransaction(transactionId, payload)
+  const index = transactions.value.findIndex(t => t.id === transaction.id)
+  if (index !== -1) {
+    transactions.value.splice(index, 1, transaction)
+  }
+  feedbackStore.showSuccess($gettext('Transaction updated'))
+}
 
 // Table columns definition
 const columns: Column[] = [
@@ -25,24 +48,42 @@ const columns: Column[] = [
   {
     key: 'category_id',
     title: $gettext('Category'),
-    component: TableLink,
-    componentProps: (value: unknown, row?: Record<string, unknown>) => {
-      const categoryId = categoriesStore.extractCategoryIdFromData(row ?? {})
-      const categoryDisplayName = categoriesStore.getCategoryDisplayName(categoryId)
-      return {
-        to: '#',
-        class: 'clickable',
-        children: categoryDisplayName
-      }
-    }
+    component: EditableCategoryCell,
+    componentProps: (_value: unknown, row?: Record<string, unknown>) => ({
+      categoryId: String(row?.category_id ?? 'uncategorized'),
+      save: (categoryId: string | null) =>
+        saveCorrection(Number(row?.transaction_id), { category_id: categoryId })
+    })
   },
-  { key: 'merchant', title: $gettext('Merchant') },
+  {
+    key: 'merchant',
+    title: $gettext('Merchant'),
+    component: EditableTextCell,
+    componentProps: (value: unknown, row?: Record<string, unknown>) => ({
+      value: String(value ?? ''),
+      maxLength: PARTNER_MAX_LENGTH,
+      allowEmpty: false,
+      save: (partner: string) =>
+        saveCorrection(Number(row?.transaction_id), { partner })
+    })
+  },
   { key: 'amount', title: $gettext('Amount') },
   { key: 'currency', title: $gettext('Currency') },
   { key: 'account', title: $gettext('Account') },
   { key: 'type', title: $gettext('Type') },
   { key: 'confidence', title: $gettext('Confidence') },
-  { key: 'notice', title: $gettext('Notice') },
+  {
+    key: 'notice',
+    title: $gettext('Notice'),
+    component: EditableTextCell,
+    componentProps: (value: unknown, row?: Record<string, unknown>) => ({
+      value: String(value ?? ''),
+      maxLength: NOTICE_MAX_LENGTH,
+      allowEmpty: true,
+      save: (notice: string) =>
+        saveCorrection(Number(row?.transaction_id), { notice })
+    })
+  },
 ]
 
 const metadata = ref<ProcessingResultMetadata | null>(null)
@@ -87,14 +128,15 @@ const allTransactions = computed(() => {
   return transactions.value.map(txn => ({
     date: formatDateForDisplay(txn.date),
     category_id: txn.category_id || 'uncategorized',
-    merchant: txn.original_partner || txn.partner || '',
+    merchant: txn.partner || txn.original_partner || '',
     amount: txn.amount?.toFixed(2) || '',
     currency: txn.currency || '',
     account: txn.account,
     type: txn.transaction_type || '',
     confidence: txn.confidence?.toString() ?? '',
     notice: txn.notice || '',
-    row_id: String(txn.id)
+    row_id: String(txn.id),
+    transaction_id: txn.id
   }))
 })
 

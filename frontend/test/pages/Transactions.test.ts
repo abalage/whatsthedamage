@@ -8,8 +8,27 @@ import { shallowMount, flushPromises, type VueWrapper } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
 import { reactive } from 'vue';
 import Transactions from '../../src/pages/Transactions.vue';
-import { fetchProcessingResultMetadata, fetchAllTransactions } from '../../src/js/api.js';
+import VueDataTable from '../../src/components/data/VueDataTable.vue';
+import EditableCategoryCell from '../../src/components/data/EditableCategoryCell.vue';
+import EditableTextCell from '../../src/components/data/EditableTextCell.vue';
+import { fetchProcessingResultMetadata, fetchAllTransactions, updateTransaction } from '../../src/js/api.js';
+import { useFeedbackStore } from '../../src/stores/feedback.js';
 import type { ProcessingResultMetadata, TransactionListItem } from '../../src/types/api.js';
+
+interface ColumnLike {
+  key: string;
+  component?: unknown;
+  componentProps?: (value: unknown, row?: Record<string, unknown>, index?: number) => Record<string, unknown>;
+}
+
+const tableProps = (wrapper: VueWrapper): Record<string, unknown> =>
+  wrapper.findComponent(VueDataTable).props() as Record<string, unknown>;
+
+const tableColumns = (wrapper: VueWrapper): ColumnLike[] =>
+  tableProps(wrapper).columns as ColumnLike[];
+
+const tableData = (wrapper: VueWrapper): Array<Record<string, unknown>> =>
+  tableProps(wrapper).data as Array<Record<string, unknown>>;
 
 const mockRoute = reactive<{ params: Record<string, unknown>; query: Record<string, unknown> }>({
   params: {},
@@ -30,6 +49,7 @@ vi.mock('vue3-gettext', (): Record<string, unknown> => ({
 vi.mock('../../src/js/api.js', () => ({
   fetchProcessingResultMetadata: vi.fn(),
   fetchAllTransactions: vi.fn(),
+  updateTransaction: vi.fn(),
 }));
 
 const metadata: ProcessingResultMetadata = {
@@ -182,5 +202,126 @@ describe('Transactions.vue', () => {
     await flushPromises();
 
     expect(wrapper.text()).not.toContain('Too many transactions to display');
+  });
+
+  it('shows the corrected partner over the original partner', async () => {
+    vi.mocked(fetchProcessingResultMetadata).mockResolvedValue(null);
+    vi.mocked(fetchAllTransactions).mockResolvedValue({
+      transactions: [{ ...transaction, partner: 'Corrected Store' }],
+      total_count: 1,
+      limit: 10000,
+      offset: 0,
+    });
+
+    const wrapper = await mountPage();
+    await flushPromises();
+
+    const rows = tableData(wrapper);
+    expect(rows[0].merchant).toBe('Corrected Store');
+  });
+});
+
+describe('Transactions.vue inline editing', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockRoute.params = {};
+    mockRoute.query = {};
+    setActivePinia(createPinia());
+  });
+
+  const mountWithTransaction = async (
+    txn: TransactionListItem
+  ): Promise<VueWrapper> => {
+    vi.mocked(fetchProcessingResultMetadata).mockResolvedValue(null);
+    vi.mocked(fetchAllTransactions).mockResolvedValue({
+      transactions: [txn],
+      total_count: 1,
+      limit: 10000,
+      offset: 0,
+    });
+    const wrapper = shallowMount(Transactions, { global: { plugins: [createPinia()] } });
+    await flushPromises();
+    return wrapper;
+  };
+
+  const findColumn = (wrapper: VueWrapper, key: string): ColumnLike => {
+    const column = tableColumns(wrapper).find(c => c.key === key);
+    expect(column).toBeDefined();
+    return column as ColumnLike;
+  };
+
+  it('renders merchant, category, and notice columns as editable cells', async () => {
+    const wrapper = await mountWithTransaction(transaction);
+
+    expect(findColumn(wrapper, 'merchant').component).toBe(EditableTextCell);
+    expect(findColumn(wrapper, 'category_id').component).toBe(EditableCategoryCell);
+    expect(findColumn(wrapper, 'notice').component).toBe(EditableTextCell);
+  });
+
+  it('prevents saving an empty merchant but allows an empty notice', async () => {
+    const wrapper = await mountWithTransaction(transaction);
+    const rows = tableData(wrapper);
+
+    const merchantProps = findColumn(wrapper, 'merchant').componentProps?.(
+      rows[0].merchant, rows[0]
+    ) as { allowEmpty?: boolean };
+    const noticeProps = findColumn(wrapper, 'notice').componentProps?.(
+      rows[0].notice, rows[0]
+    ) as { allowEmpty?: boolean };
+
+    expect(merchantProps.allowEmpty).toBe(false);
+    expect(noticeProps.allowEmpty).toBe(true);
+  });
+
+  it('persists a merchant correction and refreshes the row', async () => {
+    const wrapper = await mountWithTransaction(transaction);
+    const updated = { ...transaction, partner: 'Renamed Store' };
+    vi.mocked(updateTransaction).mockResolvedValue(updated);
+
+    const column = findColumn(wrapper, 'merchant');
+    const rows = tableData(wrapper);
+    const props = column.componentProps?.(rows[0].merchant, rows[0]) as { save: (v: string) => Promise<void> };
+    await props.save('Renamed Store');
+
+    expect(updateTransaction).toHaveBeenCalledWith(1, { partner: 'Renamed Store' });
+    const refreshed = tableData(wrapper);
+    expect(refreshed[0].merchant).toBe('Renamed Store');
+    expect(useFeedbackStore().hasMessages).toBe(true);
+  });
+
+  it('persists a category correction', async () => {
+    const wrapper = await mountWithTransaction(transaction);
+    vi.mocked(updateTransaction).mockResolvedValue({ ...transaction, category_id: 'housing' });
+
+    const column = findColumn(wrapper, 'category_id');
+    const rows = tableData(wrapper);
+    const props = column.componentProps?.(rows[0].category_id, rows[0]) as { save: (v: string | null) => Promise<void> };
+    await props.save('housing');
+
+    expect(updateTransaction).toHaveBeenCalledWith(1, { category_id: 'housing' });
+  });
+
+  it('persists a notice correction', async () => {
+    const wrapper = await mountWithTransaction(transaction);
+    vi.mocked(updateTransaction).mockResolvedValue({ ...transaction, notice: 'gift' });
+
+    const column = findColumn(wrapper, 'notice');
+    const rows = tableData(wrapper);
+    const props = column.componentProps?.(rows[0].notice, rows[0]) as { save: (v: string) => Promise<void> };
+    await props.save('gift');
+
+    expect(updateTransaction).toHaveBeenCalledWith(1, { notice: 'gift' });
+  });
+
+  it('rejects failures so the cell can show the error inline', async () => {
+    const wrapper = await mountWithTransaction(transaction);
+    vi.mocked(updateTransaction).mockRejectedValue(new Error('Update failed'));
+
+    const column = findColumn(wrapper, 'merchant');
+    const rows = tableData(wrapper);
+    const props = column.componentProps?.(rows[0].merchant, rows[0]) as { save: (v: string) => Promise<void> };
+
+    await expect(props.save('Nope')).rejects.toThrow('Update failed');
+    expect(useFeedbackStore().hasErrors).toBe(false);
   });
 });

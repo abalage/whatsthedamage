@@ -15,6 +15,7 @@ _The slang phrase "what's the damage?" is often used to ask about the cost or pr
  - Categorizes transactions into well known [accounting categories](#transaction-categories).
  - Categorizes transactions into custom categories by using regular expressions or a [machine learning model](#machine-learning-categorization).
  - Correct transaction categories or partner names; corrections are remembered and applied to future imports automatically.
+ - Correct merchant, category, and notice inline on the Transactions page; corrections are persisted on the server bound to your account.
  - Transactions can be pre-filtered by start and end dates. If no filter is set, grouping is based on the number of months.
  - Statistical algorithms to highlight outlier categories or transactions. (Web interface only)
  - Visualize reports using Bar charts, Pie charts, etc. (Web interface only)

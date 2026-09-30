@@ -12,7 +12,9 @@ import type {
   ProcessingResultListItem,
   ProcessingResultMetadata,
   RecalculateApiResponse,
+  TransactionListItem,
   TransactionListResponse,
+  TransactionUpdatePayload,
 } from '../types/api.js';
 import type {
   RegisterRequest,
@@ -364,6 +366,22 @@ export async function fetchAllTransactions(
     limit: transactions.length,
     offset: 0
   };
+}
+
+/**
+ * Update correctable attributes (category, partner, notice) of a transaction
+ * @param id - Transaction identifier
+ * @param payload - Fields to correct
+ * @returns Promise with the updated transaction
+ */
+export async function updateTransaction(
+  id: number,
+  payload: TransactionUpdatePayload
+): Promise<TransactionListItem> {
+  return fetchWithCsrf<TransactionListItem>(getApiUrl(`/transactions/${id}`), {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  });
 }
 
 /**

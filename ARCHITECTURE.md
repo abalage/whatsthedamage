@@ -275,6 +275,7 @@ The system follows a layered architecture with clear separation of concerns:
 - Optional `resultId` query parameter filters transaction views (Categories, Transactions, Pivot Table, drilldowns) to a single processing result; when absent, all transactions are shown
 - Unknown paths are redirected to the index page by a catch-all route
 - Transaction views fetch the complete dataset through `fetchAllTransactions`, which pages the `/api/v2/transactions` endpoint (2,000-row pages) until `total_count` rows are collected, capped at 50,000 rows with a visible truncation warning
+- Inline correction of transaction attributes on the Transactions page: the merchant, category, and notice cells are click-to-edit (`EditableTextCell.vue`, `EditableCategoryCell.vue`); the category cell offers a dropdown of the backend categories, and changes are persisted through `PUT /api/v2/transactions/<id>` (correction record sync included)
 - CSRF token handling for state-changing requests (fetched via `/api/v2/auth/csrf-token`)
 - State management with Pinia stores
 - Type-safe development with TypeScript

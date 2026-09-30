@@ -10,6 +10,7 @@ import {
   fetchCategoryMonthTransactions,
   fetchAggregatedTransactions,
   fetchProcessingResultMetadata,
+  updateTransaction,
 } from '../src/js/api.js';
 
 const stubFetch = (data: unknown, ok = true): void => {
@@ -249,5 +250,35 @@ describe('fetchCategoryMonthTransactions', () => {
 
     const url = vi.mocked(globalThis.fetch).mock.calls[0][0] as string;
     expect(url).not.toContain('result_id');
+  });
+});
+
+describe('updateTransaction', () => {
+  it('sends a PUT request with the correction payload', async () => {
+    const updated = { id: 5, partner: 'Renamed Store' };
+    stubFetch(updated);
+
+    const result = await updateTransaction(5, { partner: 'Renamed Store' });
+
+    expect(result).toEqual(updated);
+    const [url, init] = vi.mocked(globalThis.fetch).mock.calls[0] as [string, RequestInit];
+    expect(url).toBe('/api/v2/transactions/5');
+    expect(init.method).toBe('PUT');
+    expect(init.body).toBe(JSON.stringify({ partner: 'Renamed Store' }));
+  });
+
+  it('serializes a null category so the category can be cleared', async () => {
+    stubFetch({ id: 5, category_id: null });
+
+    await updateTransaction(5, { category_id: null });
+
+    const init = (vi.mocked(globalThis.fetch).mock.calls[0] as [string, RequestInit])[1];
+    expect(init.body).toBe(JSON.stringify({ category_id: null }));
+  });
+
+  it('throws when the update is rejected', async () => {
+    stubFetch({ error: 'Transaction not found' }, false);
+
+    await expect(updateTransaction(999, { notice: 'x' })).rejects.toThrow('Transaction not found');
   });
 });

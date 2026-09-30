@@ -1,71 +1,219 @@
-"""Integration tests for transaction API endpoints.
+"""Functional tests for transaction update API endpoints.
 
-Tests for transaction upload, retrieval, and correction management endpoints.
+Tests for PUT /api/v2/transactions/<id> covering validation, ownership,
+persistence, and automatic Correction record synchronization.
 """
 
-import pytest
-from flask import Flask
-
-from whatsthedamage.api.v2.endpoints import v2_bp
+from tests.api.v2.conftest import AuthContext, create_transaction
 
 
-@pytest.fixture
-def app():
-    """Create a test Flask app with API endpoints registered."""
-    app = Flask(__name__)
-    app.config['TESTING'] = True
-    app.config['UPLOAD_FOLDER'] = '/tmp'
-    app.register_blueprint(v2_bp)
-    return app
+class TestUpdateTransaction:
+    """Tests for PUT /api/v2/transactions/<transaction_id>."""
+
+    def test_update_partner_returns_updated_transaction(self, auth_context):
+        """Updating partner returns the corrected transaction."""
+        transaction = create_transaction(auth_context)
+
+        response = auth_context.client.put(
+            f"/api/v2/transactions/{transaction['id']}",
+            json={'partner': 'Test Merchant Ltd'},
+            headers=auth_context.csrf_headers
+        )
+
+        assert response.status_code == 200
+        data = response.get_json()
+        assert data['partner'] == 'Test Merchant Ltd'
+        assert data['original_partner'] == transaction['original_partner']
+
+    def test_update_category_id_persists(self, auth_context):
+        """Updating category_id is persisted and returned."""
+        transaction = create_transaction(auth_context)
+
+        response = auth_context.client.put(
+            f"/api/v2/transactions/{transaction['id']}",
+            json={'category_id': 'housing'},
+            headers=auth_context.csrf_headers
+        )
+
+        assert response.status_code == 200
+        assert response.get_json()['category_id'] == 'housing'
+
+        stored = auth_context.client.get(
+            f"/api/v2/transactions/{transaction['id']}"
+        )
+        assert stored.get_json()['category_id'] == 'housing'
+
+    def test_update_notice_persists(self, auth_context):
+        """Updating notice is persisted and returned."""
+        transaction = create_transaction(auth_context)
+
+        response = auth_context.client.put(
+            f"/api/v2/transactions/{transaction['id']}",
+            json={'notice': 'birthday gift'},
+            headers=auth_context.csrf_headers
+        )
+
+        assert response.status_code == 200
+        assert response.get_json()['notice'] == 'birthday gift'
+
+        stored = auth_context.client.get(
+            f"/api/v2/transactions/{transaction['id']}"
+        )
+        assert stored.get_json()['notice'] == 'birthday gift'
+
+    def test_update_all_fields_together(self, auth_context):
+        """All three correctable fields can be updated in one request."""
+        transaction = create_transaction(auth_context)
+
+        response = auth_context.client.put(
+            f"/api/v2/transactions/{transaction['id']}",
+            json={
+                'partner': 'Test Merchant Ltd',
+                'category_id': 'housing',
+                'notice': 'rent share'
+            },
+            headers=auth_context.csrf_headers
+        )
+
+        assert response.status_code == 200
+        data = response.get_json()
+        assert data['partner'] == 'Test Merchant Ltd'
+        assert data['category_id'] == 'housing'
+        assert data['notice'] == 'rent share'
+
+    def test_update_without_authentication_returns_401(
+        self, api_app, auth_context
+    ):
+        """Unauthenticated update requests are rejected."""
+        transaction = create_transaction(auth_context)
+        client = api_app.test_client()
+
+        response = client.put(
+            f"/api/v2/transactions/{transaction['id']}",
+            json={'partner': 'Nope'}
+        )
+
+        assert response.status_code == 401
+
+    def test_update_without_csrf_token_returns_403(self, auth_context):
+        """Update requests missing the CSRF header are rejected."""
+        transaction = create_transaction(auth_context)
+
+        response = auth_context.client.put(
+            f"/api/v2/transactions/{transaction['id']}",
+            json={'partner': 'Nope'}
+        )
+
+        assert response.status_code == 403
+
+    def test_update_unknown_transaction_returns_404(self, auth_context):
+        """Updating a non-existent transaction returns 404."""
+        response = auth_context.client.put(
+            '/api/v2/transactions/999999',
+            json={'partner': 'Nope'},
+            headers=auth_context.csrf_headers
+        )
+
+        assert response.status_code == 404
+
+    def test_update_other_users_transaction_returns_403(
+        self, auth_context, second_auth_context
+    ):
+        """Users cannot update transactions owned by another user."""
+        transaction = create_transaction(auth_context)
+
+        response = second_auth_context.client.put(
+            f"/api/v2/transactions/{transaction['id']}",
+            json={'partner': 'Nope'},
+            headers=second_auth_context.csrf_headers
+        )
+
+        assert response.status_code == 403
+
+    def test_update_with_empty_body_returns_400(self, auth_context):
+        """An empty JSON body is rejected."""
+        transaction = create_transaction(auth_context)
+
+        response = auth_context.client.put(
+            f"/api/v2/transactions/{transaction['id']}",
+            json={},
+            headers=auth_context.csrf_headers
+        )
+
+        assert response.status_code == 400
+
+    def test_update_with_only_unknown_fields_returns_400(self, auth_context):
+        """A body without any correctable field is rejected."""
+        transaction = create_transaction(auth_context)
+
+        response = auth_context.client.put(
+            f"/api/v2/transactions/{transaction['id']}",
+            json={'amount': 100},
+            headers=auth_context.csrf_headers
+        )
+
+        assert response.status_code == 400
 
 
-@pytest.fixture
-def client(app):
-    """Create a test client for the app."""
-    return app.test_client()
+class TestUpdateTransactionCorrectionSync:
+    """Tests for automatic Correction synchronization on transaction edit."""
 
+    def _list_corrections(self, context: AuthContext) -> list[dict]:
+        """Return all corrections of the context user."""
+        response = context.client.get('/api/v2/corrections')
+        assert response.status_code == 200
+        return response.get_json()['corrections']
 
-class TestTransactionEndpoints:
-    """Tests for transaction-related API endpoints."""
+    def test_update_creates_correction_for_original_partner(self, auth_context):
+        """Editing a transaction creates a correction keyed by
+        original_partner.
+        """
+        transaction = create_transaction(auth_context)
 
-    def test_endpoints_exist(self, client):
-        """Test that all transaction endpoints are registered."""
-        # Test GET /api/v2/transactions
-        response = client.get('/api/v2/transactions')
-        # Should fail with error because services are not initialized,
-        # but the endpoint exists
-        assert response.status_code != 404
+        response = auth_context.client.put(
+            f"/api/v2/transactions/{transaction['id']}",
+            json={'partner': 'Test Merchant Ltd'},
+            headers=auth_context.csrf_headers
+        )
+        assert response.status_code == 200
 
-    def test_corrections_endpoints_exist(self, client):
-        """Test that correction endpoints are not available in v2."""
-        # Correction endpoints are not implemented in v2 API
-        # They are handled internally by services
-        pass
+        corrections = self._list_corrections(auth_context)
+        assert len(corrections) == 1
+        assert corrections[0]['original_partner'] == 'TEST MERCHANT'
+        assert corrections[0]['corrected_partner'] == 'Test Merchant Ltd'
 
+    def test_repeated_updates_modify_single_correction(self, auth_context):
+        """Editing the same merchant twice updates the existing correction
+        instead of creating a duplicate.
+        """
+        transaction = create_transaction(auth_context)
 
-class TestEndpointAuthentication:
-    """Tests for authentication and authorization of transaction endpoints."""
+        auth_context.client.put(
+            f"/api/v2/transactions/{transaction['id']}",
+            json={'partner': 'Test Merchant Ltd'},
+            headers=auth_context.csrf_headers
+        )
+        auth_context.client.put(
+            f"/api/v2/transactions/{transaction['id']}",
+            json={'partner': 'Test Merchant GmbH'},
+            headers=auth_context.csrf_headers
+        )
 
-    def test_get_transactions_without_auth_fails(self, client):
-        """Test that GET /api/v2/transactions fails without authentication."""
-        response = client.get('/api/v2/transactions')
+        corrections = self._list_corrections(auth_context)
+        assert len(corrections) == 1
+        assert corrections[0]['corrected_partner'] == 'Test Merchant GmbH'
 
-        # Without auth setup, should get an error
-        # The exact status depends on how auth is configured
-        # but it should not be 200 OK
-        assert response.status_code != 200
+    def test_correction_is_scoped_to_owning_user(
+        self, auth_context, second_auth_context
+    ):
+        """Corrections created by one user are not visible to another."""
+        transaction = create_transaction(auth_context)
 
-    def test_get_corrections_without_auth_fails(self, client):
-        """Test that correction endpoints are not available."""
-        # Correction endpoints are not implemented in v2 API
-        pass
+        auth_context.client.put(
+            f"/api/v2/transactions/{transaction['id']}",
+            json={'partner': 'Test Merchant Ltd'},
+            headers=auth_context.csrf_headers
+        )
 
-    def test_post_corrections_without_auth_fails(self, client):
-        """Test that correction endpoints are not available."""
-        # Correction endpoints are not implemented in v2 API
-        pass
-
-    def test_delete_corrections_without_auth_fails(self, client):
-        """Test that correction endpoints are not available."""
-        # Correction endpoints are not implemented in v2 API
-        pass
+        assert len(self._list_corrections(auth_context)) == 1
+        assert self._list_corrections(second_auth_context) == []

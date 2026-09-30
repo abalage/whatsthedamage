@@ -29,7 +29,12 @@ vi.mock('../../src/js/api.js', () => ({
   fetchTransactionsByResult: vi.fn(),
 }));
 
-const makeResult = (id: string, createdAt: string): ProcessingResultListItem => ({
+const makeResult = (
+  id: string,
+  createdAt: string,
+  transactionStartDate: string | null = null,
+  transactionEndDate: string | null = null
+): ProcessingResultListItem => ({
   id,
   csv_profile_id: null,
   row_count: 10,
@@ -37,6 +42,8 @@ const makeResult = (id: string, createdAt: string): ProcessingResultListItem => 
   ml_enabled: false,
   start_date: null,
   end_date: null,
+  transaction_start_date: transactionStartDate,
+  transaction_end_date: transactionEndDate,
   created_at: createdAt,
 });
 
@@ -102,6 +109,37 @@ describe('Index.vue result selector', () => {
     const options = wrapper.find('#result-selector').findAll('option');
     expect(options).toHaveLength(3);
     expect(options.some(option => option.text().includes('2026'))).toBe(true);
+  });
+
+  it('appends the transaction date range to the option label', async () => {
+    vi.mocked(fetchProcessingResults).mockResolvedValue([
+      makeResult('r1', '2026-01-01T00:00:00Z', '2023-05-01', '2024-08-31'),
+    ]);
+    vi.mocked(fetchTransactionsByResult).mockResolvedValue({ ...emptyTransactionList, total_count: 10 });
+
+    const wrapper = await mountPage();
+    await flushPromises();
+
+    const option = wrapper.find('#result-selector').findAll('option').find(o => o.text() !== 'All Transactions');
+    expect(option).toBeDefined();
+    expect(option?.text()).toContain('2023');
+    expect(option?.text()).toContain('2024');
+    expect(option?.text()).toContain('–');
+  });
+
+  it('omits the date range when the result has no linked transactions', async () => {
+    vi.mocked(fetchProcessingResults).mockResolvedValue([
+      makeResult('r1', '2026-01-01T00:00:00Z'),
+    ]);
+    vi.mocked(fetchTransactionsByResult).mockResolvedValue({ ...emptyTransactionList, total_count: 10 });
+
+    const wrapper = await mountPage();
+    await flushPromises();
+
+    const option = wrapper.find('#result-selector').findAll('option').find(o => o.text() !== 'All Transactions');
+    expect(option).toBeDefined();
+    expect(option?.text()).not.toContain('·');
+    expect(option?.text()).not.toContain('2023');
   });
 
   it('navigates to /results?resultId={id} when a result is selected and viewed', async () => {

@@ -29,14 +29,31 @@ const hasNoTransactions = computed(() =>
   processingResults.value.length === 0 && totalTransactionCount.value === 0
 )
 
+const formatResultDate = (value: string | null): string | undefined => {
+  if (!value) {
+    return undefined
+  }
+  const date = new Date(value)
+  return Number.isNaN(date.getTime())
+    ? undefined
+    : date.toLocaleDateString(localeStore.locale)
+}
+
 const formatResultLabel = (result: ProcessingResultListItem): string => {
   if (!result.created_at) {
     return result.id
   }
   const date = new Date(result.created_at)
-  return Number.isNaN(date.getTime())
-    ? result.id
-    : date.toLocaleString(localeStore.locale)
+  if (Number.isNaN(date.getTime())) {
+    return result.id
+  }
+  const baseLabel = date.toLocaleString(localeStore.locale)
+  const startDate = formatResultDate(result.transaction_start_date)
+  const endDate = formatResultDate(result.transaction_end_date)
+  if (startDate === undefined || endDate === undefined) {
+    return baseLabel
+  }
+  return `${baseLabel} · ${startDate} – ${endDate}`
 }
 
 const sortResultsByNewest = (results: ProcessingResultListItem[]): ProcessingResultListItem[] => {

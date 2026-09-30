@@ -43,6 +43,8 @@ const metadata: ProcessingResultMetadata = {
   ml_enabled: false,
   start_date: '2026-01-01',
   end_date: '2026-01-31',
+  transaction_start_date: '2026-01-01',
+  transaction_end_date: '2026-01-31',
   created_at: '2026-01-01T00:00:00',
   transactions_url: '/api/v2/transactions?result_id=r1',
 };

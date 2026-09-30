@@ -714,3 +714,100 @@ class TestTransactionRepositoryFilters:
 
         assert [t.account for t in transactions] == ['acc1']
         assert total_count == 1
+
+
+class TestTransactionRepositoryDateRanges:
+    """Tests for SqlAlchemyTransactionRepository.get_date_ranges_by_result_ids."""
+
+    @pytest.fixture
+    def transaction_repository(self, db_session_factory):
+        """Create a TransactionRepository for testing."""
+        from whatsthedamage.models.repositories.transaction_repository import (
+            SqlAlchemyTransactionRepository,
+        )
+        return SqlAlchemyTransactionRepository(db_session_factory)
+
+    @staticmethod
+    def _make_transaction(user_id, result_id, date, hash_suffix):
+        """Create a Transaction entity with the given date and result."""
+        return TransactionDB(
+            user_id=user_id,
+            result_id=result_id,
+            date=date,
+            transaction_type='debit',
+            original_partner='Test Partner',
+            amount=-100.0,
+            currency='HUF',
+            account='acc1',
+            deduplication_hash=f'hash-{hash_suffix}',
+            created_at=datetime.now(UTC),
+            updated_at=datetime.now(UTC),
+        )
+
+    def test_returns_min_and_max_per_result(self, transaction_repository):
+        """Each result maps to the min and max date of its transactions."""
+        transaction_repository.create(self._make_transaction(
+            1, 'result-1', datetime(2024, 1, 15, tzinfo=UTC), 'a'
+        ))
+        transaction_repository.create(self._make_transaction(
+            1, 'result-1', datetime(2024, 3, 10, tzinfo=UTC), 'b'
+        ))
+        transaction_repository.create(self._make_transaction(
+            1, 'result-1', datetime(2024, 2, 1, tzinfo=UTC), 'c'
+        ))
+        transaction_repository.create(self._make_transaction(
+            1, 'result-2', datetime(2023, 12, 31, tzinfo=UTC), 'd'
+        ))
+
+        ranges = transaction_repository.get_date_ranges_by_result_ids(
+            user_id=1, result_ids=['result-1', 'result-2']
+        )
+
+        # SQLite returns naive datetimes, so compare without tzinfo
+        assert ranges['result-1'] == (
+            datetime(2024, 1, 15),
+            datetime(2024, 3, 10),
+        )
+        assert ranges['result-2'] == (
+            datetime(2023, 12, 31),
+            datetime(2023, 12, 31),
+        )
+
+    def test_excludes_other_users_transactions(self, transaction_repository):
+        """Transactions belonging to another user are not aggregated."""
+        transaction_repository.create(self._make_transaction(
+            1, 'result-1', datetime(2024, 1, 15, tzinfo=UTC), 'a'
+        ))
+        transaction_repository.create(self._make_transaction(
+            2, 'result-1', datetime(2020, 6, 1, tzinfo=UTC), 'b'
+        ))
+
+        ranges = transaction_repository.get_date_ranges_by_result_ids(
+            user_id=1, result_ids=['result-1']
+        )
+
+        # SQLite returns naive datetimes, so compare without tzinfo
+        assert ranges['result-1'] == (
+            datetime(2024, 1, 15),
+            datetime(2024, 1, 15),
+        )
+
+    def test_result_without_transactions_is_absent(self, transaction_repository):
+        """Results with no linked transactions are missing from the dict."""
+        transaction_repository.create(self._make_transaction(
+            1, 'result-1', datetime(2024, 1, 15, tzinfo=UTC), 'a'
+        ))
+
+        ranges = transaction_repository.get_date_ranges_by_result_ids(
+            user_id=1, result_ids=['result-1', 'result-empty']
+        )
+
+        assert set(ranges.keys()) == {'result-1'}
+
+    def test_empty_result_ids_returns_empty_dict(self, transaction_repository):
+        """An empty result ID list returns an empty dict without querying."""
+        ranges = transaction_repository.get_date_ranges_by_result_ids(
+            user_id=1, result_ids=[]
+        )
+
+        assert ranges == {}

@@ -183,6 +183,18 @@ def _parse_result_date(value: Any) -> Optional[datetime]:
         return None
 
 
+def _format_transaction_date(value: Optional[datetime]) -> Optional[str]:
+    """Format a transaction datetime as an ISO 8601 date string.
+
+    Args:
+        value: Transaction datetime; may be None.
+
+    Returns:
+        Date portion in YYYY-MM-DD format, or None.
+    """
+    return value.strftime('%Y-%m-%d') if value else None
+
+
 def _extract_result_date_range(
     metadata: Any,
     params: Any
@@ -446,9 +458,16 @@ def list_processing_results() -> tuple[Response, int]:
         cast(int, user.id), limit=limit, offset=offset  # type: ignore[arg-type]
     )
 
+    # Get the actual transaction date range for each result
+    transaction_repo = _get_transaction_repository()
+    date_ranges = transaction_repo.get_date_ranges_by_result_ids(
+        cast(int, user.id), [result.result_id for result in results]
+    )
+
     # Build response with new format
     results_list = []
     for result in results:
+        date_range = date_ranges.get(result.result_id)
         results_list.append({
             'id': result.result_id,  # Now using result_id
             'csv_profile_id': result.csv_profile_id,
@@ -457,6 +476,12 @@ def list_processing_results() -> tuple[Response, int]:
             'ml_enabled': result.ml_enabled,
             'start_date': result.start_date.isoformat() if result.start_date else None,
             'end_date': result.end_date.isoformat() if result.end_date else None,
+            'transaction_start_date': (
+                _format_transaction_date(date_range[0]) if date_range else None
+            ),
+            'transaction_end_date': (
+                _format_transaction_date(date_range[1]) if date_range else None
+            ),
             'created_at': result.created_at.isoformat() if result.created_at else None,
             # updated_at removed as per requirement
         })
@@ -499,6 +524,13 @@ def get_processing_result_by_id(result_id: str) -> tuple[Response, int]:
     if not processing_result:
         return jsonify({'error': 'Result not found or does not belong to you'}), 404
 
+    # Get the actual transaction date range for the result
+    transaction_repo = _get_transaction_repository()
+    date_ranges = transaction_repo.get_date_ranges_by_result_ids(
+        cast(int, user.id), [processing_result.result_id]  # type: ignore[arg-type]
+    )
+    date_range = date_ranges.get(processing_result.result_id)
+
     # Return metadata only
     return jsonify({
         'result_id': processing_result.result_id,
@@ -509,6 +541,12 @@ def get_processing_result_by_id(result_id: str) -> tuple[Response, int]:
         'ml_enabled': processing_result.ml_enabled,
         'start_date': processing_result.start_date.isoformat() if processing_result.start_date else None,
         'end_date': processing_result.end_date.isoformat() if processing_result.end_date else None,
+        'transaction_start_date': (
+            _format_transaction_date(date_range[0]) if date_range else None
+        ),
+        'transaction_end_date': (
+            _format_transaction_date(date_range[1]) if date_range else None
+        ),
         'created_at': processing_result.created_at.isoformat() if processing_result.created_at else None,
         # Provide link to fetch transactions for this result
         'transactions_url': f'/api/v2/transactions?result_id={processing_result.result_id}'

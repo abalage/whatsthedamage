@@ -31,6 +31,12 @@ def _create_test_client(processing_service=None):
         'MAX_CONTENT_LENGTH': 16 * 1024 * 1024  # 16MB max file size
     }
 
+    # Point the app at a throwaway database so tests never persist
+    # processing results or transactions into the developer's app.db
+    db_path = os.path.join(temp_dir, 'test_api.db')
+    previous_uri = os.environ.get('WHATSTHEDAMAGE_DATABASE_URI')
+    os.environ['WHATSTHEDAMAGE_DATABASE_URI'] = f'sqlite:///{db_path}'
+
     # Create basic Flask app first
     app = create_app()
 
@@ -65,6 +71,10 @@ def _create_test_client(processing_service=None):
             with app.app_context():
                 yield client
     finally:
+        if previous_uri is None:
+            os.environ.pop('WHATSTHEDAMAGE_DATABASE_URI', None)
+        else:
+            os.environ['WHATSTHEDAMAGE_DATABASE_URI'] = previous_uri
         if os.path.exists(temp_dir):
             shutil.rmtree(temp_dir)
 

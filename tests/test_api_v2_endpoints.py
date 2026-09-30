@@ -492,3 +492,117 @@ class TestAPIv2Categories:
                           'payment', 'fee', 'health')
             for cat in data
         )
+
+
+class TestAPIv2ProcessingResultDateRange:
+    """Test suite for the transaction date range fields on processing results."""
+
+    @staticmethod
+    def _make_result(result_id, created_at):
+        """Create a ProcessingResult entity without persisting it."""
+        from whatsthedamage.models.database.processing_result import (
+            ProcessingResult,
+        )
+        return ProcessingResult(
+            result_id=result_id,
+            user_id=1,
+            csv_profile_id=None,
+            row_count=2,
+            processing_time=1.0,
+            ml_enabled=False,
+            start_date=None,
+            end_date=None,
+            created_at=created_at,
+        )
+
+    def _patch_repositories(self, monkeypatch):
+        """Patch repositories to serve fixed results and date ranges."""
+        from datetime import datetime, UTC
+        from whatsthedamage.models.repositories.transaction_repository import (
+            SqlAlchemyTransactionRepository,
+        )
+        from whatsthedamage.models.repositories.processing_result_repository import (
+            SqlAlchemyProcessingResultRepository,
+        )
+
+        results = [
+            self._make_result('result-1', datetime(2026, 1, 2, tzinfo=UTC)),
+            self._make_result('result-empty', datetime(2026, 1, 1, tzinfo=UTC)),
+        ]
+        ranges = {
+            'result-1': (
+                datetime(2024, 1, 15, tzinfo=UTC),
+                datetime(2024, 3, 10, tzinfo=UTC),
+            ),
+        }
+
+        monkeypatch.setattr(
+            SqlAlchemyProcessingResultRepository,
+            'find_by_user_id',
+            lambda self, user_id, limit=100, offset=0: results,
+        )
+        monkeypatch.setattr(
+            SqlAlchemyTransactionRepository,
+            'get_date_ranges_by_result_ids',
+            lambda self, user_id, result_ids: {
+                key: value for key, value in ranges.items()
+                if key in result_ids
+            },
+        )
+
+    def test_list_includes_transaction_date_range(
+        self, api_client_with_mock, monkeypatch
+    ):
+        """The list endpoint reports the min/max transaction dates per result."""
+        self._patch_repositories(monkeypatch)
+        response = api_client_with_mock.get('/api/v2/processing-results')
+
+        assert response.status_code == 200
+        data = response.get_json()
+        by_id = {item['id']: item for item in data}
+
+        assert by_id['result-1']['transaction_start_date'] == '2024-01-15'
+        assert by_id['result-1']['transaction_end_date'] == '2024-03-10'
+        assert by_id['result-empty']['transaction_start_date'] is None
+        assert by_id['result-empty']['transaction_end_date'] is None
+
+    def test_single_result_includes_transaction_date_range(
+        self, api_client_with_mock, monkeypatch
+    ):
+        """The single-result endpoint reports the transaction date range."""
+        from datetime import datetime, UTC
+        from whatsthedamage.models.repositories.transaction_repository import (
+            SqlAlchemyTransactionRepository,
+        )
+        from whatsthedamage.models.repositories.processing_result_repository import (
+            SqlAlchemyProcessingResultRepository,
+        )
+
+        result = self._make_result('result-1', datetime(2026, 1, 2, tzinfo=UTC))
+        ranges = {
+            'result-1': (
+                datetime(2024, 1, 15, tzinfo=UTC),
+                datetime(2024, 3, 10, tzinfo=UTC),
+            ),
+        }
+
+        monkeypatch.setattr(
+            SqlAlchemyProcessingResultRepository,
+            'find_by_user_and_result_id',
+            lambda self, user_id, result_id: result,
+        )
+        monkeypatch.setattr(
+            SqlAlchemyTransactionRepository,
+            'get_date_ranges_by_result_ids',
+            lambda self, user_id, result_ids: {
+                key: value for key, value in ranges.items()
+                if key in result_ids
+            },
+        )
+
+        response = api_client_with_mock.get('/api/v2/processing-results/result-1')
+
+        assert response.status_code == 200
+        data = response.get_json()
+        assert data['transaction_start_date'] == '2024-01-15'
+        assert data['transaction_end_date'] == '2024-03-10'

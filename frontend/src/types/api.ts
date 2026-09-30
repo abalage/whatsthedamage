@@ -192,6 +192,8 @@ export interface ProcessingResultListItem {
   ml_enabled: boolean;
   start_date: string | null;
   end_date: string | null;
+  transaction_start_date: string | null;
+  transaction_end_date: string | null;
   created_at: string | null;
   // updated_at removed as per requirement
 }
@@ -209,6 +211,8 @@ export interface ProcessingResultMetadata {
   ml_enabled: boolean;
   start_date: string | null;
   end_date: string | null;
+  transaction_start_date: string | null;
+  transaction_end_date: string | null;
   created_at: string | null;
   transactions_url: string;  // Link to /transactions endpoint
 }

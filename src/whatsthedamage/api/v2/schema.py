@@ -1413,6 +1413,24 @@ def get_openapi_schema() -> dict[str, Any]:
                             "format": "date",
                             "nullable": True
                         },
+                        "transaction_start_date": {
+                            "type": "string",
+                            "format": "date",
+                            "nullable": True,
+                            "description": (
+                                "Earliest date among the "
+                                "transactions linked to this result"
+                            )
+                        },
+                        "transaction_end_date": {
+                            "type": "string",
+                            "format": "date",
+                            "nullable": True,
+                            "description": (
+                                "Latest date among the "
+                                "transactions linked to this result"
+                            )
+                        },
                         "created_at": {
                             "type": "string",
                             "format": "date-time",
@@ -1514,6 +1532,24 @@ def get_openapi_schema() -> dict[str, Any]:
                             "type": "string",
                             "format": "date",
                             "nullable": True
+                        },
+                        "transaction_start_date": {
+                            "type": "string",
+                            "format": "date",
+                            "nullable": True,
+                            "description": (
+                                "Earliest date among the "
+                                "transactions linked to this result"
+                            )
+                        },
+                        "transaction_end_date": {
+                            "type": "string",
+                            "format": "date",
+                            "nullable": True,
+                            "description": (
+                                "Latest date among the "
+                                "transactions linked to this result"
+                            )
                         },
                         "created_at": {
                             "type": "string",

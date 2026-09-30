@@ -5,7 +5,7 @@ Implements the repository pattern for transaction persistence and retrieval.
 """
 
 from datetime import datetime, UTC
-from typing import Any, Optional, Protocol, runtime_checkable
+from typing import Any, Optional, Protocol, runtime_checkable, cast
 from sqlalchemy import or_, func, extract
 from sqlalchemy.orm import Query, Session as SqlAlchemySession
 
@@ -169,6 +169,23 @@ class TransactionRepository(Protocol):
 
         Returns:
             List of Transaction entities.
+        """
+        ...
+
+    def get_date_ranges_by_result_ids(
+        self,
+        user_id: int,
+        result_ids: list[str]
+    ) -> dict[str, tuple[datetime, datetime]]:
+        """Get the min and max transaction dates for each result ID.
+
+        Args:
+            user_id: User identifier.
+            result_ids: Processing result identifiers to aggregate.
+
+        Returns:
+            Dictionary mapping result ID to (min_date, max_date).
+            Results with no linked transactions are absent.
         """
         ...
 
@@ -508,6 +525,44 @@ class SqlAlchemyTransactionRepository(SqlAlchemyBaseRepository[TransactionDB]):
             if user_id is not None:
                 query = query.filter(TransactionDB.user_id == user_id)
             return query.all()  # type: ignore[no-any-return]
+        finally:
+            session.close()
+
+    def get_date_ranges_by_result_ids(
+        self,
+        user_id: int,
+        result_ids: list[str]
+    ) -> dict[str, tuple[datetime, datetime]]:
+        """Get the min and max transaction dates for each result ID.
+
+        Args:
+            user_id: User identifier.
+            result_ids: Processing result identifiers to aggregate.
+
+        Returns:
+            Dictionary mapping result ID to (min_date, max_date).
+            Results with no linked transactions are absent.
+        """
+        if not result_ids:
+            return {}
+        session = self._get_session()
+        try:
+            rows = (
+                session.query(
+                    TransactionDB.result_id,
+                    func.min(TransactionDB.date),
+                    func.max(TransactionDB.date)
+                )
+                .filter(
+                    TransactionDB.user_id == user_id,
+                    TransactionDB.result_id.in_(result_ids)
+                )
+                .group_by(TransactionDB.result_id)
+                .all()
+            )
+            return {
+                cast(str, row[0]): (row[1], row[2]) for row in rows
+            }
         finally:
             session.close()
 

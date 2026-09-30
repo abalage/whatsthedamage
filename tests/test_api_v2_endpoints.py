@@ -452,3 +452,43 @@ class TestAPIv2EmptyAccountFallback:
         assert response.status_code == 200
         data = response.get_json()
         assert sorted(data['groups'].keys()) == ['acc1', 'unknown']
+
+
+class TestAPIv2Categories:
+    """Test suite for GET /api/v2/categories and /api/v2/categories/cost-of-living."""
+
+    def test_categories_exclude_calculated_categories(self, api_client_with_mock):
+        """Calculated categories (aggregates) must not be offered as assignable."""
+        response = api_client_with_mock.get('/api/v2/categories')
+
+        assert response.status_code == 200
+        ids = [cat['id'] for cat in response.get_json()]
+        assert 'grocery' in ids
+        assert 'balance' not in ids
+        assert 'cost_of_living' not in ids
+        assert 'total_spendings' not in ids
+
+    def test_categories_response_shape(self, api_client_with_mock):
+        """Each category exposes exactly id, default_name, and patterns."""
+        response = api_client_with_mock.get('/api/v2/categories')
+
+        assert response.status_code == 200
+        data = response.get_json()
+        assert len(data) > 0
+        for cat in data:
+            assert set(cat.keys()) == {'id', 'default_name', 'patterns'}
+
+    def test_cost_of_living_categories_response_shape(self, api_client_with_mock):
+        """Cost of living categories are filtered and have the same shape."""
+        response = api_client_with_mock.get('/api/v2/categories/cost-of-living')
+
+        assert response.status_code == 200
+        data = response.get_json()
+        assert len(data) > 0
+        for cat in data:
+            assert set(cat.keys()) == {'id', 'default_name', 'patterns'}
+        assert all(
+            cat['id'] in ('grocery', 'loan', 'transportation', 'utility',
+                          'payment', 'fee', 'health')
+            for cat in data
+        )

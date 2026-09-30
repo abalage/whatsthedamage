@@ -48,8 +48,11 @@ v2_bp = Blueprint('api_v2', __name__, url_prefix='/api/v2')
 def get_categories() -> tuple[Response, int]:
     """Get all available category definitions.
 
-    Returns the full list of CategoryDefinition objects that the frontend
-    can use for translating category IDs to display names client-side.
+    Returns the assignable (non-calculated) CategoryDefinition objects that
+    the frontend can use for translating category IDs to display names
+    client-side and for offering category choices. Calculated categories
+    (Balance, Cost of Living, Total Spendings) are excluded because they
+    are computed aggregates and cannot be assigned to transactions.
 
     This endpoint provides the canonical source of category definitions,
     allowing the frontend to map category_id values to localized display names.
@@ -60,8 +63,10 @@ def get_categories() -> tuple[Response, int]:
     Status Codes:
         200: Successfully retrieved categories
     """
-    from whatsthedamage.config.config import AVAILABLE_CATEGORIES
-    return jsonify([cat.model_dump() for cat in AVAILABLE_CATEGORIES]), 200
+    from whatsthedamage.config.config import get_assignable_categories
+    return jsonify([
+        cat.model_dump(exclude={'calculated'}) for cat in get_assignable_categories()
+    ]), 200
 
 @v2_bp.route('/categories/cost-of-living', methods=['GET'])
 def get_cost_of_living_categories() -> tuple[Response, int]:
@@ -74,7 +79,11 @@ def get_cost_of_living_categories() -> tuple[Response, int]:
         200: Successfully retrieved list of categories
     """
     from whatsthedamage.config.config import AVAILABLE_CATEGORIES, COST_OF_LIVING_CATEGORY_IDS
-    return jsonify([cat.model_dump() for cat in AVAILABLE_CATEGORIES if cat.id in COST_OF_LIVING_CATEGORY_IDS]), 200
+    return jsonify([
+        cat.model_dump(exclude={'calculated'})
+        for cat in AVAILABLE_CATEGORIES
+        if cat.id in COST_OF_LIVING_CATEGORY_IDS
+    ]), 200
 
 
 # CSV Profile endpoints

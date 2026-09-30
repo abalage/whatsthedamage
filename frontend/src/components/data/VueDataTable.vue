@@ -112,6 +112,12 @@ export interface Column {
   searchable?: boolean
   /** Enable column-specific filtering. Default: true */
   filterable?: boolean
+  /**
+   * Fixed-choice filter: renders a <select> instead of a text input.
+   * Filtering is an exact match on the option value (language-agnostic:
+   * values are stable ids, labels may be translated).
+   */
+  filterOptions?: Array<{ value: string; label: string }>
   /** CSS width (e.g., "100px", "20%") */
   width?: string
   /**
@@ -513,10 +519,12 @@ const filteredData = computed(() => {
     if (value) {
       const column = props.columns.find(c => c.key === key)
       if (column && column.filterable !== false) {
-        result = result.filter(row => {
-          const cellValue = row[key]
-          return String(cellValue).toLowerCase().includes(value.toLowerCase())
-        })
+        // Fixed-choice filters match the raw value exactly; text filters
+        // fall back to case-insensitive substring matching
+        const matches = column.filterOptions
+          ? (row: Record<string, unknown>) => String(row[key]) === value
+          : (row: Record<string, unknown>) => String(row[key]).toLowerCase().includes(value.toLowerCase())
+        result = result.filter(matches)
       }
     }
   })
@@ -899,9 +907,25 @@ defineExpose(tableApi)
                     <span v-else class="sort-indicator text-secondary">↕</span>
                   </template>
                 </div>
-                <!-- Column-specific filter input -->
+                <!-- Column-specific filter control -->
+                <select
+                  v-if="props.showColumnFilters !== false && column.filterable !== false && column.filterOptions"
+                  class="form-select form-select-sm"
+                  :value="columnFilters[column.key] || ''"
+                  :aria-label="$gettext('Filter by') + ' ' + column.title"
+                  @change="(e) => setColumnFilter(column.key, (e.target as HTMLSelectElement).value)"
+                >
+                  <option value="">{{ $gettext('All') }}</option>
+                  <option
+                    v-for="option in column.filterOptions"
+                    :key="option.value"
+                    :value="option.value"
+                  >
+                    {{ option.label }}
+                  </option>
+                </select>
                 <input
-                  v-if="props.showColumnFilters !== false && column.filterable !== false"
+                  v-else-if="props.showColumnFilters !== false && column.filterable !== false"
                   type="text"
                   class="form-control form-control-sm"
                   :value="columnFilters[column.key] || ''"

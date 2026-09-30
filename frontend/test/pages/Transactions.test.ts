@@ -11,14 +11,15 @@ import Transactions from '../../src/pages/Transactions.vue';
 import VueDataTable from '../../src/components/data/VueDataTable.vue';
 import EditableCategoryCell from '../../src/components/data/EditableCategoryCell.vue';
 import EditableTextCell from '../../src/components/data/EditableTextCell.vue';
-import { fetchProcessingResultMetadata, fetchAllTransactions, updateTransaction } from '../../src/js/api.js';
+import { fetchProcessingResultMetadata, fetchAllTransactions, updateTransaction, fetchCategories } from '../../src/js/api.js';
 import { useFeedbackStore } from '../../src/stores/feedback.js';
-import type { ProcessingResultMetadata, TransactionListItem } from '../../src/types/api.js';
+import type { ProcessingResultMetadata, TransactionListItem, CategoryDefinition } from '../../src/types/api.js';
 
 interface ColumnLike {
   key: string;
   component?: unknown;
   componentProps?: (value: unknown, row?: Record<string, unknown>, index?: number) => Record<string, unknown>;
+  filterOptions?: Array<{ value: string; label: string }>;
 }
 
 const tableProps = (wrapper: VueWrapper): Record<string, unknown> =>
@@ -50,6 +51,7 @@ vi.mock('../../src/js/api.js', () => ({
   fetchProcessingResultMetadata: vi.fn(),
   fetchAllTransactions: vi.fn(),
   updateTransaction: vi.fn(),
+  fetchCategories: vi.fn(),
 }));
 
 const metadata: ProcessingResultMetadata = {
@@ -90,6 +92,7 @@ describe('Transactions.vue', () => {
     mockRoute.params = {};
     mockRoute.query = {};
     setActivePinia(createPinia());
+    vi.mocked(fetchCategories).mockResolvedValue([]);
   });
 
   const mountPage = (): VueWrapper => shallowMount(Transactions, { global: { plugins: [createPinia()] } });
@@ -227,6 +230,7 @@ describe('Transactions.vue inline editing', () => {
     mockRoute.params = {};
     mockRoute.query = {};
     setActivePinia(createPinia());
+    vi.mocked(fetchCategories).mockResolvedValue([]);
   });
 
   const mountWithTransaction = async (
@@ -323,5 +327,69 @@ describe('Transactions.vue inline editing', () => {
 
     await expect(props.save('Nope')).rejects.toThrow('Update failed');
     expect(useFeedbackStore().hasErrors).toBe(false);
+  });
+});
+
+describe('Transactions.vue category filter', () => {
+  const categoryDefinitions: CategoryDefinition[] = [
+    { id: 'food', default_name: 'Food', patterns: [] },
+    { id: 'housing', default_name: 'Housing', patterns: [] },
+  ];
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockRoute.params = {};
+    mockRoute.query = {};
+    setActivePinia(createPinia());
+    vi.mocked(fetchCategories).mockResolvedValue(categoryDefinitions);
+  });
+
+  const mountWithCategories = async (): Promise<VueWrapper> => {
+    vi.mocked(fetchProcessingResultMetadata).mockResolvedValue(null);
+    vi.mocked(fetchAllTransactions).mockResolvedValue({
+      transactions: [transaction],
+      total_count: 1,
+      limit: 10000,
+      offset: 0,
+    });
+    const wrapper = shallowMount(Transactions, { global: { plugins: [createPinia()] } });
+    await flushPromises();
+    return wrapper;
+  };
+
+  it('loads categories on mount and offers their ids as filter values', async () => {
+    const wrapper = await mountWithCategories();
+
+    expect(fetchCategories).toHaveBeenCalled();
+    const column = tableColumns(wrapper).find(c => c.key === 'category_id');
+    const options = (column as ColumnLike).filterOptions ?? [];
+    expect(options.map(option => option.value)).toEqual(['food', 'housing']);
+  });
+
+  it('labels filter options with the category display names', async () => {
+    const wrapper = await mountWithCategories();
+
+    const column = tableColumns(wrapper).find(c => c.key === 'category_id');
+    const options = (column as ColumnLike).filterOptions ?? [];
+    expect(options.find(option => option.value === 'food')?.label).toBe('Food');
+    expect(options.find(option => option.value === 'housing')?.label).toBe('Housing');
+  });
+
+  it('offers no filter options before categories resolve', async () => {
+    vi.mocked(fetchCategories).mockReturnValue(new Promise(() => undefined));
+    vi.mocked(fetchProcessingResultMetadata).mockResolvedValue(null);
+    vi.mocked(fetchAllTransactions).mockResolvedValue({
+      transactions: [transaction],
+      total_count: 1,
+      limit: 10000,
+      offset: 0,
+    });
+
+    const wrapper = shallowMount(Transactions, { global: { plugins: [createPinia()] } });
+    await flushPromises();
+
+    const column = tableColumns(wrapper).find(c => c.key === 'category_id');
+    const options = (column as ColumnLike).filterOptions ?? [];
+    expect(options).toEqual([]);
   });
 });

@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { ref, onMounted, computed, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, RouterLink } from 'vue-router'
 import { useGettext } from 'vue3-gettext'
 import { fetchAllTransactions, fetchProcessingResultMetadata, updateTransaction } from '../js/api.js'
 import { buildResultQuery, extractResultId } from '../js/routeUtils.js'
 import { useFeedbackStore } from '../stores/feedback.js'
-import { RouterLink } from 'vue-router'
+import { useCategoriesStore } from '../stores/categories.js'
 import { formatDateISO } from '../js/dateUtils.js'
 import VueDataTable from '../components/data/VueDataTable.vue'
 import EditableCategoryCell from '../components/data/EditableCategoryCell.vue'
@@ -19,6 +19,7 @@ import type {
 
 const { $gettext } = useGettext()
 const feedbackStore = useFeedbackStore()
+const categoriesStore = useCategoriesStore()
 const route = useRoute()
 
 // Length limits matching the backend column sizes
@@ -42,15 +43,31 @@ const saveCorrection = async (
   feedbackStore.showSuccess($gettext('Transaction updated'))
 }
 
+// Category id marker used by the frontend for uncategorized transactions
+const UNCATEGORIZED = 'uncategorized'
+
+// Dropdown options for the category filter: exactly the categories the
+// backend reports as assignable, with stable ids as values and translated
+// display names as labels, so filtering is language-agnostic
+const categoryFilterOptions = computed(() => {
+  return categoriesStore.categories
+    .map(cat => ({
+      value: cat.id,
+      label: categoriesStore.getCategoryDisplayName(cat.id)
+    }))
+    .sort((a, b) => a.label.localeCompare(b.label))
+})
+
 // Table columns definition
-const columns: Column[] = [
+const columns = computed<Column[]>(() => [
   { key: 'date', title: $gettext('Date') },
   {
     key: 'category_id',
     title: $gettext('Category'),
     component: EditableCategoryCell,
+    filterOptions: categoryFilterOptions.value,
     componentProps: (_value: unknown, row?: Record<string, unknown>) => ({
-      categoryId: String(row?.category_id ?? 'uncategorized'),
+      categoryId: String(row?.category_id ?? UNCATEGORIZED),
       save: (categoryId: string | null) =>
         saveCorrection(Number(row?.transaction_id), { category_id: categoryId })
     })
@@ -84,7 +101,7 @@ const columns: Column[] = [
         saveCorrection(Number(row?.transaction_id), { notice })
     })
   },
-]
+])
 
 const metadata = ref<ProcessingResultMetadata | null>(null)
 const transactions = ref<TransactionListItem[]>([])
@@ -127,7 +144,7 @@ function formatDateForDisplay(dateValue: string | undefined): string {
 const allTransactions = computed(() => {
   return transactions.value.map(txn => ({
     date: formatDateForDisplay(txn.date),
-    category_id: txn.category_id || 'uncategorized',
+    category_id: txn.category_id || UNCATEGORIZED,
     merchant: txn.partner || txn.original_partner || '',
     amount: txn.amount?.toFixed(2) || '',
     currency: txn.currency || '',
@@ -142,6 +159,7 @@ const allTransactions = computed(() => {
 
 onMounted(() => {
   loadResults()
+  categoriesStore.loadCategories()
 })
 
 // Reload when the resultId query filter changes while the page is reused

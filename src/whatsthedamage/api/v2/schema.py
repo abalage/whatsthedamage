@@ -956,7 +956,9 @@ def get_openapi_schema() -> dict[str, Any]:
                 "get": {
                     "summary": "Get all category definitions",
                     "description": (
-                        "Returns all CategoryDefinition objects."
+                        "Returns assignable (non-calculated) category "
+                        "definitions. Calculated categories are excluded "
+                        "because they cannot be assigned to transactions."
                     ),
                     "operationId": "getCategories",
                     "tags": ["Categories"],

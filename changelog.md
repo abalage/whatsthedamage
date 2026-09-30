@@ -1,5 +1,41 @@
 # Changelog
 
+## [Unreleased]
+
+User persistence and authentication release. Processing results and transactions are now stored per user in a relational database instead of the cache-only session flow.
+
+### BREAKING CHANGES
+- **Authentication Required**: All transaction, processing result, and correction endpoints now require an authenticated user; data is scoped per user account (ad3488c).
+- **New Date Protocol**: Transaction dates are stored as datetime values and months are addressed as `YYYY-MM` in API contracts and drilldown keys (9836ac7).
+- **API Restructuring**: `POST /api/v2/process` renamed to `POST /api/v2/processing-results`; results endpoints moved under `/api/v2/processing-results` (9836ac7).
+- **Drilldown Endpoint Removal**: Removed the per-processing-result drilldown endpoints; replaced by `GET /api/v2/transactions/aggregate` with grouping by category, month, and account (c08fc1c).
+- **Optional result_id**: `result_id` is optional across transaction views; when omitted, all of the user's transactions are shown (12a520d).
+
+### Added
+- **User Management**: Registration, login, logout, and password reset endpoints under `/api/v2/auth` (ad3488c, 7d568d6).
+- **Password Recovery**: One-time recovery codes for password reset, with frontend flow to display and redeem them (7d568d6).
+- **Security Services**: Argon2 password hashing (argon2-cffi), DB-backed sessions with hashed tokens, CSRF token protection, and per-endpoint rate limiting (ad3488c).
+- **Database Persistence**: SQLAlchemy 2.0 ORM with Alembic migrations for users, sessions, transactions, processing results, corrections, and shared corrections; configurable via `WHATSTHEDAMAGE_DATABASE_URI` (default SQLite) (ad3488c, 9836ac7).
+- **Repository Pattern**: Dedicated data access layer in `models/repositories/` with a generic base repository; services no longer issue queries directly (ad3488c).
+- **Transaction CRUD**: Full REST endpoints for transactions with filtering, sorting, and limit/offset pagination (9836ac7, e1c5598).
+- **Transaction Corrections**: Users can correct transaction metadata and share corrections; full CRUD under `/api/v2/corrections` (9836ac7).
+- **CSV Profiles**: Bank-format profiles served via `/api/v2/csv-profiles` endpoints (9836ac7).
+- **Pagination Support**: Frontend fetches large datasets in 2,000-row pages, capped at 50,000 rows with a visible truncation warning (e1c5598).
+- **Frontend Authentication**: Login, Register, and ForgotPassword pages, auth Pinia store, router guards with `requiresAuth`/`requiresGuest` meta, and a login/logout menu in the layout (ad3488c, 7d568d6, 44a3b5d).
+- **Import Page**: Dedicated `/import` page for the CSV import flow (9836ac7).
+
+### Changed
+- **Currency as Account Metadata**: Currency belongs to account metadata; summaries show raw numbers (4524be9).
+- **OpenAPI Schema**: Regenerated `/api/v2/openapi.json` to match the current API: documents the auth, processing-results, transaction, aggregate, and correction endpoints with cookie security and request/response schemas; removed the deleted `/results/...` drilldown paths and stale response models; added route-coverage tests that fail when a registered v2 route or method is missing from the schema.
+- **API Documentation**: Rewrote `API.md` to match the current API: authentication endpoints with session/CSRF usage, processing-results, transaction CRUD with pagination filters, aggregation, corrections, and the optional `result_id`; removed the deleted drilldown endpoints and `cache_ttl`; updated the error format and security considerations (bd3eec2).
+- **README**: Updated user-facing highlights: user accounts with recovery-code password reset, per-user transaction persistence with import deduplication, corrections applied to future imports, database requirements for web/API deployments (SQLite default, `WHATSTHEDAMAGE_DATABASE_URI`, Docker volume note), and the new recovery-code limitation replacing the removed "no authentication" limitation.
+- **Documentation**: Updated ARCHITECTURE.md and AGENTS.md to reflect user persistence, authentication, the repository layer, new endpoints, and the removal of DataTables/jQuery references (bd3eec2).
+
+### Fixed
+- **Drilldowns**: Restored drilldown functionalities against the new transaction store (c08fc1c).
+- **Cell Highlights**: Restored the cell highlight feature (ebafbf0).
+- **Dead Code**: Removed dead code and adjusted result_id handling (e276727, ee8adf1).
+
 ## [0.99.0] - 2026-07-27
 
 ### BREAKING CHANGES

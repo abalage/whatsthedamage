@@ -11,9 +11,10 @@ _The slang phrase "what's the damage?" is often used to ask about the cost or pr
 3. **REST API** - See [API.md](API.md) for complete endpoint documentation. OpenAPI 3.0.3 specification is available at `/api/v2/openapi.json`.
 
 ## Main Features
- - Process CSV exports. Supports multi-account and multi-currency.
+ - User accounts to persist your transaction bound to your user. Each user only sees their own data.  - Process CSV exports. Supports multi-account and multi-currency. Imported transactions are stored per user.
  - Categorizes transactions into well known [accounting categories](#transaction-categories).
  - Categorizes transactions into custom categories by using regular expressions or a [machine learning model](#machine-learning-categorization).
+ - Correct transaction categories or partner names; corrections are remembered and applied to future imports automatically.
  - Transactions can be pre-filtered by start and end dates. If no filter is set, grouping is based on the number of months.
  - Statistical algorithms to highlight outlier categories or transactions. (Web interface only)
  - Visualize reports using Bar charts, Pie charts, etc. (Web interface only)
@@ -58,14 +59,16 @@ Note: the Machine Learning model was trained on the categories listed above.
 My financial details are considered a private matter between myself and my chosen bank. To process my bank account exports, I need a solution that ensures only I have access to the data.
 
 - Support for Open Banking (PSD2) is out of the scope.
-- Nothing is persisted on local storage. The web interface implements a **30-minute caching strategy** to improve performance and user experience. Once cache expires the data gets deleted.
+- Your data stays on your infrastructure. Imported transactions, user accounts, and sessions are stored in a local database (SQLite by default, file `app.db`). There is no telemetry, no external service, and no data leaves the server it runs on. Back up or delete the database file to manage your data.
+- Each account only has access to its own transactions. User management is local: passwords are hashed with Argon2, sessions are database-backed, and sensitive endpoints are rate limited.
+- Previous versions kept processed results only in a short-lived cache. Transactions are now persisted so you can browse, correct, and re-analyze your full history without re-uploading the CSV every time.
 - Machine Learning models can be built to help reducing the burden of writing regular expressions to categorize your transactions. Your data, your model.
 
 ## Install
 
 This chapter describes how to install `whatsthedamage` in production. For development purposes check out the [Development](#development) chapter.
 
-**Note**: The CLI tool works independently without the frontend. For web interface usage, see the [Frontend Development](#frontend-development) section for additional requirements (Node.js 24+, npm 10+).
+**Note**: The CLI tool works independently without the frontend or a database. The web interface and REST API require user accounts and a database: it uses SQLite by default (file `app.db`, created automatically on first start) and can be pointed at any SQLAlchemy-supported database (e.g., PostgreSQL) via the `WHATSTHEDAMAGE_DATABASE_URI` environment variable. For web interface usage, see also the [Frontend Development](#frontend-development) section for additional requirements (Node.js 24+, npm 10+). Back up the database file in production; it contains your users and transactions.
 
 ### Manual install
 
@@ -94,7 +97,9 @@ You can use a pre-built Docker image to try the software.
 $ docker run --rm -ti --publish 5000:5000/tcp ghcr.io/abalage/whatsthedamage:latest
 ```
 
-You can access the web interface on [http://localhost:5000](http://localhost:5000).
+You can access the web interface on [http://localhost:5000](http://localhost:5000). Register a user account on first use.
+
+Note: the database is stored inside the container by default. Mount a volume for the database file (or set `WHATSTHEDAMAGE_DATABASE_URI` to an external database) if you want your users and transactions to survive container recreation.
 
 ## CLI Usage
 
@@ -179,7 +184,7 @@ Note: Regexp values are not stored as raw strings, so watch out for possible bac
 
 - The categorization process may fail to categorize transactions because of the quality of the regular expressions / ML model. The transaction might be categorized as 'other'.
 - The tool assumes that an account only uses a single currency.
-- No user management, no authentication.
+- Password reset relies on the one-time recovery code shown at registration; there is no email-based account recovery.
 
 ## Development
 

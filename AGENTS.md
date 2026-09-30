@@ -21,6 +21,8 @@ This document enables AI coding agents to be immediately productive in the `what
 - **Backend**: Python (Flask) located in `src/whatsthedamage/` - API-only, no server-side templates
 - **Frontend**: Vue 3 SPA with TypeScript, located in `frontend/` at project root
 - **Interfaces**: CLI, REST API v2, and independent Frontend SPA
+- **Persistence**: Relational database via SQLAlchemy 2.0 (default SQLite, configurable via `WHATSTHEDAMAGE_DATABASE_URI`), schema managed by Alembic migrations in `migrations/`
+- **Authentication**: User accounts with Argon2 password hashing, DB-backed sessions, CSRF protection, and rate limiting; all transaction data is scoped to the authenticated user
 
 ## Project Structure
 
@@ -29,11 +31,14 @@ whatsthedamage/
 ├── config/                  # Configuration files
 ├── frontend/                # Vue 3 SPA Frontend (independent of backend)
 │   ├── src/                 # Frontend sources (TypeScript/Vue)
-│   │   ├── components/      # Reusable Vue components
+│   │   ├── components/      # Reusable Vue components (auth, charts, data, layout)
+│   │   ├── composables/     # Vue 3 composable functions
+│   │   ├── config/          # Frontend configuration (auth, highlight)
+│   │   ├── directives/      # Vue directives (popover)
+│   │   ├── locales/         # gettext translation catalogs (.po/.mo)
 │   │   ├── pages/           # Page-level components (routes)
 │   │   ├── stores/          # Pinia state management
-│   │   ├── router/          # Vue Router configuration
-│   │   ├── translations/    # Language translations
+│   │   ├── router/          # Vue Router configuration (with auth guards)
 │   │   ├── js/              # Utility functions and API client
 │   │   └── types/           # TypeScript type definitions
 │   ├── public/              # Static content
@@ -41,13 +46,14 @@ whatsthedamage/
 │   ├── package.json
 │   ├── vite.config.js
 │   └── tsconfig.json
+├── migrations/              # Alembic database migrations
+├── scripts/                 # Build/utility scripts (string extraction)
 ├── src/whatsthedamage/
-│   ├── api/                 # REST API endpoints (v2)
-│   ├── config/              # Configuration classes
+│   ├── api/                 # REST API endpoints (v2 + auth blueprint, auth decorators)
+│   ├── config/              # Configuration classes (app, auth, database, ML, CSV profiles)
 │   ├── controllers/         # Request handling
 │   │   └── frontend_routes.py # Frontend SPA catch-all routes
-│   ├── models/              # Data models and processing
-│   ├── scripts/             # ML training and utilities
+│   ├── models/              # Data models: api (Pydantic contracts), database (SQLAlchemy entities), repositories (data access), domain (processing logic)
 │   ├── services/            # Business logic services
 │   ├── static/              # Backend static assets (ML models, etc.)
 │   ├── utils/               # Utility functions
@@ -59,11 +65,12 @@ whatsthedamage/
 
 ## Architecture Patterns
 
-- **Layered Architecture**: Clear separation of concerns with Presentation (CLI/Frontend), API, Service, Model, Configuration, and Utility layers
+- **Layered Architecture**: Clear separation of concerns with Presentation (CLI/Frontend), API, Service, Model, Persistence, Configuration, and Utility layers
 - **MVC Architecture**: Model-View-Controller pattern
-- **Service Layer**: Business logic isolated in services (ProcessingService, ValidationService, MLService, ResponseFormattingService, IdMappingService, TextCorrectionService, SmoteService, etc.)
+- **Service Layer**: Business logic isolated in services (ProcessingService, ValidationService, MLService, ResponseFormattingService, AuthenticationService, TransactionPersistenceService, CorrectionService, etc.)
+- **Repository Pattern**: All database access goes through repository classes in `models/repositories/`; services never issue SQLAlchemy queries directly
 - **Dependency Injection**: Services injected into controllers
-  - **CLI**: Uses `ServiceContainer` from `service_factory.py`
+  - **CLI**: Uses `ServiceContainer` from `service_container.py`
   - **Flask**: Uses `app.extensions` dictionary
 - **API-First Design**: Backend exposes REST API v2 as the sole interface for frontend communication
 - **SOLID Principles**: Clean OOP design
@@ -73,20 +80,24 @@ whatsthedamage/
   - **Interface Segregation Principle (ISP)**: Clients should not be forced to depend on interfaces they do not use. It’s better to have many small, specific interfaces than one large, general-purpose interface.
   - **Dependency Inversion Principle (DIP)**: High-level modules should not depend on low-level modules. Both should depend on abstractions (e.g., interfaces). Abstractions should not depend on details; details should depend on abstractions.
 - **DRY Principle**: Don't Repeat Yourself
+- **Date formatting**: System dates should be formatted using the ISO 8601 standards, be in UTC time, and have the _at suffix. The codebase uses ISO 8601 date strings (YYYY-MM-DD or YYYY-MM-DDTHH:MM:SS) for all date exchange between backend and frontend.
 
 ## Tooling & Dependencies
 
 - **Python**: Dependencies in `pyproject.toml`, use `make compile-deps`
 - **JavaScript**: Dependencies in `frontend/package.json`
 - **Node.js**: Version 24+ with ESM modules
+- **Database**: SQLAlchemy 2.0 ORM, Alembic for migrations (`alembic.ini`, `migrations/`)
 - **Testing**: Vitest (frontend), pytest (backend)
 - **Linting**: Ruff (Python), ESLint (JavaScript/TypeScript)
 - **Type Checking**: mypy (Python), TypeScript compiler
 - **Frontend Framework**: Vue 3 with Composition API
 - **Frontend State Management**: Pinia
-- **Frontend Routing**: Vue Router 4
+- **Frontend Routing**: Vue Router 5 (with auth guards)
 - **Frontend Build Tool**: Vite 8
-- **Data Grid**: DataTables.net 2.3.x with Bootstrap 5 integration
+- **Data Grid**: Custom `VueDataTable.vue` component (no DataTables.net/jQuery)
+- **Charts**: chart.js with vue-chartjs
+- **i18n**: vue3-gettext with gettext catalogs in `frontend/src/locales/`
 
 ## Development Workflows
 
@@ -103,8 +114,12 @@ make frontend  # Start Vite development server
 make dev       # Set up development environment (Python venv + npm dependencies)
 
 # Production build
-make frontend-build:prod  # Build production frontend assets
-make build                 # Full stack build (Python + JavaScript)
+make frontend-build  # Build production frontend assets (npm run build)
+make build           # Full stack build (Python + JavaScript)
+
+# Database migrations (after changing SQLAlchemy models)
+alembic upgrade head                    # Apply pending migrations
+alembic revision --autogenerate -m "…"  # Create a new migration
 ```
 
 ### Common Commands
@@ -113,9 +128,9 @@ source .venv/bin/activate         # Activate virtual env
 tox -e lint                       # Python linting from virtual env
 tox -e type                       # Type checking from virtual env
 pytest                            # Run backend tests from virtual env
-make test-frontend                # Run frontend tests
+make frontend-test                # Run frontend tests (lint, type-check, knip, vitest)
 make docs                         # Generate documentation
-make lang                         # Extract translatable texts
+make lang                         # Extract and compile translatable texts
 ```
 
 ### Deployment Modes
@@ -179,10 +194,12 @@ npm run test          # Run Vitest tests
 ### JavaScript/TypeScript
 - **Framework**: Vue 3 with Composition API and `<script setup>` syntax
 - **Type System**: TypeScript 5.x with strict mode
-- **State Management**: Pinia stores (form, locale, statistical, translations, feedback)
-- **Routing**: Vue Router 4 for client-side navigation
+- **State Management**: Pinia stores (auth, categories, feedback, form, locale, pivot, statistical, theme)
+- **Routing**: Vue Router 5 for client-side navigation with auth guards (`requiresAuth`/`requiresGuest`/`public` route meta)
 - **Build Tool**: Vite 8 with ESM modules and HMR
-- **Data Grid**: DataTables.net 2.3.x with Bootstrap 5 integration
+- **Data Grid**: Use the existing `VueDataTable.vue` component; do not add DataTables.net/jQuery
+- **Charts**: Use chart.js via the existing `BarChart`/`PieChart` components
+- **i18n**: vue3-gettext; translatable strings go through gettext functions and catalogs in `src/locales/`
 - Use modern JavaScript with ES2022 features
 - Use Node.js (24+) ESM modules
 - Use Node.js built-in modules and avoid external dependencies where possible
@@ -193,7 +210,8 @@ npm run test          # Run Vitest tests
 - Do not add comments unless absolutely necessary, the code should be self-explanatory
 - Never use `null`, always use `undefined` for optional values
 - Prefer functions over classes
-- **API Communication**: Use `/api/v2` base URL or `VITE_API_BASE_URL` environment variable
+- **API Communication**: Use `/api/v2` base URL or `VITE_API_BASE_URL` environment variable; use the typed client in `src/js/api.ts`
+- **Authentication**: Use the `auth` store for session state and CSRF tokens; do not store tokens yourself
 
 ## Testing Guidelines
 
@@ -213,9 +231,13 @@ npm run test          # Run Vitest tests
 
 ## Security Considerations
 
-- **Data Protection**: Never log account numbers, personal info, or secrets
+- **Data Protection**: Never log account numbers, personal info, or secrets; never log passwords, session tokens, CSRF tokens, or recovery codes
+- **User Isolation**: All transaction/result/correction queries must be scoped to the authenticated user (via repositories); protect state-changing endpoints with `require_authentication` / `require_auth_and_csrf` decorators
+- **Passwords**: Hash with Argon2 via PasswordService; never handle plaintext passwords outside authentication flows
+- **CSRF**: State-changing API requests require a CSRF token; fetch it via the auth store / `GET /api/v2/auth/csrf-token`
+- **Rate Limiting**: Sensitive endpoints (login, register, reset) use RateLimitService; keep new auth endpoints rate-limited
 - **Input Validation**: Validate all user and file inputs
-- **Resource Management**: Close file handles promptly
+- **Resource Management**: Close file handles and DB sessions promptly
 - **Error Handling**: Don't expose internal errors or stack traces
 - **File Uploads**: Validate MIME types and extensions
 - **CORS**: Cross-Origin Resource Sharing enabled for frontend-backend communication; development CORS for `http://localhost:3000` and `http://127.0.0.1:3000`; production configurable via Flask-CORS

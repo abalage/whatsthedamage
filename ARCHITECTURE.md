@@ -14,45 +14,66 @@ whatsthedamage/
 │   │   ├── main.ts          # Application entry point
 │   │   ├── App.vue          # Root Vue component
 │   │   ├── router/
-│   │   │   └── index.ts     # Vue Router configuration
+│   │   │   └── index.ts     # Vue Router configuration (with auth guards)
 │   │   ├── components/           # Reusable Vue components
 │   │   │   ├── Layout.vue
+│   │   │   ├── AuthLayout.vue     # Layout for auth pages (login/register)
 │   │   │   ├── ErrorDisplay.vue
-│   │   │   └── StatisticalControls.vue
+│   │   │   ├── PivotCategorySelector.vue
+│   │   │   ├── auth/       # Auth components (PasswordResetForm, RecoveryCodeDisplay)
+│   │   │   ├── charts/     # Chart components (BarChart, PieChart)
+│   │   │   ├── data/       # Data components (VueDataTable, TableLink, TableLinkWithPopover)
+│   │   │   └── layout/     # Layout helpers (BreadcrumbNavigation, ErrorState, LoadingState, PageHeader)
+│   │   ├── composables/    # Vue 3 composable functions
 │   │   ├── config/
-│   │   |   └── highlight-config.ts
+│   │   │   ├── auth-config.ts
+│   │   │   └── highlight-config.ts
 │   │   ├── css/
-│   │   │   ├── components.css
-│   │   │   ├── main.css
-│   │   |   └── results.css
+│   │   │   └── main.css
+│   │   ├── directives/
+│   │   │   └── popover.ts
+│   │   ├── js/              # Utility functions and API client
+│   │   │   ├── api.ts          # Typed API client (processing, transactions, auth)
+│   │   │   ├── categoryTranslations.ts
+│   │   │   ├── dateUtils.ts
+│   │   │   ├── gettext.ts      # vue3-gettext i18n setup
+│   │   │   ├── routeUtils.ts
+│   │   │   ├── regression.ts
+│   │   │   ├── version.ts
+│   │   │   └── themes/         # Chart theme definitions
+│   │   ├── locales/         # gettext translation catalogs
+│   │   │   ├── en.po
+│   │   │   ├── hu.po / hu.mo
+│   │   │   └── messages.pot
 │   │   ├── pages/           # Page-level components (routes)
 │   │   │   ├── About.vue
 │   │   │   ├── Categories.vue
 │   │   │   ├── CategoryMonthsList.vue
 │   │   │   ├── CategoryMonthTransactions.vue
+│   │   │   ├── ForgotPassword.vue
+│   │   │   ├── Import.vue
 │   │   │   ├── Index.vue
 │   │   │   ├── Legal.vue
+│   │   │   ├── Login.vue
 │   │   │   ├── MonthCategoriesList.vue
 │   │   │   ├── PivotTable.vue
 │   │   │   ├── Privacy.vue
+│   │   │   ├── Register.vue
 │   │   │   ├── Statistics.vue
 │   │   │   └── Transactions.vue
 │   │   ├── stores/          # Pinia state management
+│   │   │   ├── auth.ts      # Authentication state
+│   │   │   ├── categories.ts
 │   │   │   ├── feedback.ts
 │   │   │   ├── form.ts
 │   │   │   ├── locale.ts
+│   │   │   ├── pivot.ts
 │   │   │   ├── statistical.ts
-│   │   │   └── translations.ts
-│   │   ├── translations/    # Language specific translations
-│   │   │   ├── hu.json
-│   │   │   └── en.json
-│   │   ├── js/              # Utility functions and API client
-│   │   │   ├── api.ts
-│   │   │   ├── index.ts
-│   │   │   ├── main.ts
-│   │   │   └── statistical-analysis.ts
+│   │   │   └── theme.ts
 │   │   └── types/           # TypeScript type definitions
 │   │       ├── api.ts
+│   │       ├── auth.ts
+│   │       ├── pivot.ts
 │   │       └── index.ts
 │   ├── public/              # Static content
 │   │   └── favicon.ico
@@ -60,17 +81,26 @@ whatsthedamage/
 │   ├── package.json
 │   ├── vite.config.js
 │   └── tsconfig.json
+├── migrations/              # Alembic database migrations
+│   └── versions/            # Versioned migration scripts
 ├── src/whatsthedamage/      # Main source code
+│   ├── app.py              # Flask application factory and setup
 │   ├── api/                 # REST API endpoints
-│   │   ├── v2/              # API v2 endpoints and schemas
-│   │   │   ├── endpoints.py # API v2 processing endpoints
-│   │   │   └── schema.py    # API response schemas
-│   │   ├── docs.py          # API documentation
-│   │   └── helpers.py       # API helper functions
+│   │   ├── auth_decorators.py # require_authentication / require_csrf decorators
+│   │   ├── error_handlers.py  # API error handlers
+│   │   ├── helpers.py       # API helper functions
+│   │   ├── models/          # API DTO package
+│   │   └── v2/              # API v2 endpoints and schemas
+│   │       ├── endpoints.py # API v2 processing, transaction, and correction endpoints
+│   │       ├── schema.py    # OpenAPI 3.0 schema generator
+│   │       └── auth/
+│   │           └── endpoints.py # Authentication endpoints (register/login/logout)
 │   ├── config/              # Configuration classes
+│   │   ├── auth_config.py   # Authentication configuration
 │   │   ├── config.py        # Central configuration
 │   │   ├── config.yml.default   # Default configuration template
-│   │   ├── dt_models.py     # Data models for API responses
+│   │   ├── csv_profiles.py  # CSV bank-format profile definitions
+│   │   ├── database_config.py # SQLAlchemy engine/session configuration
 │   │   ├── exclusions.json  # ExclusionService configuration
 │   │   ├── flask_config.py  # Flask-specific configuration
 │   │   ├── ml_config.py     # ML configuration
@@ -79,7 +109,6 @@ whatsthedamage/
 │   │   ├── cli_controller.py # CLI argument parsing
 │   │   ├── ml_cli.py         # ML CLI interface
 │   │   ├── routes.py        # Web routes
-│   │   ├── routes_helpers.py # Web route helpers
 │   │   └── frontend_routes.py # Frontend SPA routes (catch-all for Vue SPA)
 │   ├── models/              # Data models and processing
 │   │   ├── api/              # API contract models
@@ -87,8 +116,25 @@ whatsthedamage/
 │   │   │   ├── common.py       # Common API models (ProcessingMetadata, ErrorResponse)
 │   │   │   ├── requests.py     # Request models (ProcessingRequest)
 │   │   │   └── responses.py    # Response models (ResultsApiResponse, etc.)
+│   │   ├── database/         # SQLAlchemy ORM models
+│   │   │   ├── base.py             # Declarative base
+│   │   │   ├── user.py             # User entity
+│   │   │   ├── session.py          # User session entity (with CSRF token hash)
+│   │   │   ├── transaction.py      # Persisted transaction entity
+│   │   │   ├── processing_result.py # Persisted processing result entity
+│   │   │   ├── correction.py       # User transaction correction entity
+│   │   │   └── shared_correction.py # Shared correction entity
+│   │   ├── repositories/     # Data access layer (Repository pattern)
+│   │   │   ├── base_repository.py        # Generic repository base
+│   │   │   ├── user_repository.py
+│   │   │   ├── session_repository.py
+│   │   │   ├── transaction_repository.py
+│   │   │   ├── processing_result_repository.py
+│   │   │   ├── correction_repository.py
+│   │   │   └── shared_correction_repository.py
 │   │   └── domain/           # Domain/business models
 │   │       ├── __init__.py     # Package exports
+│   │       ├── account.py          # Account model
 │   │       ├── csv_row.py          # Transaction row model
 │   │       ├── csv_file_handler.py # CSV file parsing
 │   │       ├── csv_processor.py    # CSV processing orchestrator
@@ -100,27 +146,36 @@ whatsthedamage/
 │   │       ├── row_enrichment_ml.py # ML-based categorization
 │   │       ├── row_filter.py        # Date filtering
 │   │       ├── rows_processor.py    # Main processing pipeline
+│   │       ├── session.py          # Domain session model
+│   │       ├── user.py             # Domain user model
 │   │       └── statistical_algorithms.py # Statistical analysis
-│   ├── scripts/              # placeholder
 │   ├── services/             # Business logic services
+│   │   ├── authentication_service.py  # Registration, login, password reset
 │   │   ├── cache_service.py      # Caching service
 │   │   ├── configuration_service.py # Configuration loading
-│   │   ├── data_formatting_service.py # Output formatting (deprecated)
-│   │   ├── drilldown_response_service.py    # Drilldown response building
+│   │   ├── correction_service.py  # Transaction corrections
+│   │   ├── csv_profile_service.py # CSV bank-format profiles
+│   │   ├── csrf_service.py      # CSRF token issuance/validation
+│   │   ├── deduplication_service.py # Duplicate transaction detection
+│   │   ├── drilldown_response_service.py # Drilldown response building
 │   │   ├── exclusion_service.py     # Exclusion handling
 │   │   ├── file_upload_service.py   # File upload handling
 │   │   ├── id_mapping_service.py    # ID mapping for secure URLs
+│   │   ├── interfaces.py       # Service interface protocols
 │   │   ├── ml_service.py        # ML business logic orchestration
+│   │   ├── password_service.py   # Argon2 password hashing
 │   │   ├── processing_service.py    # Core processing service
-│   │   ├── response_builder_service.py # Response construction (deprecated)
+│   │   ├── rate_limit_service.py    # API rate limiting
+│   │   ├── recovery_code_service.py # One-time password recovery codes
 │   │   ├── response_formatting_service.py # Unified formatting & response building
 │   │   ├── service_container.py      # Service container factory
-│   │   ├── session_service.py      # Web session management
+│   │   ├── session_service.py      # DB-backed session management
 │   │   ├── smote_service.py      # SMOTE synthetic data generation
 │   │   ├── statistical_analysis_service.py # Statistical analysis
 │   │   ├── text_correction_service.py # Text cleaning for ML
+│   │   ├── token_service.py     # Session token generation/verification
+│   │   ├── transaction_persistence_service.py # Persist processed transactions
 │   │   └── validation_service.py   # File validation
-│   ├── static/               # Backend static assets
 │   ├── utils/                # Utility functions
 │   │   ├── data_loader.py  # Data loading utils for Machine Learning
 │   │   ├── date_converter.py  # Date parsing/formatting
@@ -130,28 +185,35 @@ whatsthedamage/
 │   ├── static/               # Backend static assets
 │   │   ├── model-card-template.md # Jinja2 template for Model Card generation
 │   ├── view/                 # Presentation layer (legacy CLI output only)
+│   │   ├── metrics_renderers/ # ML metrics rendering templates
 │   │   ├── static/           # Flask static files
 │   │   │   └── dist/         # Frontend build output (when served from backend)
 │   │   ├── row_printer.py    # Console output formatting
 │   │   └── __init__.py
 │   └── uploads/              # File uploads
 ├── tests/                    # Backend tests
-│   ├── services/             # Service layer tests
+│   ├── api/v2/             # API contract and endpoint tests
+│   ├── models/             # Model tests (transaction, correction, request)
+│   ├── repositories/       # Repository tests
+│   ├── services/           # Service layer tests
 │   ├── test_model_privacy.py # Privacy and security tests for ML models
 │   └── ...                   # Other test files
 ├── .github/                  # GitHub configurations
 ├── .gitignore                # Git ignore patterns
+├── alembic.ini               # Alembic configuration
 ├── API.md                    # REST API documentation
 ├── ARCHITECTURE.md           # This document
+├── changelog.md              # Changelog
 ├── CONTRIBUTING.md           # Contribution guidelines
 ├── LICENSE                   # License information
 ├── Makefile                  # Build automation
-├── PRODUCT.md                # Product information
 ├── README.md                 # Project overview
+├── README_ML.md              # ML documentation
 ├── pyproject.toml            # Python project metadata
 ├── requirements.txt          # Python dependencies
 ├── requirements-dev.txt      # Development dependencies
-└── requirements-web.txt      # Web-specific dependencies
+├── requirements-web.txt      # Web-specific dependencies
+└── tox.ini                   # tox automation configuration
 ```
 
 ## 2. High-Level System Diagram
@@ -159,6 +221,9 @@ Provide a simple block diagram (e.g., a C4 Model Level 1: System Context diagram
 
 ```
 [User] <--> [Frontend SPA (Vue 3)] <--> [REST API v2] <--> [ProcessingService] <--> [CSVProcessor] <--> [CsvFileHandler]
+                                    |                        |
+                                    |                        +--> [TransactionPersistenceService] <--> [Repositories] <--> [Database (SQLAlchemy)]
+                                    +--> [Auth API] <--> [AuthenticationService] <--> [PasswordService / TokenService] <--> [Repositories]
                                     |
                                     +--> [CLI Interface] <--> [ProcessingService]
 ```
@@ -170,9 +235,10 @@ Provide a simple block diagram (e.g., a C4 Model Level 1: System Context diagram
 
 The system follows a layered architecture with clear separation of concerns:
 - **Presentation Layer**: CLI and independent Frontend SPA (Vue 3) only
-- **API Layer**: REST API v2 interfaces (Flask) - API-only, no web templates
-- **Service Layer**: Business logic services (ProcessingService, ValidationService, etc.)
+- **API Layer**: REST API v2 interfaces (Flask) - API-only, no web templates, with authentication/CSRF decorators
+- **Service Layer**: Business logic services (ProcessingService, ValidationService, AuthenticationService, etc.)
 - **Model Layer**: Data processing and domain logic (CSVProcessor, RowsProcessor, etc.)
+- **Persistence Layer**: SQLAlchemy ORM models and repositories for users, sessions, transactions, processing results, and corrections
 - **Configuration Layer**: Centralized configuration management
 - **Utility Layer**: Cross-cutting concerns (date handling)
 
@@ -187,12 +253,13 @@ The system follows a layered architecture with clear separation of concerns:
 **Technologies**:
 - **Framework**: Vue 3 with Composition API
 - **Type System**: TypeScript 5.x
-- **State Management**: Pinia (stores for form, locale, statistical analysis, translations, feedback)
-- **Routing**: Vue Router 4 for client-side navigation
+- **State Management**: Pinia (stores for auth, categories, feedback, form, locale, pivot, statistical preferences, theme)
+- **Routing**: Vue Router for client-side navigation with auth guards
 - **Build Tool**: Vite 8 with ESM modules and HMR
 - **UI Framework**: Bootstrap 5 with native HTML elements + Bootstrap classes
-- **Data Grid**: DataTables.net 2.3.x with Bootstrap 5 integration
-- **Utilities**: jQuery 4.0.x (for DataTables integration)
+- **Data Grid**: Custom `VueDataTable.vue` component (DataTables.net/jQuery removed)
+- **Charts**: chart.js with vue-chartjs (BarChart, PieChart components)
+- **i18n**: vue3-gettext with gettext catalogs (`.po`/`.mo` files)
 
 **Deployment**: Independent static hosting or integrated with backend via Flask static serving
 
@@ -202,9 +269,13 @@ The system follows a layered architecture with clear separation of concerns:
 - Independent build and deployment pipeline
 - CORS-enabled communication with backend
 - Client-side routing with Vue Router
+- User authentication: login, registration, and password reset with one-time recovery codes
+- Router guards (`requiresAuth` / `requiresGuest` / `public` route meta) with a global `beforeEach` navigation guard driven by the auth store
+- CSV import flow on the `/import` page
 - Optional `resultId` query parameter filters transaction views (Categories, Transactions, Pivot Table, drilldowns) to a single processing result; when absent, all transactions are shown
 - Unknown paths are redirected to the index page by a catch-all route
 - Transaction views fetch the complete dataset through `fetchAllTransactions`, which pages the `/api/v2/transactions` endpoint (2,000-row pages) until `total_count` rows are collected, capped at 50,000 rows with a visible truncation warning
+- CSRF token handling for state-changing requests (fetched via `/api/v2/auth/csrf-token`)
 - State management with Pinia stores
 - Type-safe development with TypeScript
 - Hot Module Replacement (HMR) in development
@@ -227,7 +298,7 @@ Reusable stateful logic encapsulated in composable functions using Vue 3's Compo
 - Avoid wrapping Pinia stores in composables (use stores directly)
 
 **Usage Guidelines**:
-- Use Pinia stores for **global state** (theme, categories, feedback, locale, statistical preferences)
+- Use Pinia stores for **global state** (theme, categories, feedback, locale, statistical preferences, auth, pivot)
 - Use composables for **component-specific logic** (data fetching, route handling, title generation)
 - Use native Vue 3 features (`ref`, `computed`, `watch`) for simple reactivity
 
@@ -235,14 +306,16 @@ Reusable stateful logic encapsulated in composable functions using Vue 3's Compo
 ```
 Frontend SPA (Vue 3)
 ├── App.vue              # Root component
-├── router/              # Vue Router configuration
+├── router/              # Vue Router configuration with auth guards
 ├── composables/         # Vue 3 composable functions
 │   ├── useRouteParams.ts    # Route parameter extraction
+│   ├── useResultQuery.ts    # resultId navigation query building
 │   ├── useApiData.ts        # API data fetching
 │   ├── useBreadcrumbs.ts    # Breadcrumb generation
 │   ├── usePageTitle.ts      # Page title generation
 │   └── useDrilldownData.ts  # Drilldown page logic
 ├── stores/              # Pinia state management (global state)
+│   ├── auth.ts           # Authentication state (login/logout, CSRF token)
 │   ├── form.ts           # Form state
 │   ├── locale.ts         # Locale/language state
 │   ├── statistical.ts    # Statistical analysis preferences
@@ -252,12 +325,20 @@ Frontend SPA (Vue 3)
 │   └── feedback.ts       # User feedback/notifications
 ├── components/           # Reusable Vue components
 │   ├── Layout.vue
+│   ├── AuthLayout.vue    # Layout for auth pages
 │   ├── ErrorDisplay.vue
-│   └── StatisticalControls.vue
+│   ├── PivotCategorySelector.vue
+│   ├── auth/             # PasswordResetForm, RecoveryCodeDisplay
+│   ├── charts/           # BarChart, PieChart
+│   ├── data/             # VueDataTable, TableLink, TableLinkWithPopover
+│   └── layout/           # BreadcrumbNavigation, ErrorState, LoadingState, PageHeader
 └── pages/                # Page-level components (routes)
-    ├── About.vue
-    ├── Details.vue
-    ├── Results.vue
+    ├── Index.vue
+    ├── Import.vue
+    ├── Login.vue / Register.vue / ForgotPassword.vue
+    ├── Categories.vue / Transactions.vue / PivotTable.vue / Statistics.vue
+    ├── CategoryMonthsList.vue / MonthCategoriesList.vue / CategoryMonthTransactions.vue
+    ├── About.vue / Legal.vue / Privacy.vue
     └── ...
 ```
 
@@ -412,22 +493,146 @@ Frontend SPA (Vue 3)
 
 **Registration Note**: The catch-all route must be registered **AFTER** all API blueprints to ensure API routes take precedence.
 
+#### 3.2.11. AuthenticationService
+
+**Name**: Authentication Service
+
+**Description**: Orchestrates user registration, login, logout, password reset, and session lifecycle. Coordinates PasswordService, TokenService, CsrfService, RecoveryCodeService, and the user/session repositories.
+
+**Technologies**: Python
+
+**Deployment**: Part of the Flask application
+
+#### 3.2.12. PasswordService
+
+**Name**: Password Service
+
+**Description**: Password hashing and verification using Argon2 (via argon2-cffi). Handles password strength requirements and secure rehashing on login.
+
+**Technologies**: Python, argon2-cffi
+
+**Deployment**: Part of the Flask application
+
+#### 3.2.13. TokenService
+
+**Name**: Token Service
+
+**Description**: Session token generation and verification using Python's `secrets` module. Tokens are stored hashed (SHA-256) in DB session entities; the browser holds the opaque token in an HttpOnly, Secure, SameSite=Strict cookie.
+
+**Technologies**: Python
+
+**Deployment**: Part of the Flask application
+
+#### 3.2.14. CsrfService
+
+**Name**: CSRF Service
+
+**Description**: Issues and validates CSRF tokens for state-changing requests. The frontend fetches a token via `GET /api/v2/auth/csrf-token` and sends it with mutating requests; the stored hash is verified server-side.
+
+**Technologies**: Python
+
+**Deployment**: Part of the Flask application
+
+#### 3.2.15. RateLimitService
+
+**Name**: Rate Limit Service
+
+**Description**: Per-endpoint rate limiting for sensitive operations (login, registration, password reset) to mitigate brute-force and abuse. Configurable via `config/auth_config.py`.
+
+**Technologies**: Python
+
+**Deployment**: Part of the Flask application
+
+#### 3.2.16. RecoveryCodeService
+
+**Name**: Recovery Code Service
+
+**Description**: One-time recovery codes for password reset. Codes are issued at registration/recovery setup and consumed once during password recovery.
+
+**Technologies**: Python
+
+**Deployment**: Part of the Flask application
+
+#### 3.2.17. TransactionPersistenceService
+
+**Name**: Transaction Persistence Service
+
+**Description**: Persists processed transactions into the database per user after CSV import, applying deduplication. Works with the repository layer rather than the cache for durable storage.
+
+**Technologies**: Python, SQLAlchemy
+
+**Deployment**: Part of the Flask application
+
+#### 3.2.18. CorrectionService
+
+**Name**: Correction Service
+
+**Description**: Manages user corrections to transaction metadata (e.g., partner or category fixes) via the corrections REST endpoints. Shared corrections can be promoted for global reuse.
+
+**Technologies**: Python, SQLAlchemy
+
+**Deployment**: Part of the Flask application
+
+#### 3.2.19. DeduplicationService
+
+**Name**: Deduplication Service
+
+**Description**: Detects duplicate transactions on import (same account, date, partner, amount) so re-uploaded CSV exports do not create double entries.
+
+**Technologies**: Python
+
+**Deployment**: Part of the Flask application
+
+#### 3.2.20. CsvProfileService
+
+**Name**: CSV Profile Service
+
+**Description**: Serves CSV bank-format profile definitions (column mappings, date formats) exposed via the `/api/v2/csv-profiles` endpoints and used by the frontend import flow.
+
+**Technologies**: Python
+
+**Deployment**: Part of the Flask application
+
+#### 3.2.21. Repository Layer
+
+**Name**: Repositories (Data Access Layer)
+
+**Description**: Data access objects in `src/whatsthedamage/models/repositories/` encapsulating all SQLAlchemy queries. A generic `BaseRepository` provides shared CRUD operations; specialized repositories cover users, sessions, transactions, processing results, corrections, and shared corrections. Services depend on repositories rather than issuing queries directly.
+
+**Technologies**: Python, SQLAlchemy 2.0
+
+**Deployment**: Part of the Flask application
+
 ## 4. Data Stores
 
-### 4.1. File-based Storage
+### 4.1. Relational Database
 
-**Name**: File Uploads and Processing Results
+**Name**: Application Database
+
+**Type**: Relational database via SQLAlchemy 2.0 ORM
+
+**Purpose**: Durable, per-user persistence of accounts, sessions, imported transactions, processing results, and corrections. Introduced on the `user-persistence-support` branch; replaces the previous cache-only handling of processing results.
+
+**Configuration**:
+- Database URI configurable via the `WHATSTHEDAMAGE_DATABASE_URI` environment variable, defaulting to `sqlite:///app.db`
+- Schema managed by Alembic migrations in `migrations/versions/` (configured via `alembic.ini`)
+- Entities in `src/whatsthedamage/models/database/`: User, Session, Transaction, ProcessingResult, Correction, SharedCorrection
+- All data access goes through the repository layer (`src/whatsthedamage/models/repositories/`)
+
+### 4.2. File-based Storage
+
+**Name**: File Uploads
 
 **Type**: File system storage
 
-**Purpose**: Stores uploaded CSV files, configuration files, and processing results. The system uses temporary file storage for uploaded files and caching for processed results.
+**Purpose**: Stores uploaded CSV files and ML model assets. Uploaded files are handled temporarily during processing; processed results are persisted to the database, not the cache.
 
 **Key Files/Directories**:
 - `src/whatsthedamage/uploads/`: Temporary file uploads
 - `src/whatsthedamage/static/`: ML models and metadata
-- Session-based caching for processed results
+- CacheService still used for short-lived data (e.g., ID mappings)
 
-### 4.2. Frontend Assets
+### 4.3. Frontend Assets
 
 **Name**: Frontend Build Artifacts
 
@@ -440,13 +645,13 @@ Frontend SPA (Vue 3)
 - `frontend/src/`: Frontend source code (TypeScript/Vue components)
 - Build artifacts are excluded from Git via `.gitignore`
 
-### 4.3. Session Storage
+### 4.4. Session Storage
 
 **Name**: Web Session Management
 
-**Type**: Flask session storage
+**Type**: Database-backed session entities with cookie tokens
 
-**Purpose**: Manages user session state between requests for the web interface, including file uploads and processing results.
+**Purpose**: Manages authenticated user sessions between requests. Sessions are stored as `Session` entities in the database (including a CSRF token hash); the browser holds an opaque session token. No Flask session-based state is used for user identity.
 
 ## 5. External Integrations / APIs
 
@@ -476,33 +681,58 @@ Removed.
 
 **Service Name**: What's the Damage REST API v2
 
-**Purpose**: Provides HTTP API for CSV transaction processing, results retrieval, drilldown navigation, and statistical analysis.
+**Purpose**: Provides HTTP API for user authentication, CSV transaction import, transaction CRUD, corrections, aggregation/drilldown, and statistical analysis. All transaction data is scoped to the authenticated user.
 
-**Integration Method**: Flask REST API with Pydantic models
+**Integration Method**: Flask REST API with Pydantic models and session-cookie authentication
 
 **Architecture:**
-- **API-First Design**: Contract defined via Pydantic models in `src/whatsthedamage/models/api/responses.py`
-- **Type Safety**: Backend Pydantic models mirror frontend TypeScript interfaces exactly
-- **Validation**: All responses validated using Pydantic; all requests validated before processing
-- **Service Layer**: Business logic delegated to services (ProcessingService, CacheService, StatisticalService, DrilldownResponseService)
+- **API-First Design**: Contract defined via Pydantic models in `src/whatsthedamage/models/api/responses.py` and the OpenAPI 3.0 schema served at `/api/v2/openapi.json`
+- **Type Safety**: Backend Pydantic models mirror frontend TypeScript interfaces
+- **Validation**: Requests validated before processing; responses validated with Pydantic where models exist (e.g., `RecalculateApiResponse`), otherwise serialized via `jsonify`
+- **Service Layer**: Business logic delegated to services (ProcessingService, TransactionPersistenceService, CorrectionService, StatisticalAnalysisService, DrilldownResponseService, AuthenticationService)
 - **Dependency Injection**: Services injected via Flask extensions
+- **Authentication**: `require_authentication` / `optional_authentication` / `require_csrf` / `require_auth_and_csrf` decorators in `api/auth_decorators.py`
 
 **Key Components:**
-- `src/whatsthedamage/api/v2/endpoints.py`: REST API route handlers
+- `src/whatsthedamage/api/v2/endpoints.py`: Processing, transaction, and correction route handlers
+- `src/whatsthedamage/api/v2/auth/endpoints.py`: Authentication route handlers (auth blueprint, prefix `/api/v2/auth`)
+- `src/whatsthedamage/api/v2/schema.py`: OpenAPI 3.0 schema generator
 - `src/whatsthedamage/models/api/responses.py`: Pydantic response DTOs
 - `src/whatsthedamage/api/helpers.py`: Request validation and error handling utilities
 - `frontend/src/js/api.ts`: TypeScript API client with typed functions
-- `frontend/src/types/api.ts`: TypeScript response interfaces
+- `frontend/src/types/api.ts` / `frontend/src/types/auth.ts`: TypeScript interfaces
 
 **Endpoints:**
-| Method | Endpoint | Purpose | Response Type |
-|--------|----------|---------|---------------|
-| POST | `/api/v2/process` | Process CSV transactions | `DetailedResponse` |
-| GET | `/api/v2/results/<result_id>` | Retrieve processed results | `ResultsApiResponse` |
-| GET | `/api/v2/results/<r>/accounts/<a>/categories/<c>/months` | Category-by-month drilldown | `CategoryMonthsApiResponse` |
-| GET | `/api/v2/results/<r>/accounts/<a>/months/<m>/categories` | Month-by-category drilldown | `MonthCategoriesApiResponse` |
-| GET | `/api/v2/results/<r>/accounts/<a>/categories/<c>/months/<m>/transactions` | Transaction details | `CategoryMonthTransactionsApiResponse` |
-| POST | `/api/v2/recalculate-statistics` | Recalculate statistical highlights | `RecalculateApiResponse` |
+| Method | Endpoint | Purpose |
+|--------|----------|---------|
+| POST | `/api/v2/auth/register` | Register a new user account |
+| POST | `/api/v2/auth/login` | Authenticate user, create session |
+| POST | `/api/v2/auth/logout` | Terminate the current session |
+| GET | `/api/v2/auth/me` | Current user information |
+| POST | `/api/v2/auth/reset-password` | Reset password using a recovery code |
+| GET | `/api/v2/auth/csrf-token` | Issue a CSRF token |
+| POST | `/api/v2/processing-results` | Process and import CSV transactions |
+| GET | `/api/v2/processing-results` | List processing results |
+| GET | `/api/v2/processing-results/<result_id>` | Processing result metadata |
+| GET | `/api/v2/transactions` | List user transactions (paginated, filterable) |
+| POST | `/api/v2/transactions` | Create a transaction |
+| GET | `/api/v2/transactions/<id>` | Retrieve a single transaction |
+| PUT | `/api/v2/transactions/<id>` | Update a transaction |
+| DELETE | `/api/v2/transactions/<id>` | Delete a transaction |
+| GET | `/api/v2/transactions/aggregate` | Aggregate transactions by category/month/account (drilldown) |
+| GET | `/api/v2/corrections` | List transaction corrections |
+| POST | `/api/v2/corrections` | Create a correction |
+| GET | `/api/v2/corrections/<id>` | Retrieve a correction |
+| PUT | `/api/v2/corrections/<id>` | Update a correction |
+| DELETE | `/api/v2/corrections/<id>` | Delete a correction |
+| GET | `/api/v2/categories` | Category definitions |
+| GET | `/api/v2/categories/cost-of-living` | Cost-of-living category subset |
+| GET | `/api/v2/csv-profiles` | Available CSV bank-format profiles |
+| GET | `/api/v2/csv-profiles/<profile_id>` | A single CSV profile |
+| POST | `/api/v2/recalculate-statistics` | Recalculate statistical highlights (`RecalculateApiResponse`) |
+| GET | `/api/v2/openapi.json` | OpenAPI 3.0 specification |
+
+The legacy drilldown endpoints (`/processing-results/<id>/accounts/...`) were removed and replaced by `GET /api/v2/transactions/aggregate`, which supports grouping by category, month, and account.
 
 **Statistical Highlights Contract:**
 - `POST /api/v2/recalculate-statistics` computes highlights from persisted
@@ -515,22 +745,24 @@ Removed.
   keyed by the same `group_key` values as its `groups` — view-relative cell IDs,
   consistent with the parent matrix analysis scope.
 
+**Pagination:**
+- `GET /api/v2/transactions` supports `limit`/`offset` (defaults 100/0) plus filtering by date range, category, account, partner, transaction type, month, amount range, and `result_id`, with `sort_by`/`sort_order`
 
 **API Contract Standardization:**
-- All endpoints return validated Pydantic models
+- Responses use validated Pydantic models where models exist; new endpoints should prefer the standard response envelope (`ApiEnvelope<T>`)
 - Frontend TypeScript interfaces match backend models 1:1
 - Contract tests verify response schema compliance
-- Standard response envelope (`ApiEnvelope<T>`) available for new endpoints
 - Error responses use consistent `{code, message, details?}` format
 
 **Contract Testing:**
-- 18 contract tests in `tests/api/v2/test_contract.py`
-- Tests verify Pydantic model validation for all endpoints
+- 15 contract tests in `tests/api/v2/test_contract.py`
+- Endpoint tests in `tests/api/v2/test_transaction_endpoints.py` and `tests/test_api_v2_endpoints.py`
 - Tests verify response structure, field types, and required fields
 
 **Documentation:**
 - [API-First Architecture](docs/api-first-architecture.md)
 - [API Style Guide](docs/api-style-guide.md)
+- OpenAPI schema at `/api/v2/openapi.json`
 
 ## 6. Deployment & Infrastructure
 
@@ -539,9 +771,17 @@ Removed.
 **Key Services Used**:
 - Flask development server for local development
 - Gunicorn for production deployment (backend)
+- Relational database via SQLAlchemy 2.0 (default SQLite `app.db`; configurable with `WHATSTHEDAMAGE_DATABASE_URI`, e.g., PostgreSQL for production)
+- Alembic for database schema migrations
 - Vite for frontend bundling and optimization
 - npm for frontend dependency management
 - **ML Dependencies**: scikit-learn, skops (v0.14.0) for secure model serialization, imbalanced-learn for SMOTE
+- **Auth Dependencies**: argon2-cffi for password hashing
+
+**Database Setup**:
+- Configure the database URI via `WHATSTHEDAMAGE_DATABASE_URI` (defaults to `sqlite:///app.db`)
+- Apply migrations with Alembic (`alembic upgrade head`, configured via `alembic.ini`)
+- Sessions, users, transactions, processing results, and corrections live in the database; back it up accordingly
 
 **CI/CD Pipeline**: Makefile-based automation with commands like:
 - `make dev`: Set up development environment (Python venv + npm dependencies)
@@ -554,6 +794,11 @@ Removed.
 **Frontend Deployment Options**:
 1. **Standalone Deployment**: Frontend built with `npm run build:prod` and `dist/` directory hosted on static hosting. Backend API must be accessible via CORS.
 2. **Development Mode**: Vite dev server runs on port 3000 with `/api` proxy to `http://localhost:5000/api/v2`. Backend Flask server runs separately on port 5000.
+
+**Production Security Configuration**:
+- CORS must remain restricted to the actual frontend origin in production
+- Rate limits and session lifetimes are configured in `config/auth_config.py`
+- CSRF protection applies to all state-changing API endpoints; ensure the frontend origin is allowed so tokens validate
 
 **CORS Configuration**:
 - Development: CORS enabled for `http://localhost:3000` and `http://127.0.0.1:3000`
@@ -569,22 +814,26 @@ Removed.
 
 ## 7. Security Considerations
 
-**Authentication**: Not applicable (local tool, no user accounts)
+**Authentication**: Username/password accounts with Argon2 password hashing (`password_service.py`, argon2-cffi). Sessions are DB-backed entities identified by an opaque token stored in a cookie. Password reset uses one-time recovery codes. Rate limiting protects sensitive endpoints (login, registration, password reset).
 
-**Authorization**: Not applicable (local tool)
+**Authorization**: Per-user data isolation. All transaction, processing result, and correction endpoints scope queries to the authenticated user via the repository layer. Enforcement is centralized in `api/auth_decorators.py` (`require_authentication`, `require_auth_and_csrf`, `optional_authentication`).
 
-**Data Encryption**: Not applicable (local file processing)
+**Data Encryption**: Passwords are stored as Argon2 hashes; session tokens and CSRF tokens are hashed at rest in the `Session` entity. Transport encryption should be provided by the deployment (reverse proxy/TLS).
 
 **Key Security Tools/Practices**:
+- Argon2 password hashing with automatic rehash on login
+- CSRF token issuance (`/api/v2/auth/csrf-token`) and server-side hash verification on all state-changing requests
+- Per-endpoint rate limiting (`rate_limit_service.py`, configured in `config/auth_config.py`)
 - Input validation for all user and file inputs
 - File type and content verification
 - Secure file handling with proper cleanup
-- Never logging sensitive data (account numbers, personal info)
+- Never logging sensitive data (account numbers, personal info, passwords, tokens)
 - Resource management with prompt file handle closing
 - Error handling without exposing internal errors
 
 **Known Security Issues**:
 - File uploads require validation of MIME types and extensions
+- Default SQLite database file should be protected from direct download by the web server
 
 ## 8. Development & Testing Environment
 
@@ -613,11 +862,11 @@ Removed.
 - Complete migration to separate backend and frontend repositories (completed: frontend decoupled at root level, can be split into separate repo)
 
 **Planned Major Changes**:
-- Migrate from memory-based caching to more robust solution
+- Retire remaining CacheService usages in favor of database persistence where durability is required
 - Enhance ML model management and security
 - Improve error handling and user feedback
 - Add more statistical analysis features
-- Support additional CSV formats and banks
+- Support additional CSV formats and banks (via the CSV profile system)
 
 **Significant Future Features**:
 - Event-driven architecture for real-time updates
@@ -626,8 +875,18 @@ Removed.
 - Additional localization languages
 
 **Recent Architectural Improvements**:
+- **User Persistence Support**: Introduced SQLAlchemy 2.0 ORM with Alembic migrations. Users, sessions, transactions, processing results, and corrections are persisted in a relational database (default SQLite, configurable via `WHATSTHEDAMAGE_DATABASE_URI`), replacing cache-only processing results.
+- **Repository Pattern**: Added a dedicated data access layer (`models/repositories/`) with a generic `BaseRepository` and per-entity repositories; services no longer issue queries directly.
+- **Authentication & Authorization**: User registration, login, logout, and password reset with one-time recovery codes. Argon2 password hashing, DB-backed sessions, CSRF token verification, and per-endpoint rate limiting. Frontend gained auth pages (Login, Register, ForgotPassword), an auth Pinia store, and router guards.
+- **Transaction CRUD & Corrections**: Transactions are first-class persisted entities with full REST CRUD, filtering, and pagination; users can correct transaction metadata and share corrections.
+- **New Date Protocol**: Transaction dates stored as datetime; months addressed as `YYYY-MM` in API contracts and drilldown keys.
+- **Drilldown Rework**: Removed the per-processing-result drilldown endpoints in favor of `GET /api/v2/transactions/aggregate` with view-relative group keys; `result_id` became an optional filter across transaction views.
+- **Pagination Support**: `GET /api/v2/transactions` supports limit/offset pagination and rich filtering; the frontend fetches large datasets in 2,000-row pages (capped at 50,000).
+- **CSV Profiles**: Bank-format profiles (`config/csv_profiles.py`, `/api/v2/csv-profiles` endpoints) decouple CSV parsing from configuration; frontend gained a dedicated Import page.
+- **Data Grid Replacement**: Removed DataTables.net and jQuery; transactions and pivot views use a custom `VueDataTable.vue` component, and charts use chart.js/vue-chartjs.
+- **i18n Migration**: Switched from JSON translation files to vue3-gettext with gettext catalogs (`.po`/`.mo`) in `frontend/src/locales/`.
 - **Frontend-Backend Decoupling**: Migrated from Jinja2 server-side templates to standalone Vue 3 SPA with complete API-only communication. Frontend moved from `src/whatsthedamage/view/frontend/` to project root `frontend/`. All web templates removed. Added `frontend_routes.py` for integrated deployment support.
-- **Frontend Modernization**: Adopted Vue 3 with Composition API, Vue Router 4, Pinia for state management, TypeScript 5.x, and Vite 8 for building
+- **Frontend Modernization**: Adopted Vue 3 with Composition API, Vue Router, Pinia for state management, TypeScript 5.x, and Vite 8 for building
 - **Removed Wrapper Components**: Eliminated ButtonComponent and CardComponent that added unnecessary abstraction over Bootstrap's native classes. All usages replaced with native HTML elements + Bootstrap classes, improving code clarity and reducing maintenance burden.
 - **Simplified Composables**: Refactored useDrilldownData from a monolithic 375-line file into focused, single-responsibility composables (useRouteParams, useApiData, useBreadcrumbs, usePageTitle) that can be composed together, improving maintainability and testability. Removed deprecated buildEndpoint pattern.
 - **Code Cleanup**: Removed duplicate theme initialization from Layout.vue (theme store already auto-initializes), deleted unused utils.ts file with showNotification function.
@@ -651,7 +910,7 @@ Removed.
 
 **Primary Contact/Team**: Balage Abalage
 
-**Date of Last Update**: 2026-09-02
+**Date of Last Update**: 2026-09-29
 
 ## 11. Glossary / Acronyms
 
@@ -669,7 +928,7 @@ Removed.
 
 **Vue**: Progressive JavaScript framework used for the frontend SPA
 
-**Pinia**: State management library for Vue applications, used for managing form state, locale, statistical analysis, translations, and feedback
+**Pinia**: State management library for Vue applications, used for managing auth, categories, feedback, form, locale, pivot, statistical preferences, and theme state
 
 **Vite**: Modern build tool for frontend development with HMR (Hot Module Replacement)
 
@@ -678,3 +937,19 @@ Removed.
 **TypeScript**: Typed superset of JavaScript used for frontend development
 
 **CORS**: Cross-Origin Resource Sharing - Mechanism enabling frontend-backend communication across different origins
+
+**SQLAlchemy**: Python SQL toolkit and ORM used for database models and queries
+
+**Alembic**: Database migration tool for SQLAlchemy, managing schema changes in `migrations/`
+
+**Repository Pattern**: Data access layer encapsulating SQLAlchemy queries behind per-entity repository classes
+
+**CSRF**: Cross-Site Request Forgery - Attack mitigated by per-session tokens required on state-changing API requests
+
+**Argon2**: Password hashing algorithm used for storing user password hashes securely
+
+**Rate Limiting**: Restricting the number of requests per time window for sensitive endpoints (login, registration, password reset)
+
+**Recovery Code**: One-time code allowing a user to reset their password without an email flow
+
+**CSV Profile**: Definition of a bank's CSV export format (column mappings, date formats) used by the import flow

@@ -69,6 +69,7 @@ const pickerTheme: Theme = {
       pareto: '#ff7a49',
       excluded: '#b2b2b2',
       multiple: '#d44e90',
+      corrected: '#7fb3d5',
     },
   },
 };

@@ -4,14 +4,15 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { shallowMount, flushPromises, type VueWrapper } from '@vue/test-utils';
+import { shallowMount, flushPromises, type VueWrapper, type DOMWrapper } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
 import { reactive } from 'vue';
 import Transactions from '../../src/pages/Transactions.vue';
 import VueDataTable from '../../src/components/data/VueDataTable.vue';
 import EditableCategoryCell from '../../src/components/data/EditableCategoryCell.vue';
 import EditableTextCell from '../../src/components/data/EditableTextCell.vue';
-import { fetchProcessingResultMetadata, fetchAllTransactions, updateTransaction, fetchCategories } from '../../src/js/api.js';
+import UndoCorrectionCell from '../../src/components/data/UndoCorrectionCell.vue';
+import { fetchProcessingResultMetadata, fetchAllTransactions, updateTransaction, undoTransaction, fetchCategories } from '../../src/js/api.js';
 import { useFeedbackStore } from '../../src/stores/feedback.js';
 import type { ProcessingResultMetadata, TransactionListItem, CategoryDefinition } from '../../src/types/api.js';
 
@@ -51,6 +52,7 @@ vi.mock('../../src/js/api.js', () => ({
   fetchProcessingResultMetadata: vi.fn(),
   fetchAllTransactions: vi.fn(),
   updateTransaction: vi.fn(),
+  undoTransaction: vi.fn(),
   fetchCategories: vi.fn(),
 }));
 
@@ -395,5 +397,269 @@ describe('Transactions.vue category filter', () => {
     const column = tableColumns(wrapper).find(c => c.key === 'category_id');
     const options = (column as ColumnLike).filterOptions ?? [];
     expect(options).toEqual([]);
+  });
+});
+
+describe('Transactions.vue corrections review', () => {
+  /** Transaction without corrections: applied values equal the originals */
+  const pristineTransaction: TransactionListItem = {
+    ...transaction,
+    category_id: 'food',
+    original_category_id: 'food',
+    notice: null,
+    original_notice: null,
+    partner: null,
+  };
+
+  /** Transaction with merchant, category, and notice corrected */
+  const correctedTransaction: TransactionListItem = {
+    ...transaction,
+    id: 2,
+    category_id: 'housing',
+    original_category_id: 'food',
+    partner: 'Renamed Store',
+    notice: 'birthday gift',
+    original_notice: null,
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockRoute.params = {};
+    mockRoute.query = {};
+    setActivePinia(createPinia());
+    vi.mocked(fetchCategories).mockResolvedValue([]);
+  });
+
+  const mountWithTransactions = async (
+    transactions: TransactionListItem[]
+  ): Promise<VueWrapper> => {
+    vi.mocked(fetchProcessingResultMetadata).mockResolvedValue(null);
+    vi.mocked(fetchAllTransactions).mockResolvedValue({
+      transactions,
+      total_count: transactions.length,
+      limit: 10000,
+      offset: 0,
+    });
+    const wrapper = shallowMount(Transactions, { global: { plugins: [createPinia()] } });
+    await flushPromises();
+    return wrapper;
+  };
+
+  it('marks rows as uncorrected when applied values equal the originals', async () => {
+    const wrapper = await mountWithTransactions([pristineTransaction]);
+
+    expect(tableData(wrapper)[0].corrected).toBe(false);
+  });
+
+  it('marks rows as corrected when any value differs from its original', async () => {
+    const wrapper = await mountWithTransactions([correctedTransaction]);
+
+    expect(tableData(wrapper)[0].corrected).toBe(true);
+  });
+
+  it('hides the undo and confidence columns by default', async () => {
+    const wrapper = await mountWithTransactions([correctedTransaction]);
+
+    const keys = tableColumns(wrapper).map(column => column.key);
+    expect(keys).not.toContain('undo');
+    expect(keys).not.toContain('confidence');
+  });
+
+  it('maps corrected cells to the corrected highlight type', async () => {
+    const wrapper = await mountWithTransactions([
+      pristineTransaction,
+      correctedTransaction,
+    ]);
+
+    const highlights = tableProps(wrapper)
+      .cellHighlightsByRowId as Record<string, string[]>;
+    expect(highlights['1|category_id']).toBeUndefined();
+    expect(highlights['1|merchant']).toBeUndefined();
+    expect(highlights['1|notice']).toBeUndefined();
+    expect(highlights['2|category_id']).toEqual(['corrected']);
+    expect(highlights['2|merchant']).toEqual(['corrected']);
+    expect(highlights['2|notice']).toEqual(['corrected']);
+  });
+
+  it('carries per-cell row ids for the highlight lookup', async () => {
+    const wrapper = await mountWithTransactions([correctedTransaction]);
+
+    const rowIds = tableData(wrapper)[0]._rowIds as Record<string, string>;
+    expect(rowIds).toEqual({
+      category_id: '2|category_id',
+      merchant: '2|merchant',
+      notice: '2|notice',
+    });
+  });
+});
+
+describe('Transactions.vue toolbar toggles', () => {
+  /** Transaction without corrections: applied values equal the originals */
+  const pristineTransaction: TransactionListItem = {
+    ...transaction,
+    category_id: 'food',
+    original_category_id: 'food',
+    notice: null,
+    original_notice: null,
+    partner: null,
+  };
+
+  /** Transaction with merchant, category, and notice corrected */
+  const correctedTransaction: TransactionListItem = {
+    ...transaction,
+    id: 2,
+    category_id: 'housing',
+    original_category_id: 'food',
+    partner: 'Renamed Store',
+    notice: 'birthday gift',
+    original_notice: null,
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockRoute.params = {};
+    mockRoute.query = {};
+    setActivePinia(createPinia());
+    vi.mocked(fetchCategories).mockResolvedValue([]);
+  });
+
+  // The toolbar buttons render inside VueDataTable's filter-actions slot,
+  // so the table itself must not be stubbed for these tests
+  const mountWithTable = async (
+    transactions: TransactionListItem[]
+  ): Promise<VueWrapper> => {
+    vi.mocked(fetchProcessingResultMetadata).mockResolvedValue(null);
+    vi.mocked(fetchAllTransactions).mockResolvedValue({
+      transactions,
+      total_count: transactions.length,
+      limit: 10000,
+      offset: 0,
+    });
+    const wrapper = shallowMount(Transactions, {
+      global: {
+        plugins: [createPinia()],
+        stubs: { VueDataTable: false },
+      },
+    });
+    await flushPromises();
+    return wrapper;
+  };
+
+  // Toggle buttons in toolbar order: Corrected, Edit, Confidence
+  const findToggleButtons = (wrapper: VueWrapper): DOMWrapper<Element>[] =>
+    wrapper.findAll('button[aria-pressed]');
+
+  const findColumn = (wrapper: VueWrapper, key: string): ColumnLike => {
+    const column = tableColumns(wrapper).find(c => c.key === key);
+    expect(column).toBeDefined();
+    return column as ColumnLike;
+  };
+
+  it('renders the toggle buttons next to the clear button', async () => {
+    const wrapper = await mountWithTable([correctedTransaction]);
+
+    const toggles = findToggleButtons(wrapper);
+    expect(toggles).toHaveLength(3);
+    expect(toggles.map(t => t.text())).toEqual(['Corrected', 'Edit', 'Confidence']);
+    expect(wrapper.text()).toContain('Clear all filters');
+  });
+
+  it('filters the table to corrected transactions when the Corrected toggle is on', async () => {
+    const wrapper = await mountWithTable([
+      pristineTransaction,
+      correctedTransaction,
+    ]);
+
+    await findToggleButtons(wrapper)[0].trigger('click');
+    await flushPromises();
+
+    const rows = tableData(wrapper);
+    expect(rows).toHaveLength(1);
+    expect(rows[0].transaction_id).toBe(2);
+    expect(findToggleButtons(wrapper)[0].attributes('aria-pressed')).toBe('true');
+  });
+
+  it('adds the undo column with per-row undo callbacks when the Edit toggle is on', async () => {
+    const wrapper = await mountWithTable([
+      pristineTransaction,
+      correctedTransaction,
+    ]);
+    const restored: TransactionListItem = {
+      ...correctedTransaction,
+      category_id: 'food',
+      partner: null,
+      notice: null,
+    };
+    vi.mocked(undoTransaction).mockResolvedValue(restored);
+
+    await findToggleButtons(wrapper)[1].trigger('click');
+    await flushPromises();
+
+    const column = findColumn(wrapper, 'undo');
+    expect(column.component).toBe(UndoCorrectionCell);
+
+    const rows = tableData(wrapper);
+    const pristineProps = column.componentProps?.(
+      undefined, rows[0]
+    ) as { corrected: boolean; undo: () => Promise<void> };
+    const correctedProps = column.componentProps?.(
+      undefined, rows[1]
+    ) as { corrected: boolean; undo: () => Promise<void> };
+    expect(pristineProps.corrected).toBe(false);
+    expect(correctedProps.corrected).toBe(true);
+
+    await correctedProps.undo();
+    expect(undoTransaction).toHaveBeenCalledWith(2);
+    expect(tableData(wrapper)[1].corrected).toBe(false);
+    expect(useFeedbackStore().hasMessages).toBe(true);
+  });
+
+  it('rejects undo failures so the undo cell can show the error inline', async () => {
+    const wrapper = await mountWithTable([correctedTransaction]);
+    vi.mocked(undoTransaction).mockRejectedValue(new Error('Undo failed'));
+
+    await findToggleButtons(wrapper)[1].trigger('click');
+    await flushPromises();
+
+    const column = findColumn(wrapper, 'undo');
+    const rows = tableData(wrapper);
+    const props = column.componentProps?.(
+      undefined, rows[0]
+    ) as { undo: () => Promise<void> };
+
+    await expect(props.undo()).rejects.toThrow('Undo failed');
+    expect(tableData(wrapper)[0].corrected).toBe(true);
+    expect(useFeedbackStore().hasErrors).toBe(false);
+  });
+
+  it('adds the confidence column when the Confidence toggle is on', async () => {
+    const wrapper = await mountWithTable([correctedTransaction]);
+
+    await findToggleButtons(wrapper)[2].trigger('click');
+    await flushPromises();
+
+    const keys = tableColumns(wrapper).map(column => column.key);
+    expect(keys).toContain('confidence');
+    expect(keys).not.toContain('undo');
+  });
+
+  it('resets the corrected toggle when the filters are cleared', async () => {
+    const wrapper = await mountWithTable([
+      pristineTransaction,
+      correctedTransaction,
+    ]);
+
+    await findToggleButtons(wrapper)[0].trigger('click');
+    await flushPromises();
+    expect(tableData(wrapper)).toHaveLength(1);
+
+    const clearButton = wrapper
+      .findAll('button')
+      .find(button => button.text() === 'Clear all filters');
+    await clearButton?.trigger('click');
+    await flushPromises();
+
+    expect(findToggleButtons(wrapper)[0].attributes('aria-pressed')).toBe('false');
+    expect(tableData(wrapper)).toHaveLength(2);
   });
 });

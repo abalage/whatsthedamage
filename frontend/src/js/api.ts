@@ -385,6 +385,20 @@ export async function updateTransaction(
 }
 
 /**
+ * Undo all corrections of a transaction, restoring the original
+ * category, merchant, and notice values
+ * @param id - Transaction identifier
+ * @returns Promise with the restored transaction
+ */
+export async function undoTransaction(
+  id: number
+): Promise<TransactionListItem> {
+  return fetchWithCsrf<TransactionListItem>(getApiUrl(`/transactions/${id}/undo`), {
+    method: 'POST',
+  });
+}
+
+/**
  * Statistical analysis options for aggregation and recalculation endpoints
  */
 export interface StatisticalAnalysisOptions {

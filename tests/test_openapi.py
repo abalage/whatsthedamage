@@ -62,6 +62,7 @@ class TestOpenApiSchemaStructure:
             "/processing-results/{result_id}",
             "/transactions",
             "/transactions/{transaction_id}",
+            "/transactions/{transaction_id}/undo",
             "/transactions/aggregate",
             "/corrections",
             "/corrections/{correction_id}",

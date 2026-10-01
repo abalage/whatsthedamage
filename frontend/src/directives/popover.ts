@@ -64,7 +64,7 @@ function initPopover(el: HTMLElement, options: PopoverOptions): void {
     html: options.html !== false,
     sanitize: options.sanitize !== false,
     trigger: options.trigger ?? 'hover focus',
-    customClass: options.customClass
+    ...(options.customClass ? { customClass: options.customClass } : {})
   })
 }
 

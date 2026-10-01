@@ -274,6 +274,7 @@ The system follows a layered architecture with clear separation of concerns:
 - Unknown paths are redirected to the index page by a catch-all route
 - Transaction views fetch the complete dataset through `fetchAllTransactions`, which pages the `/api/v2/transactions` endpoint (2,000-row pages) until `total_count` rows are collected, capped at 50,000 rows with a visible truncation warning
 - Inline correction of transaction attributes on the Transactions page: the merchant, category, and notice cells are click-to-edit (`EditableTextCell.vue`, `EditableCategoryCell.vue`); the category cell offers a dropdown of the backend categories, and changes are persisted through `PUT /api/v2/transactions/<id>`. Merchant and category cells offer an "apply to future" toggle (default on, sent as `apply_to_future`): enabled corrections upsert a merchant rule for future uploads, disabled ones apply to the edited transaction only; notice corrections are always per-transaction
+- Corrections review on the Transactions page: corrected cells are highlighted through the `cellHighlightsByRowId` mechanism with the frontend-only `corrected` highlight type (resolved by `highlight-config.ts`, colored per theme via `--color-highlight-corrected`). VueDataTable's filter toolbar shows the "Clear all filters" button permanently and offers a `filter-actions` slot (plus a `cleared-filters` event) where the page adds toggle buttons: "Corrected" filters the table to corrected transactions (reset when filters are cleared), "Edit" shows an undo column (`UndoCorrectionCell.vue`) with a per-row button calling `POST /api/v2/transactions/<id>/undo`, and "Confidence" shows the confidence column. Undo restores the row's original values and deletes the merchant rule of the transaction's original partner (other existing rows keep their applied values; only future uploads stop being auto-corrected)
 - CSRF token handling for state-changing requests (fetched via `/api/v2/auth/csrf-token`)
 - State management with Pinia stores
 - Type-safe development with TypeScript
@@ -698,6 +699,7 @@ Removed.
 | POST | `/api/v2/transactions` | Create a transaction |
 | GET | `/api/v2/transactions/<id>` | Retrieve a single transaction |
 | PUT | `/api/v2/transactions/<id>` | Update a transaction |
+| POST | `/api/v2/transactions/<id>/undo` | Undo corrections of a transaction (restore original values, delete its merchant rule) |
 | DELETE | `/api/v2/transactions/<id>` | Delete a transaction |
 | GET | `/api/v2/transactions/aggregate` | Aggregate transactions by category/month/account (drilldown) |
 | GET | `/api/v2/corrections` | List transaction corrections |

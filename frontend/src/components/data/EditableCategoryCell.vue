@@ -127,8 +127,8 @@ async function commit(): Promise<void> {
       @mousedown.prevent
     >
       <input
-        type="checkbox"
         v-model="applyToFutureChecked"
+        type="checkbox"
         :disabled="saving"
       >
       {{ $gettext('Apply to future') }}

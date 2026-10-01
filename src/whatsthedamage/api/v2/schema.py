@@ -688,6 +688,47 @@ def get_openapi_schema() -> dict[str, Any]:
                     },
                 }
             },
+            "/transactions/{transaction_id}/undo": {
+                "post": {
+                    "summary": "Undo corrections of a transaction",
+                    "description": (
+                        "Restores the correctable fields (category, "
+                        "partner, notice) of a Transaction entity from "
+                        "the original values captured at upload or on "
+                        "the first correction, and deletes the merchant "
+                        "rule of the transaction's original partner so "
+                        "future uploads are no longer auto-corrected. "
+                        "Idempotent: restoring a transaction without "
+                        "corrections returns it unchanged. Requires the "
+                        "X-CSRF-Token header."
+                    ),
+                    "operationId": "undoTransaction",
+                    "tags": ["Transactions"],
+                    "security": _security(),
+                    "parameters": [
+                        _param(
+                            "transaction_id", "path",
+                            "Transaction identifier",
+                            "integer", required=True
+                        ),
+                    ],
+                    "responses": {
+                        "200": _ok(
+                            "Transaction restored",
+                            _ref("TransactionApiResponse")
+                        ),
+                        **_errors(
+                            **{
+                                "401": "Not authenticated",
+                                "403": "Transaction belongs to "
+                                       "another user",
+                                "404": "Transaction not found",
+                                "500": "Server error",
+                            }
+                        ),
+                    },
+                },
+            },
             "/transactions/aggregate": {
                 "get": {
                     "summary": "Get aggregated transaction data",

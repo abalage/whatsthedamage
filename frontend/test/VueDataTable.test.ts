@@ -124,3 +124,52 @@ describe('VueDataTable column filters', () => {
     expect(wrapper.findAll('tbody tr')).toHaveLength(2);
   });
 });
+
+describe('VueDataTable filter toolbar', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('shows the clear button even when no filter is active', () => {
+    const wrapper = mountTable();
+
+    expect(wrapper.text()).toContain('Clear all filters');
+  });
+
+  it('clears active filters and emits cleared-filters on click', async () => {
+    const wrapper = mountTable();
+    setFilter(wrapper, 'category', 'housing');
+    await wrapper.vm.$nextTick();
+    expect(wrapper.findAll('tbody tr')).toHaveLength(1);
+
+    const clearButton = wrapper
+      .findAll('button')
+      .find(button => button.text() === 'Clear all filters');
+    await clearButton?.trigger('click');
+    await wrapper.vm.$nextTick();
+
+    expect(wrapper.findAll('tbody tr')).toHaveLength(2);
+    expect(wrapper.emitted('cleared-filters')).toHaveLength(1);
+  });
+
+  it('renders page-provided buttons in the filter-actions slot', () => {
+    const wrapper = mount(VueDataTable, {
+      props: {
+        id: 'slot-test-table',
+        data: rows,
+        columns,
+        showColumnFilters: true,
+        showSearch: false,
+        showExport: false,
+        showPagination: false,
+      },
+      slots: {
+        'filter-actions': '<button type="button" class="test-toggle">Toggle</button>',
+      },
+    });
+
+    const toggle = wrapper.find('button.test-toggle');
+    expect(toggle.exists()).toBe(true);
+    expect(toggle.text()).toBe('Toggle');
+  });
+});

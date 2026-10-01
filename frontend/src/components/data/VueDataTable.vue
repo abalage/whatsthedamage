@@ -213,6 +213,10 @@ interface TableApi {
 }
 
 const props = defineProps<Props>()
+
+// Emitted when the "Clear all filters" button resets all column filters,
+// so pages can also reset their own toolbar filters
+const emit = defineEmits(['cleared-filters'])
 const { $gettext } = useGettext()
 
 // Type for aggregate calculation results
@@ -563,6 +567,7 @@ const filteredData = computed(() => {
 function clearColumnFilters(): void {
   columnFilters.value = {}
   currentPage.value = 1
+  emit('cleared-filters')
 }
 
 /**
@@ -826,8 +831,9 @@ defineExpose(tableApi)
       </div>
     </div>
 
-    <!-- Column filters clear button (shown when any column filter is active) -->
-    <div v-if="props.showColumnFilters !== false && Object.keys(columnFilters).length > 0" class="mb-2">
+    <!-- Column filters toolbar: always-visible clear button plus
+         page-provided filter toggle buttons -->
+    <div v-if="props.showColumnFilters !== false" class="mb-2 d-flex flex-wrap gap-2 align-items-center">
       <button
         class="btn bg-surface-base text-secondary border-secondary hover-bg-surface-secondary px-2 py-1 text-sm rounded-sm"
         type="button"
@@ -836,6 +842,7 @@ defineExpose(tableApi)
       >
         {{ $gettext('Clear all filters') }}
       </button>
+      <slot name="filter-actions"></slot>
     </div>
 
     <!-- Export buttons -->

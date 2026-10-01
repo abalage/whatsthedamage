@@ -105,6 +105,7 @@ export const useThemeStore = defineStore('theme', () => {
       '--color-highlight-pareto': colors.highlight.pareto,
       '--color-highlight-excluded': colors.highlight.excluded,
       '--color-highlight-multiple': colors.highlight.multiple,
+      '--color-highlight-corrected': colors.highlight.corrected,
     };
 
     // Apply only semantic CSS variables

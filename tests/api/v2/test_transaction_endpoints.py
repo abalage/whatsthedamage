@@ -1,7 +1,8 @@
 """Functional tests for transaction update API endpoints.
 
-Tests for PUT /api/v2/transactions/<id> covering validation, ownership,
-persistence, and automatic Correction record synchronization.
+Tests for PUT and POST /api/v2/transactions/<id>/undo covering validation,
+ownership, persistence, undo semantics, and automatic Correction record
+synchronization.
 """
 
 from tests.api.v2.conftest import AuthContext, create_transaction
@@ -354,3 +355,180 @@ class TestApplyToFutureSemantics:
         )
 
         assert self._list_corrections(auth_context) == []
+
+
+class TestUndoTransaction:
+    """Tests for POST /api/v2/transactions/<transaction_id>/undo."""
+
+    def _list_corrections(self, context: AuthContext) -> list[dict]:
+        """Return all corrections of the context user."""
+        response = context.client.get('/api/v2/corrections')
+        assert response.status_code == 200
+        return response.get_json()['corrections']
+
+    def _undo(self, context: AuthContext, transaction_id: int):
+        """Undo corrections of the given transaction."""
+        return context.client.post(
+            f'/api/v2/transactions/{transaction_id}/undo',
+            headers=context.csrf_headers
+        )
+
+    def test_undo_restores_all_corrected_fields(self, auth_context):
+        """Undo restores category, partner, and notice to the originals."""
+        transaction = create_transaction(
+            auth_context,
+            category_id='grocery',
+            notice='original notice',
+            apply_to_future=False
+        )
+
+        corrected = auth_context.client.put(
+            f"/api/v2/transactions/{transaction['id']}",
+            json={
+                'category_id': 'gifts',
+                'partner': 'Test Merchant Ltd',
+                'notice': 'changed notice'
+            },
+            headers=auth_context.csrf_headers
+        )
+        assert corrected.get_json()['category_id'] == 'gifts'
+
+        response = self._undo(auth_context, transaction['id'])
+
+        assert response.status_code == 200
+        data = response.get_json()
+        assert data['category_id'] == 'grocery'
+        assert data['partner'] is None
+        assert data['original_partner'] == 'TEST MERCHANT'
+        assert data['notice'] == 'original notice'
+        # The originals stay intact so undo remains repeatable
+        assert data['original_category_id'] == 'grocery'
+        assert data['original_notice'] == 'original notice'
+
+        stored = auth_context.client.get(
+            f"/api/v2/transactions/{transaction['id']}"
+        ).get_json()
+        assert stored['category_id'] == 'grocery'
+        assert stored['partner'] is None
+        assert stored['notice'] == 'original notice'
+
+    def test_undo_is_a_noop_for_pristine_transaction(self, auth_context):
+        """Undoing a transaction without corrections returns it unchanged."""
+        transaction = create_transaction(
+            auth_context, category_id='grocery', notice='kept notice'
+        )
+
+        response = self._undo(auth_context, transaction['id'])
+
+        assert response.status_code == 200
+        data = response.get_json()
+        assert data['category_id'] == 'grocery'
+        assert data['partner'] is None
+        assert data['notice'] == 'kept notice'
+
+    def test_undo_is_repeatable_across_correction_cycles(self, auth_context):
+        """Undo works after a correct, undo, re-correct sequence."""
+        transaction = create_transaction(
+            auth_context, category_id='grocery', apply_to_future=False
+        )
+
+        auth_context.client.put(
+            f"/api/v2/transactions/{transaction['id']}",
+            json={'category_id': 'gifts', 'apply_to_future': False},
+            headers=auth_context.csrf_headers
+        )
+        self._undo(auth_context, transaction['id'])
+
+        recorrected = auth_context.client.put(
+            f"/api/v2/transactions/{transaction['id']}",
+            json={'category_id': 'travel', 'apply_to_future': False},
+            headers=auth_context.csrf_headers
+        )
+        assert recorrected.get_json()['category_id'] == 'travel'
+        assert recorrected.get_json()['original_category_id'] == 'grocery'
+
+        response = self._undo(auth_context, transaction['id'])
+
+        assert response.status_code == 200
+        assert response.get_json()['category_id'] == 'grocery'
+
+    def test_undo_deletes_the_merchant_rule_of_the_transaction(self, auth_context):
+        """Undo also removes the merchant rule of the undone transaction."""
+        transaction = create_transaction(auth_context)
+
+        auth_context.client.put(
+            f"/api/v2/transactions/{transaction['id']}",
+            json={'partner': 'Test Merchant Ltd', 'category_id': 'housing'},
+            headers=auth_context.csrf_headers
+        )
+        assert len(self._list_corrections(auth_context)) == 1
+
+        response = self._undo(auth_context, transaction['id'])
+        assert response.status_code == 200
+
+        assert self._list_corrections(auth_context) == []
+
+    def test_undo_keeps_merchant_rules_of_other_merchants(self, auth_context):
+        """Undo removes only the rule of the undone transaction's merchant."""
+        transaction = create_transaction(auth_context)
+        other = create_transaction(
+            auth_context, original_partner='OTHER MERCHANT'
+        )
+
+        auth_context.client.put(
+            f"/api/v2/transactions/{transaction['id']}",
+            json={'partner': 'Test Merchant Ltd'},
+            headers=auth_context.csrf_headers
+        )
+        auth_context.client.put(
+            f"/api/v2/transactions/{other['id']}",
+            json={'partner': 'Other Merchant Ltd'},
+            headers=auth_context.csrf_headers
+        )
+        assert len(self._list_corrections(auth_context)) == 2
+
+        response = self._undo(auth_context, transaction['id'])
+        assert response.status_code == 200
+
+        corrections = self._list_corrections(auth_context)
+        assert len(corrections) == 1
+        assert corrections[0]['original_partner'] == 'OTHER MERCHANT'
+
+    def test_undo_unknown_transaction_returns_404(self, auth_context):
+        """Undoing a non-existent transaction returns 404."""
+        response = self._undo(auth_context, 999999)
+
+        assert response.status_code == 404
+
+    def test_undo_other_users_transaction_returns_403(
+        self, auth_context, second_auth_context
+    ):
+        """Users cannot undo transactions owned by another user."""
+        transaction = create_transaction(auth_context)
+
+        response = self._undo(second_auth_context, transaction['id'])
+
+        assert response.status_code == 403
+
+    def test_undo_without_csrf_token_returns_403(self, auth_context):
+        """Undo requests missing the CSRF header are rejected."""
+        transaction = create_transaction(auth_context)
+
+        response = auth_context.client.post(
+            f"/api/v2/transactions/{transaction['id']}/undo"
+        )
+
+        assert response.status_code == 403
+
+    def test_undo_without_authentication_returns_401(
+        self, api_app, auth_context
+    ):
+        """Unauthenticated undo requests are rejected."""
+        transaction = create_transaction(auth_context)
+        client = api_app.test_client()
+
+        response = client.post(
+            f"/api/v2/transactions/{transaction['id']}/undo"
+        )
+
+        assert response.status_code == 401

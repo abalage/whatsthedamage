@@ -11,6 +11,7 @@ import {
   fetchAggregatedTransactions,
   fetchProcessingResultMetadata,
   updateTransaction,
+  undoTransaction,
 } from '../src/js/api.js';
 
 const stubFetch = (data: unknown, ok = true): void => {
@@ -280,5 +281,25 @@ describe('updateTransaction', () => {
     stubFetch({ error: 'Transaction not found' }, false);
 
     await expect(updateTransaction(999, { notice: 'x' })).rejects.toThrow('Transaction not found');
+  });
+});
+
+describe('undoTransaction', () => {
+  it('sends a POST request to the undo endpoint', async () => {
+    const restored = { id: 5, category_id: 'grocery', partner: null };
+    stubFetch(restored);
+
+    const result = await undoTransaction(5);
+
+    expect(result).toEqual(restored);
+    const [url, init] = vi.mocked(globalThis.fetch).mock.calls[0] as [string, RequestInit];
+    expect(url).toBe('/api/v2/transactions/5/undo');
+    expect(init.method).toBe('POST');
+  });
+
+  it('throws when the undo is rejected', async () => {
+    stubFetch({ error: 'Transaction not found' }, false);
+
+    await expect(undoTransaction(999)).rejects.toThrow('Transaction not found');
   });
 });

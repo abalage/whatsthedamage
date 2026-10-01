@@ -1483,6 +1483,80 @@ def update_transaction_entity(transaction_id: int) -> tuple[Response, int]:
         return jsonify({'error': str(e)}), 500
 
 
+@v2_bp.route('/transactions/<int:transaction_id>/undo', methods=['POST'])
+@require_authentication
+@require_csrf
+def undo_transaction_entity(transaction_id: int) -> tuple[Response, int]:
+    """POST /api/v2/transactions/<transaction_id>/undo - Undo corrections.
+
+    Restores the correctable fields (category, partner, notice) of a
+    Transaction entity from the original values captured at upload or on
+    the first correction. The original_partner column always holds the
+    original merchant, so the corrected partner is restored to NULL and
+    the display falls back to it.
+
+    The merchant rule (correction entity) matching the transaction's
+    original_partner is also deleted, so future uploads of this merchant
+    are no longer auto-corrected. Other existing transactions of the same
+    merchant keep their applied values; rules apply at upload time to
+    newly stored rows only.
+
+    Undo is idempotent: restoring a transaction without corrections
+    returns its current values unchanged.
+
+    Args:
+        transaction_id: Transaction identifier.
+
+    Returns:
+        Restored Transaction entity data.
+
+    Status Codes:
+        200: Successfully restored the transaction.
+        401: Not authenticated.
+        403: Forbidden (transaction belongs to another user).
+        404: Transaction not found.
+        500: Internal server error.
+    """
+    user = cast(UserDB, request.user)  # type: ignore[attr-defined]
+
+    try:
+        transaction_repo = _get_transaction_repository()
+        transaction = transaction_repo.find_by_id(transaction_id)
+
+        if not transaction:
+            return jsonify({'error': 'Transaction not found'}), 404
+
+        if transaction.user_id != cast(int, user.id):  # type: ignore[arg-type]
+            return jsonify({'error': 'Transaction does not belong to you'}), 403
+
+        transaction_repo.update(
+            transaction_id,
+            category_id=transaction.original_category_id,
+            partner=None,
+            notice=transaction.original_notice
+        )
+
+        # Delete the merchant rule of the undone transaction so future
+        # uploads of this merchant are no longer auto-corrected
+        correction_repo = _get_correction_repository()
+        correction = correction_repo.find_by_user_and_original_partner(
+            cast(int, user.id),  # type: ignore[arg-type]
+            transaction.original_partner
+        )
+        if correction:
+            correction_repo.delete(correction.id)
+
+        restored_transaction = transaction_repo.find_by_id(transaction_id)
+        if not restored_transaction:
+            return jsonify({'error': 'Failed to undo transaction'}), 500
+
+        response_data = _format_transaction_response(restored_transaction)
+        return jsonify(response_data), 200
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
 @v2_bp.route('/transactions/<int:transaction_id>', methods=['DELETE'])
 @require_authentication
 @require_csrf

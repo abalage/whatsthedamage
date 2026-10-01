@@ -18,7 +18,8 @@ interface CellProps {
   value: string;
   maxLength?: number;
   allowEmpty?: boolean;
-  save: (value: string) => Promise<unknown>;
+  applyToFuture?: boolean;
+  save: (value: string, applyToFuture?: boolean) => Promise<unknown>;
 }
 
 const mountCell = (props: CellProps): VueWrapper =>
@@ -170,5 +171,29 @@ describe('EditableTextCell', () => {
     await wrapper.findAll('button')[0].trigger('click');
 
     expect(save).toHaveBeenCalledWith('New Store');
+  });
+
+  it('passes the apply-to-future state when the toggle is enabled', async () => {
+    const save = vi.fn().mockResolvedValue(undefined);
+    const wrapper = mountCell({ value: 'Store', applyToFuture: true, save });
+
+    await wrapper.find('button').trigger('click');
+
+    expect(wrapper.find('input[type="checkbox"]').exists()).toBe(true);
+
+    await wrapper.find('input[type="text"]').setValue('New Store');
+    await wrapper.find('input[type="checkbox"]').setValue(false);
+    await wrapper.findAll('button')[0].trigger('click');
+
+    expect(save).toHaveBeenCalledWith('New Store', false);
+  });
+
+  it('hides the apply-to-future toggle by default', async () => {
+    const save = vi.fn().mockResolvedValue(undefined);
+    const wrapper = mountCell({ value: 'Store', save });
+
+    await wrapper.find('button').trigger('click');
+
+    expect(wrapper.find('input[type="checkbox"]').exists()).toBe(false);
   });
 });

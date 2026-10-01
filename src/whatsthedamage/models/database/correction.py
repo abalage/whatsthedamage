@@ -25,11 +25,11 @@ class Correction(Base):
     Attributes:
         id: Primary key, auto-incrementing.
         user_id: Foreign key to User (required, with CASCADE delete).
-        original_partner: Original partner name from CSV, stored in lowercase for
-            case-insensitive lookup (max 255 chars).
+        original_partner: Original partner name from CSV, stored as provided
+            (max 255 chars); case-insensitive matching is handled at query
+            time by lowercasing both sides.
         corrected_partner: User-specified corrected partner name (max 255 chars, nullable).
         corrected_category_id: User-specified category override (max 50 chars, nullable).
-        corrected_notice: User-specified notice/comment (max 500 chars, nullable).
         created_at: Timestamp of correction creation.
         updated_at: Timestamp of last update.
         user: Many-to-one relationship with User model.
@@ -40,13 +40,12 @@ class Correction(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     user_id = Column(Integer, ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
 
-    # Lookup key (case-insensitive matching handled via lowercase storage)
+    # Lookup key (case-insensitive matching handled at query time)
     original_partner = Column(String(255), nullable=False)
 
     # Correction values (all nullable)
     corrected_partner = Column(String(255), nullable=True)
     corrected_category_id = Column(String(50), nullable=True)
-    corrected_notice = Column(String(500), nullable=True)
 
     # Metadata
     created_at = Column(DateTime, nullable=False, default=lambda: datetime.now(UTC))

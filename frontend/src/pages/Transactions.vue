@@ -68,8 +68,12 @@ const columns = computed<Column[]>(() => [
     filterOptions: categoryFilterOptions.value,
     componentProps: (_value: unknown, row?: Record<string, unknown>) => ({
       categoryId: String(row?.category_id ?? UNCATEGORIZED),
-      save: (categoryId: string | null) =>
-        saveCorrection(Number(row?.transaction_id), { category_id: categoryId })
+      applyToFuture: true,
+      save: (categoryId: string | null, applyToFuture?: boolean) =>
+        saveCorrection(Number(row?.transaction_id), {
+          category_id: categoryId,
+          apply_to_future: applyToFuture
+        })
     })
   },
   {
@@ -80,8 +84,12 @@ const columns = computed<Column[]>(() => [
       value: String(value ?? ''),
       maxLength: PARTNER_MAX_LENGTH,
       allowEmpty: false,
-      save: (partner: string) =>
-        saveCorrection(Number(row?.transaction_id), { partner })
+      applyToFuture: true,
+      save: (partner: string, applyToFuture?: boolean) =>
+        saveCorrection(Number(row?.transaction_id), {
+          partner,
+          apply_to_future: applyToFuture
+        })
     })
   },
   { key: 'amount', title: $gettext('Amount') },

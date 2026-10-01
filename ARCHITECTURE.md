@@ -153,7 +153,6 @@ whatsthedamage/
 │   │   ├── authentication_service.py  # Registration, login, password reset
 │   │   ├── cache_service.py      # Caching service
 │   │   ├── configuration_service.py # Configuration loading
-│   │   ├── correction_service.py  # Transaction corrections
 │   │   ├── csv_profile_service.py # CSV bank-format profiles
 │   │   ├── csrf_service.py      # CSRF token issuance/validation
 │   │   ├── deduplication_service.py # Duplicate transaction detection
@@ -174,7 +173,6 @@ whatsthedamage/
 │   │   ├── statistical_analysis_service.py # Statistical analysis
 │   │   ├── text_correction_service.py # Text cleaning for ML
 │   │   ├── token_service.py     # Session token generation/verification
-│   │   ├── transaction_persistence_service.py # Persist processed transactions
 │   │   └── validation_service.py   # File validation
 │   ├── utils/                # Utility functions
 │   │   ├── data_loader.py  # Data loading utils for Machine Learning
@@ -275,7 +273,7 @@ The system follows a layered architecture with clear separation of concerns:
 - Optional `resultId` query parameter filters transaction views (Categories, Transactions, Pivot Table, drilldowns) to a single processing result; when absent, all transactions are shown
 - Unknown paths are redirected to the index page by a catch-all route
 - Transaction views fetch the complete dataset through `fetchAllTransactions`, which pages the `/api/v2/transactions` endpoint (2,000-row pages) until `total_count` rows are collected, capped at 50,000 rows with a visible truncation warning
-- Inline correction of transaction attributes on the Transactions page: the merchant, category, and notice cells are click-to-edit (`EditableTextCell.vue`, `EditableCategoryCell.vue`); the category cell offers a dropdown of the backend categories, and changes are persisted through `PUT /api/v2/transactions/<id>` (correction record sync included)
+- Inline correction of transaction attributes on the Transactions page: the merchant, category, and notice cells are click-to-edit (`EditableTextCell.vue`, `EditableCategoryCell.vue`); the category cell offers a dropdown of the backend categories, and changes are persisted through `PUT /api/v2/transactions/<id>`. Merchant and category cells offer an "apply to future" toggle (default on, sent as `apply_to_future`): enabled corrections upsert a merchant rule for future uploads, disabled ones apply to the edited transaction only; notice corrections are always per-transaction
 - CSRF token handling for state-changing requests (fetched via `/api/v2/auth/csrf-token`)
 - State management with Pinia stores
 - Type-safe development with TypeScript
@@ -554,27 +552,7 @@ Frontend SPA (Vue 3)
 
 **Deployment**: Part of the Flask application
 
-#### 3.2.17. TransactionPersistenceService
-
-**Name**: Transaction Persistence Service
-
-**Description**: Persists processed transactions into the database per user after CSV import, applying deduplication. Works with the repository layer rather than the cache for durable storage.
-
-**Technologies**: Python, SQLAlchemy
-
-**Deployment**: Part of the Flask application
-
-#### 3.2.18. CorrectionService
-
-**Name**: Correction Service
-
-**Description**: Manages user corrections to transaction metadata (e.g., partner or category fixes) via the corrections REST endpoints. Shared corrections can be promoted for global reuse.
-
-**Technologies**: Python, SQLAlchemy
-
-**Deployment**: Part of the Flask application
-
-#### 3.2.19. DeduplicationService
+#### 3.2.17. DeduplicationService
 
 **Name**: Deduplication Service
 
@@ -584,7 +562,7 @@ Frontend SPA (Vue 3)
 
 **Deployment**: Part of the Flask application
 
-#### 3.2.20. CsvProfileService
+#### 3.2.18. CsvProfileService
 
 **Name**: CSV Profile Service
 
@@ -594,7 +572,7 @@ Frontend SPA (Vue 3)
 
 **Deployment**: Part of the Flask application
 
-#### 3.2.21. Repository Layer
+#### 3.2.19. Repository Layer
 
 **Name**: Repositories (Data Access Layer)
 
@@ -618,6 +596,7 @@ Frontend SPA (Vue 3)
 - Database URI configurable via the `WHATSTHEDAMAGE_DATABASE_URI` environment variable, defaulting to `sqlite:///app.db`
 - Schema managed by Alembic migrations in `migrations/versions/` (configured via `alembic.ini`)
 - Entities in `src/whatsthedamage/models/database/`: User, Session, Transaction, ProcessingResult, Correction, SharedCorrection
+- On CSV import, the importing user's merchant rules (partner and category only; notices are per-transaction) are applied to the newly stored transactions via a case-insensitive exact match on the original partner name; the deduplication hash is always computed from the original row, so rules never alter the deduplication key. Transactions store their raw pre-correction category and notice in the `original_category_id`/`original_notice` columns for original-vs-corrected display and undo
 - All data access goes through the repository layer (`src/whatsthedamage/models/repositories/`)
 
 ### 4.2. File-based Storage

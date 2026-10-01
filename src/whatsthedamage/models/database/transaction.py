@@ -44,6 +44,11 @@ class Transaction(Base):
             can be updated).
         notice: Transaction notice/comment (max 500 chars, nullable,
             can be updated).
+        original_category_id: Category value before the first user
+            correction, captured for original-vs-corrected display and
+            undo (max 50 chars, nullable).
+        original_notice: Notice value before the first user correction
+            (max 500 chars, nullable).
         confidence: Categorization confidence score (nullable, can be updated).
         created_at: Timestamp of transaction creation.
         updated_at: Timestamp of last update.
@@ -74,6 +79,11 @@ class Transaction(Base):
     partner = Column(String(255), nullable=True)
     notice = Column(String(500), nullable=True)
     confidence = Column(Float, nullable=True)
+
+    # Original values captured before user corrections overwrite the
+    # applied fields, for original-vs-corrected display and undo
+    original_category_id = Column(String(50), nullable=True)
+    original_notice = Column(String(500), nullable=True)
 
     # Metadata
     created_at = Column(

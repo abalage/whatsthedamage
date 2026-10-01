@@ -168,18 +168,8 @@ def _init_transaction_services(app: Flask, service_container: ServiceContainer) 
 
     # Create services
     from whatsthedamage.services.deduplication_service import DeduplicationService
-    from whatsthedamage.services.correction_service import CorrectionService
-    from whatsthedamage.services.transaction_persistence_service import TransactionPersistenceService
 
     dedup_service = DeduplicationService()
-    transaction_persistence_service = TransactionPersistenceService(
-        transaction_repo=transaction_repo,
-        correction_repo=correction_repo
-    )
-    correction_service = CorrectionService(
-        correction_repo=correction_repo,
-        transaction_repo=transaction_repo
-    )
 
     # Store repositories and services in app extensions
     app.extensions['transaction_repository'] = transaction_repo
@@ -187,8 +177,6 @@ def _init_transaction_services(app: Flask, service_container: ServiceContainer) 
     app.extensions['correction_repository'] = correction_repo
     app.extensions['shared_correction_repository'] = shared_correction_repo
     app.extensions['deduplication_service'] = dedup_service
-    app.extensions['transaction_persistence_service'] = transaction_persistence_service
-    app.extensions['correction_service'] = correction_service
 
     return service_container
 

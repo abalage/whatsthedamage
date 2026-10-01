@@ -191,6 +191,24 @@ class SqlAlchemyCorrectionRepository(SqlAlchemyBaseRepository[CorrectionDB]):
         finally:
             session.close()
 
+    def find_all_by_user(self, user_id: int) -> list[CorrectionDB]:
+        """Find all corrections for a user without closing the session.
+
+        Intended for use inside a unit of work, which owns the session and
+        controls its lifecycle. Loads a user's corrections in a single query
+        so they can be applied to a batch of transactions.
+
+        Args:
+            user_id: User identifier.
+
+        Returns:
+            List of Correction entities for the user.
+        """
+        session = self._get_session()
+        return session.query(CorrectionDB).filter(  # type: ignore[no-any-return]
+            CorrectionDB.user_id == user_id
+        ).all()
+
     def update(self, correction_id: int, **kwargs: Any) -> bool:
         """Update a correction.
 

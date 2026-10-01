@@ -5,7 +5,9 @@
  * Click-to-edit cell for correctable text fields (merchant, notice).
  * The persistence logic is injected through the `save` prop; Enter or
  * the Save button commits the new value, Esc, the Cancel button, or
- * losing focus discards it.
+ * losing focus discards it. With `applyToFuture` enabled an "apply to
+ * future transactions" checkbox is offered and its state is passed to
+ * `save` as the second argument.
  */
 
 import { nextTick, ref } from 'vue'
@@ -18,12 +20,17 @@ interface Props {
   maxLength: number
   /** Whether an empty value may be saved (false for required fields) */
   allowEmpty?: boolean
-  /** Persists the new value; rejects with an error message on failure */
-  save: (value: string) => Promise<unknown>
+  /** Whether to offer the "apply to future transactions" toggle */
+  applyToFuture?: boolean
+  /** Persists the new value; rejects with an error message on failure.
+   *  The second argument is the toggle state, passed when applyToFuture
+   *  is enabled. */
+  save: (value: string, applyToFuture?: boolean) => Promise<unknown>
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  allowEmpty: true
+  allowEmpty: true,
+  applyToFuture: false
 })
 
 const { $gettext } = useGettext()
@@ -32,11 +39,13 @@ const draft = ref('')
 const saving = ref(false)
 const error = ref<string | undefined>(undefined)
 const input = ref<HTMLInputElement | undefined>(undefined)
+const applyToFutureChecked = ref(true)
 
 async function startEdit(): Promise<void> {
   if (saving.value) return
   draft.value = props.value
   error.value = undefined
+  applyToFutureChecked.value = true
   editing.value = true
   await nextTick()
   input.value?.focus()
@@ -67,7 +76,11 @@ async function commit(): Promise<void> {
   saving.value = true
   error.value = undefined
   try {
-    await props.save(trimmed)
+    if (props.applyToFuture) {
+      await props.save(trimmed, applyToFutureChecked.value)
+    } else {
+      await props.save(trimmed)
+    }
     editing.value = false
   } catch (err) {
     error.value = err instanceof Error ? err.message : String(err)
@@ -99,6 +112,19 @@ async function commit(): Promise<void> {
       @keydown.esc.prevent="cancelEdit"
       @blur="cancelEdit"
     >
+    <label
+      v-if="applyToFuture"
+      class="apply-future-toggle"
+      :title="$gettext('Apply to all future transactions of this merchant')"
+      @mousedown.prevent
+    >
+      <input
+        type="checkbox"
+        v-model="applyToFutureChecked"
+        :disabled="saving"
+      >
+      {{ $gettext('Apply to future') }}
+    </label>
     <button
       type="button"
       class="btn btn-sm bg-surface-secondary text-on-dark border-secondary"
@@ -143,5 +169,14 @@ async function commit(): Promise<void> {
   display: flex;
   gap: 0.25rem;
   align-items: center;
+}
+
+.apply-future-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.75rem;
+  white-space: nowrap;
+  cursor: pointer;
 }
 </style>

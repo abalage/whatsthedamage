@@ -153,8 +153,7 @@ class TransactionTestFactory:
         user_id: int = 1,
         original_partner: str = "test merchant",
         corrected_partner: str | None = "CORRECTED MERCHANT",
-        corrected_category_id: str | None = "grocery",
-        corrected_notice: str | None = "Corrected notice"
+        corrected_category_id: str | None = "grocery"
     ) -> Correction:
         """Create a test Correction object.
 
@@ -163,7 +162,6 @@ class TransactionTestFactory:
             original_partner: Original partner name (will be stored in lowercase).
             corrected_partner: Corrected partner name.
             corrected_category_id: Corrected category identifier.
-            corrected_notice: Corrected notice.
 
         Returns:
             Correction object with test data.
@@ -173,7 +171,6 @@ class TransactionTestFactory:
             original_partner=original_partner.lower(),
             corrected_partner=corrected_partner,
             corrected_category_id=corrected_category_id,
-            corrected_notice=corrected_notice,
             created_at=datetime.now(UTC),
             updated_at=datetime.now(UTC)
         )

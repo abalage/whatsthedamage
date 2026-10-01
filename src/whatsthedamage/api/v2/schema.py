@@ -618,9 +618,12 @@ def get_openapi_schema() -> dict[str, Any]:
                     "summary": "Update a transaction",
                     "description": (
                         "Updates the non-deduplication fields of a "
-                        "Transaction entity and applies the "
-                        "correction to the original partner for "
-                        "future uploads. Requires the X-CSRF-Token "
+                        "Transaction entity. Partner and category "
+                        "corrections with apply_to_future (default "
+                        "true) upsert a merchant rule applied to "
+                        "future uploads; otherwise the change applies "
+                        "to this transaction only. Notice corrections "
+                        "never create rules. Requires the X-CSRF-Token "
                         "header."
                     ),
                     "operationId": "updateTransaction",
@@ -1596,6 +1599,22 @@ def get_openapi_schema() -> dict[str, Any]:
                             "type": "string",
                             "nullable": True
                         },
+                        "original_category_id": {
+                            "type": "string",
+                            "nullable": True,
+                            "description": (
+                                "Category value before the first user "
+                                "correction"
+                            )
+                        },
+                        "original_notice": {
+                            "type": "string",
+                            "nullable": True,
+                            "description": (
+                                "Notice value before the first user "
+                                "correction"
+                            )
+                        },
                         "confidence": {
                             "type": "number",
                             "nullable": True
@@ -1642,6 +1661,14 @@ def get_openapi_schema() -> dict[str, Any]:
                         "confidence": {
                             "type": "number",
                             "nullable": True
+                        },
+                        "apply_to_future": {
+                            "type": "boolean",
+                            "description": (
+                                "Whether provided partner/category values "
+                                "upsert a merchant rule applied to future "
+                                "uploads (default: true)"
+                            )
                         }
                     },
                     "required": [
@@ -1668,6 +1695,14 @@ def get_openapi_schema() -> dict[str, Any]:
                         "confidence": {
                             "type": "number",
                             "nullable": True
+                        },
+                        "apply_to_future": {
+                            "type": "boolean",
+                            "description": (
+                                "Whether partner/category corrections "
+                                "upsert a merchant rule applied to "
+                                "future uploads (default: true)"
+                            )
                         }
                     }
                 },
@@ -1752,10 +1787,6 @@ def get_openapi_schema() -> dict[str, Any]:
                             "type": "string",
                             "nullable": True
                         },
-                        "corrected_notice": {
-                            "type": "string",
-                            "nullable": True
-                        },
                         "created_at": {
                             "type": "string",
                             "format": "date-time"
@@ -1780,10 +1811,6 @@ def get_openapi_schema() -> dict[str, Any]:
                         "corrected_category_id": {
                             "type": "string",
                             "nullable": True
-                        },
-                        "corrected_notice": {
-                            "type": "string",
-                            "nullable": True
                         }
                     },
                     "required": ["original_partner"]
@@ -1796,10 +1823,6 @@ def get_openapi_schema() -> dict[str, Any]:
                             "nullable": True
                         },
                         "corrected_category_id": {
-                            "type": "string",
-                            "nullable": True
-                        },
-                        "corrected_notice": {
                             "type": "string",
                             "nullable": True
                         }

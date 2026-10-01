@@ -252,6 +252,10 @@ export interface TransactionListItem {
   category_id: string | null;
   partner: string | null;
   notice: string | null;
+  /** Category value before the first user correction */
+  original_category_id: string | null;
+  /** Notice value before the first user correction */
+  original_notice: string | null;
   confidence: number | null;
   created_at: string | null;
   updated_at: string | null;
@@ -276,6 +280,9 @@ export interface TransactionUpdatePayload {
   category_id?: string | null;
   partner?: string;
   notice?: string;
+  /** Whether partner/category corrections become a merchant rule for
+   *  future uploads (default: true); notice corrections never do */
+  apply_to_future?: boolean;
 }
 
 /**

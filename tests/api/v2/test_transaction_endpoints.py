@@ -217,3 +217,140 @@ class TestUpdateTransactionCorrectionSync:
 
         assert len(self._list_corrections(auth_context)) == 1
         assert self._list_corrections(second_auth_context) == []
+
+
+class TestApplyToFutureSemantics:
+    """Tests for rule vs exception semantics (apply_to_future)."""
+
+    def _list_corrections(self, context: AuthContext) -> list[dict]:
+        """Return all corrections of the context user."""
+        response = context.client.get('/api/v2/corrections')
+        assert response.status_code == 200
+        return response.get_json()['corrections']
+
+    def test_exception_mode_category_edit_creates_no_rule(self, auth_context):
+        """A category edit with apply_to_future=false updates only the row."""
+        transaction = create_transaction(auth_context, apply_to_future=False)
+
+        response = auth_context.client.put(
+            f"/api/v2/transactions/{transaction['id']}",
+            json={'category_id': 'gifts', 'apply_to_future': False},
+            headers=auth_context.csrf_headers
+        )
+
+        assert response.status_code == 200
+        assert response.get_json()['category_id'] == 'gifts'
+        assert self._list_corrections(auth_context) == []
+
+    def test_exception_mode_partner_edit_creates_no_rule(self, auth_context):
+        """A partner edit with apply_to_future=false updates only the row."""
+        transaction = create_transaction(auth_context, apply_to_future=False)
+
+        response = auth_context.client.put(
+            f"/api/v2/transactions/{transaction['id']}",
+            json={'partner': 'One-Off Name', 'apply_to_future': False},
+            headers=auth_context.csrf_headers
+        )
+
+        assert response.status_code == 200
+        assert response.get_json()['partner'] == 'One-Off Name'
+        assert self._list_corrections(auth_context) == []
+
+    def test_notice_edit_never_creates_rule(self, auth_context):
+        """Notice corrections are per-transaction and never create rules."""
+        transaction = create_transaction(auth_context, apply_to_future=False)
+
+        response = auth_context.client.put(
+            f"/api/v2/transactions/{transaction['id']}",
+            json={'notice': 'birthday gift'},
+            headers=auth_context.csrf_headers
+        )
+
+        assert response.status_code == 200
+        assert response.get_json()['notice'] == 'birthday gift'
+        assert self._list_corrections(auth_context) == []
+
+    def test_apply_to_future_must_be_boolean(self, auth_context):
+        """A non-boolean apply_to_future value is rejected."""
+        transaction = create_transaction(auth_context, apply_to_future=False)
+
+        response = auth_context.client.put(
+            f"/api/v2/transactions/{transaction['id']}",
+            json={'category_id': 'gifts', 'apply_to_future': 'yes'},
+            headers=auth_context.csrf_headers
+        )
+
+        assert response.status_code == 400
+
+    def test_original_values_captured_on_first_correction(self, auth_context):
+        """The original category/notice are captured once, not overwritten."""
+        transaction = create_transaction(
+            auth_context,
+            category_id='grocery',
+            notice='original notice',
+            apply_to_future=False
+        )
+
+        first = auth_context.client.put(
+            f"/api/v2/transactions/{transaction['id']}",
+            json={'category_id': 'gifts'},
+            headers=auth_context.csrf_headers
+        ).get_json()
+        assert first['category_id'] == 'gifts'
+        assert first['original_category_id'] == 'grocery'
+
+        second = auth_context.client.put(
+            f"/api/v2/transactions/{transaction['id']}",
+            json={'notice': 'changed notice'},
+            headers=auth_context.csrf_headers
+        ).get_json()
+        assert second['notice'] == 'changed notice'
+        assert second['original_notice'] == 'original notice'
+
+        third = auth_context.client.put(
+            f"/api/v2/transactions/{transaction['id']}",
+            json={'category_id': 'travel'},
+            headers=auth_context.csrf_headers
+        ).get_json()
+        assert third['category_id'] == 'travel'
+        assert third['original_category_id'] == 'grocery'
+
+    def test_exception_stays_when_rule_created_later(self, auth_context):
+        """An exception row keeps its values after a later rule edit."""
+        first = create_transaction(auth_context, apply_to_future=False)
+        second = create_transaction(
+            auth_context, date='2026-02-15', apply_to_future=False
+        )
+
+        exception = auth_context.client.put(
+            f"/api/v2/transactions/{first['id']}",
+            json={'category_id': 'gifts', 'apply_to_future': False},
+            headers=auth_context.csrf_headers
+        )
+        rule = auth_context.client.put(
+            f"/api/v2/transactions/{second['id']}",
+            json={'category_id': 'housing'},
+            headers=auth_context.csrf_headers
+        )
+
+        assert exception.get_json()['category_id'] == 'gifts'
+        assert rule.get_json()['category_id'] == 'housing'
+
+        corrections = self._list_corrections(auth_context)
+        assert len(corrections) == 1
+        assert corrections[0]['corrected_category_id'] == 'housing'
+
+        stored_first = auth_context.client.get(
+            f"/api/v2/transactions/{first['id']}"
+        ).get_json()
+        assert stored_first['category_id'] == 'gifts'
+
+    def test_create_with_apply_to_future_false_creates_no_rule(
+        self, auth_context
+    ):
+        """A manually created transaction can skip merchant rule creation."""
+        create_transaction(
+            auth_context, category_id='grocery', apply_to_future=False
+        )
+
+        assert self._list_corrections(auth_context) == []

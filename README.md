@@ -11,11 +11,11 @@ _The slang phrase "what's the damage?" is often used to ask about the cost or pr
 3. **REST API** - See [API.md](API.md) for complete endpoint documentation. OpenAPI 3.0.3 specification is available at `/api/v2/openapi.json`.
 
 ## Main Features
- - User accounts to persist your transaction bound to your user. Each user only sees their own data.  - Process CSV exports. Supports multi-account and multi-currency. Imported transactions are stored per user.
+ - User accounts to persist your transactions bound to your user. Each user only sees their own data.
+ - Process CSV exports. Supports multi-account and multi-currency. Imported transactions are stored per user.
  - Categorizes transactions into well known [accounting categories](#transaction-categories).
  - Categorizes transactions into custom categories by using regular expressions or a [machine learning model](#machine-learning-categorization).
- - Correct transaction categories or partner names; corrections are remembered and applied to future imports automatically.
- - Correct merchant, category, and notice inline on the Transactions page; corrections are persisted on the server bound to your account.
+ - Correct merchant, category, and notice inline on the Transactions page; corrections are persisted on the server bound to your account. Merchant and category corrections can be applied to future imports automatically, or kept to a single transaction. See [Transaction corrections](#transaction-corrections).
  - Transactions can be pre-filtered by start and end dates. If no filter is set, grouping is based on the number of months.
  - Statistical algorithms to highlight outlier categories or transactions. (Web interface only)
  - Visualize reports using Bar charts, Pie charts, etc. (Web interface only)
@@ -170,6 +170,30 @@ Using a machine learning model can automatically learn patterns from a given tra
 This project however repository does not provide any pre-built model on purpose because of the risk of model inversion. Model inversion may reveal transaction data used for training the model to possible third parties which would defeat the purpose of the tool.  
 
 However you can create your own model for categorization, just follow the steps in [README_ML.md](README_ML.md) file.
+
+### Transaction corrections
+
+Web interface and REST API only.
+
+The automatic categorization will not be perfect. On the Transactions page you can correct the merchant, category, and notice of any transaction by clicking the cell. Corrections are stored on the server, bound to your account, and survive re-uploads.
+
+A correction is either a **merchant rule** or a **per-transaction exception**, depending on the field and your choice:
+
+| Field | Default behavior | Can be limited to this transaction? |
+|---|---|---|
+| Merchant | Becomes a merchant rule, applied to future imports of the same merchant | Yes, uncheck "Apply to future" |
+| Category | Becomes a merchant rule, applied to future imports of the same merchant | Yes, uncheck "Apply to future" |
+| Notice | Always applies to this transaction only | Notices are per-transaction by nature |
+
+When you edit the merchant or category of a transaction, an **Apply to future** checkbox is shown (checked by default). Leave it checked to create or update the merchant rule; uncheck it to correct only this one transaction, for example when a single purchase from a known merchant belongs somewhere else. Rules are looked up by the original (CSV) partner name using a case-insensitive exact match, so a rule for `SPAR MARKET KFT` also matches `spar market kft`.
+
+Details worth knowing:
+
+- Rules apply to future imports only. Correcting a merchant rule later never rewrites transactions that are already stored; an exception you made on one transaction also stays intact when a rule for the same merchant is created afterwards.
+- Notice corrections never become rules. Writing "birthday gift" on one transaction will not stamp that notice on every future transaction of the merchant.
+- The pre-correction category and notice of each transaction are preserved (returned as `original_category_id` and `original_notice` by the API), so the original values remain available.
+- Re-importing a CSV never duplicates transactions and never overwrites your corrections: the deduplication key (`date + type + original partner + amount + currency + account`) is computed from the original row and is immutable.
+- Your rules can be listed, edited, and deleted via the REST API at `/api/v2/corrections`, see [API.md](API.md).
 
 ### Troubleshooting
 

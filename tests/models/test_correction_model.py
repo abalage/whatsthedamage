@@ -24,15 +24,13 @@ class TestCorrectionModel:
             user_id=1,
             original_partner="test merchant",
             corrected_partner="CORRECTED MERCHANT",
-            corrected_category_id="grocery",
-            corrected_notice="Corrected notice"
+            corrected_category_id="grocery"
         )
 
         assert correction.user_id == 1
         assert correction.original_partner == "test merchant"
         assert correction.corrected_partner == "CORRECTED MERCHANT"
         assert correction.corrected_category_id == "grocery"
-        assert correction.corrected_notice == "Corrected notice"
         # Note: created_at and updated_at are set by SQLAlchemy defaults
         # They are set when the object is committed to the database, not on creation
 
@@ -60,19 +58,17 @@ class TestCorrectionModel:
             user_id=1,
             original_partner="test merchant",
             corrected_partner=None,
-            corrected_category_id=None,
-            corrected_notice=None
+            corrected_category_id=None
         )
 
         assert correction.corrected_partner is None
         assert correction.corrected_category_id is None
-        assert correction.corrected_notice is None
 
     def test_case_insensitive_storage(self):
         """Test that original_partner can be stored with mixed case.
 
-        Note: The actual lowercase conversion is handled by CorrectionService
-        when saving corrections, not by the model itself.
+        Note: The model stores the value as provided; case-insensitive
+        matching is handled at query time by lowercasing both sides.
         """
         # Create with mixed case - the model accepts it as-is
         correction = Correction(
@@ -82,7 +78,6 @@ class TestCorrectionModel:
 
         # The model stores it as provided (mixed case)
         assert correction.original_partner == "Test Merchant"
-        # The CorrectionService converts to lowercase when saving via save_correction()
 
     def test_multiple_corrections_different_original_partners(self):
         """Test creating multiple corrections with different original_partners."""
@@ -106,12 +101,10 @@ class TestCorrectionModel:
             user_id=1,
             original_partner="test merchant",
             corrected_partner="Corrected Partner",
-            corrected_category_id="category_123",
-            corrected_notice="This is a notice"
+            corrected_category_id="category_123"
         )
 
         assert correction.user_id == 1
         assert correction.original_partner == "test merchant"
         assert correction.corrected_partner == "Corrected Partner"
         assert correction.corrected_category_id == "category_123"
-        assert correction.corrected_notice == "This is a notice"

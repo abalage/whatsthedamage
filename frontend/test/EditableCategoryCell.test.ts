@@ -26,9 +26,13 @@ const categories: CategoryDefinition[] = [
   { id: 'housing', default_name: 'Housing', patterns: [] },
 ];
 
-const mountCell = (categoryId: string, save: (id: string | null) => Promise<unknown>): VueWrapper =>
+const mountCell = (
+  categoryId: string,
+  save: (id: string | null, applyToFuture?: boolean) => Promise<unknown>,
+  applyToFuture?: boolean
+): VueWrapper =>
   mount(EditableCategoryCell, {
-    props: { categoryId, save },
+    props: { categoryId, save, applyToFuture },
   });
 
 describe('EditableCategoryCell', () => {
@@ -151,5 +155,30 @@ describe('EditableCategoryCell', () => {
 
     expect(wrapper.text()).toContain('Update failed');
     expect(wrapper.find('select').exists()).toBe(true);
+  });
+
+  it('passes the apply-to-future state when the toggle is enabled', async () => {
+    const save = vi.fn().mockResolvedValue(undefined);
+    const wrapper = mountCell('grocery', save, true);
+
+    await wrapper.find('button').trigger('click');
+    await flushPromises();
+
+    expect(wrapper.find('input[type="checkbox"]').exists()).toBe(true);
+
+    await wrapper.find('select').setValue('housing');
+    await wrapper.find('input[type="checkbox"]').setValue(false);
+    await wrapper.findAll('button')[0].trigger('click');
+
+    expect(save).toHaveBeenCalledWith('housing', false);
+  });
+
+  it('hides the apply-to-future toggle by default', async () => {
+    const wrapper = mountCell('grocery', vi.fn());
+
+    await wrapper.find('button').trigger('click');
+    await flushPromises();
+
+    expect(wrapper.find('input[type="checkbox"]').exists()).toBe(false);
   });
 });

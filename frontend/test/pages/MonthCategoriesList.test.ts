@@ -46,6 +46,8 @@ const makeTransaction = (id: number, amount: number, categoryId: string): Transa
   category_id: categoryId,
   partner: null,
   notice: null,
+  original_category_id: null,
+  original_notice: null,
   confidence: null,
   created_at: null,
   updated_at: null,

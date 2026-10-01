@@ -451,6 +451,7 @@ POST /api/v2/transactions
 | `partner` | No | string | Corrected partner name |
 | `notice` | No | string | Transaction notice/comment |
 | `confidence` | No | number | Categorization confidence score |
+| `apply_to_future` | No | boolean | Whether provided partner/category values upsert a merchant rule applied to future uploads (default: `true`); notice values never create rules |
 
 **Status Codes:**
 - `201` - Successfully created transaction
@@ -481,7 +482,7 @@ GET /api/v2/transactions/<transaction_id>
 
 ### Update Transaction
 
-Update the non-deduplication fields of a transaction (`category_id`, `partner`, `notice`, `confidence`). Updating these fields automatically creates or updates a correction entry for the `original_partner`, so future uploads with the same merchant receive the same correction.
+Update the non-deduplication fields of a transaction (`category_id`, `partner`, `notice`, `confidence`). With `apply_to_future` enabled (default), partner and category corrections also create or update a merchant rule for the `original_partner`, applied to future uploads with the same merchant; with it disabled, the correction applies to this transaction only. Notice corrections are always per-transaction and never create rules. The pre-correction category and notice are captured in `original_category_id` and `original_notice` on first overwrite.
 
 **Endpoint:**
 ```
@@ -500,6 +501,7 @@ PUT /api/v2/transactions/<transaction_id>
 | `partner` | No | string | New corrected partner name |
 | `notice` | No | string | New transaction notice/comment |
 | `confidence` | No | number | New confidence score |
+| `apply_to_future` | No | boolean | Whether partner/category corrections upsert a merchant rule applied to future uploads (default: `true`) |
 
 **Status Codes:**
 - `200` - Successfully updated transaction
@@ -603,7 +605,7 @@ curl -X GET "http://localhost:5000/api/v2/transactions/aggregate?group_by=catego
 
 ## Correction Endpoints
 
-Corrections store per-user overrides for transaction metadata by original partner name. They are applied automatically on future CSV uploads and when updating transactions.
+Corrections are per-user merchant rules: corrected partner and category values keyed by the original partner name (case-insensitive exact match). They are applied automatically to newly stored transactions on future CSV uploads. Notices are per-transaction and are never part of rules.
 
 ### List Corrections
 
@@ -645,7 +647,6 @@ POST /api/v2/corrections
 | `original_partner` | Yes | string | Original partner name to correct |
 | `corrected_partner` | No | string | Corrected partner name |
 | `corrected_category_id` | No | string | Corrected category ID |
-| `corrected_notice` | No | string | Corrected notice |
 
 **Status Codes:**
 - `201` - Successfully created correction
@@ -683,7 +684,7 @@ PUT /api/v2/corrections/<correction_id>
 
 **Requires:** session cookie and `X-CSRF-Token` header
 
-**Request Body:** any of `corrected_partner`, `corrected_category_id`, `corrected_notice`.
+**Request Body:** any of `corrected_partner`, `corrected_category_id`.
 
 **Status Codes:**
 - `200` - Successfully updated correction
@@ -973,6 +974,8 @@ Returns processing metadata only; the transactions themselves are persisted and 
   "category_id": "grocery",
   "partner": "Tesco",
   "notice": "Weekly shopping",
+  "original_category_id": "other",
+  "original_notice": null,
   "confidence": 0.95,
   "created_at": "2026-09-29T10:00:00",
   "updated_at": "2026-09-29T10:00:00"
@@ -1005,7 +1008,6 @@ Dates are stored as datetime values and serialized as ISO 8601 strings; months a
       "original_partner": "TESCO",
       "corrected_partner": "Tesco",
       "corrected_category_id": "grocery",
-      "corrected_notice": null,
       "created_at": "2026-09-29T10:00:00",
       "updated_at": "2026-09-29T10:00:00"
     }

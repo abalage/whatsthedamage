@@ -10,6 +10,9 @@ making multi-entity writes atomic.
 from types import TracebackType
 from typing import Any, Callable, Optional, Type
 
+from whatsthedamage.models.repositories.correction_repository import (
+    SqlAlchemyCorrectionRepository,
+)
 from whatsthedamage.models.repositories.processing_result_repository import (
     SqlAlchemyProcessingResultRepository,
 )
@@ -45,8 +48,8 @@ class SqlAlchemyUnitOfWork:
         """Open the shared session and bind repositories to it.
 
         Returns:
-            The unit of work with processing_results and transactions
-            repositories operating on the shared session.
+            The unit of work with processing_results, transactions and
+            corrections repositories operating on the shared session.
         """
         session = self._session_factory()
         session.expire_on_commit = False
@@ -56,6 +59,9 @@ class SqlAlchemyUnitOfWork:
         )
         self.transactions: SqlAlchemyTransactionRepository = (
             SqlAlchemyTransactionRepository(shared_factory)
+        )
+        self.corrections: SqlAlchemyCorrectionRepository = (
+            SqlAlchemyCorrectionRepository(shared_factory)
         )
         self._session = session
         return self

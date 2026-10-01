@@ -6,7 +6,9 @@
  * a value picked from the category list provided by the backend.
  * The persistence logic is injected through the `save` prop; the Save
  * button commits the selection, Esc, the Cancel button, or losing
- * focus discards it.
+ * focus discards it. With `applyToFuture` enabled an "apply to future
+ * transactions" checkbox is offered and its state is passed to
+ * `save` as the second argument.
  */
 
 import { computed, nextTick, onMounted, ref } from 'vue'
@@ -19,11 +21,17 @@ const UNCATEGORIZED = 'uncategorized'
 interface Props {
   /** Raw category id ('uncategorized' when the transaction has none) */
   categoryId: string
-  /** Persists the new category id (null clears it); rejects on failure */
-  save: (categoryId: string | null) => Promise<unknown>
+  /** Whether to offer the "apply to future transactions" toggle */
+  applyToFuture?: boolean
+  /** Persists the new category id (null clears it); rejects on
+   *  failure. The second argument is the toggle state, passed when
+   *  applyToFuture is enabled. */
+  save: (categoryId: string | null, applyToFuture?: boolean) => Promise<unknown>
 }
 
-const props = defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), {
+  applyToFuture: false
+})
 
 const { $gettext } = useGettext()
 const categoriesStore = useCategoriesStore()
@@ -32,6 +40,7 @@ const draft = ref('')
 const saving = ref(false)
 const error = ref<string | undefined>(undefined)
 const select = ref<HTMLSelectElement | undefined>(undefined)
+const applyToFutureChecked = ref(true)
 
 onMounted(() => {
   categoriesStore.loadCategories()
@@ -49,6 +58,7 @@ async function startEdit(): Promise<void> {
   await categoriesStore.loadCategories()
   draft.value = props.categoryId === UNCATEGORIZED ? '' : props.categoryId
   error.value = undefined
+  applyToFutureChecked.value = true
   editing.value = true
   await nextTick()
   select.value?.focus()
@@ -72,7 +82,11 @@ async function commit(): Promise<void> {
   saving.value = true
   error.value = undefined
   try {
-    await props.save(nextValue)
+    if (props.applyToFuture) {
+      await props.save(nextValue, applyToFutureChecked.value)
+    } else {
+      await props.save(nextValue)
+    }
     editing.value = false
   } catch (err) {
     error.value = err instanceof Error ? err.message : String(err)
@@ -106,6 +120,19 @@ async function commit(): Promise<void> {
         {{ option.label }}
       </option>
     </select>
+    <label
+      v-if="applyToFuture"
+      class="apply-future-toggle"
+      :title="$gettext('Apply to all future transactions of this merchant')"
+      @mousedown.prevent
+    >
+      <input
+        type="checkbox"
+        v-model="applyToFutureChecked"
+        :disabled="saving"
+      >
+      {{ $gettext('Apply to future') }}
+    </label>
     <button
       type="button"
       class="btn btn-sm bg-surface-secondary text-on-dark border-secondary"
@@ -150,5 +177,14 @@ async function commit(): Promise<void> {
   display: flex;
   gap: 0.25rem;
   align-items: center;
+}
+
+.apply-future-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.75rem;
+  white-space: nowrap;
+  cursor: pointer;
 }
 </style>

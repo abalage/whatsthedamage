@@ -76,7 +76,6 @@ def upgrade():
             sa.Column('updated_at', sa.DateTime(), nullable=False),
             sa.PrimaryKeyConstraint('id'),
             sa.ForeignKeyConstraint(['user_id'], ['users.id'], ondelete='CASCADE'),
-            sa.UniqueConstraint('user_id', 'deduplication_hash', name='ix_transactions_user_dedup_new'),
             sa.Index('ix_transactions_user_id_new', 'user_id'),
             sa.Index('ix_transactions_date_new', 'date'),
             sa.Index('ix_transactions_transaction_type_new', 'transaction_type'),
@@ -110,7 +109,6 @@ def upgrade():
 
         # Recreate indexes with original names
         op.create_index('ix_transactions_user_dedup', 'transactions', ['user_id', 'deduplication_hash'], unique=True)
-        op.drop_index('ix_transactions_user_dedup_new', 'transactions')
         op.drop_index('ix_transactions_date_new', 'transactions')
         op.drop_index('ix_transactions_transaction_type_new', 'transactions')
         op.drop_index('ix_transactions_account_new', 'transactions')
@@ -178,7 +176,6 @@ def downgrade():
             sa.Column('updated_at', sa.DateTime(), nullable=False),
             sa.PrimaryKeyConstraint('id'),
             sa.ForeignKeyConstraint(['user_id'], ['users.id'], ondelete='CASCADE'),
-            sa.UniqueConstraint('user_id', 'deduplication_hash', name='ix_transactions_user_dedup_new'),
             sa.Index('ix_transactions_user_id_new', 'user_id'),
             sa.Index('ix_transactions_date_new', 'date'),
             sa.Index('ix_transactions_transaction_type_new', 'transaction_type'),
@@ -211,7 +208,6 @@ def downgrade():
 
         # Recreate indexes with original names
         op.create_index('ix_transactions_user_dedup', 'transactions', ['user_id', 'deduplication_hash'], unique=True)
-        op.drop_index('ix_transactions_user_dedup_new', 'transactions')
         op.drop_index('ix_transactions_date_new', 'transactions')
         op.drop_index('ix_transactions_transaction_type_new', 'transactions')
         op.drop_index('ix_transactions_account_new', 'transactions')

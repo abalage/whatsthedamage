@@ -18,7 +18,7 @@ def create_correction(
         context: Authenticated client context.
         original_partner: Original partner name to correct.
         **fields: Corrected values (corrected_partner,
-            corrected_category_id, corrected_notice).
+            corrected_category_id).
 
     Returns:
         The created correction entity as returned by the API.
@@ -107,8 +107,7 @@ class TestCreateCorrection:
             json={
                 'original_partner': 'TEST MERCHANT',
                 'corrected_partner': 'Test Merchant Ltd',
-                'corrected_category_id': 'housing',
-                'corrected_notice': 'rent'
+                'corrected_category_id': 'housing'
             },
             headers=auth_context.csrf_headers
         )
@@ -118,7 +117,6 @@ class TestCreateCorrection:
         assert data['original_partner'] == 'TEST MERCHANT'
         assert data['corrected_partner'] == 'Test Merchant Ltd'
         assert data['corrected_category_id'] == 'housing'
-        assert data['corrected_notice'] == 'rent'
 
     def test_create_without_original_partner_returns_400(
         self, auth_context

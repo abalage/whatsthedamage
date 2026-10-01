@@ -18,9 +18,7 @@ from whatsthedamage.services.ml_service import MLService
 from whatsthedamage.services.text_correction_service import TextCorrectionService
 from whatsthedamage.services.smote_service import SmoteService
 from whatsthedamage.services.csv_profile_service import CsvProfileService
-from whatsthedamage.services.transaction_persistence_service import TransactionPersistenceService
 from whatsthedamage.services.deduplication_service import DeduplicationService
-from whatsthedamage.services.correction_service import CorrectionService
 from whatsthedamage.config.config import AppConfig
 from flask_caching import Cache
 

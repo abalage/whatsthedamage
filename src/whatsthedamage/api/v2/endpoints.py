@@ -35,6 +35,7 @@ from whatsthedamage.api.auth_decorators import require_authentication, require_c
 
 if TYPE_CHECKING:
     from whatsthedamage.models.repositories.unit_of_work import SqlAlchemyUnitOfWork
+    from whatsthedamage.models.database.correction import Correction as CorrectionDB
 
 
 # Create Blueprint
@@ -270,6 +271,20 @@ def _extract_csv_rows_from_result(result: ProcessingResponse) -> list[Any]:
     return all_csv_rows
 
 
+def _build_correction_map(
+    corrections: list[CorrectionDB],
+) -> dict[str, CorrectionDB]:
+    """Build a case-insensitive correction lookup map.
+
+    Args:
+        corrections: Correction entities belonging to the uploading user.
+
+    Returns:
+        Map from lowercased original_partner to the correction entity.
+    """
+    return {c.original_partner.lower(): c for c in corrections}
+
+
 def _persist_result_transactions(
     user_id: int,
     result_id: str,
@@ -280,7 +295,12 @@ def _persist_result_transactions(
 
     Runs inside the given unit of work without committing; rows already
     present in the database and rows repeated within the batch are
-    skipped.
+    skipped. The user's merchant rules (partner and category only;
+    notices are per-transaction) are looked up once by original
+    partner (case-insensitive exact match) and applied to the newly
+    stored transactions; the deduplication hash is always computed from
+    the original row, so rules never alter the deduplication key. The
+    raw processing values are preserved in the original_* columns.
 
     Args:
         user_id: User identifier owning the transactions.
@@ -296,12 +316,19 @@ def _persist_result_transactions(
     ]
     existing_hashes = uow.transactions.find_existing_dedup_hashes(dedup_hashes)
 
+    correction_map = _build_correction_map(
+        uow.corrections.find_all_by_user(user_id)
+    )
+
     new_transactions: list[TransactionDB] = []
     batch_hashes: set[str] = set()
     for csv_row, dedup_hash in zip(csv_rows, dedup_hashes):
         if dedup_hash in existing_hashes or dedup_hash in batch_hashes:
             continue
         batch_hashes.add(dedup_hash)
+        correction = correction_map.get(csv_row.partner.lower())
+        raw_category_id = getattr(csv_row, 'category_id', None)
+        raw_notice = getattr(csv_row, 'notice', None)
         new_transactions.append(TransactionDB(
             user_id=user_id,
             result_id=result_id,
@@ -312,9 +339,19 @@ def _persist_result_transactions(
             currency=csv_row.currency,
             account=csv_row.account or 'unknown',
             deduplication_hash=dedup_hash,
-            category_id=getattr(csv_row, 'category_id', None),
-            partner=None,
-            notice=getattr(csv_row, 'notice', None),
+            category_id=(
+                correction.corrected_category_id
+                if correction and correction.corrected_category_id
+                else raw_category_id
+            ),
+            partner=(
+                correction.corrected_partner
+                if correction and correction.corrected_partner
+                else None
+            ),
+            notice=raw_notice,
+            original_category_id=raw_category_id,
+            original_notice=raw_notice,
             confidence=getattr(csv_row, 'confidence', None),
             created_at=datetime.now(UTC),
             updated_at=datetime.now(UTC)
@@ -676,6 +713,8 @@ def list_transaction_entities() -> tuple[Response, int]:
                     'category_id': t.category_id,
                     'partner': t.partner,
                     'notice': t.notice,
+                    'original_category_id': t.original_category_id,
+                    'original_notice': t.original_notice,
                     'confidence': t.confidence,
                     'created_at': t.created_at.isoformat() if t.created_at else None,
                     'updated_at': t.updated_at.isoformat() if t.updated_at else None
@@ -928,6 +967,8 @@ def _transaction_to_dict(t: TransactionDB) -> dict[str, Any]:
         'category_id': t.category_id,
         'partner': t.partner,
         'notice': t.notice,
+        'original_category_id': t.original_category_id,
+        'original_notice': t.original_notice,
         'confidence': t.confidence,
         'created_at': t.created_at.isoformat() if t.created_at else None,
         'updated_at': t.updated_at.isoformat() if t.updated_at else None,
@@ -1052,6 +1093,8 @@ def get_transaction_entity(transaction_id: int) -> tuple[Response, int]:
             'category_id': transaction.category_id,
             'partner': transaction.partner,
             'notice': transaction.notice,
+            'original_category_id': transaction.original_category_id,
+            'original_notice': transaction.original_notice,
             'confidence': transaction.confidence,
             'created_at': transaction.created_at.isoformat() if transaction.created_at else None,
             'updated_at': transaction.updated_at.isoformat() if transaction.updated_at else None
@@ -1083,6 +1126,9 @@ def create_transaction_entity() -> tuple[Response, int]:
         partner (str, optional): Corrected partner name.
         notice (str, optional): Transaction notice/comment.
         confidence (float, optional): Categorization confidence score.
+        apply_to_future (bool, optional): Whether provided partner/category
+            values also upsert a merchant rule for future uploads
+            (default: true). Notice values never create rules.
 
     Returns:
         Created Transaction entity data.
@@ -1160,47 +1206,43 @@ def create_transaction_entity() -> tuple[Response, int]:
             category_id=data.get('category_id'),
             partner=data.get('partner'),
             notice=data.get('notice'),
+            original_category_id=data.get('category_id'),
+            original_notice=data.get('notice'),
             confidence=data.get('confidence')
         )
 
         saved_transaction = transaction_repo.create(transaction)
 
-        # Auto-create correction if partner, category_id, or notice were provided
-        # This ensures future uploads with the same partner get the same corrections
-        correction_repo = _get_correction_repository()
-        from whatsthedamage.models.database.correction import Correction as CorrectionDB
+        # In rule mode (apply_to_future, default true), provided partner
+        # and category values also upsert a merchant rule so future
+        # uploads with the same partner get the same values. Notices are
+        # per-transaction and never create rules.
+        apply_to_future = data.get('apply_to_future', True)
+        rule_fields = data.get('partner') or data.get('category_id')
+        if apply_to_future and rule_fields:
+            correction_repo = _get_correction_repository()
+            from whatsthedamage.models.database.correction import Correction as CorrectionDB
 
-        # Check if correction already exists
-        existing_correction = correction_repo.find_by_user_and_original_partner(
-            cast(int, user.id), data['original_partner']  # type: ignore[arg-type]
-        )
+            existing_correction = correction_repo.find_by_user_and_original_partner(
+                cast(int, user.id), data['original_partner']  # type: ignore[arg-type]
+            )
 
-        # Only create/update correction if user provided corrected values
-        has_corrections = (
-            data.get('partner') or
-            data.get('category_id') or
-            data.get('notice')
-        )
+            correction_update_data: dict[str, Any] = {}
+            if data.get('partner'):
+                correction_update_data['corrected_partner'] = data['partner']
+            if data.get('category_id'):
+                correction_update_data['corrected_category_id'] = data['category_id']
 
-        if has_corrections:
             if existing_correction:
-                # Update existing correction
-                correction_update_data: dict[str, Any] = {}
-                if data.get('partner'):
-                    correction_update_data['corrected_partner'] = data['partner']
-                if data.get('category_id'):
-                    correction_update_data['corrected_category_id'] = data['category_id']
-                if data.get('notice'):
-                    correction_update_data['corrected_notice'] = data['notice']
-                correction_repo.update(existing_correction.id, **correction_update_data)
+                correction_repo.update(
+                    existing_correction.id, **correction_update_data
+                )
             else:
-                # Create new correction
                 correction = CorrectionDB(
                     user_id=cast(int, user.id),  # type: ignore[arg-type]
                     original_partner=data['original_partner'],
                     corrected_partner=data.get('partner'),
-                    corrected_category_id=data.get('category_id'),
-                    corrected_notice=data.get('notice')
+                    corrected_category_id=data.get('category_id')
                 )
                 correction_repo.create(correction)
 
@@ -1217,6 +1259,8 @@ def create_transaction_entity() -> tuple[Response, int]:
             'category_id': saved_transaction.category_id,
             'partner': saved_transaction.partner,
             'notice': saved_transaction.notice,
+            'original_category_id': saved_transaction.original_category_id,
+            'original_notice': saved_transaction.original_notice,
             'confidence': saved_transaction.confidence,
             'created_at': saved_transaction.created_at.isoformat() if saved_transaction.created_at else None,
             'updated_at': saved_transaction.updated_at.isoformat() if saved_transaction.updated_at else None
@@ -1240,7 +1284,8 @@ def _validate_update_transaction_data(
 
     Returns:
         Tuple of (update_data, error_response, status_code).
-        If valid, update_data contains the fields to update.
+        If valid, update_data contains the fields to update and the
+        apply_to_future flag controlling merchant rule creation.
         If invalid, error_response and status_code are set.
     """
     if not data:
@@ -1256,21 +1301,42 @@ def _validate_update_transaction_data(
     if not update_data:
         return None, jsonify({'error': 'No valid fields to update'}), 400
 
+    apply_to_future = data.get('apply_to_future', True)
+    if not isinstance(apply_to_future, bool):
+        return None, jsonify(
+            {'error': 'apply_to_future must be a boolean'}
+        ), 400
+    update_data['apply_to_future'] = apply_to_future
+
     return update_data, None, 200
 
 
 def _handle_correction_update(
     user: UserDB,
     transaction: TransactionDB,
-    data: dict[str, Any]
+    data: dict[str, Any],
+    apply_to_future: bool
 ) -> None:
-    """Handle creation or update of correction for transaction.
+    """Upsert the merchant rule for a rule-mode transaction correction.
+
+    Partner and category corrections upsert the merchant rule only in
+    rule mode (apply_to_future); in exception mode the rule table is
+    left untouched and the correction applies to the edited transaction
+    only. Notice corrections never create rules.
 
     Args:
         user: Authenticated user.
         transaction: Transaction being updated.
         data: Request data containing update fields.
+        apply_to_future: Whether the correction should become a
+            merchant rule for future uploads.
     """
+    if not apply_to_future:
+        return
+
+    if 'partner' not in data and 'category_id' not in data:
+        return
+
     correction_repo = _get_correction_repository()
     from whatsthedamage.models.database.correction import Correction as CorrectionDB
 
@@ -1283,8 +1349,6 @@ def _handle_correction_update(
         correction_data['corrected_partner'] = data['partner']
     if 'category_id' in data:
         correction_data['corrected_category_id'] = data['category_id']
-    if 'notice' in data:
-        correction_data['corrected_notice'] = data['notice']
 
     if existing_correction:
         if correction_data:
@@ -1294,8 +1358,7 @@ def _handle_correction_update(
             user_id=cast(int, user.id),  # type: ignore[arg-type]
             original_partner=transaction.original_partner,
             corrected_partner=data.get('partner'),
-            corrected_category_id=data.get('category_id'),
-            corrected_notice=data.get('notice')
+            corrected_category_id=data.get('category_id')
         )
         correction_repo.create(correction)
 
@@ -1322,6 +1385,8 @@ def _format_transaction_response(transaction: TransactionDB) -> dict[str, Any]:
         'category_id': transaction.category_id,
         'partner': transaction.partner,
         'notice': transaction.notice,
+        'original_category_id': transaction.original_category_id,
+        'original_notice': transaction.original_notice,
         'confidence': transaction.confidence,
         'created_at': transaction.created_at.isoformat() if transaction.created_at else None,
         'updated_at': transaction.updated_at.isoformat() if transaction.updated_at else None
@@ -1337,9 +1402,12 @@ def update_transaction_entity(transaction_id: int) -> tuple[Response, int]:
     Updates an individual Transaction entity that belongs to the authenticated user.
     Only non-deduplication fields can be updated (category_id, partner, notice, confidence).
 
-    When updating category/partner/notice, this automatically creates or updates
-    a Correction entry for the original_partner to ensure future uploads
-    with the same merchant get the same corrections applied.
+    With apply_to_future enabled (default), partner and category corrections
+    also upsert a merchant rule for the original_partner so future uploads
+    with the same merchant get the same corrections applied. With
+    apply_to_future disabled, or for notice corrections, the change applies
+    to the edited transaction only. The pre-correction category and notice
+    values are captured in the original_* columns on first overwrite.
 
     Args:
         transaction_id: Transaction identifier.
@@ -1349,6 +1417,9 @@ def update_transaction_entity(transaction_id: int) -> tuple[Response, int]:
         partner (str, optional): New corrected partner name.
         notice (str, optional): New transaction notice/comment.
         confidence (float, optional): New confidence score.
+        apply_to_future (bool, optional): Whether partner/category
+            corrections become a merchant rule for future uploads
+            (default: true).
 
     Returns:
         Updated Transaction entity data.
@@ -1382,8 +1453,17 @@ def update_transaction_entity(transaction_id: int) -> tuple[Response, int]:
         if transaction.user_id != cast(int, user.id):  # type: ignore[arg-type]
             return jsonify({'error': 'Transaction does not belong to you'}), 403
 
-        # Update transaction
-        transaction_repo.update(transaction_id, **update_data)
+        # Update transaction, capturing the original category/notice on
+        # first overwrite so original-vs-corrected display and undo
+        # remain possible
+        apply_to_future = update_data.pop('apply_to_future')
+        capture_data: dict[str, Any] = {}
+        if 'category_id' in update_data and transaction.original_category_id is None:
+            capture_data['original_category_id'] = transaction.category_id
+        if 'notice' in update_data and transaction.original_notice is None:
+            capture_data['original_notice'] = transaction.notice
+
+        transaction_repo.update(transaction_id, **capture_data, **update_data)
 
         # Get updated transaction
         updated_transaction = transaction_repo.find_by_id(transaction_id)
@@ -1391,7 +1471,7 @@ def update_transaction_entity(transaction_id: int) -> tuple[Response, int]:
             return jsonify({'error': 'Failed to update transaction'}), 500
 
         # Handle correction update/creation
-        _handle_correction_update(user, transaction, data)
+        _handle_correction_update(user, transaction, data, apply_to_future)
 
         # Format and return response
         response_data = _format_transaction_response(updated_transaction)
@@ -1505,7 +1585,6 @@ def list_corrections() -> tuple[Response, int]:
                     'original_partner': c.original_partner,
                     'corrected_partner': c.corrected_partner,
                     'corrected_category_id': c.corrected_category_id,
-                    'corrected_notice': c.corrected_notice,
                     'created_at': c.created_at.isoformat() if c.created_at else None,
                     'updated_at': c.updated_at.isoformat() if c.updated_at else None
                 }
@@ -1565,7 +1644,6 @@ def get_correction(correction_id: int) -> tuple[Response, int]:
             'original_partner': correction.original_partner,
             'corrected_partner': correction.corrected_partner,
             'corrected_category_id': correction.corrected_category_id,
-            'corrected_notice': correction.corrected_notice,
             'created_at': correction.created_at.isoformat() if correction.created_at else None,
             'updated_at': correction.updated_at.isoformat() if correction.updated_at else None
         }
@@ -1589,7 +1667,6 @@ def create_correction() -> tuple[Response, int]:
         original_partner (str, required): Original partner name to correct.
         corrected_partner (str, optional): Corrected partner name.
         corrected_category_id (str, optional): Corrected category ID.
-        corrected_notice (str, optional): Corrected notice.
 
     Returns:
         CorrectionApiResponse: Created correction data.
@@ -1630,8 +1707,7 @@ def create_correction() -> tuple[Response, int]:
             user_id=cast(int, user.id),  # type: ignore[arg-type]
             original_partner=data['original_partner'],
             corrected_partner=data.get('corrected_partner'),
-            corrected_category_id=data.get('corrected_category_id'),
-            corrected_notice=data.get('corrected_notice')
+            corrected_category_id=data.get('corrected_category_id')
         )
 
         saved_correction = correction_repo.create(correction)
@@ -1642,7 +1718,6 @@ def create_correction() -> tuple[Response, int]:
             'original_partner': saved_correction.original_partner,
             'corrected_partner': saved_correction.corrected_partner,
             'corrected_category_id': saved_correction.corrected_category_id,
-            'corrected_notice': saved_correction.corrected_notice,
             'created_at': saved_correction.created_at.isoformat() if saved_correction.created_at else None,
             'updated_at': saved_correction.updated_at.isoformat() if saved_correction.updated_at else None
         }
@@ -1670,7 +1745,6 @@ def update_correction(correction_id: int) -> tuple[Response, int]:
     Request Body (JSON):
         corrected_partner (str, optional): New corrected partner name.
         corrected_category_id (str, optional): New corrected category ID.
-        corrected_notice (str, optional): New corrected notice.
 
     Returns:
         CorrectionApiResponse: Updated correction data.
@@ -1706,8 +1780,6 @@ def update_correction(correction_id: int) -> tuple[Response, int]:
             update_data['corrected_partner'] = data['corrected_partner']
         if 'corrected_category_id' in data:
             update_data['corrected_category_id'] = data['corrected_category_id']
-        if 'corrected_notice' in data:
-            update_data['corrected_notice'] = data['corrected_notice']
 
         if not update_data:
             return jsonify({'error': 'No valid fields to update'}), 400
@@ -1727,7 +1799,6 @@ def update_correction(correction_id: int) -> tuple[Response, int]:
             'original_partner': updated_correction.original_partner,
             'corrected_partner': updated_correction.corrected_partner,
             'corrected_category_id': updated_correction.corrected_category_id,
-            'corrected_notice': updated_correction.corrected_notice,
             'created_at': updated_correction.created_at.isoformat() if updated_correction.created_at else None,
             'updated_at': updated_correction.updated_at.isoformat() if updated_correction.updated_at else None
         }

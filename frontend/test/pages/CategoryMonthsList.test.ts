@@ -45,6 +45,8 @@ const makeTransaction = (id: number, amount: number): TransactionListItem => ({
   category_id: 'grocery',
   partner: null,
   notice: null,
+  original_category_id: null,
+  original_notice: null,
   confidence: null,
   created_at: null,
   updated_at: null,

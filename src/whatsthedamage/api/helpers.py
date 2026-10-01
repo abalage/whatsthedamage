@@ -25,9 +25,7 @@ from whatsthedamage.services.id_mapping_service import IdMappingService
 from whatsthedamage.services.session_service import SessionService
 from whatsthedamage.services.statistical_analysis_service import StatisticalAnalysisService
 from whatsthedamage.services.drilldown_response_service import DrilldownResponseService
-from whatsthedamage.services.transaction_persistence_service import TransactionPersistenceService
 from whatsthedamage.services.deduplication_service import DeduplicationService
-from whatsthedamage.services.correction_service import CorrectionService
 
 
 def _get_response_formatting_service() -> ResponseFormattingService:
@@ -75,19 +73,9 @@ def _get_configuration_service() -> ConfigurationService:
     return cast(ConfigurationService, current_app.extensions['configuration_service'])
 
 
-def _get_transaction_persistence_service() -> TransactionPersistenceService:
-    """Get transaction persistence service from app extensions (dependency injection)."""
-    return cast(TransactionPersistenceService, current_app.extensions['transaction_persistence_service'])
-
-
 def _get_deduplication_service() -> DeduplicationService:
     """Get deduplication service from app extensions (dependency injection)."""
     return cast(DeduplicationService, current_app.extensions['deduplication_service'])
-
-
-def _get_correction_service() -> CorrectionService:
-    """Get correction service from app extensions (dependency injection)."""
-    return cast(CorrectionService, current_app.extensions['correction_service'])
 
 
 def _get_processing_result_repository() -> ProcessingResultRepository:

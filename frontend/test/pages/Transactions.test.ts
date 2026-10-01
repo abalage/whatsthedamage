@@ -83,6 +83,8 @@ const transaction: TransactionListItem = {
   category_id: 'food',
   partner: null,
   notice: null,
+  original_category_id: null,
+  original_notice: null,
   confidence: null,
   created_at: null,
   updated_at: null,
@@ -286,10 +288,10 @@ describe('Transactions.vue inline editing', () => {
 
     const column = findColumn(wrapper, 'merchant');
     const rows = tableData(wrapper);
-    const props = column.componentProps?.(rows[0].merchant, rows[0]) as { save: (v: string) => Promise<void> };
-    await props.save('Renamed Store');
+    const props = column.componentProps?.(rows[0].merchant, rows[0]) as { save: (v: string, applyToFuture?: boolean) => Promise<void> };
+    await props.save('Renamed Store', false);
 
-    expect(updateTransaction).toHaveBeenCalledWith(1, { partner: 'Renamed Store' });
+    expect(updateTransaction).toHaveBeenCalledWith(1, { partner: 'Renamed Store', apply_to_future: false });
     const refreshed = tableData(wrapper);
     expect(refreshed[0].merchant).toBe('Renamed Store');
     expect(useFeedbackStore().hasMessages).toBe(true);
@@ -301,10 +303,10 @@ describe('Transactions.vue inline editing', () => {
 
     const column = findColumn(wrapper, 'category_id');
     const rows = tableData(wrapper);
-    const props = column.componentProps?.(rows[0].category_id, rows[0]) as { save: (v: string | null) => Promise<void> };
-    await props.save('housing');
+    const props = column.componentProps?.(rows[0].category_id, rows[0]) as { save: (v: string | null, applyToFuture?: boolean) => Promise<void> };
+    await props.save('housing', true);
 
-    expect(updateTransaction).toHaveBeenCalledWith(1, { category_id: 'housing' });
+    expect(updateTransaction).toHaveBeenCalledWith(1, { category_id: 'housing', apply_to_future: true });
   });
 
   it('persists a notice correction', async () => {

@@ -1,16 +1,19 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useRoute, RouterLink } from 'vue-router'
+import { useAuthStore } from '../stores/auth.js'
 import { useLocaleStore } from '../stores/locale.js'
 import { useStatisticalStore } from '../stores/statistical.js'
 import { useFeedbackStore } from '../stores/feedback.js'
 import { useThemeStore } from '../stores/theme.js'
 import { useGettext } from 'vue3-gettext'
 import { recalculateStatistics } from '../js/api.js'
+import { extractResultId } from '../js/routeUtils.js'
 import { APP_VERSION } from '../js/version.js'
 
 const { $gettext } = useGettext()
 const route = useRoute()
+const authStore = useAuthStore()
 const localeStore = useLocaleStore()
 const statisticalStore = useStatisticalStore()
 const feedback = useFeedbackStore()
@@ -19,10 +22,7 @@ const themeStore = useThemeStore()
 const isRecalculating = ref(false)
 
 // Get current resultId from route
-const resultId = computed(() => {
-  const id = route.query.resultId ?? route.query.result_id
-  return typeof id === 'string' ? id : null
-})
+const resultId = computed(() => extractResultId(route.query as Record<string, unknown>))
 
 // Show Analytics dropdown only when there's a resultId
 const showAnalytics = computed(() => resultId.value !== null)
@@ -120,6 +120,12 @@ const setLocale = (locale: string) => {
             <ul class="navbar-nav ms-auto">
               <li class="nav-item">
                 <RouterLink to="/" class="nav-link">{{ $gettext('Home') }}</RouterLink>
+              </li>
+              <li class="nav-item">
+                <RouterLink v-if="authStore.isAuthenticated" to="/import" class="nav-link">{{ $gettext('Import CSV') }}</RouterLink>
+              </li>
+              <li class="nav-item">
+                <RouterLink v-if="authStore.isAuthenticated" to="/settings" class="nav-link">{{ $gettext('Settings') }}</RouterLink>
               </li>
               <li>
                   <RouterLink to="about" class="nav-link">{{ $gettext('About') }}</RouterLink>
@@ -233,6 +239,14 @@ const setLocale = (locale: string) => {
                     </button>
                   </li>
                 </ul>
+              </li>
+              <li class="nav-item">
+                <RouterLink v-if="!authStore.isAuthenticated" to="login" class="nav-link">
+                  {{ $gettext('Login') }}
+                </RouterLink>
+                <RouterLink v-else to="logout" class="nav-link">
+                  {{ $gettext('Logout') }}
+                </RouterLink>
               </li>
             </ul>
           </div>

@@ -73,11 +73,21 @@ class MockProcessingService:
         # Create StatisticalMetadata with empty highlights
         statistical_metadata = StatisticalMetadata(highlights=[])
 
+        # Create ProcessingMetadata
+        from whatsthedamage.models.common.processing_metadata import ProcessingMetadata
+        result_id = str(uuid.uuid4())
+        processing_metadata = ProcessingMetadata(
+            row_count=row_count,
+            processing_time=0.1,
+            ml_enabled=False,
+            result_id=result_id
+        )
+
         # Return ProcessingResponse object
         return ProcessingResponse(
-            result_id=str(uuid.uuid4()),
+            result_id=result_id,
             data={"": dt_response},  # Empty string for default/single account
-            metadata={'row_count': row_count},  # Simplified metadata
+            metadata=processing_metadata,
             statistical_metadata=statistical_metadata
         )
 
@@ -115,11 +125,10 @@ class APITestClient:
     def __init__(self, client):
         self.client = client
 
-    def post_csv(self, endpoint: str, csv_file: tuple, **params) -> Any:
-        """Post CSV file to an API endpoint.
+    def post_processing_result(self, csv_file: tuple, **params) -> Any:
+        """Post a CSV file to POST /api/v2/processing-results.
 
         Args:
-            endpoint: API endpoint path (e.g., '/api/v1/process')
             csv_file: Tuple of (BytesIO, filename)
             **params: Additional form parameters
 
@@ -127,25 +136,29 @@ class APITestClient:
             Flask response object
         """
         data = {'csv_file': csv_file, **params}
-        return self.client.post(endpoint, data=data, content_type='multipart/form-data')
+        headers = {'X-CSRF-Token': 'test_csrf_token'}
+        return self.client.post(
+            '/api/v2/processing-results',
+            data=data,
+            content_type='multipart/form-data',
+            headers=headers
+        )
 
-    def assert_success(self, response, expected_row_count: Optional[int] = None) -> Dict:
-        """Assert successful response and return parsed JSON.
+    def assert_created(self, response) -> Dict:
+        """Assert a successful processing result creation (201) and return it.
 
         Args:
             response: Flask response object
-            expected_row_count: Optional expected row count to verify
 
         Returns:
             Parsed JSON response data
         """
-        assert response.status_code == 200
+        assert response.status_code == 201
         data = response.get_json()
-        assert 'data' in data
-        assert 'metadata' in data
 
-        if expected_row_count is not None:
-            assert data['metadata']['row_count'] == expected_row_count
+        for key in ('result_id', 'user_id', 'csv_profile_id', 'row_count',
+                    'processing_time', 'ml_enabled', 'transactions_count'):
+            assert key in data
 
         return data
 

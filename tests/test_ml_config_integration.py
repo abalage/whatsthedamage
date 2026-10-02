@@ -44,11 +44,11 @@ ml_config:
   enable_calibration: false
   calibration_method: isotonic
 """
-    
+
     with tempfile.NamedTemporaryFile(mode='w', suffix='.yml', delete=False) as f:
         f.write(yaml_content)
         config_path = f.name
-    
+
     try:
         config = load_config(config_path)
         assert config.ml_config.ml_confidence_threshold == pytest.approx(0.7)
@@ -70,11 +70,11 @@ enricher_pattern_sets:
   type: {}
   partner: {}
 """
-    
+
     with tempfile.NamedTemporaryFile(mode='w', suffix='.yml', delete=False) as f:
         f.write(yaml_content)
         config_path = f.name
-    
+
     try:
         config = load_config(config_path)
         # Compare against the fixture's default value, not hardcoded 0.5

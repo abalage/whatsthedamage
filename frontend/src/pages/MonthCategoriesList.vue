@@ -15,21 +15,19 @@ import TableLink from '../components/data/TableLink.vue'
 import PieChart from '../components/charts/PieChart.vue'
 import type { Column, AggregateRowConfig } from '../components/data/VueDataTable.vue'
 import { fetchMonthCategories } from '../js/api.js'
-import type { MonthCategoriesApiResponse } from '../types/api.js'
+import { useResultQuery } from '../composables/useResultQuery.js'
+import type { AggregatedTransactionsResponse, TransactionListItem } from '../types/api.js'
 
 const { $gettext } = useGettext()
 const categoriesStore = useCategoriesStore()
 const route = useRoute()
 const statisticalStore = useStatisticalStore()
 
-// Helper to safely get route params
-const getRouteParam = (param: string): string | null => {
-  const value = route.params[param]
-  return typeof value === 'string' ? value : null
-}
+// Optional resultId filter, carried in the query string
+const resultQuery = useResultQuery()
 
-// Import formatMonthYear for breadcrumb
-import { formatMonthYear } from '../js/dateUtils.js'
+// Import formatMonthYear and date utilities for breadcrumb
+import { formatMonthYear, createMonthDate } from '../js/dateUtils.js'
 
 // Table columns
 const columns: Column[] = [
@@ -40,11 +38,14 @@ const columns: Column[] = [
     componentProps: (value: unknown, row?: Record<string, unknown>) => {
       const accountId = String(route.params.accountId || '')
       const monthId = String(route.params.monthId || '')
-      const resultId = String(route.params.resultId || '')
       const categoryId = extractCategoryIdFromData(row ?? {})
       const categoryDisplayName = categoriesStore.getCategoryDisplayName(String(row?.category_id ?? ''))
       return {
-        to: { name: 'category-month-transactions', params: { resultId, accountId, categoryId, monthId } },
+        to: {
+          name: 'category-month-transactions',
+          params: { accountId, categoryId, monthId },
+          query: resultQuery()
+        },
         class: 'clickable',
         children: categoryDisplayName
       }
@@ -73,66 +74,102 @@ const {
   isLoading,
   error,
   fetchData,
+  resultId,
   pageTitle,
-  breadcrumbItems
-} = useDrilldownData<MonthCategoriesApiResponse>({
+  breadcrumbItems,
+  accountId
+} = useDrilldownData<AggregatedTransactionsResponse>({
   fetchData: async (params) => {
-    if (!params.resultId || !params.accountId || !params.monthId) {
+    if (!params.accountId || !params.monthId) {
       throw new Error('Missing required parameters for month categories fetch')
     }
-    return fetchMonthCategories(params)
+    return fetchMonthCategories(params, {
+      algorithms: statisticalStore.algorithms,
+      direction: statisticalStore.direction
+    })
   },
   titleBaseKey: 'Month Details',
   titleFormat: 'month',
-  titleExtractor: (data: MonthCategoriesApiResponse) => ({
-    monthTimestamp: data.month_timestamp
-  }),
-  breadcrumbItems: (data: MonthCategoriesApiResponse | null): BreadcrumbItem[] => [
-    { name: $gettext('Home'), to: '/' },
-    { name: $gettext('Categories'), to: { name: 'results', query: { resultId: getRouteParam('resultId') } } },
-    { name: data ? formatMonthYear(data.month_timestamp) : $gettext('Month Details'), active: true }
-  ],
+  titleExtractor: (data: AggregatedTransactionsResponse) => {
+    const monthDate = createMonthDate(data.month || '')
+    return { monthTimestamp: monthDate ? monthDate.getTime() / 1000 : 0 }
+  },
+  breadcrumbItems: (data: AggregatedTransactionsResponse | null): BreadcrumbItem[] => {
+    const monthDate = data ? createMonthDate(data.month || '') : null
+    const monthName = monthDate ? formatMonthYear(monthDate.getTime() / 1000) : $gettext('Month Details')
+    return [
+      { name: $gettext('Home'), to: '/' },
+      { name: $gettext('Categories'), to: { name: 'results', query: resultQuery() } },
+      { name: monthName, active: true }
+    ]
+  },
   errorMessageKey: 'monthCategoriesLoadError'
 })
 
 
 
+// Helper function to calculate total for a group of transactions
+function calculateTotalForTransactions(txns: TransactionListItem[]): number {
+  return txns.reduce((sum, txn) => sum + (txn.amount || 0), 0)
+}
+
+// Extract account currency from first transaction
+const accountCurrency = computed(() => {
+  if (!monthCategoriesData.value?.groups) return null
+  const groups = monthCategoriesData.value.groups
+  for (const txns of Object.values(groups)) {
+    if (txns.length > 0 && txns[0].currency) {
+      return txns[0].currency
+    }
+  }
+  return null
+})
+
 // Table data with _rowIds mapping
 const tableData = computed(() => {
   if (!monthCategoriesData.value) return []
-  return monthCategoriesData.value.data.map(category => ({
-    category_id: category.category_id,
-    category_url: category.category_url,
-    total: category.total.raw,
-    total_display: category.total.display,
-    row_id: category.row_id,
-    _rowIds: {
-      total: category.row_id // Map total column to its row_id for cell-level highlighting
+  const groups = monthCategoriesData.value.groups || {}
+
+  return Object.entries(groups).map(([categoryKey, txns]) => {
+    const total = calculateTotalForTransactions(txns)
+    return {
+      category_id: categoryKey,
+      total: total,
+      total_display: total.toFixed(2),
+      row_id: categoryKey,
+      _rowIds: {
+        total: categoryKey // Map total column to its row_id for cell-level highlighting
+      }
     }
-  }))
+  })
 })
 
 // Pie chart data for category distribution visualization
 const pieChartData = computed(() => {
   if (!monthCategoriesData.value) return []
-  return monthCategoriesData.value.data.map(category => ({
-    label: categoriesStore.getCategoryDisplayName(category.category_id),
-    value: category.total.raw as number,
-    categoryId: category.category_id
-  }))
+  const groups = monthCategoriesData.value.groups || {}
+  return Object.entries(groups).map(([categoryKey, txns]) => {
+    const total = calculateTotalForTransactions(txns)
+    return {
+      label: categoriesStore.getCategoryDisplayName(categoryKey),
+      value: total,
+      categoryId: categoryKey
+    }
+  })
 })
 
 // Total sum for pie chart display
 const totalSum = computed(() => {
   if (!monthCategoriesData.value) return 0
-  return monthCategoriesData.value.data.reduce((sum, category) => {
-    return sum + (category.total.raw as number)
+  const groups = monthCategoriesData.value.groups || {}
+  return Object.values(groups).reduce((sum, txns) => {
+    return sum + calculateTotalForTransactions(txns)
   }, 0)
 })
 
 // Aggregate row configuration for the table
 const aggregateRows = computed<AggregateRowConfig[]>(() => {
-  if (!monthCategoriesData.value || monthCategoriesData.value.data.length === 0) return []
+  if (!monthCategoriesData.value || !monthCategoriesData.value.groups || Object.keys(monthCategoriesData.value.groups).length === 0) return []
 
   return [
     {
@@ -168,6 +205,11 @@ watch(() => monthCategoriesData.value, (newData) => {
 onMounted(() => {
   fetchData()
 })
+
+// Refetch when the resultId query filter changes while the page is reused
+watch(resultId, () => {
+  fetchData()
+})
 </script>
 
 <template>
@@ -183,7 +225,7 @@ onMounted(() => {
       <PageHeader :title="pageTitle">
         <template #actions>
           <RouterLink
-            :to="{ name: 'results', query: { resultId: getRouteParam('resultId') } }"
+            :to="{ name: 'results', query: resultQuery() }"
             class="btn bg-surface-secondary text-on-dark border-secondary mt-3 mb-3"
           >
             {{ $gettext('Back to Categories') }}
@@ -196,9 +238,9 @@ onMounted(() => {
         <!-- Account Card -->
         <div class="card" style="width: fit-content; flex: 1; min-width: 400px">
           <div class="card-header">
-            {{ $gettext('Account') }}: {{ monthCategoriesData.account_formatted_id }}
-            <span v-if="monthCategoriesData.account_currency" class="bg-surface-secondary text-on-dark px-2 py-1 rounded text-xs">
-              {{ monthCategoriesData.account_currency }}
+            {{ $gettext('Account') }}: {{ accountId || $gettext('Unknown') }}
+            <span v-if="accountCurrency" class="bg-surface-secondary text-on-dark px-2 py-1 rounded text-xs">
+              {{ accountCurrency }}
             </span>
           </div>
           <div class="card-body">

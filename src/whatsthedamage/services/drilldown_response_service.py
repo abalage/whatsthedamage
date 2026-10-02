@@ -47,32 +47,37 @@ class DrilldownResponseService:
         self,
         id_mapping_service: IIdMappingService,
         cache_service: ICacheService,
+        processing_result_repository: Optional[Any] = None,
     ):
         """Initialize the drilldown response service.
 
         Args:
             id_mapping_service: Service for mapping between secure IDs and original values
             cache_service: Service for accessing cached processing results
+            processing_result_repository: Optional repository for database access
         """
         self._id_mapping_service = id_mapping_service
         self._cache_service = cache_service
+        self._processing_result_repository = processing_result_repository
 
     def get_category_months_response(
         self,
         result_id: str,
         account_id: str,
         category_id: str,
+        user_id: Optional[int] = None,
     ) -> CategoryMonthsApiResponse:
         """Build response for category months drilldown endpoint.
 
-        Retrieves cached processing result, filters by account and category,
+        Retrieves cached or database processing result, filters by account and category,
         groups transactions by month, aggregates totals, and aggregates highlights
         from the original processing result.
 
         Args:
-            result_id: UUID of the cached processing result
+            result_id: UUID of the processing result
             account_id: Secure account ID to filter by
             category_id: Secure category ID to get months for
+            user_id: Optional user ID for database lookup
 
         Returns:
             CategoryMonthsApiResponse: Typed response for /results/<id>/accounts/<acct>/categories/<cat>/months
@@ -80,7 +85,7 @@ class DrilldownResponseService:
         Raises:
             ValueError: If result, account, or category not found
         """
-        cached_result = self._get_cached_result(result_id)
+        cached_result = self._get_cached_result(result_id, user_id)
         account_data = self._get_account_data(cached_result, account_id, result_id)
 
         # Resolve category ID to original name
@@ -145,17 +150,19 @@ class DrilldownResponseService:
         result_id: str,
         account_id: str,
         month_id: str,
+        user_id: Optional[int] = None,
     ) -> MonthCategoriesApiResponse:
         """Build response for month categories drilldown endpoint.
 
-        Retrieves cached processing result, filters by account and month,
+        Retrieves cached or database processing result, filters by account and month,
         groups transactions by category, aggregates totals, and aggregates highlights
         from the original processing result.
 
         Args:
-            result_id: UUID of the cached processing result
+            result_id: UUID of the processing result
             account_id: Secure account ID to filter by
             month_id: Secure month ID to get categories for
+            user_id: Optional user ID for database lookup
 
         Returns:
             MonthCategoriesApiResponse: Typed response for /results/<id>/accounts/<acct>/months/<month>/categories
@@ -163,7 +170,7 @@ class DrilldownResponseService:
         Raises:
             ValueError: If result, account, or month not found
         """
-        cached_result = self._get_cached_result(result_id)
+        cached_result = self._get_cached_result(result_id, user_id)
         account_data = self._get_account_data(cached_result, account_id, result_id)
 
         # Resolve month ID to original timestamp
@@ -222,22 +229,39 @@ class DrilldownResponseService:
             highlights=highlights
         )
 
-    def _get_cached_result(self, result_id: str) -> ProcessingResponse:
-        """Get and validate cached result.
+    def _get_cached_result(self, result_id: str, user_id: Optional[int] = None) -> ProcessingResponse:
+        """Get and validate database result.
 
         Args:
-            result_id: UUID of the cached processing result
+            result_id: UUID of the processing result
+            user_id: Optional user ID to validate ownership and fetch from database
 
         Returns:
-            The cached ProcessingResponse
+            The ProcessingResponse from database
 
         Raises:
             ValueError: If result not found
         """
-        cached_result = self._cache_service.get(result_id)
-        if not cached_result:
-            raise ValueError('Results not found')
-        return cast(ProcessingResponse, cached_result)
+        from whatsthedamage.models.common.processing_metadata import ProcessingMetadata
+        from whatsthedamage.models.domain.dt_models import StatisticalMetadata
+
+        # Fetch from database (cache fallback removed - big-bang migration)
+        if self._processing_result_repository and user_id:
+            processing_result = self._processing_result_repository.find_by_user_and_result_id(user_id, result_id)
+            if processing_result:
+                # Deserialize dictionaries back to Pydantic models
+                data = {account_id: Account(**account_data) for account_id, account_data in processing_result.data.items()}
+                metadata = ProcessingMetadata(**processing_result.processing_metadata)
+                statistical_metadata = StatisticalMetadata(**processing_result.statistical_metadata)
+
+                return ProcessingResponse(
+                    result_id=processing_result.id,
+                    data=data,
+                    metadata=metadata,
+                    statistical_metadata=statistical_metadata
+                )
+
+        raise ValueError('Results not found')
 
     def _get_account_data(
         self,
@@ -1019,17 +1043,19 @@ class DrilldownResponseService:
         account_id: str,
         category_id: str,
         month_id: str,
+        user_id: Optional[int] = None,
     ) -> CategoryMonthTransactionsApiResponse:
         """Build response for category month transactions drilldown endpoint.
 
-        Retrieves cached processing result, filters by account, category, and month,
+        Retrieves cached or database processing result, filters by account, category, and month,
         and extracts individual transaction details.
 
         Args:
-            result_id: UUID of the cached processing result
+            result_id: UUID of the processing result
             account_id: Secure account ID to filter by
             category_id: Secure category ID to filter by
             month_id: Secure month ID to filter by
+            user_id: Optional user ID for database lookup
 
         Returns:
             CategoryMonthTransactionsApiResponse: Typed response for /results/<id>/accounts/<acct>/categories/<cat>/months/<month>/transactions
@@ -1037,7 +1063,7 @@ class DrilldownResponseService:
         Raises:
             ValueError: If result, account, category, or month not found or no transactions
         """
-        cached_result = self._get_cached_result(result_id)
+        cached_result = self._get_cached_result(result_id, user_id)
         account_data = self._get_account_data(cached_result, account_id, result_id)
 
         original_category, original_month_ts = self._resolve_category_and_month(

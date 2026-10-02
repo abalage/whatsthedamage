@@ -129,7 +129,7 @@ class RowEnrichment:
         # First, enrich rows with categories based on pattern matching
         for attribute_name_to_check, category_patterns in self.pattern_sets.model_dump().items():
             self.add_category_attribute(attribute_name_to_check, category_patterns)
-        
+
         # Group already-categorized rows by category_id
         result: Dict[str, List[CsvRow]] = {}
         for row in self.rows:
@@ -138,10 +138,10 @@ class RowEnrichment:
                 if category_id not in result:
                     result[category_id] = []
                 result[category_id].append(row)
-        
+
         # Ensure all known categories are present, even if empty
         for category_id in self.categorized.keys():
             if category_id not in result:
                 result[category_id] = []
-        
+
         return result

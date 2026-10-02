@@ -1,15 +1,15 @@
 /**
  * Vue Directive for Bootstrap Popover
- * 
+ *
  * This directive provides Vue-idiomatic lifecycle management for Bootstrap popovers.
  * It automatically initializes popovers when elements are mounted, updates them
  * when content changes, and destroys them when elements are unmounted.
- * 
+ *
  * Usage:
  *   <span v-popover="{ content: 'My popover content', placement: 'top' }">
  *     Hover me
  *   </span>
- * 
+ *
  * Options:
  *   - content: Popover content (required)
  *   - placement: 'top', 'right', 'bottom', 'left' (default: 'top')
@@ -44,19 +44,19 @@ export interface PopoverOptions {
  */
 function initPopover(el: HTMLElement, options: PopoverOptions): void {
   const bootstrap = (globalThis as unknown as Window).bootstrap as { Popover?: unknown } | undefined
-  
+
   if (!bootstrap?.Popover) {
     // eslint-disable-next-line no-console
     console.warn('[popover directive] Bootstrap Popover not available')
     return
   }
-  
+
   // Destroy existing popover first
   const existing = (bootstrap.Popover as { getInstance: (el: Element) => unknown }).getInstance(el)
   if (existing && typeof existing === 'object' && 'dispose' in existing) {
     (existing as { dispose: () => void }).dispose()
   }
-  
+
   // Initialize new popover
   new (bootstrap.Popover as new (el: Element, opts: unknown) => unknown)(el, {
     content: options.content,
@@ -64,7 +64,7 @@ function initPopover(el: HTMLElement, options: PopoverOptions): void {
     html: options.html !== false,
     sanitize: options.sanitize !== false,
     trigger: options.trigger ?? 'hover focus',
-    customClass: options.customClass
+    ...(options.customClass ? { customClass: options.customClass } : {})
   })
 }
 
@@ -73,7 +73,7 @@ function initPopover(el: HTMLElement, options: PopoverOptions): void {
  */
 function destroyPopover(el: HTMLElement): void {
   const bootstrap = (globalThis as unknown as Window).bootstrap as { Popover?: { getInstance: (el: Element) => unknown } } | undefined
-  
+
   if (bootstrap?.Popover) {
     const instance = bootstrap.Popover.getInstance(el)
     if (instance && typeof instance === 'object' && 'dispose' in instance) {
@@ -91,7 +91,7 @@ export const popoverDirective: Directive<HTMLElement, PopoverOptions> = {
       initPopover(el, binding.value)
     }
   },
-  
+
   updated(el: HTMLElement, binding: DirectiveBinding<PopoverOptions>) {
     // Only re-initialize if content changed
     if (binding.oldValue?.content !== binding.value?.content) {
@@ -102,7 +102,7 @@ export const popoverDirective: Directive<HTMLElement, PopoverOptions> = {
       }
     }
   },
-  
+
   unmounted(el: HTMLElement) {
     destroyPopover(el)
   }

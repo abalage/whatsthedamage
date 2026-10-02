@@ -10,7 +10,7 @@ response format with metadata and hypermedia links.
 """
 from pydantic import BaseModel, Field, ConfigDict
 from typing import Dict, List, Optional, Any, Generic, TypeVar
-from datetime import datetime
+from datetime import datetime, UTC
 from whatsthedamage.models.domain.account import Account
 from whatsthedamage.models.domain.dt_models import TransactionDetail
 from whatsthedamage.models.common.display_fields import DisplayRawField
@@ -70,7 +70,7 @@ class ApiEnvelope(BaseModel, Generic[T]):
         description="Hypermedia links for navigation (self, related, etc.)"
     )
     timestamp: datetime = Field(
-        default_factory=datetime.utcnow,
+        default_factory=lambda: datetime.now(UTC),
         description="Response generation timestamp in UTC"
     )
 
@@ -370,8 +370,8 @@ class RecalculateApiResponse(BaseModel):
 
     Attributes:
         status: Operation status (always 'success' for 200 responses)
-        result_id: Processing result identifier
-        highlights: Updated statistical highlights mapped by row_id to highlight types
+        result_id: Processing result identifier (None = all user transactions)
+        highlights: Updated statistical highlights mapped by cell ID to highlight types
         algorithms: List of algorithm names used (e.g., ['iqr', 'pareto'])
         direction: Analysis direction ('rows' or 'columns')
     """
@@ -379,9 +379,12 @@ class RecalculateApiResponse(BaseModel):
         default="success",
         description="Operation status"
     )
-    result_id: str = Field(description="Processing result identifier")
+    result_id: Optional[str] = Field(
+        default=None,
+        description="Processing result identifier (None = all user transactions)"
+    )
     highlights: Dict[str, List[str]] = Field(
-        description="Updated statistical highlights mapped by row_id to list of highlight types"
+        description="Updated statistical highlights mapped by cell ID to list of highlight types"
     )
     algorithms: List[str] = Field(
         description="List of algorithm names used (e.g., ['iqr', 'pareto'])"

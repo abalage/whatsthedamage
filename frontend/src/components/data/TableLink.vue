@@ -1,11 +1,11 @@
 <script setup lang="ts">
 /**
  * TableLink - A Vue Router-aware link component for use in VueDataTable cells.
- * 
+ *
  * This component enables SPA navigation within table cells, preventing full page reloads.
  * It automatically uses Vue Router's <router-link> when a route object is provided,
  * and falls back to a standard <a> tag for external links.
- * 
+ *
  * Usage:
  *   In VueDataTable column definition:
  *   {
@@ -18,7 +18,7 @@
  *       children: value
  *     })
  *   }
- * 
+ *
  * Or with route object:
  *   componentProps: (value, row, index) => ({
  *     to: { name: 'route-name', params: { id: row.id } },

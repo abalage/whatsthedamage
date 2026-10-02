@@ -63,7 +63,7 @@ class ConfigurationService:
 
         Returns:
             ConfigLoadResult with loaded config or error
-        
+
         Note:
             The internal load_config function calls exit() on error.
             This service wraps it for better error handling in web/API contexts.

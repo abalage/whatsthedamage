@@ -18,7 +18,7 @@ export const useFeedbackStore = defineStore('feedback', () => {
   const showMessage = (message: string, type: FeedbackMessage['type'] = 'info', autoDismiss: boolean = true): void => {
     const id = nextId.value++
     const timestamp = Date.now()
-    
+
     messages.value.push({
       id,
       type,
@@ -26,7 +26,7 @@ export const useFeedbackStore = defineStore('feedback', () => {
       timestamp,
       autoDismiss
     })
-    
+
     // Auto-dismiss after 5 seconds if enabled
     if (autoDismiss) {
       setTimeout(() => {

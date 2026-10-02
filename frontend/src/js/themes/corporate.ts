@@ -77,6 +77,7 @@ const corporateTheme: Theme = {
       pareto: '#ffc697',
       excluded: '#b2b2b2',
       multiple: '#ff5a5a',
+      corrected: '#a9cce3',
     },
   },
 };

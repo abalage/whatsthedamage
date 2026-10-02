@@ -1,4 +1,5 @@
 from typing import List, Dict, Callable, Optional, Any, TYPE_CHECKING
+from datetime import datetime
 from whatsthedamage.models.domain.csv_row import CsvRow
 from whatsthedamage.models.common.display_fields import DisplayRawField, DateField
 from whatsthedamage.models.domain.dt_models import AggregatedRow, DetailRow
@@ -161,6 +162,15 @@ class AccountResponseBuilder:
             transaction_type = getattr(row, 'type', '')
             confidence = getattr(row, 'confidence', None)
             notice = getattr(row, 'notice', '')
+            category_id = getattr(row, 'category_id', None)
+            row_date = getattr(row, 'date', '')
+            # Use start_of_month_epoch to get country-agnostic timestamp, then convert to YYYY-MM format
+            if row_date:
+                timestamp = DateConverter.start_of_month_epoch(row_date, self._date_format)
+                # Convert timestamp to YYYY-MM format for consistent month IDs
+                month_id = datetime.fromtimestamp(timestamp).strftime('%Y-%m')
+            else:
+                month_id = None
 
             details.append(
                 DetailRow(
@@ -172,7 +182,9 @@ class AccountResponseBuilder:
                     account=account,
                     type=transaction_type,
                     confidence=confidence,
-                    notice=notice
+                    notice=notice,
+                    category_id=category_id,
+                    month_id=month_id
                 )
             )
         return details

@@ -5,6 +5,7 @@
 
 import { computed, type ComputedRef } from 'vue'
 import { useRoute } from 'vue-router'
+import { extractResultId } from '../js/routeUtils.js'
 
 /**
  * String-only route parameters type
@@ -13,6 +14,7 @@ export type StringRouteParams = Record<string, string | null>
 
 /**
  * Extracts common route parameters with type safety
+ * The resultId filter is carried in the query string
  * @returns Object with computed refs for resultId, accountId, categoryId, and monthId
  */
 export function useRouteParams(): {
@@ -25,10 +27,7 @@ export function useRouteParams(): {
 } {
   const route = useRoute()
 
-  const resultId = computed(() => {
-    const value = route.params.resultId
-    return typeof value === 'string' ? value : null
-  })
+  const resultId = computed(() => extractResultId(route.query as Record<string, unknown>))
 
   const accountId = computed(() => {
     const value = route.params.accountId
@@ -65,9 +64,13 @@ export function useRouteParams(): {
   }
 
   /**
-   * Gets all route params as StringRouteParams
+   * Gets all route params as StringRouteParams, including the resultId
+   * from the query string
    */
-  const stringParams = computed(() => convertParamsToString(route.params))
+  const stringParams = computed<StringRouteParams>(() => ({
+    ...convertParamsToString(route.params),
+    resultId: resultId.value
+  }))
 
   return {
     resultId,

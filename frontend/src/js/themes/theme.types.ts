@@ -11,6 +11,7 @@ interface ThemeHighlightColors {
   pareto: string;
   excluded: string;
   multiple: string;
+  corrected: string;
 }
 
 /**

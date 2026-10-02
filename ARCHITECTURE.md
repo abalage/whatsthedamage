@@ -89,6 +89,7 @@ whatsthedamage/
 │   │   ├── auth_decorators.py # require_authentication / require_csrf decorators
 │   │   ├── error_handlers.py  # API error handlers
 │   │   ├── helpers.py       # API helper functions
+│   │   ├── middleware.py    # Blueprint auth guard, API rate limits, security headers
 │   │   ├── models/          # API DTO package
 │   │   └── v2/              # API v2 endpoints and schemas
 │   │       ├── endpoints.py # API v2 processing, transaction, and correction endpoints
@@ -537,7 +538,7 @@ Frontend SPA (Vue 3)
 
 **Name**: Rate Limit Service
 
-**Description**: Per-endpoint rate limiting for sensitive operations (login, registration, password reset) to mitigate brute-force and abuse. Configurable via `config/auth_config.py`.
+**Description**: Rate limiting for sensitive operations (login, registration, password reset) plus a general per-IP API limit and a stricter bucket for expensive endpoints (upload processing, statistics recalculation). Configurable via `config/auth_config.py` and `config/flask_config.py`.
 
 **Technologies**: Python
 
@@ -800,14 +801,17 @@ The legacy drilldown endpoints (`/processing-results/<id>/accounts/...`) were re
 
 **Authentication**: Username/password accounts with Argon2 password hashing (`password_service.py`, argon2-cffi). Sessions are DB-backed entities identified by an opaque token stored in a cookie. Password reset uses one-time recovery codes. Rate limiting protects sensitive endpoints (login, registration, password reset).
 
-**Authorization**: Per-user data isolation. All transaction, processing result, and correction endpoints scope queries to the authenticated user via the repository layer. Enforcement is centralized in `api/auth_decorators.py` (`require_authentication`, `require_auth_and_csrf`, `optional_authentication`).
+**Authorization**: Per-user data isolation. All transaction, processing result, and correction endpoints scope queries to the authenticated user via the repository layer. Enforcement is layered: blueprint-level middleware in `api/middleware.py` requires a valid session on every `/api/v2/*` route (except an explicit public allowlist of reference-data endpoints), and `api/auth_decorators.py` (`require_authentication`, `require_auth_and_csrf`, `require_csrf`) provides per-route defense in depth.
 
 **Data Encryption**: Passwords are stored as Argon2 hashes; session tokens and CSRF tokens are hashed at rest in the `Session` entity. Transport encryption should be provided by the deployment (reverse proxy/TLS).
 
 **Key Security Tools/Practices**:
 - Argon2 password hashing with automatic rehash on login
 - CSRF token issuance (`/api/v2/auth/csrf-token`) and server-side hash verification on all state-changing requests
-- Per-endpoint rate limiting (`rate_limit_service.py`, configured in `config/auth_config.py`)
+- Blueprint-level authentication middleware on all `/api/v2/*` routes with an explicit public allowlist (`api/middleware.py`)
+- Security headers on every response: CSP, HSTS, X-Frame-Options, X-Content-Type-Options, Referrer-Policy, and `Cache-Control: no-store` on API responses (`api/middleware.py`)
+- Rate limiting for login/registration/password reset plus general and heavy-endpoint API limits (`rate_limit_service.py`, configured in `config/auth_config.py` and `config/flask_config.py`)
+- Configurable CORS origins via `WHATSTHEDAMAGE_CORS_ORIGINS` (defaults to the Vite dev server)
 - Input validation for all user and file inputs
 - File type and content verification
 - Secure file handling with proper cleanup

@@ -19,9 +19,18 @@ from whatsthedamage.services.rate_limit_service import RateLimitService
 from whatsthedamage.config.auth_config import get_auth_config
 from whatsthedamage.models.database.user import User as UserDB
 from whatsthedamage.api.auth_decorators import require_auth_and_csrf
+from whatsthedamage.api.middleware import (
+    PUBLIC_AUTH_ROUTES,
+    get_client_ip,
+    register_api_middleware,
+)
 
 # Create auth blueprint
 auth_bp = Blueprint('auth', __name__, url_prefix='/api/v2/auth')
+
+# Guard auth routes with rate limiting and require a session on all
+# of them except the public routes in PUBLIC_AUTH_ROUTES.
+register_api_middleware(auth_bp, PUBLIC_AUTH_ROUTES)
 
 
 def _get_auth_service() -> AuthenticationService:
@@ -52,23 +61,6 @@ def _get_rate_limit_service() -> RateLimitService:
     if rate_limit_service is None:
         raise RuntimeError("Rate limit service not available")
     return cast(RateLimitService, rate_limit_service)
-
-
-def _get_client_ip() -> str:
-    """Get client IP address from request.
-
-    Handles X-Forwarded-For header for proxied requests.
-
-    Returns:
-        Client IP address string.
-    """
-    # Check for X-Forwarded-For header (for nginx, load balancers, etc.)
-    forwarded_for = request.headers.get('X-Forwarded-For', '')
-    if forwarded_for:
-        # Take the first IP in the list (original client)
-        return forwarded_for.split(',')[0].strip()  # type: ignore[no-any-return]
-    remote_addr = request.remote_addr or '0.0.0.0'
-    return str(remote_addr)  # type: ignore[no-any-return]
 
 
 def _get_user_agent() -> str:
@@ -237,12 +229,28 @@ def register() -> Tuple[Response, int]:
         400: Validation error (missing fields, invalid input)
         409: Username already exists
         422: Password too weak
+        429: Registration rate limit exceeded
 
     Note:
         The recovery_code is displayed only once and must be saved by the user.
         It cannot be retrieved later.
     """
     try:
+        # Check rate limiting (per IP, before any validation work)
+        rate_limit_exceeded, retry_after = _get_rate_limit_service().check_register_rate_limit(
+            ip_address=get_client_ip()
+        )
+        if rate_limit_exceeded:
+            error_response = _create_error_response(
+                f"Too many registration attempts. Try again in {retry_after} seconds.",
+                429,
+                "RATE_LIMIT_EXCEEDED",
+                retry_after
+            )
+            response = jsonify(error_response[0])
+            response.headers['Retry-After'] = str(retry_after)
+            return response, 429
+
         data = request.get_json()
         if not data:
             return jsonify(_create_error_response(
@@ -268,7 +276,7 @@ def register() -> Tuple[Response, int]:
                 "MISSING_PASSWORD"
             )[0]), 400
 
-        ip_address = _get_client_ip()
+        ip_address = get_client_ip()
         user_agent = _get_user_agent()
 
         # Register user
@@ -388,7 +396,7 @@ def login() -> Tuple[Response, int]:
         # Check rate limiting
         rate_limit_exceeded, retry_after = _get_rate_limit_service().check_login_rate_limit(
             username=username.strip(),
-            ip_address=_get_client_ip()
+            ip_address=get_client_ip()
         )
         if rate_limit_exceeded:
             error_response = _create_error_response(
@@ -401,7 +409,7 @@ def login() -> Tuple[Response, int]:
             response.headers['Retry-After'] = str(retry_after)
             return response, 429
 
-        ip_address = _get_client_ip()
+        ip_address = get_client_ip()
         user_agent = _get_user_agent()
 
         # Login user
@@ -766,7 +774,7 @@ def reset_password() -> Tuple[Response, int]:
 
         # Check rate limiting (by IP address only, since username may not be valid)
         rate_limit_exceeded, retry_after = _get_rate_limit_service().check_recovery_rate_limit(
-            ip_address=_get_client_ip()
+            ip_address=get_client_ip()
         )
         if rate_limit_exceeded:
             error_response_data = _create_error_response(
@@ -787,7 +795,7 @@ def reset_password() -> Tuple[Response, int]:
         )
 
         # Reset rate limit on successful recovery
-        _get_rate_limit_service().reset_recovery_rate_limit(_get_client_ip())
+        _get_rate_limit_service().reset_recovery_rate_limit(get_client_ip())
 
         # Build response
         response_data = {

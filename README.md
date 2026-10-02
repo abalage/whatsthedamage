@@ -61,7 +61,7 @@ My financial details are considered a private matter between myself and my chose
 
 - Support for Open Banking (PSD2) is out of the scope.
 - Your data stays on your infrastructure. Imported transactions, user accounts, and sessions are stored in a local database (SQLite by default, file `app.db`). There is no telemetry, no external service, and no data leaves the server it runs on. Back up or delete the database file to manage your data.
-- Each account only has access to its own transactions. User management is local: passwords are hashed with Argon2, sessions are database-backed, and sensitive endpoints are rate limited.
+- Each account only has access to its own transactions. User management is local: passwords are hashed with Argon2, sessions are database-backed, and sensitive endpoints are rate limited. All API endpoints require an authenticated session except public reference data (category definitions, CSV profiles, the API schema), every response carries security headers (CSP, HSTS, frame and sniffing protection), and allowed CORS origins are configurable via the `WHATSTHEDAMAGE_CORS_ORIGINS` environment variable.
 - Previous versions kept processed results only in a short-lived cache. Transactions are now persisted so you can browse, correct, and re-analyze your full history without re-uploading the CSV every time.
 - Machine Learning models can be built to help reducing the burden of writing regular expressions to categorize your transactions. Your data, your model.
 

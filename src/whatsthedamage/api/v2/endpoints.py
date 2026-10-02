@@ -33,6 +33,7 @@ from whatsthedamage.api.helpers import (
     _get_shared_correction_repository,
 )
 from whatsthedamage.api.auth_decorators import require_authentication, require_csrf
+from whatsthedamage.api.middleware import PUBLIC_V2_ROUTES, register_api_middleware
 
 if TYPE_CHECKING:
     from whatsthedamage.models.repositories.unit_of_work import SqlAlchemyUnitOfWork
@@ -41,6 +42,10 @@ if TYPE_CHECKING:
 
 # Create Blueprint
 v2_bp = Blueprint('api_v2', __name__, url_prefix='/api/v2')
+
+# Guard every v2 route with authentication and rate limiting;
+# reference-data routes listed in PUBLIC_V2_ROUTES stay public.
+register_api_middleware(v2_bp, PUBLIC_V2_ROUTES)
 
 
 # Removed old drilldown endpoints - replaced by /transactions/aggregate

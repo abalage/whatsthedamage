@@ -38,10 +38,22 @@ def _configure_flask_app(
 
 
 def _configure_cors(app: Flask) -> None:
-    """Configure CORS for API endpoints."""
+    """Configure CORS for API endpoints.
+
+    Allowed origins are read from the CORS_ORIGINS config, which
+    defaults to the Vite dev server and can be overridden via the
+    WHATSTHEDAMAGE_CORS_ORIGINS environment variable.
+
+    Args:
+        app: Flask application.
+    """
+    origins = app.config.get(
+        'CORS_ORIGINS',
+        ['http://localhost:3000', 'http://127.0.0.1:3000']
+    )
     CORS(app, resources={
         r"/api/*": {
-            "origins": ["http://localhost:3000", "http://127.0.0.1:3000"],
+            "origins": origins,
             "supports_credentials": True
         }
     })
@@ -224,6 +236,12 @@ def _register_error_handlers(app: Flask) -> None:
     register_error_handlers(app)
 
 
+def _register_security_headers(app: Flask) -> None:
+    """Register security header middleware (CSP, HSTS, etc.)."""
+    from whatsthedamage.api.middleware import register_security_headers
+    register_security_headers(app)
+
+
 def _setup_request_logging(app: Flask, logger: LoggerAdapter) -> None:
     """Set up request logging middleware."""
     @app.before_request
@@ -261,6 +279,7 @@ def create_app(
 
     _register_blueprints(app)
     _register_error_handlers(app)
+    _register_security_headers(app)
     _setup_request_logging(app, logger)
 
     return app

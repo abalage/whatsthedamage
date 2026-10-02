@@ -4,6 +4,7 @@ Tests CRUD operations and business logic for user and session repositories.
 """
 
 import pytest
+import hashlib
 from datetime import datetime, timedelta, UTC
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -17,6 +18,9 @@ from whatsthedamage.models.database.correction import Correction as CorrectionDB
 from whatsthedamage.models.database.shared_correction import SharedCorrection as SharedCorrectionDB
 from whatsthedamage.models.repositories.user_repository import SqlAlchemyUserRepository
 from whatsthedamage.models.repositories.session_repository import SqlAlchemySessionRepository
+from whatsthedamage.models.repositories.shared_correction_repository import (
+    SqlAlchemySharedCorrectionRepository
+)
 from whatsthedamage.services.password_service import PasswordService
 
 
@@ -50,6 +54,12 @@ def session_repository(db_session_factory):
 
 
 @pytest.fixture
+def shared_correction_repository(db_session_factory):
+    """Create a SharedCorrectionRepository instance for testing."""
+    return SqlAlchemySharedCorrectionRepository(db_session_factory)
+
+
+@pytest.fixture
 def password_service():
     """Create a PasswordService instance for testing."""
     return PasswordService(
@@ -57,6 +67,18 @@ def password_service():
         memory_cost=16384,
         parallelism=1
     )
+
+
+def _partner_hash(partner: str) -> str:
+    """Compute the anonymized partner hash used by shared corrections.
+
+    Args:
+        partner: Original partner name.
+
+    Returns:
+        SHA-256 hex digest of the lowercase partner name.
+    """
+    return hashlib.sha256(partner.lower().encode('utf-8')).hexdigest()
 
 
 class TestUserRepository:
@@ -193,6 +215,38 @@ class TestUserRepository:
         # Verify reactivation
         updated_user = user_repository.find_by_id(user.id)
         assert updated_user.is_active is True
+
+    def test_set_opt_in_sharing(self, user_repository, password_service):
+        """Test setting user's sharing opt-in preference."""
+        password_hash = password_service.hash_password('test_password')
+        recovery_code_hash = password_service.hash_password('ABCD-EFGH-IJKL-MNOP')
+
+        # Create user (opt-in defaults to False)
+        user = user_repository.create(
+            username='sharinguser',
+            password_hash=password_hash,
+            recovery_code_hash=recovery_code_hash
+        )
+        assert user.opt_in_sharing is False
+
+        # Opt in
+        result = user_repository.set_opt_in_sharing(user.id, True)
+        assert result is True
+
+        updated_user = user_repository.find_by_id(user.id)
+        assert updated_user.opt_in_sharing is True
+
+        # Revoke opt-in
+        result = user_repository.set_opt_in_sharing(user.id, False)
+        assert result is True
+
+        updated_user = user_repository.find_by_id(user.id)
+        assert updated_user.opt_in_sharing is False
+
+    def test_set_opt_in_sharing_unknown_user(self, user_repository):
+        """Test setting opt-in for a nonexistent user returns False."""
+        result = user_repository.set_opt_in_sharing(99999, True)
+        assert result is False
 
     def test_find_all(self, user_repository, password_service):
         """Test finding all users."""
@@ -811,3 +865,62 @@ class TestTransactionRepositoryDateRanges:
         )
 
         assert ranges == {}
+
+
+class TestSharedCorrectionRepository:
+    """Tests for SharedCorrectionRepository.create_or_update semantics."""
+
+    def test_creates_new_shared_correction(self, shared_correction_repository):
+        """A first contribution creates the row with count 1."""
+        shared = shared_correction_repository.create_or_update(
+            'Test Shop', 'grocery', corrected_partner='Test Shop Ltd'
+        )
+
+        assert shared.original_partner_hash == _partner_hash('Test Shop')
+        assert shared.corrected_partner == 'Test Shop Ltd'
+        assert shared.corrected_category_id == 'grocery'
+        assert shared.contribution_count == 1
+
+    def test_identical_contribution_is_noop(
+        self, shared_correction_repository
+    ):
+        """Re-contributing the same values does not increment the count."""
+        shared_correction_repository.create_or_update(
+            'Test Shop', 'grocery', corrected_partner='Test Shop Ltd'
+        )
+
+        shared = shared_correction_repository.create_or_update(
+            'Test Shop', 'grocery', corrected_partner='Test Shop Ltd'
+        )
+
+        assert shared.contribution_count == 1
+
+    def test_changed_values_update_and_increment(
+        self, shared_correction_repository
+    ):
+        """Contributing different values updates the row and counts it."""
+        shared_correction_repository.create_or_update(
+            'Test Shop', 'grocery'
+        )
+
+        shared = shared_correction_repository.create_or_update(
+            'Test Shop', 'housing', corrected_partner='Test Shop Ltd'
+        )
+
+        assert shared.corrected_category_id == 'housing'
+        assert shared.corrected_partner == 'Test Shop Ltd'
+        assert shared.contribution_count == 2
+
+    def test_partner_lookup_is_case_insensitive(
+        self, shared_correction_repository
+    ):
+        """Different casing of the partner maps to the same shared row."""
+        first = shared_correction_repository.create_or_update(
+            'TEST SHOP', 'grocery'
+        )
+        second = shared_correction_repository.create_or_update(
+            'test shop', 'grocery'
+        )
+
+        assert second.id == first.id
+        assert second.contribution_count == 1

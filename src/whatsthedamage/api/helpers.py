@@ -16,6 +16,7 @@ if TYPE_CHECKING:
     from whatsthedamage.models.repositories.processing_result_repository import ProcessingResultRepository
     from whatsthedamage.models.repositories.transaction_repository import TransactionRepository
     from whatsthedamage.models.repositories.correction_repository import CorrectionRepository
+    from whatsthedamage.models.repositories.shared_correction_repository import SharedCorrectionRepository
 from whatsthedamage.services.configuration_service import ConfigurationService
 from whatsthedamage.services.response_formatting_service import ResponseFormattingService
 from whatsthedamage.services.file_upload_service import FileUploadService, FileUploadError
@@ -94,6 +95,12 @@ def _get_correction_repository() -> CorrectionRepository:
     """Get correction repository from app extensions (dependency injection)."""
     from whatsthedamage.models.repositories.correction_repository import CorrectionRepository
     return cast(CorrectionRepository, current_app.extensions['correction_repository'])
+
+
+def _get_shared_correction_repository() -> SharedCorrectionRepository:
+    """Get shared correction repository from app extensions (dependency injection)."""
+    from whatsthedamage.models.repositories.shared_correction_repository import SharedCorrectionRepository
+    return cast(SharedCorrectionRepository, current_app.extensions['shared_correction_repository'])
 
 
 def validate_csv_file() -> FileStorage:

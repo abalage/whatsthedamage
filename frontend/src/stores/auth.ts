@@ -8,7 +8,7 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import type { User } from '../types/auth.js';
-import { register, login, logout, getMe, fetchCsrfToken } from '../js/api.js';
+import { register, login, logout, getMe, fetchCsrfToken, updateSharingPreference } from '../js/api.js';
 
 /**
  * localStorage key for the persisted CSRF token.
@@ -179,6 +179,31 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   /**
+   * Update the correction sharing opt-in preference.
+   *
+   * @param optIn - Whether the user opts in to sharing corrections
+   * @returns Promise with the updated user
+   */
+  async function setOptInSharing(optIn: boolean): Promise<User> {
+    isLoading.value = true;
+    error.value = null;
+
+    try {
+      const response = await updateSharingPreference(optIn);
+      if (user.value) {
+        user.value = response.user;
+      }
+      return response.user;
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      error.value = errorMessage;
+      throw err;
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  /**
    * Mint a fresh CSRF token from the backend and persist it.
    * The new token supersedes any previously issued one for this session.
    */
@@ -212,6 +237,7 @@ export const useAuthStore = defineStore('auth', () => {
     clearError,
     acknowledgeRecoveryCode,
     refreshCsrfToken,
+    setOptInSharing,
 
     // Getters
     getUser: (): User | null => user.value,

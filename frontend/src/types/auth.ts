@@ -82,6 +82,21 @@ export interface CsrfTokenResponse {
 }
 
 /**
+ * Request body for updating user settings via PUT /auth/me.
+ */
+export interface UpdateMeRequest {
+  opt_in_sharing: boolean;
+}
+
+/**
+ * Response from successful settings update.
+ * Contains the updated user data.
+ */
+export interface UpdateMeResponse {
+  user: User;
+}
+
+/**
  * Request body for password reset using recovery code.
  */
 export interface PasswordResetRequest {

@@ -14,6 +14,7 @@ import Login from '../pages/Login.vue'
 import Register from '../pages/Register.vue'
 import ForgotPassword from '../pages/ForgotPassword.vue'
 import Import from '../pages/Import.vue'
+import Settings from '../pages/Settings.vue'
 import { useAuthStore } from '../stores/auth.js'
 
 const router = createRouter({
@@ -29,6 +30,12 @@ const router = createRouter({
       path: '/import',
       name: 'import',
       component: Import,
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/settings',
+      name: 'settings',
+      component: Settings,
       meta: { requiresAuth: true }
     },
     {

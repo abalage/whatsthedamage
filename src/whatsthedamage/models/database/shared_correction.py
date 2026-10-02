@@ -24,7 +24,8 @@ class SharedCorrection(Base):
         corrected_category_id: Shared category identifier (max 50 chars, required).
         corrected_notice: Shared notice/comment (max 500 chars, nullable).
         contributed_at: Timestamp when this correction was first contributed.
-        contribution_count: Number of users who have contributed this correction.
+        contribution_count: Number of contributions with changed values;
+            identical re-contributions do not increment it.
     """
 
     __tablename__ = 'shared_corrections'

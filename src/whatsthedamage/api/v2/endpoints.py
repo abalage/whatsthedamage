@@ -30,6 +30,7 @@ from whatsthedamage.api.helpers import (
     _get_transaction_repository,
     _get_correction_repository,
     _get_deduplication_service,
+    _get_shared_correction_repository,
 )
 from whatsthedamage.api.auth_decorators import require_authentication, require_csrf
 
@@ -1213,38 +1214,7 @@ def create_transaction_entity() -> tuple[Response, int]:
 
         saved_transaction = transaction_repo.create(transaction)
 
-        # In rule mode (apply_to_future, default true), provided partner
-        # and category values also upsert a merchant rule so future
-        # uploads with the same partner get the same values. Notices are
-        # per-transaction and never create rules.
-        apply_to_future = data.get('apply_to_future', True)
-        rule_fields = data.get('partner') or data.get('category_id')
-        if apply_to_future and rule_fields:
-            correction_repo = _get_correction_repository()
-            from whatsthedamage.models.database.correction import Correction as CorrectionDB
-
-            existing_correction = correction_repo.find_by_user_and_original_partner(
-                cast(int, user.id), data['original_partner']  # type: ignore[arg-type]
-            )
-
-            correction_update_data: dict[str, Any] = {}
-            if data.get('partner'):
-                correction_update_data['corrected_partner'] = data['partner']
-            if data.get('category_id'):
-                correction_update_data['corrected_category_id'] = data['category_id']
-
-            if existing_correction:
-                correction_repo.update(
-                    existing_correction.id, **correction_update_data
-                )
-            else:
-                correction = CorrectionDB(
-                    user_id=cast(int, user.id),  # type: ignore[arg-type]
-                    original_partner=data['original_partner'],
-                    corrected_partner=data.get('partner'),
-                    corrected_category_id=data.get('category_id')
-                )
-                correction_repo.create(correction)
+        _handle_transaction_create_correction(user, data)
 
         response_data = {
             'id': saved_transaction.id,
@@ -1311,6 +1281,145 @@ def _validate_update_transaction_data(
     return update_data, None, 200
 
 
+MAX_SHARED_CATEGORY_ID_LENGTH = 50
+MAX_SHARED_PARTNER_LENGTH = 255
+
+
+def _share_correction_if_opted_in(
+    user: UserDB,
+    original_partner: str,
+    corrected_partner: Optional[str],
+    corrected_category_id: str
+) -> None:
+    """Contribute a merchant rule to the anonymized shared corrections.
+
+    Shares merchant names and categories only; notices are never
+    shared. The opt-in flag is evaluated per call, so revoking the
+    opt-in takes effect immediately for future corrections. A
+    sharing failure must not fail the correction write itself.
+
+    Args:
+        user: Authenticated user.
+        original_partner: Original partner name of the merchant rule.
+        corrected_partner: Corrected partner name, if any.
+        corrected_category_id: Corrected category identifier.
+    """
+    if not user.opt_in_sharing:
+        return
+
+    if (
+        not isinstance(corrected_category_id, str)
+        or not corrected_category_id
+        or len(corrected_category_id) > MAX_SHARED_CATEGORY_ID_LENGTH
+    ):
+        current_app.logger.warning(
+            'Skipped shared correction contribution: '
+            'invalid category value'
+        )
+        return
+
+    if corrected_partner is not None and (
+        not isinstance(corrected_partner, str)
+        or len(corrected_partner) > MAX_SHARED_PARTNER_LENGTH
+    ):
+        current_app.logger.warning(
+            'Skipped shared correction contribution: '
+            'invalid partner value'
+        )
+        return
+
+    try:
+        shared_repo = _get_shared_correction_repository()
+        shared_repo.create_or_update(
+            original_partner=original_partner,
+            corrected_category_id=corrected_category_id,
+            corrected_partner=corrected_partner
+        )
+    except Exception:
+        current_app.logger.exception(
+            'Failed to contribute shared correction'
+        )
+
+
+def _share_rule_if_opted_in(user: UserDB, original_partner: str) -> None:
+    """Contribute the user's current merchant rule if opted in.
+
+    Re-fetches the persisted rule so the shared values reflect the
+    actual rule state after the upsert, including fields not part
+    of the current edit and explicit clears to None.
+
+    Args:
+        user: Authenticated user.
+        original_partner: Original partner name of the merchant rule.
+    """
+    if not user.opt_in_sharing:
+        return
+
+    correction_repo = _get_correction_repository()
+    rule = correction_repo.find_by_user_and_original_partner(
+        cast(int, user.id), original_partner  # type: ignore[arg-type]
+    )
+    if not rule or not rule.corrected_category_id:
+        return
+
+    _share_correction_if_opted_in(
+        user,
+        original_partner,
+        rule.corrected_partner,
+        cast(str, rule.corrected_category_id)
+    )
+
+
+def _handle_transaction_create_correction(
+    user: UserDB,
+    data: dict[str, Any]
+) -> None:
+    """Upsert the merchant rule for a rule-mode transaction create.
+
+    In rule mode (apply_to_future, default true), provided partner and
+    category values also upsert a merchant rule so future uploads with
+    the same partner get the same values. Notices are per-transaction
+    and never create rules. When the user opted in to sharing, the
+    resulting rule is contributed to the shared corrections.
+
+    Args:
+        user: Authenticated user.
+        data: Request data containing the created transaction fields.
+    """
+    apply_to_future = data.get('apply_to_future', True)
+    rule_fields = data.get('partner') or data.get('category_id')
+    if not apply_to_future or not rule_fields:
+        return
+
+    correction_repo = _get_correction_repository()
+    from whatsthedamage.models.database.correction import Correction as CorrectionDB
+
+    existing_correction = correction_repo.find_by_user_and_original_partner(
+        cast(int, user.id), data['original_partner']  # type: ignore[arg-type]
+    )
+
+    correction_update_data: dict[str, Any] = {}
+    if data.get('partner'):
+        correction_update_data['corrected_partner'] = data['partner']
+    if data.get('category_id'):
+        correction_update_data['corrected_category_id'] = data['category_id']
+
+    if existing_correction:
+        correction_repo.update(
+            existing_correction.id, **correction_update_data
+        )
+    else:
+        correction = CorrectionDB(
+            user_id=cast(int, user.id),  # type: ignore[arg-type]
+            original_partner=data['original_partner'],
+            corrected_partner=data.get('partner'),
+            corrected_category_id=data.get('category_id')
+        )
+        correction_repo.create(correction)
+
+    _share_rule_if_opted_in(user, data['original_partner'])
+
+
 def _handle_correction_update(
     user: UserDB,
     transaction: TransactionDB,
@@ -1351,8 +1460,7 @@ def _handle_correction_update(
         correction_data['corrected_category_id'] = data['category_id']
 
     if existing_correction:
-        if correction_data:
-            correction_repo.update(existing_correction.id, **correction_data)
+        correction_repo.update(existing_correction.id, **correction_data)
     else:
         correction = CorrectionDB(
             user_id=cast(int, user.id),  # type: ignore[arg-type]
@@ -1361,6 +1469,8 @@ def _handle_correction_update(
             corrected_category_id=data.get('category_id')
         )
         correction_repo.create(correction)
+
+    _share_rule_if_opted_in(user, transaction.original_partner)
 
 
 def _format_transaction_response(transaction: TransactionDB) -> dict[str, Any]:
@@ -1786,6 +1896,14 @@ def create_correction() -> tuple[Response, int]:
 
         saved_correction = correction_repo.create(correction)
 
+        if saved_correction.corrected_category_id:
+            _share_correction_if_opted_in(
+                user,
+                saved_correction.original_partner,
+                saved_correction.corrected_partner,
+                saved_correction.corrected_category_id
+            )
+
         response_data = {
             'id': saved_correction.id,
             'user_id': saved_correction.user_id,
@@ -1866,6 +1984,14 @@ def update_correction(correction_id: int) -> tuple[Response, int]:
 
         if not updated_correction:
             return jsonify({'error': 'Failed to update correction'}), 500
+
+        if updated_correction.corrected_category_id:
+            _share_correction_if_opted_in(
+                user,
+                updated_correction.original_partner,
+                updated_correction.corrected_partner,
+                updated_correction.corrected_category_id
+            )
 
         response_data = {
             'id': updated_correction.id,

@@ -290,6 +290,34 @@ def get_openapi_schema() -> dict[str, Any]:
                         ),
                         **_errors(**{"401": "Not authenticated"}),
                     },
+                },
+                "put": {
+                    "summary": "Update current user settings",
+                    "description": (
+                        "Updates the authenticated user's correction "
+                        "sharing opt-in preference. Changing the "
+                        "preference takes effect immediately for "
+                        "future corrections; previously shared "
+                        "corrections are retained permanently."
+                    ),
+                    "operationId": "updateMe",
+                    "tags": ["Authentication"],
+                    "security": _security(),
+                    "requestBody": _body("UpdateMeRequest"),
+                    "responses": {
+                        "200": _ok(
+                            "Updated user information",
+                            _ref("UpdateMeResponse")
+                        ),
+                        **_errors(
+                            **{
+                                "400": "Validation error",
+                                "401": "Not authenticated",
+                                "403": "Invalid or missing CSRF token",
+                                "404": "User not found",
+                            }
+                        ),
+                    },
                 }
             },
             "/auth/reset-password": {
@@ -1321,6 +1349,28 @@ def get_openapi_schema() -> dict[str, Any]:
                                 "not have a CSRF token yet"
                             )
                         }
+                    }
+                },
+                "UpdateMeRequest": {
+                    "type": "object",
+                    "required": ["opt_in_sharing"],
+                    "properties": {
+                        "opt_in_sharing": {
+                            "type": "boolean",
+                            "description": (
+                                "Whether the user opts in to sharing "
+                                "corrections (merchant names and "
+                                "categories, anonymized, retained "
+                                "permanently)"
+                            )
+                        }
+                    }
+                },
+                "UpdateMeResponse": {
+                    "type": "object",
+                    "required": ["user"],
+                    "properties": {
+                        "user": _ref("UserDetail")
                     }
                 },
                 "ResetPasswordRequest": {

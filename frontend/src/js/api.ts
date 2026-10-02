@@ -26,6 +26,8 @@ import type {
   CsrfTokenResponse,
   PasswordResetRequest,
   PasswordResetResponse,
+  UpdateMeRequest,
+  UpdateMeResponse,
 } from '../types/auth.js';
 
 // API base URL configuration
@@ -484,6 +486,19 @@ export async function logout(): Promise<LogoutResponse> {
 export async function getMe(): Promise<MeResponse> {
   return fetchWithErrorHandling<MeResponse>(getApiUrl('/auth/me'), {
     credentials: 'include'
+  });
+}
+
+/**
+ * Update the current user's correction sharing opt-in preference
+ * @param optIn - Whether the user opts in to sharing corrections
+ * @returns Promise with the updated user
+ */
+export async function updateSharingPreference(optIn: boolean): Promise<UpdateMeResponse> {
+  const requestData: UpdateMeRequest = { opt_in_sharing: optIn };
+  return fetchWithCsrf<UpdateMeResponse>(getApiUrl('/auth/me'), {
+    method: 'PUT',
+    body: JSON.stringify(requestData)
   });
 }
 

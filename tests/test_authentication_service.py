@@ -827,3 +827,45 @@ class TestAuthenticationServicePasswordReset:
                 recovery_code='ABCD-EFGH-IJKL-MNOP',
                 new_password='new_secure_password_1234'
             )
+
+
+class TestAuthenticationServiceUpdateOptInSharing:
+    """Tests for updating the sharing opt-in preference."""
+
+    def test_update_opt_in_sharing_returns_updated_user(
+        self, authentication_service, mock_user_repository
+    ):
+        """Updating the preference returns the reloaded user."""
+        updated_user = Mock(id=1, username='testuser', opt_in_sharing=True)
+        mock_user_repository.set_opt_in_sharing.return_value = True
+        mock_user_repository.find_by_id.return_value = updated_user
+
+        result = authentication_service.update_opt_in_sharing(1, True)
+
+        assert result is updated_user
+        mock_user_repository.set_opt_in_sharing.assert_called_once_with(1, True)
+        mock_user_repository.find_by_id.assert_called_once_with(1)
+
+    def test_update_opt_in_sharing_revocation(
+        self, authentication_service, mock_user_repository
+    ):
+        """Revoking the opt-in persists False."""
+        updated_user = Mock(id=1, username='testuser', opt_in_sharing=False)
+        mock_user_repository.set_opt_in_sharing.return_value = True
+        mock_user_repository.find_by_id.return_value = updated_user
+
+        result = authentication_service.update_opt_in_sharing(1, False)
+
+        assert result is updated_user
+        mock_user_repository.set_opt_in_sharing.assert_called_once_with(1, False)
+
+    def test_update_opt_in_sharing_user_not_found(
+        self, authentication_service, mock_user_repository
+    ):
+        """When the repository cannot find the user, None is returned."""
+        mock_user_repository.set_opt_in_sharing.return_value = False
+
+        result = authentication_service.update_opt_in_sharing(99999, True)
+
+        assert result is None
+        mock_user_repository.find_by_id.assert_not_called()

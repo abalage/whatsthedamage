@@ -96,6 +96,8 @@ class TestOpenApiSchemaStructure:
             "LoginRequest",
             "LoginResponse",
             "MeResponse",
+            "UpdateMeRequest",
+            "UpdateMeResponse",
             "ResetPasswordRequest",
             "ResetPasswordResponse",
             "CsrfTokenResponse",
@@ -146,6 +148,7 @@ class TestOpenApiSchemaContent:
         assert "post" in paths["/auth/login"]
         assert "post" in paths["/auth/logout"]
         assert "get" in paths["/auth/me"]
+        assert "put" in paths["/auth/me"]
         assert "post" in paths["/auth/reset-password"]
         assert "get" in paths["/auth/csrf-token"]
 
@@ -226,6 +229,17 @@ class TestOpenApiSchemaContent:
                 f"Field {field} not found in ProcessingRequest"
             )
 
+    def test_update_me_request_has_required_boolean_field(self):
+        """Test that UpdateMeRequest requires a boolean opt_in_sharing."""
+        schema = get_openapi_schema()
+        update_me_request = schema["components"]["schemas"][
+            "UpdateMeRequest"
+        ]
+
+        assert update_me_request["required"] == ["opt_in_sharing"]
+        properties = update_me_request["properties"]
+        assert properties["opt_in_sharing"]["type"] == "boolean"
+
     def test_error_response_has_correct_structure(self):
         """Test that ErrorResponse schema matches the Pydantic model."""
         schema = get_openapi_schema()
@@ -252,6 +266,7 @@ class TestOpenApiSchemaContent:
             ("/processing-results", "post"),
             ("/corrections", "post"),
             ("/auth/logout", "post"),
+            ("/auth/me", "put"),
         ]
         for path, method in protected:
             operation = paths[path][method]

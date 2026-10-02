@@ -598,6 +598,7 @@ Frontend SPA (Vue 3)
 - Schema managed by Alembic migrations in `migrations/versions/` (configured via `alembic.ini`)
 - Entities in `src/whatsthedamage/models/database/`: User, Session, Transaction, ProcessingResult, Correction, SharedCorrection
 - On CSV import, the importing user's merchant rules (partner and category only; notices are per-transaction) are applied to the newly stored transactions via a case-insensitive exact match on the original partner name; the deduplication hash is always computed from the original row, so rules never alter the deduplication key. Transactions store their raw pre-correction category and notice in the `original_category_id`/`original_notice` columns for original-vs-corrected display and undo
+- Correction sharing (opt-in, default off): when a user opts in via the Settings page (`PUT /api/v2/auth/me`), merchant rules (partner + category, never notices, amounts, dates, or user data) written at any merchant-rule site (`POST`/`PUT /api/v2/corrections`, rule-mode `POST`/`PUT /api/v2/transactions/<id>`) are contributed to the anonymized `shared_corrections` table keyed by a SHA-256 hash of the lowercase partner name. The opt-in flag is evaluated per write, so revoking it (US-8) stops future contributions immediately; previously shared rows are retained permanently and are not linked to any user, so they survive account deletion by design
 - All data access goes through the repository layer (`src/whatsthedamage/models/repositories/`)
 
 ### 4.2. File-based Storage
@@ -690,6 +691,7 @@ Removed.
 | POST | `/api/v2/auth/login` | Authenticate user, create session |
 | POST | `/api/v2/auth/logout` | Terminate the current session |
 | GET | `/api/v2/auth/me` | Current user information |
+| PUT | `/api/v2/auth/me` | Update user settings (correction sharing opt-in) |
 | POST | `/api/v2/auth/reset-password` | Reset password using a recovery code |
 | GET | `/api/v2/auth/csrf-token` | Issue a CSRF token |
 | POST | `/api/v2/processing-results` | Process and import CSV transactions |

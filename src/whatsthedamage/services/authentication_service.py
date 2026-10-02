@@ -515,3 +515,23 @@ class AuthenticationService:
         csrf_token = self.refresh_csrf_token(session)
 
         return user, session, csrf_token
+
+    def update_opt_in_sharing(
+        self, user_id: int, opt_in_sharing: bool
+    ) -> Optional[UserDB]:
+        """Update the user's correction sharing opt-in preference.
+
+        Args:
+            user_id: User identifier.
+            opt_in_sharing: Whether the user opts in to sharing
+                corrections.
+
+        Returns:
+            The updated User entity, or None if the user was not found.
+        """
+        updated = self.user_repository.set_opt_in_sharing(
+            user_id, opt_in_sharing
+        )
+        if not updated:
+            return None
+        return self.user_repository.find_by_id(user_id)

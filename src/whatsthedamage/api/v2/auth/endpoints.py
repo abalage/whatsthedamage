@@ -5,6 +5,7 @@ Provides REST API endpoints for user authentication including:
 - Login (POST /api/v2/auth/login)
 - Logout (POST /api/v2/auth/logout)
 - Current user (GET /api/v2/auth/me)
+- Update settings (PUT /api/v2/auth/me)
 - CSRF token (GET /api/v2/auth/csrf-token)
 """
 
@@ -16,6 +17,7 @@ from werkzeug.exceptions import BadRequest
 from whatsthedamage.services.authentication_service import AuthenticationService
 from whatsthedamage.services.rate_limit_service import RateLimitService
 from whatsthedamage.config.auth_config import get_auth_config
+from whatsthedamage.models.database.user import User as UserDB
 from whatsthedamage.api.auth_decorators import require_auth_and_csrf
 
 # Create auth blueprint
@@ -584,6 +586,96 @@ def get_me() -> Tuple[Response, int]:
     except Exception as e:
         return jsonify(_create_error_response(
             "Failed to get user information",
+            500,
+            "INTERNAL_ERROR"
+        )[0]), 500
+
+
+@auth_bp.route('/me', methods=['PUT'])
+@require_auth_and_csrf
+def update_me() -> Tuple[Response, int]:
+    """Update current user settings.
+
+    Updates the authenticated user's correction sharing opt-in
+    preference. Requires authentication and CSRF protection.
+
+    Request JSON:
+        {
+            "opt_in_sharing": boolean (required)
+        }
+
+    Response JSON:
+        {
+            "user": {
+                "id": int,
+                "username": "string",
+                "created_at": "ISO8601 timestamp",
+                "last_login_at": "ISO8601 timestamp or null",
+                "is_active": boolean,
+                "opt_in_sharing": boolean
+            }
+        }
+
+    Status Codes:
+        200: Successfully updated
+        400: Bad request (missing or invalid opt_in_sharing)
+        401: Not authenticated
+        403: Invalid or missing CSRF token
+    """
+    user = cast(UserDB, request.user)  # type: ignore[attr-defined]
+
+    try:
+        data = request.get_json(silent=True)
+        if not data or 'opt_in_sharing' not in data:
+            return jsonify(_create_error_response(
+                "opt_in_sharing is required",
+                400,
+                "VALIDATION_ERROR"
+            )[0]), 400
+
+        opt_in_sharing = data['opt_in_sharing']
+        if not isinstance(opt_in_sharing, bool):
+            return jsonify(_create_error_response(
+                "opt_in_sharing must be a boolean",
+                400,
+                "VALIDATION_ERROR"
+            )[0]), 400
+
+        updated_user = _get_auth_service().update_opt_in_sharing(
+            cast(int, user.id), opt_in_sharing
+        )
+        if updated_user is None:
+            return jsonify(_create_error_response(
+                "User not found",
+                404,
+                "USER_NOT_FOUND"
+            )[0]), 404
+
+        created_at_str = (
+            updated_user.created_at.isoformat()
+            if updated_user.created_at else None
+        )
+        last_login_str = (
+            updated_user.last_login_at.isoformat()
+            if updated_user.last_login_at else None
+        )
+        response_data: dict[str, Any] = {
+            'user': {
+                'id': int(updated_user.id)
+                if updated_user.id is not None else 0,
+                'username': updated_user.username,
+                'created_at': created_at_str,
+                'last_login_at': last_login_str,
+                'is_active': updated_user.is_active,
+                'opt_in_sharing': updated_user.opt_in_sharing
+            }
+        }
+
+        return jsonify(response_data), 200
+
+    except Exception as e:
+        return jsonify(_create_error_response(
+            "Failed to update user settings",
             500,
             "INTERNAL_ERROR"
         )[0]), 500

@@ -12,6 +12,7 @@ import {
   fetchProcessingResultMetadata,
   updateTransaction,
   undoTransaction,
+  updateSharingPreference,
 } from '../src/js/api.js';
 
 const stubFetch = (data: unknown, ok = true): void => {
@@ -301,5 +302,42 @@ describe('undoTransaction', () => {
     stubFetch({ error: 'Transaction not found' }, false);
 
     await expect(undoTransaction(999)).rejects.toThrow('Transaction not found');
+  });
+});
+
+describe('updateSharingPreference', () => {
+  it('sends a PUT request to /auth/me with the opt-in value', async () => {
+    const updatedUser = {
+      id: 1,
+      username: 'testuser',
+      created_at: null,
+      last_login_at: null,
+      is_active: true,
+      opt_in_sharing: true,
+    };
+    stubFetch({ user: updatedUser });
+
+    const result = await updateSharingPreference(true);
+
+    expect(result.user.opt_in_sharing).toBe(true);
+    const [url, init] = vi.mocked(globalThis.fetch).mock.calls[0] as [string, RequestInit];
+    expect(url).toBe('/api/v2/auth/me');
+    expect(init.method).toBe('PUT');
+    expect(init.body).toBe(JSON.stringify({ opt_in_sharing: true }));
+  });
+
+  it('sends false when revoking the opt-in', async () => {
+    stubFetch({ user: { id: 1, username: 'testuser', is_active: true, opt_in_sharing: false } });
+
+    await updateSharingPreference(false);
+
+    const [, init] = vi.mocked(globalThis.fetch).mock.calls[0] as [string, RequestInit];
+    expect(init.body).toBe(JSON.stringify({ opt_in_sharing: false }));
+  });
+
+  it('throws when the update is rejected', async () => {
+    stubFetch({ error: 'opt_in_sharing must be a boolean' }, false);
+
+    await expect(updateSharingPreference(true)).rejects.toThrow('opt_in_sharing must be a boolean');
   });
 });

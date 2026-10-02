@@ -76,6 +76,20 @@ class UserRepository(Protocol):
         """
         ...
 
+    def set_opt_in_sharing(self, user_id: int, opt_in_sharing: bool) -> bool:
+        """Set user's correction sharing opt-in preference.
+
+        Args:
+            user_id: User identifier.
+            opt_in_sharing: Whether the user opts in to sharing
+                corrections.
+
+        Returns:
+            True if the preference was updated, False if the user
+            was not found.
+        """
+        ...
+
     def update_password_and_recovery_code(
         self,
         user_id: int,
@@ -220,6 +234,34 @@ class SqlAlchemyUserRepository(SqlAlchemyBaseRepository[UserDB]):
             if user:
                 user.is_active = cast(Any, is_active)
                 session.commit()
+        except Exception:
+            session.rollback()
+            raise
+        finally:
+            session.close()
+
+    def set_opt_in_sharing(self, user_id: int, opt_in_sharing: bool) -> bool:
+        """Set user's correction sharing opt-in preference.
+
+        Args:
+            user_id: User identifier.
+            opt_in_sharing: Whether the user opts in to sharing
+                corrections.
+
+        Returns:
+            True if the preference was updated, False if the user
+            was not found.
+        """
+        session = self._get_session()
+        try:
+            user = session.query(UserDB).filter(
+                UserDB.id == user_id
+            ).first()
+            if user:
+                user.opt_in_sharing = cast(Any, opt_in_sharing)
+                session.commit()
+                return True
+            return False
         except Exception:
             session.rollback()
             raise

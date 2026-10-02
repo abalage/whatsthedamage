@@ -124,6 +124,9 @@ const setLocale = (locale: string) => {
               <li class="nav-item">
                 <RouterLink v-if="authStore.isAuthenticated" to="/import" class="nav-link">{{ $gettext('Import CSV') }}</RouterLink>
               </li>
+              <li class="nav-item">
+                <RouterLink v-if="authStore.isAuthenticated" to="/settings" class="nav-link">{{ $gettext('Settings') }}</RouterLink>
+              </li>
               <li>
                   <RouterLink to="about" class="nav-link">{{ $gettext('About') }}</RouterLink>
               </li>

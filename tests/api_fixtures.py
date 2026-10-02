@@ -55,6 +55,7 @@ def _create_test_client(processing_service=None):
     mock_auth_service = MagicMock()
     mock_user = MagicMock()
     mock_user.id = 1
+    mock_user.opt_in_sharing = False
     mock_session = MagicMock()
     mock_session.csrf_token_hash = 'test_csrf_hash'
     mock_auth_service.validate_session.return_value = (mock_user, mock_session)

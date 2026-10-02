@@ -76,8 +76,11 @@ class SharedCorrectionRepository(Protocol):
     ) -> SharedCorrectionDB:
         """Create or update a shared correction.
 
-        If a shared correction with the same partner hash already exists,
-        increments the contribution_count. Otherwise, creates a new one.
+        If a shared correction with the same partner hash already
+        exists, updates the contributed values to the latest ones and
+        increments the contribution_count only when the values
+        actually changed; identical re-contributions are no-ops.
+        Otherwise, creates a new one.
 
         Args:
             original_partner: Original partner name (will be hashed).
@@ -189,8 +192,13 @@ class SqlAlchemySharedCorrectionRepository(
     ) -> SharedCorrectionDB:
         """Create or update a shared correction.
 
-        If a shared correction with the same partner hash already exists,
-        increments the contribution_count. Otherwise, creates a new one.
+        If a shared correction with the same partner hash already
+        exists, updates the contributed values to the latest ones and
+        increments the contribution_count only when the values
+        actually changed; identical re-contributions are no-ops so
+        the count reflects distinct value revisions. Otherwise,
+        creates a new one. A concurrent insert racing the unique
+        partner hash index is retried as an update.
 
         Args:
             original_partner: Original partner name (will be hashed).
@@ -202,6 +210,7 @@ class SqlAlchemySharedCorrectionRepository(
             The created or updated SharedCorrection entity.
         """
         import hashlib
+        from sqlalchemy.exc import IntegrityError
 
         # Generate hash of lowercase original_partner
         partner_hash = hashlib.sha256(
@@ -216,12 +225,18 @@ class SqlAlchemySharedCorrectionRepository(
             ).first()
 
             if existing:
-                # Update contribution count
-                setattr(existing, 'contribution_count', int(existing.contribution_count) + 1)
+                self._apply_contribution(
+                    existing,
+                    corrected_partner,
+                    corrected_category_id,
+                    corrected_notice
+                )
                 session.commit()
                 return existing  # type: ignore[no-any-return]
 
-            # Create new shared correction
+            # Create new shared correction; a concurrent insert may
+            # win the unique index race, in which case the row is
+            # updated instead
             shared_correction = SharedCorrectionDB(
                 original_partner_hash=partner_hash,
                 corrected_partner=corrected_partner,
@@ -229,13 +244,66 @@ class SqlAlchemySharedCorrectionRepository(
                 corrected_notice=corrected_notice
             )
             session.add(shared_correction)
-            session.commit()
-            return shared_correction
+            try:
+                session.commit()
+                return shared_correction
+            except IntegrityError:
+                session.rollback()
+                existing = session.query(SharedCorrectionDB).filter(
+                    SharedCorrectionDB.original_partner_hash == partner_hash
+                ).first()
+                if existing is None:
+                    raise
+                self._apply_contribution(
+                    existing,
+                    corrected_partner,
+                    corrected_category_id,
+                    corrected_notice
+                )
+                session.commit()
+                return existing  # type: ignore[no-any-return]
         except Exception:
             session.rollback()
             raise
         finally:
             session.close()
+
+    @staticmethod
+    def _apply_contribution(
+        shared_correction: SharedCorrectionDB,
+        corrected_partner: Optional[str],
+        corrected_category_id: str,
+        corrected_notice: Optional[str]
+    ) -> None:
+        """Apply a contribution to an existing shared correction.
+
+        Updates the contributed values and increments the
+        contribution_count only when the values actually changed.
+
+        Args:
+            shared_correction: Existing shared correction entity.
+            corrected_partner: Corrected partner name (optional).
+            corrected_category_id: Category identifier for the correction.
+            corrected_notice: Corrected notice (optional).
+        """
+        values_changed = (
+            shared_correction.corrected_partner != corrected_partner
+            or shared_correction.corrected_category_id
+            != corrected_category_id
+            or shared_correction.corrected_notice != corrected_notice
+        )
+        if not values_changed:
+            return
+
+        setattr(shared_correction, 'corrected_partner', corrected_partner)
+        setattr(
+            shared_correction, 'corrected_category_id', corrected_category_id
+        )
+        setattr(shared_correction, 'corrected_notice', corrected_notice)
+        setattr(
+            shared_correction, 'contribution_count',
+            int(shared_correction.contribution_count) + 1
+        )
 
     def delete(self, shared_correction_id: int) -> bool:
         """Delete a shared correction.

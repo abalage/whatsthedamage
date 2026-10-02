@@ -196,6 +196,51 @@ curl -X GET http://localhost:5000/api/v2/auth/me
 
 ---
 
+### Update User Settings
+
+Update the authenticated user's correction sharing opt-in preference. Changing the preference takes effect immediately for future corrections; previously shared corrections are retained permanently and cannot be retracted. Shared corrections contain merchant names and categories only, anonymized, with no amounts, dates, or user information.
+
+**Endpoint:**
+```
+PUT /api/v2/auth/me
+```
+
+**Request Body:**
+
+| Field | Required | Type | Description |
+|-------|----------|------|-------------|
+| `opt_in_sharing` | Yes | boolean | Whether the user opts in to sharing corrections |
+
+**Curl Example:**
+```bash
+curl -X PUT http://localhost:5000/api/v2/auth/me \
+  -H "Content-Type: application/json" \
+  -H "X-CSRF-Token: <csrf-token>" \
+  -d '{"opt_in_sharing": true}'
+```
+
+**Response:**
+```json
+{
+  "user": {
+    "id": 1,
+    "username": "alice",
+    "created_at": "2026-09-01T10:00:00",
+    "last_login_at": "2026-09-29T09:00:00",
+    "is_active": true,
+    "opt_in_sharing": true
+  }
+}
+```
+
+**Status Codes:**
+- `200` - Successfully updated
+- `400` - Validation error (missing or non-boolean `opt_in_sharing`)
+- `401` - Not authenticated
+- `403` - Invalid or missing CSRF token
+
+---
+
 ### Reset Password
 
 Reset the password using the one-time recovery code issued during registration (or a previous reset). Public endpoint; no session or CSRF token required. All existing sessions are invalidated on success and a new recovery code is issued.
@@ -1116,6 +1161,7 @@ open http://localhost:5000/api/v2/openapi.json
 | `POST` | `/api/v2/auth/login` | Authenticate and create a session |
 | `POST` | `/api/v2/auth/logout` | Revoke the current session |
 | `GET` | `/api/v2/auth/me` | Get current user information |
+| `PUT` | `/api/v2/auth/me` | Update user settings (correction sharing opt-in) |
 | `POST` | `/api/v2/auth/reset-password` | Reset password using a recovery code |
 | `GET` | `/api/v2/auth/csrf-token` | Get a new CSRF token |
 | `POST` | `/api/v2/processing-results` | Process and import a CSV file |

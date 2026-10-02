@@ -23,6 +23,12 @@ User persistence and authentication release. Processing results and transactions
 - **Pagination Support**: Frontend fetches large datasets in 2,000-row pages, capped at 50,000 rows with a visible truncation warning (e1c5598).
 - **Frontend Authentication**: Login, Register, and ForgotPassword pages, auth Pinia store, router guards with `requiresAuth`/`requiresGuest` meta, and a login/logout menu in the layout (ad3488c, 7d568d6, 44a3b5d).
 - **Import Page**: Dedicated `/import` page for the CSV import flow (9836ac7).
+- **Inline Transaction Editing**: Merchant, category, and notice fields are editable on the transactions page; corrections are persisted per user account (27dbef9).
+- **Transaction Set Ranges**: Processing results expose the date ranges their transactions are made from (019be76).
+- **Correction Auto-Apply**: Merchant rules (case-insensitive exact match on `original_partner`) are applied automatically to future imports; rule-mode corrections upsert the merchant rule while exception-mode corrections apply to the edited transaction only (d552cde).
+- **Undo Corrections**: Transactions can be filtered to corrected ones and their corrections undone from the UI (a9957a0).
+- **Correction Sharing Opt-in**: Settings page with an opt-in toggle (default off) for sharing corrections; shared corrections are anonymized (SHA-256 hashed partner names, no user or raw transaction data) and retained permanently; the opt-in can be revoked anytime (45f98f5).
+- **API Security**: Blueprint-level authentication middleware on all `/api/v2/*` endpoints with an explicit public allowlist, security headers on every response (CSP, HSTS, X-Frame-Options, nosniff, Referrer-Policy, `Cache-Control: no-store`), extended rate limiting (registration, general per-IP API, and heavy upload/statistics buckets), and configurable CORS origins (ec61b0c).
 
 ### Changed
 - **Currency as Account Metadata**: Currency belongs to account metadata; summaries show raw numbers (4524be9).
@@ -30,11 +36,15 @@ User persistence and authentication release. Processing results and transactions
 - **API Documentation**: Rewrote `API.md` to match the current API: authentication endpoints with session/CSRF usage, processing-results, transaction CRUD with pagination filters, aggregation, corrections, and the optional `result_id`; removed the deleted drilldown endpoints and `cache_ttl`; updated the error format and security considerations (bd3eec2).
 - **README**: Updated user-facing highlights: user accounts with recovery-code password reset, per-user transaction persistence with import deduplication, corrections applied to future imports, database requirements for web/API deployments (SQLite default, `WHATSTHEDAMAGE_DATABASE_URI`, Docker volume note), and the new recovery-code limitation replacing the removed "no authentication" limitation.
 - **Documentation**: Updated ARCHITECTURE.md and AGENTS.md to reflect user persistence, authentication, the repository layer, new endpoints, and the removal of DataTables/jQuery references (bd3eec2).
+- **Atomic Import**: CSV import is atomic via a unit-of-work pattern over the repositories, with performance improvements (2a4ccf8).
+- **Categories Page**: Performance improvements to the categories page UI (076ceda).
 
 ### Fixed
 - **Drilldowns**: Restored drilldown functionalities against the new transaction store (c08fc1c).
 - **Cell Highlights**: Restored the cell highlight feature (ebafbf0).
 - **Dead Code**: Removed dead code and adjusted result_id handling (e276727, ee8adf1).
+- **Category Filter Dropdown**: Fixed the category dropdown filter on the transactions page; filtering by category now matches the server-side category ids, including an explicit uncategorized option (2615869).
+- **npm Lock File**: Regenerated `frontend/package-lock.json` with npm 11.19 to include the `@emnapi/core` and `@emnapi/runtime` peer dependencies of `@napi-rs/wasm-runtime`, fixing `npm ci` failures on Node 24.x in CI (02484aa).
 
 ## [0.99.0] - 2026-07-27
 

@@ -71,8 +71,7 @@ class SharedCorrectionRepository(Protocol):
         self,
         original_partner: str,
         corrected_category_id: str,
-        corrected_partner: Optional[str] = None,
-        corrected_notice: Optional[str] = None
+        corrected_partner: Optional[str] = None
     ) -> SharedCorrectionDB:
         """Create or update a shared correction.
 
@@ -86,7 +85,6 @@ class SharedCorrectionRepository(Protocol):
             original_partner: Original partner name (will be hashed).
             corrected_category_id: Category identifier for the correction.
             corrected_partner: Corrected partner name (optional).
-            corrected_notice: Corrected notice (optional).
 
         Returns:
             The created or updated SharedCorrection entity.
@@ -187,8 +185,7 @@ class SqlAlchemySharedCorrectionRepository(
         self,
         original_partner: str,
         corrected_category_id: str,
-        corrected_partner: Optional[str] = None,
-        corrected_notice: Optional[str] = None
+        corrected_partner: Optional[str] = None
     ) -> SharedCorrectionDB:
         """Create or update a shared correction.
 
@@ -204,7 +201,6 @@ class SqlAlchemySharedCorrectionRepository(
             original_partner: Original partner name (will be hashed).
             corrected_category_id: Category identifier for the correction.
             corrected_partner: Corrected partner name (optional).
-            corrected_notice: Corrected notice (optional).
 
         Returns:
             The created or updated SharedCorrection entity.
@@ -228,8 +224,7 @@ class SqlAlchemySharedCorrectionRepository(
                 self._apply_contribution(
                     existing,
                     corrected_partner,
-                    corrected_category_id,
-                    corrected_notice
+                    corrected_category_id
                 )
                 session.commit()
                 return existing  # type: ignore[no-any-return]
@@ -240,8 +235,7 @@ class SqlAlchemySharedCorrectionRepository(
             shared_correction = SharedCorrectionDB(
                 original_partner_hash=partner_hash,
                 corrected_partner=corrected_partner,
-                corrected_category_id=corrected_category_id,
-                corrected_notice=corrected_notice
+                corrected_category_id=corrected_category_id
             )
             session.add(shared_correction)
             try:
@@ -257,8 +251,7 @@ class SqlAlchemySharedCorrectionRepository(
                 self._apply_contribution(
                     existing,
                     corrected_partner,
-                    corrected_category_id,
-                    corrected_notice
+                    corrected_category_id
                 )
                 session.commit()
                 return existing  # type: ignore[no-any-return]
@@ -272,8 +265,7 @@ class SqlAlchemySharedCorrectionRepository(
     def _apply_contribution(
         shared_correction: SharedCorrectionDB,
         corrected_partner: Optional[str],
-        corrected_category_id: str,
-        corrected_notice: Optional[str]
+        corrected_category_id: str
     ) -> None:
         """Apply a contribution to an existing shared correction.
 
@@ -284,13 +276,11 @@ class SqlAlchemySharedCorrectionRepository(
             shared_correction: Existing shared correction entity.
             corrected_partner: Corrected partner name (optional).
             corrected_category_id: Category identifier for the correction.
-            corrected_notice: Corrected notice (optional).
         """
         values_changed = (
             shared_correction.corrected_partner != corrected_partner
             or shared_correction.corrected_category_id
             != corrected_category_id
-            or shared_correction.corrected_notice != corrected_notice
         )
         if not values_changed:
             return
@@ -299,7 +289,6 @@ class SqlAlchemySharedCorrectionRepository(
         setattr(
             shared_correction, 'corrected_category_id', corrected_category_id
         )
-        setattr(shared_correction, 'corrected_notice', corrected_notice)
         setattr(
             shared_correction, 'contribution_count',
             int(shared_correction.contribution_count) + 1

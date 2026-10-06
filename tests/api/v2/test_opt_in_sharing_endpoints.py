@@ -192,7 +192,6 @@ class TestCorrectionSharing:
         )
         assert shared.corrected_partner == 'Test Merchant Ltd'
         assert shared.corrected_category_id == 'housing'
-        assert shared.corrected_notice is None
         assert shared.contribution_count == 1
 
     def test_revoke_stops_future_sharing(self, api_app, auth_context):

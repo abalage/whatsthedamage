@@ -30,6 +30,10 @@ class AuthConfig:
         CSRF_TOKEN_LENGTH: Length of CSRF tokens in bytes.
         RECOVERY_CODE_LENGTH: Length of recovery codes.
         RECOVERY_CODE_CHARACTERS: Character set for recovery codes.
+        RETENTION_INACTIVITY_DAYS: Days without a login after which the
+            retention job purges a user's personal data.
+        ACCOUNT_DELETION_GRACE_DAYS: Grace period (in days) between an
+            account deletion request and the actual purge.
     """
 
     # Flask session configuration
@@ -126,6 +130,16 @@ class AuthConfig:
         'WHATSTHEDAMAGE_RECOVERY_CODE_CHARACTERS',
         'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
     )
+
+    # Data retention configuration (see docs/retention-policy.md)
+    RETENTION_INACTIVITY_DAYS: int = int(os.getenv(
+        'WHATSTHEDAMAGE_RETENTION_INACTIVITY_DAYS',
+        '180'
+    ))
+    ACCOUNT_DELETION_GRACE_DAYS: int = int(os.getenv(
+        'WHATSTHEDAMAGE_ACCOUNT_DELETION_GRACE_DAYS',
+        '7'
+    ))
 
 
 # Create a singleton instance

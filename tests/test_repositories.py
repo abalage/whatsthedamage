@@ -924,3 +924,150 @@ class TestSharedCorrectionRepository:
 
         assert second.id == first.id
         assert second.contribution_count == 1
+
+
+class TestUserRepositoryRetention:
+    """Tests for UserRepository retention and deletion operations."""
+
+    def _create_user(
+        self, user_repository, password_service, username='retentionuser'
+    ):
+        """Create a user with a known password hash.
+
+        Args:
+            user_repository: User repository under test.
+            password_service: Password service for hashing.
+            username: Username of the created user.
+
+        Returns:
+            The created User entity.
+        """
+        return user_repository.create(
+            username=username,
+            password_hash=password_service.hash_password('password-123456'),
+            recovery_code_hash=password_service.hash_password('CODE')
+        )
+
+    def test_schedule_deletion_sets_timestamp(
+        self, user_repository, password_service
+    ):
+        """Scheduling a deletion stores the given timestamp."""
+        user = self._create_user(user_repository, password_service)
+        scheduled_at = datetime.now(UTC) + timedelta(days=7)
+
+        assert user_repository.schedule_deletion(
+            int(user.id), scheduled_at
+        ) is True
+
+        reloaded = user_repository.find_by_id(int(user.id))
+        assert reloaded is not None
+        # SQLite stores naive datetimes; tzinfo is dropped on reload
+        assert reloaded.scheduled_deletion_at == (
+            scheduled_at.replace(tzinfo=None)
+        )
+
+    def test_schedule_deletion_missing_user(
+        self, user_repository, password_service
+    ):
+        """Scheduling a deletion for an unknown user returns False."""
+        scheduled_at = datetime.now(UTC) + timedelta(days=7)
+        assert user_repository.schedule_deletion(9999, scheduled_at) is False
+
+    def test_cancel_deletion_clears_timestamp(
+        self, user_repository, password_service
+    ):
+        """Canceling clears a scheduled deletion."""
+        user = self._create_user(user_repository, password_service)
+        user_repository.schedule_deletion(
+            int(user.id), datetime.now(UTC) + timedelta(days=7)
+        )
+
+        assert user_repository.cancel_deletion(int(user.id)) is True
+
+        reloaded = user_repository.find_by_id(int(user.id))
+        assert reloaded is not None
+        assert reloaded.scheduled_deletion_at is None
+
+    def test_cancel_deletion_without_schedule(
+        self, user_repository, password_service
+    ):
+        """Canceling without a scheduled deletion returns False."""
+        user = self._create_user(user_repository, password_service)
+        assert user_repository.cancel_deletion(int(user.id)) is False
+
+    def test_find_due_for_deletion(
+        self, user_repository, password_service
+    ):
+        """Only users whose scheduled deletion has elapsed are due."""
+        due = self._create_user(user_repository, password_service, 'due')
+        pending = self._create_user(
+            user_repository, password_service, 'pending'
+        )
+        user_repository.schedule_deletion(
+            int(due.id), datetime.now(UTC) - timedelta(days=1)
+        )
+        user_repository.schedule_deletion(
+            int(pending.id), datetime.now(UTC) + timedelta(days=7)
+        )
+
+        due_users = user_repository.find_due_for_deletion(
+            datetime.now(UTC)
+        )
+
+        assert [u.username for u in due_users] == ['due']
+
+    def test_find_inactive_since_uses_last_login(
+        self, user_repository, password_service, db_session_factory
+    ):
+        """A stale last_login_at marks the user inactive."""
+        user = self._create_user(user_repository, password_service)
+        stale = datetime.now(UTC) - timedelta(days=181)
+        session = db_session_factory()
+        session.query(UserDB).filter(
+            UserDB.id == user.id
+        ).update({'last_login_at': stale})
+        session.commit()
+        session.close()
+
+        inactive = user_repository.find_inactive_since(
+            datetime.now(UTC) - timedelta(days=180)
+        )
+
+        assert [u.username for u in inactive] == [user.username]
+
+    def test_find_inactive_since_falls_back_to_created_at(
+        self, user_repository, password_service
+    ):
+        """A never-logged-in user is inactive based on created_at."""
+        user = self._create_user(user_repository, password_service)
+
+        inactive = user_repository.find_inactive_since(
+            datetime.now(UTC) + timedelta(days=1)
+        )
+
+        assert [u.username for u in inactive] == [user.username]
+
+    def test_find_inactive_since_excludes_scheduled_deletion(
+        self, user_repository, password_service
+    ):
+        """Users with a scheduled deletion are not reported inactive."""
+        user = self._create_user(user_repository, password_service)
+        user_repository.schedule_deletion(
+            int(user.id), datetime.now(UTC) + timedelta(days=7)
+        )
+
+        inactive = user_repository.find_inactive_since(
+            datetime.now(UTC) + timedelta(days=1)
+        )
+
+        assert inactive == []
+
+    def test_delete_removes_user(
+        self, user_repository, password_service
+    ):
+        """Deleting a user removes the account row."""
+        user = self._create_user(user_repository, password_service)
+
+        assert user_repository.delete(int(user.id)) is True
+        assert user_repository.find_by_id(int(user.id)) is None
+        assert user_repository.delete(int(user.id)) is False

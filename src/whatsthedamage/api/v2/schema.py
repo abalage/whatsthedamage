@@ -370,6 +370,41 @@ def get_openapi_schema() -> dict[str, Any]:
                     },
                 }
             },
+            "/auth/account": {
+                "delete": {
+                    "summary": "Schedule deletion of the current "
+                               "account",
+                    "description": (
+                        "Verifies the current password, schedules the "
+                        "account deletion after the grace period "
+                        "(default 7 days), and revokes all sessions. "
+                        "Logging in before the scheduled timestamp "
+                        "cancels the deletion. After the grace period "
+                        "the retention job deletes the account with "
+                        "all transactions, corrections, and "
+                        "processing results; anonymized shared "
+                        "corrections are retained permanently."
+                    ),
+                    "operationId": "deleteAccount",
+                    "tags": ["Authentication"],
+                    "security": _security(),
+                    "requestBody": _body("AccountDeletionRequest"),
+                    "responses": {
+                        "200": _ok(
+                            "Account deletion scheduled",
+                            _ref("AccountDeletionResponse")
+                        ),
+                        **_errors(
+                            **{
+                                "400": "Validation error",
+                                "401": "Not authenticated or invalid "
+                                      "password",
+                                "403": "Invalid or missing CSRF token",
+                            }
+                        ),
+                    },
+                }
+            },
             "/processing-results": {
                 "post": {
                     "summary": "Create a transaction processing result",
@@ -1371,6 +1406,41 @@ def get_openapi_schema() -> dict[str, Any]:
                     "required": ["user"],
                     "properties": {
                         "user": _ref("UserDetail")
+                    }
+                },
+                "AccountDeletionRequest": {
+                    "type": "object",
+                    "required": ["password"],
+                    "properties": {
+                        "password": {
+                            "type": "string",
+                            "format": "password",
+                            "description": (
+                                "Current password confirming the "
+                                "deletion request"
+                            )
+                        }
+                    }
+                },
+                "AccountDeletionResponse": {
+                    "type": "object",
+                    "required": [
+                        "message", "scheduled_deletion_at"
+                    ],
+                    "properties": {
+                        "message": {
+                            "type": "string"
+                        },
+                        "scheduled_deletion_at": {
+                            "type": "string",
+                            "format": "date-time",
+                            "description": (
+                                "UTC timestamp after which the "
+                                "retention job deletes the account; "
+                                "logging in before it cancels the "
+                                "deletion"
+                            )
+                        }
                     }
                 },
                 "ResetPasswordRequest": {

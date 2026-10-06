@@ -8,7 +8,7 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import type { User } from '../types/auth.js';
-import { register, login, logout, getMe, fetchCsrfToken, updateSharingPreference } from '../js/api.js';
+import { register, login, logout, getMe, fetchCsrfToken, updateSharingPreference, deleteAccount } from '../js/api.js';
 
 /**
  * localStorage key for the persisted CSRF token.
@@ -204,6 +204,35 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   /**
+   * Schedule deletion of the current account.
+   *
+   * The backend revokes all sessions and schedules the deletion after
+   * a grace period; logging in before that cancels it. Local auth
+   * state is cleared regardless.
+   *
+   * @param password - Current password confirming the deletion request
+   * @returns Promise with the scheduled deletion timestamp
+   */
+  async function requestAccountDeletion(password: string): Promise<string> {
+    isLoading.value = true;
+    error.value = null;
+
+    try {
+      const response = await deleteAccount(password);
+      return response.scheduled_deletion_at;
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      error.value = errorMessage;
+      throw err;
+    } finally {
+      // All sessions are revoked server-side; drop local state too
+      user.value = null;
+      setCsrfToken(null);
+      isLoading.value = false;
+    }
+  }
+
+  /**
    * Mint a fresh CSRF token from the backend and persist it.
    * The new token supersedes any previously issued one for this session.
    */
@@ -238,6 +267,7 @@ export const useAuthStore = defineStore('auth', () => {
     acknowledgeRecoveryCode,
     refreshCsrfToken,
     setOptInSharing,
+    requestAccountDeletion,
 
     // Getters
     getUser: (): User | null => user.value,

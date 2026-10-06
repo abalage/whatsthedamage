@@ -34,6 +34,10 @@ class User(Base):
         last_login_at: Timestamp of last successful login (nullable).
         is_active: Whether the account is active (default True).
         opt_in_sharing: Whether user opts in to sharing corrections (default False).
+        scheduled_deletion_at: UTC timestamp after which the retention
+            job deletes the account (nullable; set by the account
+            deletion request, cleared by logging in during the grace
+            period).
         sessions: One-to-many relationship with Session model.
         processing_results: One-to-many relationship with ProcessingResult model.
         corrections: One-to-many relationship with Correction model.
@@ -50,6 +54,7 @@ class User(Base):
     last_login_at = Column(DateTime, nullable=True)
     is_active = Column(Boolean, nullable=False, default=True)
     opt_in_sharing = Column(Boolean, nullable=False, default=False)
+    scheduled_deletion_at = Column(DateTime, nullable=True)
 
     # Relationship to sessions (one-to-many)
     sessions = relationship(

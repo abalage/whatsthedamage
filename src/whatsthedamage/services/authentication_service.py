@@ -203,6 +203,28 @@ class AuthenticationService:
         if not user.is_active:
             raise ValueError("Account is inactive")
 
+        # A scheduled account deletion is canceled by logging in
+        # during the grace period; past the scheduled timestamp login
+        # is refused until the retention job deletes the account.
+        scheduled_deletion_at = user.scheduled_deletion_at
+        if scheduled_deletion_at is not None:
+            # SQLite returns naive datetimes; normalize to UTC
+            if scheduled_deletion_at.tzinfo is None:
+                scheduled_deletion_at = scheduled_deletion_at.replace(
+                    tzinfo=UTC
+                )
+            if scheduled_deletion_at <= datetime.now(UTC):
+                raise ValueError("Account is scheduled for deletion")
+            self.user_repository.cancel_deletion(cast(int, user.id))
+            self.logger.info(
+                "Scheduled account deletion canceled by login",
+                extra={"context": {
+                    "action": "account_deletion",
+                    "status": "canceled",
+                    "user_id": user.id
+                }}
+            )
+
         # Update last login timestamp
         self.user_repository.update_last_login(cast(int, user.id))
 

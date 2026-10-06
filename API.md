@@ -241,6 +241,45 @@ curl -X PUT http://localhost:5000/api/v2/auth/me \
 
 ---
 
+### Delete Account
+
+Schedule the deletion of the authenticated user's account. Requires the current password for confirmation. All sessions are revoked immediately and the deletion takes effect after a grace period (default 7 days, configurable via `WHATSTHEDAMAGE_ACCOUNT_DELETION_GRACE_DAYS`). Logging in before the scheduled timestamp cancels the deletion. After the grace period the retention job (`flask retention-purge`, see `docs/retention-policy.md`) deletes the account with all transactions, corrections, and processing results; anonymized shared corrections are retained permanently.
+
+**Endpoint:**
+```
+DELETE /api/v2/auth/account
+```
+
+**Request Body:**
+
+| Field | Required | Type | Description |
+|-------|----------|------|-------------|
+| `password` | Yes | string | Current password confirming the deletion request |
+
+**Curl Example:**
+```bash
+curl -X DELETE http://localhost:5000/api/v2/auth/account \
+  -H "Content-Type: application/json" \
+  -H "X-CSRF-Token: <csrf-token>" \
+  -d '{"password": "your-password"}'
+```
+
+**Response:**
+```json
+{
+  "message": "Account deletion scheduled",
+  "scheduled_deletion_at": "2026-10-13T09:00:00+00:00"
+}
+```
+
+**Status Codes:**
+- `200` - Account deletion scheduled
+- `400` - Missing password
+- `401` - Not authenticated or wrong password
+- `403` - Invalid or missing CSRF token
+
+---
+
 ### Reset Password
 
 Reset the password using the one-time recovery code issued during registration (or a previous reset). Public endpoint; no session or CSRF token required. All existing sessions are invalidated on success and a new recovery code is issued.
@@ -1162,6 +1201,7 @@ open http://localhost:5000/api/v2/openapi.json
 | `POST` | `/api/v2/auth/logout` | Revoke the current session |
 | `GET` | `/api/v2/auth/me` | Get current user information |
 | `PUT` | `/api/v2/auth/me` | Update user settings (correction sharing opt-in) |
+| `DELETE` | `/api/v2/auth/account` | Schedule deletion of the current account |
 | `POST` | `/api/v2/auth/reset-password` | Reset password using a recovery code |
 | `GET` | `/api/v2/auth/csrf-token` | Get a new CSRF token |
 | `POST` | `/api/v2/processing-results` | Process and import a CSV file |

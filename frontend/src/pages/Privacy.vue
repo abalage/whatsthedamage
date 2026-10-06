@@ -12,7 +12,7 @@ const emailHref = computed(() => `mailto:${emailUsername}@${emailDomain}`)
 <template>
   <div class="container">
     <h1>Privacy Policy</h1>
-    <p><strong>Effective Date:</strong> 03-02-2025</p>
+    <p><strong>Effective Date:</strong> 10-06-2026</p>
     <h2>1. Introduction</h2>
     <p>Welcome to Whatsthedamage (the "App"). This Privacy Policy explains how we collect, use, disclose, and protect your personal information when you use our App. We are committed to protecting your privacy and ensuring that your personal data is handled in accordance with the General Data Protection Regulation (GDPR) and other applicable data protection laws.</p>
     <h2>2. Information We Collect</h2>
@@ -43,7 +43,9 @@ const emailHref = computed(() => `mailto:${emailUsername}@${emailDomain}`)
         <li><strong>Contractual Necessity:</strong> Processing is necessary for the performance of a contract to which you are a party.</li>
     </ul>
     <h2>5. Data Retention</h2>
-    <p>We will retain your personal data only for as long as necessary to fulfill the purposes for which it was collected, including for the purposes of satisfying any legal, accounting, or reporting requirements. All uploaded content is deleted immediately after the report is generated.</p>
+    <p>We retain your personal data only for as long as necessary to fulfill the purposes for which it was collected. Your account, including all transactions, corrections, and processing results, is permanently deleted 6 months after your last login, or when you request account deletion in the settings (with a 7-day grace period during which logging in cancels the request).</p>
+    <p>If you opted in to sharing corrections, the anonymized corrections you contributed (merchant names and categories only) are retained permanently and cannot be retracted, even after your account is deleted.</p>
+    <p>Further details are available in our <a href="https://github.com/abalage/whatsthedamage/blob/main/docs/retention-policy.md">Data Retention Policy</a>.</p>
     <h2>6. Data Security</h2>
     <p>We implement appropriate technical and organizational measures to protect your personal data against unauthorized access, loss, or destruction. However, please be aware that no method of transmission over the internet or method of electronic storage is 100% secure.</p>
     <h2>7. Your Rights</h2>

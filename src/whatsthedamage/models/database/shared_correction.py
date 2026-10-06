@@ -22,10 +22,12 @@ class SharedCorrection(Base):
         original_partner_hash: SHA-256 hash of lowercase original_partner (64 char hex).
         corrected_partner: Shared corrected partner name (max 255 chars, nullable).
         corrected_category_id: Shared category identifier (max 50 chars, required).
-        corrected_notice: Shared notice/comment (max 500 chars, nullable).
         contributed_at: Timestamp when this correction was first contributed.
         contribution_count: Number of contributions with changed values;
             identical re-contributions do not increment it.
+
+    Notices are never shared (see epic Decision #8); only merchant
+    names and categories are contributed.
     """
 
     __tablename__ = 'shared_corrections'
@@ -35,10 +37,9 @@ class SharedCorrection(Base):
     # Anonymized lookup key - SHA-256 hash of lowercase original_partner
     original_partner_hash = Column(String(64), nullable=False)
 
-    # Correction values
+    # Correction values (notices are never shared)
     corrected_partner = Column(String(255), nullable=True)
     corrected_category_id = Column(String(50), nullable=False)
-    corrected_notice = Column(String(500), nullable=True)
 
     # Contribution metadata (anonymized)
     contributed_at = Column(DateTime, nullable=False, default=lambda: datetime.now(UTC))

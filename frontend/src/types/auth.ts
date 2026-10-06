@@ -113,3 +113,19 @@ export interface PasswordResetResponse {
   user: User;
   new_recovery_code: string;
 }
+
+/**
+ * Request body for scheduling account deletion via DELETE /auth/account.
+ */
+export interface AccountDeletionRequest {
+  password: string;
+}
+
+/**
+ * Response from scheduling account deletion.
+ * Contains the UTC timestamp after which the account is deleted.
+ */
+export interface AccountDeletionResponse {
+  message: string;
+  scheduled_deletion_at: string;
+}

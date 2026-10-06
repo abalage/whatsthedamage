@@ -28,6 +28,8 @@ import type {
   PasswordResetResponse,
   UpdateMeRequest,
   UpdateMeResponse,
+  AccountDeletionRequest,
+  AccountDeletionResponse,
 } from '../types/auth.js';
 
 // API base URL configuration
@@ -534,6 +536,19 @@ export async function resetPassword(
   };
   return fetchWithCsrf<PasswordResetResponse>(getApiUrl('/auth/reset-password'), {
     method: 'POST',
+    body: JSON.stringify(requestData)
+  });
+}
+
+/**
+ * Schedule deletion of the current user's account
+ * @param password - Current password confirming the deletion request
+ * @returns Promise with the scheduled deletion timestamp
+ */
+export async function deleteAccount(password: string): Promise<AccountDeletionResponse> {
+  const requestData: AccountDeletionRequest = { password };
+  return fetchWithCsrf<AccountDeletionResponse>(getApiUrl('/auth/account'), {
+    method: 'DELETE',
     body: JSON.stringify(requestData)
   });
 }

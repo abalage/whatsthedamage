@@ -179,8 +179,7 @@ class TransactionTestFactory:
     def create_shared_correction(
         original_partner: str = "test merchant",
         corrected_category_id: str = "grocery",
-        corrected_partner: str | None = "CORRECTED MERCHANT",
-        corrected_notice: str | None = "Shared notice"
+        corrected_partner: str | None = "CORRECTED MERCHANT"
     ) -> SharedCorrection:
         """Create a test SharedCorrection object.
 
@@ -188,7 +187,6 @@ class TransactionTestFactory:
             original_partner: Original partner name (will be hashed).
             corrected_category_id: Corrected category identifier.
             corrected_partner: Corrected partner name.
-            corrected_notice: Corrected notice.
 
         Returns:
             SharedCorrection object with test data.
@@ -201,7 +199,6 @@ class TransactionTestFactory:
             original_partner_hash=partner_hash,
             corrected_partner=corrected_partner,
             corrected_category_id=corrected_category_id,
-            corrected_notice=corrected_notice,
             contributed_at=datetime.now(UTC),
             contribution_count=1
         )

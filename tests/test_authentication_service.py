@@ -159,7 +159,8 @@ class TestAuthenticationServiceLogin:
             username='testuser',
             password_hash='$argon2id$v=19$m=65536,t=3,p=4$...',
             is_active=True,
-            last_login_at=None
+            last_login_at=None,
+            scheduled_deletion_at=None
         )
         mock_user_repository.find_by_username.return_value = mock_user
 
@@ -244,13 +245,95 @@ class TestAuthenticationServiceLogin:
                     password='correct_password'
                 )
 
+    def test_login_user_cancels_pending_deletion(
+        self, authentication_service, mock_user_repository
+    ):
+        """Logging in during the grace period cancels the deletion."""
+        mock_user = Mock(
+            id=1,
+            username='testuser',
+            password_hash='$argon2id$v=19$m=65536,t=3,p=4$...',
+            is_active=True,
+            scheduled_deletion_at=datetime.now(UTC) + timedelta(days=3)
+        )
+        mock_user_repository.find_by_username.return_value = mock_user
+
+        with patch.object(
+            authentication_service.password_service,
+            'verify_password',
+            return_value=True
+        ):
+            authentication_service.login_user(
+                username='testuser',
+                password='correct_password'
+            )
+
+        mock_user_repository.cancel_deletion.assert_called_once_with(1)
+        assert mock_user_repository.update_last_login.called
+
+    def test_login_user_refuses_past_due_deletion(
+        self, authentication_service, mock_user_repository
+    ):
+        """Login is refused once the scheduled deletion has elapsed."""
+        mock_user = Mock(
+            id=1,
+            username='testuser',
+            password_hash='$argon2id$v=19$m=65536,t=3,p=4$...',
+            is_active=True,
+            scheduled_deletion_at=datetime.now(UTC) - timedelta(days=1)
+        )
+        mock_user_repository.find_by_username.return_value = mock_user
+
+        with patch.object(
+            authentication_service.password_service,
+            'verify_password',
+            return_value=True
+        ):
+            with pytest.raises(
+                ValueError,
+                match="Account is scheduled for deletion"
+            ):
+                authentication_service.login_user(
+                    username='testuser',
+                    password='correct_password'
+                )
+
+        mock_user_repository.cancel_deletion.assert_not_called()
+        mock_user_repository.update_last_login.assert_not_called()
+
+    def test_login_user_without_scheduled_deletion_skips_cancel(
+        self, authentication_service, mock_user_repository
+    ):
+        """Regular logins never call the deletion cancel."""
+        mock_user = Mock(
+            id=1,
+            username='testuser',
+            password_hash='$argon2id$v=19$m=65536,t=3,p=4$...',
+            is_active=True,
+            scheduled_deletion_at=None
+        )
+        mock_user_repository.find_by_username.return_value = mock_user
+
+        with patch.object(
+            authentication_service.password_service,
+            'verify_password',
+            return_value=True
+        ):
+            authentication_service.login_user(
+                username='testuser',
+                password='correct_password'
+            )
+
+        mock_user_repository.cancel_deletion.assert_not_called()
+
     def test_login_user_remember_me(self, authentication_service, mock_user_repository, mock_session_repository):
         """Test login with remember me option."""
         mock_user = Mock(
             id=1,
             username='testuser',
             password_hash='$argon2id$v=19$m=65536,t=3,p=4$...',
-            is_active=True
+            is_active=True,
+            scheduled_deletion_at=None
         )
         mock_user_repository.find_by_username.return_value = mock_user
 

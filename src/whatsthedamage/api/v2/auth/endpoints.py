@@ -6,6 +6,7 @@ Provides REST API endpoints for user authentication including:
 - Logout (POST /api/v2/auth/logout)
 - Current user (GET /api/v2/auth/me)
 - Update settings (PUT /api/v2/auth/me)
+- Account deletion (DELETE /api/v2/auth/account)
 - CSRF token (GET /api/v2/auth/csrf-token)
 """
 
@@ -458,6 +459,12 @@ def login() -> Tuple[Response, int]:
                 403,
                 "ACCOUNT_INACTIVE"
             )[0]), 403
+        elif "account is scheduled for deletion" in error_message.lower():
+            return jsonify(_create_error_response(
+                "Account is scheduled for deletion",
+                403,
+                "ACCOUNT_DELETION_PENDING"
+            )[0]), 403
         else:
             return jsonify(_create_error_response(
                 "Login failed",
@@ -684,6 +691,91 @@ def update_me() -> Tuple[Response, int]:
     except Exception as e:
         return jsonify(_create_error_response(
             "Failed to update user settings",
+            500,
+            "INTERNAL_ERROR"
+        )[0]), 500
+
+
+@auth_bp.route('/account', methods=['DELETE'])
+@require_auth_and_csrf
+def delete_account() -> Tuple[Response, int]:
+    """Schedule the deletion of the current user's account.
+
+    Verifies the current password, schedules the account deletion
+    after the configured grace period (default 7 days), and revokes
+    all sessions. Logging in before the scheduled timestamp cancels
+    the deletion. After the grace period the retention job deletes
+    the account with all transactions, corrections, and processing
+    results; anonymized shared corrections are retained permanently.
+
+    Request JSON:
+        {
+            "password": "string"
+        }
+
+    Request Headers:
+        X-CSRF-Token: Valid CSRF token for the current session
+
+    Response JSON:
+        {
+            "message": "string",
+            "scheduled_deletion_at": "ISO8601 timestamp"
+        }
+
+    Status Codes:
+        200: Account deletion scheduled
+        400: Missing password
+        401: Not authenticated or wrong password
+        403: Invalid or missing CSRF token
+    """
+    user = cast(UserDB, request.user)  # type: ignore[attr-defined]
+
+    try:
+        data = request.get_json(silent=True)
+        password = data.get('password') if data else None
+        if not password or not isinstance(password, str):
+            return jsonify(_create_error_response(
+                "Password is required",
+                400,
+                "MISSING_PASSWORD"
+            )[0]), 400
+
+        retention_service = current_app.extensions.get(
+            'retention_service'
+        )
+        if retention_service is None:
+            return jsonify(_create_error_response(
+                "Account deletion is not available",
+                500,
+                "INTERNAL_ERROR"
+            )[0]), 500
+
+        scheduled_deletion_at = cast(
+            Any, retention_service
+        ).request_account_deletion(user, password)
+
+        response = jsonify({
+            'message': 'Account deletion scheduled',
+            'scheduled_deletion_at': scheduled_deletion_at.isoformat()
+        })
+        response = _clear_session_cookie(response)
+        return response, 200
+
+    except ValueError as e:
+        if "invalid password" in str(e).lower():
+            return jsonify(_create_error_response(
+                "Invalid password",
+                401,
+                "INVALID_CREDENTIALS"
+            )[0]), 401
+        return jsonify(_create_error_response(
+            "Failed to schedule account deletion",
+            400,
+            "VALIDATION_ERROR"
+        )[0]), 400
+    except Exception:
+        return jsonify(_create_error_response(
+            "Failed to schedule account deletion",
             500,
             "INTERNAL_ERROR"
         )[0]), 500

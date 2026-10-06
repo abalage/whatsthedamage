@@ -16,6 +16,7 @@ _The slang phrase "what's the damage?" is often used to ask about the cost or pr
  - Categorizes transactions into well known [accounting categories](#transaction-categories).
  - Categorizes transactions into custom categories by using regular expressions or a [machine learning model](#machine-learning-categorization).
  - Correct merchant, category, and notice inline on the Transactions page; corrections are persisted on the server bound to your account. Merchant and category corrections can be applied to future imports automatically, or kept to a single transaction. See [Transaction corrections](#transaction-corrections).
+ - Data retention and account deletion: personal data is deleted 6 months after your last login or upon request, with a 7-day grace period. See [Data retention](#data-retention-and-account-deletion).
  - Transactions can be pre-filtered by start and end dates. If no filter is set, grouping is based on the number of months.
  - Statistical algorithms to highlight outlier categories or transactions. (Web interface only)
  - Visualize reports using Bar charts, Pie charts, etc. (Web interface only)
@@ -101,6 +102,22 @@ $ docker run --rm -ti --publish 5000:5000/tcp ghcr.io/abalage/whatsthedamage:lat
 You can access the web interface on [http://localhost:5000](http://localhost:5000). Register a user account on first use.
 
 Note: the database is stored inside the container by default. Mount a volume for the database file (or set `WHATSTHEDAMAGE_DATABASE_URI` to an external database) if you want your users and transactions to survive container recreation.
+
+### Scheduling the retention purge
+
+Neither data retention trigger (inactivity, account deletion) runs automatically; both are executed by a Flask CLI command:
+
+```shell
+$ flask --app whatsthedamage.app retention-purge
+```
+
+The command permanently deletes accounts whose deletion grace period has elapsed and the accounts of users inactive for longer than the retention window (see [Data retention and account deletion](#data-retention-and-account-deletion) and [docs/retention-policy.md](docs/retention-policy.md)). Schedule it periodically, e.g. daily via cron:
+
+```cron
+0 3 * * * cd /path/to/whatsthedamage && flask --app whatsthedamage.app retention-purge
+```
+
+In containerized deployments run the command inside the container, e.g. `docker exec <container> flask --app whatsthedamage.app retention-purge`. It is idempotent and safe to run while the application is serving requests.
 
 ## CLI Usage
 
@@ -194,6 +211,22 @@ Details worth knowing:
 - The pre-correction category and notice of each transaction are preserved (returned as `original_category_id` and `original_notice` by the API), so the original values remain available.
 - Re-importing a CSV never duplicates transactions and never overwrites your corrections: the deduplication key (`date + type + original partner + amount + currency + account`) is computed from the original row and is immutable.
 - Your rules can be listed, edited, and deleted via the REST API at `/api/v2/corrections`, see [API.md](API.md).
+
+### Data retention and account deletion
+
+Personal data is not kept longer than necessary; the full policy is published in [docs/retention-policy.md](docs/retention-policy.md).
+
+- **Inactivity**: the account is permanently deleted together with its transactions, corrections, and processing results 6 months after your last login (configurable via `WHATSTHEDAMAGE_RETENTION_INACTIVITY_DAYS`, default 180). A returning user must register a new account.
+- **Account deletion**: request deletion in the Settings (API: `DELETE /api/v2/auth/account`, requires your current password). All sessions are revoked immediately and the account is permanently deleted after a 7-day grace period (configurable via `WHATSTHEDAMAGE_ACCOUNT_DELETION_GRACE_DAYS`, default 7). Logging in before the deadline cancels the deletion.
+- **Shared corrections**: anonymized corrections you opted in to share (merchant names and categories only) are retained permanently and cannot be retracted, even after account deletion.
+
+The purge does not run automatically; it is executed by a Flask CLI command that must be scheduled periodically (e.g. daily via cron):
+
+```bash
+flask --app whatsthedamage.app retention-purge
+```
+
+See [Running the retention job](docs/retention-policy.md#running-the-retention-job) in the retention policy for details, including running it in a container.
 
 ### Troubleshooting
 

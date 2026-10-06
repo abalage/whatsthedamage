@@ -190,6 +190,14 @@ def _init_transaction_services(app: Flask, service_container: ServiceContainer) 
     app.extensions['shared_correction_repository'] = shared_correction_repo
     app.extensions['deduplication_service'] = dedup_service
 
+    # Create retention service (account deletion + retention purge)
+    # after all repositories it depends on are registered
+    from whatsthedamage.services.retention_service import (
+        create_retention_service_from_app
+    )
+    retention_service = create_retention_service_from_app(app)
+    app.extensions['retention_service'] = retention_service
+
     return service_container
 
 
@@ -258,6 +266,35 @@ def _setup_request_logging(app: Flask, logger: LoggerAdapter) -> None:
             })
 
 
+def _register_cli_commands(app: Flask) -> None:
+    """Register application management CLI commands."""
+    import click
+
+    @app.cli.command('retention-purge')
+    def retention_purge() -> None:
+        """Run the retention purge job (see docs/retention-policy.md).
+
+        Permanently deletes accounts whose deletion grace period has
+        elapsed and the accounts of users inactive for longer than
+        the retention window, together with all of their personal
+        data. Run periodically, e.g. daily via cron.
+        """
+        from whatsthedamage.services.retention_service import (
+            RetentionService
+        )
+        service = app.extensions.get('retention_service')
+        if service is None:
+            raise click.ClickException('Retention service not available')
+        result = cast(RetentionService, service).purge()
+        click.echo(
+            'Retention purge completed: '
+            f"{result['accounts_deleted']} account(s) deleted "
+            '(grace period elapsed), '
+            f"{result['inactive_accounts_deleted']} "
+            'inactive account(s) deleted'
+        )
+
+
 def create_app(
     config_class: Optional[FlaskAppConfig] = None,
     service_container: Optional[ServiceContainer] = None
@@ -280,6 +317,7 @@ def create_app(
     _register_blueprints(app)
     _register_error_handlers(app)
     _register_security_headers(app)
+    _register_cli_commands(app)
     _setup_request_logging(app, logger)
 
     return app

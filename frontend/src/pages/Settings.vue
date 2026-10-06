@@ -1,15 +1,21 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useGettext } from 'vue3-gettext'
+import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth.js'
 
 const { $gettext } = useGettext()
+const router = useRouter()
 const authStore = useAuthStore()
 
 const isUpdating = ref(false)
 const updateError = ref<string | null>(null)
 const justEnabled = ref(false)
 const justDisabled = ref(false)
+
+const deletePassword = ref('')
+const isDeleting = ref(false)
+const deleteError = ref<string | null>(null)
 
 async function handleToggle(event: Event): Promise<void> {
   const target = event.target as HTMLInputElement
@@ -27,6 +33,20 @@ async function handleToggle(event: Event): Promise<void> {
     target.checked = !newValue
   } finally {
     isUpdating.value = false
+  }
+}
+
+async function handleDeleteAccount(): Promise<void> {
+  isDeleting.value = true
+  deleteError.value = null
+  try {
+    await authStore.requestAccountDeletion(deletePassword.value)
+    deletePassword.value = ''
+    await router.push({ name: 'login' })
+  } catch (err: unknown) {
+    deleteError.value = err instanceof Error ? err.message : String(err)
+  } finally {
+    isDeleting.value = false
   }
 }
 </script>
@@ -67,6 +87,43 @@ async function handleToggle(event: Event): Promise<void> {
     </div>
     <div v-if="updateError" class="alert alert-danger" role="alert">
       {{ $gettext('Failed to update the sharing preference:') }} {{ updateError }}
+    </div>
+
+    <h2 class="mt-5">{{ $gettext('Delete account') }}</h2>
+
+    <p>{{ $gettext('Scheduling deletion logs you out everywhere. Your account and all of your transactions and corrections are deleted after a 7-day grace period.') }}</p>
+    <p>{{ $gettext('If you log in again before the grace period ends, the deletion is canceled and nothing is lost.') }}</p>
+
+    <div class="alert alert-warning" role="alert">
+      {{ $gettext('Anonymized corrections you shared before deletion are retained permanently and cannot be retracted.') }}
+    </div>
+
+    <form class="mb-3" @submit.prevent="handleDeleteAccount">
+      <div class="mb-3">
+        <label class="form-label" for="deleteAccountPassword">
+          {{ $gettext('Confirm with your password') }}
+        </label>
+        <input
+          id="deleteAccountPassword"
+          v-model="deletePassword"
+          class="form-control"
+          type="password"
+          autocomplete="current-password"
+          :disabled="isDeleting"
+          required
+        >
+      </div>
+      <button
+        type="submit"
+        class="btn btn-danger"
+        :disabled="isDeleting || deletePassword.length === 0"
+      >
+        {{ $gettext('Schedule my account for deletion') }}
+      </button>
+    </form>
+
+    <div v-if="deleteError" class="alert alert-danger" role="alert">
+      {{ $gettext('Failed to schedule the account deletion:') }} {{ deleteError }}
     </div>
   </div>
 </template>

@@ -574,7 +574,17 @@ Frontend SPA (Vue 3)
 
 **Deployment**: Part of the Flask application
 
-#### 3.2.19. Repository Layer
+#### 3.2.19. RetentionService
+
+**Name**: Retention Service
+
+**Description**: Implements the data retention policy (`docs/retention-policy.md`). Schedules account deletion requests (`DELETE /api/v2/auth/account`: password confirmation, 7-day grace period during which login cancels the deletion) and runs the periodic purge (`flask --app whatsthedamage.app retention-purge`): permanently deletes accounts whose grace period has elapsed and the accounts of users inactive for longer than the retention window (6 months by default), together with all their personal data. Anonymized shared corrections are never deleted.
+
+**Technologies**: Python
+
+**Deployment**: Part of the Flask application
+
+#### 3.2.20. Repository Layer
 
 **Name**: Repositories (Data Access Layer)
 

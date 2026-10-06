@@ -6,6 +6,7 @@ Implements the repository pattern for user account management.
 
 from datetime import datetime, UTC
 from typing import Any, Optional, Protocol, runtime_checkable, cast
+from sqlalchemy import func
 from sqlalchemy.orm import Session as SqlAlchemySession
 
 from whatsthedamage.models.database.user import User as UserDB
@@ -111,6 +112,77 @@ class UserRepository(Protocol):
 
         Raises:
             Exception: On database errors (rollback performed automatically).
+        """
+        ...
+
+    def schedule_deletion(
+        self,
+        user_id: int,
+        scheduled_deletion_at: datetime
+    ) -> bool:
+        """Schedule the user's account deletion.
+
+        Args:
+            user_id: User identifier.
+            scheduled_deletion_at: UTC timestamp after which the
+                retention job deletes the account.
+
+        Returns:
+            True if the deletion was scheduled, False if the user
+            was not found.
+        """
+        ...
+
+    def cancel_deletion(self, user_id: int) -> bool:
+        """Cancel a scheduled account deletion.
+
+        Args:
+            user_id: User identifier.
+
+        Returns:
+            True if a scheduled deletion was canceled, False if the
+            user was not found or had no deletion scheduled.
+        """
+        ...
+
+    def find_due_for_deletion(self, now: datetime) -> list[UserDB]:
+        """Find users whose scheduled deletion is due.
+
+        Args:
+            now: Current UTC timestamp.
+
+        Returns:
+            Users with a scheduled_deletion_at at or before now.
+        """
+        ...
+
+    def find_inactive_since(self, before: datetime) -> list[UserDB]:
+        """Find users inactive since the given timestamp.
+
+        A user is inactive when neither their last login nor their
+        account creation happened after the given cutoff.
+
+        Args:
+            before: UTC timestamp; users with no activity after it
+                are considered inactive.
+
+        Returns:
+            Users whose last activity is at or before the cutoff.
+        """
+        ...
+
+    def delete(self, user_id: int) -> bool:
+        """Delete a user and all of their data.
+
+        Cascades to sessions, processing results, corrections, and
+        transactions. Shared corrections are not linked to users and
+        are never affected.
+
+        Args:
+            user_id: User identifier.
+
+        Returns:
+            True if the user was found and deleted, False otherwise.
         """
         ...
 
@@ -298,6 +370,140 @@ class SqlAlchemyUserRepository(SqlAlchemyBaseRepository[UserDB]):
             if user:
                 user.password_hash = cast(Any, new_password_hash)
                 user.recovery_code_hash = cast(Any, new_recovery_code_hash)
+                session.commit()
+                return True
+            return False
+        except Exception:
+            session.rollback()
+            raise
+        finally:
+            session.close()
+
+    def schedule_deletion(
+        self,
+        user_id: int,
+        scheduled_deletion_at: datetime
+    ) -> bool:
+        """Schedule the user's account deletion.
+
+        Args:
+            user_id: User identifier.
+            scheduled_deletion_at: UTC timestamp after which the
+                retention job deletes the account.
+
+        Returns:
+            True if the deletion was scheduled, False if the user
+            was not found.
+        """
+        session = self._get_session()
+        try:
+            user = session.query(UserDB).filter(
+                UserDB.id == user_id
+            ).first()
+            if user:
+                user.scheduled_deletion_at = cast(
+                    Any, scheduled_deletion_at
+                )
+                session.commit()
+                return True
+            return False
+        except Exception:
+            session.rollback()
+            raise
+        finally:
+            session.close()
+
+    def cancel_deletion(self, user_id: int) -> bool:
+        """Cancel a scheduled account deletion.
+
+        Args:
+            user_id: User identifier.
+
+        Returns:
+            True if a scheduled deletion was canceled, False if the
+            user was not found or had no deletion scheduled.
+        """
+        session = self._get_session()
+        try:
+            user = session.query(UserDB).filter(
+                UserDB.id == user_id
+            ).first()
+            if user and user.scheduled_deletion_at is not None:
+                user.scheduled_deletion_at = cast(Any, None)
+                session.commit()
+                return True
+            return False
+        except Exception:
+            session.rollback()
+            raise
+        finally:
+            session.close()
+
+    def find_due_for_deletion(self, now: datetime) -> list[UserDB]:
+        """Find users whose scheduled deletion is due.
+
+        Args:
+            now: Current UTC timestamp.
+
+        Returns:
+            Users with a scheduled_deletion_at at or before now.
+        """
+        session = self._get_session()
+        try:
+            return session.query(UserDB).filter(  # type: ignore[no-any-return]
+                UserDB.scheduled_deletion_at.isnot(None),
+                UserDB.scheduled_deletion_at <= now
+            ).all()
+        finally:
+            session.close()
+
+    def find_inactive_since(self, before: datetime) -> list[UserDB]:
+        """Find users inactive since the given timestamp.
+
+        A user is inactive when neither their last login nor their
+        account creation happened after the given cutoff. Users with
+        a scheduled deletion are excluded; they are handled by the
+        account deletion purge.
+
+        Args:
+            before: UTC timestamp; users with no activity after it
+                are considered inactive.
+
+        Returns:
+            Users whose last activity is at or before the cutoff.
+        """
+        session = self._get_session()
+        try:
+            last_activity = func.coalesce(
+                UserDB.last_login_at, UserDB.created_at
+            )
+            return session.query(UserDB).filter(  # type: ignore[no-any-return]
+                last_activity <= before,
+                UserDB.scheduled_deletion_at.is_(None)
+            ).all()
+        finally:
+            session.close()
+
+    def delete(self, user_id: int) -> bool:
+        """Delete a user and all of their data.
+
+        Cascades to sessions, processing results, corrections, and
+        transactions. Shared corrections are not linked to users and
+        are never affected.
+
+        Args:
+            user_id: User identifier.
+
+        Returns:
+            True if the user was found and deleted, False otherwise.
+        """
+        session = self._get_session()
+        try:
+            user = session.query(UserDB).filter(
+                UserDB.id == user_id
+            ).first()
+            if user:
+                session.delete(user)
                 session.commit()
                 return True
             return False

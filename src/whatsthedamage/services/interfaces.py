@@ -167,6 +167,25 @@ class IStatisticalAnalysisService(ABC):
         """
         pass
 
+    @abstractmethod
+    def compute_highlights_from_transactions(
+        self,
+        transactions: List[Any],
+        algorithms: Optional[List[str]] = None,
+        direction: Optional[str] = None
+    ) -> Dict[str, List[str]]:
+        """Compute statistical highlights from Transaction entities.
+
+        Args:
+            transactions: List of Transaction database entities
+            algorithms: Optional list of algorithm names (None = enabled algorithms)
+            direction: Analysis direction ('columns' or 'rows', default 'columns')
+
+        Returns:
+            Dictionary mapping cell IDs to highlight types
+        """
+        pass
+
 
 class IDrilldownResponseService(ABC):
     """Interface for drilldown response service operations."""

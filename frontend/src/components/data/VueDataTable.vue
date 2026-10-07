@@ -112,6 +112,12 @@ export interface Column {
   searchable?: boolean
   /** Enable column-specific filtering. Default: true */
   filterable?: boolean
+  /**
+   * Fixed-choice filter: renders a <select> instead of a text input.
+   * Filtering is an exact match on the option value (language-agnostic:
+   * values are stable ids, labels may be translated).
+   */
+  filterOptions?: Array<{ value: string; label: string }>
   /** CSS width (e.g., "100px", "20%") */
   width?: string
   /**
@@ -207,6 +213,10 @@ interface TableApi {
 }
 
 const props = defineProps<Props>()
+
+// Emitted when the "Clear all filters" button resets all column filters,
+// so pages can also reset their own toolbar filters
+const emit = defineEmits(['cleared-filters'])
 const { $gettext } = useGettext()
 
 // Type for aggregate calculation results
@@ -513,10 +523,12 @@ const filteredData = computed(() => {
     if (value) {
       const column = props.columns.find(c => c.key === key)
       if (column && column.filterable !== false) {
-        result = result.filter(row => {
-          const cellValue = row[key]
-          return String(cellValue).toLowerCase().includes(value.toLowerCase())
-        })
+        // Fixed-choice filters match the raw value exactly; text filters
+        // fall back to case-insensitive substring matching
+        const matches = column.filterOptions
+          ? (row: Record<string, unknown>) => String(row[key]) === value
+          : (row: Record<string, unknown>) => String(row[key]).toLowerCase().includes(value.toLowerCase())
+        result = result.filter(matches)
       }
     }
   })
@@ -555,6 +567,7 @@ const filteredData = computed(() => {
 function clearColumnFilters(): void {
   columnFilters.value = {}
   currentPage.value = 1
+  emit('cleared-filters')
 }
 
 /**
@@ -818,8 +831,9 @@ defineExpose(tableApi)
       </div>
     </div>
 
-    <!-- Column filters clear button (shown when any column filter is active) -->
-    <div v-if="props.showColumnFilters !== false && Object.keys(columnFilters).length > 0" class="mb-2">
+    <!-- Column filters toolbar: always-visible clear button plus
+         page-provided filter toggle buttons -->
+    <div v-if="props.showColumnFilters !== false" class="mb-2 d-flex flex-wrap gap-2 align-items-center">
       <button
         class="btn bg-surface-base text-secondary border-secondary hover-bg-surface-secondary px-2 py-1 text-sm rounded-sm"
         type="button"
@@ -828,6 +842,7 @@ defineExpose(tableApi)
       >
         {{ $gettext('Clear all filters') }}
       </button>
+      <slot name="filter-actions"></slot>
     </div>
 
     <!-- Export buttons -->
@@ -899,9 +914,25 @@ defineExpose(tableApi)
                     <span v-else class="sort-indicator text-secondary">↕</span>
                   </template>
                 </div>
-                <!-- Column-specific filter input -->
+                <!-- Column-specific filter control -->
+                <select
+                  v-if="props.showColumnFilters !== false && column.filterable !== false && column.filterOptions"
+                  class="form-select form-select-sm"
+                  :value="columnFilters[column.key] || ''"
+                  :aria-label="$gettext('Filter by') + ' ' + column.title"
+                  @change="(e) => setColumnFilter(column.key, (e.target as HTMLSelectElement).value)"
+                >
+                  <option value="">{{ $gettext('All') }}</option>
+                  <option
+                    v-for="option in column.filterOptions"
+                    :key="option.value"
+                    :value="option.value"
+                  >
+                    {{ option.label }}
+                  </option>
+                </select>
                 <input
-                  v-if="props.showColumnFilters !== false && column.filterable !== false"
+                  v-else-if="props.showColumnFilters !== false && column.filterable !== false"
                   type="text"
                   class="form-control form-control-sm"
                   :value="columnFilters[column.key] || ''"

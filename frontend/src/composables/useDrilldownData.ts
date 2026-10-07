@@ -5,7 +5,6 @@
  */
 
 import { computed, nextTick, type ComputedRef, type Ref } from 'vue'
-import { useRoute } from 'vue-router'
 import { useGettext } from 'vue3-gettext'
 import { useRouteParams, type StringRouteParams } from './useRouteParams.js'
 import { useApiData } from './useApiData.js'
@@ -95,7 +94,12 @@ export interface DrilldownResult<T> {
  * // Basic usage with built-in title generation
  * const { data, isLoading, error, fetchData, pageTitle, breadcrumbItems } =
  *   useDrilldownData<CategoryMonthsResponse>({
- *     fetchData: async (params) => fetchCategoryMonths(params),
+ *     fetchData: async (params) => fetchAggregatedTransactions({
+ *       result_id: params.resultId ?? undefined,
+ *       account: params.accountId ?? undefined,
+ *       category_id: params.categoryId ?? undefined,
+ *       group_by: 'month'
+ *     }),
  *     titleBaseKey: 'Category Details',
  *     titleFormat: 'category',
  *     titleExtractor: (data) => ({ categoryId: data.category_id }),
@@ -112,23 +116,16 @@ export interface DrilldownResult<T> {
 export function useDrilldownData<T>(
   config: DrilldownPageConfig<T>
 ): DrilldownResult<T> {
-  const route = useRoute()
   const { $gettext } = useGettext()
 
   const t = (key: string): string => $gettext(key)
 
   // Route params using the new composable
-  const { resultId, accountId, categoryId, monthId, convertParamsToString } = useRouteParams()
-
-  // Create params computed for API calls
-  const stringParams = computed(() => convertParamsToString(route.params))
+  const { resultId, accountId, categoryId, monthId, stringParams } = useRouteParams()
 
   // Use the focused useApiData composable
   const createFetchFn = (): (() => Promise<T>) => {
     return async () => {
-      if (!resultId.value) {
-        throw new Error(t('missingRequiredParameters'))
-      }
       const response = await config.fetchData(stringParams.value)
       return config.transformData ? config.transformData(response) : response
     }

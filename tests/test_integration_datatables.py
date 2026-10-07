@@ -16,16 +16,16 @@ def app_context():
         date_attribute_format="%Y-%m-%d",
         attribute_mapping={"date": "date", "amount": "amount", "currency": "currency", "partner": "partner"},
     )
-    
+
     enricher_pattern_sets = EnricherPatternSets(
         partner={"Groceries": ["TESCO", "Grocery Store"], "Transportation": ["Gas Station"]},
         type={}
     )
-    
+
     app_config = AppConfig(
         enricher_pattern_sets=enricher_pattern_sets
     )
-    
+
     app_args = AppArgs(
         config="config.yml",
         filename="data.csv",
@@ -40,7 +40,7 @@ def app_context():
         ml=False,
         output="html"
     )
-    
+
     return AppContext(app_config, app_args, csv_config)
 
 
@@ -71,31 +71,31 @@ def test_process_rows_timestamps(app_context, csv_rows_with_months):
     """Test that process_rows generates proper timestamps for months."""
     processor = RowsProcessor(app_context)
     responses_dict = processor.process_rows(csv_rows_with_months)
-    
+
     # Extract first account's response
     assert len(responses_dict) > 0, "Should have at least one account"
     response = next(iter(responses_dict.values()))
-    
+
     # Verify we have data
     assert len(response.data) > 0
-    
+
     # Verify all month timestamps are non-zero
     for row in response.data:
         assert row.date.timestamp > 0, f"Month '{row.date.display}' has timestamp 0"
-    
+
     # Collect unique months with timestamps
     month_tuples = set()
     for row in response.data:
         month_tuples.add((row.date.display, row.date.timestamp))
-    
+
     # Sort by timestamp (as done in routes.py)
     sorted_months = [m[0] for m in sorted(month_tuples, key=lambda x: x[1])]
-    
+
     # Verify months are in chronological order
     # Note: The display names are localized month names, so we check timestamp order
     timestamps = [m[1] for m in sorted(month_tuples, key=lambda x: x[1])]
     assert timestamps == sorted(timestamps), "Months should be sorted by timestamp"
-    
+
     # Verify we have 3 months (January, February, March)
     assert len(sorted_months) == 3
 
@@ -103,26 +103,26 @@ def test_process_rows_timestamps(app_context, csv_rows_with_months):
 def test_month_timestamp_values(app_context, csv_rows_with_months):
     """Test that month timestamps correspond to the first day of each month."""
     from whatsthedamage.utils.date_converter import DateConverter
-    
+
     processor = RowsProcessor(app_context)
     responses_dict = processor.process_rows(csv_rows_with_months)
-    
+
     # Extract first account's response
     assert len(responses_dict) > 0, "Should have at least one account"
     response = next(iter(responses_dict.values()))
-    
+
     # Expected timestamps for first day of each month in 2025
     expected_timestamps = {
         1: DateConverter.convert_to_epoch("2025-01-01", "%Y-%m-%d"),
         2: DateConverter.convert_to_epoch("2025-02-01", "%Y-%m-%d"),
         3: DateConverter.convert_to_epoch("2025-03-01", "%Y-%m-%d"),
     }
-    
+
     # Collect actual timestamps
     actual_timestamps = set()
     for row in response.data:
         actual_timestamps.add(row.date.timestamp)
-    
+
     # Verify the timestamps match expected values
     for timestamp in actual_timestamps:
         assert timestamp in expected_timestamps.values(), f"Unexpected timestamp: {timestamp}"

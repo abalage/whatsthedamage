@@ -57,12 +57,13 @@ class CategoryDefinition(BaseModel):
     id: str
     default_name: str
     patterns: List[str]
+    calculated: bool = False
 
 
 AVAILABLE_CATEGORIES = [
-    CategoryDefinition(id="balance", default_name="Balance", patterns=[]),
+    CategoryDefinition(id="balance", default_name="Balance", patterns=[], calculated=True),
     CategoryDefinition(id="clothes", default_name="Clothes", patterns=[]),
-    CategoryDefinition(id="cost_of_living", default_name="Cost of Living", patterns=[]),
+    CategoryDefinition(id="cost_of_living", default_name="Cost of Living", patterns=[], calculated=True),
     CategoryDefinition(id="deposit", default_name="Deposit", patterns=[]),
     CategoryDefinition(id="dining_out", default_name="Dining Out", patterns=[]),
     CategoryDefinition(id="electronics_digital_services", default_name="Electronics and Digital Services", patterns=[]),
@@ -77,7 +78,7 @@ AVAILABLE_CATEGORIES = [
     CategoryDefinition(id="other", default_name="Other", patterns=[]),
     CategoryDefinition(id="payment", default_name="Payment", patterns=[]),
     CategoryDefinition(id="refund", default_name="Refund", patterns=[]),
-    CategoryDefinition(id="total_spendings", default_name="Total Spendings", patterns=[]),
+    CategoryDefinition(id="total_spendings", default_name="Total Spendings", patterns=[], calculated=True),
     CategoryDefinition(id="transfer", default_name="Transfer", patterns=[]),
     CategoryDefinition(id="transportation", default_name="Transportation", patterns=[]),
     CategoryDefinition(id="utility", default_name="Utility", patterns=[]),
@@ -151,6 +152,19 @@ def load_config(config_path: str | None) -> AppConfig:
     except FileNotFoundError:
         logger.error(f"Configuration file '{config_path}' not found")
         exit(1)
+
+
+def get_assignable_categories() -> List[CategoryDefinition]:
+    """Get categories that can be assigned to a transaction.
+
+    Excludes calculated categories (Balance, Cost of Living, Total
+    Spendings), which are computed aggregates and never assigned to
+    individual transactions.
+
+    Returns:
+        List of assignable CategoryDefinition objects.
+    """
+    return [cat for cat in AVAILABLE_CATEGORIES if not cat.calculated]
 
 
 def get_category_by_id(category_id: str) -> Optional[CategoryDefinition]:

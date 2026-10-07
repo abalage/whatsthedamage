@@ -15,7 +15,7 @@ class MockProcessor:
     """Mock processor that provides currency information."""
     def get_currency(self):
         return 'EUR'
-    
+
     def get_currency_from_rows(self, rows):
         """Get currency from rows."""
         return "EUR"
@@ -25,7 +25,7 @@ class MockCSVProcessor:
     """Mock CSV processor with nested processor."""
     def __init__(self):
         self.processor = MockProcessor()
-    
+
     def _read_csv_file(self):
         """Mock method to read CSV file and return rows."""
         from whatsthedamage.models.domain.csv_row import CsvRow
@@ -304,3 +304,111 @@ def custom_ml_config():
     """Fixture for MLConfig with custom confidence threshold."""
     from whatsthedamage.config.ml_config import MLConfig
     return MLConfig(ml_confidence_threshold=0.7)
+
+
+# Authentication test fixtures
+
+@pytest.fixture
+def db_engine():
+    """Create an in-memory SQLite database engine for auth testing."""
+    from sqlalchemy import create_engine
+    from whatsthedamage.models.database.base import Base
+    # Import all models to ensure they're registered with SQLAlchemy metadata
+    from whatsthedamage.models.database.user import User  # noqa: F401
+    from whatsthedamage.models.database.session import Session  # noqa: F401
+    from whatsthedamage.models.database.transaction import Transaction  # noqa: F401
+    from whatsthedamage.models.database.processing_result import ProcessingResult  # noqa: F401
+    from whatsthedamage.models.database.correction import Correction  # noqa: F401
+    from whatsthedamage.models.database.shared_correction import SharedCorrection  # noqa: F401
+    engine = create_engine('sqlite:///:memory:')
+    Base.metadata.create_all(engine)
+    yield engine
+    Base.metadata.drop_all(engine)
+
+
+@pytest.fixture
+def db_session(db_engine):
+    """Create a database session for auth testing."""
+    from sqlalchemy.orm import sessionmaker
+    Session = sessionmaker(bind=db_engine)
+    session = Session()
+    yield session
+    session.close()
+
+
+@pytest.fixture
+def session_factory(db_engine):
+    """Create a session factory for repository testing."""
+    from sqlalchemy.orm import sessionmaker
+    return sessionmaker(bind=db_engine)
+
+
+@pytest.fixture
+def user_repository(session_factory):
+    """Create a UserRepository for testing."""
+    from whatsthedamage.models.repositories.user_repository import SqlAlchemyUserRepository
+    return SqlAlchemyUserRepository(session_factory)
+
+
+@pytest.fixture
+def session_repository(session_factory):
+    """Create a SessionRepository for testing."""
+    from whatsthedamage.models.repositories.session_repository import SqlAlchemySessionRepository
+    return SqlAlchemySessionRepository(session_factory)
+
+
+@pytest.fixture
+def password_service():
+    """Create a PasswordService with test-friendly parameters."""
+    from whatsthedamage.services.password_service import PasswordService
+    return PasswordService(
+        time_cost=2,
+        memory_cost=16384,
+        parallelism=1
+    )
+
+
+@pytest.fixture
+def token_service():
+    """Create a TokenService for testing."""
+    from whatsthedamage.services.token_service import TokenService
+    return TokenService(default_length=32)
+
+
+@pytest.fixture
+def recovery_code_service():
+    """Create a RecoveryCodeService for testing."""
+    from whatsthedamage.services.recovery_code_service import RecoveryCodeService
+    return RecoveryCodeService(code_length=16)
+
+
+@pytest.fixture
+def csrf_service():
+    """Create a CsrfService for testing."""
+    from whatsthedamage.services.csrf_service import CsrfService
+    return CsrfService(token_length=32)
+
+
+@pytest.fixture
+def rate_limit_service():
+    """Create a RateLimitService for testing."""
+    from whatsthedamage.services.rate_limit_service import RateLimitService
+    return RateLimitService(max_attempts=5, window_seconds=900)
+
+
+@pytest.fixture
+def auth_service(user_repository, session_repository, password_service, token_service, recovery_code_service, csrf_service):
+    """Create an AuthenticationService for testing."""
+    from whatsthedamage.services.authentication_service import AuthenticationService
+    return AuthenticationService(
+        user_repository=user_repository,
+        session_repository=session_repository,
+        password_service=password_service,
+        token_service=token_service,
+        recovery_code_service=recovery_code_service,
+        csrf_service=csrf_service,
+        password_min_length=12,
+        session_timeout=3600,
+        remember_me_duration=604800,
+        max_concurrent_sessions=5
+    )

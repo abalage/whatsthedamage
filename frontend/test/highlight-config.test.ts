@@ -97,4 +97,18 @@ describe('Highlight Configuration', () => {
         // excluded takes precedence
         expect(result).toEqual(['highlight-excluded']);
     });
+
+    it('should have a default mapping for the corrected type', () => {
+        expect(DEFAULT_HIGHLIGHT_CONFIG.highlightTypes['corrected']).toBe('highlight-corrected');
+    });
+
+    it('should return highlight-corrected for corrected only', () => {
+        const result = getCssClassesForHighlights(['corrected']);
+        expect(result).toEqual(['highlight-corrected']);
+    });
+
+    it('should return highlight-multiple when corrected is combined with an algorithm', () => {
+        const result = getCssClassesForHighlights(['corrected', 'outlier']);
+        expect(result).toEqual(['highlight-multiple']);
+    });
 });

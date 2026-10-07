@@ -77,19 +77,19 @@ def test_lazy_initialization(container: ServiceContainer) -> None:
     # ResponseFormattingService depends on StatisticalAnalysisService, which depends on ConfigurationService
     assert len(container._services) == 3
     assert 'ResponseFormattingService' in str(list(container._services.keys())[2])
-    
+
     # Configuration service is already in cache (dependency of response formatting service)
     config_service = container.configuration_service
-    
+
     # Still 3 services in cache (no new services added)
     assert len(container._services) == 3
-    
+
     # Access processing service - this will create its dependencies too
     processing_service = container.processing_service
-    
+
     # Now we should have more services (processing service + its dependencies)
     assert len(container._services) > 2
-    
+
     # Verify same instances are returned (singleton behavior)
     assert container.configuration_service is config_service
     assert container.processing_service is processing_service
@@ -99,14 +99,14 @@ def test_lazy_initialization(container: ServiceContainer) -> None:
 def test_web_services_require_flask_app() -> None:
     """Test that web-specific services require Flask app context."""
     container = ServiceContainer()  # No Flask app provided
-    
+
     # These should raise ValueError when no Flask app is provided
     with pytest.raises(ValueError, match="CacheService requires Flask app"):
         _ = container.cache_service
-    
+
     with pytest.raises(ValueError, match="IdMappingService requires Flask app"):
         _ = container.id_mapping_service
-    
+
     # DrilldownResponseService will fail when trying to create IdMappingService dependency
     with pytest.raises(ValueError, match="IdMappingService requires Flask app"):
         _ = container.drilldown_response_service
@@ -116,14 +116,14 @@ def test_web_services_work_with_flask_app() -> None:
     """Test that web-specific services work when Flask app is provided."""
     app = Flask(__name__)
     container = ServiceContainer(flask_app=app)
-    
+
     # These should work with Flask app
     cache_service = container.cache_service
     assert isinstance(cache_service, CacheService)
-    
+
     id_mapping_service = container.id_mapping_service
     assert isinstance(id_mapping_service, IdMappingService)
-    
+
     drilldown_response_service = container.drilldown_response_service
     assert isinstance(drilldown_response_service, DrilldownResponseService)
 
@@ -131,14 +131,14 @@ def test_web_services_work_with_flask_app() -> None:
 def test_get_service_method() -> None:
     """Test the generic get_service method."""
     container = ServiceContainer()
-    
+
     # Test getting services via the generic method
     config_service = container.get_service(ConfigurationService)
     assert isinstance(config_service, ConfigurationService)
-    
+
     response_formatting_service = container.get_service(ResponseFormattingService)
     assert isinstance(response_formatting_service, ResponseFormattingService)
-    
+
     # Verify singleton behavior
     assert container.get_service(ConfigurationService) is config_service
     assert container.get_service(ResponseFormattingService) is response_formatting_service
@@ -147,10 +147,10 @@ def test_get_service_method() -> None:
 def test_unknown_service_raises_error() -> None:
     """Test that requesting unknown service raises ValueError."""
     container = ServiceContainer()
-    
+
     class UnknownService:
         pass
-    
+
     with pytest.raises(ValueError, match="Unknown service class"):
         container.get_service(UnknownService)
 
@@ -159,11 +159,11 @@ def test_service_container_with_flask_app_factory() -> None:
     """Test creating service container with Flask app via factory."""
     app = Flask(__name__)
     container = create_service_container(flask_app=app)
-    
+
     # Should be able to get web services
     cache_service = container.cache_service
     assert isinstance(cache_service, CacheService)
-    
+
     # Should also be able to get regular services
     config_service = container.configuration_service
     assert isinstance(config_service, ConfigurationService)

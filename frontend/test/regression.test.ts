@@ -83,7 +83,7 @@ describe('filterOutliers', () => {
   test('should remove one min and one max when they are different', () => {
     const points = createPoints([0, 1, 2, 3, 4], [10, 20, 30, 40, 50]);
     const result = filterOutliers(points);
-    
+
     expect(result).toHaveLength(3);
     // Should have removed x=0 (min y=10) and x=4 (max y=50)
     expect(result.map((p: RegressionPoint) => p.x)).toContain(1);
@@ -96,14 +96,14 @@ describe('filterOutliers', () => {
   test('should remove only one point when min and max are the same', () => {
     const points = createPoints([0, 1, 2], [100, 100, 100]);
     const result = filterOutliers(points);
-    
+
     expect(result).toHaveLength(2);
   });
 
   test('should handle negative values', () => {
     const points = createPoints([0, 1, 2], [-10, 0, 10]);
     const result = filterOutliers(points);
-    
+
     expect(result).toHaveLength(1);
     expect(result[0].y).toBe(0);
   });
@@ -111,7 +111,7 @@ describe('filterOutliers', () => {
   test('should handle floating point values', () => {
     const points = createPoints([0, 1, 2], [1.5, 2.5, 3.5]);
     const result = filterOutliers(points);
-    
+
     expect(result).toHaveLength(1);
     expect(result[0].y).toBe(2.5);
   });
@@ -119,7 +119,7 @@ describe('filterOutliers', () => {
   test('should preserve points when all have same value and count is MIN_POINTS', () => {
     const points = createPoints([0, 1], [50, 50]);
     const result = filterOutliers(points);
-    
+
     expect(result).toHaveLength(2);
   });
 });
@@ -132,7 +132,7 @@ describe('calculateRegressionSums', () => {
   test('should calculate correct sums for single point', () => {
     const points = createPoints([5], [10]);
     const result = calculateRegressionSums(points);
-    
+
     expect(result.sumX).toBe(5);
     expect(result.sumY).toBe(10);
     expect(result.sumXY).toBe(50);
@@ -142,7 +142,7 @@ describe('calculateRegressionSums', () => {
   test('should calculate correct sums for multiple points', () => {
     const points = createPoints([0, 1, 2], [0, 1, 4]);
     const result = calculateRegressionSums(points);
-    
+
     // sumX = 0 + 1 + 2 = 3
     // sumY = 0 + 1 + 4 = 5
     // sumXY = 0*0 + 1*1 + 2*4 = 0 + 1 + 8 = 9
@@ -156,7 +156,7 @@ describe('calculateRegressionSums', () => {
   test('should handle negative values', () => {
     const points = createPoints([-1, 0, 1], [-2, 0, 2]);
     const result = calculateRegressionSums(points);
-    
+
     // sumX = -1 + 0 + 1 = 0
     // sumY = -2 + 0 + 2 = 0
     // sumXY = (-1 * -2) + (0 * 0) + (1 * 2) = 2 + 0 + 2 = 4
@@ -169,7 +169,7 @@ describe('calculateRegressionSums', () => {
 
   test('should return zeros for empty array', () => {
     const result = calculateRegressionSums([]);
-    
+
     expect(result.sumX).toBe(0);
     expect(result.sumY).toBe(0);
     expect(result.sumXY).toBe(0);
@@ -187,7 +187,7 @@ describe('calculateSlopeAndIntercept', () => {
     // sumX = 3, sumY = 6, sumXY = 10, sumX2 = 5, n = 3
     const sums = { sumX: 3, sumY: 6, sumXY: 10, sumX2: 5 };
     const result = calculateSlopeAndIntercept(sums, 3);
-    
+
     expect(roundTo10Decimal(result.slope)).toBe(2);
     expect(roundTo10Decimal(result.intercept)).toBe(0);
   });
@@ -200,7 +200,7 @@ describe('calculateSlopeAndIntercept', () => {
     // sumX2 = 0+1+4 = 5
     const sums = { sumX: 3, sumY: 18, sumXY: 20, sumX2: 5 };
     const result = calculateSlopeAndIntercept(sums, 3);
-    
+
     expect(roundTo10Decimal(result.slope)).toBe(1);
     expect(roundTo10Decimal(result.intercept)).toBe(5);
   });
@@ -209,7 +209,7 @@ describe('calculateSlopeAndIntercept', () => {
     // y = 5 (constant), points: (0,5), (1,5), (2,5)
     const sums = { sumX: 3, sumY: 15, sumXY: 15, sumX2: 5 };
     const result = calculateSlopeAndIntercept(sums, 3);
-    
+
     expect(roundTo10Decimal(result.slope)).toBe(0);
     expect(roundTo10Decimal(result.intercept)).toBe(5);
   });
@@ -222,7 +222,7 @@ describe('calculateSlopeAndIntercept', () => {
     // sumX2 = 0+1+4 = 5
     const sums = { sumX: 3, sumY: 27, sumXY: 25, sumX2: 5 };
     const result = calculateSlopeAndIntercept(sums, 3);
-    
+
     expect(roundTo10Decimal(result.slope)).toBe(-1);
     expect(roundTo10Decimal(result.intercept)).toBe(10);
   });
@@ -231,7 +231,7 @@ describe('calculateSlopeAndIntercept', () => {
     // Vertical line or single point: sumX2 * n = sumX * sumX
     const sums = { sumX: 2, sumY: 4, sumXY: 4, sumX2: 2 };
     const result = calculateSlopeAndIntercept(sums, 2);
-    
+
     expect(result.slope).toBe(REGRESSION_CONFIG.DEFAULT_SLOPE);
     expect(result.intercept).toBe(2); // sumY / n = 4 / 2 = 2
   });
@@ -244,7 +244,7 @@ describe('calculateSlopeAndIntercept', () => {
 describe('calculateLinearRegression', () => {
   test('should return default values for empty array', () => {
     const result = calculateLinearRegression([]);
-    
+
     expect(result.slope).toBe(REGRESSION_CONFIG.DEFAULT_SLOPE);
     expect(result.intercept).toBe(REGRESSION_CONFIG.DEFAULT_INTERCEPT);
   });
@@ -252,7 +252,7 @@ describe('calculateLinearRegression', () => {
   test('should return default slope for single point', () => {
     const points = createPoints([5], [10]);
     const result = calculateLinearRegression(points);
-    
+
     expect(result.slope).toBe(REGRESSION_CONFIG.DEFAULT_SLOPE);
     expect(result.intercept).toBe(10);
   });
@@ -262,7 +262,7 @@ describe('calculateLinearRegression', () => {
     // Line should be y = 2x + 0
     const points = createPoints([0, 2], [0, 4]);
     const result = calculateLinearRegression(points);
-    
+
     expect(roundTo10Decimal(result.slope)).toBe(2);
     expect(roundTo10Decimal(result.intercept)).toBe(0);
   });
@@ -272,7 +272,7 @@ describe('calculateLinearRegression', () => {
     // Line should be y = 2x + 0
     const points = createPoints([0, 1, 2], [0, 2, 4]);
     const result = calculateLinearRegression(points);
-    
+
     expect(roundTo10Decimal(result.slope)).toBe(2);
     expect(roundTo10Decimal(result.intercept)).toBe(0);
   });
@@ -284,7 +284,7 @@ describe('calculateLinearRegression', () => {
     // These points don't form a perfect line, but we can verify the function works
     const points = createPoints([0, 1, 2, 3, 4], [100, 2, 3, 4, 101]);
     const result = calculateLinearRegression(points, { excludeOutliers: true });
-    
+
     // With points (0,100), (2,3), (3,4):
     // The line should have a negative slope (decreasing from 100 to 4)
     expect(result.slope).toBeLessThan(0);
@@ -297,7 +297,7 @@ describe('calculateLinearRegression', () => {
     // Only 2 points, excluding min/max would leave 0
     const points = createPoints([0, 1], [10, 20]);
     const result = calculateLinearRegression(points, { excludeOutliers: true });
-    
+
     // Should fall back to using all points
     expect(roundTo10Decimal(result.slope)).toBe(10);
     expect(roundTo10Decimal(result.intercept)).toBe(10);
@@ -307,7 +307,7 @@ describe('calculateLinearRegression', () => {
     // Simulating cost of living over 5 months: Jan=100, Feb=120, Mar=110, Apr=130, May=140
     const points = createPoints([0, 1, 2, 3, 4], [100, 120, 110, 130, 140]);
     const result = calculateLinearRegression(points);
-    
+
     // Slope should be positive (increasing trend)
     expect(result.slope).toBeGreaterThan(0);
     // Intercept should be close to first value
@@ -318,7 +318,7 @@ describe('calculateLinearRegression', () => {
   test('should handle negative values', () => {
     const points = createPoints([0, 1, 2], [-10, -5, 0]);
     const result = calculateLinearRegression(points);
-    
+
     expect(roundTo10Decimal(result.slope)).toBe(5);
     expect(roundTo10Decimal(result.intercept)).toBe(-10);
   });
@@ -327,7 +327,7 @@ describe('calculateLinearRegression', () => {
     // x values: 10, 20, 30 with y values: 5, 10, 15
     const points = createPoints([10, 20, 30], [5, 10, 15]);
     const result = calculateLinearRegression(points);
-    
+
     expect(roundTo10Decimal(result.slope)).toBe(0.5);
     expect(roundTo10Decimal(result.intercept)).toBe(0);
   });

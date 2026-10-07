@@ -77,6 +77,7 @@ const earthTonesTheme: Theme = {
       pareto: '#ffcd60',  //narancs
       excluded: '#b2b2b2', //szürke
       multiple: '#B48EAD', //piros
+      corrected: '#a8cdd8',
     },
   },
 };

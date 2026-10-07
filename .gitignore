@@ -188,3 +188,4 @@ memory-bank/
 
 # ML test data
 src/whatsthedamage/static/model-rf-*
+app.db

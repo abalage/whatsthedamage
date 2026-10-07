@@ -20,18 +20,18 @@ const getIconClass = (type: string) => {
 
 <template>
   <div class="feedback-container">
-    <div 
-      v-for="message in feedback.messages" 
-      :key="message.id" 
-      :class="getAlertClass(message.type)" 
+    <div
+      v-for="message in feedback.messages"
+      :key="message.id"
+      :class="getAlertClass(message.type)"
       role="alert"
     >
       <i :class="['bi', getIconClass(message.type), 'me-2']"></i>
       {{ message.message }}
-      <button 
-        type="button" 
-        class="btn-close" 
-        aria-label="Close" 
+      <button
+        type="button"
+        class="btn-close"
+        aria-label="Close"
         @click="feedback.dismissMessage(message.id)"
       ></button>
     </div>

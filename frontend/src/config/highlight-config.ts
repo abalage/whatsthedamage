@@ -21,6 +21,11 @@ export interface HighlightConfig {
 
 /**
  * Default highlight configuration
+ *
+ * 'corrected' is a frontend-only semantic type marking user-corrected
+ * transaction cells on the Transactions page; the others come from backend
+ * statistical analysis. A cell carrying both would resolve to
+ * multipleHighlightClass.
  */
 export const DEFAULT_HIGHLIGHT_CONFIG: HighlightConfig = {
     highlightTypes: {
@@ -28,6 +33,7 @@ export const DEFAULT_HIGHLIGHT_CONFIG: HighlightConfig = {
         iqr: 'highlight-outlier',
         pareto: 'highlight-pareto',
         excluded: 'highlight-excluded',
+        corrected: 'highlight-corrected',
     },
     multipleHighlightClass: 'highlight-multiple',
 };

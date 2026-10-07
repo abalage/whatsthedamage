@@ -77,6 +77,7 @@ const softPastelTheme: Theme = {
       pareto: '#ffdebe',
       excluded: '#F5F5F5',
       multiple: '#ffcaca',
+      corrected: '#d4e9f7',
     },
   },
 };

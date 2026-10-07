@@ -1,5 +1,54 @@
 # Changelog
 
+## [Unreleased]
+
+User persistence and authentication release. Processing results and transactions are now stored per user in a relational database instead of the cache-only session flow.
+
+### BREAKING CHANGES
+- **Authentication Required**: All transaction, processing result, and correction endpoints now require an authenticated user; data is scoped per user account (ad3488c).
+- **New Date Protocol**: Transaction dates are stored as datetime values and months are addressed as `YYYY-MM` in API contracts and drilldown keys (9836ac7).
+- **API Restructuring**: `POST /api/v2/process` renamed to `POST /api/v2/processing-results`; results endpoints moved under `/api/v2/processing-results` (9836ac7).
+- **Drilldown Endpoint Removal**: Removed the per-processing-result drilldown endpoints; replaced by `GET /api/v2/transactions/aggregate` with grouping by category, month, and account (c08fc1c).
+- **Optional result_id**: `result_id` is optional across transaction views; when omitted, all of the user's transactions are shown (12a520d).
+
+### Added
+- **User Management**: Registration, login, logout, and password reset endpoints under `/api/v2/auth` (ad3488c, 7d568d6).
+- **Password Recovery**: One-time recovery codes for password reset, with frontend flow to display and redeem them (7d568d6).
+- **Security Services**: Argon2 password hashing (argon2-cffi), DB-backed sessions with hashed tokens, CSRF token protection, and per-endpoint rate limiting (ad3488c).
+- **Database Persistence**: SQLAlchemy 2.0 ORM with Alembic migrations for users, sessions, transactions, processing results, corrections, and shared corrections; configurable via `WHATSTHEDAMAGE_DATABASE_URI` (default SQLite) (ad3488c, 9836ac7).
+- **Repository Pattern**: Dedicated data access layer in `models/repositories/` with a generic base repository; services no longer issue queries directly (ad3488c).
+- **Transaction CRUD**: Full REST endpoints for transactions with filtering, sorting, and limit/offset pagination (9836ac7, e1c5598).
+- **Transaction Corrections**: Users can correct transaction metadata and share corrections; full CRUD under `/api/v2/corrections` (9836ac7).
+- **CSV Profiles**: Bank-format profiles served via `/api/v2/csv-profiles` endpoints (9836ac7).
+- **Pagination Support**: Frontend fetches large datasets in 2,000-row pages, capped at 50,000 rows with a visible truncation warning (e1c5598).
+- **Frontend Authentication**: Login, Register, and ForgotPassword pages, auth Pinia store, router guards with `requiresAuth`/`requiresGuest` meta, and a login/logout menu in the layout (ad3488c, 7d568d6, 44a3b5d).
+- **Import Page**: Dedicated `/import` page for the CSV import flow (9836ac7).
+- **Inline Transaction Editing**: Merchant, category, and notice fields are editable on the transactions page; corrections are persisted per user account (27dbef9).
+- **Transaction Set Ranges**: Processing results expose the date ranges their transactions are made from (019be76).
+- **Correction Auto-Apply**: Merchant rules (case-insensitive exact match on `original_partner`) are applied automatically to future imports; rule-mode corrections upsert the merchant rule while exception-mode corrections apply to the edited transaction only (d552cde).
+- **Undo Corrections**: Transactions can be filtered to corrected ones and their corrections undone from the UI (a9957a0).
+- **Correction Sharing Opt-in**: Settings page with an opt-in toggle (default off) for sharing corrections; shared corrections are anonymized (SHA-256 hashed partner names, no user or raw transaction data) and retained permanently; the opt-in can be revoked anytime (45f98f5).
+- **API Security**: Blueprint-level authentication middleware on all `/api/v2/*` endpoints with an explicit public allowlist, security headers on every response (CSP, HSTS, X-Frame-Options, nosniff, Referrer-Policy, `Cache-Control: no-store`), extended rate limiting (registration, general per-IP API, and heavy upload/statistics buckets), and configurable CORS origins (ec61b0c).
+- **Data Retention and Account Deletion**: `DELETE /api/v2/auth/account` schedules account deletion with password confirmation (7-day grace period, configurable via `WHATSTHEDAMAGE_ACCOUNT_DELETION_GRACE_DAYS`; logging in cancels it); a retention job (`flask --app whatsthedamage.app retention-purge`, run periodically e.g. via cron) permanently deletes accounts past their grace period and the accounts of users inactive for 6 months (configurable via `WHATSTHEDAMAGE_RETENTION_INACTIVITY_DAYS`) together with all their data; anonymized shared corrections are retained permanently. Settings page gained a delete-account section; retention policy published in `docs/retention-policy.md`.
+
+### Changed
+- **Shared Corrections Schema**: Dropped the unused `shared_corrections.corrected_notice` column (notices are never shared; merchant names and categories only) via Alembic migration 008, which also adds `users.scheduled_deletion_at`.
+- **Legal and Privacy Pages**: The data processing/retention sections now reflect the per-user persistence, the 6-month inactivity purge, account deletion with grace period, and the permanent retention of anonymized shared corrections, and link to the published retention policy.
+- **Currency as Account Metadata**: Currency belongs to account metadata; summaries show raw numbers (4524be9).
+- **OpenAPI Schema**: Regenerated `/api/v2/openapi.json` to match the current API: documents the auth, processing-results, transaction, aggregate, and correction endpoints with cookie security and request/response schemas; removed the deleted `/results/...` drilldown paths and stale response models; added route-coverage tests that fail when a registered v2 route or method is missing from the schema.
+- **API Documentation**: Rewrote `API.md` to match the current API: authentication endpoints with session/CSRF usage, processing-results, transaction CRUD with pagination filters, aggregation, corrections, and the optional `result_id`; removed the deleted drilldown endpoints and `cache_ttl`; updated the error format and security considerations (bd3eec2).
+- **README**: Updated user-facing highlights: user accounts with recovery-code password reset, per-user transaction persistence with import deduplication, corrections applied to future imports, database requirements for web/API deployments (SQLite default, `WHATSTHEDAMAGE_DATABASE_URI`, Docker volume note), and the new recovery-code limitation replacing the removed "no authentication" limitation.
+- **Documentation**: Updated ARCHITECTURE.md and AGENTS.md to reflect user persistence, authentication, the repository layer, new endpoints, and the removal of DataTables/jQuery references (bd3eec2).
+- **Atomic Import**: CSV import is atomic via a unit-of-work pattern over the repositories, with performance improvements (2a4ccf8).
+- **Categories Page**: Performance improvements to the categories page UI (076ceda).
+
+### Fixed
+- **Drilldowns**: Restored drilldown functionalities against the new transaction store (c08fc1c).
+- **Cell Highlights**: Restored the cell highlight feature (ebafbf0).
+- **Dead Code**: Removed dead code and adjusted result_id handling (e276727, ee8adf1).
+- **Category Filter Dropdown**: Fixed the category dropdown filter on the transactions page; filtering by category now matches the server-side category ids, including an explicit uncategorized option (2615869).
+- **npm Lock File**: Regenerated `frontend/package-lock.json` with npm 11.19 to include the `@emnapi/core` and `@emnapi/runtime` peer dependencies of `@napi-rs/wasm-runtime`, fixing `npm ci` failures on Node 24.x in CI (02484aa).
+
 ## [0.99.0] - 2026-07-27
 
 ### BREAKING CHANGES
@@ -79,7 +128,7 @@ This is a big upgrade which decouples the frontend from Flask + jinja2 to Vue3.
 - **ML Metrics**: Enhanced `Metrics` class with detailed analysis including confusion matrix, confidence analysis, and merchant error analysis.
 
 ### Changed
-- **ML Model**: New model version built on more data. The model's features have been also reviwed and optimized to improve its accuracy. 
+- **ML Model**: New model version built on more data. The model's features have been also reviwed and optimized to improve its accuracy.
 - **ML Training**: Training now automatically splits data, validates class distribution, and exports test data for metrics validation.
 - **ML Configuration**: Moved from hardcoded values to centralized `MLConfig` with sensible defaults and validation.
 - **ML Text Processing**: Integrated `TextCorrectionService` for consistent partner field cleaning between training and inference. Regexp engine also uses it.

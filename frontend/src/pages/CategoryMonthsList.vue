@@ -4,7 +4,7 @@ import { useGettext } from 'vue3-gettext'
 import { useStatisticalStore } from '../stores/statistical.js'
 import { useCategoriesStore } from '../stores/categories.js'
 import { useDrilldownData } from '../composables/useDrilldownData.js'
-import { useRoute, RouterLink } from 'vue-router'
+import { RouterLink } from 'vue-router'
 import type { BreadcrumbItem } from '../composables/useBreadcrumbs.js'
 import BreadcrumbNavigation from '../components/layout/BreadcrumbNavigation.vue'
 import LoadingState from '../components/layout/LoadingState.vue'
@@ -13,22 +13,20 @@ import PageHeader from '../components/layout/PageHeader.vue'
 import VueDataTable from '../components/data/VueDataTable.vue'
 import TableLink from '../components/data/TableLink.vue'
 import type { Column, AggregateRowConfig } from '../components/data/VueDataTable.vue'
-import { fetchCategoryMonths } from '../js/api.js'
-import type { CategoryMonthsApiResponse } from '../types/api.js'
-import { formatMonthYear } from '../js/dateUtils.js'
+import { fetchAggregatedTransactions } from '../js/api.js'
+import { buildResultQuery } from '../js/routeUtils.js'
+import { useResultQuery } from '../composables/useResultQuery.js'
+import type { AggregatedTransactionsResponse, TransactionListItem } from '../types/api.js'
+import { formatMonthYear, extractMonthKey, createMonthDate } from '../js/dateUtils.js'
 import BarChart from '../components/charts/BarChart.vue'
 
 const { $gettext } = useGettext()
 
-const route = useRoute()
 const statisticalStore = useStatisticalStore()
 const categoriesStore = useCategoriesStore()
 
-// Helper to safely get route params
-const getRouteParam = (param: string): string | null => {
-  const value = route.params[param]
-  return typeof value === 'string' ? value : null
-}
+// Optional resultId filter, carried in the query string
+const resultQuery = useResultQuery()
 
 // Table columns
 const columns: Column[] = [
@@ -37,12 +35,15 @@ const columns: Column[] = [
     title: $gettext('Month'),
     component: TableLink,
     componentProps: (value: unknown, row?: Record<string, unknown>) => {
-      const resultId = String(row?.resultId || '')
       const accountId = String(row?.accountId || '')
       const categoryId = String(row?.categoryId || '')
       const monthId = extractMonthIdFromData(row ?? {})
       return {
-        to: { name: 'category-month-transactions', params: { resultId, accountId, categoryId, monthId } },
+        to: {
+          name: 'category-month-transactions',
+          params: { accountId, categoryId, monthId },
+          query: buildResultQuery(String(row?.resultId || ''))
+        },
         class: 'clickable',
         children: String(value)
       }
@@ -57,12 +58,15 @@ const columns: Column[] = [
 
 // Extract month_id from row data
 function extractMonthIdFromData(row: Record<string, unknown>): string {
-  const cellUrl = row.cell_url as string | undefined
-  const monthTimestamp = row.month_timestamp as number | string | undefined
-  if (cellUrl) {
-    const match = cellUrl.match(/months\/([^/]+)\/transactions/)
-    if (match) return match[1]
+  const rowId = row.row_id as string | undefined
+
+  // Use row_id (which is the month key in YYYY-MM format) as the month_id
+  if (rowId) {
+    return rowId
   }
+
+  // Fallback to month_timestamp if row_id is not available
+  const monthTimestamp = row.month_timestamp as number | string | undefined
   return String(monthTimestamp || '')
 }
 
@@ -76,48 +80,81 @@ const {
   categoryId,
   pageTitle,
   breadcrumbItems
-} = useDrilldownData<CategoryMonthsApiResponse>({
+} = useDrilldownData<AggregatedTransactionsResponse>({
   fetchData: async (params) => {
-    if (!params.resultId || !params.accountId || !params.categoryId) {
+    if (!params.accountId || !params.categoryId) {
       throw new Error('Missing required parameters for category months fetch')
     }
-    return fetchCategoryMonths(params)
+    return fetchAggregatedTransactions({
+      result_id: params.resultId ?? undefined,
+      account: params.accountId,
+      category_id: params.categoryId,
+      group_by: 'month',
+      algorithms: statisticalStore.algorithms,
+      direction: statisticalStore.direction
+    })
   },
   titleBaseKey: 'Category Details',
   titleFormat: 'category',
-  titleExtractor: (data: CategoryMonthsApiResponse) => ({
+  titleExtractor: (data: AggregatedTransactionsResponse) => ({
     categoryId: data.category_id
   }),
-  breadcrumbItems: (data: CategoryMonthsApiResponse | null): BreadcrumbItem[] => [
+  breadcrumbItems: (data: AggregatedTransactionsResponse | null): BreadcrumbItem[] => [
     { name: $gettext('Home'), to: '/' },
-    { name: $gettext('Categories'), to: { name: 'results', query: { resultId: getRouteParam('resultId') } } },
-    { name: data ? categoriesStore.getCategoryDisplayName(data.category_id) : $gettext('Category Details'), active: true }
+    { name: $gettext('Categories'), to: { name: 'results', query: resultQuery() } },
+    { name: data ? categoriesStore.getCategoryDisplayName(data.category_id || '') : $gettext('Category Details'), active: true }
   ],
   errorMessageKey: 'categoryMonthsLoadError'
 })
 
+// Helper function to format month key (YYYY-MM) to display format
+function formatMonthKey(monthKey: string): string {
+  // monthKey is in YYYY-MM format
+  const normalized = extractMonthKey(monthKey)
+  const monthDate = createMonthDate(normalized)
+  if (monthDate) {
+    return formatMonthYear(monthDate.getTime() / 1000)
+  }
+  return monthKey
+}
+
+// Helper function to calculate total for a group of transactions
+function calculateTotalForTransactions(txns: TransactionListItem[]): number {
+  return txns.reduce((sum, txn) => sum + (txn.amount || 0), 0)
+}
+
 // Table data
 const tableData = computed(() => {
   if (!categoryMonthsData.value) return []
-  return categoryMonthsData.value.data.map(month => ({
-    month: formatMonthYear(month.month_timestamp),
-    total: month.total.raw,
-    total_display: month.total.display,
-    row_id: month.row_id,
-    cell_url: month.cell_url,
-    month_timestamp: month.month_timestamp,
-    resultId: resultId.value,
-    accountId: accountId.value,
-    categoryId: categoryId.value,
-    _rowIds: {
-      total: month.row_id // Map total column to its row_id for cell-level highlighting
+
+  const groups = categoryMonthsData.value.groups || {}
+
+  return Object.entries(groups).map(([monthKey, txns]) => {
+    const total = calculateTotalForTransactions(txns)
+    const normalizedMonthKey = extractMonthKey(monthKey)
+    const monthDate = createMonthDate(normalizedMonthKey)
+    const monthTimestamp = monthDate ? monthDate.getTime() / 1000 : 0
+
+    return {
+      month: formatMonthKey(monthKey),
+      total: total,
+      total_display: total.toFixed(2),
+      row_id: normalizedMonthKey,
+      cell_url: `#`,
+      month_timestamp: monthTimestamp,
+      resultId: resultId.value,
+      accountId: accountId.value,
+      categoryId: categoryId.value,
+      _rowIds: {
+        total: normalizedMonthKey
+      }
     }
-  }))
+  })
 })
 
 // Aggregate row configuration for the table
 const aggregateRows = computed<AggregateRowConfig[]>(() => {
-  if (!categoryMonthsData.value || categoryMonthsData.value.data.length === 0) return []
+  if (!categoryMonthsData.value || !categoryMonthsData.value.groups || Object.keys(categoryMonthsData.value.groups).length === 0) return []
 
   return [
     {
@@ -183,6 +220,11 @@ const chartCategories = computed(() => [
 onMounted(() => {
   fetchData()
 })
+
+// Refetch when the resultId query filter changes while the page is reused
+watch(resultId, () => {
+  fetchData()
+})
 </script>
 
 <template>
@@ -198,7 +240,7 @@ onMounted(() => {
       <PageHeader :title="pageTitle">
         <template #actions>
           <RouterLink
-            :to="{ name: 'results', query: { resultId: getRouteParam('resultId') } }"
+            :to="{ name: 'results', query: buildResultQuery(resultId) }"
             class="btn bg-surface-secondary text-on-dark border-secondary mt-3 mb-3"
           >
             {{ $gettext('Back to Categories') }}
@@ -211,9 +253,9 @@ onMounted(() => {
         <!-- Account & Table Card -->
         <div class="card flex-grow-1" style="min-width: 400px">
           <div class="card-header">
-            {{ $gettext('Account') }}: {{ categoryMonthsData.account_formatted_id }}
-            <span v-if="categoryMonthsData.account_currency" class="bg-surface-secondary text-on-dark px-2 py-1 rounded text-xs">
-              {{ categoryMonthsData.account_currency }}
+            {{ $gettext('Account') }}: {{ accountId || $gettext('Unknown') }}
+            <span v-if="categoryMonthsData?.account" class="bg-surface-secondary text-on-dark px-2 py-1 rounded text-xs">
+              {{ categoryMonthsData?.account }}
             </span>
           </div>
           <div class="card-body">

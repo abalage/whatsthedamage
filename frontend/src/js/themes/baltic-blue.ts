@@ -77,6 +77,7 @@ const balticBlueTheme: Theme = {
       pareto: '#a5be00',
       excluded: '#b2b2b2',
       multiple: '#e74c3c',
+      corrected: '#8ecae6',
     },
   },
 };

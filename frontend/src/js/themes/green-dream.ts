@@ -77,6 +77,7 @@ const defaultTheme: Theme = {
       pareto: '#ffc697',
       excluded: '#b2b2b2',
       multiple: '#e35b69',
+      corrected: '#a3d9e8',
     },
   },
 };

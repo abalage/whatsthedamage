@@ -4,12 +4,20 @@
 #
 #    pip-compile --extra=web --output-file=requirements-web.txt pyproject.toml
 #
+alembic==1.13.2
+    # via whatsthedamage (pyproject.toml)
 annotated-types==0.7.0
     # via pydantic
+argon2-cffi==25.1.0
+    # via whatsthedamage (pyproject.toml)
+argon2-cffi-bindings==26.1.0
+    # via argon2-cffi
 blinker==1.9.0
     # via flask
 cachelib==0.13.0
     # via flask-caching
+cffi==2.1.1
+    # via argon2-cffi-bindings
 click==8.3.1
     # via flask
 cloudpickle==3.1.2
@@ -28,17 +36,22 @@ gunicorn==23.0.0
 imbalanced-learn==0.14.1
     # via whatsthedamage (pyproject.toml)
 itsdangerous==2.2.0
-    # via flask
+    # via
+    #   flask
+    #   whatsthedamage (pyproject.toml)
 jinja2==3.1.6
     # via flask
 joblib==1.6.0
     # via
     #   imbalanced-learn
     #   scikit-learn
+mako==1.4.1
+    # via alembic
 markupsafe==3.0.3
     # via
     #   flask
     #   jinja2
+    #   mako
     #   werkzeug
 numpy==2.4.2
     # via
@@ -55,6 +68,8 @@ pandas==3.0.0
     # via whatsthedamage (pyproject.toml)
 prettytable==3.18.0
     # via skops
+pycparser==3.0
+    # via cffi
 pydantic==2.12.5
     # via whatsthedamage (pyproject.toml)
 pydantic-core==2.41.5
@@ -83,14 +98,20 @@ sklearn-compat==0.1.5
     # via imbalanced-learn
 skops==0.14.0
     # via whatsthedamage (pyproject.toml)
+sqlalchemy==2.0.36
+    # via
+    #   alembic
+    #   whatsthedamage (pyproject.toml)
 threadpoolctl==3.6.0
     # via
     #   imbalanced-learn
     #   scikit-learn
 typing-extensions==4.15.0
     # via
+    #   alembic
     #   pydantic
     #   pydantic-core
+    #   sqlalchemy
     #   typing-inspection
 typing-inspection==0.4.2
     # via pydantic

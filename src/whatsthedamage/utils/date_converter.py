@@ -136,3 +136,35 @@ class DateConverter:
         """
         dt = DateConverter.parse_to_datetime(date_value, date_format)
         return dt.month
+
+    @staticmethod
+    def parse_to_datetime_utc(date_value: str | int | float) -> datetime:
+        """Parse date string or epoch to naive datetime (UTC).
+
+        Accepts:
+        - Epoch timestamp: integer or string of integer (seconds since 1970-01-01 UTC)
+        - ISO format: YYYY-MM-DD string
+
+        Returns:
+            datetime: Naive datetime in UTC
+
+        Raises:
+            ValueError: If date_value cannot be parsed
+        """
+        # Handle epoch timestamp (as string or numeric)
+        if isinstance(date_value, (int, float)) or (isinstance(date_value, str) and date_value.lstrip('-').isdigit()):
+            timestamp = int(date_value)
+            return datetime.fromtimestamp(timestamp, tz=timezone.utc).replace(tzinfo=None)
+
+        # Handle ISO format (YYYY-MM-DD)
+        try:
+            return datetime.strptime(date_value, '%Y-%m-%d')
+        except ValueError:
+            pass
+
+        # Handle other formats (could extend as needed)
+        # For CSV formats, use parse_to_datetime() with format parameter
+        try:
+            return DateConverter.parse_to_datetime(date_value, '%Y-%m-%d')
+        except ValueError:
+            raise ValueError(f"Cannot parse date: {date_value}")

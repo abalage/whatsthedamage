@@ -1,9 +1,30 @@
 """Test cases for the new statistical analysis controls feature."""
 
-from whatsthedamage.services.statistical_analysis_service import StatisticalAnalysisService, AnalysisDirection
-from whatsthedamage.models.domain.dt_models import AggregatedRow, DisplayRawField, DateField, StatisticalMetadata
+from datetime import datetime
+from types import SimpleNamespace
+
+from whatsthedamage.services.statistical_analysis_service import (
+    StatisticalAnalysisService,
+    AnalysisDirection,
+)
+from whatsthedamage.models.domain.dt_models import (
+    AggregatedRow,
+    DisplayRawField,
+    DateField,
+    StatisticalMetadata,
+)
 from whatsthedamage.models.domain.account import Account
 import uuid
+
+
+def _make_transaction(account, category, amount, year=2024, month=1):
+    """Create a Transaction-like object for analysis tests."""
+    return SimpleNamespace(
+        account=account,
+        category_id=category,
+        amount=amount,
+        date=datetime(year, month, 15),
+    )
 
 def test_recalculate_highlights_method():
     """Test the compute_statistical_metadata method in StatisticalAnalysisService."""
@@ -117,11 +138,131 @@ def test_recalculate_highlights_with_both_algorithms():
     highlight_types = [h.highlight_types[0] for h in result.highlights]
     assert any(ht in ['outlier', 'pareto'] for ht in highlight_types)
 
-def test_recalculate_statistics_route():
-    """Test the recalculate-statistics route functionality."""
-    # This would be a functional test that requires Flask test client
-    # For now, we'll just test the service method that the route calls
-    pass
+def test_compute_highlights_from_transactions_columns_direction():
+    """Test Pareto analysis with columns direction (categories within months)."""
+    service = StatisticalAnalysisService()
+    transactions = [
+        _make_transaction('acc1', 'grocery', -100.0),
+        _make_transaction('acc1', 'utilities', -50.0),
+        _make_transaction('acc1', 'entertainment', -200.0),
+    ]
+
+    highlights = service.compute_highlights_from_transactions(
+        transactions,
+        algorithms=['pareto'],
+        direction='columns'
+    )
+
+    # Pareto marks entertainment (200) and grocery (100) as top contributors
+    assert highlights.get('acc1|2024-01|entertainment') == ['pareto']
+    assert highlights.get('acc1|2024-01|grocery') == ['pareto']
+    assert 'acc1|2024-01|utilities' not in highlights
+
+
+def test_compute_highlights_from_transactions_rows_direction():
+    """Test IQR analysis with rows direction (months within categories)."""
+    service = StatisticalAnalysisService()
+    transactions = [
+        _make_transaction('acc1', 'grocery', -10.0, month=1),
+        _make_transaction('acc1', 'grocery', -11.0, month=2),
+        _make_transaction('acc1', 'grocery', -10.0, month=3),
+        _make_transaction('acc1', 'grocery', -10.0, month=4),
+        # Far outlier for the grocery category
+        _make_transaction('acc1', 'grocery', -1000.0, month=5),
+    ]
+
+    highlights = service.compute_highlights_from_transactions(
+        transactions,
+        algorithms=['iqr'],
+        direction='rows'
+    )
+
+    assert highlights.get('acc1|2024-05|grocery') == ['outlier']
+    assert 'acc1|2024-01|grocery' not in highlights
+
+
+def test_compute_highlights_from_transactions_excluded_category():
+    """Test that excluded categories are marked 'excluded' and not analyzed."""
+    service = StatisticalAnalysisService()
+    service.set_user_exclusions('default', ['salary'])
+    transactions = [
+        _make_transaction('acc1', 'grocery', -100.0),
+        _make_transaction('acc1', 'utilities', -50.0),
+        _make_transaction('acc1', 'entertainment', -200.0),
+        _make_transaction('acc1', 'salary', -500.0),
+    ]
+
+    highlights = service.compute_highlights_from_transactions(
+        transactions,
+        algorithms=['pareto'],
+        direction='columns'
+    )
+
+    assert highlights.get('acc1|2024-01|salary') == ['excluded']
+    # Salary must not take part in the analysis of the other categories
+    assert highlights.get('acc1|2024-01|entertainment') == ['pareto']
+
+
+def test_compute_highlights_from_transactions_filters_income():
+    """Test that non-expenses are excluded from analysis by default."""
+    service = StatisticalAnalysisService()
+    transactions = [
+        _make_transaction('acc1', 'grocery', -100.0),
+        _make_transaction('acc1', 'utilities', -50.0),
+        _make_transaction('acc1', 'entertainment', -200.0),
+        _make_transaction('acc1', 'salary', 5000.0),
+    ]
+
+    highlights = service.compute_highlights_from_transactions(
+        transactions,
+        algorithms=['pareto'],
+        direction='columns'
+    )
+
+    assert 'acc1|2024-01|salary' not in highlights
+
+
+def test_compute_highlights_from_transactions_separates_accounts():
+    """Test that identical categories in different accounts are analyzed independently."""
+    service = StatisticalAnalysisService()
+    transactions = [
+        _make_transaction('acc1', 'grocery', -100.0),
+        _make_transaction('acc1', 'utilities', -50.0),
+        _make_transaction('acc1', 'entertainment', -200.0),
+        _make_transaction('acc2', 'grocery', -300.0),
+        _make_transaction('acc2', 'utilities', -50.0),
+        _make_transaction('acc2', 'entertainment', -50.0),
+    ]
+
+    highlights = service.compute_highlights_from_transactions(
+        transactions,
+        algorithms=['pareto'],
+        direction='columns'
+    )
+
+    # Same category names, but each account is analyzed independently:
+    # acc1 pareto: entertainment (200), grocery (100); utilities not marked.
+    # acc2 pareto: grocery (300), utilities (50); entertainment not marked.
+    assert highlights.get('acc1|2024-01|entertainment') == ['pareto']
+    assert highlights.get('acc1|2024-01|grocery') == ['pareto']
+    assert highlights.get('acc2|2024-01|grocery') == ['pareto']
+    assert highlights.get('acc2|2024-01|utilities') == ['pareto']
+    assert 'acc2|2024-01|entertainment' not in highlights
+    assert 'acc1|2024-01|utilities' not in highlights
+
+
+def test_compute_highlights_from_transactions_empty_input():
+    """Test that empty input returns an empty highlights dict."""
+    service = StatisticalAnalysisService()
+
+    highlights = service.compute_highlights_from_transactions(
+        [],
+        algorithms=['iqr', 'pareto'],
+        direction='columns'
+    )
+
+    assert highlights == {}
+
 
 def test_highlight_key_format():
     """Test that highlight keys are formatted correctly."""

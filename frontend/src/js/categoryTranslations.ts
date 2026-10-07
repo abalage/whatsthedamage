@@ -9,27 +9,27 @@ declare const $gettext: (s: string) => string;
 
 // Array of all category display names - used only for extraction
 export const categoryTranslations = [
-  $gettext("Grocery"),
+  $gettext("Balance"),
   $gettext("Clothes"),
+  $gettext("Cost of Living"),
+  $gettext("Deposit"),
   $gettext("Dining Out"),
+  $gettext("Electronics and Digital Services"),
+  $gettext("Entertainment and Leisure"),
+  $gettext("Fee"),
+  $gettext("Grocery"),
   $gettext("Health"),
+  $gettext("Home Maintenance"),
+  $gettext("Insurance"),
+  $gettext("Interest"),
+  $gettext("Loan"),
+  $gettext("Other"),
   $gettext("Payment"),
+  $gettext("Refund"),
+  $gettext("Total Spendings"),
+  $gettext("Transfer"),
   $gettext("Transportation"),
   $gettext("Utility"),
-  $gettext("Home Maintenance"),
-  $gettext("Entertainment and Leisure"),
-  $gettext("Insurance"),
-  $gettext("Loan"),
-  $gettext("Withdrawal"),
-  $gettext("Fee"),
-  $gettext("Deposit"),
-  $gettext("Refund"),
-  $gettext("Interest"),
-  $gettext("Electronics and Digital Services"),
-  $gettext("Transfer"),
-  $gettext("Other"),
-  $gettext("Balance"),
-  $gettext("Total Spendings"),
-  $gettext("Cost of Living")
+  $gettext("Withdrawal")
 
 ];

@@ -18,6 +18,7 @@ from whatsthedamage.services.ml_service import MLService
 from whatsthedamage.services.text_correction_service import TextCorrectionService
 from whatsthedamage.services.smote_service import SmoteService
 from whatsthedamage.services.csv_profile_service import CsvProfileService
+from whatsthedamage.services.deduplication_service import DeduplicationService
 from whatsthedamage.config.config import AppConfig
 from flask_caching import Cache
 
@@ -129,9 +130,15 @@ class ServiceContainer:
 
     def _create_drilldown_response_service(self) -> DrilldownResponseService:
         """Create DrilldownResponseService instance."""
+        # Try to get processing_result_repository from Flask app if available
+        processing_result_repository = None
+        if self._flask_app:
+            processing_result_repository = self._flask_app.extensions.get('processing_result_repository')
+
         return DrilldownResponseService(
             id_mapping_service=self.get_service(IdMappingService),
-            cache_service=self.get_service(CacheService)
+            cache_service=self.get_service(CacheService),
+            processing_result_repository=processing_result_repository
         )
 
     # Convenience properties for common services

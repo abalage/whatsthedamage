@@ -3,12 +3,20 @@
 This module provides common functionality used across API versions
 to avoid code duplication.
 """
+from __future__ import annotations
+
 from flask import request, current_app, Response
 from werkzeug.exceptions import BadRequest
 from werkzeug.datastructures import FileStorage
-from typing import Optional, cast
+from typing import TYPE_CHECKING, Optional, cast
 
 from whatsthedamage.models.api.requests import ProcessingRequest
+
+if TYPE_CHECKING:
+    from whatsthedamage.models.repositories.processing_result_repository import ProcessingResultRepository
+    from whatsthedamage.models.repositories.transaction_repository import TransactionRepository
+    from whatsthedamage.models.repositories.correction_repository import CorrectionRepository
+    from whatsthedamage.models.repositories.shared_correction_repository import SharedCorrectionRepository
 from whatsthedamage.services.configuration_service import ConfigurationService
 from whatsthedamage.services.response_formatting_service import ResponseFormattingService
 from whatsthedamage.services.file_upload_service import FileUploadService, FileUploadError
@@ -18,6 +26,7 @@ from whatsthedamage.services.id_mapping_service import IdMappingService
 from whatsthedamage.services.session_service import SessionService
 from whatsthedamage.services.statistical_analysis_service import StatisticalAnalysisService
 from whatsthedamage.services.drilldown_response_service import DrilldownResponseService
+from whatsthedamage.services.deduplication_service import DeduplicationService
 
 
 def _get_response_formatting_service() -> ResponseFormattingService:
@@ -63,6 +72,35 @@ def _get_session_service() -> SessionService:
 def _get_configuration_service() -> ConfigurationService:
     """Get ConfigurationService from app extensions (dependency injection)."""
     return cast(ConfigurationService, current_app.extensions['configuration_service'])
+
+
+def _get_deduplication_service() -> DeduplicationService:
+    """Get deduplication service from app extensions (dependency injection)."""
+    return cast(DeduplicationService, current_app.extensions['deduplication_service'])
+
+
+def _get_processing_result_repository() -> ProcessingResultRepository:
+    """Get processing result repository from app extensions (dependency injection)."""
+    from whatsthedamage.models.repositories.processing_result_repository import ProcessingResultRepository
+    return cast(ProcessingResultRepository, current_app.extensions['processing_result_repository'])
+
+
+def _get_transaction_repository() -> TransactionRepository:
+    """Get transaction repository from app extensions (dependency injection)."""
+    from whatsthedamage.models.repositories.transaction_repository import TransactionRepository
+    return cast(TransactionRepository, current_app.extensions['transaction_repository'])
+
+
+def _get_correction_repository() -> CorrectionRepository:
+    """Get correction repository from app extensions (dependency injection)."""
+    from whatsthedamage.models.repositories.correction_repository import CorrectionRepository
+    return cast(CorrectionRepository, current_app.extensions['correction_repository'])
+
+
+def _get_shared_correction_repository() -> SharedCorrectionRepository:
+    """Get shared correction repository from app extensions (dependency injection)."""
+    from whatsthedamage.models.repositories.shared_correction_repository import SharedCorrectionRepository
+    return cast(SharedCorrectionRepository, current_app.extensions['shared_correction_repository'])
 
 
 def validate_csv_file() -> FileStorage:
@@ -118,16 +156,13 @@ def parse_request_params() -> ProcessingRequest:
     Raises:
         ValidationError: If parameters are invalid
     """
-    cache_ttl_value = request.form.get('cache_ttl')
-    cache_ttl = int(cache_ttl_value) if cache_ttl_value is not None else None
-
     return ProcessingRequest(
         start_date=request.form.get('start_date'),
         end_date=request.form.get('end_date'),
         date_format=request.form.get('date_format'),
         ml_enabled=request.form.get('ml_enabled', 'false').lower() == 'true',
         category_filter=request.form.get('category_filter'),
-        cache_ttl=cache_ttl
+        csv_profile_id=request.form.get('csv_profile_id')
     )
 
 

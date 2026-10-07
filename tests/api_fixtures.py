@@ -31,23 +31,51 @@ def _create_test_client(processing_service=None):
         'MAX_CONTENT_LENGTH': 16 * 1024 * 1024  # 16MB max file size
     }
 
+    # Point the app at a throwaway database so tests never persist
+    # processing results or transactions into the developer's app.db
+    db_path = os.path.join(temp_dir, 'test_api.db')
+    previous_uri = os.environ.get('WHATSTHEDAMAGE_DATABASE_URI')
+    os.environ['WHATSTHEDAMAGE_DATABASE_URI'] = f'sqlite:///{db_path}'
+
     # Create basic Flask app first
     app = create_app()
 
     # Now create service container with the Flask app and register our test processing service
     from whatsthedamage.services.service_container import ServiceContainer
+    from whatsthedamage.services.authentication_service import AuthenticationService
+    from unittest.mock import MagicMock
+
     service_container = ServiceContainer(flask_app=app)
     service_container._services[ProcessingService] = processing_service
 
-    # Update Flask extensions with our test service
+    # Update Flask extensions with our test services
     app.extensions['processing_service'] = processing_service
+
+    # Mock authentication service to avoid 401 errors in tests
+    mock_auth_service = MagicMock()
+    mock_user = MagicMock()
+    mock_user.id = 1
+    mock_user.opt_in_sharing = False
+    mock_session = MagicMock()
+    mock_session.csrf_token_hash = 'test_csrf_hash'
+    mock_auth_service.validate_session.return_value = (mock_user, mock_session)
+    mock_auth_service.validate_csrf_token.return_value = True
+    app.extensions['auth_service'] = mock_auth_service
+
     app.config.from_mapping(config)
 
     try:
+        # Create test client with a session cookie
         with app.test_client() as client:
+            # Set a session cookie to pass authentication
+            client.set_cookie('session_token', 'test_session_token')
             with app.app_context():
                 yield client
     finally:
+        if previous_uri is None:
+            os.environ.pop('WHATSTHEDAMAGE_DATABASE_URI', None)
+        else:
+            os.environ['WHATSTHEDAMAGE_DATABASE_URI'] = previous_uri
         if os.path.exists(temp_dir):
             shutil.rmtree(temp_dir)
 

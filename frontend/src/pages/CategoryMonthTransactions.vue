@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { onMounted, computed } from 'vue'
+import { onMounted, computed, watch } from 'vue'
 import { useGettext } from 'vue3-gettext'
 import { useCategoriesStore } from '../stores/categories.js'
 import { useDrilldownData } from '../composables/useDrilldownData.js'
-import { useRoute, RouterLink } from 'vue-router'
+import { RouterLink } from 'vue-router'
 import BreadcrumbNavigation from '../components/layout/BreadcrumbNavigation.vue'
 import type { BreadcrumbItem } from '../composables/useBreadcrumbs.js'
 import LoadingState from '../components/layout/LoadingState.vue'
@@ -12,20 +12,16 @@ import PageHeader from '../components/layout/PageHeader.vue'
 import VueDataTable from '../components/data/VueDataTable.vue'
 import type { Column, AggregateRowConfig } from '../components/data/VueDataTable.vue'
 import { fetchCategoryMonthTransactions } from '../js/api.js'
-import type { CategoryMonthTransactionsApiResponse } from '../types/api.js'
-import { formatMonthYear } from '../js/dateUtils.js'
+import { useResultQuery } from '../composables/useResultQuery.js'
+import type { TransactionListResponse } from '../types/api.js'
+import { formatMonthYear, formatDateISO, toEpoch } from '../js/dateUtils.js'
 import BarChart from '../components/charts/BarChart.vue'
 
 const { $gettext } = useGettext()
 const categoriesStore = useCategoriesStore()
-const route = useRoute()
 
-
-// Helper to safely get route params
-const getRouteParam = (param: string): string | null => {
-  const value = route.params[param]
-  return typeof value === 'string' ? value : null
-}
+// Optional resultId filter, carried in the query string
+const resultQuery = useResultQuery()
 
 // Table columns
 const columns: Column[] = [
@@ -43,49 +39,71 @@ const {
   isLoading,
   error,
   fetchData,
+  resultId,
+  accountId,
   pageTitle,
   breadcrumbItems
-} = useDrilldownData<CategoryMonthTransactionsApiResponse>({
+} = useDrilldownData<TransactionListResponse>({
   fetchData: async (params) => {
-    if (!params.resultId || !params.accountId || !params.categoryId || !params.monthId) {
+    if (!params.accountId || !params.categoryId || !params.monthId) {
       throw new Error('Missing required parameters for category month transactions fetch')
     }
     return fetchCategoryMonthTransactions(params)
   },
   titleBaseKey: 'Transactions',
   titleFormat: 'category-month',
-  titleExtractor: (data: CategoryMonthTransactionsApiResponse) => ({
-    categoryId: categoriesStore.extractCategoryIdFromData(data as unknown as Record<string, unknown>),
-    monthTimestamp: data.month_timestamp
-  }),
-  breadcrumbItems: (data: CategoryMonthTransactionsApiResponse | null): BreadcrumbItem[] => {
-    const categoryName = data ? categoriesStore.getCategoryDisplayName(categoriesStore.extractCategoryIdFromData(data as unknown as Record<string, unknown>)) : null
-    const monthName = data ? formatMonthYear(data.month_timestamp) : null
+  titleExtractor: (data: TransactionListResponse) => {
+    const firstTxn = data.transactions[0]
+    const monthTimestamp = firstTxn ? toEpoch(firstTxn.date) : 0
+    return {
+      categoryId: categoriesStore.extractCategoryIdFromData(data as unknown as Record<string, unknown>),
+      monthTimestamp
+    }
+  },
+  breadcrumbItems: (data: TransactionListResponse | null): BreadcrumbItem[] => {
+    // Extract category and month from first transaction
+    const firstTxn = data?.transactions[0]
+    const categoryName = firstTxn ? categoriesStore.getCategoryDisplayName(firstTxn.category_id || '') : null
+    const monthTimestamp = firstTxn ? toEpoch(firstTxn.date) : null
+    const monthName = monthTimestamp !== null ? formatMonthYear(monthTimestamp) : null
     return [
       { name: $gettext('Home'), to: '/' },
-      { name: $gettext('Categories'), to: { name: 'results', query: { resultId: getRouteParam('resultId') } } },
+      { name: $gettext('Categories'), to: { name: 'results', query: resultQuery() } },
       { name: categoryName && monthName ? `${categoryName} - ${monthName}` : $gettext('Transaction Details'), active: true }
     ]
   },
   errorMessageKey: 'transactionsLoadError'
 })
 
+// Helper function to format transaction date from ISO string or timestamp
+// Uses the new utility function that handles both formats
+function formatTransactionDateForDisplay(dateValue: string | undefined): string {
+  return formatDateISO(dateValue)
+}
+
+// Extract account currency from first transaction
+const accountCurrency = computed(() => {
+  if (!transactionsData.value?.transactions || transactionsData.value.transactions.length === 0) return null
+  const firstTxn = transactionsData.value.transactions[0]
+  return firstTxn.currency || null
+})
+
 // Table data
 const tableData = computed(() => {
   if (!transactionsData.value) return []
-  return transactionsData.value.data.map(t => ({
-    date: typeof t.date.timestamp === 'string' ? Number(t.date.timestamp) : t.date.timestamp,
-    date_display: t.date.display,
-    amount: t.amount.raw,
-    amount_display: t.amount.display,
-    merchant: t.merchant,
-    row_id: t.row_id
+  return transactionsData.value.transactions.map(t => ({
+    date: t.date,
+    date_display: formatTransactionDateForDisplay(t.date),
+    amount: t.amount,
+    amount_display: t.amount.toFixed(2),
+    merchant: t.original_partner || t.partner || '',
+    row_id: String(t.id)
   }))
 })
 
 // Aggregate row configuration for the table
 const aggregateRows = computed<AggregateRowConfig[]>(() => {
-  if (!transactionsData.value || transactionsData.value.data.length === 0) return []
+  if (!transactionsData.value || transactionsData.value.transactions.length === 0) return []
 
   return [
     {
@@ -127,7 +145,7 @@ const aggregateRows = computed<AggregateRowConfig[]>(() => {
 const chartData = computed(() => {
   return tableData.value.map(row => ({
     label: row.date_display,
-    timestamp: row.date as number,
+    timestamp: row.date ? parseInt(row.date, 10) : 0,
     values: { amount: row.amount as number }
   }))
 })
@@ -137,6 +155,11 @@ const chartCategories = computed(() => [
 ])
 
 onMounted(() => {
+  fetchData()
+})
+
+// Refetch when the resultId query filter changes while the page is reused
+watch(resultId, () => {
   fetchData()
 })
 </script>
@@ -155,7 +178,7 @@ onMounted(() => {
         <template #actions>
           <div class="d-flex gap-2">
             <RouterLink
-              :to="{ name: 'results', query: { resultId: getRouteParam('resultId') } }"
+              :to="{ name: 'results', query: resultQuery() }"
               class="btn bg-surface-secondary text-on-dark border-secondary mt-3 mb-3"
             >
               {{ $gettext('Back to Categories') }}
@@ -169,9 +192,9 @@ onMounted(() => {
         <!-- Account & Table Card -->
         <div class="card flex-grow-1" style="min-width: 400px">
           <div class="card-header">
-            {{ $gettext('Account') }}: {{ transactionsData.account_formatted_id }}
-            <span v-if="transactionsData.account_currency" class="bg-surface-secondary text-on-dark px-2 py-1 rounded text-xs">
-              {{ transactionsData.account_currency }}
+            {{ $gettext('Account') }}: {{ accountId || $gettext('Unknown') }}
+            <span v-if="accountCurrency" class="bg-surface-secondary text-on-dark px-2 py-1 rounded text-xs">
+              {{ accountCurrency }}
             </span>
           </div>
           <div class="card-body">

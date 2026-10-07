@@ -41,11 +41,6 @@ class ProcessingRequest(BaseModel):
         description="Date format string (Python strptime format). If not provided, uses CsvConfig default.",
         examples=["%Y.%m.%d", "%Y-%m-%d"]
     )
-    cache_ttl: Optional[int] = Field(
-        default=None,
-        description="Cache TTL in seconds. If None, uses backend default. 0 means never expire.",
-        examples=[1800, 0]
-    )
     csv_profile_id: Optional[str] = Field(
         default=None,
         description="CSV profile ID to use for parsing (e.g., 'otp-hu', 'kh-hu'). Uses default if not provided.",

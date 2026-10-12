@@ -293,6 +293,7 @@ Reusable stateful logic encapsulated in composable functions using Vue 3's Compo
 - `useBreadcrumbs.ts` - Dynamic breadcrumb navigation generation
 - `usePageTitle.ts` - Page title generation with i18n support and multiple format patterns
 - `useDrilldownData.ts` - Composed drilldown page logic that ties together route params, API fetching, page titles, and breadcrumbs
+- `useTransactionCorrections.ts` - Shared transaction correction persistence (save/undo), corrected-state predicates, and cell highlight maps for the transaction table pages
 
 **Design Principles**:
 - Each composable has a single, clear responsibility
@@ -316,6 +317,7 @@ Frontend SPA (Vue 3)
 │   ├── useApiData.ts        # API data fetching
 │   ├── useBreadcrumbs.ts    # Breadcrumb generation
 │   ├── usePageTitle.ts      # Page title generation
+│   ├── useTransactionCorrections.ts # Transaction correction persistence
 │   └── useDrilldownData.ts  # Drilldown page logic
 ├── stores/              # Pinia state management (global state)
 │   ├── auth.ts           # Authentication state (login/logout, CSRF token)

@@ -14,6 +14,9 @@ export interface User {
   last_login_at?: string | null;
   is_active: boolean;
   opt_in_sharing: boolean;
+  opted_in_at?: string | null;
+  opted_out_at?: string | null;
+  scheduled_deletion_at?: string | null;
 }
 
 /**
@@ -83,9 +86,11 @@ export interface CsrfTokenResponse {
 
 /**
  * Request body for updating user settings via PUT /auth/me.
+ * At least one field must be present.
  */
 export interface UpdateMeRequest {
-  opt_in_sharing: boolean;
+  opt_in_sharing?: boolean;
+  username?: string;
 }
 
 /**
@@ -119,6 +124,7 @@ export interface PasswordResetResponse {
  */
 export interface AccountDeletionRequest {
   password: string;
+  revoke_shared_corrections?: boolean;
 }
 
 /**
@@ -128,4 +134,79 @@ export interface AccountDeletionRequest {
 export interface AccountDeletionResponse {
   message: string;
   scheduled_deletion_at: string;
+}
+
+/**
+ * Request body for changing the password while logged in
+ * via PUT /auth/me/password.
+ */
+export interface ChangePasswordRequest {
+  current_password: string;
+  new_password: string;
+}
+
+/**
+ * Response from a successful password change.
+ */
+export interface ChangePasswordResponse {
+  message: string;
+}
+
+/**
+ * A processing result as included in the data export.
+ */
+interface ExportedProcessingResult {
+  result_id: string | null;
+  csv_profile_id: string;
+  row_count: number;
+  processing_time: number;
+  ml_enabled: boolean;
+  start_date: string | null;
+  end_date: string | null;
+  created_at: string | null;
+}
+
+/**
+ * A transaction as included in the data export.
+ */
+interface ExportedTransaction {
+  id: number | null;
+  result_id: string | null;
+  date: string | null;
+  transaction_type: string | null;
+  original_partner: string | null;
+  amount: number | null;
+  currency: string | null;
+  account: string | null;
+  category_id: string | null;
+  partner: string | null;
+  notice: string | null;
+  confidence: number | null;
+  original_category_id: string | null;
+  original_notice: string | null;
+  created_at: string | null;
+  updated_at: string | null;
+}
+
+/**
+ * A correction as included in the data export.
+ */
+interface ExportedCorrection {
+  id: number | null;
+  original_partner: string;
+  corrected_partner: string | null;
+  corrected_category_id: string;
+  created_at: string | null;
+  updated_at: string | null;
+}
+
+/**
+ * Response from GET /auth/me/export (data portability).
+ */
+export interface DataExportResponse {
+  generated_at: string;
+  account: User;
+  processing_results: ExportedProcessingResult[];
+  transactions: ExportedTransaction[];
+  corrections: ExportedCorrection[];
 }

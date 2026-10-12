@@ -291,7 +291,9 @@ def _register_cli_commands(app: Flask) -> None:
             f"{result['accounts_deleted']} account(s) deleted "
             '(grace period elapsed), '
             f"{result['inactive_accounts_deleted']} "
-            'inactive account(s) deleted'
+            'inactive account(s) deleted, '
+            f"{result['expired_sessions_deleted']} "
+            'expired session(s) deleted'
         )
 
 

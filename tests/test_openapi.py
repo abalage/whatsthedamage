@@ -229,16 +229,18 @@ class TestOpenApiSchemaContent:
                 f"Field {field} not found in ProcessingRequest"
             )
 
-    def test_update_me_request_has_required_boolean_field(self):
-        """Test that UpdateMeRequest requires a boolean opt_in_sharing."""
+    def test_update_me_request_has_optional_fields(self):
+        """Test UpdateMeRequest fields and their types."""
         schema = get_openapi_schema()
         update_me_request = schema["components"]["schemas"][
             "UpdateMeRequest"
         ]
 
-        assert update_me_request["required"] == ["opt_in_sharing"]
+        # At least one field must be present; neither is required
+        assert "required" not in update_me_request
         properties = update_me_request["properties"]
         assert properties["opt_in_sharing"]["type"] == "boolean"
+        assert properties["username"]["type"] == "string"
 
     def test_error_response_has_correct_structure(self):
         """Test that ErrorResponse schema matches the Pydantic model."""

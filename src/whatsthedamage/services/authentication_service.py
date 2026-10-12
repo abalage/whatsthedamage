@@ -356,8 +356,9 @@ class AuthenticationService:
         # Update user's last login timestamp for auditing
         self.user_repository.update_last_login(cast(int, user.id))
 
-        # Audit log successful password reset (without sensitive data)
-        self.logger.info("Password reset successful", extra={"context": {"action": "password_reset", "status": "success", "user_id": user.id, "username": user.username}})
+        # Audit log successful password reset (without personal data
+        # beyond the user identifier)
+        self.logger.info("Password reset successful", extra={"context": {"action": "password_reset", "status": "success", "user_id": user.id}})
 
         # Return the updated user and new formatted recovery code
         # Reload user to get fresh data
@@ -543,6 +544,9 @@ class AuthenticationService:
     ) -> Optional[UserDB]:
         """Update the user's correction sharing opt-in preference.
 
+        The repository records the consent timestamps (opted_in_at /
+        opted_out_at) for demonstrability (GDPR Art. 7(1)).
+
         Args:
             user_id: User identifier.
             opt_in_sharing: Whether the user opts in to sharing
@@ -557,3 +561,109 @@ class AuthenticationService:
         if not updated:
             return None
         return self.user_repository.find_by_id(user_id)
+
+    def update_username(
+        self, user: UserDB, username: str
+    ) -> Optional[UserDB]:
+        """Update the user's username (right to rectification).
+
+        Args:
+            user: The authenticated user requesting the change.
+            username: New username (stripped, max 255 characters).
+
+        Returns:
+            The updated User entity, or None if the user was not found.
+
+        Raises:
+            ValueError: If the username is empty, too long, or
+                already taken.
+        """
+        stripped = username.strip()
+        if not stripped:
+            raise ValueError("Username cannot be empty")
+        if len(stripped) > 255:
+            raise ValueError("Username cannot exceed 255 characters")
+
+        updated = self.user_repository.update_username(
+            cast(int, user.id), stripped
+        )
+        if not updated:
+            return None
+
+        self.logger.info(
+            "Username updated",
+            extra={"context": {
+                "action": "username_update",
+                "status": "success",
+                "user_id": user.id
+            }}
+        )
+        return self.user_repository.find_by_id(cast(int, user.id))
+
+    def change_password(
+        self,
+        user: UserDB,
+        current_password: str,
+        new_password: str,
+        current_session: SessionDB
+    ) -> None:
+        """Change the user's password while logged in.
+
+        Verifies the current password, validates the new password,
+        updates the password hash, and revokes all other sessions of
+        the user. The current session stays valid.
+
+        Args:
+            user: The authenticated user requesting the change.
+            current_password: Current password for confirmation.
+            new_password: New plain text password (minimum length
+                enforced).
+            current_session: The session the request was made from;
+                it is kept active.
+
+        Raises:
+            ValueError: If the current password is incorrect or the
+                new password is too short.
+        """
+        if not self.password_service.verify_password(
+            current_password, cast(str, user.password_hash)
+        ):
+            self.logger.warning(
+                "Password change failed: invalid current password",
+                extra={"context": {
+                    "action": "password_change",
+                    "status": "failed",
+                    "reason": "invalid_password",
+                    "user_id": user.id
+                }}
+            )
+            raise ValueError("Invalid current password")
+
+        if len(new_password) < self.password_min_length:
+            raise ValueError(
+                f"Password must be at least "
+                f"{self.password_min_length} characters"
+            )
+
+        new_password_hash = self.password_service.hash_password(
+            new_password
+        )
+        updated = self.user_repository.update_password(
+            cast(int, user.id), new_password_hash
+        )
+        if not updated:
+            raise ValueError("User not found")
+
+        revoked = self.session_repository.revoke_by_user_id_except(
+            cast(int, user.id), cast(int, current_session.id)
+        )
+
+        self.logger.info(
+            "Password changed",
+            extra={"context": {
+                "action": "password_change",
+                "status": "success",
+                "user_id": user.id,
+                "sessions_revoked": revoked
+            }}
+        )

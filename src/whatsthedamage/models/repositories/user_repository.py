@@ -80,6 +80,10 @@ class UserRepository(Protocol):
     def set_opt_in_sharing(self, user_id: int, opt_in_sharing: bool) -> bool:
         """Set user's correction sharing opt-in preference.
 
+        Records the consent timestamp for demonstrability (GDPR
+        Art. 7(1)): opting in stamps opted_in_at and clears
+        opted_out_at; opting out stamps opted_out_at.
+
         Args:
             user_id: User identifier.
             opt_in_sharing: Whether the user opts in to sharing
@@ -87,6 +91,35 @@ class UserRepository(Protocol):
 
         Returns:
             True if the preference was updated, False if the user
+            was not found.
+        """
+        ...
+
+    def update_username(self, user_id: int, username: str) -> bool:
+        """Update the user's username (right to rectification).
+
+        Args:
+            user_id: User identifier.
+            username: New unique username (max 255 characters).
+
+        Returns:
+            True if the username was updated, False if the user
+            was not found.
+
+        Raises:
+            ValueError: If the username is already taken.
+        """
+        ...
+
+    def update_password(self, user_id: int, new_password_hash: str) -> bool:
+        """Update the user's password hash.
+
+        Args:
+            user_id: User identifier.
+            new_password_hash: New Argon2id hashed password.
+
+        Returns:
+            True if the password was updated, False if the user
             was not found.
         """
         ...
@@ -118,7 +151,8 @@ class UserRepository(Protocol):
     def schedule_deletion(
         self,
         user_id: int,
-        scheduled_deletion_at: datetime
+        scheduled_deletion_at: datetime,
+        revoke_shared_corrections: bool = False
     ) -> bool:
         """Schedule the user's account deletion.
 
@@ -126,6 +160,9 @@ class UserRepository(Protocol):
             user_id: User identifier.
             scheduled_deletion_at: UTC timestamp after which the
                 retention job deletes the account.
+            revoke_shared_corrections: Whether the user's shared
+                correction contributions must be withdrawn when the
+                account is deleted.
 
         Returns:
             True if the deletion was scheduled, False if the user
@@ -175,8 +212,9 @@ class UserRepository(Protocol):
         """Delete a user and all of their data.
 
         Cascades to sessions, processing results, corrections, and
-        transactions. Shared corrections are not linked to users and
-        are never affected.
+        transactions. Shared correction contributions are withdrawn
+        separately by the retention job when the user requested
+        revocation; otherwise they are retained.
 
         Args:
             user_id: User identifier.
@@ -315,6 +353,10 @@ class SqlAlchemyUserRepository(SqlAlchemyBaseRepository[UserDB]):
     def set_opt_in_sharing(self, user_id: int, opt_in_sharing: bool) -> bool:
         """Set user's correction sharing opt-in preference.
 
+        Records the consent timestamp for demonstrability (GDPR
+        Art. 7(1)): opting in stamps opted_in_at and clears
+        opted_out_at; opting out stamps opted_out_at.
+
         Args:
             user_id: User identifier.
             opt_in_sharing: Whether the user opts in to sharing
@@ -330,7 +372,77 @@ class SqlAlchemyUserRepository(SqlAlchemyBaseRepository[UserDB]):
                 UserDB.id == user_id
             ).first()
             if user:
+                now = datetime.now(UTC)
                 user.opt_in_sharing = cast(Any, opt_in_sharing)
+                if opt_in_sharing:
+                    user.opted_in_at = cast(Any, now)
+                    user.opted_out_at = cast(Any, None)
+                else:
+                    user.opted_out_at = cast(Any, now)
+                session.commit()
+                return True
+            return False
+        except Exception:
+            session.rollback()
+            raise
+        finally:
+            session.close()
+
+    def update_username(self, user_id: int, username: str) -> bool:
+        """Update the user's username (right to rectification).
+
+        Args:
+            user_id: User identifier.
+            username: New unique username (max 255 characters).
+
+        Returns:
+            True if the username was updated, False if the user
+            was not found.
+
+        Raises:
+            ValueError: If the username is already taken.
+        """
+        session = self._get_session()
+        try:
+            existing = session.query(UserDB).filter(
+                UserDB.username == username,
+                UserDB.id != user_id
+            ).first()
+            if existing:
+                raise ValueError(f"Username '{username}' already exists")
+
+            user = session.query(UserDB).filter(
+                UserDB.id == user_id
+            ).first()
+            if user:
+                user.username = cast(Any, username)
+                session.commit()
+                return True
+            return False
+        except Exception:
+            session.rollback()
+            raise
+        finally:
+            session.close()
+
+    def update_password(self, user_id: int, new_password_hash: str) -> bool:
+        """Update the user's password hash.
+
+        Args:
+            user_id: User identifier.
+            new_password_hash: New Argon2id hashed password.
+
+        Returns:
+            True if the password was updated, False if the user
+            was not found.
+        """
+        session = self._get_session()
+        try:
+            user = session.query(UserDB).filter(
+                UserDB.id == user_id
+            ).first()
+            if user:
+                user.password_hash = cast(Any, new_password_hash)
                 session.commit()
                 return True
             return False
@@ -382,7 +494,8 @@ class SqlAlchemyUserRepository(SqlAlchemyBaseRepository[UserDB]):
     def schedule_deletion(
         self,
         user_id: int,
-        scheduled_deletion_at: datetime
+        scheduled_deletion_at: datetime,
+        revoke_shared_corrections: bool = False
     ) -> bool:
         """Schedule the user's account deletion.
 
@@ -390,6 +503,9 @@ class SqlAlchemyUserRepository(SqlAlchemyBaseRepository[UserDB]):
             user_id: User identifier.
             scheduled_deletion_at: UTC timestamp after which the
                 retention job deletes the account.
+            revoke_shared_corrections: Whether the user's shared
+                correction contributions must be withdrawn when the
+                account is deleted.
 
         Returns:
             True if the deletion was scheduled, False if the user
@@ -403,6 +519,9 @@ class SqlAlchemyUserRepository(SqlAlchemyBaseRepository[UserDB]):
             if user:
                 user.scheduled_deletion_at = cast(
                     Any, scheduled_deletion_at
+                )
+                user.revoke_shared_corrections = cast(
+                    Any, revoke_shared_corrections
                 )
                 session.commit()
                 return True
@@ -430,6 +549,7 @@ class SqlAlchemyUserRepository(SqlAlchemyBaseRepository[UserDB]):
             ).first()
             if user and user.scheduled_deletion_at is not None:
                 user.scheduled_deletion_at = cast(Any, None)
+                user.revoke_shared_corrections = cast(Any, False)
                 session.commit()
                 return True
             return False
@@ -488,8 +608,9 @@ class SqlAlchemyUserRepository(SqlAlchemyBaseRepository[UserDB]):
         """Delete a user and all of their data.
 
         Cascades to sessions, processing results, corrections, and
-        transactions. Shared corrections are not linked to users and
-        are never affected.
+        transactions. Shared correction contributions are withdrawn
+        separately by the retention job when the user requested
+        revocation; otherwise they are retained.
 
         Args:
             user_id: User identifier.

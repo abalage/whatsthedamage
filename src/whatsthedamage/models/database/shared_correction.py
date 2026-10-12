@@ -6,6 +6,7 @@ used across users (foundation for US-6).
 
 from datetime import datetime, UTC
 from sqlalchemy import Column, Integer, String, DateTime, Index
+from sqlalchemy.orm import relationship
 
 from whatsthedamage.models.database.base import Base
 
@@ -44,6 +45,15 @@ class SharedCorrection(Base):
     # Contribution metadata (anonymized)
     contributed_at = Column(DateTime, nullable=False, default=lambda: datetime.now(UTC))
     contribution_count = Column(Integer, nullable=False, default=1)
+
+    # User linkage used solely for erasure/withdrawal (never exposed
+    # via the API)
+    contributions = relationship(
+        'SharedCorrectionContribution',
+        back_populates='shared_correction',
+        cascade='all, delete-orphan',
+        passive_deletes=True
+    )
 
     # Indexes for performance
     __table_args__ = (

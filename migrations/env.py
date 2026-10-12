@@ -15,6 +15,9 @@ from whatsthedamage.models.database.base import Base
 from whatsthedamage.models.database.user import User
 from whatsthedamage.models.database.session import Session
 from whatsthedamage.models.database.transaction import Transaction
+from whatsthedamage.models.database.shared_correction_contribution import (
+    SharedCorrectionContribution
+)
 
 # This is the Alembic Config object
 config = context.config

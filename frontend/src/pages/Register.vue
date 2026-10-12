@@ -18,6 +18,7 @@ const authStore = useAuthStore();
 const username = ref('');
 const password = ref('');
 const confirmPassword = ref('');
+const termsAccepted = ref(false);
 const isSubmitting = ref(false);
 const showRecoveryCode = ref(false);
 const recoveryCodeAcknowledged = ref(false);
@@ -28,7 +29,8 @@ const passwordValid = () => password.value.length >= 12;
 const formValid = () => (
   username.value.trim().length > 0 &&
   password.value.length >= 12 &&
-  passwordsMatch()
+  passwordsMatch() &&
+  termsAccepted.value
 );
 
 /**
@@ -40,6 +42,8 @@ async function handleRegister() {
       authStore.error = 'Passwords do not match';
     } else if (!passwordValid()) {
       authStore.error = 'Password must be at least 12 characters';
+    } else if (!termsAccepted.value) {
+      authStore.error = 'Please accept the Terms and the Privacy Policy to continue';
     } else {
       authStore.error = 'Please fill in all fields';
     }
@@ -176,6 +180,21 @@ onMounted(async () => {
           </div>
         </div>
 
+        <!-- Terms and privacy policy acceptance -->
+        <div class="form-group form-checkbox terms-checkbox">
+          <label>
+            <input
+              v-model="termsAccepted"
+              type="checkbox"
+              required
+            />
+            I have read and accept the
+            <router-link to="/legal">Terms (Legal Notice)</router-link>
+            and the
+            <router-link to="/privacy">Privacy Policy</router-link>
+          </label>
+        </div>
+
         <!-- Submit button -->
         <button
           type="submit"
@@ -303,6 +322,21 @@ onMounted(async () => {
 .form-checkbox label {
   font-weight: normal;
   cursor: pointer;
+}
+
+.terms-checkbox label {
+  align-items: baseline;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.terms-checkbox a {
+  color: #007bff;
+  text-decoration: none;
+}
+
+.terms-checkbox a:hover {
+  text-decoration: underline;
 }
 
 .btn {

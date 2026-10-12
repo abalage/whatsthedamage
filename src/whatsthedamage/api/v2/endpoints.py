@@ -1338,7 +1338,8 @@ def _share_correction_if_opted_in(
         shared_repo.create_or_update(
             original_partner=original_partner,
             corrected_category_id=corrected_category_id,
-            corrected_partner=corrected_partner
+            corrected_partner=corrected_partner,
+            user_id=cast(int, user.id)
         )
     except Exception:
         current_app.logger.exception(

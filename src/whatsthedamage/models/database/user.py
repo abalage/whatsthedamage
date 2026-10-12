@@ -16,6 +16,9 @@ if TYPE_CHECKING:
     from whatsthedamage.models.database.processing_result import ProcessingResult
     from whatsthedamage.models.database.correction import Correction
     from whatsthedamage.models.database.transaction import Transaction
+    from whatsthedamage.models.database.shared_correction_contribution import (
+        SharedCorrectionContribution
+    )
 
 
 class User(Base):
@@ -34,6 +37,14 @@ class User(Base):
         last_login_at: Timestamp of last successful login (nullable).
         is_active: Whether the account is active (default True).
         opt_in_sharing: Whether user opts in to sharing corrections (default False).
+        opted_in_at: UTC timestamp of the most recent sharing opt-in
+            (nullable; recorded for consent demonstrability, Art. 7(1)).
+        opted_out_at: UTC timestamp of the most recent sharing opt-out
+            (nullable).
+        revoke_shared_corrections: Whether the user's shared correction
+            contributions must be withdrawn when the account is
+            deleted (default False; set by the account deletion
+            request).
         scheduled_deletion_at: UTC timestamp after which the retention
             job deletes the account (nullable; set by the account
             deletion request, cleared by logging in during the grace
@@ -42,6 +53,8 @@ class User(Base):
         processing_results: One-to-many relationship with ProcessingResult model.
         corrections: One-to-many relationship with Correction model.
         transactions: One-to-many relationship with Transaction model.
+        contributions: One-to-many relationship with
+            SharedCorrectionContribution model.
     """
 
     __tablename__ = 'users'
@@ -54,6 +67,9 @@ class User(Base):
     last_login_at = Column(DateTime, nullable=True)
     is_active = Column(Boolean, nullable=False, default=True)
     opt_in_sharing = Column(Boolean, nullable=False, default=False)
+    opted_in_at = Column(DateTime, nullable=True)
+    opted_out_at = Column(DateTime, nullable=True)
+    revoke_shared_corrections = Column(Boolean, nullable=False, default=False)
     scheduled_deletion_at = Column(DateTime, nullable=True)
 
     # Relationship to sessions (one-to-many)
@@ -83,6 +99,15 @@ class User(Base):
     # Relationship to transactions (one-to-many)
     transactions = relationship(
         'Transaction',
+        back_populates='user',
+        cascade='all, delete-orphan',
+        passive_deletes=True
+    )
+
+    # Relationship to shared correction contributions (one-to-many).
+    # The linkage exists solely for the right to erasure/withdrawal.
+    contributions = relationship(
+        'SharedCorrectionContribution',
         back_populates='user',
         cascade='all, delete-orphan',
         passive_deletes=True

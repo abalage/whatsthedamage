@@ -184,7 +184,10 @@ curl -X GET http://localhost:5000/api/v2/auth/me
     "created_at": "2026-09-01T10:00:00",
     "last_login_at": "2026-09-29T09:00:00",
     "is_active": true,
-    "opt_in_sharing": false
+    "opt_in_sharing": false,
+    "opted_in_at": null,
+    "opted_out_at": null,
+    "scheduled_deletion_at": null
   },
   "csrf_token": "eyJhbGciOi..."
 }
@@ -196,9 +199,9 @@ curl -X GET http://localhost:5000/api/v2/auth/me
 
 ---
 
-### Update User Settings
+### Update User Account Data
 
-Update the authenticated user's correction sharing opt-in preference. Changing the preference takes effect immediately for future corrections; previously shared corrections are retained permanently and cannot be retracted. Shared corrections contain merchant names and categories only, anonymized, with no amounts, dates, or user information.
+Update the authenticated user's username and/or correction sharing opt-in preference (right to rectification, GDPR Art. 16). At least one field must be present. Changing the sharing preference takes effect immediately for future corrections and records the consent timestamp (GDPR Art. 7(1)); shared corrections are anonymized and can be withdrawn with the account deletion. Shared corrections contain merchant names and categories only, anonymized, with no amounts, dates, or user information.
 
 **Endpoint:**
 ```
@@ -209,7 +212,8 @@ PUT /api/v2/auth/me
 
 | Field | Required | Type | Description |
 |-------|----------|------|-------------|
-| `opt_in_sharing` | Yes | boolean | Whether the user opts in to sharing corrections |
+| `username` | No | string | New unique username (max 255 characters) |
+| `opt_in_sharing` | No | boolean | Whether the user opts in to sharing corrections |
 
 **Curl Example:**
 ```bash
@@ -228,22 +232,99 @@ curl -X PUT http://localhost:5000/api/v2/auth/me \
     "created_at": "2026-09-01T10:00:00",
     "last_login_at": "2026-09-29T09:00:00",
     "is_active": true,
-    "opt_in_sharing": true
+    "opt_in_sharing": true,
+    "opted_in_at": "2026-10-07T09:00:00",
+    "opted_out_at": null,
+    "scheduled_deletion_at": null
   }
 }
 ```
 
 **Status Codes:**
 - `200` - Successfully updated
-- `400` - Validation error (missing or non-boolean `opt_in_sharing`)
+- `400` - Validation error (no known field present, invalid types)
 - `401` - Not authenticated
 - `403` - Invalid or missing CSRF token
+- `409` - Username already taken
+
+---
+
+### Change Password
+
+Change the authenticated user's password while logged in. Requires the current password for confirmation. All other sessions of the user are revoked; the current session stays valid.
+
+**Endpoint:**
+```
+PUT /api/v2/auth/me/password
+```
+
+**Request Body:**
+
+| Field | Required | Type | Description |
+|-------|----------|------|-------------|
+| `current_password` | Yes | string | Current password confirming the change |
+| `new_password` | Yes | string | New password (minimum 12 characters) |
+
+**Curl Example:**
+```bash
+curl -X PUT http://localhost:5000/api/v2/auth/me/password \
+  -H "Content-Type: application/json" \
+  -H "X-CSRF-Token: <csrf-token>" \
+  -d '{"current_password": "your-password", "new_password": "new-password"}'
+```
+
+**Response:**
+```json
+{
+  "message": "Password changed"
+}
+```
+
+**Status Codes:**
+- `200` - Password changed
+- `400` - Validation error (missing fields)
+- `401` - Not authenticated or wrong current password
+- `403` - Invalid or missing CSRF token
+- `422` - New password too weak
+
+---
+
+### Export My Data
+
+Export all personal data of the authenticated user in a machine-readable JSON document (right of access and data portability, GDPR Art. 15 and 20). Contains the account data, processing results, transactions, and corrections. Credential hashes are never included.
+
+**Endpoint:**
+```
+GET /api/v2/auth/me/export
+```
+
+**Curl Example:**
+```bash
+curl -X GET http://localhost:5000/api/v2/auth/me/export \
+  -OJ
+```
+
+**Response:** JSON attachment (`Content-Disposition: attachment; filename="whatsthedamage-export.json"`):
+
+```json
+{
+  "generated_at": "2026-10-07T09:00:00+00:00",
+  "account": { "...": "user object as in GET /auth/me" },
+  "processing_results": [],
+  "transactions": [],
+  "corrections": []
+}
+```
+
+**Status Codes:**
+- `200` - Export generated
+- `401` - Not authenticated
 
 ---
 
 ### Delete Account
 
-Schedule the deletion of the authenticated user's account. Requires the current password for confirmation. All sessions are revoked immediately and the deletion takes effect after a grace period (default 7 days, configurable via `WHATSTHEDAMAGE_ACCOUNT_DELETION_GRACE_DAYS`). Logging in before the scheduled timestamp cancels the deletion. After the grace period the retention job (`flask retention-purge`, see `docs/retention-policy.md`) deletes the account with all transactions, corrections, and processing results; anonymized shared corrections are retained permanently.
+Schedule the deletion of the authenticated user's account. Requires the current password for confirmation. All sessions are revoked immediately and the deletion takes effect after a grace period (default 7 days, configurable via `WHATSTHEDAMAGE_ACCOUNT_DELETION_GRACE_DAYS`). Logging in before the scheduled timestamp cancels the deletion. After the grace period the retention job (`flask retention-purge`, see `docs/retention-policy.md`) deletes the account with all transactions, corrections, and processing results. Anonymized shared corrections are retained unless the request asks for their withdrawal (`revoke_shared_corrections: true`, GDPR Art. 7(3)); already-trained machine learning models cannot be changed, new models reflect the absence of withdrawn data once they are made available and older models are deprecated.
 
 **Endpoint:**
 ```
@@ -255,13 +336,14 @@ DELETE /api/v2/auth/account
 | Field | Required | Type | Description |
 |-------|----------|------|-------------|
 | `password` | Yes | string | Current password confirming the deletion request |
+| `revoke_shared_corrections` | No | boolean | Also withdraw the user's shared correction contributions when the account is deleted (default `false`) |
 
 **Curl Example:**
 ```bash
 curl -X DELETE http://localhost:5000/api/v2/auth/account \
   -H "Content-Type: application/json" \
   -H "X-CSRF-Token: <csrf-token>" \
-  -d '{"password": "your-password"}'
+  -d '{"password": "your-password", "revoke_shared_corrections": true}'
 ```
 
 **Response:**
@@ -1200,7 +1282,9 @@ open http://localhost:5000/api/v2/openapi.json
 | `POST` | `/api/v2/auth/login` | Authenticate and create a session |
 | `POST` | `/api/v2/auth/logout` | Revoke the current session |
 | `GET` | `/api/v2/auth/me` | Get current user information |
-| `PUT` | `/api/v2/auth/me` | Update user settings (correction sharing opt-in) |
+| `PUT` | `/api/v2/auth/me` | Update user account data (username, correction sharing opt-in) |
+| `PUT` | `/api/v2/auth/me/password` | Change password while logged in |
+| `GET` | `/api/v2/auth/me/export` | Export all personal data (access/portability) |
 | `DELETE` | `/api/v2/auth/account` | Schedule deletion of the current account |
 | `POST` | `/api/v2/auth/reset-password` | Reset password using a recovery code |
 | `GET` | `/api/v2/auth/csrf-token` | Get a new CSRF token |

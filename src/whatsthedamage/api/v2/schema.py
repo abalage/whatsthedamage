@@ -292,13 +292,14 @@ def get_openapi_schema() -> dict[str, Any]:
                     },
                 },
                 "put": {
-                    "summary": "Update current user settings",
+                    "summary": "Update current user account data",
                     "description": (
-                        "Updates the authenticated user's correction "
-                        "sharing opt-in preference. Changing the "
-                        "preference takes effect immediately for "
-                        "future corrections; previously shared "
-                        "corrections are retained permanently."
+                        "Updates the authenticated user's username "
+                        "and/or correction sharing opt-in "
+                        "preference. Changing the preference takes "
+                        "effect immediately for future corrections; "
+                        "shared corrections can be withdrawn with "
+                        "the account deletion."
                     ),
                     "operationId": "updateMe",
                     "tags": ["Authentication"],
@@ -315,8 +316,61 @@ def get_openapi_schema() -> dict[str, Any]:
                                 "401": "Not authenticated",
                                 "403": "Invalid or missing CSRF token",
                                 "404": "User not found",
+                                "409": "Username already taken",
                             }
                         ),
+                    },
+                }
+            },
+            "/auth/me/password": {
+                "put": {
+                    "summary": "Change the current user's password",
+                    "description": (
+                        "Verifies the current password, updates the "
+                        "password hash, and revokes all other "
+                        "sessions. The current session stays valid. "
+                        "Requires the X-CSRF-Token header."
+                    ),
+                    "operationId": "changePassword",
+                    "tags": ["Authentication"],
+                    "security": _security(),
+                    "requestBody": _body("ChangePasswordRequest"),
+                    "responses": {
+                        "200": _ok(
+                            "Password changed",
+                            _ref("MessageResponse")
+                        ),
+                        **_errors(
+                            **{
+                                "400": "Validation error",
+                                "401": "Invalid current password",
+                                "403": "Invalid or missing CSRF token",
+                                "422": "New password too weak",
+                            }
+                        ),
+                    },
+                }
+            },
+            "/auth/me/export": {
+                "get": {
+                    "summary": "Export all personal data of the "
+                               "current user",
+                    "description": (
+                        "Returns a JSON document containing the "
+                        "user's account data, processing results, "
+                        "transactions, and corrections (right of "
+                        "access and data portability, GDPR Art. 15 "
+                        "and 20)."
+                    ),
+                    "operationId": "exportMe",
+                    "tags": ["Authentication"],
+                    "security": _security(),
+                    "responses": {
+                        "200": _ok(
+                            "Data export",
+                            _ref("DataExportResponse")
+                        ),
+                        **_errors(**{"401": "Not authenticated"}),
                     },
                 }
             },
@@ -1301,6 +1355,33 @@ def get_openapi_schema() -> dict[str, Any]:
                         },
                         "opt_in_sharing": {
                             "type": "boolean"
+                        },
+                        "opted_in_at": {
+                            "type": "string",
+                            "format": "date-time",
+                            "nullable": True,
+                            "description": (
+                                "UTC timestamp of the most recent "
+                                "sharing opt-in (GDPR Art. 7(1))"
+                            )
+                        },
+                        "opted_out_at": {
+                            "type": "string",
+                            "format": "date-time",
+                            "nullable": True,
+                            "description": (
+                                "UTC timestamp of the most recent "
+                                "sharing opt-out"
+                            )
+                        },
+                        "scheduled_deletion_at": {
+                            "type": "string",
+                            "format": "date-time",
+                            "nullable": True,
+                            "description": (
+                                "UTC timestamp after which the "
+                                "retention job deletes the account"
+                            )
                         }
                     }
                 },
@@ -1388,15 +1469,25 @@ def get_openapi_schema() -> dict[str, Any]:
                 },
                 "UpdateMeRequest": {
                     "type": "object",
-                    "required": ["opt_in_sharing"],
+                    "description": (
+                        "At least one of username or opt_in_sharing "
+                        "must be present"
+                    ),
                     "properties": {
+                        "username": {
+                            "type": "string",
+                            "maxLength": 255,
+                            "description": (
+                                "New unique username (right to "
+                                "rectification)"
+                            )
+                        },
                         "opt_in_sharing": {
                             "type": "boolean",
                             "description": (
                                 "Whether the user opts in to sharing "
                                 "corrections (merchant names and "
-                                "categories, anonymized, retained "
-                                "permanently)"
+                                "categories, anonymized)"
                             )
                         }
                     }
@@ -1406,6 +1497,61 @@ def get_openapi_schema() -> dict[str, Any]:
                     "required": ["user"],
                     "properties": {
                         "user": _ref("UserDetail")
+                    }
+                },
+                "ChangePasswordRequest": {
+                    "type": "object",
+                    "required": ["current_password", "new_password"],
+                    "properties": {
+                        "current_password": {
+                            "type": "string",
+                            "format": "password",
+                            "description": (
+                                "Current password confirming the "
+                                "change"
+                            )
+                        },
+                        "new_password": {
+                            "type": "string",
+                            "format": "password",
+                            "description": (
+                                "New password (minimum 12 characters)"
+                            )
+                        }
+                    }
+                },
+                "DataExportResponse": {
+                    "type": "object",
+                    "description": (
+                        "Machine-readable export of the user's "
+                        "personal data (account, processing results, "
+                        "transactions, corrections)"
+                    ),
+                    "required": ["generated_at", "account"],
+                    "properties": {
+                        "generated_at": {
+                            "type": "string",
+                            "format": "date-time"
+                        },
+                        "account": _ref("UserDetail"),
+                        "processing_results": {
+                            "type": "array",
+                            "items": {
+                                "type": "object"
+                            }
+                        },
+                        "transactions": {
+                            "type": "array",
+                            "items": {
+                                "type": "object"
+                            }
+                        },
+                        "corrections": {
+                            "type": "array",
+                            "items": {
+                                "type": "object"
+                            }
+                        }
                     }
                 },
                 "AccountDeletionRequest": {
@@ -1418,6 +1564,15 @@ def get_openapi_schema() -> dict[str, Any]:
                             "description": (
                                 "Current password confirming the "
                                 "deletion request"
+                            )
+                        },
+                        "revoke_shared_corrections": {
+                            "type": "boolean",
+                            "description": (
+                                "Also withdraw the user's shared "
+                                "correction contributions when the "
+                                "account is deleted (GDPR Art. 7(3)); "
+                                "default false"
                             )
                         }
                     }

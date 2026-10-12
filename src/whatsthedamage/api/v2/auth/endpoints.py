@@ -5,7 +5,9 @@ Provides REST API endpoints for user authentication including:
 - Login (POST /api/v2/auth/login)
 - Logout (POST /api/v2/auth/logout)
 - Current user (GET /api/v2/auth/me)
-- Update settings (PUT /api/v2/auth/me)
+- Update account data (PUT /api/v2/auth/me)
+- Change password (PUT /api/v2/auth/me/password)
+- Data export (GET /api/v2/auth/me/export)
 - Account deletion (DELETE /api/v2/auth/account)
 - CSRF token (GET /api/v2/auth/csrf-token)
 """
@@ -198,6 +200,44 @@ def _create_error_response(
     if retry_after is not None:
         error_dict['retry_after'] = str(retry_after)
     return error_dict, status_code
+
+
+def _to_iso(value: Any) -> Optional[str]:
+    """Serialize a datetime-or-string value as an ISO 8601 string.
+
+    Args:
+        value: DateTime, string, or None.
+
+    Returns:
+        ISO 8601 string, the original string, or None.
+    """
+    if value is None:
+        return None
+    if isinstance(value, datetime):
+        return value.isoformat()
+    return str(value)
+
+
+def _user_payload(user: UserDB) -> dict[str, Any]:
+    """Build the API representation of a user.
+
+    Args:
+        user: User entity.
+
+    Returns:
+        Dictionary of user attributes for API responses.
+    """
+    return {
+        'id': int(user.id) if user.id is not None else 0,
+        'username': user.username,
+        'created_at': _to_iso(user.created_at),
+        'last_login_at': _to_iso(user.last_login_at),
+        'is_active': user.is_active,
+        'opt_in_sharing': user.opt_in_sharing,
+        'opted_in_at': _to_iso(user.opted_in_at),
+        'opted_out_at': _to_iso(user.opted_out_at),
+        'scheduled_deletion_at': _to_iso(user.scheduled_deletion_at)
+    }
 
 
 @auth_bp.route('/register', methods=['POST'])
@@ -550,7 +590,10 @@ def get_me() -> Tuple[Response, int]:
                 "created_at": "ISO8601 timestamp",
                 "last_login_at": "ISO8601 timestamp or null",
                 "is_active": boolean,
-                "opt_in_sharing": boolean
+                "opt_in_sharing": boolean,
+                "opted_in_at": "ISO8601 timestamp or null",
+                "opted_out_at": "ISO8601 timestamp or null",
+                "scheduled_deletion_at": "ISO8601 timestamp or null"
             },
             "csrf_token": "string or null"
         }
@@ -580,19 +623,8 @@ def get_me() -> Tuple[Response, int]:
 
         user, session, csrf_token = result
 
-        # Build response
-        user_id = int(user.id) if user.id is not None else 0
-        created_at_str = user.created_at.isoformat() if user.created_at else None
-        last_login_str = user.last_login_at.isoformat() if user.last_login_at else None
         response_data: dict[str, Any] = {
-            'user': {
-                'id': user_id,
-                'username': user.username,
-                'created_at': created_at_str,
-                'last_login_at': last_login_str,
-                'is_active': user.is_active,
-                'opt_in_sharing': user.opt_in_sharing
-            },
+            'user': _user_payload(user),
             'csrf_token': csrf_token
         }
 
@@ -609,15 +641,21 @@ def get_me() -> Tuple[Response, int]:
 @auth_bp.route('/me', methods=['PUT'])
 @require_auth_and_csrf
 def update_me() -> Tuple[Response, int]:
-    """Update current user settings.
+    """Update current user account data (right to rectification).
 
-    Updates the authenticated user's correction sharing opt-in
-    preference. Requires authentication and CSRF protection.
+    Updates the authenticated user's username and/or correction
+    sharing opt-in preference. Requires authentication and CSRF
+    protection.
 
     Request JSON:
         {
-            "opt_in_sharing": boolean (required)
+            "username": "string" (optional),
+            "opt_in_sharing": boolean (optional)
         }
+
+    At least one field must be present. The consent timestamps
+    (opted_in_at / opted_out_at) are recorded with the opt-in
+    change for demonstrability (GDPR Art. 7(1)).
 
     Response JSON:
         {
@@ -627,38 +665,64 @@ def update_me() -> Tuple[Response, int]:
                 "created_at": "ISO8601 timestamp",
                 "last_login_at": "ISO8601 timestamp or null",
                 "is_active": boolean,
-                "opt_in_sharing": boolean
+                "opt_in_sharing": boolean,
+                "opted_in_at": "ISO8601 timestamp or null",
+                "opted_out_at": "ISO8601 timestamp or null",
+                "scheduled_deletion_at": "ISO8601 timestamp or null"
             }
         }
 
     Status Codes:
         200: Successfully updated
-        400: Bad request (missing or invalid opt_in_sharing)
+        400: Bad request (no valid field present, invalid types)
         401: Not authenticated
         403: Invalid or missing CSRF token
+        409: Username already taken
     """
     user = cast(UserDB, request.user)  # type: ignore[attr-defined]
 
     try:
         data = request.get_json(silent=True)
-        if not data or 'opt_in_sharing' not in data:
+        if not data:
             return jsonify(_create_error_response(
-                "opt_in_sharing is required",
+                "Request body is required",
                 400,
                 "VALIDATION_ERROR"
             )[0]), 400
 
-        opt_in_sharing = data['opt_in_sharing']
-        if not isinstance(opt_in_sharing, bool):
+        if 'username' not in data and 'opt_in_sharing' not in data:
             return jsonify(_create_error_response(
-                "opt_in_sharing must be a boolean",
+                "username or opt_in_sharing is required",
                 400,
                 "VALIDATION_ERROR"
             )[0]), 400
 
-        updated_user = _get_auth_service().update_opt_in_sharing(
-            cast(int, user.id), opt_in_sharing
-        )
+        updated_user: Optional[UserDB] = None
+
+        if 'opt_in_sharing' in data:
+            opt_in_sharing = data['opt_in_sharing']
+            if not isinstance(opt_in_sharing, bool):
+                return jsonify(_create_error_response(
+                    "opt_in_sharing must be a boolean",
+                    400,
+                    "VALIDATION_ERROR"
+                )[0]), 400
+            updated_user = _get_auth_service().update_opt_in_sharing(
+                cast(int, user.id), opt_in_sharing
+            )
+
+        if 'username' in data:
+            new_username = data['username']
+            if not isinstance(new_username, str):
+                return jsonify(_create_error_response(
+                    "username must be a string",
+                    400,
+                    "VALIDATION_ERROR"
+                )[0]), 400
+            updated_user = _get_auth_service().update_username(
+                user, new_username
+            )
+
         if updated_user is None:
             return jsonify(_create_error_response(
                 "User not found",
@@ -666,31 +730,222 @@ def update_me() -> Tuple[Response, int]:
                 "USER_NOT_FOUND"
             )[0]), 404
 
-        created_at_str = (
-            updated_user.created_at.isoformat()
-            if updated_user.created_at else None
-        )
-        last_login_str = (
-            updated_user.last_login_at.isoformat()
-            if updated_user.last_login_at else None
-        )
-        response_data: dict[str, Any] = {
-            'user': {
-                'id': int(updated_user.id)
-                if updated_user.id is not None else 0,
-                'username': updated_user.username,
-                'created_at': created_at_str,
-                'last_login_at': last_login_str,
-                'is_active': updated_user.is_active,
-                'opt_in_sharing': updated_user.opt_in_sharing
-            }
-        }
+        return jsonify({'user': _user_payload(updated_user)}), 200
 
-        return jsonify(response_data), 200
-
-    except Exception as e:
+    except ValueError as e:
+        error_message = str(e)
+        if "already exists" in error_message.lower():
+            return jsonify(_create_error_response(
+                error_message,
+                409,
+                "USERNAME_EXISTS"
+            )[0]), 409
+        return jsonify(_create_error_response(
+            error_message,
+            400,
+            "VALIDATION_ERROR"
+        )[0]), 400
+    except Exception:
         return jsonify(_create_error_response(
             "Failed to update user settings",
+            500,
+            "INTERNAL_ERROR"
+        )[0]), 500
+
+
+@auth_bp.route('/me/password', methods=['PUT'])
+@require_auth_and_csrf
+def change_password() -> Tuple[Response, int]:
+    """Change the current user's password while logged in.
+
+    Verifies the current password, updates the password hash, and
+    revokes all other sessions of the user. The current session
+    stays valid. Requires authentication and CSRF protection.
+
+    Request JSON:
+        {
+            "current_password": "string",
+            "new_password": "string"
+        }
+
+    Request Headers:
+        X-CSRF-Token: Valid CSRF token for the current session
+
+    Response JSON:
+        {
+            "message": "Password changed"
+        }
+
+    Status Codes:
+        200: Password changed
+        400: Validation error (missing fields, new password too weak)
+        401: Not authenticated or wrong current password
+        403: Invalid or missing CSRF token
+        422: New password too short
+    """
+    user = cast(UserDB, request.user)  # type: ignore[attr-defined]
+    session = cast(Any, request.session)  # type: ignore[attr-defined]
+
+    try:
+        data = request.get_json(silent=True)
+        current_password = data.get('current_password') if data else None
+        new_password = data.get('new_password') if data else None
+
+        if not current_password or not isinstance(current_password, str):
+            return jsonify(_create_error_response(
+                "Current password is required",
+                400,
+                "MISSING_CURRENT_PASSWORD"
+            )[0]), 400
+
+        if not new_password or not isinstance(new_password, str):
+            return jsonify(_create_error_response(
+                "New password is required",
+                400,
+                "MISSING_NEW_PASSWORD"
+            )[0]), 400
+
+        _get_auth_service().change_password(
+            user, current_password, new_password, session
+        )
+
+        return jsonify({'message': 'Password changed'}), 200
+
+    except ValueError as e:
+        error_message = str(e)
+        if "password must be at least" in error_message.lower():
+            return jsonify(_create_error_response(
+                error_message,
+                422,
+                "PASSWORD_TOO_WEAK"
+            )[0]), 422
+        if "invalid current password" in error_message.lower():
+            return jsonify(_create_error_response(
+                "Invalid current password",
+                401,
+                "INVALID_CREDENTIALS"
+            )[0]), 401
+        return jsonify(_create_error_response(
+            error_message,
+            400,
+            "VALIDATION_ERROR"
+        )[0]), 400
+    except Exception:
+        return jsonify(_create_error_response(
+            "Failed to change password",
+            500,
+            "INTERNAL_ERROR"
+        )[0]), 500
+
+
+@auth_bp.route('/me/export', methods=['GET'])
+def export_me() -> Tuple[Response, int]:
+    """Export all personal data of the current user.
+
+    Returns a single JSON document containing the user's account
+    data, processing results, transactions, and corrections
+    (right of access and data portability, GDPR Art. 15 and 20).
+    Requires authentication. Password and recovery code hashes are
+    never included.
+
+    Response:
+        JSON attachment with the user's data.
+
+    Status Codes:
+        200: Export generated
+        401: Not authenticated
+        500: Internal server error
+    """
+    user = cast(UserDB, request.user)  # type: ignore[attr-defined]
+
+    try:
+        user_id = cast(int, user.id)
+
+        transaction_repo = current_app.extensions.get(
+            'transaction_repository'
+        )
+        correction_repo = current_app.extensions.get(
+            'correction_repository'
+        )
+        processing_result_repo = current_app.extensions.get(
+            'processing_result_repository'
+        )
+        if (
+            transaction_repo is None
+            or correction_repo is None
+            or processing_result_repo is None
+        ):
+            return jsonify(_create_error_response(
+                "Data export is not available",
+                500,
+                "INTERNAL_ERROR"
+            )[0]), 500
+
+        transactions = transaction_repo.find_all_by_user(user_id)
+        corrections = correction_repo.find_all_by_user(user_id)
+
+        processing_results: list[dict[str, Any]] = []
+        offset = 0
+        page_size = 100
+        while True:
+            page = processing_result_repo.find_by_user_id(
+                user_id, limit=page_size, offset=offset
+            )
+            processing_results.extend({
+                'result_id': result.result_id,
+                'csv_profile_id': result.csv_profile_id,
+                'row_count': result.row_count,
+                'processing_time': result.processing_time,
+                'ml_enabled': result.ml_enabled,
+                'start_date': _to_iso(result.start_date),
+                'end_date': _to_iso(result.end_date),
+                'created_at': _to_iso(result.created_at)
+            } for result in page)
+            if len(page) < page_size:
+                break
+            offset += page_size
+
+        payload: dict[str, Any] = {
+            'generated_at': datetime.now(UTC).isoformat(),
+            'account': _user_payload(user),
+            'processing_results': processing_results,
+            'transactions': [{
+                'id': transaction.id,
+                'result_id': transaction.result_id,
+                'date': _to_iso(transaction.date),
+                'transaction_type': transaction.transaction_type,
+                'original_partner': transaction.original_partner,
+                'amount': transaction.amount,
+                'currency': transaction.currency,
+                'account': transaction.account,
+                'category_id': transaction.category_id,
+                'partner': transaction.partner,
+                'notice': transaction.notice,
+                'confidence': transaction.confidence,
+                'original_category_id': transaction.original_category_id,
+                'original_notice': transaction.original_notice,
+                'created_at': _to_iso(transaction.created_at),
+                'updated_at': _to_iso(transaction.updated_at)
+            } for transaction in transactions],
+            'corrections': [{
+                'id': correction.id,
+                'original_partner': correction.original_partner,
+                'corrected_partner': correction.corrected_partner,
+                'corrected_category_id': correction.corrected_category_id,
+                'created_at': _to_iso(correction.created_at),
+                'updated_at': _to_iso(correction.updated_at)
+            } for correction in corrections]
+        }
+
+        response = jsonify(payload)
+        response.headers['Content-Disposition'] = (
+            'attachment; filename="whatsthedamage-export.json"'
+        )
+        return response, 200
+
+    except Exception:
+        return jsonify(_create_error_response(
+            "Failed to export data",
             500,
             "INTERNAL_ERROR"
         )[0]), 500
@@ -706,11 +961,16 @@ def delete_account() -> Tuple[Response, int]:
     all sessions. Logging in before the scheduled timestamp cancels
     the deletion. After the grace period the retention job deletes
     the account with all transactions, corrections, and processing
-    results; anonymized shared corrections are retained permanently.
+    results. When revoke_shared_corrections is true, the user's
+    shared correction contributions are also withdrawn (GDPR
+    Art. 7(3)); otherwise the anonymized shared corrections are
+    retained.
 
     Request JSON:
         {
-            "password": "string"
+            "password": "string",
+            "revoke_shared_corrections": boolean (optional,
+                default false)
         }
 
     Request Headers:
@@ -740,6 +1000,18 @@ def delete_account() -> Tuple[Response, int]:
                 "MISSING_PASSWORD"
             )[0]), 400
 
+        revoke_shared_corrections = False
+        if data and 'revoke_shared_corrections' in data:
+            revoke_shared_corrections = (
+                data['revoke_shared_corrections']
+            )
+            if not isinstance(revoke_shared_corrections, bool):
+                return jsonify(_create_error_response(
+                    "revoke_shared_corrections must be a boolean",
+                    400,
+                    "VALIDATION_ERROR"
+                )[0]), 400
+
         retention_service = current_app.extensions.get(
             'retention_service'
         )
@@ -752,7 +1024,11 @@ def delete_account() -> Tuple[Response, int]:
 
         scheduled_deletion_at = cast(
             Any, retention_service
-        ).request_account_deletion(user, password)
+        ).request_account_deletion(
+            user,
+            password,
+            revoke_shared_corrections=revoke_shared_corrections
+        )
 
         response = jsonify({
             'message': 'Account deletion scheduled',
@@ -891,14 +1167,7 @@ def reset_password() -> Tuple[Response, int]:
 
         # Build response
         response_data = {
-            'user': {
-                'id': user.id,
-                'username': user.username,
-                'created_at': user.created_at.isoformat() if user.created_at else None,
-                'last_login_at': user.last_login_at.isoformat() if user.last_login_at else None,
-                'is_active': user.is_active,
-                'opt_in_sharing': user.opt_in_sharing
-            },
+            'user': _user_payload(user),
             'new_recovery_code': new_formatted_recovery_code
         }
 

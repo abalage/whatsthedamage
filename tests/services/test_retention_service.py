@@ -46,7 +46,9 @@ def mock_user_repository():
 @pytest.fixture
 def mock_session_repository():
     """Create a mock SessionRepository for testing."""
-    return Mock()
+    mock = Mock()
+    mock.cleanup_expired_and_revoked.return_value = 0
+    return mock
 
 
 @pytest.fixture
@@ -74,13 +76,22 @@ def mock_processing_result_repository():
 
 
 @pytest.fixture
+def mock_shared_correction_repository():
+    """Create a mock SharedCorrectionRepository for testing."""
+    mock = Mock()
+    mock.withdraw_by_user_id.return_value = 0
+    return mock
+
+
+@pytest.fixture
 def retention_service(
     mock_user_repository,
     mock_session_repository,
     password_service,
     mock_transaction_repository,
     mock_correction_repository,
-    mock_processing_result_repository
+    mock_processing_result_repository,
+    mock_shared_correction_repository
 ):
     """Create a RetentionService instance for testing."""
     return RetentionService(
@@ -90,6 +101,7 @@ def retention_service(
         transaction_repository=mock_transaction_repository,
         correction_repository=mock_correction_repository,
         processing_result_repository=mock_processing_result_repository,
+        shared_correction_repository=mock_shared_correction_repository,
         deletion_grace_days=7,
         inactivity_days=180
     )
@@ -112,9 +124,23 @@ class TestRequestAccountDeletion:
         after = datetime.now(UTC) + timedelta(days=7)
         assert before + timedelta(days=7) <= scheduled_at <= after
         mock_user_repository.schedule_deletion.assert_called_once_with(
-            1, scheduled_at
+            1, scheduled_at, revoke_shared_corrections=False
         )
         mock_session_repository.revoke_by_user_id.assert_called_once_with(1)
+
+    def test_schedules_deletion_with_shared_correction_revocation(
+        self, retention_service, mock_user_repository, user
+    ):
+        """The revocation option is persisted with the request."""
+        retention_service.request_account_deletion(
+            user, 'password-123456', revoke_shared_corrections=True
+        )
+
+        mock_user_repository.schedule_deletion.assert_called_once_with(
+            mock_user_repository.schedule_deletion.call_args[0][0],
+            mock_user_repository.schedule_deletion.call_args[0][1],
+            revoke_shared_corrections=True
+        )
 
     def test_wrong_password_raises(
         self, retention_service, mock_user_repository,
@@ -144,7 +170,8 @@ class TestPurge:
 
         assert result == {
             'accounts_deleted': 1,
-            'inactive_accounts_deleted': 0
+            'inactive_accounts_deleted': 0,
+            'expired_sessions_deleted': 0
         }
         mock_user_repository.delete.assert_called_once_with(1)
         mock_session_repository.revoke_by_user_id.assert_called_once_with(1)
@@ -173,7 +200,8 @@ class TestPurge:
 
         assert result == {
             'accounts_deleted': 0,
-            'inactive_accounts_deleted': 1
+            'inactive_accounts_deleted': 1,
+            'expired_sessions_deleted': 0
         }
         mock_user_repository.delete.assert_called_once_with(1)
         mock_session_repository.revoke_by_user_id.assert_called_once_with(1)
@@ -195,15 +223,42 @@ class TestPurge:
         expected_max = after - timedelta(days=180)
         assert expected_min <= cutoff <= expected_max
 
-    def test_purge_never_touches_shared_corrections(
-        self, retention_service, mock_user_repository, user
+    def test_purge_deletes_expired_sessions(
+        self, retention_service, mock_session_repository
     ):
-        """Shared corrections have no user linkage and are not queried."""
+        """Expired and revoked session rows are physically deleted."""
+        mock_session_repository.cleanup_expired_and_revoked.return_value = 3
+
+        result = retention_service.purge()
+
+        mock_session_repository.cleanup_expired_and_revoked \
+            .assert_called_once_with()
+        assert result['expired_sessions_deleted'] == 3
+
+    def test_purge_withdraws_shared_corrections_on_request(
+        self, retention_service, mock_user_repository,
+        mock_shared_correction_repository, user
+    ):
+        """Contributions are withdrawn when the user requested it."""
+        user.revoke_shared_corrections = True
         mock_user_repository.find_due_for_deletion.return_value = [user]
 
         retention_service.purge()
 
-        # The retention service has no shared correction repository;
-        # the purge only goes through user, transaction, correction,
-        # and processing result repositories.
-        assert not hasattr(retention_service, 'shared_correction_repository')
+        mock_shared_correction_repository.withdraw_by_user_id \
+            .assert_called_once_with(1)
+
+    def test_purge_keeps_shared_corrections_without_request(
+        self, retention_service, mock_user_repository,
+        mock_shared_correction_repository, user
+    ):
+        """Without a revocation request the linkage is deleted only."""
+        user.revoke_shared_corrections = False
+        mock_user_repository.find_due_for_deletion.return_value = [user]
+
+        retention_service.purge()
+
+        mock_shared_correction_repository.withdraw_by_user_id \
+            .assert_not_called()
+        mock_shared_correction_repository.delete_links_by_user_id \
+            .assert_called_once_with(1)

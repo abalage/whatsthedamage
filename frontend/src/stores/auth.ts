@@ -8,7 +8,8 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import type { User } from '../types/auth.js';
-import { register, login, logout, getMe, fetchCsrfToken, updateSharingPreference, deleteAccount } from '../js/api.js';
+import { register, login, logout, getMe, fetchCsrfToken, updateSharingPreference, updateUsername, changePassword, exportMyData, deleteAccount } from '../js/api.js';
+import type { DataExportResponse } from '../types/auth.js';
 
 /**
  * localStorage key for the persisted CSRF token.
@@ -204,6 +205,67 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   /**
+   * Change the current user's username (right to rectification).
+   *
+   * @param username - New unique username
+   * @returns Promise with the updated user
+   */
+  async function changeUsername(username: string): Promise<User> {
+    isLoading.value = true;
+    error.value = null;
+
+    try {
+      const response = await updateUsername(username);
+      if (user.value) {
+        user.value = response.user;
+      }
+      return response.user;
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      error.value = errorMessage;
+      throw err;
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  /**
+   * Change the current user's password while logged in.
+   *
+   * All other sessions are revoked server-side; the current session
+   * stays valid.
+   *
+   * @param currentPassword - Current password confirming the change
+   * @param newPassword - New password (minimum 12 characters)
+   */
+  async function changeUserPassword(
+    currentPassword: string,
+    newPassword: string
+  ): Promise<void> {
+    isLoading.value = true;
+    error.value = null;
+
+    try {
+      await changePassword(currentPassword, newPassword);
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      error.value = errorMessage;
+      throw err;
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  /**
+   * Export all personal data of the current user (data portability).
+   *
+   * @returns Promise with the machine-readable export document
+   */
+  async function exportData(): Promise<DataExportResponse> {
+    return exportMyData();
+  }
+
+  /**
    * Schedule deletion of the current account.
    *
    * The backend revokes all sessions and schedules the deletion after
@@ -211,14 +273,19 @@ export const useAuthStore = defineStore('auth', () => {
    * state is cleared regardless.
    *
    * @param password - Current password confirming the deletion request
+   * @param revokeSharedCorrections - Whether to also withdraw the
+   * user's shared correction contributions when the account is deleted
    * @returns Promise with the scheduled deletion timestamp
    */
-  async function requestAccountDeletion(password: string): Promise<string> {
+  async function requestAccountDeletion(
+    password: string,
+    revokeSharedCorrections: boolean = false
+  ): Promise<string> {
     isLoading.value = true;
     error.value = null;
 
     try {
-      const response = await deleteAccount(password);
+      const response = await deleteAccount(password, revokeSharedCorrections);
       return response.scheduled_deletion_at;
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : String(err);
@@ -267,6 +334,9 @@ export const useAuthStore = defineStore('auth', () => {
     acknowledgeRecoveryCode,
     refreshCsrfToken,
     setOptInSharing,
+    changeUsername,
+    changeUserPassword,
+    exportData,
     requestAccountDeletion,
 
     // Getters

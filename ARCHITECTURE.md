@@ -124,7 +124,8 @@ whatsthedamage/
 │   │   │   ├── transaction.py      # Persisted transaction entity
 │   │   │   ├── processing_result.py # Persisted processing result entity
 │   │   │   ├── correction.py       # User transaction correction entity
-│   │   │   └── shared_correction.py # Shared correction entity
+│   │   │   ├── shared_correction.py # Shared correction entity
+│   │   │   └── shared_correction_contribution.py # User-to-shared-correction link (erasure/withdrawal)
 │   │   ├── repositories/     # Data access layer (Repository pattern)
 │   │   │   ├── base_repository.py        # Generic repository base
 │   │   │   ├── user_repository.py
@@ -167,6 +168,7 @@ whatsthedamage/
 │   │   ├── processing_service.py    # Core processing service
 │   │   ├── rate_limit_service.py    # API rate limiting
 │   │   ├── recovery_code_service.py # One-time password recovery codes
+│   │   ├── retention_service.py    # Account deletion and retention purge
 │   │   ├── response_formatting_service.py # Unified formatting & response building
 │   │   ├── service_container.py      # Service container factory
 │   │   ├── session_service.py      # DB-backed session management

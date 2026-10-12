@@ -13,6 +13,9 @@ from sqlalchemy.orm import Session as SqlAlchemySession
 from whatsthedamage.models.database.shared_correction import (
     SharedCorrection as SharedCorrectionDB
 )
+from whatsthedamage.models.database.shared_correction_contribution import (
+    SharedCorrectionContribution as ContributionDB
+)
 from whatsthedamage.models.repositories.base_repository import SqlAlchemyBaseRepository
 
 
@@ -71,7 +74,8 @@ class SharedCorrectionRepository(Protocol):
         self,
         original_partner: str,
         corrected_category_id: str,
-        corrected_partner: Optional[str] = None
+        corrected_partner: Optional[str] = None,
+        user_id: Optional[int] = None
     ) -> SharedCorrectionDB:
         """Create or update a shared correction.
 
@@ -79,15 +83,50 @@ class SharedCorrectionRepository(Protocol):
         exists, updates the contributed values to the latest ones and
         increments the contribution_count only when the values
         actually changed; identical re-contributions are no-ops.
-        Otherwise, creates a new one.
+        Otherwise, creates a new one. When user_id is given, the
+        user's contribution is recorded in the contribution link
+        table so it can be withdrawn on account deletion (GDPR
+        Art. 7(3)); the link is never exposed via the API.
 
         Args:
             original_partner: Original partner name (will be hashed).
             corrected_category_id: Category identifier for the correction.
             corrected_partner: Corrected partner name (optional).
+            user_id: Contributing user identifier (optional).
 
         Returns:
             The created or updated SharedCorrection entity.
+        """
+        ...
+
+    def withdraw_by_user_id(self, user_id: int) -> int:
+        """Withdraw all shared correction contributions of a user.
+
+        Subtracts the user's recorded revision counts from the
+        shared corrections' contribution_count values and deletes
+        every shared correction whose count reaches zero, then
+        removes the user's contribution link rows.
+
+        Args:
+            user_id: User identifier.
+
+        Returns:
+            Number of contribution link rows withdrawn.
+        """
+        ...
+
+    def delete_links_by_user_id(self, user_id: int) -> int:
+        """Delete a user's contribution link rows without withdrawal.
+
+        Used when an account is deleted without a withdrawal request:
+        the user linkage is personal data and is removed with the
+        account, while the anonymized shared corrections are retained.
+
+        Args:
+            user_id: User identifier.
+
+        Returns:
+            Number of contribution link rows deleted.
         """
         ...
 
@@ -185,7 +224,8 @@ class SqlAlchemySharedCorrectionRepository(
         self,
         original_partner: str,
         corrected_category_id: str,
-        corrected_partner: Optional[str] = None
+        corrected_partner: Optional[str] = None,
+        user_id: Optional[int] = None
     ) -> SharedCorrectionDB:
         """Create or update a shared correction.
 
@@ -195,12 +235,17 @@ class SqlAlchemySharedCorrectionRepository(
         actually changed; identical re-contributions are no-ops so
         the count reflects distinct value revisions. Otherwise,
         creates a new one. A concurrent insert racing the unique
-        partner hash index is retried as an update.
+        partner hash index is retried as an update. When user_id is
+        given, the user's contribution is recorded in the
+        contribution link table so it can be withdrawn on account
+        deletion (GDPR Art. 7(3)); the link is never exposed via
+        the API.
 
         Args:
             original_partner: Original partner name (will be hashed).
             corrected_category_id: Category identifier for the correction.
             corrected_partner: Corrected partner name (optional).
+            user_id: Contributing user identifier (optional).
 
         Returns:
             The created or updated SharedCorrection entity.
@@ -221,11 +266,15 @@ class SqlAlchemySharedCorrectionRepository(
             ).first()
 
             if existing:
-                self._apply_contribution(
+                changed = self._apply_contribution(
                     existing,
                     corrected_partner,
                     corrected_category_id
                 )
+                if changed and user_id is not None:
+                    self._record_contribution(
+                        session, user_id, existing.id
+                    )
                 session.commit()
                 return existing  # type: ignore[no-any-return]
 
@@ -239,6 +288,11 @@ class SqlAlchemySharedCorrectionRepository(
             )
             session.add(shared_correction)
             try:
+                session.flush()
+                if user_id is not None:
+                    self._record_contribution(
+                        session, user_id, shared_correction.id
+                    )
                 session.commit()
                 return shared_correction
             except IntegrityError:
@@ -248,13 +302,121 @@ class SqlAlchemySharedCorrectionRepository(
                 ).first()
                 if existing is None:
                     raise
-                self._apply_contribution(
+                changed = self._apply_contribution(
                     existing,
                     corrected_partner,
                     corrected_category_id
                 )
+                if changed and user_id is not None:
+                    self._record_contribution(
+                        session, user_id, existing.id
+                    )
                 session.commit()
                 return existing  # type: ignore[no-any-return]
+        except Exception:
+            session.rollback()
+            raise
+        finally:
+            session.close()
+
+    @staticmethod
+    def _record_contribution(
+        session: SqlAlchemySession,
+        user_id: int,
+        shared_correction_id: Optional[int]
+    ) -> None:
+        """Record or increment a user's contribution link row.
+
+        Args:
+            session: Active SQLAlchemy session.
+            user_id: Contributing user identifier.
+            shared_correction_id: Shared correction identifier.
+        """
+        if shared_correction_id is None:
+            return
+        link = session.query(ContributionDB).filter(
+            ContributionDB.user_id == user_id,
+            ContributionDB.shared_correction_id == shared_correction_id
+        ).first()
+        if link:
+            setattr(
+                link, 'contribution_count',
+                int(link.contribution_count) + 1
+            )
+        else:
+            session.add(ContributionDB(
+                user_id=user_id,
+                shared_correction_id=shared_correction_id,
+                contribution_count=1,
+                contributed_at=datetime.now(UTC)
+            ))
+
+    def withdraw_by_user_id(self, user_id: int) -> int:
+        """Withdraw all shared correction contributions of a user.
+
+        Subtracts the user's recorded revision counts from the
+        shared corrections' contribution_count values and deletes
+        every shared correction whose count reaches zero, then
+        removes the user's contribution link rows.
+
+        Args:
+            user_id: User identifier.
+
+        Returns:
+            Number of contribution link rows withdrawn.
+        """
+        session = self._get_session()
+        try:
+            links = session.query(ContributionDB).filter(
+                ContributionDB.user_id == user_id
+            ).all()
+
+            for link in links:
+                shared_correction = session.query(
+                    SharedCorrectionDB
+                ).filter(
+                    SharedCorrectionDB.id == link.shared_correction_id
+                ).first()
+                if shared_correction is None:
+                    continue
+                remaining = int(shared_correction.contribution_count) \
+                    - int(link.contribution_count)
+                if remaining <= 0:
+                    session.delete(shared_correction)
+                else:
+                    setattr(
+                        shared_correction, 'contribution_count', remaining
+                    )
+                session.delete(link)
+
+            session.commit()
+            return len(links)
+        except Exception:
+            session.rollback()
+            raise
+        finally:
+            session.close()
+
+    def delete_links_by_user_id(self, user_id: int) -> int:
+        """Delete a user's contribution link rows without withdrawal.
+
+        Used when an account is deleted without a withdrawal request:
+        the user linkage is personal data and is removed with the
+        account, while the anonymized shared corrections are retained.
+
+        Args:
+            user_id: User identifier.
+
+        Returns:
+            Number of contribution link rows deleted.
+        """
+        session = self._get_session()
+        try:
+            result = session.query(ContributionDB).filter(
+                ContributionDB.user_id == user_id
+            ).delete(synchronize_session=False)
+            session.commit()
+            return result  # type: ignore[no-any-return]
         except Exception:
             session.rollback()
             raise
@@ -266,7 +428,7 @@ class SqlAlchemySharedCorrectionRepository(
         shared_correction: SharedCorrectionDB,
         corrected_partner: Optional[str],
         corrected_category_id: str
-    ) -> None:
+    ) -> bool:
         """Apply a contribution to an existing shared correction.
 
         Updates the contributed values and increments the
@@ -276,6 +438,9 @@ class SqlAlchemySharedCorrectionRepository(
             shared_correction: Existing shared correction entity.
             corrected_partner: Corrected partner name (optional).
             corrected_category_id: Category identifier for the correction.
+
+        Returns:
+            True when the values changed, False otherwise.
         """
         values_changed = (
             shared_correction.corrected_partner != corrected_partner
@@ -283,7 +448,7 @@ class SqlAlchemySharedCorrectionRepository(
             != corrected_category_id
         )
         if not values_changed:
-            return
+            return False
 
         setattr(shared_correction, 'corrected_partner', corrected_partner)
         setattr(
@@ -293,6 +458,7 @@ class SqlAlchemySharedCorrectionRepository(
             shared_correction, 'contribution_count',
             int(shared_correction.contribution_count) + 1
         )
+        return True
 
     def delete(self, shared_correction_id: int) -> bool:
         """Delete a shared correction.

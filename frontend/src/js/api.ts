@@ -30,6 +30,9 @@ import type {
   UpdateMeResponse,
   AccountDeletionRequest,
   AccountDeletionResponse,
+  ChangePasswordRequest,
+  ChangePasswordResponse,
+  DataExportResponse,
 } from '../types/auth.js';
 
 // API base URL configuration
@@ -543,13 +546,64 @@ export async function resetPassword(
 /**
  * Schedule deletion of the current user's account
  * @param password - Current password confirming the deletion request
+ * @param revokeSharedCorrections - Whether to also withdraw the user's
+ * shared correction contributions when the account is deleted
  * @returns Promise with the scheduled deletion timestamp
  */
-export async function deleteAccount(password: string): Promise<AccountDeletionResponse> {
-  const requestData: AccountDeletionRequest = { password };
+export async function deleteAccount(
+  password: string,
+  revokeSharedCorrections: boolean = false
+): Promise<AccountDeletionResponse> {
+  const requestData: AccountDeletionRequest = {
+    password,
+    revoke_shared_corrections: revokeSharedCorrections
+  };
   return fetchWithCsrf<AccountDeletionResponse>(getApiUrl('/auth/account'), {
     method: 'DELETE',
     body: JSON.stringify(requestData)
+  });
+}
+
+/**
+ * Change the current user's username (right to rectification)
+ * @param username - New unique username
+ * @returns Promise with the updated user
+ */
+export async function updateUsername(username: string): Promise<UpdateMeResponse> {
+  const requestData: UpdateMeRequest = { username };
+  return fetchWithCsrf<UpdateMeResponse>(getApiUrl('/auth/me'), {
+    method: 'PUT',
+    body: JSON.stringify(requestData)
+  });
+}
+
+/**
+ * Change the current user's password while logged in
+ * @param currentPassword - Current password confirming the change
+ * @param newPassword - New password (minimum 12 characters)
+ * @returns Promise with a confirmation message
+ */
+export async function changePassword(
+  currentPassword: string,
+  newPassword: string
+): Promise<ChangePasswordResponse> {
+  const requestData: ChangePasswordRequest = {
+    current_password: currentPassword,
+    new_password: newPassword
+  };
+  return fetchWithCsrf<ChangePasswordResponse>(getApiUrl('/auth/me/password'), {
+    method: 'PUT',
+    body: JSON.stringify(requestData)
+  });
+}
+
+/**
+ * Export all personal data of the current user (data portability)
+ * @returns Promise with the machine-readable export document
+ */
+export async function exportMyData(): Promise<DataExportResponse> {
+  return fetchWithErrorHandling<DataExportResponse>(getApiUrl('/auth/me/export'), {
+    credentials: 'include'
   });
 }
 

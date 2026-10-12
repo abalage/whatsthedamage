@@ -101,6 +101,20 @@ class SessionRepository(Protocol):
         """
         ...
 
+    def revoke_by_user_id_except(
+        self, user_id: int, session_id: int
+    ) -> int:
+        """Revoke all sessions for a user except one.
+
+        Args:
+            user_id: User identifier.
+            session_id: Session identifier to keep active.
+
+        Returns:
+            Number of sessions revoked.
+        """
+        ...
+
     def revoke_expired(self) -> int:
         """Revoke all expired sessions.
 
@@ -322,6 +336,33 @@ class SqlAlchemySessionRepository(SqlAlchemyBaseRepository[SessionDB]):
         try:
             result = session.query(SessionDB).filter(
                 SessionDB.user_id == user_id
+            ).update({'is_revoked': True})
+            session.commit()
+            return result  # type: ignore[no-any-return]
+        except Exception:
+            session.rollback()
+            raise
+        finally:
+            session.close()
+
+    def revoke_by_user_id_except(
+        self, user_id: int, session_id: int
+    ) -> int:
+        """Revoke all sessions for a user except one.
+
+        Args:
+            user_id: User identifier.
+            session_id: Session identifier to keep active.
+
+        Returns:
+            Number of sessions revoked.
+        """
+        session = self._get_session()
+        try:
+            result = session.query(SessionDB).filter(
+                SessionDB.user_id == user_id,
+                SessionDB.id != session_id,
+                SessionDB.is_revoked == False
             ).update({'is_revoked': True})
             session.commit()
             return result  # type: ignore[no-any-return]

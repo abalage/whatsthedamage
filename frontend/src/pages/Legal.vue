@@ -12,13 +12,13 @@ const emailHref = computed(() => `mailto:${emailUsername}@${emailDomain}`)
 <template>
   <div class="container">
     <h1>Legal Notice</h1>
-    <p><strong>Effective Date:</strong> 10-06-2026</p>
+    <p><strong>Effective Date:</strong> 10-07-2026</p>
     <h2>1. Introduction</h2>
     <p>Welcome to Whatsthedamage (the "App"). By accessing or using this App, you agree to comply with and be bound by the following terms and conditions. If you do not agree with these terms, please do not use the App.</p>
     <h2>2. Data Processing and Retention</h2>
     <p>The App processes bank account transaction histories uploaded in CSV format. When you create an account, your transactions, corrections, and processing results are stored on our servers bound to your account so you can access them across sessions and devices.</p>
     <p>We retain your personal data only as long as necessary: your account and all of its data are permanently deleted 6 months after your last login, or when you request account deletion in the settings. Account deletion takes effect after a 7-day grace period during which logging in cancels the request.</p>
-    <p>If you opted in to sharing corrections, the anonymized corrections you contributed (merchant names and categories only, never amounts, dates, or account information) are retained permanently and cannot be retracted, even after your account is deleted.</p>
+    <p>If you opted in to sharing corrections, the anonymized corrections you contributed (merchant names and categories only, never amounts, dates, or account information) are retained. When you request account deletion, you may choose to also remove the corrections you contributed; machine learning models already trained on them cannot be changed, but new models reflect the absence of withdrawn data once they are made available and older models are deprecated.</p>
     <p>The full details are published in our <a href="https://github.com/abalage/whatsthedamage/blob/main/docs/retention-policy.md">Data Retention Policy</a>.</p>
     <h2>3. No Warranty</h2>
     <p>While we strive to provide accurate and reliable reports, the App is provided "as is" without any warranties of any kind, either express or implied. We do not guarantee the accuracy, completeness, or reliability of the reports generated.</p>

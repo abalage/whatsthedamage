@@ -24,8 +24,11 @@ const isRecalculating = ref(false)
 // Get current resultId from route
 const resultId = computed(() => extractResultId(route.query as Record<string, unknown>))
 
-// Show Analytics dropdown only when there's a resultId
-const showAnalytics = computed(() => resultId.value !== null)
+// Show Analytics dropdown on pages that render statistical highlights
+const STATISTICAL_ROUTES = ['results', 'category-months', 'month-categories']
+const showAnalytics = computed(() =>
+  typeof route.name === 'string' && STATISTICAL_ROUTES.includes(route.name)
+)
 
 // Sync with store
 const algorithms = computed({
@@ -41,7 +44,7 @@ const direction = computed({
 const handleDirectionChange = (event: Event) => {
   const target = event.target as HTMLSelectElement
   direction.value = target.value as 'rows' | 'columns'
-  if (resultId.value) {
+  if (showAnalytics.value) {
     triggerRecalculate()
   }
 }
@@ -50,18 +53,16 @@ const handleAlgorithmChange = (event: Event) => {
   const target = event.target as HTMLSelectElement
   const selected = Array.from(target.selectedOptions).map(opt => opt.value)
   algorithms.value = selected
-  if (resultId.value) {
+  if (showAnalytics.value) {
     triggerRecalculate()
   }
 }
 
 const triggerRecalculate = async () => {
-  if (!resultId.value) return
-
   try {
     isRecalculating.value = true
     const response = await recalculateStatistics(
-      resultId.value,
+      resultId.value ?? undefined,
       algorithms.value,
       direction.value
     )
@@ -80,11 +81,11 @@ const triggerRecalculate = async () => {
 
 const resetToDefaults = async () => {
   statisticalStore.resetToDefaults()
-  if (resultId.value) {
+  if (showAnalytics.value) {
     try {
       isRecalculating.value = true
       const response = await recalculateStatistics(
-        resultId.value,
+        resultId.value ?? undefined,
         ['iqr', 'pareto'],
         'columns'
       )

@@ -2,10 +2,18 @@
 import { ref, onMounted, computed, watch } from 'vue'
 import { useRoute, RouterLink } from 'vue-router'
 import { useGettext } from 'vue3-gettext'
-import { fetchAllTransactions, fetchProcessingResultMetadata, updateTransaction, undoTransaction } from '../js/api.js'
+import { fetchAllTransactions, fetchProcessingResultMetadata } from '../js/api.js'
 import { buildResultQuery, extractResultId } from '../js/routeUtils.js'
-import { useFeedbackStore } from '../stores/feedback.js'
 import { useCategoriesStore } from '../stores/categories.js'
+import {
+  useTransactionCorrections,
+  isCorrected,
+  merchantOf,
+  correctedRowIds,
+  PARTNER_MAX_LENGTH,
+  NOTICE_MAX_LENGTH,
+  UNCATEGORIZED
+} from '../composables/useTransactionCorrections.js'
 import { formatDateISO } from '../js/dateUtils.js'
 import VueDataTable from '../components/data/VueDataTable.vue'
 import EditableCategoryCell from '../components/data/EditableCategoryCell.vue'
@@ -14,71 +22,27 @@ import UndoCorrectionCell from '../components/data/UndoCorrectionCell.vue'
 import type { Column } from '../components/data/VueDataTable.vue'
 import type {
   ProcessingResultMetadata,
-  TransactionListItem,
-  TransactionUpdatePayload
+  TransactionListItem
 } from '../types/api.js'
 
 const { $gettext } = useGettext()
-const feedbackStore = useFeedbackStore()
 const categoriesStore = useCategoriesStore()
 const route = useRoute()
-
-// Length limits matching the backend column sizes
-const PARTNER_MAX_LENGTH = 255
-const NOTICE_MAX_LENGTH = 500
 
 // Optional resultId filter, carried in the query string
 const resultId = computed(() => extractResultId(route.query as Record<string, unknown>))
 
-// Persist a correction, refresh the local row, and confirm the outcome.
-// Errors are rethrown so the editing cell can display them inline.
-const saveCorrection = async (
-  transactionId: number,
-  payload: TransactionUpdatePayload
-): Promise<void> => {
-  const transaction = await updateTransaction(transactionId, payload)
-  const index = transactions.value.findIndex(t => t.id === transaction.id)
-  if (index !== -1) {
-    transactions.value.splice(index, 1, transaction)
-  }
-  feedbackStore.showSuccess($gettext('Transaction updated'))
-}
+const transactions = ref<TransactionListItem[]>([])
 
-// Undo all corrections of a transaction and refresh the local row.
-// Errors are rethrown so the undo cell can display them inline.
-const undoCorrection = async (transactionId: number): Promise<void> => {
-  const transaction = await undoTransaction(transactionId)
-  const index = transactions.value.findIndex(t => t.id === transaction.id)
-  if (index !== -1) {
-    transactions.value.splice(index, 1, transaction)
-  }
-  feedbackStore.showSuccess($gettext('Corrections undone'))
-}
-
-// Correctable column keys whose cells are highlighted when corrected
-const CORRECTED_COLUMNS = ['category_id', 'merchant', 'notice'] as const
-
-// A field is corrected when its applied value differs from its original;
-// rows created by the current API always carry the original values
-const isCategoryCorrected = (txn: TransactionListItem): boolean =>
-  txn.category_id !== txn.original_category_id
-
-const isMerchantCorrected = (txn: TransactionListItem): boolean =>
-  txn.partner !== null && txn.partner !== txn.original_partner
-
-const isNoticeCorrected = (txn: TransactionListItem): boolean =>
-  txn.notice !== txn.original_notice
-
-const isCorrected = (txn: TransactionListItem): boolean =>
-  isCategoryCorrected(txn) || isMerchantCorrected(txn) || isNoticeCorrected(txn)
+// Persist corrections and undo them, refreshing the local row in place;
+// errors are rethrown so the editing cell can display them inline
+const { saveCorrection, undoCorrection, correctedCellHighlights } =
+  useTransactionCorrections(() => transactions.value)
 
 // Toolbar view toggles (all default off)
 const correctedOnly = ref(false)
 const editMode = ref(false)
 const showConfidence = ref(false)
-
-// Category id marker used by the frontend for uncategorized transactions
-const UNCATEGORIZED = 'uncategorized'
 
 // Dropdown options for the category filter: exactly the categories the
 // backend reports as assignable, with stable ids as values and translated
@@ -170,7 +134,6 @@ const columns = computed<Column[]>(() => {
 })
 
 const metadata = ref<ProcessingResultMetadata | null>(null)
-const transactions = ref<TransactionListItem[]>([])
 const totalTransactionCount = ref(0)
 const isLoading = ref(true)
 const error = ref<string | null>(null)
@@ -215,7 +178,7 @@ const allTransactions = computed(() => {
   return source.map(txn => ({
     date: formatDateForDisplay(txn.date),
     category_id: txn.category_id || UNCATEGORIZED,
-    merchant: txn.partner || txn.original_partner || '',
+    merchant: merchantOf(txn),
     amount: txn.amount?.toFixed(2) || '',
     currency: txn.currency || '',
     account: txn.account,
@@ -225,31 +188,8 @@ const allTransactions = computed(() => {
     corrected: isCorrected(txn),
     row_id: String(txn.id),
     transaction_id: txn.id,
-    _rowIds: {
-      category_id: `${txn.id}|category_id`,
-      merchant: `${txn.id}|merchant`,
-      notice: `${txn.id}|notice`
-    }
+    _rowIds: correctedRowIds(txn)
   }))
-})
-
-// Cell highlight map for the data table: corrected cells resolve to
-// the 'corrected' semantic type via the highlight config
-const correctedCellHighlights = computed<Record<string, string[]>>(() => {
-  const highlights: Record<string, string[]> = {}
-  for (const txn of transactions.value) {
-    for (const column of CORRECTED_COLUMNS) {
-      const corrected = column === 'category_id'
-        ? isCategoryCorrected(txn)
-        : column === 'merchant'
-          ? isMerchantCorrected(txn)
-          : isNoticeCorrected(txn)
-      if (corrected) {
-        highlights[`${txn.id}|${column}`] = ['corrected']
-      }
-    }
-  }
-  return highlights
 })
 
 onMounted(() => {

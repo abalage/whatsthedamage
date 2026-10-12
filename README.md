@@ -15,7 +15,7 @@ _The slang phrase "what's the damage?" is often used to ask about the cost or pr
  - Process CSV exports. Supports multi-account and multi-currency. Imported transactions are stored per user.
  - Categorizes transactions into well known [accounting categories](#transaction-categories).
  - Categorizes transactions into custom categories by using regular expressions or a [machine learning model](#machine-learning-categorization).
- - Correct merchant, category, and notice inline on the Transactions page; corrections are persisted on the server bound to your account. Merchant and category corrections can be applied to future imports automatically, or kept to a single transaction. See [Transaction corrections](#transaction-corrections).
+ - Correct merchant, category, and notice inline on the Transactions and category month transactions pages; corrections are persisted on the server bound to your account. Merchant and category corrections can be applied to future imports automatically, or kept to a single transaction. See [Transaction corrections](#transaction-corrections).
  - Data retention and account deletion: personal data is deleted 6 months after your last login or upon request, with a 7-day grace period. See [Data retention](#data-retention-and-account-deletion).
  - Transactions can be pre-filtered by start and end dates. If no filter is set, grouping is based on the number of months.
  - Statistical algorithms to highlight outlier categories or transactions. (Web interface only)
@@ -192,7 +192,7 @@ However you can create your own model for categorization, just follow the steps 
 
 Web interface and REST API only.
 
-The automatic categorization will not be perfect. On the Transactions page you can correct the merchant, category, and notice of any transaction by clicking the cell. Corrections are stored on the server, bound to your account, and survive re-uploads.
+The automatic categorization will not be perfect. On the Transactions and category month transactions pages you can correct the merchant, category, and notice of any transaction by clicking the cell. Corrections are stored on the server, bound to your account, and survive re-uploads.
 
 A correction is either a **merchant rule** or a **per-transaction exception**, depending on the field and your choice:
 

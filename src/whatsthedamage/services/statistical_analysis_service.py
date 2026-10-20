@@ -20,7 +20,6 @@ from whatsthedamage.models.domain.statistical_algorithms import (
     IQROutlierDetection,
     ParetoAnalysis
 )
-from whatsthedamage.services.interfaces import IStatisticalAnalysisService
 from whatsthedamage.config import DEFAULT_EXCLUSIONS_PATH
 
 class AnalysisDirection(Enum):
@@ -32,7 +31,7 @@ class AnalysisDirection(Enum):
     COLUMNS = "columns"
     ROWS = "rows"
 
-class StatisticalAnalysisService(IStatisticalAnalysisService):
+class StatisticalAnalysisService:
     """Service for applying statistical algorithms to data.
 
     Uses Strategy Pattern for extensible algorithm selection.
@@ -725,3 +724,129 @@ class StatisticalAnalysisService(IStatisticalAnalysisService):
         types = highlights.setdefault(cell_id, [])
         if highlight_type not in types:
             types.append(highlight_type)
+    # ------------------------------------------------------------------
+    # Grouped transaction views (drilldown aggregation)
+    # ------------------------------------------------------------------
+
+    GROUP_BY_KEYS = ('month', 'category', 'account', 'category_month')
+
+    def group_transactions(
+        self,
+        transactions: List['TransactionDB'],
+        group_by: str
+    ) -> Dict[str, List['TransactionDB']]:
+        """Group transactions by a drilldown grouping dimension.
+
+        Args:
+            transactions: Transaction entities to group.
+            group_by: One of 'month', 'category', 'account',
+                'category_month'.
+
+        Returns:
+            Dictionary mapping group keys to the group's transactions.
+
+        Raises:
+            ValueError: When group_by is not a supported dimension.
+        """
+        if group_by == 'month':
+            return self._group_by_month(transactions)
+        if group_by == 'category':
+            return self._group_by_category(transactions)
+        if group_by == 'account':
+            return self._group_by_account(transactions)
+        if group_by == 'category_month':
+            return self._group_by_category_and_month(transactions)
+        raise ValueError(f"Invalid group_by value: {group_by}")
+
+    @staticmethod
+    def _group_by_month(
+        transactions: List['TransactionDB']
+    ) -> Dict[str, List['TransactionDB']]:
+        """Group transactions by month (YYYY-MM)."""
+        groups: Dict[str, List['TransactionDB']] = {}
+        for t in transactions:
+            month_key = str(t.date.strftime('%Y-%m')) if t.date else 'unknown'
+            groups.setdefault(month_key, []).append(t)
+        return groups
+
+    @staticmethod
+    def _group_by_category(
+        transactions: List['TransactionDB']
+    ) -> Dict[str, List['TransactionDB']]:
+        """Group transactions by category."""
+        groups: Dict[str, List['TransactionDB']] = {}
+        for t in transactions:
+            cat = str(t.category_id or 'uncategorized')
+            groups.setdefault(cat, []).append(t)
+        return groups
+
+    @staticmethod
+    def _group_by_account(
+        transactions: List['TransactionDB']
+    ) -> Dict[str, List['TransactionDB']]:
+        """Group transactions by account."""
+        groups: Dict[str, List['TransactionDB']] = {}
+        for t in transactions:
+            acc = str(t.account or 'unknown')
+            groups.setdefault(acc, []).append(t)
+        return groups
+
+    @staticmethod
+    def _group_by_category_and_month(
+        transactions: List['TransactionDB']
+    ) -> Dict[str, List['TransactionDB']]:
+        """Group transactions by category and month."""
+        groups: Dict[str, List['TransactionDB']] = {}
+        for t in transactions:
+            cat = str(t.category_id or 'uncategorized')
+            month_key = str(t.date.strftime('%Y-%m')) if t.date else 'unknown'
+            key = f"{cat}_{month_key}"
+            groups.setdefault(key, []).append(t)
+        return groups
+
+    def compute_group_highlights(
+        self,
+        scope_transactions: List['TransactionDB'],
+        groups: Dict[str, List['TransactionDB']],
+        algorithms: Optional[List[str]] = None,
+        direction: str = 'columns'
+    ) -> Dict[str, List[str]]:
+        """Map matrix-scope statistical highlights onto grouped transactions.
+
+        Highlights are computed over the full month x category matrix
+        for user/result/account (the parent matrix view's scope), then
+        each group receives the union of the highlight types of the
+        matrix cells its transactions cover. This keeps drilldown views
+        consistent with the Categories matrix view.
+
+        Args:
+            scope_transactions: Transactions of the full parent matrix
+                scope.
+            groups: Transactions grouped by the view's grouping
+                dimension.
+            algorithms: Optional algorithm names (None = enabled
+                algorithms).
+            direction: Analysis direction ('columns' or 'rows').
+
+        Returns:
+            Dictionary mapping group keys to highlight types.
+        """
+        cell_highlights = self.compute_highlights_from_transactions(
+            scope_transactions, algorithms=algorithms, direction=direction
+        )
+
+        highlights: Dict[str, List[str]] = {}
+        for group_key, txns in groups.items():
+            group_types: List[str] = []
+            for t in txns:
+                month = t.date.strftime('%Y-%m') if t.date else 'unknown'
+                cell_id = (
+                    f"{t.account or 'unknown'}|{month}"
+                    f"|{t.category_id or 'uncategorized'}"
+                )
+                for highlight_type in cell_highlights.get(cell_id, []):
+                    if highlight_type not in group_types:
+                        group_types.append(highlight_type)
+            highlights[group_key] = group_types
+
+        return highlights

@@ -290,7 +290,7 @@ class TestErrorResponses:
     """Contract tests for error responses."""
 
     def test_missing_file_returns_error_response(self, api_client_with_mock):
-        """Verify missing file error returns valid ErrorResponse format."""
+        """Verify missing file error returns the canonical error shape."""
         response = api_client_with_mock.post(
             '/api/v2/processing-results',
             data={},  # No csv_file
@@ -301,12 +301,8 @@ class TestErrorResponses:
         assert response.status_code == 400
         data = response.get_json()
 
-        # Validate against Pydantic model
-        validated = ErrorResponse.model_validate(data)
-
-        assert validated.code == 400
-        assert validated.message is not None
-        assert len(validated.message) > 0
+        assert 'error' in data
+        assert len(data['error']) > 0
 
     def test_nonexistent_result_returns_error_response(self, api_client_with_mock):
         """Verify non-existent result error returns an error response."""
@@ -329,10 +325,8 @@ class TestErrorResponses:
         assert response.status_code == 400
         data = response.get_json()
 
-        validated = ErrorResponse.model_validate(data)
-
-        assert validated.code == 400
-        assert validated.message is not None
+        assert 'error' in data
+        assert len(data['error']) > 0
 
 
 # =============================================================================

@@ -117,7 +117,7 @@ class TestUpdateTransaction:
 
         assert response.status_code == 404
 
-    def test_update_other_users_transaction_returns_403(
+    def test_update_other_users_transaction_returns_404(
         self, auth_context, second_auth_context
     ):
         """Users cannot update transactions owned by another user."""
@@ -129,7 +129,7 @@ class TestUpdateTransaction:
             headers=second_auth_context.csrf_headers
         )
 
-        assert response.status_code == 403
+        assert response.status_code == 404
 
     def test_update_with_empty_body_returns_400(self, auth_context):
         """An empty JSON body is rejected."""
@@ -500,7 +500,7 @@ class TestUndoTransaction:
 
         assert response.status_code == 404
 
-    def test_undo_other_users_transaction_returns_403(
+    def test_undo_other_users_transaction_returns_404(
         self, auth_context, second_auth_context
     ):
         """Users cannot undo transactions owned by another user."""
@@ -508,7 +508,7 @@ class TestUndoTransaction:
 
         response = self._undo(second_auth_context, transaction['id'])
 
-        assert response.status_code == 403
+        assert response.status_code == 404
 
     def test_undo_without_csrf_token_returns_403(self, auth_context):
         """Undo requests missing the CSRF header are rejected."""

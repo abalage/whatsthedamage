@@ -31,13 +31,3 @@ export class AppError extends Error {
     this.name = 'AppError';
   }
 }
-
-/**
- * API response wrapper
- */
-export interface ApiResponse<T> {
-  data: T;
-  status: number;
-  ok: boolean;
-  error?: string;
-}

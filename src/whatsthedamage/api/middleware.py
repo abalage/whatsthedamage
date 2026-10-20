@@ -13,6 +13,8 @@ from typing import Any, Optional
 
 from flask import Blueprint, Flask, Response, current_app, jsonify, request
 
+from whatsthedamage.api.auth_decorators import authenticate_request
+
 # v2 routes that intentionally remain public. They expose static
 # reference data (categories, CSV profiles, OpenAPI spec) that carries
 # no user data and may be needed before login.
@@ -69,8 +71,11 @@ def get_client_ip() -> str:
     return str(request.remote_addr or '0.0.0.0')
 
 
-def _rate_limit_response(retry_after: int) -> Response:
+def rate_limit_response(retry_after: int) -> Response:
     """Build a 429 response with a Retry-After header.
+
+    Shared by the middleware and the auth endpoints so every rate
+    limit rejection has the same body and headers.
 
     Args:
         retry_after: Seconds until the rate limit resets.
@@ -108,7 +113,7 @@ def _check_api_rate_limit() -> Optional[Response]:
         current_app.config['RATE_LIMIT_API_WINDOW'],
     )
     if exceeded:
-        return _rate_limit_response(retry_after)
+        return rate_limit_response(retry_after)
 
     rule = request.url_rule.rule if request.url_rule is not None else ''
     if request.method == 'POST' and rule in HEAVY_ROUTES:
@@ -118,7 +123,7 @@ def _check_api_rate_limit() -> Optional[Response]:
             current_app.config['RATE_LIMIT_HEAVY_WINDOW'],
         )
         if exceeded:
-            return _rate_limit_response(retry_after)
+            return rate_limit_response(retry_after)
 
     return None
 
@@ -148,9 +153,9 @@ def register_api_middleware(
         if request.method == 'OPTIONS':
             return None
 
-        rate_limit_response = _check_api_rate_limit()
-        if rate_limit_response is not None:
-            return rate_limit_response
+        limit_response = _check_api_rate_limit()
+        if limit_response is not None:
+            return limit_response
 
         rule = (
             request.url_rule.rule
@@ -160,23 +165,16 @@ def register_api_middleware(
         if rule in public_routes:
             return None
 
-        auth_service = current_app.extensions.get('auth_service')
-        if not auth_service:
+        if not current_app.extensions.get('auth_service'):
             return jsonify(
                 {'error': 'Authentication service not available'}
             ), 500
 
-        session_token = request.cookies.get('session_token')
-        if not session_token:
-            return jsonify({'error': 'Authentication required'}), 401
-
-        result = auth_service.validate_session(session_token)
+        result = authenticate_request()
         if not result:
             return jsonify({'error': 'Authentication required'}), 401
 
-        user, session = result
-        request.user = user  # type: ignore[attr-defined]
-        request.session = session  # type: ignore[attr-defined]
+        request.user, request.session = result  # type: ignore[attr-defined]
         return None
 
 

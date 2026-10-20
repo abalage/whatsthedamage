@@ -32,7 +32,6 @@ from whatsthedamage.models.domain.dt_models import (
     StatisticalMetadata,
     SummaryData,
 )
-from whatsthedamage.services.interfaces import IDataFormattingService
 from whatsthedamage.services.statistical_analysis_service import (
     StatisticalAnalysisService,
 )
@@ -42,7 +41,7 @@ if TYPE_CHECKING:
     from flask import Response
 
 
-class ResponseFormattingService(IDataFormattingService):
+class ResponseFormattingService:
     """Service for formatting data and building responses.
 
     Combines the functionality of DataFormattingService and ResponseBuilderService.
@@ -592,104 +591,6 @@ class ResponseFormattingService(IDataFormattingService):
                 date_range=self._build_date_range(params)
             )
         )
-
-    def build_error_response(
-        self,
-        error: Exception,
-        default_code: int = 500,
-        default_message: str = "Internal server error",
-        context: Optional[Dict[str, Any]] = None
-    ) -> tuple["Response", int]:
-        """Build standardized error response.
-
-        Centralizes error response building logic that was duplicated in
-        api/helpers.py::handle_error() and api/error_handlers.py.
-
-        Args:
-            error: The exception to handle
-            default_code: Default status code if exception type not recognized
-            default_message: Default error message
-            context: Optional additional context
-
-        Returns:
-            tuple: (jsonified error response, status code)
-
-        Example:
-            >>> response, code = service.build_error_response(
-            ...     ValueError("Invalid date format"),
-            ...     default_code=422,
-            ...     default_message="Validation error"
-            ... )
-        """
-        from flask import jsonify
-        from werkzeug.exceptions import BadRequest
-        from pydantic import ValidationError as PydanticValidationError
-        from whatsthedamage.utils.validation import ValidationError
-
-        # Log the error with context before building response
-        error_context = {
-            "error_type": type(error).__name__,
-            "error_message": str(error),
-            "status_code": default_code
-        }
-        if context:
-            error_context.update(context)
-
-        self.logger.error("Building error response", extra={"context": error_context})
-
-        # Determine status code and message based on exception type
-        if isinstance(error, BadRequest):
-            field_value = context.get("field", "unknown") if context else "unknown"
-            error_response = ErrorResponse(
-                code=400,
-                message=str(error),
-                details={"field": str(field_value)}
-            )
-            status_code = 400
-
-        elif isinstance(error, PydanticValidationError):
-            validation_errors = [str(err) for err in error.errors()]
-            error_response = ErrorResponse(
-                code=400,
-                message="Invalid request parameters",
-                details={"errors": validation_errors}
-            )
-            status_code = 400
-
-        elif isinstance(error, ValidationError):
-            error_response = ErrorResponse(
-                code=400,
-                message=error.result.error_message or "Validation failed",
-                details=error.result.details or {}
-            )
-            status_code = 400
-
-        elif isinstance(error, FileNotFoundError):
-            error_response = ErrorResponse(
-                code=400,
-                message="File not found",
-                details={"error": str(error)}
-            )
-            status_code = 400
-
-        elif isinstance(error, ValueError):
-            error_response = ErrorResponse(
-                code=422,
-                message="Processing error",
-                details={"error": str(error)}
-            )
-            status_code = 422
-
-        else:
-            # Generic exception handling
-            error_response = ErrorResponse(
-                code=default_code,
-                message=default_message,
-                details={"error": str(error), "type": type(error).__name__}
-            )
-            status_code = default_code
-
-        return jsonify(error_response.model_dump()), status_code
 
     def format_processing_response_for_frontend(
         self,

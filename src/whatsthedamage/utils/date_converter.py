@@ -168,3 +168,18 @@ class DateConverter:
             return DateConverter.parse_to_datetime(date_value, '%Y-%m-%d')
         except ValueError:
             raise ValueError(f"Cannot parse date: {date_value}")
+
+    @staticmethod
+    def ensure_utc(value: datetime) -> datetime:
+        """
+        Normalize a possibly naive datetime (e.g. from SQLite) to UTC.
+
+        Values that already carry timezone information are returned
+        unchanged; naive values are assumed to be UTC.
+
+        :param value: Datetime that may lack timezone information.
+        :return: The datetime with UTC timezone information.
+        """
+        if value.tzinfo is None:
+            return value.replace(tzinfo=timezone.utc)
+        return value

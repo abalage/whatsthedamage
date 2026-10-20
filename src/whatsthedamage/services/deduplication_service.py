@@ -9,7 +9,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
-    from whatsthedamage.models.repositories.transaction_repository import TransactionRepository
+    from whatsthedamage.models.repositories.transaction_repository import SqlAlchemyTransactionRepository
     from whatsthedamage.models.database.transaction import Transaction
 
 
@@ -69,7 +69,7 @@ class DeduplicationService:
         self,
         user_id: int,
         dedup_hash: str,
-        transaction_repo: 'TransactionRepository'
+        transaction_repo: 'SqlAlchemyTransactionRepository'
     ) -> bool:
         """Check if a transaction with this dedup hash already exists for user.
 

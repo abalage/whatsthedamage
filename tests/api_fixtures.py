@@ -42,7 +42,7 @@ def _create_test_client(processing_service=None):
 
     # Now create service container with the Flask app and register our test processing service
     from whatsthedamage.services.service_container import ServiceContainer
-    from whatsthedamage.services.authentication_service import AuthenticationService
+    from whatsthedamage.services.account_service import AccountService
     from unittest.mock import MagicMock
 
     service_container = ServiceContainer(flask_app=app)
@@ -61,6 +61,8 @@ def _create_test_client(processing_service=None):
     mock_auth_service.validate_session.return_value = (mock_user, mock_session)
     mock_auth_service.validate_csrf_token.return_value = True
     app.extensions['auth_service'] = mock_auth_service
+    mock_account_service = MagicMock()
+    app.extensions['account_service'] = mock_account_service
 
     app.config.from_mapping(config)
 

@@ -9,8 +9,7 @@ import { createPinia, setActivePinia } from 'pinia';
 import { reactive } from 'vue';
 import CategoryMonthTransactions from '../../src/pages/CategoryMonthTransactions.vue';
 import VueDataTable from '../../src/components/data/VueDataTable.vue';
-import EditableCategoryCell from '../../src/components/data/EditableCategoryCell.vue';
-import EditableTextCell from '../../src/components/data/EditableTextCell.vue';
+import EditableCell from '../../src/components/data/EditableCell.vue';
 import UndoCorrectionCell from '../../src/components/data/UndoCorrectionCell.vue';
 import { fetchCategoryMonthTransactions, fetchCategories, updateTransaction, undoTransaction } from '../../src/js/api.js';
 import { useFeedbackStore } from '../../src/stores/feedback.js';
@@ -171,9 +170,9 @@ describe('CategoryMonthTransactions.vue inline editing', () => {
   it('renders category, merchant, and notice columns as editable cells', async () => {
     const wrapper = await mountWithResponse(makeResponse());
 
-    expect(findColumn(wrapper, 'category_id').component).toBe(EditableCategoryCell);
-    expect(findColumn(wrapper, 'merchant').component).toBe(EditableTextCell);
-    expect(findColumn(wrapper, 'notice').component).toBe(EditableTextCell);
+    expect(findColumn(wrapper, 'category_id').component).toBe(EditableCell);
+    expect(findColumn(wrapper, 'merchant').component).toBe(EditableCell);
+    expect(findColumn(wrapper, 'notice').component).toBe(EditableCell);
   });
 
   it('renders the notice value from the transaction', async () => {
@@ -385,7 +384,7 @@ describe('CategoryMonthTransactions.vue toolbar toggles', () => {
     const wrapper = shallowMount(CategoryMonthTransactions, {
       global: {
         plugins: [createPinia()],
-        stubs: { VueDataTable: false },
+        stubs: { VueDataTable: false, ToggleFilterButton: false },
       },
     });
     await flushPromises();

@@ -25,18 +25,10 @@ from whatsthedamage.models.repositories.user_repository import (
 from whatsthedamage.models.repositories.session_repository import (
     SqlAlchemySessionRepository
 )
-from whatsthedamage.models.repositories.transaction_repository import (
-    SqlAlchemyTransactionRepository
+from whatsthedamage.models.repositories.unit_of_work import (
+    SqlAlchemyUnitOfWork
 )
-from whatsthedamage.models.repositories.correction_repository import (
-    SqlAlchemyCorrectionRepository
-)
-from whatsthedamage.models.repositories.processing_result_repository import (
-    SqlAlchemyProcessingResultRepository
-)
-from whatsthedamage.models.repositories.shared_correction_repository import (
-    SqlAlchemySharedCorrectionRepository
-)
+from whatsthedamage.services.auth_errors import InvalidPasswordError
 from whatsthedamage.services.password_service import PasswordService
 from whatsthedamage.utils.logging import get_logger
 
@@ -47,19 +39,17 @@ class RetentionService:
     Orchestrates account deletion requests and the periodic purge
     that permanently deletes accounts (and all of their personal
     data) of users past their deletion grace period or inactive for
-    longer than the retention window. Uses dependency injection for
-    all required services and repositories.
+    longer than the retention window. The account purge itself runs
+    through a unit of work, so the deletion of all personal data is
+    atomic.
 
     Attributes:
         user_repository: Repository for user data access.
-        session_repository: Repository for session data access.
+        session_repository: Repository for session data access
+            (session purge and revocation).
         password_service: Service for password verification.
-        transaction_repository: Repository for transaction data access.
-        correction_repository: Repository for correction data access.
-        processing_result_repository: Repository for processing
-            result data access.
-        shared_correction_repository: Repository for shared
-            correction data access (contribution withdrawal).
+        session_factory: Session factory used to run the account
+            purge in a single transaction (unit of work).
         deletion_grace_days: Grace period (in days) between an
             account deletion request and the actual purge.
         inactivity_days: Days without a login after which the purge
@@ -72,12 +62,7 @@ class RetentionService:
         user_repository: SqlAlchemyUserRepository,
         session_repository: SqlAlchemySessionRepository,
         password_service: PasswordService,
-        transaction_repository: SqlAlchemyTransactionRepository,
-        correction_repository: SqlAlchemyCorrectionRepository,
-        processing_result_repository: SqlAlchemyProcessingResultRepository,
-        shared_correction_repository: (
-            SqlAlchemySharedCorrectionRepository
-        ),
+        session_factory: Any,
         deletion_grace_days: int = 7,
         inactivity_days: int = 180
     ):
@@ -85,16 +70,11 @@ class RetentionService:
 
         Args:
             user_repository: Repository for user data access.
-            session_repository: Repository for session data access.
+            session_repository: Repository for session data access
+                (session purge and revocation).
             password_service: Service for password verification.
-            transaction_repository: Repository for transaction data
-                access.
-            correction_repository: Repository for correction data
-                access.
-            processing_result_repository: Repository for processing
-                result data access.
-            shared_correction_repository: Repository for shared
-                correction data access (contribution withdrawal).
+            session_factory: Session factory used to run the account
+                purge in a single transaction (unit of work).
             deletion_grace_days: Grace period (in days) between an
                 account deletion request and the actual purge.
             inactivity_days: Days without a login after which the
@@ -103,10 +83,7 @@ class RetentionService:
         self.user_repository = user_repository
         self.session_repository = session_repository
         self.password_service = password_service
-        self.transaction_repository = transaction_repository
-        self.correction_repository = correction_repository
-        self.processing_result_repository = processing_result_repository
-        self.shared_correction_repository = shared_correction_repository
+        self.session_factory = session_factory
         self.deletion_grace_days = deletion_grace_days
         self.inactivity_days = inactivity_days
         self.logger = get_logger(__name__)
@@ -150,7 +127,7 @@ class RetentionService:
                     "user_id": user.id
                 }}
             )
-            raise ValueError("Invalid password")
+            raise InvalidPasswordError("Invalid password")
 
         scheduled_deletion_at = datetime.now(UTC) + timedelta(
             days=self.deletion_grace_days
@@ -234,44 +211,37 @@ class RetentionService:
     def _delete_account(self, user: UserDB) -> None:
         """Delete a user's account with all of its personal data.
 
-        The personal data is deleted explicitly before the user row
-        so the purge also works on databases without foreign-key
-        cascade enforcement (e.g. SQLite without the foreign_keys
-        pragma). When the user requested revocation with the account
-        deletion, the user's shared correction contributions are
-        withdrawn first (GDPR Art. 7(3)); the user row must still
-        exist for the link cascade.
+        The purge runs inside a single unit of work so a mid-failure
+        cannot leave a half-deleted account behind. When the user
+        requested revocation with the account deletion, the user's
+        shared correction contributions are withdrawn (GDPR
+        Art. 7(3)); otherwise the anonymized shared corrections are
+        retained and only the user linkage is removed.
 
         Args:
             user: User entity to delete.
         """
         user_id = cast(int, user.id)
-        if user.revoke_shared_corrections:
-            withdrawn = (
-                self.shared_correction_repository.withdraw_by_user_id(
-                    user_id
-                )
+        with SqlAlchemyUnitOfWork(self.session_factory) as uow:
+            counts = uow.purge_user(
+                user_id,
+                revoke_shared_corrections=bool(user.revoke_shared_corrections)
             )
-            self.logger.info(
-                "Shared correction contributions withdrawn",
-                extra={"context": {
-                    "action": "retention_purge",
-                    "status": "contributions_withdrawn",
-                    "user_id": user_id,
-                    "contributions_withdrawn": withdrawn
-                }}
-            )
-        else:
-            # The user linkage is personal data and is removed with
-            # the account; the anonymized shared corrections remain.
-            self.shared_correction_repository.delete_links_by_user_id(
-                user_id
-            )
-        self.transaction_repository.delete_by_user_id(user_id)
-        self.correction_repository.delete_by_user_id(user_id)
-        self.processing_result_repository.delete_by_user_id(user_id)
-        self.session_repository.revoke_by_user_id(user_id)
-        self.user_repository.delete(user_id)
+            uow.commit()
+
+        action = 'contributions_withdrawn' if (
+            'contributions_withdrawn' in counts
+        ) else 'contribution_links_deleted'
+        self.logger.info(
+            "Account personal data purged",
+            extra={"context": {
+                "action": "retention_purge",
+                "status": "personal_data_purged",
+                "user_id": user_id,
+                action: counts.get(action, 0),
+                **counts
+            }}
+        )
 
     def _purge_due_deletions(self, now: datetime) -> int:
         """Delete accounts whose grace period has elapsed.
@@ -343,16 +313,7 @@ def create_retention_service_from_app(app: Any) -> RetentionService:
         user_repository=app.extensions['user_repository'],
         session_repository=app.extensions['session_repository'],
         password_service=app.extensions['password_service'],
-        transaction_repository=app.extensions[
-            'transaction_repository'
-        ],
-        correction_repository=app.extensions['correction_repository'],
-        processing_result_repository=app.extensions[
-            'processing_result_repository'
-        ],
-        shared_correction_repository=app.extensions[
-            'shared_correction_repository'
-        ],
+        session_factory=app.extensions['db_session_factory'],
         deletion_grace_days=auth_config.ACCOUNT_DELETION_GRACE_DAYS,
         inactivity_days=auth_config.RETENTION_INACTIVITY_DAYS
     )

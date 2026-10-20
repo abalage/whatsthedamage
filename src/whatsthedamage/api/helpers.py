@@ -13,25 +13,21 @@ from typing import TYPE_CHECKING, Optional, cast
 from whatsthedamage.models.api.requests import ProcessingRequest
 
 if TYPE_CHECKING:
-    from whatsthedamage.models.repositories.processing_result_repository import ProcessingResultRepository
-    from whatsthedamage.models.repositories.transaction_repository import TransactionRepository
-    from whatsthedamage.models.repositories.correction_repository import CorrectionRepository
-    from whatsthedamage.models.repositories.shared_correction_repository import SharedCorrectionRepository
-from whatsthedamage.services.configuration_service import ConfigurationService
-from whatsthedamage.services.response_formatting_service import ResponseFormattingService
+    from whatsthedamage.models.repositories.processing_result_repository import SqlAlchemyProcessingResultRepository
+    from whatsthedamage.models.repositories.transaction_repository import SqlAlchemyTransactionRepository
+    from whatsthedamage.models.repositories.correction_repository import SqlAlchemyCorrectionRepository
+    from whatsthedamage.models.repositories.shared_correction_repository import SqlAlchemySharedCorrectionRepository
+from whatsthedamage.services.deduplication_service import DeduplicationService
 from whatsthedamage.services.file_upload_service import FileUploadService, FileUploadError
 from whatsthedamage.services.processing_service import ProcessingService
-from whatsthedamage.services.cache_service import CacheService
-from whatsthedamage.services.id_mapping_service import IdMappingService
-from whatsthedamage.services.session_service import SessionService
 from whatsthedamage.services.statistical_analysis_service import StatisticalAnalysisService
-from whatsthedamage.services.drilldown_response_service import DrilldownResponseService
-from whatsthedamage.services.deduplication_service import DeduplicationService
+from whatsthedamage.services.correction_service import CorrectionService
+from whatsthedamage.services.data_export_service import DataExportService
+from whatsthedamage.services.transaction_import_service import (
+    TransactionImportService
+)
 
 
-def _get_response_formatting_service() -> ResponseFormattingService:
-    """Get response builder service from app extensions (dependency injection)."""
-    return cast(ResponseFormattingService, current_app.extensions['response_formatting_service'])
 
 
 def _get_file_upload_service() -> FileUploadService:
@@ -44,14 +40,8 @@ def _get_processing_service() -> ProcessingService:
     return cast(ProcessingService, current_app.extensions['processing_service'])
 
 
-def _get_cache_service() -> CacheService:
-    """Get cache service from app extensions (dependency injection)."""
-    return cast(CacheService, current_app.extensions['cache_service'])
 
 
-def _get_id_mapping_service() -> IdMappingService:
-    """Get ID mapping service from app extensions (dependency injection)."""
-    return cast(IdMappingService, current_app.extensions['id_mapping_service'])
 
 
 def _get_statistical_service() -> StatisticalAnalysisService:
@@ -59,19 +49,10 @@ def _get_statistical_service() -> StatisticalAnalysisService:
     return cast(StatisticalAnalysisService, current_app.extensions['statistical_analysis_service'])
 
 
-def _get_drilldown_response_service() -> DrilldownResponseService:
-    """Get drilldown response service from app extensions (dependency injection)."""
-    return cast(DrilldownResponseService, current_app.extensions['drilldown_response_service'])
 
 
-def _get_session_service() -> SessionService:
-    """Get session service from app extensions (dependency injection)."""
-    return cast(SessionService, current_app.extensions['session_service'])
 
 
-def _get_configuration_service() -> ConfigurationService:
-    """Get ConfigurationService from app extensions (dependency injection)."""
-    return cast(ConfigurationService, current_app.extensions['configuration_service'])
 
 
 def _get_deduplication_service() -> DeduplicationService:
@@ -79,28 +60,43 @@ def _get_deduplication_service() -> DeduplicationService:
     return cast(DeduplicationService, current_app.extensions['deduplication_service'])
 
 
-def _get_processing_result_repository() -> ProcessingResultRepository:
+def _get_transaction_import_service() -> TransactionImportService:
+    """Get transaction import service from app extensions (dependency injection)."""
+    return cast(TransactionImportService, current_app.extensions['transaction_import_service'])
+
+
+def _get_correction_service() -> CorrectionService:
+    """Get correction service from app extensions (dependency injection)."""
+    return cast(CorrectionService, current_app.extensions['correction_service'])
+
+
+def _get_data_export_service() -> DataExportService:
+    """Get data export service from app extensions (dependency injection)."""
+    return cast(DataExportService, current_app.extensions['data_export_service'])
+
+
+def _get_processing_result_repository() -> SqlAlchemyProcessingResultRepository:
     """Get processing result repository from app extensions (dependency injection)."""
-    from whatsthedamage.models.repositories.processing_result_repository import ProcessingResultRepository
-    return cast(ProcessingResultRepository, current_app.extensions['processing_result_repository'])
+    from whatsthedamage.models.repositories.processing_result_repository import SqlAlchemyProcessingResultRepository
+    return cast(SqlAlchemyProcessingResultRepository, current_app.extensions['processing_result_repository'])
 
 
-def _get_transaction_repository() -> TransactionRepository:
+def _get_transaction_repository() -> SqlAlchemyTransactionRepository:
     """Get transaction repository from app extensions (dependency injection)."""
-    from whatsthedamage.models.repositories.transaction_repository import TransactionRepository
-    return cast(TransactionRepository, current_app.extensions['transaction_repository'])
+    from whatsthedamage.models.repositories.transaction_repository import SqlAlchemyTransactionRepository
+    return cast(SqlAlchemyTransactionRepository, current_app.extensions['transaction_repository'])
 
 
-def _get_correction_repository() -> CorrectionRepository:
+def _get_correction_repository() -> SqlAlchemyCorrectionRepository:
     """Get correction repository from app extensions (dependency injection)."""
-    from whatsthedamage.models.repositories.correction_repository import CorrectionRepository
-    return cast(CorrectionRepository, current_app.extensions['correction_repository'])
+    from whatsthedamage.models.repositories.correction_repository import SqlAlchemyCorrectionRepository
+    return cast(SqlAlchemyCorrectionRepository, current_app.extensions['correction_repository'])
 
 
-def _get_shared_correction_repository() -> SharedCorrectionRepository:
+def _get_shared_correction_repository() -> SqlAlchemySharedCorrectionRepository:
     """Get shared correction repository from app extensions (dependency injection)."""
-    from whatsthedamage.models.repositories.shared_correction_repository import SharedCorrectionRepository
-    return cast(SharedCorrectionRepository, current_app.extensions['shared_correction_repository'])
+    from whatsthedamage.models.repositories.shared_correction_repository import SqlAlchemySharedCorrectionRepository
+    return cast(SqlAlchemySharedCorrectionRepository, current_app.extensions['shared_correction_repository'])
 
 
 def validate_csv_file() -> FileStorage:
@@ -200,14 +196,13 @@ def cleanup_files(csv_path: str, config_path: str | None) -> None:
 
 
 def handle_error(error: Exception, endpoint_name: Optional[str] = None) -> tuple[Response, int]:
-    """Handle exceptions and return appropriate error response.
+    """Handle exceptions and return the API error response.
 
-    Delegates to ResponseFormattingService for consistent error handling
-    across API and web endpoints. Automatically logs errors and handles
-    ValueError as 404, BadRequest as 400, and others as 500.
-
-    Falls back to simple error response if services are not available
-    (e.g., during testing or initialization).
+    Single error path for API endpoints. BadRequest and ValueError
+    carry controlled, client-facing validation messages and map to
+    400; the exception text of unexpected errors is never exposed to
+    the client (generic 500 message), the full exception is logged
+    server-side instead.
 
     Args:
         error: The exception to handle
@@ -220,32 +215,17 @@ def handle_error(error: Exception, endpoint_name: Optional[str] = None) -> tuple
     from whatsthedamage.utils.logging import get_logger
     logger = get_logger(__name__)
 
-    # Log the error with context
-    if endpoint_name:
-        logger.error(f"Error in {endpoint_name}: {error}")
-    else:
-        logger.error(f"API error: {error}")
+    context = f" in {endpoint_name}" if endpoint_name else ""
 
-    # Determine status code and message based on exception type
+    if isinstance(error, BadRequest):
+        logger.error(f"API error{context}: {error}")
+        return jsonify({'error': str(error)}), 400
+    if isinstance(error, FileNotFoundError):
+        logger.error(f"API error{context}: {error}")
+        return jsonify({'error': 'File not found'}), 400
     if isinstance(error, ValueError):
-        status_code = 404
-        message = str(error)
-    elif isinstance(error, BadRequest):
-        status_code = 400
-        message = str(error)
-    else:
-        status_code = 500
-        message = "Internal server error"
+        logger.error(f"API error{context}: {error}")
+        return jsonify({'error': str(error)}), 400
 
-    # Try to use the response builder service if available
-    try:
-        response_builder = _get_response_formatting_service()
-        return response_builder.build_error_response(
-            error=error,
-            default_code=status_code,
-            default_message=message,
-            context={'field': 'csv_file'} if isinstance(error, BadRequest) else None
-        )
-    except (KeyError, RuntimeError):
-        # Service not available (e.g., during testing), fall back to simple response
-        return jsonify({'code': status_code, 'message': message}), status_code
+    logger.exception(f"Unhandled API error{context}")
+    return jsonify({'error': 'Internal server error'}), 500

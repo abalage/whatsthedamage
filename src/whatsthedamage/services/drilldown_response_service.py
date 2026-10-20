@@ -22,10 +22,8 @@ from whatsthedamage.models.api.responses import (
     MonthData,
     CategoryData,
 )
-from whatsthedamage.services.interfaces import (
-    IIdMappingService,
-    ICacheService,
-)
+from whatsthedamage.services.cache_service import CacheService
+from whatsthedamage.services.id_mapping_service import IdMappingService
 from whatsthedamage.utils.logging import get_logger
 
 logger = get_logger(__name__)
@@ -45,8 +43,8 @@ class DrilldownResponseService:
 
     def __init__(
         self,
-        id_mapping_service: IIdMappingService,
-        cache_service: ICacheService,
+        id_mapping_service: IdMappingService,
+        cache_service: CacheService,
         processing_result_repository: Optional[Any] = None,
     ):
         """Initialize the drilldown response service.

@@ -38,7 +38,7 @@ class Transaction(Base):
         currency: Currency code (max 3 chars).
         account: Account identifier (max 100 chars).
         deduplication_hash: SHA-256 hash of deduplication key (64 char hex,
-            unique).
+            unique per user).
         category_id: Assigned category identifier (max 50 chars, nullable).
         partner: Corrected partner name (max 255 chars, nullable,
             can be updated).
@@ -71,8 +71,9 @@ class Transaction(Base):
     currency = Column(String(3), nullable=False)
     account = Column(String(100), nullable=False)
 
-    # Dedup key hash for fast lookup
-    deduplication_hash = Column(String(64), nullable=False, unique=True)
+    # Dedup key hash for fast lookup; uniqueness is enforced per user
+    # via the ix_transactions_user_dedup composite index below
+    deduplication_hash = Column(String(64), nullable=False)
 
     # Processed/categorized fields (can be updated)
     category_id = Column(String(50), nullable=True)

@@ -398,17 +398,26 @@ def rate_limit_service():
 
 @pytest.fixture
 def auth_service(user_repository, session_repository, password_service, token_service, recovery_code_service, csrf_service):
-    """Create an AuthenticationService for testing."""
-    from whatsthedamage.services.authentication_service import AuthenticationService
-    return AuthenticationService(
+    """Create an AuthSessionService for testing."""
+    from whatsthedamage.services.auth_session_service import AuthSessionService
+    return AuthSessionService(
         user_repository=user_repository,
         session_repository=session_repository,
-        password_service=password_service,
         token_service=token_service,
-        recovery_code_service=recovery_code_service,
         csrf_service=csrf_service,
-        password_min_length=12,
         session_timeout=3600,
         remember_me_duration=604800,
         max_concurrent_sessions=5
+    )
+
+
+def account_service(user_repository, password_service, recovery_code_service, auth_service):
+    """Create an AccountService for testing."""
+    from whatsthedamage.services.account_service import AccountService
+    return AccountService(
+        user_repository=user_repository,
+        password_service=password_service,
+        recovery_code_service=recovery_code_service,
+        session_service=auth_service,
+        password_min_length=12
     )

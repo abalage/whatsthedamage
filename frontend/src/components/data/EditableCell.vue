@@ -1,35 +1,42 @@
 <script setup lang="ts">
 /**
- * EditableCategoryCell - Inline category dropdown for VueDataTable cells.
+ * EditableCell - Inline editor for VueDataTable cells.
  *
- * Click-to-edit cell that corrects the category of a transaction with
- * a value picked from the category list provided by the backend.
- * The persistence logic is injected through the `save` prop; the Save
- * button commits the selection, Esc, the Cancel button, or losing
- * focus discards it. With `applyToFuture` enabled an "apply to future
- * transactions" checkbox is offered and its state is passed to
- * `save` as the second argument.
+ * Click-to-edit cell with either a category dropdown (editor='select',
+ * options from the categories store) or a free-text input
+ * (editor='text', for merchant and notice). The persistence logic is
+ * injected through the `save` prop; Enter or the Save button commits
+ * the new value, Esc, the Cancel button, or losing focus discards it.
+ * With `applyToFuture` enabled an "apply to future transactions"
+ * checkbox is offered and its state is passed to `save` as the
+ * second argument.
  */
 
 import { computed, nextTick, onMounted, ref } from 'vue'
 import { useGettext } from 'vue3-gettext'
 import { useCategoriesStore } from '../../stores/categories.js'
-
-/** Category id marker used by the frontend for uncategorized transactions */
-const UNCATEGORIZED = 'uncategorized'
+import { UNCATEGORIZED } from '../../composables/useTransactionCorrections.js'
 
 interface Props {
-  /** Raw category id ('uncategorized' when the transaction has none) */
-  categoryId: string
+  /** Editor kind: category dropdown or free-text input */
+  editor: 'select' | 'text'
+  /** Current raw value ('uncategorized' marks an empty category) */
+  value: string
+  /** Maximum accepted length, matches the backend column (text only) */
+  maxLength?: number
+  /** Whether an empty value may be saved (text only) */
+  allowEmpty?: boolean
   /** Whether to offer the "apply to future transactions" toggle */
   applyToFuture?: boolean
-  /** Persists the new category id (null clears it); rejects on
+  /** Persists the new value (null clears the category); rejects on
    *  failure. The second argument is the toggle state, passed when
    *  applyToFuture is enabled. */
-  save: (categoryId: string | null, applyToFuture?: boolean) => Promise<unknown>
+  save: (value: string | null, applyToFuture?: boolean) => Promise<unknown>
 }
 
 const props = withDefaults(defineProps<Props>(), {
+  maxLength: 500,
+  allowEmpty: true,
   applyToFuture: false
 })
 
@@ -40,28 +47,49 @@ const draft = ref('')
 const saving = ref(false)
 const error = ref<string | undefined>(undefined)
 const select = ref<HTMLSelectElement | undefined>(undefined)
+const input = ref<HTMLInputElement | undefined>(undefined)
 const applyToFutureChecked = ref(true)
 
+const isSelect = computed(() => props.editor === 'select')
+
 onMounted(() => {
-  categoriesStore.loadCategories()
+  if (isSelect.value) {
+    categoriesStore.loadCategories()
+  }
 })
 
-const displayName = computed(() => categoriesStore.getCategoryDisplayName(props.categoryId))
+const displayName = computed(() =>
+  isSelect.value
+    ? categoriesStore.getCategoryDisplayName(props.value)
+    : props.value
+)
 
 const options = computed(() => categoriesStore.categories.map(cat => ({
   value: cat.id,
   label: categoriesStore.getCategoryDisplayName(cat.id),
 })))
 
+const currentValue = computed<string | null>(() =>
+  isSelect.value
+    ? props.value === UNCATEGORIZED ? null : props.value
+    : props.value
+)
+
 async function startEdit(): Promise<void> {
   if (saving.value) return
-  await categoriesStore.loadCategories()
-  draft.value = props.categoryId === UNCATEGORIZED ? '' : props.categoryId
+  if (isSelect.value) {
+    await categoriesStore.loadCategories()
+  }
+  draft.value = currentValue.value ?? ''
   error.value = undefined
   applyToFutureChecked.value = true
   editing.value = true
   await nextTick()
-  select.value?.focus()
+  if (isSelect.value) {
+    select.value?.focus()
+  } else {
+    input.value?.focus()
+  }
 }
 
 function cancelEdit(): void {
@@ -72,9 +100,22 @@ function cancelEdit(): void {
 
 async function commit(): Promise<void> {
   if (saving.value) return
-  const nextValue = draft.value === '' ? null : draft.value
-  const currentValue = props.categoryId === UNCATEGORIZED ? null : props.categoryId
-  if (nextValue === currentValue) {
+  let nextValue: string | null
+  if (isSelect.value) {
+    nextValue = draft.value === '' ? null : draft.value
+  } else {
+    const trimmed = draft.value.trim()
+    if (trimmed.length > props.maxLength) {
+      error.value = $gettext('Value is too long')
+      return
+    }
+    if (trimmed === '' && !props.allowEmpty) {
+      error.value = $gettext('Value must not be empty')
+      return
+    }
+    nextValue = trimmed
+  }
+  if (nextValue === currentValue.value) {
     editing.value = false
     error.value = undefined
     return
@@ -108,6 +149,7 @@ async function commit(): Promise<void> {
   </button>
   <div v-else class="editable-cell-editor">
     <select
+      v-if="isSelect"
       ref="select"
       v-model="draft"
       class="form-select form-select-sm"
@@ -120,6 +162,18 @@ async function commit(): Promise<void> {
         {{ option.label }}
       </option>
     </select>
+    <input
+      v-else
+      ref="input"
+      v-model="draft"
+      type="text"
+      class="form-control form-control-sm"
+      :maxlength="maxLength"
+      :disabled="saving"
+      @keydown.enter.prevent="commit"
+      @keydown.esc.prevent="cancelEdit"
+      @blur="cancelEdit"
+    >
     <label
       v-if="applyToFuture"
       class="apply-future-toggle"

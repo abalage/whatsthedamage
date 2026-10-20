@@ -16,8 +16,17 @@ from whatsthedamage.models.repositories.correction_repository import (
 from whatsthedamage.models.repositories.processing_result_repository import (
     SqlAlchemyProcessingResultRepository,
 )
+from whatsthedamage.models.repositories.session_repository import (
+    SqlAlchemySessionRepository,
+)
+from whatsthedamage.models.repositories.shared_correction_repository import (
+    SqlAlchemySharedCorrectionRepository,
+)
 from whatsthedamage.models.repositories.transaction_repository import (
     SqlAlchemyTransactionRepository,
+)
+from whatsthedamage.models.repositories.user_repository import (
+    SqlAlchemyUserRepository,
 )
 
 
@@ -48,8 +57,9 @@ class SqlAlchemyUnitOfWork:
         """Open the shared session and bind repositories to it.
 
         Returns:
-            The unit of work with processing_results, transactions and
-            corrections repositories operating on the shared session.
+            The unit of work with processing_results, transactions,
+            corrections, shared_corrections, sessions and users
+            repositories operating on the shared session.
         """
         session = self._session_factory()
         session.expire_on_commit = False
@@ -63,6 +73,15 @@ class SqlAlchemyUnitOfWork:
         self.corrections: SqlAlchemyCorrectionRepository = (
             SqlAlchemyCorrectionRepository(shared_factory)
         )
+        self.shared_corrections: SqlAlchemySharedCorrectionRepository = (
+            SqlAlchemySharedCorrectionRepository(shared_factory)
+        )
+        self.sessions: SqlAlchemySessionRepository = (
+            SqlAlchemySessionRepository(shared_factory)
+        )
+        self.users: SqlAlchemyUserRepository = (
+            SqlAlchemyUserRepository(shared_factory)
+        )
         self._session = session
         return self
 
@@ -71,6 +90,68 @@ class SqlAlchemyUnitOfWork:
         if self._session is None:
             raise RuntimeError("Unit of work has not been started")
         self._session.commit()
+
+    def purge_user(self, user_id: int, revoke_shared_corrections: bool) -> dict[str, int]:
+        """Delete a user with all of their personal data in one transaction.
+
+        Shared correction contributions are withdrawn (with their
+        contribution counts subtracted) when revoke_shared_corrections
+        is true; otherwise only the user's contribution link rows are
+        deleted and the anonymized shared corrections are retained.
+        The personal data is deleted explicitly before the user row so
+        the purge also works on databases without foreign-key cascade
+        enforcement. This method never commits on its own; the caller
+        controls the transaction via commit().
+
+        Args:
+            user_id: User identifier.
+            revoke_shared_corrections: Whether the user's shared
+                correction contributions must be withdrawn.
+
+        Returns:
+            Mapping of purge result counts: contributions_withdrawn
+            (or contribution_links_deleted when nothing was withdrawn),
+            transactions_deleted, corrections_deleted,
+            processing_results_deleted, and sessions_revoked.
+        """
+        if self._session is None:
+            raise RuntimeError("Unit of work has not been started")
+
+        counts: dict[str, int] = {}
+        if revoke_shared_corrections:
+            counts['contributions_withdrawn'] = (
+                self.shared_corrections.withdraw_links_in_session(
+                    self._session, user_id
+                )
+            )
+        else:
+            counts['contribution_links_deleted'] = (
+                self.shared_corrections.delete_links_in_session(
+                    self._session, user_id
+                )
+            )
+        counts['transactions_deleted'] = (
+            self.transactions.delete_by_user_id_in_session(
+                self._session, user_id
+            )
+        )
+        counts['corrections_deleted'] = (
+            self.corrections.delete_by_user_id_in_session(
+                self._session, user_id
+            )
+        )
+        counts['processing_results_deleted'] = (
+            self.processing_results.delete_by_user_id_in_session(
+                self._session, user_id
+            )
+        )
+        counts['sessions_revoked'] = (
+            self.sessions.revoke_by_user_id_in_session(
+                self._session, user_id
+            )
+        )
+        self.users.delete_in_session(self._session, user_id)
+        return counts
 
     def rollback(self) -> None:
         """Roll back the current transaction, discarding pending writes."""

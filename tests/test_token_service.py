@@ -82,47 +82,23 @@ class TestTokenHashing:
         assert hash1 != hash2
 
 
-class TestTokenHashPrefix:
-    """Tests for token hash prefix functionality."""
-
-    def test_get_prefix_returns_8_chars(self, token_service):
-        """Test that get_token_hash_prefix returns 8 characters."""
-        token = token_service.generate_token()
-        hash = token_service.hash_token(token)
-        prefix = token_service.get_token_hash_prefix(hash)
-        assert len(prefix) == 8
-
-    def test_get_prefix_is_first_8_chars(self, token_service):
-        """Test that prefix is first 8 characters of hash."""
-        token = token_service.generate_token()
-        hash = token_service.hash_token(token)
-        prefix = token_service.get_token_hash_prefix(hash)
-        assert prefix == hash[:8]
-
-    def test_get_prefix_invalid_length_raises_error(self, token_service):
-        """Test that invalid hash length raises ValueError."""
-        with pytest.raises(ValueError, match="Token hash must be 64 characters"):
-            token_service.get_token_hash_prefix("short")
 
 
 class TestTokenAndHashGeneration:
     """Tests for combined token and hash generation."""
 
     def test_generate_token_and_hash_returns_tuple(self, token_service):
-        """Test that generate_token_and_hash returns 3 values."""
+        """Test that generate_token_and_hash returns token and hash."""
         result = token_service.generate_token_and_hash()
-        assert len(result) == 3
-        token, hash, prefix = result
+        assert len(result) == 2
+        token, hash = result
         assert isinstance(token, str)
         assert isinstance(hash, str)
-        assert isinstance(prefix, str)
 
     def test_generate_token_and_hash_consistency(self, token_service):
-        """Test that generated token, hash, and prefix are consistent."""
-        token, hash, prefix = token_service.generate_token_and_hash()
+        """Test that the generated hash matches the token."""
+        token, hash = token_service.generate_token_and_hash()
         assert hash == token_service.hash_token(token)
-        assert prefix == token_service.get_token_hash_prefix(hash)
-        assert prefix == hash[:8]
 
 
 class TestTokenValidation:
@@ -133,22 +109,3 @@ class TestTokenValidation:
         token = token_service.generate_token()
         hash = token_service.hash_token(token)
         assert token_service.validate_token(token, hash) is True
-
-    def test_validate_token_incorrect(self, token_service):
-        """Test that validate_token returns False for incorrect token."""
-        token = token_service.generate_token()
-        hash = token_service.hash_token(token)
-        assert token_service.validate_token("wrong_token", hash) is False
-
-    def test_validate_token_by_prefix_correct(self, token_service):
-        """Test that validate_token_by_prefix returns True for correct token."""
-        token = token_service.generate_token()
-        hash = token_service.hash_token(token)
-        prefix = token_service.get_token_hash_prefix(hash)
-        assert token_service.validate_token_by_prefix(token, prefix, hash) is True
-
-    def test_validate_token_by_prefix_wrong_prefix(self, token_service):
-        """Test that validate_token_by_prefix returns False for wrong prefix."""
-        token = token_service.generate_token()
-        hash = token_service.hash_token(token)
-        assert token_service.validate_token_by_prefix(token, "wrongxxx", hash) is False

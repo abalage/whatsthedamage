@@ -5,15 +5,11 @@ with mock dependencies for unit testing.
 """
 from typing import Dict, Optional, Any, List
 from whatsthedamage.services.drilldown_response_service import DrilldownResponseService
-from whatsthedamage.services.interfaces import (
-    IIdMappingService, ICacheService,
-    IDataFormattingService, IStatisticalAnalysisService
-)
 from whatsthedamage.models.domain.account import Account
 from whatsthedamage.models.domain.dt_models import StatisticalMetadata
 
-class MockIdMappingService(IIdMappingService):
-    """Mock implementation of IIdMappingService for testing."""
+class MockIdMappingService:
+    """Mock IdMappingService for testing."""
 
     def __init__(self, mappings: Optional[Dict] = None):
         """Initialize mock ID mapping service.
@@ -52,8 +48,8 @@ class MockIdMappingService(IIdMappingService):
         """Get secure month ID from original month timestamp."""
         return self._mappings.get(f"month_reverse:{month_timestamp}")
 
-class MockCacheService(ICacheService):
-    """Mock implementation of ICacheService for testing."""
+class MockCacheService:
+    """Mock CacheService for testing."""
 
     def __init__(self, cache_data: Optional[Dict] = None):
         """Initialize mock cache service.
@@ -71,8 +67,8 @@ class MockCacheService(ICacheService):
         """Store data in cache."""
         self._cache[key] = value
 
-class MockDataFormattingService(IDataFormattingService):
-    """Mock implementation of IDataFormattingService for testing."""
+class MockDataFormattingService:
+    """Mock DataFormattingService for testing."""
 
     def __init__(self, formatting_results: Optional[Dict] = None):
         """Initialize mock data formatting service.
@@ -90,8 +86,8 @@ class MockDataFormattingService(IDataFormattingService):
         """Convert statistical metadata to highlights dictionary."""
         return self._formatting_results.get('highlights', {})
 
-class MockStatisticalAnalysisService(IStatisticalAnalysisService):
-    """Mock implementation of IStatisticalAnalysisService for testing."""
+class MockStatisticalAnalysisService:
+    """Mock StatisticalAnalysisService for testing."""
 
     def compute_statistical_metadata(
         self,

@@ -17,7 +17,16 @@ from flask import Blueprint, current_app, request, jsonify, Response
 from typing import Any, Optional, Tuple, cast
 from werkzeug.exceptions import BadRequest
 
-from whatsthedamage.services.authentication_service import AuthenticationService
+from whatsthedamage.services.account_service import AccountService
+from whatsthedamage.services.auth_session_service import AuthSessionService
+from whatsthedamage.services.auth_errors import (
+    AccountDeletionPendingError,
+    AccountInactiveError,
+    InvalidCredentialsError,
+    InvalidPasswordError,
+    PasswordTooWeakError,
+    UsernameExistsError,
+)
 from whatsthedamage.services.rate_limit_service import RateLimitService
 from whatsthedamage.config.auth_config import get_auth_config
 from whatsthedamage.models.database.user import User as UserDB
@@ -25,6 +34,7 @@ from whatsthedamage.api.auth_decorators import require_auth_and_csrf
 from whatsthedamage.api.middleware import (
     PUBLIC_AUTH_ROUTES,
     get_client_ip,
+    rate_limit_response,
     register_api_middleware,
 )
 
@@ -36,19 +46,34 @@ auth_bp = Blueprint('auth', __name__, url_prefix='/api/v2/auth')
 register_api_middleware(auth_bp, PUBLIC_AUTH_ROUTES)
 
 
-def _get_auth_service() -> AuthenticationService:
-    """Get the AuthenticationService instance from Flask extensions.
+def _get_auth_service() -> AuthSessionService:
+    """Get the AuthSessionService instance from Flask extensions.
 
     Returns:
-        AuthenticationService instance.
+        AuthSessionService instance.
 
     Raises:
-        RuntimeError: If authentication service is not available.
+        RuntimeError: If the service is not available.
     """
     auth_service = current_app.extensions.get('auth_service')
     if auth_service is None:
         raise RuntimeError("Authentication service not available")
-    return cast(AuthenticationService, auth_service)
+    return cast(AuthSessionService, auth_service)
+
+
+def _get_account_service() -> AccountService:
+    """Get the AccountService instance from Flask extensions.
+
+    Returns:
+        AccountService instance.
+
+    Raises:
+        RuntimeError: If the service is not available.
+    """
+    account_service = current_app.extensions.get('account_service')
+    if account_service is None:
+        raise RuntimeError("Account service not available")
+    return cast(AccountService, account_service)
 
 
 def _get_rate_limit_service() -> RateLimitService:
@@ -76,13 +101,35 @@ def _get_user_agent() -> str:
     return ua[:512]
 
 
+def _cookie_kwargs() -> dict[str, Any]:
+    """Common attributes of the session cookie.
+
+    Uses the configured SameSite and Secure values; on localhost the
+    cookie domain is pinned to 'localhost' so it works across the
+    dev ports (3000, 5000), with Lax and non-Secure cookies because
+    the Vite proxy makes frontend and backend same-origin.
+
+    Returns:
+        Keyword arguments for Flask's set_cookie / delete_cookie.
+    """
+    if request.host == 'localhost' or request.host.startswith('localhost:'):
+        return {'domain': 'localhost', 'samesite': 'Lax', 'secure': False}
+
+    auth_config = get_auth_config()
+    return {
+        'domain': None,
+        'samesite': auth_config.SESSION_COOKIE_SAMESITE,
+        'secure': auth_config.SESSION_COOKIE_SECURE
+    }
+
+
 def _set_session_cookie(
     response: Response,
     token: str,
     expires: datetime,
     remember_me: bool = False
 ) -> Response:
-    """Set HttpOnly, Secure, SameSite=Strict session cookie.
+    """Set HttpOnly session cookie.
 
     Args:
         response: Flask response to set cookie on.
@@ -93,47 +140,20 @@ def _set_session_cookie(
     Returns:
         Response with session cookie set.
     """
-    auth_config = get_auth_config()
-
     # Calculate max age based on expiration
     max_age_seconds = (expires - datetime.now(UTC)).total_seconds()
     max_age = int(max_age_seconds)
     if max_age <= 0:
-        max_age = auth_config.SESSION_TOKEN_LENGTH
-
-    # Determine domain for cookie - use 'localhost' for development
-    # This allows cookies to work across different ports (3000, 5000) on localhost
-    domain = None
-    try:
-        from flask import request as flask_request
-        host = flask_request.host
-        if host and (host.startswith('localhost:') or host == 'localhost'):
-            domain = 'localhost'
-    except (RuntimeError, ImportError):
-        pass
-
-    # Use SameSite=Lax for development to work with local proxy setup
-    # SameSite=None requires Secure=true which doesn't work for HTTP in development
-    # With Vite proxy, frontend and backend appear as same-origin to browser, so Lax is sufficient
-    samesite = auth_config.SESSION_COOKIE_SAMESITE
-    secure = auth_config.SESSION_COOKIE_SECURE
-
-    # For localhost development, use Lax and non-secure cookies
-    # This works because Vite proxy makes frontend and backend same-origin from browser's perspective
-    if domain == 'localhost':
-        samesite = 'Lax'
-        secure = False
+        max_age = get_auth_config().SESSION_TOKEN_LENGTH
 
     response.set_cookie(
         'session_token',
         value=token,
         httponly=True,
-        secure=secure,
-        samesite=samesite,
         max_age=max_age,
         expires=expires,
         path='/',
-        domain=domain
+        **_cookie_kwargs()
     )
     return response
 
@@ -147,32 +167,11 @@ def _clear_session_cookie(response: Response) -> Response:
     Returns:
         Response with session cookie cleared.
     """
-    auth_config = get_auth_config()
-
-    # Determine domain for cookie - use 'localhost' for development
-    domain = None
-    try:
-        from flask import request as flask_request
-        host = flask_request.host
-        if host and (host.startswith('localhost:') or host == 'localhost'):
-            domain = 'localhost'
-    except (RuntimeError, ImportError):
-        pass
-
-    # For localhost development, use Lax and non-secure cookies
-    samesite = auth_config.SESSION_COOKIE_SAMESITE
-    secure = auth_config.SESSION_COOKIE_SECURE
-    if domain == 'localhost':
-        samesite = 'Lax'
-        secure = False
-
     response.delete_cookie(
         'session_token',
         path='/',
-        domain=domain,
         httponly=True,
-        secure=secure,
-        samesite=samesite
+        **_cookie_kwargs()
     )
     return response
 
@@ -282,15 +281,7 @@ def register() -> Tuple[Response, int]:
             ip_address=get_client_ip()
         )
         if rate_limit_exceeded:
-            error_response = _create_error_response(
-                f"Too many registration attempts. Try again in {retry_after} seconds.",
-                429,
-                "RATE_LIMIT_EXCEEDED",
-                retry_after
-            )
-            response = jsonify(error_response[0])
-            response.headers['Retry-After'] = str(retry_after)
-            return response, 429
+            return rate_limit_response(retry_after), 429
 
         data = request.get_json()
         if not data:
@@ -322,7 +313,7 @@ def register() -> Tuple[Response, int]:
 
         # Register user
         user, recovery_code, session_token, session_expiry, csrf_token = (
-            _get_auth_service().register_user(
+            _get_account_service().register_user(
                 username=username.strip(),
                 password=password,
                 ip_address=ip_address,
@@ -350,26 +341,18 @@ def register() -> Tuple[Response, int]:
 
         return response, 201
 
+    except UsernameExistsError as e:
+        return jsonify(_create_error_response(
+            str(e), 409, "USERNAME_EXISTS"
+        )[0]), 409
+    except PasswordTooWeakError as e:
+        return jsonify(_create_error_response(
+            str(e), 422, "PASSWORD_TOO_WEAK"
+        )[0]), 422
     except ValueError as e:
-        error_message = str(e)
-        if "already exists" in error_message.lower():
-            return jsonify(_create_error_response(
-                error_message,
-                409,
-                "USERNAME_EXISTS"
-            )[0]), 409
-        elif "password must be at least" in error_message.lower():
-            return jsonify(_create_error_response(
-                error_message,
-                422,
-                "PASSWORD_TOO_WEAK"
-            )[0]), 422
-        else:
-            return jsonify(_create_error_response(
-                error_message,
-                400,
-                "VALIDATION_ERROR"
-            )[0]), 400
+        return jsonify(_create_error_response(
+            str(e), 400, "VALIDATION_ERROR"
+        )[0]), 400
 
 
 @auth_bp.route('/login', methods=['POST'])
@@ -440,22 +423,14 @@ def login() -> Tuple[Response, int]:
             ip_address=get_client_ip()
         )
         if rate_limit_exceeded:
-            error_response = _create_error_response(
-                f"Too many login attempts. Try again in {retry_after} seconds.",
-                429,
-                "RATE_LIMIT_EXCEEDED",
-                retry_after
-            )
-            response = jsonify(error_response[0])
-            response.headers['Retry-After'] = str(retry_after)
-            return response, 429
+            return rate_limit_response(retry_after), 429
 
         ip_address = get_client_ip()
         user_agent = _get_user_agent()
 
         # Login user
         user, session_token, session_expiry, csrf_token = (
-            _get_auth_service().login_user(
+            _get_account_service().login_user(
                 username=username.strip(),
                 password=password,
                 remember_me=remember_me,
@@ -485,35 +460,27 @@ def login() -> Tuple[Response, int]:
 
         return response, 200
 
-    except ValueError as e:
-        error_message = str(e)
-        if "invalid username or password" in error_message.lower():
-            return jsonify(_create_error_response(
-                "Invalid username or password",
-                401,
-                "INVALID_CREDENTIALS"
-            )[0]), 401
-        elif "account is inactive" in error_message.lower():
-            return jsonify(_create_error_response(
-                "Account is inactive",
-                403,
-                "ACCOUNT_INACTIVE"
-            )[0]), 403
-        elif "account is scheduled for deletion" in error_message.lower():
-            return jsonify(_create_error_response(
-                "Account is scheduled for deletion",
-                403,
-                "ACCOUNT_DELETION_PENDING"
-            )[0]), 403
-        else:
-            return jsonify(_create_error_response(
-                "Login failed",
-                401,
-                "AUTHENTICATION_FAILED"
-            )[0]), 401
-    except Exception as e:
+    except InvalidCredentialsError:
         return jsonify(_create_error_response(
-            "Login failed " + e.__class__.__name__ + ": " + str(e),
+            "Invalid username or password", 401, "INVALID_CREDENTIALS"
+        )[0]), 401
+    except AccountInactiveError:
+        return jsonify(_create_error_response(
+            "Account is inactive", 403, "ACCOUNT_INACTIVE"
+        )[0]), 403
+    except AccountDeletionPendingError:
+        return jsonify(_create_error_response(
+            "Account is scheduled for deletion",
+            403,
+            "ACCOUNT_DELETION_PENDING"
+        )[0]), 403
+    except ValueError:
+        return jsonify(_create_error_response(
+            "Login failed", 401, "AUTHENTICATION_FAILED"
+        )[0]), 401
+    except Exception:
+        return jsonify(_create_error_response(
+            "Login failed",
             500,
             "INTERNAL_ERROR"
         )[0]), 500
@@ -575,67 +542,39 @@ def logout() -> Tuple[Response, int]:
 
 
 @auth_bp.route('/me', methods=['GET'])
+@require_auth_and_csrf
 def get_me() -> Tuple[Response, int]:
     """Get current user information.
 
-    Returns information about the currently authenticated user.
-    Includes a CSRF token only when the session does not have one yet;
-    repeat calls do not rotate an existing token.
+    The blueprint guard has already validated the session and attached
+    the user and session to the request context. Includes a CSRF
+    token only when the session does not have one yet; repeat calls
+    do not rotate an existing token.
 
     Response JSON:
         {
-            "user": {
-                "id": int,
-                "username": "string",
-                "created_at": "ISO8601 timestamp",
-                "last_login_at": "ISO8601 timestamp or null",
-                "is_active": boolean,
-                "opt_in_sharing": boolean,
-                "opted_in_at": "ISO8601 timestamp or null",
-                "opted_out_at": "ISO8601 timestamp or null",
-                "scheduled_deletion_at": "ISO8601 timestamp or null"
-            },
+            "user": {...},
             "csrf_token": "string or null"
         }
 
     Status Codes:
         200: Authenticated
         401: Not authenticated
+        403: Invalid or missing CSRF token
     """
-    try:
-        # Get session token from cookie
-        session_token = request.cookies.get('session_token')
-        if not session_token:
-            return jsonify(_create_error_response(
-                "No session found",
-                401,
-                "NOT_AUTHENTICATED"
-            )[0]), 401
+    user = cast(UserDB, request.user)  # type: ignore[attr-defined]
+    session = cast(Any, request.session)  # type: ignore[attr-defined]
 
-        # Get user info with CSRF token
-        result = _get_auth_service().get_me(session_token)
-        if not result:
-            return jsonify(_create_error_response(
-                "Invalid or expired session",
-                401,
-                "INVALID_SESSION"
-            )[0]), 401
+    csrf_token: Optional[str] = None
+    if not session.csrf_token_hash:
+        csrf_token = _get_auth_service().refresh_csrf_token(session)
 
-        user, session, csrf_token = result
+    response_data: dict[str, Any] = {
+        'user': _user_payload(user),
+        'csrf_token': csrf_token
+    }
 
-        response_data: dict[str, Any] = {
-            'user': _user_payload(user),
-            'csrf_token': csrf_token
-        }
-
-        return jsonify(response_data), 200
-
-    except Exception as e:
-        return jsonify(_create_error_response(
-            "Failed to get user information",
-            500,
-            "INTERNAL_ERROR"
-        )[0]), 500
+    return jsonify(response_data), 200
 
 
 @auth_bp.route('/me', methods=['PUT'])
@@ -707,7 +646,7 @@ def update_me() -> Tuple[Response, int]:
                     400,
                     "VALIDATION_ERROR"
                 )[0]), 400
-            updated_user = _get_auth_service().update_opt_in_sharing(
+            updated_user = _get_account_service().update_opt_in_sharing(
                 cast(int, user.id), opt_in_sharing
             )
 
@@ -719,7 +658,7 @@ def update_me() -> Tuple[Response, int]:
                     400,
                     "VALIDATION_ERROR"
                 )[0]), 400
-            updated_user = _get_auth_service().update_username(
+            updated_user = _get_account_service().update_username(
                 user, new_username
             )
 
@@ -732,18 +671,13 @@ def update_me() -> Tuple[Response, int]:
 
         return jsonify({'user': _user_payload(updated_user)}), 200
 
-    except ValueError as e:
-        error_message = str(e)
-        if "already exists" in error_message.lower():
-            return jsonify(_create_error_response(
-                error_message,
-                409,
-                "USERNAME_EXISTS"
-            )[0]), 409
+    except UsernameExistsError as e:
         return jsonify(_create_error_response(
-            error_message,
-            400,
-            "VALIDATION_ERROR"
+            str(e), 409, "USERNAME_EXISTS"
+        )[0]), 409
+    except ValueError as e:
+        return jsonify(_create_error_response(
+            str(e), 400, "VALIDATION_ERROR"
         )[0]), 400
     except Exception:
         return jsonify(_create_error_response(
@@ -805,30 +739,23 @@ def change_password() -> Tuple[Response, int]:
                 "MISSING_NEW_PASSWORD"
             )[0]), 400
 
-        _get_auth_service().change_password(
+        _get_account_service().change_password(
             user, current_password, new_password, session
         )
 
         return jsonify({'message': 'Password changed'}), 200
 
-    except ValueError as e:
-        error_message = str(e)
-        if "password must be at least" in error_message.lower():
-            return jsonify(_create_error_response(
-                error_message,
-                422,
-                "PASSWORD_TOO_WEAK"
-            )[0]), 422
-        if "invalid current password" in error_message.lower():
-            return jsonify(_create_error_response(
-                "Invalid current password",
-                401,
-                "INVALID_CREDENTIALS"
-            )[0]), 401
+    except PasswordTooWeakError as e:
         return jsonify(_create_error_response(
-            error_message,
-            400,
-            "VALIDATION_ERROR"
+            str(e), 422, "PASSWORD_TOO_WEAK"
+        )[0]), 422
+    except InvalidPasswordError:
+        return jsonify(_create_error_response(
+            "Invalid current password", 401, "INVALID_CREDENTIALS"
+        )[0]), 401
+    except ValueError as e:
+        return jsonify(_create_error_response(
+            str(e), 400, "VALIDATION_ERROR"
         )[0]), 400
     except Exception:
         return jsonify(_create_error_response(
@@ -859,83 +786,17 @@ def export_me() -> Tuple[Response, int]:
     user = cast(UserDB, request.user)  # type: ignore[attr-defined]
 
     try:
-        user_id = cast(int, user.id)
-
-        transaction_repo = current_app.extensions.get(
-            'transaction_repository'
-        )
-        correction_repo = current_app.extensions.get(
-            'correction_repository'
-        )
-        processing_result_repo = current_app.extensions.get(
-            'processing_result_repository'
-        )
-        if (
-            transaction_repo is None
-            or correction_repo is None
-            or processing_result_repo is None
-        ):
+        export_service = current_app.extensions.get('data_export_service')
+        if export_service is None:
             return jsonify(_create_error_response(
                 "Data export is not available",
                 500,
                 "INTERNAL_ERROR"
             )[0]), 500
 
-        transactions = transaction_repo.find_all_by_user(user_id)
-        corrections = correction_repo.find_all_by_user(user_id)
-
-        processing_results: list[dict[str, Any]] = []
-        offset = 0
-        page_size = 100
-        while True:
-            page = processing_result_repo.find_by_user_id(
-                user_id, limit=page_size, offset=offset
-            )
-            processing_results.extend({
-                'result_id': result.result_id,
-                'csv_profile_id': result.csv_profile_id,
-                'row_count': result.row_count,
-                'processing_time': result.processing_time,
-                'ml_enabled': result.ml_enabled,
-                'start_date': _to_iso(result.start_date),
-                'end_date': _to_iso(result.end_date),
-                'created_at': _to_iso(result.created_at)
-            } for result in page)
-            if len(page) < page_size:
-                break
-            offset += page_size
-
-        payload: dict[str, Any] = {
-            'generated_at': datetime.now(UTC).isoformat(),
-            'account': _user_payload(user),
-            'processing_results': processing_results,
-            'transactions': [{
-                'id': transaction.id,
-                'result_id': transaction.result_id,
-                'date': _to_iso(transaction.date),
-                'transaction_type': transaction.transaction_type,
-                'original_partner': transaction.original_partner,
-                'amount': transaction.amount,
-                'currency': transaction.currency,
-                'account': transaction.account,
-                'category_id': transaction.category_id,
-                'partner': transaction.partner,
-                'notice': transaction.notice,
-                'confidence': transaction.confidence,
-                'original_category_id': transaction.original_category_id,
-                'original_notice': transaction.original_notice,
-                'created_at': _to_iso(transaction.created_at),
-                'updated_at': _to_iso(transaction.updated_at)
-            } for transaction in transactions],
-            'corrections': [{
-                'id': correction.id,
-                'original_partner': correction.original_partner,
-                'corrected_partner': correction.corrected_partner,
-                'corrected_category_id': correction.corrected_category_id,
-                'created_at': _to_iso(correction.created_at),
-                'updated_at': _to_iso(correction.updated_at)
-            } for correction in corrections]
-        }
+        payload = export_service.build_export(
+            cast(int, user.id), _user_payload(user)
+        )
 
         response = jsonify(payload)
         response.headers['Content-Disposition'] = (
@@ -1037,17 +898,13 @@ def delete_account() -> Tuple[Response, int]:
         response = _clear_session_cookie(response)
         return response, 200
 
-    except ValueError as e:
-        if "invalid password" in str(e).lower():
-            return jsonify(_create_error_response(
-                "Invalid password",
-                401,
-                "INVALID_CREDENTIALS"
-            )[0]), 401
+    except InvalidPasswordError:
         return jsonify(_create_error_response(
-            "Failed to schedule account deletion",
-            400,
-            "VALIDATION_ERROR"
+            "Invalid password", 401, "INVALID_CREDENTIALS"
+        )[0]), 401
+    except ValueError as e:
+        return jsonify(_create_error_response(
+            str(e), 400, "VALIDATION_ERROR"
         )[0]), 400
     except Exception:
         return jsonify(_create_error_response(
@@ -1145,18 +1002,10 @@ def reset_password() -> Tuple[Response, int]:
             ip_address=get_client_ip()
         )
         if rate_limit_exceeded:
-            error_response_data = _create_error_response(
-                f"Too many attempts. Try again in {retry_after} seconds.",
-                429,
-                "RATE_LIMIT_EXCEEDED",
-                retry_after
-            )
-            response = jsonify(error_response_data[0])
-            response.headers['Retry-After'] = str(retry_after)
-            return response, 429
+            return rate_limit_response(retry_after), 429
 
         # Reset password using recovery code
-        user, new_formatted_recovery_code = _get_auth_service().reset_password_with_recovery_code(
+        user, new_formatted_recovery_code = _get_account_service().reset_password_with_recovery_code(
             username=username.strip(),
             recovery_code=recovery_code.strip(),
             new_password=new_password
@@ -1173,26 +1022,20 @@ def reset_password() -> Tuple[Response, int]:
 
         return jsonify(response_data), 200
 
-    except ValueError as e:
-        error_message = str(e)
-        if "password must be at least" in error_message.lower():
-            return jsonify(_create_error_response(
-                error_message,
-                422,
-                "PASSWORD_TOO_WEAK"
-            )[0]), 422
-        elif "invalid username or recovery code" in error_message.lower():
-            return jsonify(_create_error_response(
-                "Invalid username or recovery code",
-                401,
-                "INVALID_CREDENTIALS"
-            )[0]), 401
-        else:
-            return jsonify(_create_error_response(
-                "Password reset failed",
-                401,
-                "AUTHENTICATION_FAILED"
-            )[0]), 401
+    except PasswordTooWeakError as e:
+        return jsonify(_create_error_response(
+            str(e), 422, "PASSWORD_TOO_WEAK"
+        )[0]), 422
+    except InvalidCredentialsError:
+        return jsonify(_create_error_response(
+            "Invalid username or recovery code",
+            401,
+            "INVALID_CREDENTIALS"
+        )[0]), 401
+    except ValueError:
+        return jsonify(_create_error_response(
+            "Password reset failed", 401, "AUTHENTICATION_FAILED"
+        )[0]), 401
     except Exception as e:
         return jsonify(_create_error_response(
             "Password reset failed",

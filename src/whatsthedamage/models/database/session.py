@@ -26,7 +26,6 @@ class Session(Base):
         id: Primary key, auto-incrementing.
         user_id: Foreign key to User (required).
         token_hash: SHA-256 hash of the session token (64 char hex).
-        token_hash_prefix: First 8 characters of token_hash for fast lookup.
         csrf_token_hash: SHA-256 hash of the CSRF token (64 char hex).
         expires_at: Token expiration timestamp.
         created_at: Token creation timestamp.
@@ -41,7 +40,6 @@ class Session(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     user_id = Column(Integer, ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
     token_hash = Column(String(64), nullable=False)
-    token_hash_prefix = Column(String(8), nullable=False)
     csrf_token_hash = Column(String(64), nullable=True)
     expires_at = Column(DateTime, nullable=False)
     created_at = Column(DateTime, nullable=False, default=lambda: datetime.now(UTC))
@@ -55,7 +53,6 @@ class Session(Base):
     # Indexes for performance
     __table_args__ = (
         Index('ix_sessions_token_hash', 'token_hash'),
-        Index('ix_sessions_token_hash_prefix', 'token_hash_prefix'),
         Index('ix_sessions_user_id', 'user_id'),
         Index('ix_sessions_expires_at', 'expires_at'),
     )

@@ -9,8 +9,7 @@ import { createPinia, setActivePinia } from 'pinia';
 import { reactive } from 'vue';
 import Transactions from '../../src/pages/Transactions.vue';
 import VueDataTable from '../../src/components/data/VueDataTable.vue';
-import EditableCategoryCell from '../../src/components/data/EditableCategoryCell.vue';
-import EditableTextCell from '../../src/components/data/EditableTextCell.vue';
+import EditableCell from '../../src/components/data/EditableCell.vue';
 import UndoCorrectionCell from '../../src/components/data/UndoCorrectionCell.vue';
 import { fetchProcessingResultMetadata, fetchAllTransactions, updateTransaction, undoTransaction, fetchCategories } from '../../src/js/api.js';
 import { useFeedbackStore } from '../../src/stores/feedback.js';
@@ -263,9 +262,9 @@ describe('Transactions.vue inline editing', () => {
   it('renders merchant, category, and notice columns as editable cells', async () => {
     const wrapper = await mountWithTransaction(transaction);
 
-    expect(findColumn(wrapper, 'merchant').component).toBe(EditableTextCell);
-    expect(findColumn(wrapper, 'category_id').component).toBe(EditableCategoryCell);
-    expect(findColumn(wrapper, 'notice').component).toBe(EditableTextCell);
+    expect(findColumn(wrapper, 'merchant').component).toBe(EditableCell);
+    expect(findColumn(wrapper, 'category_id').component).toBe(EditableCell);
+    expect(findColumn(wrapper, 'notice').component).toBe(EditableCell);
   });
 
   it('prevents saving an empty merchant but allows an empty notice', async () => {
@@ -538,7 +537,7 @@ describe('Transactions.vue toolbar toggles', () => {
     const wrapper = shallowMount(Transactions, {
       global: {
         plugins: [createPinia()],
-        stubs: { VueDataTable: false },
+        stubs: { VueDataTable: false, ToggleFilterButton: false },
       },
     });
     await flushPromises();

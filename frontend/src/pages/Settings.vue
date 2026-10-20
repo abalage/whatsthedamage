@@ -3,51 +3,62 @@ import { ref } from 'vue'
 import { useGettext } from 'vue3-gettext'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth.js'
+import { useAsyncAction } from '../composables/useAsyncAction.js'
 
 const { $gettext } = useGettext()
 const router = useRouter()
 const authStore = useAuthStore()
 
-const isUpdating = ref(false)
-const updateError = ref<string | null>(null)
+const {
+  isLoading: isUpdating,
+  error: updateError,
+  run: runToggle
+} = useAsyncAction()
 const justEnabled = ref(false)
 const justDisabled = ref(false)
 
 const newUsername = ref('')
-const isChangingUsername = ref(false)
-const usernameError = ref<string | null>(null)
+const {
+  isLoading: isChangingUsername,
+  error: usernameError,
+  run: runChangeUsername
+} = useAsyncAction()
 const usernameChanged = ref(false)
 
 const currentPassword = ref('')
 const newPassword = ref('')
-const isChangingPassword = ref(false)
-const passwordError = ref<string | null>(null)
+const {
+  isLoading: isChangingPassword,
+  error: passwordError,
+  run: runChangePassword
+} = useAsyncAction()
 const passwordChanged = ref(false)
 
-const isExporting = ref(false)
-const exportError = ref<string | null>(null)
+const {
+  isLoading: isExporting,
+  error: exportError,
+  run: runExport
+} = useAsyncAction()
 
 const deletePassword = ref('')
 const revokeSharedCorrections = ref(false)
-const isDeleting = ref(false)
-const deleteError = ref<string | null>(null)
+const {
+  isLoading: isDeleting,
+  error: deleteError,
+  run: runDeleteAccount
+} = useAsyncAction()
 
 async function handleToggle(event: Event): Promise<void> {
   const target = event.target as HTMLInputElement
   const newValue = target.checked
-  isUpdating.value = true
-  updateError.value = null
   justEnabled.value = false
   justDisabled.value = false
-  try {
-    await authStore.setOptInSharing(newValue)
+  const result = await runToggle(() => authStore.setOptInSharing(newValue))
+  if (result !== undefined) {
     justEnabled.value = newValue
     justDisabled.value = !newValue
-  } catch (err: unknown) {
-    updateError.value = err instanceof Error ? err.message : String(err)
+  } else {
     target.checked = !newValue
-  } finally {
-    isUpdating.value = false
   }
 }
 
@@ -56,40 +67,30 @@ async function handleChangeUsername(): Promise<void> {
   if (trimmed.length === 0 || trimmed === authStore.user?.username) {
     return
   }
-  isChangingUsername.value = true
-  usernameError.value = null
   usernameChanged.value = false
-  try {
-    await authStore.changeUsername(trimmed)
+  const result = await runChangeUsername(() =>
+    authStore.changeUsername(trimmed)
+  )
+  if (result !== undefined) {
     newUsername.value = ''
     usernameChanged.value = true
-  } catch (err: unknown) {
-    usernameError.value = err instanceof Error ? err.message : String(err)
-  } finally {
-    isChangingUsername.value = false
   }
 }
 
 async function handleChangePassword(): Promise<void> {
-  isChangingPassword.value = true
-  passwordError.value = null
   passwordChanged.value = false
-  try {
-    await authStore.changeUserPassword(currentPassword.value, newPassword.value)
+  const result = await runChangePassword(() =>
+    authStore.changeUserPassword(currentPassword.value, newPassword.value)
+  )
+  if (result !== undefined) {
     currentPassword.value = ''
     newPassword.value = ''
     passwordChanged.value = true
-  } catch (err: unknown) {
-    passwordError.value = err instanceof Error ? err.message : String(err)
-  } finally {
-    isChangingPassword.value = false
   }
 }
 
 async function handleExport(): Promise<void> {
-  isExporting.value = true
-  exportError.value = null
-  try {
+  await runExport(async () => {
     const data = await authStore.exportData()
     const blob = new Blob([JSON.stringify(data, null, 2)], {
       type: 'application/json'
@@ -102,27 +103,19 @@ async function handleExport(): Promise<void> {
     anchor.click()
     anchor.remove()
     URL.revokeObjectURL(url)
-  } catch (err: unknown) {
-    exportError.value = err instanceof Error ? err.message : String(err)
-  } finally {
-    isExporting.value = false
-  }
+  })
 }
 
 async function handleDeleteAccount(): Promise<void> {
-  isDeleting.value = true
-  deleteError.value = null
-  try {
-    await authStore.requestAccountDeletion(
+  const result = await runDeleteAccount(() =>
+    authStore.requestAccountDeletion(
       deletePassword.value,
       revokeSharedCorrections.value
     )
+  )
+  if (result !== undefined) {
     deletePassword.value = ''
     await router.push({ name: 'login' })
-  } catch (err: unknown) {
-    deleteError.value = err instanceof Error ? err.message : String(err)
-  } finally {
-    isDeleting.value = false
   }
 }
 </script>

@@ -67,7 +67,7 @@ whatsthedamage/
 
 - **Layered Architecture**: Clear separation of concerns with Presentation (CLI/Frontend), API, Service, Model, Persistence, Configuration, and Utility layers
 - **MVC Architecture**: Model-View-Controller pattern
-- **Service Layer**: Business logic isolated in services (ProcessingService, ValidationService, MLService, ResponseFormattingService, AuthenticationService, TransactionPersistenceService, CorrectionService, etc.)
+- **Service Layer**: Business logic isolated in services (ProcessingService, ValidationService, MLService, ResponseFormattingService, AccountService, AuthSessionService, TransactionImportService, CorrectionService, DataExportService, RetentionService, etc.)
 - **Repository Pattern**: All database access goes through repository classes in `models/repositories/`; services never issue SQLAlchemy queries directly
 - **Dependency Injection**: Services injected into controllers
   - **CLI**: Uses `ServiceContainer` from `service_container.py`
@@ -186,7 +186,7 @@ npm run test          # Run Vitest tests
 - **PEP 8**: Follow Python style guide
 - **Type hints**: Use `typing` module (avoid `Any`)
 - **Docstrings**: Required for all public functions/classes (Sphinx format, PEP 257 conventions)
-- **Line length**: Maximum 79 characters
+- **Line length**: Maximum 119 characters
 - **Indentation**: 4 spaces per level
 - **Imports**: Group by type, separate with blank lines
 - **Trailing whitespaces**: Remove trailing whitespaces

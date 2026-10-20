@@ -2,21 +2,17 @@
  * Authentication store for managing user authentication state.
  *
  * Uses Pinia for state management. Handles login, logout, registration,
- * and session management. Manages CSRF tokens and recovery codes.
+ * and session management. The CSRF token lives in the shared
+ * js/csrfToken.ts holder (persisted there); this store only refreshes
+ * and clears it alongside authentication state.
  */
 
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import type { User } from '../types/auth.js';
 import { register, login, logout, getMe, fetchCsrfToken, updateSharingPreference, updateUsername, changePassword, exportMyData, deleteAccount } from '../js/api.js';
+import { setCsrfToken, getCsrfToken } from '../js/csrfToken.js';
 import type { DataExportResponse } from '../types/auth.js';
-
-/**
- * localStorage key for the persisted CSRF token.
- * Persisting it lets page reloads and tabs reuse the same token instead
- * of forcing the backend to mint (and rotate) a new one.
- */
-const CSRF_TOKEN_STORAGE_KEY = 'csrfToken';
 
 /**
  * Use the authentication store.
@@ -26,7 +22,6 @@ const CSRF_TOKEN_STORAGE_KEY = 'csrfToken';
  * - isAuthenticated: Whether user is logged in
  * - isLoading: Loading state for auth operations
  * - error: Current error message
- * - csrfToken: Current CSRF token (persisted in localStorage)
  * - recoveryCode: Recovery code shown after registration
  * - showRecoveryCode: Whether to display recovery code
  * - recoveryCodeAcknowledged: Whether user has acknowledged saving recovery code
@@ -36,7 +31,6 @@ export const useAuthStore = defineStore('auth', () => {
   const user = ref<User | null>(null);
   const isLoading = ref<boolean>(false);
   const error = ref<string | null>(null);
-  const csrfToken = ref<string | null>(localStorage.getItem(CSRF_TOKEN_STORAGE_KEY));
   const recoveryCode = ref<string | null>(null);
   const showRecoveryCode = ref<boolean>(false);
   const recoveryCodeAcknowledged = ref<boolean>(false);
@@ -45,16 +39,25 @@ export const useAuthStore = defineStore('auth', () => {
   const isAuthenticated = computed(() => user.value !== null);
 
   /**
-   * Set the CSRF token in state and persist it.
+   * Run an action with the shared loading/error wrapper.
    *
-   * @param token - New CSRF token, or null to clear it
+   * Sets isLoading during the action; stores the error message and
+   * re-throws on failure.
+   *
+   * @param action - Async action to run
+   * @returns Promise with the action's result
    */
-  function setCsrfToken(token: string | null): void {
-    csrfToken.value = token;
-    if (token) {
-      localStorage.setItem(CSRF_TOKEN_STORAGE_KEY, token);
-    } else {
-      localStorage.removeItem(CSRF_TOKEN_STORAGE_KEY);
+  async function withLoading<T>(action: () => Promise<T>): Promise<T> {
+    isLoading.value = true;
+    error.value = null;
+
+    try {
+      return await action();
+    } catch (err: unknown) {
+      error.value = err instanceof Error ? err.message : String(err);
+      throw err;
+    } finally {
+      isLoading.value = false;
     }
   }
 
@@ -73,7 +76,7 @@ export const useAuthStore = defineStore('auth', () => {
       user.value = response.user;
       if (response.csrf_token) {
         setCsrfToken(response.csrf_token);
-      } else if (!csrfToken.value) {
+      } else if (!getCsrfToken()) {
         // The session has a token but this client does not (fresh
         // storage); mint one via the explicit token endpoint
         await refreshCsrfToken();
@@ -81,7 +84,7 @@ export const useAuthStore = defineStore('auth', () => {
     } catch {
       // Not authenticated - clear any existing state
       user.value = null;
-      setCsrfToken(null);
+      setCsrfToken(undefined);
       // Don't set error for 401 (not authenticated)
     } finally {
       isLoading.value = false;
@@ -96,12 +99,10 @@ export const useAuthStore = defineStore('auth', () => {
    * @returns Promise with user and recovery code
    */
   async function registerUser(username: string, password: string): Promise<{ user: User; recoveryCode: string }> {
-    isLoading.value = true;
-    error.value = null;
     showRecoveryCode.value = false;
     recoveryCodeAcknowledged.value = false;
 
-    try {
+    return withLoading(async () => {
       const response = await register(username, password);
       user.value = response.user;
       recoveryCode.value = response.recovery_code;
@@ -109,13 +110,7 @@ export const useAuthStore = defineStore('auth', () => {
       setCsrfToken(response.csrf_token);
 
       return { user: response.user, recoveryCode: response.recovery_code };
-    } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : String(err);
-      error.value = errorMessage;
-      throw err;
-    } finally {
-      isLoading.value = false;
-    }
+    });
   }
 
   /**
@@ -127,22 +122,13 @@ export const useAuthStore = defineStore('auth', () => {
    * @returns Promise with authenticated user
    */
   async function loginUser(username: string, password: string, rememberMe: boolean = false): Promise<User> {
-    isLoading.value = true;
-    error.value = null;
-
-    try {
+    return withLoading(async () => {
       const response = await login(username, password, rememberMe);
       user.value = response.user;
       setCsrfToken(response.csrf_token);
 
       return response.user;
-    } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : String(err);
-      error.value = errorMessage;
-      throw err;
-    } finally {
-      isLoading.value = false;
-    }
+    });
   }
 
   /**
@@ -157,7 +143,7 @@ export const useAuthStore = defineStore('auth', () => {
     } finally {
       // Clear state regardless of success
       user.value = null;
-      setCsrfToken(null);
+      setCsrfToken(undefined);
       isLoading.value = false;
     }
   }
@@ -186,22 +172,13 @@ export const useAuthStore = defineStore('auth', () => {
    * @returns Promise with the updated user
    */
   async function setOptInSharing(optIn: boolean): Promise<User> {
-    isLoading.value = true;
-    error.value = null;
-
-    try {
+    return withLoading(async () => {
       const response = await updateSharingPreference(optIn);
       if (user.value) {
         user.value = response.user;
       }
       return response.user;
-    } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : String(err);
-      error.value = errorMessage;
-      throw err;
-    } finally {
-      isLoading.value = false;
-    }
+    });
   }
 
   /**
@@ -211,22 +188,13 @@ export const useAuthStore = defineStore('auth', () => {
    * @returns Promise with the updated user
    */
   async function changeUsername(username: string): Promise<User> {
-    isLoading.value = true;
-    error.value = null;
-
-    try {
+    return withLoading(async () => {
       const response = await updateUsername(username);
       if (user.value) {
         user.value = response.user;
       }
       return response.user;
-    } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : String(err);
-      error.value = errorMessage;
-      throw err;
-    } finally {
-      isLoading.value = false;
-    }
+    });
   }
 
   /**
@@ -242,18 +210,9 @@ export const useAuthStore = defineStore('auth', () => {
     currentPassword: string,
     newPassword: string
   ): Promise<void> {
-    isLoading.value = true;
-    error.value = null;
-
-    try {
+    return withLoading(async () => {
       await changePassword(currentPassword, newPassword);
-    } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : String(err);
-      error.value = errorMessage;
-      throw err;
-    } finally {
-      isLoading.value = false;
-    }
+    });
   }
 
   /**
@@ -288,13 +247,12 @@ export const useAuthStore = defineStore('auth', () => {
       const response = await deleteAccount(password, revokeSharedCorrections);
       return response.scheduled_deletion_at;
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : String(err);
-      error.value = errorMessage;
+      error.value = err instanceof Error ? err.message : String(err);
       throw err;
     } finally {
       // All sessions are revoked server-side; drop local state too
       user.value = null;
-      setCsrfToken(null);
+      setCsrfToken(undefined);
       isLoading.value = false;
     }
   }
@@ -305,11 +263,10 @@ export const useAuthStore = defineStore('auth', () => {
    */
   async function refreshCsrfToken(): Promise<void> {
     try {
-      const response = await fetchCsrfToken();
-      setCsrfToken(response.csrf_token);
+      await fetchCsrfToken();
     } catch {
       // If we can't get a new CSRF token, just clear it
-      setCsrfToken(null);
+      setCsrfToken(undefined);
     }
   }
 
@@ -320,7 +277,6 @@ export const useAuthStore = defineStore('auth', () => {
     isAuthenticated,
     isLoading,
     error,
-    csrfToken,
     recoveryCode,
     showRecoveryCode,
     recoveryCodeAcknowledged,
@@ -337,10 +293,6 @@ export const useAuthStore = defineStore('auth', () => {
     changeUsername,
     changeUserPassword,
     exportData,
-    requestAccountDeletion,
-
-    // Getters
-    getUser: (): User | null => user.value,
-    getCsrfToken: (): string | null => csrfToken.value
+    requestAccountDeletion
   };
 });

@@ -1,19 +1,21 @@
 """
 Error handlers for API endpoints.
 
-Converts exceptions to standardized ErrorResponse JSON format.
+Converts exceptions to the canonical API error shape: a JSON body
+with an ``error`` message (plus ``details`` for validation errors).
+Unexpected exceptions never expose their text to the client.
 """
 from typing import Any, Protocol
 from flask import jsonify, Response, request, Flask
 from werkzeug.exceptions import BadRequest, RequestEntityTooLarge, HTTPException
 from pydantic import ValidationError
-from whatsthedamage.models.api.common import ErrorResponse
 from whatsthedamage.utils.logging import get_logger
 
 
 class ExceptionHandler(Protocol):
     """Protocol for exception handler functions."""
     def __call__(self, error: Any) -> tuple[Response, int]: ...
+
 
 logger = get_logger(__name__)
 
@@ -31,12 +33,8 @@ def handle_bad_request(error: BadRequest) -> tuple[Response, int]:
     Returns:
         tuple: JSON response and status code 400
     """
-    error_response = ErrorResponse(
-        code=400,
-        message="Bad Request",
-        details={"error": str(error.description) if error.description else "Invalid request"}
-    )
-    return jsonify(error_response.model_dump()), 400
+    message = str(error.description) if error.description else "Invalid request"
+    return jsonify({'error': message}), 400
 
 
 def handle_file_not_found(error: FileNotFoundError) -> tuple[Response, int]:
@@ -49,12 +47,7 @@ def handle_file_not_found(error: FileNotFoundError) -> tuple[Response, int]:
     Returns:
         tuple: JSON response and status code 400
     """
-    error_response = ErrorResponse(
-        code=400,
-        message="File Not Found",
-        details={"error": str(error)}
-    )
-    return jsonify(error_response.model_dump()), 400
+    return jsonify({'error': 'File not found'}), 400
 
 
 def handle_validation_error(error: ValidationError) -> tuple[Response, int]:
@@ -67,18 +60,15 @@ def handle_validation_error(error: ValidationError) -> tuple[Response, int]:
     Returns:
         tuple: JSON response and status code 400
     """
-    # Extract validation errors from Pydantic
     validation_errors = []
     for err in error.errors():
         field = ".".join(str(loc) for loc in err['loc'])
         validation_errors.append(f"{field}: {err['msg']}")
 
-    error_response = ErrorResponse(
-        code=400,
-        message="Validation Error",
-        details={"errors": validation_errors}
-    )
-    return jsonify(error_response.model_dump()), 400
+    return jsonify({
+        'error': 'Validation Error',
+        'details': validation_errors
+    }), 400
 
 
 def handle_value_error(error: ValueError) -> tuple[Response, int]:
@@ -91,12 +81,7 @@ def handle_value_error(error: ValueError) -> tuple[Response, int]:
     Returns:
         tuple: JSON response and status code 422
     """
-    error_response = ErrorResponse(
-        code=422,
-        message="Unprocessable Entity",
-        details={"error": str(error)}
-    )
-    return jsonify(error_response.model_dump()), 422
+    return jsonify({'error': str(error)}), 422
 
 
 def handle_request_entity_too_large(error: RequestEntityTooLarge) -> tuple[Response, int]:
@@ -109,17 +94,19 @@ def handle_request_entity_too_large(error: RequestEntityTooLarge) -> tuple[Respo
     Returns:
         tuple: JSON response and status code 413
     """
-    error_response = ErrorResponse(
-        code=413,
-        message="Request Entity Too Large",
-        details={"error": str(error.description) if error.description else "Uploaded file is too large"}
+    message = (
+        str(error.description) if error.description
+        else "Uploaded file is too large"
     )
-    return jsonify(error_response.model_dump()), 413
+    return jsonify({'error': message}), 413
 
 
 def handle_generic_exception(error: Exception) -> tuple[Response, int]:
     """
     Handle all other exceptions.
+
+    The exception text is never exposed to the client; the full
+    exception is logged server-side instead.
 
     Args:
         error: The generic exception
@@ -127,7 +114,6 @@ def handle_generic_exception(error: Exception) -> tuple[Response, int]:
     Returns:
         tuple: JSON response and status code 500
     """
-    # Extract request context for logging
     request_context = {
         "error_type": type(error).__name__,
         "path": request.path if request else "unknown",
@@ -136,15 +122,9 @@ def handle_generic_exception(error: Exception) -> tuple[Response, int]:
         "remote_addr": request.remote_addr if request else "unknown"
     }
 
-    # Log the full exception for debugging with detailed context
     logger.exception("Unhandled exception in API endpoint", extra={"context": request_context})
 
-    error_response = ErrorResponse(
-        code=500,
-        message="Internal Server Error",
-        details={"error": "An unexpected error occurred"}
-    )
-    return jsonify(error_response.model_dump()), 500
+    return jsonify({'error': 'Internal Server Error'}), 500
 
 
 def register_error_handlers(app: Flask) -> None:

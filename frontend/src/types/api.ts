@@ -21,24 +21,13 @@ export interface DisplayRawField {
   raw: number;
 }
 
-/**
- * Date with display format and timestamp
- * @deprecated Use ISO 8601 date strings directly instead.
- * This type is kept for backward compatibility but is no longer used in API responses.
- */
-export interface DateField {
-  display: string;
-  timestamp: number;
-}
-
 // ============================================================================
 // Data Models (from dt_models.py)
 // ============================================================================
 
 /**
- * Unified transaction detail model - consolidates DetailRow and TransactionDetail.
- * Replaces the previous DetailRow and TransactionDetailResponse interfaces.
- * Uses ISO 8601 date strings instead of DateField objects.
+ * Unified transaction detail model.
+ * Uses ISO 8601 date strings.
  */
 export interface TransactionDetail {
   row_id: string;
@@ -57,7 +46,7 @@ export interface TransactionDetail {
 
 /**
  * Aggregated row: transactions grouped by category and date
- * Uses ISO 8601 date strings instead of DateField objects.
+ * Uses ISO 8601 date strings.
  */
 export interface AggregatedRow {
   row_id: string;
@@ -67,9 +56,6 @@ export interface AggregatedRow {
   details: TransactionDetail[];
   is_calculated?: boolean;
 }
-
-// DetailRow is now an alias to TransactionDetail
-export type DetailRow = TransactionDetail;
 
 /**
  * Statistical highlights for a single cell/row
@@ -160,20 +146,6 @@ export interface CsvProfile {
   version: string;
   csv_config: CsvConfig;
   is_default: boolean;
-}
-
-/**
- * Schema information for CSV profile format
- * Fetched via GET /api/v2/csv-profiles/schema
- */
-export interface CsvProfileSchema {
-  description: string;
-  required_fields: string[];
-  optional_fields: string[];
-  csv_config_required: string[];
-  attribute_mapping_required_keys: string[];
-  example: Record<string, unknown>;
-  notes: string[];
 }
 
 // -----------------------------------------------------------------------------

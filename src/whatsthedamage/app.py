@@ -115,7 +115,8 @@ def _init_auth_services(app: Flask, service_container: ServiceContainer) -> Serv
     from whatsthedamage.services.recovery_code_service import RecoveryCodeService
     from whatsthedamage.services.csrf_service import CsrfService
     from whatsthedamage.services.rate_limit_service import RateLimitService
-    from whatsthedamage.services.authentication_service import AuthenticationService
+    from whatsthedamage.services.auth_session_service import AuthSessionService
+    from whatsthedamage.services.account_service import AccountService
 
     auth_config = get_auth_config()
 
@@ -135,21 +136,26 @@ def _init_auth_services(app: Flask, service_container: ServiceContainer) -> Serv
     csrf_service = CsrfService(auth_config.CSRF_TOKEN_LENGTH)
     rate_limit_service = RateLimitService()
 
-    auth_service = AuthenticationService(
+    auth_session_service = AuthSessionService(
         user_repository=user_repo,
         session_repository=session_repo,
-        password_service=password_service,
         token_service=token_service,
-        recovery_code_service=recovery_code_service,
         csrf_service=csrf_service,
-        password_min_length=auth_config.PASSWORD_MIN_LENGTH,
         session_timeout=auth_config.PERMANENT_SESSION_LIFETIME,
         remember_me_duration=auth_config.SESSION_REMEMBER_ME_DURATION,
         max_concurrent_sessions=auth_config.SESSION_MAX_CONCURRENT
     )
+    account_service = AccountService(
+        user_repository=user_repo,
+        password_service=password_service,
+        recovery_code_service=recovery_code_service,
+        session_service=auth_session_service,
+        password_min_length=auth_config.PASSWORD_MIN_LENGTH
+    )
 
     # Store services in app extensions
-    app.extensions['auth_service'] = auth_service
+    app.extensions['auth_service'] = auth_session_service
+    app.extensions['account_service'] = account_service
     app.extensions['rate_limit_service'] = rate_limit_service
     app.extensions['password_service'] = password_service
     app.extensions['token_service'] = token_service
@@ -179,9 +185,19 @@ def _init_transaction_services(app: Flask, service_container: ServiceContainer) 
     shared_correction_repo = SqlAlchemySharedCorrectionRepository(cast(Any, session_factory))
 
     # Create services
+    from whatsthedamage.services.correction_service import CorrectionService
+    from whatsthedamage.services.data_export_service import DataExportService
     from whatsthedamage.services.deduplication_service import DeduplicationService
+    from whatsthedamage.services.transaction_import_service import (
+        TransactionImportService
+    )
 
     dedup_service = DeduplicationService()
+    correction_service = CorrectionService(correction_repo, shared_correction_repo)
+    data_export_service = DataExportService(
+        transaction_repo, correction_repo, processing_result_repo
+    )
+    transaction_import_service = TransactionImportService(dedup_service)
 
     # Store repositories and services in app extensions
     app.extensions['transaction_repository'] = transaction_repo
@@ -189,6 +205,9 @@ def _init_transaction_services(app: Flask, service_container: ServiceContainer) 
     app.extensions['correction_repository'] = correction_repo
     app.extensions['shared_correction_repository'] = shared_correction_repo
     app.extensions['deduplication_service'] = dedup_service
+    app.extensions['correction_service'] = correction_service
+    app.extensions['data_export_service'] = data_export_service
+    app.extensions['transaction_import_service'] = transaction_import_service
 
     # Create retention service (account deletion + retention purge)
     # after all repositories it depends on are registered

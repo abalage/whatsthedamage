@@ -19,7 +19,6 @@ class Session:
         id: Unique identifier for the session.
         user_id: ID of the associated user.
         token_hash: SHA-256 hash of the session token.
-        token_hash_prefix: First 8 characters of token_hash for fast lookup.
         expires_at: Token expiration timestamp.
         created_at: Token creation timestamp.
         ip_address: IP address of the client.
@@ -32,7 +31,6 @@ class Session:
         id: Optional[int] = None,
         user_id: Optional[int] = None,
         token_hash: Optional[str] = None,
-        token_hash_prefix: Optional[str] = None,
         expires_at: Optional[datetime] = None,
         created_at: Optional[datetime] = None,
         ip_address: Optional[str] = None,
@@ -45,7 +43,6 @@ class Session:
             id: Unique identifier (optional, set on persistence).
             user_id: Associated user ID.
             token_hash: SHA-256 hash of the session token.
-            token_hash_prefix: First 8 characters of token_hash.
             expires_at: Token expiration timestamp.
             created_at: Token creation timestamp.
             ip_address: Client IP address.
@@ -55,7 +52,6 @@ class Session:
         self.id = id
         self.user_id = user_id
         self.token_hash = token_hash
-        self.token_hash_prefix = token_hash_prefix
         self.expires_at = expires_at
         self.created_at = created_at or datetime.now(UTC)
         self.ip_address = ip_address

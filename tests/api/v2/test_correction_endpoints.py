@@ -185,7 +185,7 @@ class TestGetCorrection:
 
         assert response.status_code == 404
 
-    def test_get_other_users_correction_returns_403(
+    def test_get_other_users_correction_returns_404(
         self, auth_context, second_auth_context
     ):
         """Users cannot fetch corrections owned by another user."""
@@ -195,7 +195,7 @@ class TestGetCorrection:
             f"/api/v2/corrections/{correction['id']}"
         )
 
-        assert response.status_code == 403
+        assert response.status_code == 404
 
 
 class TestUpdateCorrection:
@@ -236,7 +236,7 @@ class TestUpdateCorrection:
 
         assert response.status_code == 404
 
-    def test_update_other_users_correction_returns_403(
+    def test_update_other_users_correction_returns_404(
         self, auth_context, second_auth_context
     ):
         """Users cannot update corrections owned by another user."""
@@ -248,7 +248,7 @@ class TestUpdateCorrection:
             headers=second_auth_context.csrf_headers
         )
 
-        assert response.status_code == 403
+        assert response.status_code == 404
 
 
 class TestDeleteCorrection:
@@ -278,7 +278,7 @@ class TestDeleteCorrection:
 
         assert response.status_code == 404
 
-    def test_delete_other_users_correction_returns_403(
+    def test_delete_other_users_correction_returns_404(
         self, auth_context, second_auth_context
     ):
         """Users cannot delete corrections owned by another user."""
@@ -289,7 +289,7 @@ class TestDeleteCorrection:
             headers=second_auth_context.csrf_headers
         )
 
-        assert response.status_code == 403
+        assert response.status_code == 404
 
     def test_delete_without_csrf_token_returns_403(self, auth_context):
         """Delete requests missing the CSRF header are rejected."""

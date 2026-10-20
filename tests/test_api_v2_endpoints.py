@@ -87,14 +87,13 @@ class TestAPIv2ValidationErrors:
 
         assert response.status_code == 400
         response_data = response.get_json()
-        assert response_data['code'] == 400
+        assert 'error' in response_data
 
     def test_invalid_date_format_returns_400(self, api_test_helper, sample_csv_file):
         """Test that invalid date format returns 400 validation error."""
         response = api_test_helper.post_processing_result(sample_csv_file, start_date='not-a-date')
 
-        data = api_test_helper.assert_error(response, 400)
-        assert 'details' in data
+        api_test_helper.assert_error(response, 400)
 
 
 class TestAPIv2ProcessingErrors:
@@ -132,7 +131,7 @@ class TestAPIv2FileCleanup:
         mock_processing_service.process_with_details.return_value = \
             MockProcessingService.create_detailed_result([], row_count=2)
 
-        monkeypatch.setattr('whatsthedamage.api.v2.endpoints.cleanup_files', mock_cleanup)
+        monkeypatch.setattr('whatsthedamage.api.v2.endpoints.processing_results.cleanup_files', mock_cleanup)
 
         response = api_test_helper.post_processing_result(sample_csv_file)
 
@@ -150,7 +149,7 @@ class TestAPIv2FileCleanup:
                 os.unlink(csv_path)
 
         mock_processing_service.process_with_details.side_effect = ValueError("Processing failed")
-        monkeypatch.setattr('whatsthedamage.api.v2.endpoints.cleanup_files', mock_cleanup)
+        monkeypatch.setattr('whatsthedamage.api.v2.endpoints.processing_results.cleanup_files', mock_cleanup)
 
         response = api_test_helper.post_processing_result(sample_csv_file)
 

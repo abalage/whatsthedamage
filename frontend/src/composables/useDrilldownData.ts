@@ -4,7 +4,7 @@
  * @module composables/useDrilldownData
  */
 
-import { computed, nextTick, type ComputedRef, type Ref } from 'vue'
+import { computed, type ComputedRef, type Ref } from 'vue'
 import { useGettext } from 'vue3-gettext'
 import { useRouteParams, type StringRouteParams } from './useRouteParams.js'
 import { useApiData } from './useApiData.js'
@@ -20,10 +20,6 @@ export interface DrilldownPageConfig<T> {
    * This is the only supported pattern (buildEndpoint has been removed)
    */
   fetchData: (params: StringRouteParams) => Promise<T>
-  /**
-   * Optional data transformation function
-   */
-  transformData?: (data: unknown) => T
   /**
    * Base translation key for auto-generating page title
    * Used with titleFormat and titleExtractor to create titles like "Transactions: Food - Jan 2025"
@@ -46,11 +42,6 @@ export interface DrilldownPageConfig<T> {
    * Breadcrumb items - can be static or function that takes data and returns items
    */
   breadcrumbItems?: BreadcrumbItem[] | ((data: T | null) => BreadcrumbItem[])
-  /**
-   * Custom initialization hook called after data is loaded
-   * Use this for DataTables initialization or other page-specific setup
-   */
-  onDataLoaded?: (data: T) => void | Promise<void>
   /**
    * Error message key for i18n
    */
@@ -82,7 +73,6 @@ export interface DrilldownResult<T> {
  * - API data fetching with error handling
  * - Loading and error states
  * - Page titles and breadcrumbs
- * - DataTables initialization callbacks
  *
  * Note: The deprecated buildEndpoint pattern has been removed. Use fetchData only.
  *
@@ -125,10 +115,7 @@ export function useDrilldownData<T>(
 
   // Use the focused useApiData composable
   const createFetchFn = (): (() => Promise<T>) => {
-    return async () => {
-      const response = await config.fetchData(stringParams.value)
-      return config.transformData ? config.transformData(response) : response
-    }
+    return async () => config.fetchData(stringParams.value)
   }
 
   const { data, isLoading, error, fetchData: baseFetchData } = useApiData<T>({
@@ -137,13 +124,8 @@ export function useDrilldownData<T>(
     errorMessageKey: config.errorMessageKey
   })
 
-  // Wrap fetchData with onDataLoaded callback
   const fetchData = async (): Promise<void> => {
     await baseFetchData()
-    if (data.value && config.onDataLoaded) {
-      await nextTick()
-      await config.onDataLoaded(data.value)
-    }
   }
 
   // Page title generation

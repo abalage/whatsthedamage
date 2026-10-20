@@ -8,7 +8,7 @@ Each endpoint in api/v2/endpoints.py should return one of these models.
 For new endpoints, consider using the ApiEnvelope<T> wrapper for standardized
 response format with metadata and hypermedia links.
 """
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, Field, ConfigDict, field_validator
 from typing import Dict, List, Optional, Any, Generic, TypeVar
 from datetime import datetime, UTC
 from whatsthedamage.models.domain.account import Account
@@ -410,3 +410,85 @@ class RecalculateApiResponse(BaseModel):
 
 
 
+
+# =============================================================================
+# Transaction / Correction Entity Responses
+# =============================================================================
+
+class TransactionApi(BaseModel):
+    """API representation of a persisted Transaction entity.
+
+    Built directly from the SQLAlchemy entity (from_attributes), the
+    datetimes serialize to ISO 8601 strings on model_dump(). The
+    account falls back to 'unknown' when missing.
+
+    Attributes:
+        id: Transaction identifier.
+        user_id: Owner identifier.
+        result_id: Processing result identifier.
+        date: Transaction date.
+        transaction_type: Transaction type (debit/credit).
+        original_partner: Original partner name from the CSV.
+        amount: Transaction amount.
+        currency: Currency code.
+        account: Account identifier ('unknown' when missing).
+        deduplication_hash: SHA-256 hash of the deduplication key.
+        category_id: Assigned category identifier.
+        partner: Corrected partner name.
+        notice: Transaction notice/comment.
+        original_category_id: Category before the first correction.
+        original_notice: Notice before the first correction.
+        confidence: Categorization confidence score.
+        created_at: Creation timestamp.
+        updated_at: Last update timestamp.
+    """
+    model_config = ConfigDict(from_attributes=True)
+
+    id: Optional[int] = None
+    user_id: Optional[int] = None
+    result_id: Optional[str] = None
+    date: Optional[datetime] = None
+    transaction_type: Optional[str] = None
+    original_partner: Optional[str] = None
+    amount: Optional[float] = None
+    currency: Optional[str] = None
+    account: Optional[str] = None
+    deduplication_hash: Optional[str] = None
+    category_id: Optional[str] = None
+    partner: Optional[str] = None
+    notice: Optional[str] = None
+    original_category_id: Optional[str] = None
+    original_notice: Optional[str] = None
+    confidence: Optional[float] = None
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+
+    @field_validator('account', mode='before')
+    @classmethod
+    def _account_fallback(cls, value: Optional[str]) -> Optional[str]:
+        """Default a missing account to 'unknown'."""
+        return value if value else 'unknown'
+
+
+class CorrectionApi(BaseModel):
+    """API representation of a persisted merchant-rule Correction.
+
+    Attributes:
+        id: Correction identifier.
+        user_id: Owner identifier.
+        original_partner: Original partner name the rule matches.
+        corrected_partner: Corrected partner name.
+        corrected_category_id: Corrected category identifier.
+        created_at: Creation timestamp.
+        updated_at: Last update timestamp.
+    """
+    model_config = ConfigDict(from_attributes=True)
+
+    id: Optional[int] = None
+    user_id: Optional[int] = None
+    original_partner: Optional[str] = None
+    corrected_partner: Optional[str] = None
+    # Rules tolerate non-string category values; sharing rejects them
+    corrected_category_id: Optional[Any] = None
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None

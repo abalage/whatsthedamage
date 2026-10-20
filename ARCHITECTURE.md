@@ -88,12 +88,16 @@ whatsthedamage/
 │   ├── api/                 # REST API endpoints
 │   │   ├── auth_decorators.py # require_authentication / require_csrf decorators
 │   │   ├── error_handlers.py  # API error handlers
-│   │   ├── helpers.py       # API helper functions
-│   │   ├── middleware.py    # Blueprint auth guard, API rate limits, security headers
-│   │   ├── models/          # API DTO package
+│   │   ├── helpers.py         # API helper functions
+│   │   └── middleware.py     # Blueprint auth guard, API rate limits, security headers
 │   │   └── v2/              # API v2 endpoints and schemas
-│   │       ├── endpoints.py # API v2 processing, transaction, and correction endpoints
-│   │       ├── schema.py    # OpenAPI 3.0 schema generator
+│   │       ├── endpoints/       # API v2 sub-blueprints by domain
+│   │       │   ├── reference.py          # Categories, CSV profiles, OpenAPI spec
+│   │       │   ├── processing_results.py # CSV upload processing and result listings
+│   │       │   ├── transactions.py       # Transaction CRUD and drilldown aggregation
+│   │       │   ├── corrections.py        # Merchant-rule correction CRUD
+│   │       │   └── statistics.py         # Statistical highlight recalculation
+│   │       ├── schema.py        # OpenAPI 3.0 schema generator
 │   │       └── auth/
 │   │           └── endpoints.py # Authentication endpoints (register/login/logout)
 │   ├── config/              # Configuration classes
@@ -152,11 +156,15 @@ whatsthedamage/
 │   │       ├── user.py             # Domain user model
 │   │       └── statistical_algorithms.py # Statistical analysis
 │   ├── services/             # Business logic services
-│   │   ├── authentication_service.py  # Registration, login, password reset
+│   │   ├── account_service.py    # Registration, login, password reset/change
+│   │   ├── auth_errors.py        # Typed authentication exceptions
+│   │   ├── auth_session_service.py # Session lifecycle (create/validate/revoke, CSRF)
 │   │   ├── cache_service.py      # Caching service
 │   │   ├── configuration_service.py # Configuration loading
+│   │   ├── correction_service.py # Merchant-rule upsert and sharing opt-in
 │   │   ├── csv_profile_service.py # CSV bank-format profiles
 │   │   ├── csrf_service.py      # CSRF token issuance/validation
+│   │   ├── data_export_service.py # GDPR data export payload
 │   │   ├── deduplication_service.py # Duplicate transaction detection
 │   │   ├── drilldown_response_service.py # Drilldown response building
 │   │   ├── exclusion_service.py     # Exclusion handling
@@ -176,6 +184,7 @@ whatsthedamage/
 │   │   ├── statistical_analysis_service.py # Statistical analysis
 │   │   ├── text_correction_service.py # Text cleaning for ML
 │   │   ├── token_service.py     # Session token generation/verification
+│   │   ├── transaction_import_service.py # CSV import persistence via the unit of work
 │   │   └── validation_service.py   # File validation
 │   ├── utils/                # Utility functions
 │   │   ├── data_loader.py  # Data loading utils for Machine Learning

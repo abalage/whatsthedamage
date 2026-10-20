@@ -6,12 +6,12 @@ in URLs while maintaining the ability to look up the original data.
 """
 from typing import Dict, Optional, Any, cast
 import hashlib
-from whatsthedamage.services.interfaces import IIdMappingService, ICacheService
+from whatsthedamage.services.cache_service import CacheService
 
-class IdMappingService(IIdMappingService):
+class IdMappingService:
     """Service for mapping sensitive data to opaque identifiers and vice versa."""
 
-    def __init__(self, cache_service: ICacheService):
+    def __init__(self, cache_service: CacheService):
         """Initialize the ID mapping service with CacheService.
 
         Args:

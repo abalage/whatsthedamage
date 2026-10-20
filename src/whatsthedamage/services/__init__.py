@@ -9,7 +9,8 @@ from whatsthedamage.services.token_service import TokenService
 from whatsthedamage.services.recovery_code_service import RecoveryCodeService
 from whatsthedamage.services.csrf_service import CsrfService
 from whatsthedamage.services.rate_limit_service import RateLimitService
-from whatsthedamage.services.authentication_service import AuthenticationService
+from whatsthedamage.services.account_service import AccountService
+from whatsthedamage.services.auth_session_service import AuthSessionService
 
 # SessionService requires Flask - import directly where needed (web routes only)
 
@@ -25,5 +26,6 @@ __all__ = [
     'RecoveryCodeService',
     'CsrfService',
     'RateLimitService',
-    'AuthenticationService',
+    'AccountService',
+    'AuthSessionService',
 ]

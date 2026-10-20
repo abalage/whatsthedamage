@@ -9,6 +9,7 @@ import { createPinia, setActivePinia } from 'pinia';
 import { useAuthStore } from '../src/stores/auth.js';
 import { login, getMe, fetchCsrfToken } from '../src/js/api.js';
 import { recalculateStatistics } from '../src/js/api.js';
+import { getCsrfToken, setCsrfToken } from '../src/js/csrfToken.js';
 
 type FetchResponse = {
   ok: boolean;
@@ -42,6 +43,7 @@ const user = {
 beforeEach(() => {
   vi.clearAllMocks();
   localStorage.clear();
+  setCsrfToken(undefined);
   setActivePinia(createPinia());
 });
 
@@ -59,7 +61,7 @@ describe('auth store CSRF token handling', () => {
     const authStore = useAuthStore();
     await authStore.login('testuser', 'password', false);
 
-    expect(authStore.getCsrfToken()).toBe('login-token');
+    expect(getCsrfToken()).toBe('login-token');
     expect(localStorage.getItem('csrfToken')).toBe('login-token');
   });
 
@@ -77,7 +79,7 @@ describe('auth store CSRF token handling', () => {
     const authStore = useAuthStore();
     await authStore.register('newuser', 'secure_password_1');
 
-    expect(authStore.getCsrfToken()).toBe('register-token');
+    expect(getCsrfToken()).toBe('register-token');
     expect(localStorage.getItem('csrfToken')).toBe('register-token');
   });
 
@@ -90,12 +92,12 @@ describe('auth store CSRF token handling', () => {
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(String(fetchMock.mock.calls[0][0])).toContain('/api/v2/auth/csrf-token');
-    expect(authStore.getCsrfToken()).toBe('minted-token');
+    expect(getCsrfToken()).toBe('minted-token');
     expect(localStorage.getItem('csrfToken')).toBe('minted-token');
   });
 
   it('initialize keeps the persisted token when /auth/me returns none', async () => {
-    localStorage.setItem('csrfToken', 'persisted-token');
+    setCsrfToken('persisted-token');
     const fetchMock = vi.fn(async (_url?: unknown): Promise<FetchResponse> => makeResponse({ user, csrf_token: null }));
     vi.stubGlobal('fetch', fetchMock);
 
@@ -104,7 +106,7 @@ describe('auth store CSRF token handling', () => {
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(String(fetchMock.mock.calls[0][0])).toContain('/api/v2/auth/me');
-    expect(authStore.getCsrfToken()).toBe('persisted-token');
+    expect(getCsrfToken()).toBe('persisted-token');
   });
 
   it('initialize mints a token when the session has one but the client does not', async () => {
@@ -122,27 +124,26 @@ describe('auth store CSRF token handling', () => {
 
     expect(fetchMock).toHaveBeenCalledTimes(2);
     expect(String(fetchMock.mock.calls[1][0])).toContain('/api/v2/auth/csrf-token');
-    expect(authStore.getCsrfToken()).toBe('minted-token');
+    expect(getCsrfToken()).toBe('minted-token');
     expect(localStorage.getItem('csrfToken')).toBe('minted-token');
   });
 
   it('logout clears the persisted token', async () => {
-    localStorage.setItem('csrfToken', 'persisted-token');
+    setCsrfToken('persisted-token');
     const fetchMock = vi.fn(async (_url?: unknown): Promise<FetchResponse> => makeResponse({ message: 'Successfully logged out' }));
     vi.stubGlobal('fetch', fetchMock);
 
     const authStore = useAuthStore();
     await authStore.logout();
 
-    expect(authStore.getCsrfToken()).toBeNull();
+    expect(getCsrfToken()).toBeUndefined();
     expect(localStorage.getItem('csrfToken')).toBeNull();
   });
 });
 
-describe('fetchWithCsrf stale token retry', () => {
+describe('stale CSRF token retry', () => {
   it('retries a request once with a fresh token after a rejected one', async () => {
-    const authStore = useAuthStore();
-    authStore.csrfToken = 'stale-token';
+    setCsrfToken('stale-token');
 
     const responses: FetchResponse[] = [
       makeResponse({ error: 'Invalid CSRF token' }, false, 403),
@@ -168,12 +169,11 @@ describe('fetchWithCsrf stale token retry', () => {
     expect(retryHeaders['X-CSRF-Token']).toBe('fresh-token');
 
     expect(result.highlights).toEqual({});
-    expect(authStore.getCsrfToken()).toBe('fresh-token');
+    expect(getCsrfToken()).toBe('fresh-token');
   });
 
   it('does not retry twice on repeated rejection', async () => {
-    const authStore = useAuthStore();
-    authStore.csrfToken = 'stale-token';
+    setCsrfToken('stale-token');
 
     const responses: FetchResponse[] = [
       makeResponse({ error: 'Invalid CSRF token' }, false, 403),
@@ -192,8 +192,7 @@ describe('fetchWithCsrf stale token retry', () => {
   });
 
   it('does not retry unrelated 403 errors', async () => {
-    const authStore = useAuthStore();
-    authStore.csrfToken = 'valid-token';
+    setCsrfToken('valid-token');
 
     const fetchMock = vi.fn(async (_url?: unknown): Promise<FetchResponse> =>
       makeResponse({ error: 'Session has no CSRF token' }, false, 403)

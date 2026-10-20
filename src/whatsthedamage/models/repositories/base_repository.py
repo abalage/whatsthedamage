@@ -1,71 +1,14 @@
-"""Base repository interface.
+"""Base repository.
 
-Provides the abstract base class for all repository implementations.
-Uses Python's Protocol for structural subtyping.
+Provides the shared base class for all SQLAlchemy repository
+implementations.
 """
 
-from typing import Any, Generic, Optional, Protocol, TypeVar
+from contextlib import contextmanager
+from typing import Any, Generic, TypeVar
 from sqlalchemy.orm import Session as SqlAlchemySession
 
 T = TypeVar('T')
-
-
-class BaseRepository(Protocol, Generic[T]):
-    """Base repository protocol.
-
-    Defines the common interface for all repository implementations.
-    Repositories provide data access abstraction for domain models.
-    """
-
-    def create(self, **kwargs: Any) -> T:
-        """Create a new entity.
-
-        Args:
-            **kwargs: Entity attributes.
-
-        Returns:
-            The created entity.
-        """
-        ...
-
-    def find_by_id(self, id: int) -> Optional[T]:
-        """Find entity by ID.
-
-        Args:
-            id: Entity identifier.
-
-        Returns:
-            The entity if found, None otherwise.
-        """
-        ...
-
-    def find_all(self) -> list[T]:
-        """Find all entities.
-
-        Returns:
-            List of all entities.
-        """
-        ...
-
-    def update(self, entity: T, **kwargs: Any) -> T:  # noqa
-        """Update an entity.
-
-        Args:
-            entity: Entity to update.
-            **kwargs: Attributes to update.
-
-        Returns:
-            The updated entity.
-        """
-        ...
-
-    def delete(self, entity: T) -> None:  # noqa
-        """Delete an entity.
-
-        Args:
-            entity: Entity to delete.
-        """
-        ...
 
 
 class SqlAlchemyBaseRepository(Generic[T]):
@@ -94,3 +37,37 @@ class SqlAlchemyBaseRepository(Generic[T]):
         # Keep objects accessible after commit for repository operations
         session.expire_on_commit = False
         return session
+
+    @contextmanager
+    def _read(self) -> Any:
+        """Provide a session for read-only work, closing it after.
+
+        Yields:
+            A SQLAlchemy session that is always closed afterwards.
+        """
+        session = self._get_session()
+        try:
+            yield session
+        finally:
+            session.close()
+
+    @contextmanager
+    def _write(self) -> Any:
+        """Provide a session for atomic write work.
+
+        Commits on success; rolls back and re-raises on failure;
+        always closes the session.
+
+        Yields:
+            A SQLAlchemy session whose transaction is controlled by
+            the context manager.
+        """
+        session = self._get_session()
+        try:
+            yield session
+            session.commit()
+        except Exception:
+            session.rollback()
+            raise
+        finally:
+            session.close()

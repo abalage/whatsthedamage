@@ -175,12 +175,10 @@ class APITestClient:
         """
         assert response.status_code == expected_status
         data = response.get_json()
-        assert 'code' in data
-        assert 'message' in data
-        assert data['code'] == expected_status
+        assert 'error' in data
 
         if expected_message_contains:
-            assert expected_message_contains.lower() in data['message'].lower()
+            assert expected_message_contains.lower() in data['error'].lower()
 
         return data
 

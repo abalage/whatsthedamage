@@ -16,6 +16,9 @@ from whatsthedamage.models.database.transaction import Transaction as Transactio
 from whatsthedamage.models.database.processing_result import ProcessingResult as ProcessingResultDB
 from whatsthedamage.models.database.correction import Correction as CorrectionDB  # noqa: F401
 from whatsthedamage.models.database.shared_correction import SharedCorrection as SharedCorrectionDB  # noqa: F401
+from whatsthedamage.models.database.shared_correction_contribution import (  # noqa: F401
+    SharedCorrectionContribution as SharedCorrectionContributionDB
+)
 from whatsthedamage.models.repositories.unit_of_work import SqlAlchemyUnitOfWork
 
 
@@ -29,12 +32,17 @@ def db_session_factory():
     engine.dispose()
 
 
+_user_seq = 0
+
+
 def _create_user(session_factory) -> int:
     """Create a user row and return its identifier."""
+    global _user_seq
+    _user_seq += 1
     session = session_factory()
     try:
         user = UserDB(
-            username='uow-user',
+            username=f'uow-user-{_user_seq}',
             password_hash='hash',
             recovery_code_hash='hash',
             created_at=datetime.now(UTC)
@@ -190,7 +198,7 @@ class TestFindExistingDedupHashes:
         )
         repo = SqlAlchemyTransactionRepository(db_session_factory)
         existing = repo.find_existing_dedup_hashes(
-            ['hash-a', 'hash-b', 'hash-c', 'hash-d']
+            user_id, ['hash-a', 'hash-b', 'hash-c', 'hash-d']
         )
         assert existing == {'hash-a', 'hash-b'}
 
@@ -215,8 +223,42 @@ class TestFindExistingDedupHashes:
         )
         repo = SqlAlchemyTransactionRepository(db_session_factory)
         all_hashes = [f'hash-{i:04d}' for i in range(601)]
-        existing = repo.find_existing_dedup_hashes(all_hashes)
+        existing = repo.find_existing_dedup_hashes(user_id, all_hashes)
         assert existing == {seeded_hash}
+
+    def test_scope_is_per_user(self, db_session_factory):
+        """Test Cases:
+            The lookup only reports hashes of the given user; the same
+            hash imported by another user is not matched.
+        """
+        user_id = _create_user(db_session_factory)
+        other_user_id = _create_user(db_session_factory)
+        result = _make_result(user_id, 'result-scope')
+        other_result = _make_result(other_user_id, 'result-scope-other')
+
+        with SqlAlchemyUnitOfWork(db_session_factory) as uow:
+            uow.processing_results.add(result)
+            uow.processing_results.add(other_result)
+            uow.transactions.add_all([
+                _make_transaction(user_id, result.result_id, 'hash-x'),
+                _make_transaction(
+                    other_user_id, other_result.result_id, 'hash-a'
+                ),
+            ])
+            uow.commit()
+
+        from whatsthedamage.models.repositories.transaction_repository import (
+            SqlAlchemyTransactionRepository,
+        )
+        repo = SqlAlchemyTransactionRepository(db_session_factory)
+        existing = repo.find_existing_dedup_hashes(
+            user_id, ['hash-a', 'hash-x']
+        )
+        assert existing == {'hash-x'}
+        existing_other = repo.find_existing_dedup_hashes(
+            other_user_id, ['hash-a', 'hash-x']
+        )
+        assert existing_other == {'hash-a'}
 
     def test_empty_hash_list_returns_empty_set(self, db_session_factory):
         """Test Cases:
@@ -226,4 +268,86 @@ class TestFindExistingDedupHashes:
             SqlAlchemyTransactionRepository,
         )
         repo = SqlAlchemyTransactionRepository(db_session_factory)
-        assert repo.find_existing_dedup_hashes([]) == set()
+        assert repo.find_existing_dedup_hashes(1, []) == set()
+
+
+class TestPurgeUser:
+    """Tests for the atomic account purge."""
+
+    def _seed_user_data(self, db_session_factory, user_id):
+        """Create a user with personal data spread over all tables."""
+        session = db_session_factory()
+        try:
+            session.add(CorrectionDB(
+                user_id=user_id,
+                original_partner='TEST MERCHANT',
+                corrected_partner='Test Merchant',
+                corrected_category_id='groceries'
+            ))
+            session.commit()
+        finally:
+            session.close()
+
+        result = _make_result(user_id, 'result-purge')
+        with SqlAlchemyUnitOfWork(db_session_factory) as uow:
+            uow.processing_results.add(result)
+            uow.transactions.add_all([
+                _make_transaction(user_id, result.result_id, 'hash-purge')
+            ])
+            uow.commit()
+
+    def test_purge_user_deletes_everything_atomically(self, db_session_factory):
+        """Test Cases:
+            purge_user removes the user's transactions, corrections,
+            processing results, and the user row in one transaction;
+            after commit nothing of the user remains.
+        """
+        user_id = _create_user(db_session_factory)
+        self._seed_user_data(db_session_factory, user_id)
+
+        from whatsthedamage.models.repositories.transaction_repository import (
+            SqlAlchemyTransactionRepository,
+        )
+        from whatsthedamage.models.repositories.user_repository import (
+            SqlAlchemyUserRepository,
+        )
+
+        repo = SqlAlchemyTransactionRepository(db_session_factory)
+        assert repo.find_existing_dedup_hashes(user_id, ['hash-purge']) == {
+            'hash-purge'
+        }
+
+        with SqlAlchemyUnitOfWork(db_session_factory) as uow:
+            uow.purge_user(user_id, revoke_shared_corrections=False)
+            uow.commit()
+
+        assert repo.find_existing_dedup_hashes(user_id, ['hash-purge']) == set()
+        user_repo = SqlAlchemyUserRepository(db_session_factory)
+        assert user_repo.find_by_id(user_id) is None
+
+    def test_purge_user_rolls_back_on_failure(self, db_session_factory):
+        """Test Cases:
+            When a step of the purge raises inside the unit of work,
+            leaving the with block rolls the whole purge back and the
+            user's data is still fully present.
+        """
+        user_id = _create_user(db_session_factory)
+        self._seed_user_data(db_session_factory, user_id)
+
+        from whatsthedamage.models.repositories.transaction_repository import (
+            SqlAlchemyTransactionRepository,
+        )
+
+        repo = SqlAlchemyTransactionRepository(db_session_factory)
+        assert repo.find_existing_dedup_hashes(user_id, ['hash-purge']) == {
+            'hash-purge'
+        }
+
+        with pytest.raises(RuntimeError):
+            with SqlAlchemyUnitOfWork(db_session_factory) as uow:
+                uow.purge_user(user_id, revoke_shared_corrections=False)
+                raise RuntimeError('boom')
+
+        assert repo.find_existing_dedup_hashes(user_id, ['hash-purge']) == {
+            'hash-purge'
+        }

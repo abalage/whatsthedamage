@@ -8,16 +8,19 @@ import { computed, type ComputedRef } from 'vue'
 import { useGettext } from 'vue3-gettext'
 import { useFeedbackStore } from '../stores/feedback.js'
 import { updateTransaction, undoTransaction } from '../js/api.js'
+import type { Column } from '../types/column.js'
+import EditableCell from '../components/data/EditableCell.vue'
+import UndoCorrectionCell from '../components/data/UndoCorrectionCell.vue'
 import type {
   TransactionListItem,
   TransactionUpdatePayload
 } from '../types/api.js'
 
 /** Maximum length of the partner (merchant) field, matches the backend */
-export const PARTNER_MAX_LENGTH = 255
+const PARTNER_MAX_LENGTH = 255
 
 /** Maximum length of the notice field, matches the backend */
-export const NOTICE_MAX_LENGTH = 500
+const NOTICE_MAX_LENGTH = 500
 
 /** Category id marker used by the frontend for uncategorized transactions */
 export const UNCATEGORIZED = 'uncategorized'
@@ -66,6 +69,98 @@ export function correctedRowIds(
     merchant: `${txn.id}|merchant`,
     notice: `${txn.id}|notice`
   }
+}
+
+/**
+ * Factory for the correctable table columns shared by the transaction
+ * table pages: category (dropdown), merchant, notice, and the
+ * edit-mode undo column.
+ *
+ * @param gettext - Translation function of the page
+ * @param saveCorrection - Persists a correction (from
+ *  useTransactionCorrections)
+ * @param undoCorrection - Undoes all corrections (from
+ *  useTransactionCorrections)
+ * @returns Column factories keyed by field
+ */
+export function editableCorrectionColumns(
+  gettext: (msgid: string) => string,
+  saveCorrection: (transactionId: number, payload: TransactionUpdatePayload) => Promise<void>,
+  undoCorrection: (transactionId: number) => Promise<void>
+): {
+  categoryColumn: (filterOptions: Array<{ value: string; label: string }>) => Column
+  merchantColumn: () => Column
+  noticeColumn: () => Column
+  undoColumn: () => Column
+} {
+  const transactionIdOf = (row?: Record<string, unknown>): number =>
+    Number(row?.transaction_id)
+
+  const categoryColumn = (
+    filterOptions: Array<{ value: string; label: string }>
+  ): Column => ({
+    key: 'category_id',
+    title: gettext('Category'),
+    component: EditableCell,
+    filterOptions,
+    componentProps: (_value: unknown, row?: Record<string, unknown>) => ({
+      editor: 'select' as const,
+      value: String(row?.category_id ?? UNCATEGORIZED),
+      applyToFuture: true,
+      save: (categoryId: string | null, applyToFuture?: boolean) =>
+        saveCorrection(transactionIdOf(row), {
+          category_id: categoryId,
+          apply_to_future: applyToFuture
+        })
+    })
+  })
+
+  const merchantColumn = (): Column => ({
+    key: 'merchant',
+    title: gettext('Merchant'),
+    component: EditableCell,
+    componentProps: (value: unknown, row?: Record<string, unknown>) => ({
+      editor: 'text' as const,
+      value: String(value ?? ''),
+      maxLength: PARTNER_MAX_LENGTH,
+      allowEmpty: false,
+      applyToFuture: true,
+      save: (partner: string, applyToFuture?: boolean) =>
+        saveCorrection(transactionIdOf(row), {
+          partner,
+          apply_to_future: applyToFuture
+        })
+    })
+  })
+
+  const noticeColumn = (): Column => ({
+    key: 'notice',
+    title: gettext('Notice'),
+    component: EditableCell,
+    componentProps: (value: unknown, row?: Record<string, unknown>) => ({
+      editor: 'text' as const,
+      value: String(value ?? ''),
+      maxLength: NOTICE_MAX_LENGTH,
+      allowEmpty: true,
+      save: (notice: string) =>
+        saveCorrection(transactionIdOf(row), { notice })
+    })
+  })
+
+  const undoColumn = (): Column => ({
+    key: 'undo',
+    title: gettext('Edit'),
+    sortable: false,
+    filterable: false,
+    searchable: false,
+    component: UndoCorrectionCell,
+    componentProps: (_value: unknown, row?: Record<string, unknown>) => ({
+      corrected: row?.corrected === true,
+      undo: () => undoCorrection(transactionIdOf(row))
+    })
+  })
+
+  return { categoryColumn, merchantColumn, noticeColumn, undoColumn }
 }
 
 /**

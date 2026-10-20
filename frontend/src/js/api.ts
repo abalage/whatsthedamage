@@ -3,7 +3,8 @@
  * @module utils/api
  */
 
-import { AppError, ApiResponse } from '../types/index.js';
+import { AppError } from '../types/index.js';
+import { getCsrfToken, setCsrfToken } from './csrfToken.js';
 import type {
   AggregatedTransactionsResponse,
   CategoryDefinition,
@@ -39,65 +40,135 @@ import type {
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '/api/v2';
 
 /**
- * Fetch with proper error handling and response wrapping
+ * State-changing HTTP methods that require CSRF protection
+ */
+const CSRF_METHODS = new Set(['POST', 'PUT', 'DELETE', 'PATCH']);
+
+/**
+ * Build the request headers: JSON content type unless the body is
+ * multipart (the browser sets the Content-Type with boundary), merged
+ * with any caller-provided headers, plus the CSRF token for
+ * state-changing methods.
+ * @param options - Fetch options
+ * @returns Complete header map for the request
+ */
+function buildHeaders(options: RequestInit): Record<string, string> {
+  const headers: Record<string, string> = {};
+  if (!(options.body instanceof FormData)) {
+    headers['Content-Type'] = 'application/json';
+  }
+  if (options.headers) {
+    if (options.headers instanceof Headers) {
+      options.headers.forEach((value, key) => {
+        headers[key] = value;
+      });
+    } else if (Array.isArray(options.headers)) {
+      for (const [key, value] of options.headers) {
+        headers[key] = value;
+      }
+    } else {
+      Object.assign(headers, options.headers);
+    }
+  }
+  const method = options.method?.toUpperCase() ?? 'GET';
+  if (CSRF_METHODS.has(method)) {
+    const token = getCsrfToken();
+    if (token) {
+      headers['X-CSRF-Token'] = token;
+    }
+  }
+  return headers;
+}
+
+/**
+ * Extract the error message from an error response body.
+ * @param response - Non-OK fetch response
+ * @returns Promise with the error message
+ */
+async function parseApiError(response: Response): Promise<string> {
+  let message = response.statusText || 'Request failed';
+  try {
+    const errorData: Record<string, unknown> = await response.json();
+    const extracted = errorData.error ?? errorData.message ?? errorData.detail;
+    if (typeof extracted === 'string') {
+      message = extracted;
+    }
+  } catch {
+    // No JSON body; keep the status text fallback
+  }
+  return message;
+}
+
+/**
+ * Whether an error is a rejected CSRF token (the sent token no longer
+ * matches the hash stored for the session)
+ */
+function isInvalidCsrfTokenError(error: unknown): boolean {
+  if (!(error instanceof AppError)) return false;
+  const context = error.context as { status?: number } | undefined;
+  return context?.status === 403 && /invalid csrf token/i.test(error.message);
+}
+
+/**
+ * Mint a fresh CSRF token from the backend and store it for the next
+ * state-changing request.
+ * @returns The new CSRF token, or null when the refresh failed
+ */
+async function refreshCsrfToken(): Promise<string | null> {
+  try {
+    const response = await request<CsrfTokenResponse>(getApiUrl('/auth/csrf-token'));
+    setCsrfToken(response.csrf_token);
+    return response.csrf_token;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Single transport for all API requests. Always sends cookies
+ * (credentials), attaches the CSRF token to state-changing methods,
+ * and retries a rejected token once with a freshly minted one.
  * @param url - API endpoint URL
  * @param options - Fetch options
- * @returns Promise with wrapped API response
+ * @param allowCsrfRetry - Whether a rejected CSRF token may be retried
+ * @returns Promise with parsed data
+ * @throws AppError if the request fails
  */
-async function fetchApi<T>(
+async function request<T>(
   url: string,
-  options: RequestInit = {}
-): Promise<ApiResponse<T>> {
+  options: RequestInit = {},
+  allowCsrfRetry = true
+): Promise<T> {
+  let response: Response;
   try {
-    const response = await fetch(url, {
+    response = await fetch(url, {
       ...options,
-      headers: {
-        'Content-Type': 'application/json',
-        ...options.headers,
-      },
+      credentials: 'include',
+      headers: buildHeaders(options)
     });
-
-    const data: T = await response.json();
-
-    return {
-      data,
-      status: response.status,
-      ok: response.ok,
-      error: response.ok ? undefined : ((data as Record<string, unknown>)?.error as string | undefined) ?? 'Request failed',
-    };
-  } catch (error) {
+  } catch (error: unknown) {
     throw new AppError(
       `API request failed: ${error instanceof Error ? error.message : String(error)}`,
       { url, options }
     );
   }
-}
-
-/**
- * Fetch with automatic error handling
- * @param url - API endpoint URL
- * @param options - Fetch options
- * @returns Promise with parsed data
- * @throws AppError if request fails
- */
-async function fetchWithErrorHandling<T>(
-  url: string,
-  options: RequestInit = {}
-): Promise<T> {
-  const response = await fetchApi<T>(url, options);
 
   if (!response.ok) {
-    throw new AppError(response.error ?? 'Request failed', {
-      status: response.status,
-      url,
-    });
+    const message = await parseApiError(response);
+    if (allowCsrfRetry && isInvalidCsrfTokenError(new AppError(message, { status: response.status }))) {
+      const refreshedToken = await refreshCsrfToken();
+      if (refreshedToken) {
+        return request<T>(url, options, false);
+      }
+    }
+    throw new AppError(message, { status: response.status, url });
   }
 
-  return response.data;
+  return (await response.json()) as T;
 }
 
 /**
- * POST request with error handling
+ * POST request with a JSON body
  * @param url - API endpoint URL
  * @param data - Request body
  * @returns Promise with parsed data
@@ -106,7 +177,7 @@ async function postData<T>(
   url: string,
   data: unknown
 ): Promise<T> {
-  return fetchWithCsrf<T>(url, {
+  return request<T>(url, {
     method: 'POST',
     body: JSON.stringify(data),
   });
@@ -122,59 +193,20 @@ function getApiUrl(endpoint: string): string {
 }
 
 /**
- * Process transactions via API (new RESTful endpoint)
- * Note: This uses direct fetch (not fetchWithErrorHandling) because:
- * 1. It's a multipart form upload (FormData)
- * 2. Content-Type must be set by the browser with boundary
- * 3. We need to handle the response differently (no JSON in body for multipart)
+ * Process transactions via API (multipart form upload; the browser
+ * sets the Content-Type with boundary)
  *
  * @param formData - Form data containing CSV and config files
  * @returns Promise with processing result metadata (flat structure)
  * @throws AppError if processing fails
  */
 export async function createTransaction(formData: FormData): Promise<ProcessingResultCreationResponse> {
-  try {
-    // Get CSRF token from store for state-changing POST request
-    const csrfToken = await getCsrfTokenFromStore();
-
-    // Build headers manually - let browser set Content-Type for multipart
-    const headers: Record<string, string> = {};
-    if (csrfToken) {
-      headers['X-CSRF-Token'] = csrfToken;
-    }
-
-    const response = await fetch(`${API_BASE_URL}/processing-results`, {
-      method: 'POST',
-      body: formData,
-      credentials: 'include',
-      headers,
-      // Don't set Content-Type header - let browser set it with boundary for multipart
-    });
-
-    if (!response.ok) {
-      let errorMessage = 'Transaction processing failed'
-      try {
-        const errorData: Record<string, unknown> = await response.json()
-        errorMessage = (errorData.error ?? errorData.message ?? errorData.detail ?? errorMessage) as string
-      } catch {
-        // If we can't parse JSON, use the status text
-        errorMessage = response.statusText || errorMessage
-      }
-      throw new AppError(errorMessage, {
-        status: response.status,
-      })
-    }
-
-    return await response.json()
-  } catch (error: unknown) {
-    if (error instanceof AppError) {
-      throw error
-    }
-    throw new AppError(
-      `Transaction processing failed: ${error instanceof Error ? error.message : String(error)}`,
-      { originalError: error }
-    )
-  }
+  // The body is multipart; request() lets the browser set the
+  // Content-Type with boundary and attaches the CSRF token
+  return request<ProcessingResultCreationResponse>(
+    `${API_BASE_URL}/processing-results`,
+    { method: 'POST', body: formData }
+  );
 }
 
 /**
@@ -235,7 +267,7 @@ export async function fetchCategoryMonthTransactions(
  * @returns Promise with array of CategoryDefinition objects
  */
 export async function fetchCategories(): Promise<CategoryDefinition[]> {
-  return fetchWithErrorHandling<CategoryDefinition[]>(getApiUrl('/categories'));
+  return request<CategoryDefinition[]>(getApiUrl('/categories'));
 }
 
 /**
@@ -243,7 +275,7 @@ export async function fetchCategories(): Promise<CategoryDefinition[]> {
  * @returns Promise with array of CategoryDefinition objects
  */
 export async function fetchCostOfLivingCategories(): Promise<CategoryDefinition[]> {
-  return fetchWithErrorHandling<CategoryDefinition[]>(getApiUrl('/categories/cost-of-living'));
+  return request<CategoryDefinition[]>(getApiUrl('/categories/cost-of-living'));
 }
 
 /**
@@ -251,7 +283,7 @@ export async function fetchCostOfLivingCategories(): Promise<CategoryDefinition[
  * @returns Promise with array of CsvProfile objects
  */
 export async function fetchAllCsvProfiles(): Promise<CsvProfile[]> {
-  return fetchWithErrorHandling<CsvProfile[]>(getApiUrl('/csv-profiles'));
+  return request<CsvProfile[]>(getApiUrl('/csv-profiles'));
 }
 
 /**
@@ -259,9 +291,7 @@ export async function fetchAllCsvProfiles(): Promise<CsvProfile[]> {
  * @returns Promise with array of ProcessingResultListItem objects
  */
 export async function fetchProcessingResults(): Promise<ProcessingResultListItem[]> {
-  return fetchWithErrorHandling<ProcessingResultListItem[]>(getApiUrl('/processing-results'), {
-    credentials: 'include'
-  });
+  return request<ProcessingResultListItem[]>(getApiUrl('/processing-results'));
 }
 
 /**
@@ -273,9 +303,7 @@ export async function fetchProcessingResultMetadata(resultId?: string): Promise<
   if (!resultId) {
     return null
   }
-  return fetchWithErrorHandling<ProcessingResultMetadata>(getApiUrl(`/processing-results/${encodeURIComponent(resultId)}`), {
-    credentials: 'include'
-  });
+  return request<ProcessingResultMetadata>(getApiUrl(`/processing-results/${encodeURIComponent(resultId)}`));
 }
 
 /**
@@ -308,10 +336,8 @@ export async function fetchTransactionsByResult(
 
   const query = params.toString();
 
-  return fetchWithErrorHandling<TransactionListResponse>(
-    getApiUrl(query ? `/transactions?${query}` : '/transactions'),
-    { credentials: 'include' }
-  );
+  return request<TransactionListResponse>(
+    getApiUrl(query ? `/transactions?${query}` : '/transactions'));
 }
 
 /**
@@ -385,7 +411,7 @@ export async function updateTransaction(
   id: number,
   payload: TransactionUpdatePayload
 ): Promise<TransactionListItem> {
-  return fetchWithCsrf<TransactionListItem>(getApiUrl(`/transactions/${id}`), {
+  return request<TransactionListItem>(getApiUrl(`/transactions/${id}`), {
     method: 'PUT',
     body: JSON.stringify(payload),
   });
@@ -400,7 +426,7 @@ export async function updateTransaction(
 export async function undoTransaction(
   id: number
 ): Promise<TransactionListItem> {
-  return fetchWithCsrf<TransactionListItem>(getApiUrl(`/transactions/${id}/undo`), {
+  return request<TransactionListItem>(getApiUrl(`/transactions/${id}/undo`), {
     method: 'POST',
   });
 }
@@ -436,10 +462,8 @@ export async function fetchAggregatedTransactions(params: {
   if (params.algorithms) searchParams.append('algorithms', params.algorithms.join(','));
   if (params.direction) searchParams.append('direction', params.direction);
 
-  return fetchWithErrorHandling<AggregatedTransactionsResponse>(
-    getApiUrl(`/transactions/aggregate?${searchParams.toString()}`),
-    { credentials: 'include' }
-  );
+  return request<AggregatedTransactionsResponse>(
+    getApiUrl(`/transactions/aggregate?${searchParams.toString()}`));
 }
 
 // Authentication API functions
@@ -452,7 +476,7 @@ export async function fetchAggregatedTransactions(params: {
  */
 export async function register(username: string, password: string): Promise<RegisterResponse> {
   const requestData: RegisterRequest = { username, password };
-  return fetchWithCsrf<RegisterResponse>(getApiUrl('/auth/register'), {
+  return request<RegisterResponse>(getApiUrl('/auth/register'), {
     method: 'POST',
     body: JSON.stringify(requestData)
   });
@@ -467,7 +491,7 @@ export async function register(username: string, password: string): Promise<Regi
  */
 export async function login(username: string, password: string, rememberMe: boolean = false): Promise<LoginResponse> {
   const requestData: LoginRequest = { username, password, rememberMe };
-  return fetchWithCsrf<LoginResponse>(getApiUrl('/auth/login'), {
+  return request<LoginResponse>(getApiUrl('/auth/login'), {
     method: 'POST',
     body: JSON.stringify(requestData)
   });
@@ -478,7 +502,7 @@ export async function login(username: string, password: string, rememberMe: bool
  * @returns Promise with logout response
  */
 export async function logout(): Promise<LogoutResponse> {
-  return fetchWithCsrf<LogoutResponse>(getApiUrl('/auth/logout'), {
+  return request<LogoutResponse>(getApiUrl('/auth/logout'), {
     method: 'POST',
     body: JSON.stringify({})
   });
@@ -489,9 +513,7 @@ export async function logout(): Promise<LogoutResponse> {
  * @returns Promise with user info and CSRF token
  */
 export async function getMe(): Promise<MeResponse> {
-  return fetchWithErrorHandling<MeResponse>(getApiUrl('/auth/me'), {
-    credentials: 'include'
-  });
+  return request<MeResponse>(getApiUrl('/auth/me'));
 }
 
 /**
@@ -501,7 +523,7 @@ export async function getMe(): Promise<MeResponse> {
  */
 export async function updateSharingPreference(optIn: boolean): Promise<UpdateMeResponse> {
   const requestData: UpdateMeRequest = { opt_in_sharing: optIn };
-  return fetchWithCsrf<UpdateMeResponse>(getApiUrl('/auth/me'), {
+  return request<UpdateMeResponse>(getApiUrl('/auth/me'), {
     method: 'PUT',
     body: JSON.stringify(requestData)
   });
@@ -515,9 +537,9 @@ export async function updateSharingPreference(optIn: boolean): Promise<UpdateMeR
  * @returns Promise with CSRF token
  */
 export async function fetchCsrfToken(): Promise<CsrfTokenResponse> {
-  return fetchWithErrorHandling<CsrfTokenResponse>(getApiUrl('/auth/csrf-token'), {
-    credentials: 'include'
-  });
+  const response = await request<CsrfTokenResponse>(getApiUrl('/auth/csrf-token'));
+  setCsrfToken(response.csrf_token);
+  return response;
 }
 
 /**
@@ -537,7 +559,7 @@ export async function resetPassword(
     recoveryCode,
     newPassword
   };
-  return fetchWithCsrf<PasswordResetResponse>(getApiUrl('/auth/reset-password'), {
+  return request<PasswordResetResponse>(getApiUrl('/auth/reset-password'), {
     method: 'POST',
     body: JSON.stringify(requestData)
   });
@@ -558,7 +580,7 @@ export async function deleteAccount(
     password,
     revoke_shared_corrections: revokeSharedCorrections
   };
-  return fetchWithCsrf<AccountDeletionResponse>(getApiUrl('/auth/account'), {
+  return request<AccountDeletionResponse>(getApiUrl('/auth/account'), {
     method: 'DELETE',
     body: JSON.stringify(requestData)
   });
@@ -571,7 +593,7 @@ export async function deleteAccount(
  */
 export async function updateUsername(username: string): Promise<UpdateMeResponse> {
   const requestData: UpdateMeRequest = { username };
-  return fetchWithCsrf<UpdateMeResponse>(getApiUrl('/auth/me'), {
+  return request<UpdateMeResponse>(getApiUrl('/auth/me'), {
     method: 'PUT',
     body: JSON.stringify(requestData)
   });
@@ -591,7 +613,7 @@ export async function changePassword(
     current_password: currentPassword,
     new_password: newPassword
   };
-  return fetchWithCsrf<ChangePasswordResponse>(getApiUrl('/auth/me/password'), {
+  return request<ChangePasswordResponse>(getApiUrl('/auth/me/password'), {
     method: 'PUT',
     body: JSON.stringify(requestData)
   });
@@ -602,136 +624,5 @@ export async function changePassword(
  * @returns Promise with the machine-readable export document
  */
 export async function exportMyData(): Promise<DataExportResponse> {
-  return fetchWithErrorHandling<DataExportResponse>(getApiUrl('/auth/me/export'), {
-    credentials: 'include'
-  });
+  return request<DataExportResponse>(getApiUrl('/auth/me/export'));
 }
-
-/**
- * Fetch with automatic inclusion of credentials (cookies)
- * @param url - API endpoint URL
- * @param options - Fetch options
- * @returns Promise with parsed data
- */
-async function fetchWithCredentials<T>(
-  url: string,
-  options: RequestInit = {}
-): Promise<T> {
-  return fetchWithErrorHandling<T>(url, {
-    ...options,
-    credentials: 'include'
-  });
-}
-
-/**
- * State-changing HTTP methods that require CSRF protection
- */
-const CSRF_METHODS = new Set(['POST', 'PUT', 'DELETE', 'PATCH']);
-
-/**
- * Get CSRF token from auth store
- * @returns CSRF token string or null
- */
-async function getCsrfTokenFromStore(): Promise<string | null> {
-  try {
-    // Import dynamically to avoid circular dependencies
-    const { useAuthStore } = await import('../stores/auth.js');
-    const authStore = useAuthStore();
-    return authStore.getCsrfToken?.() ?? null;
-  } catch {
-    return null;
-  }
-}
-
-/**
- * Mint a fresh CSRF token via the auth store so every consumer sees it
- * @returns The new CSRF token, or null when the refresh failed
- */
-async function refreshCsrfTokenViaStore(): Promise<string | null> {
-  try {
-    const { useAuthStore } = await import('../stores/auth.js');
-    const authStore = useAuthStore();
-    await authStore.refreshCsrfToken();
-    return authStore.getCsrfToken?.() ?? null;
-  } catch {
-    return null;
-  }
-}
-
-/**
- * Whether an error is a rejected CSRF token (the sent token no longer
- * matches the hash stored for the session)
- */
-function isInvalidCsrfTokenError(error: unknown): boolean {
-  if (!(error instanceof AppError)) return false;
-  const context = error.context as { status?: number } | undefined;
-  return context?.status === 403 && /invalid csrf token/i.test(error.message);
-}
-
-/**
- * Fetch with automatic CSRF token inclusion for state-changing requests.
- * When the server rejects the token as invalid (e.g. it was superseded by
- * a token minted in another tab), a fresh token is minted and the request
- * is retried once.
- * @param url - API endpoint URL
- * @param options - Fetch options
- * @param allowCsrfRetry - Whether a rejected CSRF token may be retried
- * @returns Promise with parsed data
- */
-async function fetchWithCsrf<T>(
-  url: string,
-  options: RequestInit = {},
-  allowCsrfRetry = true
-): Promise<T> {
-  // Only add CSRF token for state-changing methods
-  const method = (options.method?.toUpperCase() ?? 'GET');
-
-  if (CSRF_METHODS.has(method)) {
-    const csrfToken = await getCsrfTokenFromStore();
-
-    // Build headers - only include CSRF token if available
-    // This allows auth endpoints (register/login) to work without CSRF
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-    };
-
-    // Safely merge headers from options
-    if (options.headers) {
-      if (options.headers instanceof Headers) {
-        options.headers.forEach((value, key) => {
-          headers[key] = value;
-        });
-      } else if (Array.isArray(options.headers)) {
-        for (const [key, value] of options.headers) {
-          headers[key] = value;
-        }
-      } else {
-        Object.assign(headers, options.headers);
-      }
-    }
-
-    if (csrfToken) {
-      headers['X-CSRF-Token'] = csrfToken;
-    }
-
-    try {
-      return await fetchWithErrorHandling<T>(url, {
-        ...options,
-        credentials: 'include',
-        headers
-      });
-    } catch (error) {
-      if (allowCsrfRetry && isInvalidCsrfTokenError(error)) {
-        const refreshedToken = await refreshCsrfTokenViaStore();
-        if (refreshedToken) {
-          return fetchWithCsrf<T>(url, options, false);
-        }
-      }
-      throw error;
-    }
-  }
-
-  // For non-state-changing requests, just use credentials
-  return fetchWithCredentials<T>(url, options);
-}
-

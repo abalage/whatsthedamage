@@ -1,12 +1,12 @@
 """Rate limiting service for login attempt limiting.
 
-Provides application-level rate limiting using in-memory storage via
-Flask-Limiter. Protects against credential stuffing and brute force attacks.
+Provides application-level rate limiting with thread-safe in-memory
+storage. Protects against credential stuffing and brute force attacks.
 """
 
 import time
 from datetime import datetime, timedelta
-from typing import Any, Optional, Tuple, cast
+from typing import Any, Optional, Tuple
 from collections import defaultdict
 from threading import Lock
 
@@ -158,71 +158,8 @@ class RateLimitService:
             key, self.max_attempts, self.window_seconds
         )
 
-    def reset_rate_limit(self, username: str, ip_address: str) -> None:
-        """Reset the rate limit counter for a username+IP combination.
 
-        Useful for resetting after successful authentication or
-        administrative override.
 
-        Args:
-            username: Username to reset.
-            ip_address: Client IP address to reset.
-        """
-        key = self._make_key(username, ip_address)
-        with self.lock:
-            if key in self.storage:
-                del self.storage[key]
-
-    def get_remaining_attempts(self, username: str, ip_address: str) -> int:
-        """Get the number of remaining attempts for a username+IP combination.
-
-        Args:
-            username: Username to check.
-            ip_address: Client IP address to check.
-
-        Returns:
-            Number of remaining attempts, or max_attempts if no limit is active.
-        """
-        key = self._make_key(username, ip_address)
-        current_time = time.time()
-
-        with self.lock:
-            entry = self.storage.get(key)
-            if entry is None:
-                return self.max_attempts
-
-            # Check if window has expired
-            if current_time > entry['expires_at']:
-                return self.max_attempts
-
-            attempts = cast(int, entry['attempts'])
-            remaining = max(0, self.max_attempts - attempts)
-            return remaining
-
-    def get_attempts(self, username: str, ip_address: str) -> int:
-        """Get the current number of attempts for a username+IP combination.
-
-        Args:
-            username: Username to check.
-            ip_address: Client IP address to check.
-
-        Returns:
-            Number of attempts in the current window.
-        """
-        key = self._make_key(username, ip_address)
-
-        with self.lock:
-            entry = self.storage.get(key)
-            if entry is None:
-                return 0
-
-            current_time = time.time()
-            # Check if window has expired
-            if current_time > entry['expires_at']:
-                return 0
-
-            attempts = cast(int, entry['attempts'])
-            return attempts
 
     def check_recovery_rate_limit(
         self,
@@ -294,16 +231,6 @@ class RateLimitService:
         key = f"api:{identifier}"
         return self._check_bucket(key, max_requests, window_seconds)
 
-    def reset_api_rate_limit(self, identifier: str) -> None:
-        """Reset the general API rate limit counter for an identifier.
-
-        Args:
-            identifier: Bucket identifier to reset.
-        """
-        key = f"api:{identifier}"
-        with self.lock:
-            if key in self.storage:
-                del self.storage[key]
 
     def reset_recovery_rate_limit(self, ip_address: str) -> None:
         """Reset the rate limit counter for password recovery attempts.
@@ -316,27 +243,3 @@ class RateLimitService:
             if key in self.storage:
                 del self.storage[key]
 
-    def get_remaining_recovery_attempts(self, ip_address: str) -> int:
-        """Get the number of remaining recovery attempts for an IP address.
-
-        Args:
-            ip_address: Client IP address to check.
-
-        Returns:
-            Number of remaining attempts, or max_attempts if no limit is active.
-        """
-        key = f"recovery:{ip_address}"
-        current_time = time.time()
-
-        with self.lock:
-            entry = self.storage.get(key)
-            if entry is None:
-                return self.max_attempts
-
-            # Check if window has expired
-            if current_time > entry['expires_at']:
-                return self.max_attempts
-
-            attempts = cast(int, entry['attempts'])
-            remaining = max(0, self.max_attempts - attempts)
-            return remaining

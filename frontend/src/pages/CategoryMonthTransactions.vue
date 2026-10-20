@@ -10,19 +10,16 @@ import LoadingState from '../components/layout/LoadingState.vue'
 import ErrorState from '../components/layout/ErrorState.vue'
 import PageHeader from '../components/layout/PageHeader.vue'
 import VueDataTable from '../components/data/VueDataTable.vue'
+import ToggleFilterButton from '../components/data/ToggleFilterButton.vue'
 import type { Column, AggregateRowConfig } from '../components/data/VueDataTable.vue'
-import EditableCategoryCell from '../components/data/EditableCategoryCell.vue'
-import EditableTextCell from '../components/data/EditableTextCell.vue'
-import UndoCorrectionCell from '../components/data/UndoCorrectionCell.vue'
 import { fetchCategoryMonthTransactions } from '../js/api.js'
 import { useResultQuery } from '../composables/useResultQuery.js'
 import {
   useTransactionCorrections,
+  editableCorrectionColumns,
   isCorrected,
   merchantOf,
   correctedRowIds,
-  PARTNER_MAX_LENGTH,
-  NOTICE_MAX_LENGTH,
   UNCATEGORIZED
 } from '../composables/useTransactionCorrections.js'
 import type { TransactionListResponse } from '../types/api.js'
@@ -57,7 +54,7 @@ const {
     const firstTxn = data.transactions[0]
     const monthTimestamp = firstTxn ? toEpoch(firstTxn.date) : 0
     return {
-      categoryId: categoriesStore.extractCategoryIdFromData(data as unknown as Record<string, unknown>),
+      categoryId: firstTxn?.category_id ?? undefined,
       monthTimestamp
     }
   },
@@ -81,6 +78,10 @@ const {
 const { saveCorrection, undoCorrection, correctedCellHighlights } =
   useTransactionCorrections(() => transactionsData.value?.transactions ?? [])
 
+// Shared correctable columns (category, merchant, notice, undo)
+const { categoryColumn, merchantColumn, noticeColumn, undoColumn } =
+  editableCorrectionColumns($gettext, saveCorrection, undoCorrection)
+
 // Toolbar view toggles (default off)
 const correctedOnly = ref(false)
 const editMode = ref(false)
@@ -101,79 +102,22 @@ const categoryFilterOptions = computed(() => {
 const columns = computed<Column[]>(() => {
   const cols: Column[] = [
     { key: 'date', title: $gettext('Date'), renderHtml: (value: unknown, row?: Record<string, unknown>) => String(((row as { date_display?: string })?.date_display) || value || '') },
-    {
-      key: 'category_id',
-      title: $gettext('Category'),
-      component: EditableCategoryCell,
-      filterOptions: categoryFilterOptions.value,
-      componentProps: (_value: unknown, row?: Record<string, unknown>) => ({
-        categoryId: String(row?.category_id ?? UNCATEGORIZED),
-        applyToFuture: true,
-        save: (categoryId: string | null, applyToFuture?: boolean) =>
-          saveCorrection(Number(row?.transaction_id), {
-            category_id: categoryId,
-            apply_to_future: applyToFuture
-          })
-      })
-    },
-    {
-      key: 'merchant',
-      title: $gettext('Merchant'),
-      component: EditableTextCell,
-      componentProps: (value: unknown, row?: Record<string, unknown>) => ({
-        value: String(value ?? ''),
-        maxLength: PARTNER_MAX_LENGTH,
-        allowEmpty: false,
-        applyToFuture: true,
-        save: (partner: string, applyToFuture?: boolean) =>
-          saveCorrection(Number(row?.transaction_id), {
-            partner,
-            apply_to_future: applyToFuture
-          })
-      })
-    },
+    categoryColumn(categoryFilterOptions.value),
+    merchantColumn(),
     {
       key: 'amount',
       title: $gettext('Amount'),
       renderHtml: (value: unknown, row?: Record<string, unknown>) => String(((row as { amount_display?: string })?.amount_display) || value || '')
     },
-    {
-      key: 'notice',
-      title: $gettext('Notice'),
-      component: EditableTextCell,
-      componentProps: (value: unknown, row?: Record<string, unknown>) => ({
-        value: String(value ?? ''),
-        maxLength: NOTICE_MAX_LENGTH,
-        allowEmpty: true,
-        save: (notice: string) =>
-          saveCorrection(Number(row?.transaction_id), { notice })
-      })
-    }
+    noticeColumn()
   ]
 
   if (editMode.value) {
-    cols.push({
-      key: 'undo',
-      title: $gettext('Edit'),
-      sortable: false,
-      filterable: false,
-      searchable: false,
-      component: UndoCorrectionCell,
-      componentProps: (_value: unknown, row?: Record<string, unknown>) => ({
-        corrected: row?.corrected === true,
-        undo: () => undoCorrection(Number(row?.transaction_id))
-      })
-    })
+    cols.push(undoColumn())
   }
 
   return cols
 })
-
-// Helper function to format transaction date from ISO string or timestamp
-// Uses the new utility function that handles both formats
-function formatTransactionDateForDisplay(dateValue: string | undefined): string {
-  return formatDateISO(dateValue)
-}
 
 // Extract account currency from first transaction
 const accountCurrency = computed(() => {
@@ -187,7 +131,7 @@ const accountCurrency = computed(() => {
 const tableData = computed(() => {
   const rows = (transactionsData.value?.transactions ?? []).map(t => ({
     date: t.date,
-    date_display: formatTransactionDateForDisplay(t.date),
+    date_display: formatDateISO(t.date),
     category_id: t.category_id || UNCATEGORIZED,
     merchant: merchantOf(t),
     amount: t.amount,
@@ -313,30 +257,16 @@ watch(resultId, () => {
               @cleared-filters="correctedOnly = false"
             >
               <template #filter-actions>
-                <button
-                  type="button"
-                  class="btn px-2 py-1 text-sm rounded-sm"
-                  :class="correctedOnly
-                    ? 'bg-surface-secondary text-on-dark border-secondary'
-                    : 'bg-surface-base text-secondary border-secondary hover-bg-surface-secondary'"
-                  :aria-pressed="correctedOnly"
+                <ToggleFilterButton
+                  v-model="correctedOnly"
+                  :label="$gettext('Corrected')"
                   :title="$gettext('Show only transactions with corrections')"
-                  @click="correctedOnly = !correctedOnly"
-                >
-                  {{ $gettext('Corrected') }}
-                </button>
-                <button
-                  type="button"
-                  class="btn px-2 py-1 text-sm rounded-sm"
-                  :class="editMode
-                    ? 'bg-surface-secondary text-on-dark border-secondary'
-                    : 'bg-surface-base text-secondary border-secondary hover-bg-surface-secondary'"
-                  :aria-pressed="editMode"
+                />
+                <ToggleFilterButton
+                  v-model="editMode"
+                  :label="$gettext('Edit')"
                   :title="$gettext('Show the column with correction actions')"
-                  @click="editMode = !editMode"
-                >
-                  {{ $gettext('Edit') }}
-                </button>
+                />
               </template>
             </VueDataTable>
           </div>

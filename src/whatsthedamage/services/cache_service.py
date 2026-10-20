@@ -3,9 +3,7 @@
 This service wraps Flask-Caching with SimpleCache backend for in-memory caching.
 Provides abstract protocol for cache implementations.
 """
-from typing import Optional, Protocol, runtime_checkable
-from whatsthedamage.models.domain.dt_models import ProcessingResponse
-from whatsthedamage.services.interfaces import ICacheService
+from typing import Any, Optional, Protocol, runtime_checkable
 from flask_caching import Cache
 from whatsthedamage.utils.logging import get_logger
 
@@ -22,14 +20,13 @@ class FlaskCacheAdapter:
     def __init__(self, flask_cache: Cache):
         self._flask_cache = flask_cache
 
-    def set(self, key: str, value: ProcessingResponse, timeout: int) -> None:
+    def set(self, key: str, value: Any, timeout: int) -> None:
         """Store value in Flask cache."""
         self._flask_cache.set(key, value, timeout=timeout)
 
-    def get(self, key: str) -> Optional[ProcessingResponse]:
+    def get(self, key: str) -> Optional[Any]:
         """Retrieve value from Flask cache."""
-        result: Optional[ProcessingResponse] = self._flask_cache.get(key)
-        return result
+        return self._flask_cache.get(key)
 
     def delete(self, key: str) -> None:
         """Remove value from Flask cache."""
@@ -43,10 +40,10 @@ class CacheProtocol(Protocol):
     without changing dependent code.
     """
 
-    def set(self, key: str, value: ProcessingResponse, timeout: int) -> None:
+    def set(self, key: str, value: Any, timeout: int) -> None:
         """Store value in cache with timeout."""
         ...
-    def get(self, key: str) -> Optional[ProcessingResponse]:
+    def get(self, key: str) -> Optional[Any]:
         """Retrieve value from cache."""
         ...
     def delete(self, key: str) -> None:
@@ -54,7 +51,7 @@ class CacheProtocol(Protocol):
         ...
 
 
-class CacheService(ICacheService):
+class CacheService:
     """Service for caching processing results.
 
     Wraps a cache backend implementing CacheProtocol.
@@ -70,12 +67,12 @@ class CacheService(ICacheService):
         self._cache = cache
         self._ttl = ttl
 
-    def set(self, key: str, value: ProcessingResponse, timeout: Optional[int] = None) -> None:
+    def set(self, key: str, value: Any, timeout: Optional[int] = None) -> None:
         """Cache the result."""
         actual_timeout = timeout if timeout is not None else self._ttl
         self._cache.set(key, value, timeout=actual_timeout)
 
-    def get(self, key: str) -> Optional[ProcessingResponse]:
+    def get(self, key: str) -> Optional[Any]:
         """Retrieve cached result."""
         result = self._cache.get(key)
         if result is None:

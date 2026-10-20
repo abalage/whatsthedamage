@@ -1,12 +1,13 @@
 """Tests for RetentionService.
 
 Tests account deletion scheduling and the periodic purge of personal
-data (see docs/retention-policy.md).
+data (see docs/retention-policy.md). The account purge runs through a
+unit of work, so the tests mock the unit of work factory.
 """
 
 import pytest
 from datetime import datetime, timedelta, UTC
-from unittest.mock import Mock
+from unittest.mock import MagicMock, Mock
 
 from whatsthedamage.models.database.user import User as UserDB
 from whatsthedamage.services.password_service import PasswordService
@@ -39,7 +40,6 @@ def mock_user_repository():
     mock.find_inactive_since.return_value = []
     mock.schedule_deletion.return_value = True
     mock.cancel_deletion.return_value = True
-    mock.delete.return_value = True
     return mock
 
 
@@ -52,35 +52,23 @@ def mock_session_repository():
 
 
 @pytest.fixture
-def mock_transaction_repository():
-    """Create a mock TransactionRepository for testing."""
-    mock = Mock()
-    mock.delete_by_user_id.return_value = 0
-    return mock
+def mock_unit_of_work():
+    """Create a mock SqlAlchemyUnitOfWork.
 
-
-@pytest.fixture
-def mock_correction_repository():
-    """Create a mock CorrectionRepository for testing."""
-    mock = Mock()
-    mock.delete_by_user_id.return_value = 0
-    return mock
-
-
-@pytest.fixture
-def mock_processing_result_repository():
-    """Create a mock ProcessingResultRepository for testing."""
-    mock = Mock()
-    mock.delete_by_user_id.return_value = 0
-    return mock
-
-
-@pytest.fixture
-def mock_shared_correction_repository():
-    """Create a mock SharedCorrectionRepository for testing."""
-    mock = Mock()
-    mock.withdraw_by_user_id.return_value = 0
-    return mock
+    purge_user runs in the mock's context manager; purge_user returns
+    counts matching the service's logging expectations.
+    """
+    uow = Mock()
+    uow.purge_user.return_value = {
+        'contribution_links_deleted': 0,
+        'transactions_deleted': 0,
+        'corrections_deleted': 0,
+        'processing_results_deleted': 0,
+        'sessions_revoked': 0,
+    }
+    uow_cm = MagicMock()
+    uow_cm.__enter__.return_value = uow
+    return uow_cm
 
 
 @pytest.fixture
@@ -88,20 +76,23 @@ def retention_service(
     mock_user_repository,
     mock_session_repository,
     password_service,
-    mock_transaction_repository,
-    mock_correction_repository,
-    mock_processing_result_repository,
-    mock_shared_correction_repository
+    mock_unit_of_work,
+    monkeypatch
 ):
-    """Create a RetentionService instance for testing."""
+    """Create a RetentionService instance with a mocked unit of work."""
+
+    def _uow_factory(_session_factory):
+        return mock_unit_of_work
+
+    monkeypatch.setattr(
+        'whatsthedamage.services.retention_service.SqlAlchemyUnitOfWork',
+        _uow_factory
+    )
     return RetentionService(
         user_repository=mock_user_repository,
         session_repository=mock_session_repository,
         password_service=password_service,
-        transaction_repository=mock_transaction_repository,
-        correction_repository=mock_correction_repository,
-        processing_result_repository=mock_processing_result_repository,
-        shared_correction_repository=mock_shared_correction_repository,
+        session_factory=Mock(),
         deletion_grace_days=7,
         inactivity_days=180
     )
@@ -161,7 +152,7 @@ class TestPurge:
 
     def test_purge_deletes_due_accounts(
         self, retention_service, mock_user_repository,
-        mock_session_repository, user
+        mock_session_repository, mock_unit_of_work, user
     ):
         """Accounts past their grace period are fully deleted."""
         mock_user_repository.find_due_for_deletion.return_value = [user]
@@ -173,11 +164,15 @@ class TestPurge:
             'inactive_accounts_deleted': 0,
             'expired_sessions_deleted': 0
         }
-        mock_user_repository.delete.assert_called_once_with(1)
-        mock_session_repository.revoke_by_user_id.assert_called_once_with(1)
+        uow = mock_unit_of_work.__enter__.return_value
+        uow.purge_user.assert_called_once_with(
+            1, revoke_shared_corrections=False
+        )
+        uow.commit.assert_called_once_with()
 
     def test_purge_keeps_pending_accounts(
-        self, retention_service, mock_user_repository, user
+        self, retention_service, mock_user_repository,
+        mock_unit_of_work, user
     ):
         """Accounts still inside the grace period are not deleted."""
         mock_user_repository.find_due_for_deletion.return_value = []
@@ -185,13 +180,12 @@ class TestPurge:
         result = retention_service.purge()
 
         assert result['accounts_deleted'] == 0
-        mock_user_repository.delete.assert_not_called()
+        mock_unit_of_work.__enter__.return_value.purge_user \
+            .assert_not_called()
 
     def test_purge_deletes_inactive_users_account(
         self, retention_service, mock_user_repository,
-        mock_session_repository, mock_transaction_repository,
-        mock_correction_repository, mock_processing_result_repository,
-        user
+        mock_session_repository, mock_unit_of_work, user
     ):
         """Inactive users' accounts are permanently deleted."""
         mock_user_repository.find_inactive_since.return_value = [user]
@@ -203,12 +197,11 @@ class TestPurge:
             'inactive_accounts_deleted': 1,
             'expired_sessions_deleted': 0
         }
-        mock_user_repository.delete.assert_called_once_with(1)
-        mock_session_repository.revoke_by_user_id.assert_called_once_with(1)
-        mock_transaction_repository.delete_by_user_id.assert_called_once_with(1)
-        mock_correction_repository.delete_by_user_id.assert_called_once_with(1)
-        mock_processing_result_repository.delete_by_user_id. \
-            assert_called_once_with(1)
+        uow = mock_unit_of_work.__enter__.return_value
+        uow.purge_user.assert_called_once_with(
+            1, revoke_shared_corrections=False
+        )
+        uow.commit.assert_called_once_with()
 
     def test_purge_uses_inactivity_cutoff(
         self, retention_service, mock_user_repository
@@ -237,7 +230,7 @@ class TestPurge:
 
     def test_purge_withdraws_shared_corrections_on_request(
         self, retention_service, mock_user_repository,
-        mock_shared_correction_repository, user
+        mock_unit_of_work, user
     ):
         """Contributions are withdrawn when the user requested it."""
         user.revoke_shared_corrections = True
@@ -245,12 +238,14 @@ class TestPurge:
 
         retention_service.purge()
 
-        mock_shared_correction_repository.withdraw_by_user_id \
-            .assert_called_once_with(1)
+        uow = mock_unit_of_work.__enter__.return_value
+        uow.purge_user.assert_called_once_with(
+            1, revoke_shared_corrections=True
+        )
 
     def test_purge_keeps_shared_corrections_without_request(
         self, retention_service, mock_user_repository,
-        mock_shared_correction_repository, user
+        mock_unit_of_work, user
     ):
         """Without a revocation request the linkage is deleted only."""
         user.revoke_shared_corrections = False
@@ -258,7 +253,7 @@ class TestPurge:
 
         retention_service.purge()
 
-        mock_shared_correction_repository.withdraw_by_user_id \
-            .assert_not_called()
-        mock_shared_correction_repository.delete_links_by_user_id \
-            .assert_called_once_with(1)
+        uow = mock_unit_of_work.__enter__.return_value
+        uow.purge_user.assert_called_once_with(
+            1, revoke_shared_corrections=False
+        )

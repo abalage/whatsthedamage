@@ -7,8 +7,11 @@ carries no user data and may be needed before login.
 from flask import Blueprint, jsonify, Response
 
 from whatsthedamage.services.csv_profile_service import CsvProfileService
+from whatsthedamage.utils.logging import get_logger
 
 reference_bp = Blueprint('api_v2_reference', __name__)
+
+logger = get_logger(__name__)
 
 
 _csv_profile_service = CsvProfileService()
@@ -74,6 +77,7 @@ def get_csv_profiles() -> tuple[Response, int]:
         profiles = _csv_profile_service.get_all_profiles()
         return jsonify([p.model_dump() for p in profiles]), 200
     except Exception:
+        logger.exception("CSV profile listing failed with unexpected exception")
         return jsonify({"error": "Failed to retrieve CSV profiles"}), 500
 
 

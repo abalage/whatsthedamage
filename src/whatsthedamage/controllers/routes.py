@@ -28,6 +28,7 @@ def health() -> Response:
         return make_response({"status": "healthy"}, 200)
 
     except Exception as e:
+        logger.exception("Health check failed with unexpected exception")
         return make_response(
             {"status": "unhealthy", "reason": f"Unexpected error: {e}"},
             503

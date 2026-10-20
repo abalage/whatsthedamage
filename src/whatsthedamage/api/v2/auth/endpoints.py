@@ -37,6 +37,9 @@ from whatsthedamage.api.middleware import (
     rate_limit_response,
     register_api_middleware,
 )
+from whatsthedamage.utils.logging import get_logger
+
+logger = get_logger(__name__)
 
 # Create auth blueprint
 auth_bp = Blueprint('auth', __name__, url_prefix='/api/v2/auth')
@@ -479,6 +482,7 @@ def login() -> Tuple[Response, int]:
             "Login failed", 401, "AUTHENTICATION_FAILED"
         )[0]), 401
     except Exception:
+        logger.exception("Login failed with unexpected exception")
         return jsonify(_create_error_response(
             "Login failed",
             500,
@@ -534,6 +538,7 @@ def logout() -> Tuple[Response, int]:
         return response, 200
 
     except Exception as e:
+        logger.exception("Logout failed with unexpected exception")
         return jsonify(_create_error_response(
             "Logout failed",
             500,
@@ -680,6 +685,7 @@ def update_me() -> Tuple[Response, int]:
             str(e), 400, "VALIDATION_ERROR"
         )[0]), 400
     except Exception:
+        logger.exception("User settings update failed with unexpected exception")
         return jsonify(_create_error_response(
             "Failed to update user settings",
             500,
@@ -758,6 +764,7 @@ def change_password() -> Tuple[Response, int]:
             str(e), 400, "VALIDATION_ERROR"
         )[0]), 400
     except Exception:
+        logger.exception("Password change failed with unexpected exception")
         return jsonify(_create_error_response(
             "Failed to change password",
             500,
@@ -805,6 +812,7 @@ def export_me() -> Tuple[Response, int]:
         return response, 200
 
     except Exception:
+        logger.exception("Data export failed with unexpected exception")
         return jsonify(_create_error_response(
             "Failed to export data",
             500,
@@ -907,6 +915,7 @@ def delete_account() -> Tuple[Response, int]:
             str(e), 400, "VALIDATION_ERROR"
         )[0]), 400
     except Exception:
+        logger.exception("Account deletion scheduling failed with unexpected exception")
         return jsonify(_create_error_response(
             "Failed to schedule account deletion",
             500,
@@ -1037,6 +1046,7 @@ def reset_password() -> Tuple[Response, int]:
             "Password reset failed", 401, "AUTHENTICATION_FAILED"
         )[0]), 401
     except Exception as e:
+        logger.exception("Password reset failed with unexpected exception")
         return jsonify(_create_error_response(
             "Password reset failed",
             500,
@@ -1088,6 +1098,7 @@ def get_csrf_token() -> Tuple[Response, int]:
         csrf_token = _get_auth_service().refresh_csrf_token(session)
         return jsonify({'csrf_token': csrf_token}), 200
     except Exception as e:
+        logger.exception("CSRF token generation failed with unexpected exception")
         return jsonify(_create_error_response(
             "Failed to generate CSRF token",
             500,

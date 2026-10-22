@@ -3,7 +3,7 @@
  * @module js/dateUtils
  */
 
-import { useLocaleStore } from '../stores/locale.js';
+import { useLocaleStore } from '../stores/locale';
 
 /**
  * Format a timestamp as a localized month and year string.
@@ -131,6 +131,20 @@ export function createMonthDate(monthKey: string): Date | undefined {
   }
 
   return date
+}
+
+/**
+ * Format a month key (YYYY-MM) into a human-readable display format.
+ *
+ * @param monthKey - Month key in YYYY-MM format
+ * @returns Formatted month name (e.g. "Jan 2025"), or the input when invalid
+ */
+export function formatMonthKey(monthKey: string): string {
+  const monthDate = createMonthDate(monthKey)
+  if (monthDate) {
+    return formatMonthYear(monthDate.getTime() / 1000)
+  }
+  return monthKey
 }
 
 /**

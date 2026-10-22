@@ -3,25 +3,23 @@
  *
  * This store manages:
  * - Results data from backend
- * - User-selected categories for Pivot
- * - Chart display preferences
+ * - User-selected categories for Pivot (persisted)
+ * - Chart display preferences (persisted)
  * - Calculated Pivot data
  */
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
-import type { ResultsApiResponse, Account } from '../types/api.ts';
-import type { PivotSettings } from '../types/pivot.ts';
-import { useCategoriesStore } from './categories.ts';
+import type { ResultsApiResponse, Account } from '../types/api';
+import { useCategoriesStore } from './categories';
+import { usePersistentRef } from '../composables/usePersistentRef';
 
-// Constants
-const ZERO = 0;
-const ONE = 1;
-const NEGATIVE_ONE = -1;
+const SELECTED_CATEGORIES_KEY = 'pivotSelectedCategoryIds';
+const SHOW_TRENDLINE_KEY = 'pivotShowTrendline';
 
 export const usePivotStore = defineStore('pivot', () => {
   const categoriesStore = useCategoriesStore();
 
-  // Results data from backend (via fetchTransactionsByResult + transform)
+  // Results data from backend (via fetchAllTransactions + transform)
   const resultsData = ref<ResultsApiResponse | null>(null);
 
   // Selected account ID (for multi-account support)
@@ -30,11 +28,20 @@ export const usePivotStore = defineStore('pivot', () => {
   // Default Pivot categories from the categories store
   const defaultCostOfLivingCategoryIds = computed(() => categoriesStore.costOfLivingCategories);
 
-  // User-selected categories for Pivot
-  const selectedCategoryIds = ref<string[]>([...defaultCostOfLivingCategoryIds.value]);
+  // User-selected categories for Pivot (persisted)
+  const selectedCategoryIds = usePersistentRef<string[]>(
+    SELECTED_CATEGORIES_KEY,
+    [...defaultCostOfLivingCategoryIds.value],
+    (value): value is string[] =>
+      Array.isArray(value) && value.every(v => typeof v === 'string')
+  );
 
-  // Chart display settings
-  const showTrendline = ref<boolean>(true);
+  // Chart display settings (persisted)
+  const showTrendline = usePersistentRef<boolean>(
+    SHOW_TRENDLINE_KEY,
+    true,
+    (value): value is boolean => typeof value === 'boolean'
+  );
 
   // Computed: Get all available category names from results data
   const availableCategoryNames = computed<string[]>(() => {
@@ -107,11 +114,11 @@ export const usePivotStore = defineStore('pivot', () => {
     ) as Account | undefined;
 
     const accountData = account?.data;
-    if (!accountData?.length) return null;
+    if (!accountData?.length || !account) return null;
 
     // Create data for each month
     const monthsData = months.value.map(month => {
-      let total = ZERO;
+      let total = 0;
       const categories: Record<string, { amount: number; display: string }> = {};
 
       // Find all rows for this month
@@ -147,18 +154,15 @@ export const usePivotStore = defineStore('pivot', () => {
 
     // Calculate mean (use absolute values)
     const totals = monthsData.map(m => Math.abs(m.total));
-    const mean = totals.length > ZERO
-      ? totals.reduce((a, b) => a + b, ZERO) / totals.length
-      : ZERO;
-
-    // Get currency from account
-    const currency = account!.currency ?? '';
+    const mean = totals.length > 0
+      ? totals.reduce((a, b) => a + b, 0) / totals.length
+      : 0;
 
     return {
       months: monthsData,
       mean,
-      currency,
-      accountName: account!.name
+      currency: account.currency ?? '',
+      accountName: account.name
     };
   });
 
@@ -167,8 +171,8 @@ export const usePivotStore = defineStore('pivot', () => {
   const setResultsData = (data: ResultsApiResponse): void => {
     resultsData.value = data;
     // Select first account by default
-    if (data.accounts.length > ZERO) {
-      selectedAccountId.value = data.accounts[ZERO].id;
+    if (data.accounts.length > 0) {
+      selectedAccountId.value = data.accounts[0].id;
     }
   };
 
@@ -178,23 +182,29 @@ export const usePivotStore = defineStore('pivot', () => {
 
   const toggleCategory = (categoryId: string): void => {
     const index = selectedCategoryIds.value.indexOf(categoryId);
-    if (index > NEGATIVE_ONE) {
-      selectedCategoryIds.value.splice(index, ONE);
+    if (index > -1) {
+      selectedCategoryIds.value = [
+        ...selectedCategoryIds.value.slice(0, index),
+        ...selectedCategoryIds.value.slice(index + 1)
+      ];
     } else {
-      selectedCategoryIds.value.push(categoryId);
+      selectedCategoryIds.value = [...selectedCategoryIds.value, categoryId];
     }
   };
 
   const addCategory = (categoryId: string): void => {
     if (!selectedCategoryIds.value.includes(categoryId)) {
-      selectedCategoryIds.value.push(categoryId);
+      selectedCategoryIds.value = [...selectedCategoryIds.value, categoryId];
     }
   };
 
   const removeCategory = (categoryId: string): void => {
     const index = selectedCategoryIds.value.indexOf(categoryId);
-    if (index > NEGATIVE_ONE) {
-      selectedCategoryIds.value.splice(index, ONE);
+    if (index > -1) {
+      selectedCategoryIds.value = [
+        ...selectedCategoryIds.value.slice(0, index),
+        ...selectedCategoryIds.value.slice(index + 1)
+      ];
     }
   };
 
@@ -216,32 +226,6 @@ export const usePivotStore = defineStore('pivot', () => {
 
   const resetToDefaults = (): void => {
     selectedCategoryIds.value = [...defaultCostOfLivingCategoryIds.value];
-  };
-
-  // ========== Persistence ==========
-
-  const STORAGE_KEY = 'PivotSettings';
-
-  const saveSettings = (): void => {
-    const settings: PivotSettings = {
-      selectedCategoryIds: selectedCategoryIds.value,
-      showTrendline: showTrendline.value,
-      showDataLabels: true  // Currently not used but kept for future
-    };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
-  };
-
-  const loadSettings = (): void => {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) {
-      try {
-        const settings: PivotSettings = JSON.parse(saved);
-        selectedCategoryIds.value = settings.selectedCategoryIds ?? [...defaultCostOfLivingCategoryIds.value];
-        showTrendline.value = settings.showTrendline ?? true;
-      } catch {
-        // Failed to load Pivot settings - silently ignore
-      }
-    }
   };
 
   return {
@@ -267,10 +251,6 @@ export const usePivotStore = defineStore('pivot', () => {
     setShowTrendline,
     selectAll,
     clearAll,
-    resetToDefaults,
-
-    // Persistence
-    saveSettings,
-    loadSettings
+    resetToDefaults
   };
 });

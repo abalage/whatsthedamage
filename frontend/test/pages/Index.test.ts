@@ -7,9 +7,9 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { mount, flushPromises, type VueWrapper } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
 import Index from '../../src/pages/Index.vue';
-import { useAuthStore } from '../../src/stores/auth.js';
-import { fetchProcessingResults, fetchTransactionsByResult } from '../../src/js/api.js';
-import type { ProcessingResultListItem } from '../../src/types/api.js';
+import { useAuthStore } from '../../src/stores/auth';
+import { fetchProcessingResults, fetchTransactionsByResult } from '../../src/js/api';
+import type { ProcessingResultListItem } from '../../src/types/api';
 
 const mockPush = vi.fn();
 

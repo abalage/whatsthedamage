@@ -3,7 +3,7 @@
  * Cool, professional theme with blue and green accent colors
  */
 
-import type { Theme } from './theme.types.js';
+import type { Theme } from './theme.types';
 
 const balticBlueTheme: Theme = {
   id: 'baltic-blue',

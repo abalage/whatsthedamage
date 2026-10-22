@@ -6,10 +6,10 @@
 
 import { computed, type ComputedRef, type Ref } from 'vue'
 import { useGettext } from 'vue3-gettext'
-import { useRouteParams, type StringRouteParams } from './useRouteParams.js'
-import { useApiData } from './useApiData.js'
-import { usePageTitle, type TitleFormat } from './usePageTitle.js'
-import type { BreadcrumbItem } from './useBreadcrumbs.js'
+import { useRouteParams, type StringRouteParams } from './useRouteParams'
+import { useApiData } from './useApiData'
+import { usePageTitle, type TitleFormat } from './usePageTitle'
+import type { BreadcrumbItem } from './useBreadcrumbs'
 
 /**
  * Page configuration for drilldown pages

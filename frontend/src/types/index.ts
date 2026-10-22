@@ -4,25 +4,6 @@
  */
 
 /**
- * Response from statistical analysis API
- */
-interface StatisticalAnalysisResponse {
-  status: 'success' | 'error';
-  highlights: Record<string, string[]> | {};  // row_id -> array of highlight types
-  error?: string;
-}
-
-/**
- * Request payload for statistical analysis
- */
-interface StatisticalAnalysisRequest {
-  result_id: string;
-  algorithms: string[];
-  direction: 'columns' | 'rows';
-  use_default_directions?: boolean;
-}
-
-/**
  * Error with additional context
  */
 export class AppError extends Error {

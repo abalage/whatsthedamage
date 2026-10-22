@@ -3,7 +3,7 @@
  * Natural, organic, balanced with olive and taupe
  */
 
-import type { Theme } from './theme.types.js';
+import type { Theme } from './theme.types';
 
 const earthTonesTheme: Theme = {
   id: 'earth-tones',

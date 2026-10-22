@@ -9,10 +9,11 @@
 
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
-import type { User } from '../types/auth.js';
-import { register, login, logout, getMe, fetchCsrfToken, updateSharingPreference, updateUsername, changePassword, exportMyData, deleteAccount } from '../js/api.js';
-import { setCsrfToken, getCsrfToken } from '../js/csrfToken.js';
-import type { DataExportResponse } from '../types/auth.js';
+import type { User } from '../types/auth';
+import { register, login, logout, getMe, fetchCsrfToken, updateSharingPreference, updateUsername, changePassword, exportMyData, deleteAccount } from '../js/api';
+import { setCsrfToken, getCsrfToken } from '../js/csrfToken';
+import { useDatasetStore } from './dataset';
+import type { DataExportResponse } from '../types/auth';
 
 /**
  * Use the authentication store.
@@ -30,6 +31,7 @@ export const useAuthStore = defineStore('auth', () => {
   // State
   const user = ref<User | null>(null);
   const isLoading = ref<boolean>(false);
+  const isInitialized = ref<boolean>(false);
   const error = ref<string | null>(null);
   const recoveryCode = ref<string | null>(null);
   const showRecoveryCode = ref<boolean>(false);
@@ -63,10 +65,11 @@ export const useAuthStore = defineStore('auth', () => {
 
   /**
    * Initialize auth state by checking current session.
-   * Called on app load to restore session from cookies.
+   * Called by the router guard before the first navigation; runs the
+   * session check only once per app load.
    */
   async function initialize(): Promise<void> {
-    if (isLoading.value) return;
+    if (isInitialized.value || isLoading.value) return;
 
     isLoading.value = true;
     error.value = null;
@@ -85,9 +88,13 @@ export const useAuthStore = defineStore('auth', () => {
       // Not authenticated - clear any existing state
       user.value = null;
       setCsrfToken(undefined);
+      // The session expired or belongs to nobody; cached datasets
+      // may belong to a previous user
+      useDatasetStore().invalidateAll();
       // Don't set error for 401 (not authenticated)
     } finally {
       isLoading.value = false;
+      isInitialized.value = true;
     }
   }
 
@@ -126,6 +133,8 @@ export const useAuthStore = defineStore('auth', () => {
       const response = await login(username, password, rememberMe);
       user.value = response.user;
       setCsrfToken(response.csrf_token);
+      // Defensive: a cached dataset could belong to a previous session
+      useDatasetStore().invalidateAll();
 
       return response.user;
     });
@@ -144,6 +153,8 @@ export const useAuthStore = defineStore('auth', () => {
       // Clear state regardless of success
       user.value = null;
       setCsrfToken(undefined);
+      // Cached datasets belong to the logged-out user
+      useDatasetStore().invalidateAll();
       isLoading.value = false;
     }
   }
@@ -253,6 +264,7 @@ export const useAuthStore = defineStore('auth', () => {
       // All sessions are revoked server-side; drop local state too
       user.value = null;
       setCsrfToken(undefined);
+      useDatasetStore().invalidateAll();
       isLoading.value = false;
     }
   }
@@ -276,6 +288,7 @@ export const useAuthStore = defineStore('auth', () => {
     user,
     isAuthenticated,
     isLoading,
+    isInitialized,
     error,
     recoveryCode,
     showRecoveryCode,

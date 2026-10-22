@@ -1,8 +1,9 @@
-import { createRouter, createWebHistory, type RouteLocationNormalized } from 'vue-router'
+import { createRouter, createWebHistory } from 'vue-router'
 import Index from '../pages/Index.vue'
 import About from '../pages/About.vue'
 import Legal from '../pages/Legal.vue'
 import Privacy from '../pages/Privacy.vue'
+import NotFound from '../pages/NotFound.vue'
 import Categories from '../pages/Categories.vue'
 import Transactions from '../pages/Transactions.vue'
 import Statistics from '../pages/Statistics.vue'
@@ -13,9 +14,10 @@ import PivotTable from '../pages/PivotTable.vue'
 import Login from '../pages/Login.vue'
 import Register from '../pages/Register.vue'
 import ForgotPassword from '../pages/ForgotPassword.vue'
+import Logout from '../pages/Logout.vue'
 import Import from '../pages/Import.vue'
 import Settings from '../pages/Settings.vue'
-import { useAuthStore } from '../stores/auth.js'
+import { useAuthStore } from '../stores/auth'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -41,17 +43,20 @@ const router = createRouter({
     {
       path: '/about',
       name: 'about',
-      component: About
+      component: About,
+      meta: { public: true }
     },
     {
       path: '/legal',
       name: 'legal',
-      component: Legal
+      component: Legal,
+      meta: { public: true }
     },
     {
       path: '/privacy',
       name: 'privacy',
-      component: Privacy
+      component: Privacy,
+      meta: { public: true }
     },
     {
       path: '/results',
@@ -117,67 +122,46 @@ const router = createRouter({
     {
       path: '/logout',
       name: 'logout',
-      component: Login,
-      beforeEnter: async (to: RouteLocationNormalized, from: RouteLocationNormalized, next) => {
-        const authStore = useAuthStore();
-        try {
-          await authStore.logout();
-        } finally {
-          next({ name: 'login', query: { loggedOut: 'true' } });
-        }
-      },
+      component: Logout,
       meta: { public: true }
     },
-    // Catch-all: redirect unknown paths (including removed legacy URLs) to the index page
+    // Catch-all: 404 page for unknown paths (including removed legacy URLs)
     {
       path: '/:pathMatch(.*)*',
       name: 'not-found',
-      redirect: { name: 'index' }
+      component: NotFound,
+      meta: { public: true }
     }
   ]
 });
 
 // Navigation guards for authentication
-router.beforeEach(async (to, from, next) => {
+router.beforeEach(async (to) => {
   const authStore = useAuthStore();
 
-  // Initialize auth state if not already done
-  // Only initialize for routes that might need auth (not for public routes like login/register)
-  if (!to.meta.public && !authStore.isAuthenticated && !authStore.isLoading) {
-    try {
-      await authStore.initialize();
-    } catch {
-      // Initialization failed - not authenticated
-    }
+  // Restore the session from cookies on the first navigation. This runs
+  // for public routes too, so requiresGuest redirects and login-state
+  // aware pages work without each page re-initializing the store.
+  if (!authStore.isInitialized && !authStore.isLoading) {
+    await authStore.initialize();
   }
 
   // Check if route requires authentication
   if (to.meta.requiresAuth && !authStore.isAuthenticated) {
     // Save the route the user was trying to visit for redirect after login
-    next({
+    return {
       name: 'login',
       query: { redirect: to.fullPath }
-    });
-    return;
+    };
   }
 
   // Check if route requires guest (not authenticated)
   if (to.meta.requiresGuest && authStore.isAuthenticated) {
-    next({ name: 'index' });
-    return;
+    return { name: 'index' };
   }
 
   // Default: allow navigation
-  next();
-});
-
-// Add public meta to routes that don't have explicit auth configuration
-const routes = router.getRoutes();
-routes.forEach(route => {
-  if (!route.meta.public && !route.meta.requiresAuth && !route.meta.requiresGuest) {
-    // Routes without explicit auth meta are public by default
-    route.meta.public = true;
-  }
+  return true;
 });
 
 export default router

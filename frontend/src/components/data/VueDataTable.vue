@@ -34,8 +34,18 @@
 import { ref, computed, onUnmounted, type CSSProperties } from 'vue'
 import { useGettext } from 'vue3-gettext'
 import { RouterLink } from 'vue-router'
-import type { Column, AggregateRowConfig } from '../../types/column.js'
-import { getCssClassesForHighlights, DEFAULT_HIGHLIGHT_CONFIG } from '../../config/highlight-config.ts'
+import type { Column, AggregateRowConfig } from '../../types/column'
+import { getCssClassesForHighlights, DEFAULT_HIGHLIGHT_CONFIG } from '../../config/highlight-config'
+import {
+  AGGREGATE_CALCULATORS,
+  AGGREGATE_ROW_MARKER,
+  getDefaultLabelForType,
+  getEffectiveAggregateConfig,
+  isAggregateRow,
+  shouldIncludeColumn
+} from './tableAggregates'
+import TableCell from './TableCell.vue'
+import { buildExportRows, exportCsv as exportCsvFile, exportExcel as exportExcelFile } from '../../js/tableExport'
 
 export type { Column, AggregateRowConfig }
 
@@ -131,42 +141,6 @@ const props = defineProps<Props>()
 const emit = defineEmits(['cleared-filters'])
 const { $gettext } = useGettext()
 
-// Type for aggregate calculation results
-type AggregateValue = number | string | null
-
-// Built-in aggregate calculators
-const AGGREGATE_CALCULATORS: Record<string, (data: Record<string, unknown>[], columnKey: string) => AggregateValue> = {
-  average: (data, columnKey) => {
-    const values = data.map(row => row[columnKey]).filter(v => v !== null && v !== undefined)
-    if (values.length === 0) return null
-    const numericValues = values.map(Number).filter(v => !Number.isNaN(v))
-    return numericValues.reduce((sum, val) => sum + val, 0) / numericValues.length
-  },
-  sum: (data, columnKey) => {
-    const numericValues = data.map(row => Number(row[columnKey])).filter(v => !Number.isNaN(v))
-    return numericValues.length > 0 ? numericValues.reduce((sum, val) => sum + val, 0) : null
-  },
-  min: (data, columnKey) => {
-    const numericValues = data.map(row => Number(row[columnKey])).filter(v => !Number.isNaN(v))
-    return numericValues.length > 0 ? Math.min(...numericValues) : null
-  },
-  max: (data, columnKey) => {
-    const numericValues = data.map(row => Number(row[columnKey])).filter(v => !Number.isNaN(v))
-    return numericValues.length > 0 ? Math.max(...numericValues) : null
-  },
-  count: (data, columnKey) => {
-    return data.filter(row => row[columnKey] !== null && row[columnKey] !== undefined).length
-  }
-}
-
-// Marker property to identify aggregate rows
-const AGGREGATE_ROW_MARKER = '_isAggregateRow'
-
-// Helper function to check if a row is an aggregate row (for template use)
-function isAggregateRow(row: Record<string, unknown>): boolean {
-  return row[AGGREGATE_ROW_MARKER] === true
-}
-
 // Computed aggregate row data
 const aggregateRowData = computed(() => {
   if (!props.aggregateRows?.length || !props.columns?.length) return []
@@ -206,11 +180,7 @@ const aggregateRowData = computed(() => {
       } else {
         // Built-in calculator
         const calculator = AGGREGATE_CALCULATORS[effectiveConfig.type || aggregateRow.type]
-        if (calculator) {
-          value = calculator(dataForCalculation, column.key)
-        } else {
-          value = null
-        }
+        value = calculator ? calculator(dataForCalculation, column.key) : null
       }
 
       // Apply formatter
@@ -221,7 +191,7 @@ const aggregateRowData = computed(() => {
     // Set row label for the first column (or as specified)
     if (props.columns.length > 0) {
       const firstColumnKey = props.columns[0].key
-      const label = aggregateRow.label || getDefaultLabelForType(aggregateRow.type)
+      const label = aggregateRow.label || getDefaultLabelForType(aggregateRow.type, $gettext)
       // Only set label if not already set by custom calculator
       if (row[firstColumnKey] === '' || row[firstColumnKey] == null) {
         row[firstColumnKey] = label
@@ -232,58 +202,15 @@ const aggregateRowData = computed(() => {
   })
 })
 
-// Helper: Check if column should be included in aggregate row
-function shouldIncludeColumn(aggregateRow: AggregateRowConfig, columnKey: string): boolean {
-  // If columns are explicitly specified, only include those
-  if (aggregateRow.columns) {
-    if (typeof aggregateRow.columns === 'function') {
-      return aggregateRow.columns(columnKey)
-    }
-    return aggregateRow.columns.includes(columnKey)
-  }
-
-  // If columns are explicitly excluded, exclude those
-  if (aggregateRow.excludeColumns && aggregateRow.excludeColumns.includes(columnKey)) {
-    return false
-  }
-
-  return true
-}
-
-// Helper: Get effective aggregate config (column-level overrides global)
-function getEffectiveAggregateConfig(aggregateRow: AggregateRowConfig, column: Column): {
-  type: string
-  customCalculator?: (data: Record<string, unknown>[]) => unknown
-  formatter?: (value: unknown) => string
-  enabled?: boolean
-  label?: string
-} {
-  const columnAggregate = column.aggregate
-
-  if (columnAggregate && columnAggregate.enabled === false) {
-    return { type: 'none' }
-  }
-
-  return {
-    type: columnAggregate?.type || aggregateRow.type,
-    customCalculator: columnAggregate?.customCalculator,
-    formatter: columnAggregate?.formatter,
-    enabled: columnAggregate?.enabled,
-    label: columnAggregate?.label
-  }
-}
-
-// Helper: Get default label for aggregate type
-function getDefaultLabelForType(type: string): string {
-  const labels: Record<string, string> = {
-    average: $gettext('Average'),
-    sum: $gettext('Sum'),
-    min: $gettext('Min'),
-    max: $gettext('Max'),
-    count: $gettext('Count'),
-    custom: $gettext('Aggregate')
-  }
-  return labels[type] || $gettext('Aggregate')
+/**
+ * Whether a cell needs the TableCell component (custom component or
+ * HTML rendering). Plain cells render inline for performance: mounting
+ * a component instance per plain cell measurably slows large tables.
+ * Body-row component cells are also rendered inline; TableCell remains
+ * for HTML-rendered cells and the aggregate rows.
+ */
+function needsCellComponent(column: Column): boolean {
+  return Boolean(column.component || column.renderHtml)
 }
 
 // Separate aggregate rows for header and footer
@@ -399,29 +326,6 @@ function compareValues(a: unknown, b: unknown): number {
 
   // Strings (fallback)
   return String(a).localeCompare(String(b))
-}
-
-/**
- * Get display value for a cell.
- * Handles custom render functions and formatting.
- */
-function getDisplayValue(column: Column, value: unknown, row: Record<string, unknown>, index: number): string {
-  if (column.renderHtml) {
-    return column.renderHtml(value, row, index)
-  }
-  if (value == null) return ''
-  return String(value)
-}
-
-/**
- * Check if column uses HTML rendering (requires v-html)
- */
-function usesHtmlRendering(column: Column): boolean {
-  // If component is used, it handles its own rendering
-  if (column.component) return false
-  // Explicit renderHtml uses HTML
-  if (column.renderHtml) return true
-  return false
 }
 
 /**
@@ -584,95 +488,19 @@ function clearSearch(): void {
 }
 
 /**
- * Get export value for a cell (always returns plain text, no HTML)
- */
-function getExportValue(column: Column, value: unknown, row: Record<string, unknown>, index: number): string {
-  // For components, use the raw value (components can't be rendered in exports)
-  if (column.component) {
-    if (value == null) return ''
-    return String(value)
-  }
-  // For HTML rendering, get the HTML but strip tags for CSV/TSV
-  if (column.renderHtml) {
-    const html = column.renderHtml(value, row, index)
-    // Strip HTML tags for export
-    return html.replace(/<[^<>]*>/g, '')
-  }
-  if (value == null) return ''
-  return String(value)
-}
-
-/**
- * Get export rows including summary rows if configured.
- */
-function getExportRows(): string[][] {
-  const dataRows = filteredData.value.map((row, rowIndex) => {
-    return props.columns.map(column => {
-      const value = row[column.key]
-      return getExportValue(column, value, row, rowIndex)
-    })
-  })
-
-  // Add aggregate rows that should be included in export
-  const exportableAggregateRows = props.aggregateRows?.filter(ar => ar.includeInExport !== false) || []
-  if (exportableAggregateRows.length > 0) {
-    // Get the aggregate data for export
-    const aggregateRowsForExport = props.aggregateRows?.map((aggregateRow, aggregateIndex) => {
-      if (aggregateRow.includeInExport === false) return null
-
-      const rowData = aggregateRowData.value[aggregateIndex]
-      if (!rowData) return null
-
-      return props.columns.map(column => {
-        const value = rowData[column.key]
-        // Use export value (plain text, no HTML)
-        const displayValue = getExportValue(column, value, rowData, aggregateIndex)
-        return displayValue
-      })
-    }).filter(Boolean) as string[][]
-
-    dataRows.push(...aggregateRowsForExport)
-  }
-
-  return dataRows
-}
-
-/**
  * Export data to CSV.
  */
 function exportCSV(): void {
-  const headers = props.columns.map(c => c.title).join(',')
-  const rows = getExportRows()
-
-  const csv = [headers, ...rows.map(row => row.map(v => `"${v.replaceAll('"', '""')}"`).join(','))].join('\n')
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
-  const url = URL.createObjectURL(blob)
-  const link = document.createElement('a')
-  link.href = url
-  link.download = `${props.id || 'data'}-${new Date().toISOString().slice(0, 10)}.csv`
-  document.body.appendChild(link)
-  link.click()
-  link.remove()
-  URL.revokeObjectURL(url)
+  const rows = buildExportRows(props.columns, filteredData.value, props.aggregateRows ?? [], aggregateRowData.value)
+  exportCsvFile(props.columns, rows, `${props.id || 'data'}-${new Date().toISOString().slice(0, 10)}`)
 }
 
 /**
  * Export data to Excel (XLSX format using TSV as fallback).
  */
 function exportExcel(): void {
-  const headers = props.columns.map(c => c.title).join('\t')
-  const rows = getExportRows()
-
-  const tsv = [headers, ...rows.map(row => row.join('\t'))].join('\n')
-  const blob = new Blob([tsv], { type: 'application/vnd.ms-excel;charset=utf-8;' })
-  const url = URL.createObjectURL(blob)
-  const link = document.createElement('a')
-  link.href = url
-  link.download = `${props.id || 'data'}-${new Date().toISOString().slice(0, 10)}.xlsx`
-  document.body.appendChild(link)
-  link.click()
-  link.remove()
-  URL.revokeObjectURL(url)
+  const rows = buildExportRows(props.columns, filteredData.value, props.aggregateRows ?? [], aggregateRowData.value)
+  exportExcelFile(props.columns, rows, `${props.id || 'data'}-${new Date().toISOString().slice(0, 10)}`)
 }
 
 /**
@@ -869,24 +697,15 @@ defineExpose(tableApi)
                 ...getCellHighlightClasses(aggregateRow, column.key),
               ]"
             >
-              <template v-if="column.component && !isAggregateRow(aggregateRow)">
-                <component
-                  :is="column.component"
-                  v-bind="column.componentProps ? column.componentProps(aggregateRow[column.key], aggregateRow, aggregateIndex) : {}"
-                />
-              </template>
-              <template v-else-if="column.component">
-                <!-- For aggregate rows, display value as plain text instead of component -->
-                {{ getDisplayValue(column, aggregateRow[column.key], aggregateRow, aggregateIndex) }}
-              </template>
-              <template v-else-if="usesHtmlRendering(column)">
-                <!-- SECURITY: v-html used for custom render. Only enabled with renderHtml. -->
-                <!-- eslint-disable-next-line vue/no-v-html -->
-                <span v-html="getDisplayValue(column, aggregateRow[column.key], aggregateRow, aggregateIndex)" />
-              </template>
-              <template v-else>
-                {{ getDisplayValue(column, aggregateRow[column.key], aggregateRow, aggregateIndex) }}
-              </template>
+              <TableCell
+                v-if="needsCellComponent(column)"
+                :column="column"
+                :value="aggregateRow[column.key]"
+                :row="aggregateRow"
+                :index="aggregateIndex"
+                :as-text="isAggregateRow(aggregateRow)"
+              />
+              <template v-else>{{ aggregateRow[column.key] ?? '' }}</template>
             </td>
           </tr>
         </thead>
@@ -905,20 +724,19 @@ defineExpose(tableApi)
                 ...getCellHighlightClasses(row, column.key),
               ]"
             >
-              <template v-if="column.component">
-                <component
-                  :is="column.component"
-                  v-bind="column.componentProps ? column.componentProps(row[column.key], row, rowIndex) : {}"
-                />
-              </template>
-              <template v-else-if="usesHtmlRendering(column)">
-                <!-- SECURITY: v-html used for custom render. Only enabled with renderHtml. -->
-                <!-- eslint-disable-next-line vue/no-v-html -->
-                <span v-html="getDisplayValue(column, row[column.key], row, rowIndex)" />
-              </template>
-              <template v-else>
-                {{ getDisplayValue(column, row[column.key], row, rowIndex) }}
-              </template>
+              <component
+                :is="column.component"
+                v-if="column.component"
+                v-bind="column.componentProps ? column.componentProps(row[column.key], row, rowIndex) : {}"
+              />
+              <TableCell
+                v-else-if="needsCellComponent(column)"
+                :column="column"
+                :value="row[column.key]"
+                :row="row"
+                :index="rowIndex"
+              />
+              <template v-else>{{ row[column.key] ?? '' }}</template>
             </td>
           </tr>
           <tr v-if="paginatedData.length === 0">
@@ -942,24 +760,15 @@ defineExpose(tableApi)
                 ...getCellHighlightClasses(aggregateRow, column.key),
               ]"
             >
-              <template v-if="column.component && !isAggregateRow(aggregateRow)">
-                <component
-                  :is="column.component"
-                  v-bind="column.componentProps ? column.componentProps(aggregateRow[column.key], aggregateRow, aggregateIndex) : {}"
-                />
-              </template>
-              <template v-else-if="column.component">
-                <!-- For aggregate rows, display value as plain text instead of component -->
-                {{ getDisplayValue(column, aggregateRow[column.key], aggregateRow, aggregateIndex) }}
-              </template>
-              <template v-else-if="usesHtmlRendering(column)">
-                <!-- SECURITY: v-html used for custom render. Only enabled with renderHtml. -->
-                <!-- eslint-disable-next-line vue/no-v-html -->
-                <span v-html="getDisplayValue(column, aggregateRow[column.key], aggregateRow, aggregateIndex)" />
-              </template>
-              <template v-else>
-                {{ getDisplayValue(column, aggregateRow[column.key], aggregateRow, aggregateIndex) }}
-              </template>
+              <TableCell
+                v-if="needsCellComponent(column)"
+                :column="column"
+                :value="aggregateRow[column.key]"
+                :row="aggregateRow"
+                :index="aggregateIndex"
+                :as-text="isAggregateRow(aggregateRow)"
+              />
+              <template v-else>{{ aggregateRow[column.key] ?? '' }}</template>
             </td>
           </tr>
         </tfoot>

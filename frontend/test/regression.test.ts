@@ -10,8 +10,8 @@ import {
   calculateRegressionSums,
   calculateSlopeAndIntercept,
   REGRESSION_CONFIG
-} from '../src/js/regression.js';
-import type { RegressionPoint } from '../src/js/regression.js';
+} from '../src/js/regression';
+import type { RegressionPoint } from '../src/js/regression';
 
 // ============================================================================
 // Test Helper Functions

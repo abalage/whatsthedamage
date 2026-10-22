@@ -7,8 +7,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { mount, flushPromises, type VueWrapper } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
 import EditableCell from '../src/components/data/EditableCell.vue';
-import { fetchCategories } from '../src/js/api.js';
-import type { CategoryDefinition } from '../src/types/api.js';
+import { fetchCategories } from '../src/js/api';
+import type { CategoryDefinition } from '../src/types/api';
 
 vi.mock('vue3-gettext', (): Record<string, unknown> => ({
   useGettext: (): { $gettext: (key: string) => string } => ({

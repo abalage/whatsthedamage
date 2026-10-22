@@ -2,9 +2,8 @@
 import { ref, onMounted, computed, watch } from 'vue'
 import { useRoute, RouterLink } from 'vue-router'
 import { useGettext } from 'vue3-gettext'
-import { fetchAllTransactions, fetchProcessingResultMetadata } from '../js/api.js'
-import { buildResultQuery, extractResultId } from '../js/routeUtils.js'
-import { useCategoriesStore } from '../stores/categories.js'
+import { useDatasetStore } from '../stores/dataset'
+import { useCategoriesStore } from '../stores/categories'
 import {
   useTransactionCorrections,
   editableCorrectionColumns,
@@ -12,18 +11,20 @@ import {
   merchantOf,
   correctedRowIds,
   UNCATEGORIZED
-} from '../composables/useTransactionCorrections.js'
-import { formatDateISO } from '../js/dateUtils.js'
+} from '../composables/useTransactionCorrections'
+import { formatDateISO } from '../js/dateUtils'
+import { buildResultQuery, extractResultId } from '../js/routeUtils'
 import VueDataTable from '../components/data/VueDataTable.vue'
 import ToggleFilterButton from '../components/data/ToggleFilterButton.vue'
 import type { Column } from '../components/data/VueDataTable.vue'
 import type {
   ProcessingResultMetadata,
   TransactionListItem
-} from '../types/api.js'
+} from '../types/api'
 
 const { $gettext } = useGettext()
 const categoriesStore = useCategoriesStore()
+const datasetStore = useDatasetStore()
 const route = useRoute()
 
 // Optional resultId filter, carried in the query string
@@ -96,15 +97,11 @@ const loadResults = async () => {
     isLoading.value = true
     error.value = null
 
-    // Fetch metadata only when scoped to a specific result
-    metadata.value = resultId.value
-      ? await fetchProcessingResultMetadata(resultId.value)
-      : null
-
-    // Fetch the complete dataset, optionally filtered by result
-    const response = await fetchAllTransactions(resultId.value ?? undefined)
-    transactions.value = response.transactions
-    totalTransactionCount.value = response.total_count
+    // Shared, cached dataset load: rows and metadata in one pass
+    const entry = await datasetStore.load(resultId.value ?? undefined)
+    metadata.value = entry.metadata
+    transactions.value = entry.transactions
+    totalTransactionCount.value = entry.total_count
 
     isLoading.value = false
   } catch (err) {

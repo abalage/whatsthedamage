@@ -2,8 +2,8 @@
 import { ref } from 'vue'
 import { useGettext } from 'vue3-gettext'
 import { useRouter } from 'vue-router'
-import { useAuthStore } from '../stores/auth.js'
-import { useAsyncAction } from '../composables/useAsyncAction.js'
+import { useAuthStore } from '../stores/auth'
+import { useAsyncAction } from '../composables/useAsyncAction'
 
 const { $gettext } = useGettext()
 const router = useRouter()

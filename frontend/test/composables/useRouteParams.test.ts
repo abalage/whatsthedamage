@@ -6,7 +6,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { mount } from '@vue/test-utils';
 import { defineComponent, reactive, nextTick } from 'vue';
-import { useRouteParams } from '../../src/composables/useRouteParams.js';
+import { useRouteParams } from '../../src/composables/useRouteParams';
 
 const mockRoute = reactive<{ params: Record<string, unknown>; query: Record<string, unknown> }>({
   params: {},

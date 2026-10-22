@@ -4,7 +4,7 @@
  */
 
 import { ref, type Ref } from 'vue'
-import { useFeedbackStore } from '../stores/feedback.js'
+import { useFeedbackStore } from '../stores/feedback'
 
 /**
  * Options for API data fetching

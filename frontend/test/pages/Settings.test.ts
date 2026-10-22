@@ -7,7 +7,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { mount, type VueWrapper } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
 import Settings from '../../src/pages/Settings.vue';
-import { useAuthStore } from '../../src/stores/auth.js';
+import { useAuthStore } from '../../src/stores/auth';
 
 vi.mock('vue3-gettext', (): Record<string, unknown> => ({
   useGettext: (): { $gettext: (key: string) => string } => ({

@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
+import type { ChartOptions, TooltipItem } from 'chart.js';
 import { Pie } from 'vue-chartjs';
 import { computed } from 'vue';
-import { useThemeStore } from '../../stores/theme.ts';
+import { useThemeStore } from '../../stores/theme';
 
 // Register ChartJS components
 ChartJS.register(ArcElement, Tooltip, Legend);
@@ -52,7 +53,7 @@ const chartData = computed(() => {
   };
 });
 
-const chartOptions = computed(() => ({
+const chartOptions = computed<ChartOptions<'pie'>>(() => ({
   responsive: true,
   maintainAspectRatio: false,
   plugins: {
@@ -70,7 +71,7 @@ const chartOptions = computed(() => ({
     },
     tooltip: {
       callbacks: {
-        label: (context: any) => {
+        label: (context: TooltipItem<'pie'>) => {
           const label = context.label || '';
           const value = context.raw as number;
           const totalSum = context.dataset.data.reduce((a: number, b: number) => a + b, ZERO);
@@ -81,7 +82,7 @@ const chartOptions = computed(() => ({
         }
       }
     },
-  } as any
+  }
 }))
 </script>
 

@@ -1,5 +1,8 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useGettext } from 'vue3-gettext'
+
+const { $gettext } = useGettext()
 
 // Email obfuscation using JavaScript string manipulation
 // This provides basic obfuscation without using v-html
@@ -11,8 +14,8 @@ const emailHref = computed(() => `mailto:${emailUsername}@${emailDomain}`)
 
 <template>
   <div class="container">
-    <h1>Legal Notice</h1>
-    <p><strong>Effective Date:</strong> 10-07-2026</p>
+    <h1>{{ $gettext('Legal Notice') }}</h1>
+    <p><strong>{{ $gettext('Effective Date:') }}</strong> 10-07-2026</p>
     <h2>1. Introduction</h2>
     <p>Welcome to Whatsthedamage (the "App"). By accessing or using this App, you agree to comply with and be bound by the following terms and conditions. If you do not agree with these terms, please do not use the App.</p>
     <h2>2. Data Processing and Retention</h2>

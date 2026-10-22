@@ -6,7 +6,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { mount } from '@vue/test-utils';
 import { defineComponent, reactive, nextTick } from 'vue';
-import { useResultQuery } from '../../src/composables/useResultQuery.js';
+import { useResultQuery } from '../../src/composables/useResultQuery';
 
 const mockRoute = reactive<{ query: Record<string, unknown> }>({ query: {} });
 

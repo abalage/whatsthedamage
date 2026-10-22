@@ -1,10 +1,29 @@
 import { defineStore } from 'pinia'
 import { ref, reactive, computed } from 'vue'
-import { useRouter } from 'vue-router'
-import { createTransaction } from '../js/api.js'
-import { useFeedbackStore } from './feedback.js'
-import { useAuthStore } from './auth.js'
-import type { ProcessingResultCreationResponse } from '../types/api.js'
+import { createTransaction } from '../js/api'
+import type { ProcessingResultCreationResponse } from '../types/api'
+
+/**
+ * Validation error codes for the transaction processing form.
+ * The page maps these codes to translated user-facing messages;
+ * the store itself holds no UI strings.
+ */
+export type FormErrorCode =
+  | 'csvRequired'
+  | 'csvInvalid'
+  | 'configInvalid'
+  | 'startDateInvalid'
+  | 'endDateInvalid'
+  | 'dateRangeInvalid'
+
+/**
+ * Submission failure codes returned by prepareSubmit
+ */
+type SubmitErrorCode =
+  | 'notAuthenticated'
+  | 'validationFailed'
+  | 'noResultId'
+  | 'processingFailed'
 
 /**
  * Form data interface for transaction processing
@@ -21,34 +40,30 @@ interface FormData {
 }
 
 /**
- * Form validation errors interface
+ * Form validation errors: field -> error code
  */
-interface FormErrors {
-  csvFile?: string
-  configFile?: string
-  startDate?: string
-  endDate?: string
-  dateRange?: string
-}
+type FormErrors = Partial<Record<'csvFile' | 'configFile' | 'startDate' | 'endDate' | 'dateRange', FormErrorCode>>
 
 /**
- * Result of form submission
+ * Result of form submission: either a resultId or a failure code
+ * with the underlying message for logging/diagnostics
  */
 interface SubmitResult {
   success: boolean
   resultId?: string
-  error?: string
+  errorCode?: SubmitErrorCode
+  errorMessage?: string
 }
 
 /**
  * Form store using Pinia for state management
  *
- * Note: Navigation is handled separately via a composable to avoid
- * the limitation of useRouter() not being available in Pinia stores.
+ * The store owns form state, validation, and the API call.
+ * User-facing feedback and navigation are handled by the
+ * useFormWithNavigation composable so messages can be translated
+ * in the component context.
  */
 const useFormStore = defineStore('form', () => {
-  const feedback = useFeedbackStore()
-
   /**
    * Reactive form data
    */
@@ -64,7 +79,7 @@ const useFormStore = defineStore('form', () => {
   })
 
   /**
-   * Validation errors
+   * Validation error codes
    */
   const errors = ref<FormErrors>({})
 
@@ -77,11 +92,6 @@ const useFormStore = defineStore('form', () => {
    * Whether form has been submitted
    */
   const isSubmitted = ref(false)
-
-  /**
-   * Magic number for array index access (eslint)
-   */
-  const ARRAY_INDEX = 0
 
   /**
    * Reset form to initial state
@@ -109,27 +119,27 @@ const useFormStore = defineStore('form', () => {
 
     // CSV file validation
     if (!formData.csvFile) {
-      newErrors.csvFile = 'CSV file is required'
+      newErrors.csvFile = 'csvRequired'
       isValid = false
     } else if (!formData.csvFile.name.endsWith('.csv')) {
-      newErrors.csvFile = 'Please upload a valid CSV file'
+      newErrors.csvFile = 'csvInvalid'
       isValid = false
     }
 
     // Config file validation (if provided)
     if (formData.configFile && !formData.configFile.name.endsWith('.yaml') && !formData.configFile.name.endsWith('.yml')) {
-      newErrors.configFile = 'Please upload a valid YAML configuration file'
+      newErrors.configFile = 'configInvalid'
       isValid = false
     }
 
     // Date validation
     if (formData.startDate && Number.isNaN(new Date(formData.startDate).getTime())) {
-      newErrors.startDate = 'Please enter a valid start date'
+      newErrors.startDate = 'startDateInvalid'
       isValid = false
     }
 
     if (formData.endDate && Number.isNaN(new Date(formData.endDate).getTime())) {
-      newErrors.endDate = 'Please enter a valid end date'
+      newErrors.endDate = 'endDateInvalid'
       isValid = false
     }
 
@@ -138,7 +148,7 @@ const useFormStore = defineStore('form', () => {
       const start = new Date(formData.startDate)
       const end = new Date(formData.endDate)
       if (start > end) {
-        newErrors.dateRange = 'End date must be after start date'
+        newErrors.dateRange = 'dateRangeInvalid'
         isValid = false
       }
     }
@@ -155,11 +165,8 @@ const useFormStore = defineStore('form', () => {
   const handleFileChange = (event: Event, field: 'csvFile' | 'configFile'): void => {
     const target = event.target as HTMLInputElement
     if (target.files?.length) {
-      formData[field] = target.files[ARRAY_INDEX]
-      // Clear validation error for this field
-      if (errors.value[field]) {
-        errors.value[field] = undefined
-      }
+      formData[field] = target.files[0]
+      errors.value[field] = undefined
     }
   }
 
@@ -170,36 +177,25 @@ const useFormStore = defineStore('form', () => {
    */
   const handleInputChange = (field: Exclude<keyof FormData, 'csvFile' | 'configFile'>, value: string | boolean): void => {
     formData[field] = value as never
-    // Clear validation error for this field (only for fields that can have errors)
     if (field in errors.value) {
       errors.value[field as keyof FormErrors] = undefined
     }
   }
 
   /**
-   * Prepare form data for submission (without navigation)
+   * Validate the form and submit it to the processing API.
    *
-   * NOTE: This method does NOT manage the isLoading state.
-   * The caller (typically submitForm in useFormWithNavigation) is responsible
-   * for setting isLoading to true before calling this and false after handling
-   * the result (including navigation).
+   * The caller (useFormWithNavigation) is responsible for user-facing
+   * feedback and navigation based on the returned code.
    *
-   * @returns Promise with result containing resultId or error
+   * @returns Promise with the resultId or a failure code
    */
   const prepareSubmit = async (): Promise<SubmitResult> => {
-    // Check if user is authenticated
-    const authStore = useAuthStore()
-    if (!authStore.isAuthenticated) {
-      feedback.showError('Please login to process transactions')
-      return { success: false, error: 'Not authenticated' }
-    }
-
     if (!validateForm()) {
-      feedback.showError('Please fix the form errors before submitting')
-      return { success: false, error: 'Validation failed' }
+      return { success: false, errorCode: 'validationFailed' }
     }
 
-    feedback.clearMessages()
+    isLoading.value = true
 
     try {
       const formDataObj = new FormData()
@@ -240,21 +236,18 @@ const useFormStore = defineStore('form', () => {
       // Extract result_id from response (flat structure, not nested in metadata)
       const resultId = response.result_id
 
-      // Debug: Check if we have a valid result ID
       if (!resultId) {
-        feedback.showError('Backend error: No result ID returned')
-        return { success: false, error: 'No result ID returned' }
+        return { success: false, errorCode: 'noResultId' }
       }
 
       isSubmitted.value = true
-      feedback.showSuccess('Transactions processed successfully')
 
       return { success: true, resultId }
-
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error)
-      feedback.showError(`Error processing transactions: ${message}`)
-      return { success: false, error: message }
+      return { success: false, errorCode: 'processingFailed', errorMessage: message }
+    } finally {
+      isLoading.value = false
     }
   }
 
@@ -262,15 +255,15 @@ const useFormStore = defineStore('form', () => {
    * Check if form has errors
    */
   const hasErrors = computed((): boolean => {
-    return Object.keys(errors.value).length > ARRAY_INDEX
+    return Object.keys(errors.value).length > 0
   })
 
   /**
-   * Get error for a specific field
+   * Get the error code for a specific field
    * @param field - Field name
-   * @returns Error message or undefined
+   * @returns Error code or undefined
    */
-  const getError = (field: keyof FormErrors): string | undefined => {
+  const getError = (field: keyof FormErrors): FormErrorCode | undefined => {
     return errors.value[field]
   }
 
@@ -289,49 +282,4 @@ const useFormStore = defineStore('form', () => {
   }
 })
 
-/**
- * Composable for form submission with navigation
- * This separates the navigation logic from the form state
- *
- * @returns Object containing the form store instance and navigation-capable submit function
- */
-export const useFormWithNavigation = () => {
-  const formStore = useFormStore()
-  const router = useRouter()
-
-  /**
-   * Submit form with navigation to results page
-   * @returns Promise with success status
-   */
-  const submitForm = async (): Promise<boolean> => {
-    formStore.isLoading = true
-
-    try {
-      const result = await formStore.prepareSubmit()
-
-      if (!result.success || !result.resultId) {
-        return false
-      }
-
-      // Navigate to results page with the result ID
-      await router.push({
-        name: 'results',
-        query: { resultId: result.resultId }
-      })
-      return true
-    } catch (navError: unknown) {
-      const message = navError instanceof Error ? navError.message : String(navError)
-      useFeedbackStore().showError(`Navigation error: ${message}`)
-      return false
-    } finally {
-      formStore.isLoading = false
-    }
-  }
-
-  return {
-    formStore,
-    submitForm,
-  } as const
-}
-
-
+export default useFormStore

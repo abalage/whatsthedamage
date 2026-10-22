@@ -5,7 +5,7 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { createPinia, setActivePinia } from 'pinia';
-import { useAuthStore } from '../src/stores/auth.js';
+import { useAuthStore } from '../src/stores/auth';
 
 type FetchResponse = {
   ok: boolean;

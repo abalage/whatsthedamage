@@ -1,11 +1,17 @@
 <script setup lang="ts">
 import { onMounted, computed, watch } from 'vue'
 import { useGettext } from 'vue3-gettext'
-import { useStatisticalStore } from '../stores/statistical.js'
-import { useCategoriesStore } from '../stores/categories.js'
-import { useDrilldownData } from '../composables/useDrilldownData.js'
+import { useStatisticalStore } from '../stores/statistical'
+import { useCategoriesStore } from '../stores/categories'
+import { useDrilldownData } from '../composables/useDrilldownData'
+import {
+  buildGroupRows,
+  sumAggregateRowConfig,
+  averageAggregateRowConfig,
+  useStatisticalHighlights
+} from '../composables/useAggregatedGroups'
 import { RouterLink } from 'vue-router'
-import type { BreadcrumbItem } from '../composables/useBreadcrumbs.js'
+import type { BreadcrumbItem } from '../composables/useBreadcrumbs'
 import BreadcrumbNavigation from '../components/layout/BreadcrumbNavigation.vue'
 import LoadingState from '../components/layout/LoadingState.vue'
 import ErrorState from '../components/layout/ErrorState.vue'
@@ -13,11 +19,11 @@ import PageHeader from '../components/layout/PageHeader.vue'
 import VueDataTable from '../components/data/VueDataTable.vue'
 import TableLink from '../components/data/TableLink.vue'
 import type { Column, AggregateRowConfig } from '../components/data/VueDataTable.vue'
-import { fetchAggregatedTransactions } from '../js/api.js'
-import { buildResultQuery } from '../js/routeUtils.js'
-import { useResultQuery } from '../composables/useResultQuery.js'
-import type { AggregatedTransactionsResponse, TransactionListItem } from '../types/api.js'
-import { formatMonthYear, extractMonthKey, createMonthDate } from '../js/dateUtils.js'
+import { fetchAggregatedTransactions } from '../js/api'
+import { buildResultQuery } from '../js/routeUtils'
+import { useResultQuery } from '../composables/useResultQuery'
+import type { AggregatedTransactionsResponse } from '../types/api'
+import { formatMonthKey, extractMonthKey, createMonthDate } from '../js/dateUtils'
 import BarChart from '../components/charts/BarChart.vue'
 
 const { $gettext } = useGettext()
@@ -107,46 +113,23 @@ const {
   errorMessageKey: 'categoryMonthsLoadError'
 })
 
-// Helper function to format month key (YYYY-MM) to display format
-function formatMonthKey(monthKey: string): string {
-  // monthKey is in YYYY-MM format
-  const normalized = extractMonthKey(monthKey)
-  const monthDate = createMonthDate(normalized)
-  if (monthDate) {
-    return formatMonthYear(monthDate.getTime() / 1000)
-  }
-  return monthKey
-}
-
-// Helper function to calculate total for a group of transactions
-function calculateTotalForTransactions(txns: TransactionListItem[]): number {
-  return txns.reduce((sum, txn) => sum + (txn.amount || 0), 0)
-}
-
-// Table data
+// Table data: one row per month group of the category
 const tableData = computed(() => {
   if (!categoryMonthsData.value) return []
 
   const groups = categoryMonthsData.value.groups || {}
 
-  return Object.entries(groups).map(([monthKey, txns]) => {
-    const total = calculateTotalForTransactions(txns)
-    const normalizedMonthKey = extractMonthKey(monthKey)
-    const monthDate = createMonthDate(normalizedMonthKey)
-    const monthTimestamp = monthDate ? monthDate.getTime() / 1000 : 0
-
-    return {
-      month: formatMonthKey(monthKey),
-      total: total,
-      total_display: total.toFixed(2),
-      row_id: normalizedMonthKey,
-      cell_url: `#`,
-      month_timestamp: monthTimestamp,
-      resultId: resultId.value,
-      accountId: accountId.value,
-      categoryId: categoryId.value,
-      _rowIds: {
-        total: normalizedMonthKey
+  return buildGroupRows(groups, {
+    keyColumn: 'month',
+    labelFormatter: formatMonthKey,
+    rowIdOf: extractMonthKey,
+    extraFields: (monthKey) => {
+      const monthDate = createMonthDate(extractMonthKey(monthKey))
+      return {
+        month_timestamp: monthDate ? monthDate.getTime() / 1000 : 0,
+        resultId: resultId.value,
+        accountId: accountId.value,
+        categoryId: categoryId.value
       }
     }
   })
@@ -157,52 +140,13 @@ const aggregateRows = computed<AggregateRowConfig[]>(() => {
   if (!categoryMonthsData.value || !categoryMonthsData.value.groups || Object.keys(categoryMonthsData.value.groups).length === 0) return []
 
   return [
-    {
-      id: 'total-sum',
-      type: 'custom',
-      position: 'footer',
-      includeInExport: true,
-      class: 'fw-bold bg-surface-primary text-on-primary',
-      customCalculator: (data, columnKey) => {
-        if (columnKey === 'month') return $gettext('Total')
-        if (columnKey === 'total') {
-          const numericValues = data.map(row => Number(row[columnKey])).filter(v => !Number.isNaN(v))
-          return numericValues.reduce((sum, val) => sum + val, 0)
-        }
-        return ''
-      }
-    },
-    {
-      id: 'total-average',
-      type: 'custom',
-      position: 'footer',
-      includeInExport: true,
-      class: 'fw-bold bg-surface-secondary text-on-dark',
-      customCalculator: (data, columnKey) => {
-        if (columnKey === 'month') return $gettext('Average')
-        if (columnKey === 'total') {
-          const numericValues = data.map(row => Number(row[columnKey])).filter(v => !Number.isNaN(v))
-          return numericValues.length > 0
-            ? numericValues.reduce((sum, val) => sum + val, 0) / numericValues.length
-            : null
-        }
-        return ''
-      }
-    }
+    sumAggregateRowConfig($gettext, 'month'),
+    averageAggregateRowConfig($gettext, 'month')
   ]
 })
 
-// Cell highlights from Pinia store
-const cellHighlightsByRowId = computed(() => {
-  return statisticalStore.highlights || {}
-})
-
-// Initialize highlights from API when data loads
-watch(() => categoryMonthsData.value, (newData) => {
-  if (newData?.highlights) {
-    statisticalStore.setHighlights(newData.highlights)
-  }
-}, { immediate: true })
+// Cell highlights synced from the aggregation response
+const { cellHighlightsByRowId } = useStatisticalHighlights(categoryMonthsData)
 
 // Chart data for BarChart
 const chartData = computed(() => {

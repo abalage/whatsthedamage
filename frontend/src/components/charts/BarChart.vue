@@ -2,9 +2,9 @@
 import { Chart as ChartJS, Title, Tooltip, Legend, BarElement, LineElement, CategoryScale, LinearScale, PointElement } from 'chart.js';
 import { Bar } from 'vue-chartjs';
 import { computed, ref, watch, nextTick } from 'vue';
-import type { ChartOptions, ChartData, ActiveElement, Chart } from 'chart.js';
-import { calculateLinearRegression, REGRESSION_CONFIG } from '../../js/regression.ts';
-import { useThemeStore } from '../../stores/theme.ts';
+import type { ChartOptions, ChartData, ChartDataset, ActiveElement, Chart } from 'chart.js';
+import { calculateLinearRegression, REGRESSION_CONFIG } from '../../js/regression';
+import { useThemeStore } from '../../stores/theme';
 
 // Register ChartJS components
 ChartJS.register(Title, Tooltip, Legend, BarElement, LineElement, CategoryScale, LinearScale, PointElement);
@@ -76,7 +76,7 @@ const chartData = computed<ChartData<'bar'>>(() => {
   const labels = props.data.map(item => item.label);
 
   // Create one dataset per category
-  const datasets: any[] = props.categories.map((category, categoryIndex) => {
+  const datasets: ChartDataset<'bar'>[] = props.categories.map((category, categoryIndex) => {
     const color = getCategoryColor(categoryIndex);
 
     return {

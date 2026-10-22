@@ -4,7 +4,7 @@
  */
 
 import { useRoute } from 'vue-router'
-import { buildResultQuery, extractResultId } from '../js/routeUtils.js'
+import { buildResultQuery, extractResultId } from '../js/routeUtils'
 
 /**
  * Creates a function that builds a location query carrying the current

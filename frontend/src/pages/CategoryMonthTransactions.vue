@@ -1,19 +1,19 @@
 <script setup lang="ts">
 import { onMounted, computed, ref, watch } from 'vue'
 import { useGettext } from 'vue3-gettext'
-import { useCategoriesStore } from '../stores/categories.js'
-import { useDrilldownData } from '../composables/useDrilldownData.js'
+import { useCategoriesStore } from '../stores/categories'
+import { useDrilldownData } from '../composables/useDrilldownData'
 import { RouterLink } from 'vue-router'
 import BreadcrumbNavigation from '../components/layout/BreadcrumbNavigation.vue'
-import type { BreadcrumbItem } from '../composables/useBreadcrumbs.js'
+import type { BreadcrumbItem } from '../composables/useBreadcrumbs'
 import LoadingState from '../components/layout/LoadingState.vue'
 import ErrorState from '../components/layout/ErrorState.vue'
 import PageHeader from '../components/layout/PageHeader.vue'
 import VueDataTable from '../components/data/VueDataTable.vue'
 import ToggleFilterButton from '../components/data/ToggleFilterButton.vue'
 import type { Column, AggregateRowConfig } from '../components/data/VueDataTable.vue'
-import { fetchCategoryMonthTransactions } from '../js/api.js'
-import { useResultQuery } from '../composables/useResultQuery.js'
+import { fetchCategoryMonthTransactions } from '../js/api'
+import { useResultQuery } from '../composables/useResultQuery'
 import {
   useTransactionCorrections,
   editableCorrectionColumns,
@@ -21,9 +21,9 @@ import {
   merchantOf,
   correctedRowIds,
   UNCATEGORIZED
-} from '../composables/useTransactionCorrections.js'
-import type { TransactionListResponse } from '../types/api.js'
-import { formatMonthYear, formatDateISO, toEpoch } from '../js/dateUtils.js'
+} from '../composables/useTransactionCorrections'
+import type { TransactionListResponse } from '../types/api'
+import { formatMonthYear, formatDateISO, toEpoch } from '../js/dateUtils'
 import BarChart from '../components/charts/BarChart.vue'
 
 const { $gettext } = useGettext()

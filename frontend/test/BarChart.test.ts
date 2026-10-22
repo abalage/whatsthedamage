@@ -308,7 +308,7 @@ describe('BarChart component logic', () => {
 
       const hasTimestamps = data.every(item => item.timestamp !== undefined);
       const isDescending = hasTimestamps && data.length > 1 ?
-        data[0].timestamp! > data[1].timestamp! :
+        (data[0]?.timestamp ?? 0) > (data[1]?.timestamp ?? 0) :
         false;
 
       expect(hasTimestamps).toBe(true);
@@ -324,7 +324,7 @@ describe('BarChart component logic', () => {
 
       const hasTimestamps = data.every(item => item.timestamp !== undefined);
       const isDescending = hasTimestamps && data.length > 1 ?
-        data[0].timestamp! > data[1].timestamp! :
+        (data[0]?.timestamp ?? 0) > (data[1]?.timestamp ?? 0) :
         false;
 
       expect(hasTimestamps).toBe(true);

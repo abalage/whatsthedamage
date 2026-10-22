@@ -4,8 +4,8 @@
  */
 
 import { computed, type ComputedRef } from 'vue'
-import { useCategoriesStore } from '../stores/categories.js'
-import { formatMonthYear } from '../js/dateUtils.js'
+import { useCategoriesStore } from '../stores/categories'
+import { formatMonthYear } from '../js/dateUtils'
 
 /**
  * Title format patterns

@@ -11,7 +11,7 @@ interface FeedbackMessage {
 
 export const useFeedbackStore = defineStore('feedback', () => {
   const messages = ref<FeedbackMessage[]>([])
-  const nextId = ref(1) // eslint-disable-line no-magic-numbers
+  const nextId = ref(1)
 
   const AUTO_DISMISS_TIMEOUT = 5000 // ms
 
@@ -65,7 +65,7 @@ export const useFeedbackStore = defineStore('feedback', () => {
   }
 
   const hasMessages = computed((): boolean => {
-    return messages.value.length > 0 // eslint-disable-line no-magic-numbers
+    return messages.value.length > 0
   })
 
   const hasErrors = computed((): boolean => {

@@ -20,6 +20,7 @@
  */
 
 import type { Directive, DirectiveBinding } from 'vue'
+import { logger } from '../js/logger'
 
 /**
  * Popover directive options
@@ -46,8 +47,7 @@ function initPopover(el: HTMLElement, options: PopoverOptions): void {
   const bootstrap = (globalThis as unknown as Window).bootstrap as { Popover?: unknown } | undefined
 
   if (!bootstrap?.Popover) {
-    // eslint-disable-next-line no-console
-    console.warn('[popover directive] Bootstrap Popover not available')
+    logger.warn('[popover directive] Bootstrap Popover not available')
     return
   }
 

@@ -6,15 +6,16 @@
 
 import { computed, type ComputedRef } from 'vue'
 import { useGettext } from 'vue3-gettext'
-import { useFeedbackStore } from '../stores/feedback.js'
-import { updateTransaction, undoTransaction } from '../js/api.js'
-import type { Column } from '../types/column.js'
+import { useFeedbackStore } from '../stores/feedback'
+import { useDatasetStore } from '../stores/dataset'
+import { updateTransaction, undoTransaction } from '../js/api'
+import type { Column } from '../types/column'
 import EditableCell from '../components/data/EditableCell.vue'
 import UndoCorrectionCell from '../components/data/UndoCorrectionCell.vue'
 import type {
   TransactionListItem,
   TransactionUpdatePayload
-} from '../types/api.js'
+} from '../types/api'
 
 /** Maximum length of the partner (merchant) field, matches the backend */
 const PARTNER_MAX_LENGTH = 255
@@ -195,6 +196,7 @@ export function useTransactionCorrections(
 ): TransactionCorrections {
   const { $gettext } = useGettext()
   const feedbackStore = useFeedbackStore()
+  const datasetStore = useDatasetStore()
 
   // Replace the row of the same id so the table refreshes in place
   const replaceTransaction = (transaction: TransactionListItem): void => {
@@ -213,6 +215,14 @@ export function useTransactionCorrections(
   ): Promise<void> => {
     const transaction = await updateTransaction(transactionId, payload)
     replaceTransaction(transaction)
+    if (payload.apply_to_future) {
+      // The backend also re-categorized the merchant's other
+      // transactions; cached datasets cannot be patched in place
+      datasetStore.invalidateAll()
+    } else {
+      // Keep other cached datasets (other pages) in sync without a refetch
+      datasetStore.replaceTransaction(transaction)
+    }
     feedbackStore.showSuccess($gettext('Transaction updated'))
   }
 
@@ -223,6 +233,7 @@ export function useTransactionCorrections(
   ): Promise<void> => {
     const transaction = await undoTransaction(transactionId)
     replaceTransaction(transaction)
+    datasetStore.replaceTransaction(transaction)
     feedbackStore.showSuccess($gettext('Corrections undone'))
   }
 

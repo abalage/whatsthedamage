@@ -5,7 +5,7 @@
 
 import { computed, type ComputedRef } from 'vue'
 import { useRoute } from 'vue-router'
-import { extractResultId } from '../js/routeUtils.js'
+import { extractResultId } from '../js/routeUtils'
 
 /**
  * String-only route parameters type

@@ -11,9 +11,9 @@ import CategoryMonthTransactions from '../../src/pages/CategoryMonthTransactions
 import VueDataTable from '../../src/components/data/VueDataTable.vue';
 import EditableCell from '../../src/components/data/EditableCell.vue';
 import UndoCorrectionCell from '../../src/components/data/UndoCorrectionCell.vue';
-import { fetchCategoryMonthTransactions, fetchCategories, updateTransaction, undoTransaction } from '../../src/js/api.js';
-import { useFeedbackStore } from '../../src/stores/feedback.js';
-import type { TransactionListItem, TransactionListResponse, CategoryDefinition } from '../../src/types/api.js';
+import { fetchCategoryMonthTransactions, fetchCategories, updateTransaction, undoTransaction } from '../../src/js/api';
+import { useFeedbackStore } from '../../src/stores/feedback';
+import type { TransactionListItem, TransactionListResponse, CategoryDefinition } from '../../src/types/api';
 
 interface ColumnLike {
   key: string;

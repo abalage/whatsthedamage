@@ -7,6 +7,8 @@
  * business logic in the service layer.
  */
 
+import { logger } from '../js/logger';
+
 export interface HighlightConfig {
     /**
      * Mapping of semantic highlight types to CSS class names
@@ -51,8 +53,7 @@ export function getCssClassForHighlight(
     const cssClass = config.highlightTypes[highlightType];
     if (!cssClass) {
         // Log warning for unknown highlight types to help debugging
-        // eslint-disable-next-line no-console
-        console.warn(`Unknown highlight type: "${highlightType}". This may prevent highlight-multiple from being applied correctly.`);
+        logger.warn(`Unknown highlight type: "${highlightType}". This may prevent highlight-multiple from being applied correctly.`);
     }
     return cssClass ?? '';
 }
@@ -92,7 +93,7 @@ export function getCssClassesForHighlights(
 
     // Add multiple highlight class if multiple valid algorithm highlights
     // When multiple algorithms mark the same cell, only apply highlight-multiple
-    if (validAlgoHighlights.length > 1) { // eslint-disable-line no-magic-numbers
+    if (validAlgoHighlights.length > 1) {
         cssClasses.push(config.multipleHighlightClass);
     } else {
         // For single algorithm, add its individual class

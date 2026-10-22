@@ -1,15 +1,15 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useRoute, RouterLink } from 'vue-router'
-import { useAuthStore } from '../stores/auth.js'
-import { useLocaleStore } from '../stores/locale.js'
-import { useStatisticalStore } from '../stores/statistical.js'
-import { useFeedbackStore } from '../stores/feedback.js'
-import { useThemeStore } from '../stores/theme.js'
+import { useAuthStore } from '../stores/auth'
+import { useLocaleStore } from '../stores/locale'
+import { useStatisticalStore } from '../stores/statistical'
+import { useFeedbackStore } from '../stores/feedback'
+import { useThemeStore } from '../stores/theme'
 import { useGettext } from 'vue3-gettext'
-import { recalculateStatistics } from '../js/api.js'
-import { extractResultId } from '../js/routeUtils.js'
-import { APP_VERSION } from '../js/version.js'
+import { recalculateStatistics } from '../js/api'
+import { extractResultId } from '../js/routeUtils'
+import { APP_VERSION } from '../js/version'
 
 const { $gettext } = useGettext()
 const route = useRoute()

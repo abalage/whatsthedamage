@@ -6,10 +6,10 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { createPinia, setActivePinia } from 'pinia';
-import { useAuthStore } from '../src/stores/auth.js';
-import { login, getMe, fetchCsrfToken } from '../src/js/api.js';
-import { recalculateStatistics } from '../src/js/api.js';
-import { getCsrfToken, setCsrfToken } from '../src/js/csrfToken.js';
+import { useAuthStore } from '../src/stores/auth';
+import { login, getMe, fetchCsrfToken } from '../src/js/api';
+import { recalculateStatistics } from '../src/js/api';
+import { getCsrfToken, setCsrfToken } from '../src/js/csrfToken';
 
 type FetchResponse = {
   ok: boolean;

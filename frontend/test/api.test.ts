@@ -13,7 +13,7 @@ import {
   updateTransaction,
   undoTransaction,
   updateSharingPreference,
-} from '../src/js/api.js';
+} from '../src/js/api';
 
 const stubFetch = (data: unknown, ok = true): void => {
   vi.stubGlobal('fetch', vi.fn(async () => ({

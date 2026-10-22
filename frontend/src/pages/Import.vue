@@ -1,15 +1,16 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { useFormWithNavigation } from '../stores/form.js'
-import { useFeedbackStore } from '../stores/feedback.js'
+import { useFormWithNavigation } from '../composables/useFormWithNavigation'
+import { useFeedbackStore } from '../stores/feedback'
 import { useGettext } from 'vue3-gettext'
 import { RouterLink } from 'vue-router'
 import ErrorDisplay from '../components/ErrorDisplay.vue'
-import { fetchAllCsvProfiles } from '../js/api.js'
-import type { CsvProfile } from '../types/api.js'
+import { fetchAllCsvProfiles } from '../js/api'
+import { logger } from '../js/logger'
+import type { CsvProfile } from '../types/api'
 
 const { $gettext } = useGettext()
-const { formStore, submitForm: submitFormFn } = useFormWithNavigation()
+const { formStore, formErrorMessage, submitForm: submitFormFn } = useFormWithNavigation()
 const feedback = useFeedbackStore()
 
 
@@ -68,7 +69,7 @@ const loadCsvProfiles = async (): Promise<void> => {
     }
   } catch (error: unknown) {
     feedback.showError($gettext('Failed to load CSV profiles'))
-    console.error('Failed to load CSV profiles:', error)
+    logger.error('Failed to load CSV profiles:', error)
   } finally {
     isLoadingProfiles.value = false
   }
@@ -105,7 +106,7 @@ onMounted(() => {
                   @change="handleCsvChange"
                 />
                 <div v-if="formStore.getError('csvFile')" class="invalid-feedback">
-                  {{ formStore.getError('csvFile') }}
+                  {{ formErrorMessage(formStore.getError('csvFile')) }}
                 </div>
                 <div id="fileHelp" class="form-text">{{ $gettext('Upload your CSV file containing the exported bank account history') }}</div>
               </div>
@@ -126,11 +127,11 @@ onMounted(() => {
               </div>
               <div class="px-0">
                 <button
-                  @click="showAdvanced = !showAdvanced"
                   class="btn btn-link p-0 mb-3 text-black text-decoration-none"
                   type="button"
                   aria-controls="advancedSettings"
                   :aria-expanded="showAdvanced"
+                  @click="showAdvanced = !showAdvanced"
                 >
                   <span>{{ showAdvanced ? '▼' : '▶' }}</span>
                   {{ $gettext('Advanced settings') }}
@@ -148,7 +149,7 @@ onMounted(() => {
                     @change="handleConfigChange"
                   />
                   <div v-if="formStore.getError('configFile')" class="invalid-feedback">
-                    {{ formStore.getError('configFile') }}
+                    {{ formErrorMessage(formStore.getError('configFile')) }}
                   </div>
                   <div id="configHelp" class="form-text">{{ $gettext('Upload your custom configuration file, or leave it blank to use the default') }}</div>
                 </div>

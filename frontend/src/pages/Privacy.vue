@@ -1,5 +1,8 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useGettext } from 'vue3-gettext'
+
+const { $gettext } = useGettext()
 
 // Email obfuscation using JavaScript string manipulation
 // This provides basic obfuscation without using v-html
@@ -16,8 +19,8 @@ const controllerAddress = '[Controller postal address]'
 
 <template>
   <div class="container">
-    <h1>Privacy Policy</h1>
-    <p><strong>Effective Date:</strong> 10-07-2026</p>
+    <h1>{{ $gettext('Privacy Policy') }}</h1>
+    <p><strong>{{ $gettext('Effective Date:') }}</strong> 10-07-2026</p>
     <h2>1. Introduction</h2>
     <p>Welcome to Whatsthedamage (the "App"). This Privacy Policy explains how we collect, use, disclose, and protect your personal information when you use our App. We are committed to protecting your privacy and ensuring that your personal data is handled in accordance with the General Data Protection Regulation (GDPR) and other applicable data protection laws.</p>
     <h2>2. Who We Are</h2>

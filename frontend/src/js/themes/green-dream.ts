@@ -3,7 +3,7 @@
  * Original green theme with Bootstrap colors
  */
 
-import type { Theme } from './theme.types.ts';
+import type { Theme } from './theme.types';
 
 const defaultTheme: Theme = {
   id: 'green-dream',

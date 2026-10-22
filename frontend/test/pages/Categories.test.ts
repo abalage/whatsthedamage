@@ -8,9 +8,9 @@ import { shallowMount, flushPromises, type VueWrapper } from '@vue/test-utils';
 import { createPinia, setActivePinia, type Pinia } from 'pinia';
 import { reactive } from 'vue';
 import Categories from '../../src/pages/Categories.vue';
-import { fetchProcessingResultMetadata, fetchAllTransactions, recalculateStatistics } from '../../src/js/api.js';
-import { useStatisticalStore } from '../../src/stores/statistical.js';
-import type { ProcessingResultMetadata, TransactionListItem } from '../../src/types/api.js';
+import { fetchProcessingResultMetadata, fetchAllTransactions, recalculateStatistics } from '../../src/js/api';
+import { useStatisticalStore } from '../../src/stores/statistical';
+import type { ProcessingResultMetadata, TransactionListItem } from '../../src/types/api';
 
 const mockRoute = reactive<{ params: Record<string, unknown>; query: Record<string, unknown> }>({
   params: {},
@@ -130,7 +130,9 @@ describe('Categories.vue', () => {
     await flushPromises();
 
     expect(fetchAllTransactions).toHaveBeenCalledWith(undefined);
-    expect(fetchProcessingResultMetadata).not.toHaveBeenCalled();
+    // The shared dataset cache resolves metadata through the API helper,
+    // which returns null without a request when unscoped
+    expect(fetchProcessingResultMetadata).toHaveBeenCalledWith(undefined);
   });
 
   it('fetches filtered transactions and metadata when resultId is defined', async () => {

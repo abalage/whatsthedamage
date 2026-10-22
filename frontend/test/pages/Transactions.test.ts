@@ -11,9 +11,9 @@ import Transactions from '../../src/pages/Transactions.vue';
 import VueDataTable from '../../src/components/data/VueDataTable.vue';
 import EditableCell from '../../src/components/data/EditableCell.vue';
 import UndoCorrectionCell from '../../src/components/data/UndoCorrectionCell.vue';
-import { fetchProcessingResultMetadata, fetchAllTransactions, updateTransaction, undoTransaction, fetchCategories } from '../../src/js/api.js';
-import { useFeedbackStore } from '../../src/stores/feedback.js';
-import type { ProcessingResultMetadata, TransactionListItem, CategoryDefinition } from '../../src/types/api.js';
+import { fetchProcessingResultMetadata, fetchAllTransactions, updateTransaction, undoTransaction, fetchCategories } from '../../src/js/api';
+import { useFeedbackStore } from '../../src/stores/feedback';
+import type { ProcessingResultMetadata, TransactionListItem, CategoryDefinition } from '../../src/types/api';
 
 interface ColumnLike {
   key: string;
@@ -130,7 +130,9 @@ describe('Transactions.vue', () => {
     await flushPromises();
 
     expect(fetchAllTransactions).toHaveBeenCalledWith(undefined);
-    expect(fetchProcessingResultMetadata).not.toHaveBeenCalled();
+    // The shared dataset cache resolves metadata through the API helper,
+    // which returns null without a request when unscoped
+    expect(fetchProcessingResultMetadata).toHaveBeenCalledWith(undefined);
   });
 
   it('fetches filtered transactions and metadata when resultId is defined', async () => {

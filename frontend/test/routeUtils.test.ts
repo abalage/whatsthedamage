@@ -4,7 +4,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { buildResultQuery, extractResultId } from '../src/js/routeUtils.js';
+import { buildResultQuery, extractResultId } from '../src/js/routeUtils';
 
 describe('buildResultQuery', () => {
   it('returns an empty query for a null resultId', () => {

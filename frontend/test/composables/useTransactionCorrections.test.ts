@@ -15,10 +15,10 @@ import {
   isCorrected,
   merchantOf,
   correctedRowIds,
-} from '../../src/composables/useTransactionCorrections.js';
-import { updateTransaction, undoTransaction } from '../../src/js/api.js';
-import { useFeedbackStore } from '../../src/stores/feedback.js';
-import type { TransactionListItem, TransactionUpdatePayload } from '../../src/types/api.js';
+} from '../../src/composables/useTransactionCorrections';
+import { updateTransaction, undoTransaction } from '../../src/js/api';
+import { useFeedbackStore } from '../../src/stores/feedback';
+import type { TransactionListItem, TransactionUpdatePayload } from '../../src/types/api';
 
 vi.mock('vue3-gettext', (): Record<string, unknown> => ({
   useGettext: (): { $gettext: (key: string) => string } => ({

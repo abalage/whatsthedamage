@@ -6,7 +6,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { mount } from '@vue/test-utils';
 import ForgotPassword from '../../src/pages/ForgotPassword.vue';
-import { resetPassword } from '../../src/js/api.js';
+import { resetPassword } from '../../src/js/api';
 
 // Mock the router
 const mockPush = vi.fn();
@@ -14,15 +14,35 @@ const mockRouter = {
   push: mockPush
 };
 
+/**
+ * Page instance surface accessed by the tests (script setup bindings)
+ */
+interface ForgotPasswordVm {
+  handleResetPassword: (username: string, recoveryCode: string, newPassword: string) => Promise<void>;
+  handleContinue: () => void;
+  clearError: () => void;
+  showSuccessState: boolean;
+  newRecoveryCode: string | null;
+  error: string | null;
+  isLoading: boolean;
+}
+
 // Mock the API
 vi.mock('../../src/js/api.js', () => ({
   resetPassword: vi.fn()
 }));
 
+// Mock gettext: translations pass the key through unchanged
+vi.mock('vue3-gettext', (): Record<string, unknown> => ({
+  useGettext: (): { $gettext: (key: string) => string } => ({
+    $gettext: (key: string): string => key
+  })
+}));
+
 // Mock useRouter from vue-router
 vi.mock('vue-router', () => ({
-  useRouter: () => mockRouter,
-  useRoute: () => ({ query: {} })
+  useRouter: (): { push: (location: unknown) => Promise<unknown> } => mockRouter,
+  useRoute: (): { query: Record<string, unknown> } => ({ query: {} })
 }));
 
 describe('ForgotPassword.vue', () => {
@@ -46,7 +66,7 @@ describe('ForgotPassword.vue', () => {
     const html = wrapper.html();
 
     expect(html.includes('Reset Password')).toBe(true);
-    expect(html.includes('class="instructions"')).toBe(true);
+    expect(html.includes('class="auth-instructions"')).toBe(true);
     expect(html).toContain('Enter your username and the recovery code');
   });
 
@@ -65,7 +85,7 @@ describe('ForgotPassword.vue', () => {
     });
 
     const wrapper = mount(ForgotPassword, mountOptions);
-    const vm = wrapper.vm as any;
+    const vm = wrapper.vm as unknown as ForgotPasswordVm;
 
     await vm.handleResetPassword('testuser', 'ABCD-EFGH-IJKL-MNOP', 'new_secure_password_1234');
     await new Promise(setImmediate);
@@ -84,7 +104,7 @@ describe('ForgotPassword.vue', () => {
     });
 
     const wrapper = mount(ForgotPassword, mountOptions);
-    const vm = wrapper.vm as any;
+    const vm = wrapper.vm as unknown as ForgotPasswordVm;
 
     await vm.handleResetPassword('testuser', 'ABCD-EFGH-IJKL-MNOP', 'new_secure_password_1234');
     await new Promise(setImmediate);
@@ -98,7 +118,7 @@ describe('ForgotPassword.vue', () => {
     vi.mocked(resetPassword).mockRejectedValue(new Error('Invalid username or recovery code'));
 
     const wrapper = mount(ForgotPassword, mountOptions);
-    const vm = wrapper.vm as any;
+    const vm = wrapper.vm as unknown as ForgotPasswordVm;
 
     await vm.handleResetPassword('testuser', 'WRONG-CODE', 'new_secure_password_1234');
     await new Promise(setImmediate);
@@ -112,7 +132,7 @@ describe('ForgotPassword.vue', () => {
     vi.mocked(resetPassword).mockRejectedValue(new Error('Password must be at least 12 characters'));
 
     const wrapper = mount(ForgotPassword, mountOptions);
-    const vm = wrapper.vm as any;
+    const vm = wrapper.vm as unknown as ForgotPasswordVm;
 
     await vm.handleResetPassword('testuser', 'ABCD-EFGH-IJKL-MNOP', 'short');
     await new Promise(setImmediate);
@@ -128,7 +148,7 @@ describe('ForgotPassword.vue', () => {
     });
 
     const wrapper = mount(ForgotPassword, mountOptions);
-    const vm = wrapper.vm as any;
+    const vm = wrapper.vm as unknown as ForgotPasswordVm;
 
     await vm.handleResetPassword('testuser', 'ABCD-EFGH-IJKL-MNOP', 'new_secure_password_1234');
     await new Promise(setImmediate);
@@ -143,7 +163,7 @@ describe('ForgotPassword.vue', () => {
     vi.mocked(resetPassword).mockRejectedValue(new Error('Invalid username or recovery code'));
 
     const wrapper = mount(ForgotPassword, mountOptions);
-    const vm = wrapper.vm as any;
+    const vm = wrapper.vm as unknown as ForgotPasswordVm;
 
     await vm.handleResetPassword('testuser', 'WRONG-CODE', 'new_secure_password_1234');
     await new Promise(setImmediate);
@@ -158,7 +178,7 @@ describe('ForgotPassword.vue', () => {
 
   it('passes isLoading and error props to child form', () => {
     const wrapper = mount(ForgotPassword, mountOptions);
-    const vm = wrapper.vm as any;
+    const vm = wrapper.vm as unknown as ForgotPasswordVm;
 
     expect(vm.isLoading).toBe(false);
     expect(vm.error).toBe(null);

@@ -1,13 +1,14 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter, RouterLink } from 'vue-router'
-import { useAuthStore } from '../stores/auth.js'
-import { useFeedbackStore } from '../stores/feedback.js'
-import { useLocaleStore } from '../stores/locale.js'
+import { useAuthStore } from '../stores/auth'
+import { useFeedbackStore } from '../stores/feedback'
+import { useLocaleStore } from '../stores/locale'
 import { useGettext } from 'vue3-gettext'
-import { fetchProcessingResults, fetchTransactionsByResult } from '../js/api.js'
-import { buildResultQuery } from '../js/routeUtils.js'
-import type { ProcessingResultListItem } from '../types/api.js'
+import { fetchProcessingResults, fetchTransactionsByResult } from '../js/api'
+import { logger } from '../js/logger'
+import { buildResultQuery } from '../js/routeUtils'
+import type { ProcessingResultListItem } from '../types/api'
 
 const { $gettext } = useGettext()
 const router = useRouter()
@@ -92,7 +93,7 @@ const loadProcessingResults = async (): Promise<void> => {
     const message = error instanceof Error ? error.message : String(error)
     loadError.value = message
     feedback.showError(`${$gettext('Failed to load your transactions')}: ${message}`)
-    console.error('Failed to load processing results:', error)
+    logger.error('Failed to load processing results:', error)
   } finally {
     isLoading.value = false
   }

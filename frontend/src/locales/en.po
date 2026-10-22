@@ -9,275 +9,392 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#: src/components/data/EditableCategoryCell.vue:104
-#: src/components/data/EditableTextCell.vue:98
+#: src/components/auth/PasswordResetForm.vue:83 src/pages/Login.vue:88
+#: src/pages/Register.vue:112
+#, fuzzy
+msgid "Clear error"
+msgstr "Clear form"
+
+#: src/components/auth/PasswordResetForm.vue:92 src/pages/Login.vue:97
+#: src/pages/Register.vue:121 src/pages/Settings.vue:132
+msgid "Username"
+msgstr ""
+
+#: src/components/auth/PasswordResetForm.vue:99 src/pages/Login.vue:104
+msgid "Enter your username"
+msgstr ""
+
+#: src/components/auth/PasswordResetForm.vue:107
+msgid "Recovery Code"
+msgstr ""
+
+#: src/components/auth/PasswordResetForm.vue:114
+msgid "e.g., ABCD-EFGH-IJKL-MNOP"
+msgstr ""
+
+#: src/components/auth/PasswordResetForm.vue:119
+msgid "Enter the recovery code you saved (with or without hyphens)"
+msgstr ""
+
+#: src/components/auth/PasswordResetForm.vue:125
+msgid "New Password"
+msgstr ""
+
+#: src/components/auth/PasswordResetForm.vue:132
+msgid "Enter new password"
+msgstr ""
+
+#: src/components/auth/PasswordResetForm.vue:138 src/pages/Register.vue:150
+msgid "characters"
+msgstr ""
+
+#: src/components/auth/PasswordResetForm.vue:145
+msgid "Confirm New Password"
+msgstr ""
+
+#: src/components/auth/PasswordResetForm.vue:152
+msgid "Confirm new password"
+msgstr ""
+
+#: src/components/auth/PasswordResetForm.vue:157 src/pages/Register.vue:170
+msgid "Passwords match"
+msgstr ""
+
+#: src/components/auth/PasswordResetForm.vue:158 src/pages/Register.vue:47
+#: src/pages/Register.vue:170
+msgid "Passwords do not match"
+msgstr ""
+
+#: src/components/auth/PasswordResetForm.vue:168
+#: src/pages/ForgotPassword.vue:88
+msgid "Reset Password"
+msgstr ""
+
+#: src/components/auth/PasswordResetForm.vue:169
+msgid "Resetting..."
+msgstr ""
+
+#: src/components/auth/PasswordResetForm.vue:175
+msgid "Note:"
+msgstr ""
+
+#: src/components/auth/PasswordResetForm.vue:176
+msgid "Password must be at least {minLength} characters long."
+msgstr ""
+
+#: src/components/auth/RecoveryCodeDisplay.vue:72
+msgid "Password Reset Successful!"
+msgstr ""
+
+#: src/components/auth/RecoveryCodeDisplay.vue:75
+msgid "Your password has been successfully reset."
+msgstr ""
+
+#: src/components/auth/RecoveryCodeDisplay.vue:77 src/pages/Register.vue:233
+#, fuzzy
+msgid "Important:"
+msgstr "Import CSV"
+
+#: src/components/auth/RecoveryCodeDisplay.vue:78
+msgid ""
+"A new recovery code has been generated. You must save it as you will not be "
+"able to see it again."
+msgstr ""
+
+#: src/components/auth/RecoveryCodeDisplay.vue:88 src/pages/Register.vue:224
+msgid "Copy to clipboard"
+msgstr ""
+
+#: src/components/auth/RecoveryCodeDisplay.vue:91 src/pages/Register.vue:227
+msgid "Copy"
+msgstr ""
+
+#: src/components/auth/RecoveryCodeDisplay.vue:92
+msgid "Copied!"
+msgstr ""
+
+#: src/components/auth/RecoveryCodeDisplay.vue:96
+msgid "Recovery code copied to clipboard!"
+msgstr ""
+
+#: src/components/auth/RecoveryCodeDisplay.vue:102
+msgid "WARNING: SAVE THIS CODE NOW!"
+msgstr ""
+
+#: src/components/auth/RecoveryCodeDisplay.vue:103
+msgid "You will not be able to retrieve it later."
+msgstr ""
+
+#: src/components/auth/RecoveryCodeDisplay.vue:106
+msgid ""
+"Without this recovery code, you will not be able to reset your password if "
+"you forget it again."
+msgstr ""
+
+#: src/components/auth/RecoveryCodeDisplay.vue:116
+msgid "I have saved my new recovery code in a secure location"
+msgstr ""
+
+#: src/components/auth/RecoveryCodeDisplay.vue:126 src/pages/Register.vue:254
+msgid "Continue to Login"
+msgstr ""
+
+#: src/components/auth/RecoveryCodeDisplay.vue:132
+#, fuzzy
+msgid "Back to Login"
+msgstr "Back to Form"
+
+#: src/components/data/EditableCell.vue:109
+msgid "Value is too long"
+msgstr ""
+
+#: src/components/data/EditableCell.vue:113
+msgid "Value must not be empty"
+msgstr ""
+
+#: src/components/data/EditableCell.vue:145
 msgid "Click to edit"
 msgstr ""
 
-#: src/components/data/EditableCategoryCell.vue:118
+#: src/components/data/EditableCell.vue:160
 #, fuzzy
 msgid "Uncategorized"
 msgstr "Categories"
 
-#: src/components/data/EditableCategoryCell.vue:126
-#: src/components/data/EditableTextCell.vue:118
+#: src/components/data/EditableCell.vue:180
 msgid "Apply to all future transactions of this merchant"
 msgstr ""
 
-#: src/components/data/EditableCategoryCell.vue:134
-#: src/components/data/EditableTextCell.vue:126
+#: src/components/data/EditableCell.vue:188
 msgid "Apply to future"
 msgstr ""
 
-#: src/components/data/EditableCategoryCell.vue:143
-#: src/components/data/EditableTextCell.vue:135
+#: src/components/data/EditableCell.vue:197
 msgid "Save"
 msgstr ""
 
-#: src/components/data/EditableCategoryCell.vue:152
-#: src/components/data/EditableTextCell.vue:144
+#: src/components/data/EditableCell.vue:206
 msgid "Cancel"
 msgstr ""
 
-#: src/components/data/EditableTextCell.vue:64
-msgid "Value is too long"
+#: src/components/data/UndoCorrectionCell.vue:46
+msgid "Undo corrections"
 msgstr ""
 
-#: src/components/data/EditableTextCell.vue:68
-msgid "Value must not be empty"
+#: src/components/data/UndoCorrectionCell.vue:55
+msgid "Undo"
 msgstr ""
 
-#: src/components/data/VueDataTable.vue:363
-#: src/pages/CategoryMonthsList.vue:182
-#: src/pages/CategoryMonthTransactions.vue:131 src/pages/PivotTable.vue:281
-#: src/pages/PivotTable.vue:286
-msgid "Average"
-msgstr ""
-
-#: src/components/data/VueDataTable.vue:364
-#, fuzzy
-msgid "Sum"
-msgstr "Submit"
-
-#: src/components/data/VueDataTable.vue:365
-msgid "Min"
-msgstr ""
-
-#: src/components/data/VueDataTable.vue:366
-msgid "Max"
-msgstr ""
-
-#: src/components/data/VueDataTable.vue:367
-#, fuzzy
-msgid "Count"
-msgstr "Amount"
-
-#: src/components/data/VueDataTable.vue:368
-#: src/components/data/VueDataTable.vue:370
-msgid "Aggregate"
-msgstr ""
-
-#: src/components/data/VueDataTable.vue:812
+#: src/components/data/VueDataTable.vue:546
 msgid "Search..."
 msgstr ""
 
-#: src/components/data/VueDataTable.vue:814 src/pages/PivotTable.vue:448
+#: src/components/data/VueDataTable.vue:548 src/pages/PivotTable.vue:344
 msgid "Search"
 msgstr ""
 
-#: src/components/data/VueDataTable.vue:821
+#: src/components/data/VueDataTable.vue:555
 #, fuzzy
 msgid "Clear search"
 msgstr "Clear form"
 
-#: src/components/data/VueDataTable.vue:834
-#: src/components/data/VueDataTable.vue:837
+#: src/components/data/VueDataTable.vue:569
+#: src/components/data/VueDataTable.vue:572
 #, fuzzy
 msgid "Clear all filters"
 msgstr "Category filter"
 
-#: src/components/data/VueDataTable.vue:848 src/pages/Categories.vue:424
-#: src/pages/CategoryMonthsList.vue:268
-#: src/pages/CategoryMonthTransactions.vue:206
-#: src/pages/MonthCategoriesList.vue:253 src/pages/PivotTable.vue:446
+#: src/components/data/VueDataTable.vue:584 src/pages/Categories.vue:426
+#: src/pages/CategoryMonthsList.vue:212
+#: src/pages/CategoryMonthTransactions.vue:252
+#: src/pages/MonthCategoriesList.vue:217 src/pages/PivotTable.vue:342
 msgid "Export CSV"
 msgstr "Export CSV"
 
-#: src/components/data/VueDataTable.vue:854 src/pages/Categories.vue:425
-#: src/pages/CategoryMonthsList.vue:269
-#: src/pages/CategoryMonthTransactions.vue:207
-#: src/pages/MonthCategoriesList.vue:254 src/pages/PivotTable.vue:447
+#: src/components/data/VueDataTable.vue:590 src/pages/Categories.vue:427
+#: src/pages/CategoryMonthsList.vue:213
+#: src/pages/CategoryMonthTransactions.vue:253
+#: src/pages/MonthCategoriesList.vue:218 src/pages/PivotTable.vue:343
 msgid "Export Excel"
 msgstr "Export Excel"
 
-#: src/components/data/VueDataTable.vue:915
-#: src/components/data/VueDataTable.vue:933
+#: src/components/data/VueDataTable.vue:651
+#: src/components/data/VueDataTable.vue:669
 #, fuzzy
 msgid "Filter by"
 msgstr "Filters"
 
-#: src/components/data/VueDataTable.vue:918
+#: src/components/data/VueDataTable.vue:654
 msgid "All"
 msgstr ""
 
-#: src/components/data/VueDataTable.vue:932
+#: src/components/data/VueDataTable.vue:668
 #, fuzzy
 msgid "Filter"
 msgstr "Filters"
 
-#: src/components/data/VueDataTable.vue:1007
-#: src/pages/CategoryMonthsList.vue:295 src/pages/MonthCategoriesList.vue:280
-#: src/pages/PivotTable.vue:459 src/pages/PivotTable.vue:464
+#: src/components/data/VueDataTable.vue:724
+#: src/pages/CategoryMonthsList.vue:239 src/pages/MonthCategoriesList.vue:244
+#: src/pages/PivotTable.vue:355 src/pages/PivotTable.vue:360
 msgid "No data available"
 msgstr ""
 
-#: src/components/data/VueDataTable.vue:1057
+#: src/components/data/VueDataTable.vue:763
 msgid "First page"
 msgstr ""
 
-#: src/components/data/VueDataTable.vue:1060
+#: src/components/data/VueDataTable.vue:766
 msgid "First"
 msgstr ""
 
-#: src/components/data/VueDataTable.vue:1067
+#: src/components/data/VueDataTable.vue:773
 msgid "Previous page"
 msgstr ""
 
-#: src/components/data/VueDataTable.vue:1070
+#: src/components/data/VueDataTable.vue:776
 msgid "Previous"
 msgstr ""
 
-#: src/components/data/VueDataTable.vue:1083
+#: src/components/data/VueDataTable.vue:789
 msgid "Page"
 msgstr ""
 
-#: src/components/data/VueDataTable.vue:1094
+#: src/components/data/VueDataTable.vue:800
 msgid "Next page"
 msgstr ""
 
-#: src/components/data/VueDataTable.vue:1097
+#: src/components/data/VueDataTable.vue:803
 msgid "Next"
 msgstr ""
 
-#: src/components/data/VueDataTable.vue:1104
+#: src/components/data/VueDataTable.vue:810
 msgid "Last page"
 msgstr ""
 
-#: src/components/data/VueDataTable.vue:1107
+#: src/components/data/VueDataTable.vue:813
 msgid "Last"
 msgstr ""
 
-#: src/components/data/VueDataTable.vue:1112
+#: src/components/data/VueDataTable.vue:818
 msgid "Showing"
 msgstr ""
 
-#: src/components/data/VueDataTable.vue:1113
+#: src/components/data/VueDataTable.vue:819
 msgid "of"
 msgstr ""
 
-#: src/components/data/VueDataTable.vue:1113
+#: src/components/data/VueDataTable.vue:819
 msgid "items"
 msgstr ""
 
-#: src/components/Layout.vue:115
+#: src/components/ErrorDisplay.vue:36
+msgid "Close"
+msgstr ""
+
+#: src/components/Layout.vue:116
 msgid "Tell me I didn't spend that much…"
 msgstr ""
 
-#: src/components/Layout.vue:122 src/pages/Categories.vue:362
-#: src/pages/CategoryMonthsList.vue:103
-#: src/pages/CategoryMonthTransactions.vue:70
-#: src/pages/MonthCategoriesList.vue:101 src/pages/PivotTable.vue:47
-#: src/pages/Transactions.vue:184
+#: src/components/Layout.vue:123 src/pages/Categories.vue:364
+#: src/pages/CategoryMonthsList.vue:109
+#: src/pages/CategoryMonthTransactions.vue:68
+#: src/pages/MonthCategoriesList.vue:105 src/pages/PivotTable.vue:33
+#: src/pages/Transactions.vue:155
 msgid "Home"
 msgstr "Home"
 
-#: src/components/Layout.vue:125 src/pages/Index.vue:158
-#: src/pages/Index.vue:194
+#: src/components/Layout.vue:126 src/pages/Index.vue:159
+#: src/pages/Index.vue:195
 msgid "Import CSV"
 msgstr "Import CSV"
 
-#: src/components/Layout.vue:128
+#: src/components/Layout.vue:129 src/pages/Settings.vue:125
+msgid "Settings"
+msgstr ""
+
+#: src/components/Layout.vue:132
 msgid "About"
 msgstr "About"
 
-#: src/components/Layout.vue:132
+#: src/components/Layout.vue:136
 msgid "Analytics"
 msgstr ""
 
-#: src/components/Layout.vue:136
+#: src/components/Layout.vue:140
 msgid "Analysis direction"
 msgstr "Analysis direction"
 
-#: src/components/Layout.vue:147
+#: src/components/Layout.vue:151
 msgid "columns"
 msgstr "columns"
 
-#: src/components/Layout.vue:148
+#: src/components/Layout.vue:152
 msgid "rows"
 msgstr "rows"
 
-#: src/components/Layout.vue:152
+#: src/components/Layout.vue:156
 msgid "Algorithms"
 msgstr "Algorithms"
 
-#: src/components/Layout.vue:165
+#: src/components/Layout.vue:169
 msgid "IQR Outlier Detection"
 msgstr "IQR Outlier Detection"
 
-#: src/components/Layout.vue:166
+#: src/components/Layout.vue:170
 msgid "Pareto analysis"
 msgstr "Pareto analysis"
 
-#: src/components/Layout.vue:170
+#: src/components/Layout.vue:174
 msgid "Legend"
 msgstr "Legend"
 
-#: src/components/Layout.vue:175
+#: src/components/Layout.vue:179
 msgid "Marked outlier by IQR"
 msgstr ""
 
-#: src/components/Layout.vue:176
+#: src/components/Layout.vue:180
 msgid "Marked outlier by Pareto principle"
 msgstr ""
 
-#: src/components/Layout.vue:177
+#: src/components/Layout.vue:181
 msgid "Excluded from statistics"
 msgstr ""
 
-#: src/components/Layout.vue:178
+#: src/components/Layout.vue:182
 msgid "Matched by multiple algorithms"
 msgstr ""
 
-#: src/components/Layout.vue:192 src/pages/Import.vue:189
+#: src/components/Layout.vue:196 src/pages/Import.vue:190
 msgid "Reset to defaults"
 msgstr "Reset to defaults"
 
-#: src/components/Layout.vue:199
+#: src/components/Layout.vue:203
 msgid "Languages"
 msgstr "Languages"
 
-#: src/components/Layout.vue:220
+#: src/components/Layout.vue:224
 msgid "Themes"
 msgstr ""
 
-#: src/components/Layout.vue:242
+#: src/components/Layout.vue:246 src/pages/ForgotPassword.vue:105
+#: src/pages/Login.vue:76 src/pages/Login.vue:139 src/pages/Register.vue:205
 msgid "Login"
 msgstr ""
 
-#: src/components/Layout.vue:245
+#: src/components/Layout.vue:249
 msgid "Logout"
 msgstr ""
 
-#: src/components/Layout.vue:267
+#: src/components/Layout.vue:271
 msgid "Privacy"
 msgstr "Privacy"
 
-#: src/components/Layout.vue:268
+#: src/components/Layout.vue:272
 msgid "Legal"
 msgstr "Legal"
 
-#: src/components/layout/LoadingState.vue:10 src/pages/Categories.vue:369
-#: src/pages/Transactions.vue:193
+#: src/components/layout/LoadingState.vue:10 src/pages/Categories.vue:371
+#: src/pages/Transactions.vue:164
 msgid "loading"
 msgstr "loading"
 
@@ -331,6 +448,63 @@ msgstr ""
 #, fuzzy
 msgid "Default category"
 msgstr "Details for Category"
+
+#: src/composables/useFormWithNavigation.ts:49
+msgid "CSV file is required"
+msgstr ""
+
+#: src/composables/useFormWithNavigation.ts:51
+#, fuzzy
+msgid "Please upload a valid CSV file"
+msgstr "Please upload a CSV file first."
+
+#: src/composables/useFormWithNavigation.ts:53
+msgid "Please upload a valid YAML configuration file"
+msgstr ""
+
+#: src/composables/useFormWithNavigation.ts:55
+msgid "Please enter a valid start date"
+msgstr ""
+
+#: src/composables/useFormWithNavigation.ts:57
+msgid "Please enter a valid end date"
+msgstr ""
+
+#: src/composables/useFormWithNavigation.ts:59
+msgid "End date must be after start date"
+msgstr ""
+
+#: src/composables/useFormWithNavigation.ts:69
+#, fuzzy
+msgid "Please login to process transactions"
+msgstr "Processing your transactions..."
+
+#: src/composables/useFormWithNavigation.ts:78
+msgid "Please fix the form errors before submitting"
+msgstr ""
+
+#: src/composables/useFormWithNavigation.ts:81
+msgid "Backend error: No result ID returned"
+msgstr ""
+
+#: src/composables/useFormWithNavigation.ts:87
+#, fuzzy
+msgid "Error processing transactions"
+msgstr "Processing your transactions..."
+
+#: src/composables/useFormWithNavigation.ts:93
+msgid "Transactions processed successfully"
+msgstr ""
+
+#: src/composables/useTransactionCorrections.ts:216
+#, fuzzy
+msgid "Transaction updated"
+msgstr "Transaction Details"
+
+#: src/composables/useTransactionCorrections.ts:226
+#, fuzzy
+msgid "Corrections undone"
+msgstr "No transactions found"
 
 #: src/js/categoryTranslations.ts:12
 msgid "Balance"
@@ -496,9 +670,9 @@ msgid ""
 "grouped by transaction categories."
 msgstr ""
 
-#: src/pages/About.vue:22 src/pages/Categories.vue:405
-#: src/pages/PivotTable.vue:49 src/pages/PivotTable.vue:307
-#: src/pages/PivotTable.vue:308
+#: src/pages/About.vue:22 src/pages/Categories.vue:407
+#: src/pages/PivotTable.vue:35 src/pages/PivotTable.vue:204
+#: src/pages/PivotTable.vue:205
 msgid "Pivot Table"
 msgstr ""
 
@@ -639,160 +813,203 @@ msgstr ""
 msgid "blog post."
 msgstr ""
 
-#: src/pages/Categories.vue:196
+#: src/pages/Categories.vue:198
 msgid "Failed to load highlights"
 msgstr ""
 
-#: src/pages/Categories.vue:207 src/pages/Categories.vue:363
-#: src/pages/Categories.vue:385 src/pages/CategoryMonthsList.vue:104
-#: src/pages/CategoryMonthTransactions.vue:71
-#: src/pages/MonthCategoriesList.vue:102 src/pages/PivotTable.vue:48
-#: src/pages/Transactions.vue:185
+#: src/pages/Categories.vue:209 src/pages/Categories.vue:365
+#: src/pages/Categories.vue:387 src/pages/CategoryMonthsList.vue:110
+#: src/pages/CategoryMonthTransactions.vue:69
+#: src/pages/MonthCategoriesList.vue:106 src/pages/PivotTable.vue:34
+#: src/pages/Transactions.vue:156
 msgid "Categories"
 msgstr "Categories"
 
-#: src/pages/Categories.vue:371 src/pages/Transactions.vue:195
+#: src/pages/Categories.vue:373 src/pages/Transactions.vue:166
 msgid "Loading results"
 msgstr "Loading results"
 
-#: src/pages/Categories.vue:381 src/pages/PivotTable.vue:331
-#: src/pages/Transactions.vue:207
+#: src/pages/Categories.vue:383 src/pages/PivotTable.vue:228
+#: src/pages/Transactions.vue:178
 msgid "Too many transactions to display"
 msgstr "Too many transactions to display"
 
-#: src/pages/Categories.vue:381 src/pages/PivotTable.vue:331
-#: src/pages/Transactions.vue:207
+#: src/pages/Categories.vue:383 src/pages/PivotTable.vue:228
+#: src/pages/Transactions.vue:178
 msgid "showing"
 msgstr "showing"
 
-#: src/pages/Categories.vue:381 src/pages/PivotTable.vue:331
-#: src/pages/Transactions.vue:207
+#: src/pages/Categories.vue:383 src/pages/PivotTable.vue:228
+#: src/pages/Transactions.vue:178
 msgid "Select a result to see the rest."
 msgstr "Select a result to see the rest."
 
-#: src/pages/Categories.vue:386 src/pages/Index.vue:177
-#: src/pages/PivotTable.vue:308 src/pages/Transactions.vue:212
+#: src/pages/Categories.vue:388 src/pages/Index.vue:178
+#: src/pages/PivotTable.vue:205 src/pages/Transactions.vue:183
 msgid "All Transactions"
 msgstr "All Transactions"
 
-#: src/pages/Categories.vue:393
+#: src/pages/Categories.vue:395
 msgid "Back to Form"
 msgstr "Back to Form"
 
-#: src/pages/Categories.vue:399 src/pages/CategoryMonthTransactions.vue:218
-#: src/pages/Transactions.vue:186 src/pages/Transactions.vue:211
-#: src/pages/Transactions.vue:226
+#: src/pages/Categories.vue:401 src/pages/CategoryMonthTransactions.vue:278
+#: src/pages/Transactions.vue:157 src/pages/Transactions.vue:182
+#: src/pages/Transactions.vue:197
 #, fuzzy
 msgid "Transactions"
 msgstr "Transaction Details"
 
-#: src/pages/Categories.vue:413 src/pages/CategoryMonthsList.vue:256
-#: src/pages/CategoryMonthTransactions.vue:195
-#: src/pages/MonthCategoriesList.vue:241 src/pages/PivotTable.vue:351
-#: src/pages/Transactions.vue:97
+#: src/pages/Categories.vue:415 src/pages/CategoryMonthsList.vue:200
+#: src/pages/CategoryMonthTransactions.vue:240
+#: src/pages/MonthCategoriesList.vue:205 src/pages/PivotTable.vue:248
+#: src/pages/Transactions.vue:69
 msgid "Account"
 msgstr "Account"
 
-#: src/pages/Categories.vue:436 src/pages/CategoryMonthTransactions.vue:232
-#: src/pages/Transactions.vue:244
+#: src/pages/Categories.vue:438 src/pages/CategoryMonthTransactions.vue:292
+#: src/pages/Transactions.vue:235
 msgid "No transactions found"
 msgstr "No transactions found"
 
-#: src/pages/Categories.vue:438
+#: src/pages/Categories.vue:440
 msgid "Please upload a CSV file first."
 msgstr "Please upload a CSV file first."
 
-#: src/pages/CategoryMonthsList.vue:35 src/pages/PivotTable.vue:224
+#: src/pages/CategoryMonthsList.vue:41 src/pages/PivotTable.vue:121
 msgid "Month"
 msgstr "Month"
 
-#: src/pages/CategoryMonthsList.vue:54 src/pages/CategoryMonthsList.vue:167
-#: src/pages/CategoryMonthTransactions.vue:116
-#: src/pages/MonthCategoriesList.vue:56 src/pages/MonthCategoriesList.vue:182
-#: src/pages/PivotTable.vue:397
+#: src/pages/CategoryMonthsList.vue:60
+#: src/pages/CategoryMonthTransactions.vue:160
+#: src/pages/MonthCategoriesList.vue:60 src/pages/PivotTable.vue:294
 msgid "Total"
 msgstr "Total"
 
-#: src/pages/CategoryMonthsList.vue:105 src/pages/CategoryMonthsList.vue:280
+#: src/pages/CategoryMonthsList.vue:111 src/pages/CategoryMonthsList.vue:224
 msgid "Category Details"
 msgstr "Category Details"
 
-#: src/pages/CategoryMonthsList.vue:217
-#: src/pages/CategoryMonthTransactions.vue:31
-#: src/pages/CategoryMonthTransactions.vue:154 src/pages/Transactions.vue:95
+#: src/pages/CategoryMonthsList.vue:161
+#: src/pages/CategoryMonthTransactions.vue:109
+#: src/pages/CategoryMonthTransactions.vue:198 src/pages/Transactions.vue:67
 msgid "Amount"
 msgstr "Amount"
 
-#: src/pages/CategoryMonthsList.vue:246
-#: src/pages/CategoryMonthTransactions.vue:184
-#: src/pages/MonthCategoriesList.vue:231 src/pages/PivotTable.vue:339
-#: src/pages/Transactions.vue:219
+#: src/pages/CategoryMonthsList.vue:190
+#: src/pages/CategoryMonthTransactions.vue:229
+#: src/pages/MonthCategoriesList.vue:195 src/pages/PivotTable.vue:236
+#: src/pages/Transactions.vue:190
 #, fuzzy
 msgid "Back to Categories"
 msgstr "Back to Category Months"
 
-#: src/pages/CategoryMonthsList.vue:256
-#: src/pages/CategoryMonthTransactions.vue:195
-#: src/pages/MonthCategoriesList.vue:241
+#: src/pages/CategoryMonthsList.vue:200
+#: src/pages/CategoryMonthTransactions.vue:240
+#: src/pages/MonthCategoriesList.vue:205
 msgid "Unknown"
 msgstr ""
 
-#: src/pages/CategoryMonthTransactions.vue:28 src/pages/Transactions.vue:63
-msgid "Date"
-msgstr "Date"
-
-#: src/pages/CategoryMonthTransactions.vue:34 src/pages/Transactions.vue:81
-msgid "Merchant"
-msgstr "Merchant"
-
-#: src/pages/CategoryMonthTransactions.vue:72
+#: src/pages/CategoryMonthTransactions.vue:70
 msgid "Transaction Details"
 msgstr "Transaction Details"
 
-#: src/pages/Import.vue:47
+#: src/pages/CategoryMonthTransactions.vue:104 src/pages/Transactions.vue:64
+msgid "Date"
+msgstr "Date"
+
+#: src/pages/CategoryMonthTransactions.vue:175 src/pages/PivotTable.vue:178
+#: src/pages/PivotTable.vue:183
+msgid "Average"
+msgstr ""
+
+#: src/pages/CategoryMonthTransactions.vue:262 src/pages/Transactions.vue:214
+msgid "Corrected"
+msgstr ""
+
+#: src/pages/CategoryMonthTransactions.vue:263 src/pages/Transactions.vue:215
+#, fuzzy
+msgid "Show only transactions with corrections"
+msgstr "Too many transactions to display"
+
+#: src/pages/CategoryMonthTransactions.vue:267 src/pages/Transactions.vue:219
+msgid "Edit"
+msgstr ""
+
+#: src/pages/CategoryMonthTransactions.vue:268 src/pages/Transactions.vue:220
+msgid "Show the column with correction actions"
+msgstr ""
+
+#: src/pages/ForgotPassword.vue:58
+msgid "Too many attempts. Please try again later."
+msgstr ""
+
+#: src/pages/ForgotPassword.vue:61
+msgid "Invalid username or recovery code"
+msgstr ""
+
+#: src/pages/ForgotPassword.vue:91
+msgid ""
+"Enter your username and the recovery code you saved during registration to "
+"reset your password."
+msgstr ""
+
+#: src/pages/ForgotPassword.vue:104
+msgid "Remember your password?"
+msgstr ""
+
+#: src/pages/ForgotPassword.vue:108 src/pages/Login.vue:157
+msgid "Don't have an account?"
+msgstr ""
+
+#: src/pages/ForgotPassword.vue:109 src/pages/Login.vue:158
+msgid "Register"
+msgstr ""
+
+#: src/pages/Import.vue:48
 msgid "Are you sure you want to clear the form?"
 msgstr "Are you sure you want to clear the form?"
 
-#: src/pages/Import.vue:49
+#: src/pages/Import.vue:50
 msgid "Form cleared"
 msgstr "Form cleared"
 
-#: src/pages/Import.vue:70
+#: src/pages/Import.vue:71
 msgid "Failed to load CSV profiles"
 msgstr ""
 
-#: src/pages/Import.vue:92
+#: src/pages/Import.vue:93
 msgid "Processing CSV export file"
 msgstr ""
 
-#: src/pages/Import.vue:98
+#: src/pages/Import.vue:99
 msgid "CSV file"
 msgstr "CSV file"
 
-#: src/pages/Import.vue:110
+#: src/pages/Import.vue:111
 #, fuzzy
 msgid "Upload your CSV file containing the exported bank account history"
 msgstr ""
 "Upload your CSV file containing the exported bank account history here."
 
-#: src/pages/Import.vue:113
+#: src/pages/Import.vue:114
 #, fuzzy
 msgid "CSV Profile"
 msgstr "CSV file"
 
-#: src/pages/Import.vue:125
+#: src/pages/Import.vue:126
 msgid "Select a bank profile"
 msgstr ""
 
-#: src/pages/Import.vue:136
+#: src/pages/Import.vue:137
 msgid "Advanced settings"
 msgstr "Advanced settings"
 
-#: src/pages/Import.vue:141
+#: src/pages/Import.vue:142
 msgid "Configuration file"
 msgstr "Configuration file"
 
-#: src/pages/Import.vue:153
+#: src/pages/Import.vue:154
 #, fuzzy
 msgid ""
 "Upload your custom configuration file, or leave it blank to use the default"
@@ -800,171 +1017,462 @@ msgstr ""
 "Upload your configuration file here, or the default configuration will be "
 "used."
 
-#: src/pages/Import.vue:164
+#: src/pages/Import.vue:165
 msgid "Use Machine Learning model for categorization"
 msgstr "Use Machine Learning model for categorization"
 
-#: src/pages/Import.vue:167
+#: src/pages/Import.vue:168
 #, fuzzy
 msgid "Uncheck to use regular expressions instead"
 msgstr "Uncheck to use regular expressions instead of the ML model."
 
-#: src/pages/Import.vue:180
+#: src/pages/Import.vue:181
 msgid "Processing your transactions..."
 msgstr "Processing your transactions..."
 
-#: src/pages/Import.vue:180
+#: src/pages/Import.vue:181
 msgid "Submit"
 msgstr "Submit"
 
-#: src/pages/Import.vue:200
+#: src/pages/Import.vue:201
 msgid "How to use the application"
 msgstr ""
 
-#: src/pages/Import.vue:205
+#: src/pages/Import.vue:206
 msgid ""
 "This application categorizes your bank transactions and provide you with "
 "insights about where your money goes."
 msgstr ""
 
-#: src/pages/Import.vue:206
+#: src/pages/Import.vue:207
 msgid ""
 "To use this application, you need to use your Bank provider's service to "
 "save your transactions in CSV format."
 msgstr ""
 
-#: src/pages/Import.vue:207
+#: src/pages/Import.vue:208
 #, fuzzy
 msgid "Upload your CSV file containing the exported bank account history."
 msgstr ""
 "Upload your CSV file containing the exported bank account history here."
 
-#: src/pages/Import.vue:208
+#: src/pages/Import.vue:209
 msgid "Learn more about how the application works"
 msgstr ""
 
-#: src/pages/Index.vue:126
+#: src/pages/Index.vue:127
 msgid "Loading"
 msgstr "Loading"
 
-#: src/pages/Index.vue:128
+#: src/pages/Index.vue:129
 msgid "Loading your transactions"
 msgstr "Loading your transactions"
 
-#: src/pages/Index.vue:134
+#: src/pages/Index.vue:135
 msgid "Failed to load your transactions"
 msgstr "Failed to load your transactions"
 
-#: src/pages/Index.vue:143
+#: src/pages/Index.vue:144
 msgid "Try again"
 msgstr "Try again"
 
-#: src/pages/Index.vue:152
+#: src/pages/Index.vue:153
 msgid "Welcome"
 msgstr ""
 
-#: src/pages/Index.vue:155
+#: src/pages/Index.vue:156
 msgid "You have no transactions yet."
 msgstr "You have no transactions yet."
 
-#: src/pages/Index.vue:168
+#: src/pages/Index.vue:169
 msgid "Your Transactions"
 msgstr "Your Transactions"
 
-#: src/pages/Index.vue:171
+#: src/pages/Index.vue:172
 msgid "Select Result"
 msgstr "Select Result"
 
-#: src/pages/Index.vue:188
+#: src/pages/Index.vue:189
 msgid "View Transactions"
 msgstr "View Transactions"
 
-#: src/pages/MonthCategoriesList.vue:36 src/pages/Transactions.vue:66
+#: src/pages/Legal.vue:17
+msgid "Legal Notice"
+msgstr ""
+
+#: src/pages/Legal.vue:18 src/pages/Privacy.vue:23
+msgid "Effective Date:"
+msgstr ""
+
+#: src/pages/Login.vue:36
+msgid "Username and password are required"
+msgstr ""
+
+#: src/pages/Login.vue:83
+#, fuzzy
+msgid "Try again in"
+msgstr "Try again"
+
+#: src/pages/Login.vue:83
+msgid "minutes"
+msgstr ""
+
+#: src/pages/Login.vue:112
+msgid "Password"
+msgstr ""
+
+#: src/pages/Login.vue:119
+msgid "Enter your password"
+msgstr ""
+
+#: src/pages/Login.vue:129
+msgid "Remember me"
+msgstr ""
+
+#: src/pages/Login.vue:140
+msgid "Logging in..."
+msgstr ""
+
+#: src/pages/Login.vue:146
+msgid "login attempts remaining"
+msgstr ""
+
+#: src/pages/Login.vue:154
+msgid "Forgot password?"
+msgstr ""
+
+#: src/pages/Logout.vue:30
+msgid "Logging out..."
+msgstr ""
+
+#: src/pages/MonthCategoriesList.vue:40
 msgid "Category"
 msgstr "Category"
 
-#: src/pages/MonthCategoriesList.vue:99
+#: src/pages/MonthCategoriesList.vue:103
 msgid "Month Details"
 msgstr "Month Details"
 
-#: src/pages/MonthCategoriesList.vue:265
+#: src/pages/MonthCategoriesList.vue:229
 #, fuzzy
 msgid "Category Distribution"
 msgstr "Category Details"
 
-#: src/pages/PivotTable.vue:230
+#: src/pages/NotFound.vue:11
+msgid "The page you are looking for does not exist."
+msgstr ""
+
+#: src/pages/NotFound.vue:13
+#, fuzzy
+msgid "Back to Home"
+msgstr "Back to Form"
+
+#: src/pages/PivotTable.vue:127
 #, fuzzy
 msgid "Summary of Categories"
 msgstr "Back to Category Months"
 
-#: src/pages/PivotTable.vue:348
+#: src/pages/PivotTable.vue:245
 #, fuzzy
 msgid "Select Account"
 msgstr "Account"
 
-#: src/pages/PivotTable.vue:365
+#: src/pages/PivotTable.vue:262
 msgid "No categories found in the data"
 msgstr ""
 
-#: src/pages/PivotTable.vue:369
+#: src/pages/PivotTable.vue:266
 msgid "Please select at least one category to see calculations"
 msgstr ""
 
-#: src/pages/PivotTable.vue:376
+#: src/pages/PivotTable.vue:273
 msgid "Summary"
 msgstr ""
 
-#: src/pages/PivotTable.vue:382
+#: src/pages/PivotTable.vue:279
 #, fuzzy
 msgid "Selected Categories"
 msgstr "Categories"
 
-#: src/pages/PivotTable.vue:389
+#: src/pages/PivotTable.vue:286
 msgid "Months Analyzed"
 msgstr ""
 
-#: src/pages/PivotTable.vue:393
+#: src/pages/PivotTable.vue:290
 msgid "Average Monthly"
 msgstr ""
 
-#: src/pages/PivotTable.vue:410
+#: src/pages/PivotTable.vue:307
 msgid "Monthly breakdown of selected categories"
 msgstr ""
 
-#: src/pages/PivotTable.vue:415
+#: src/pages/PivotTable.vue:312
 msgid "Show trendline"
 msgstr ""
 
-#: src/pages/PivotTable.vue:421
+#: src/pages/PivotTable.vue:318
 #, fuzzy
 msgid "Summaries of selected categories"
 msgstr "Categories"
 
-#: src/pages/PivotTable.vue:435
+#: src/pages/PivotTable.vue:331
 #, fuzzy
 msgid "Detailed Monthly Data"
 msgstr "Details for Month"
 
-#: src/pages/Transactions.vue:43
+#: src/pages/Privacy.vue:22 src/pages/Register.vue:186
 #, fuzzy
-msgid "Transaction updated"
-msgstr "Transaction Details"
+msgid "Privacy Policy"
+msgstr "Privacy"
 
-#: src/pages/Transactions.vue:96
+#: src/pages/Register.vue:49
+msgid "Password must be at least {minLength} characters"
+msgstr ""
+
+#: src/pages/Register.vue:51
+msgid "Please accept the Terms and the Privacy Policy to continue"
+msgstr ""
+
+#: src/pages/Register.vue:53
+msgid "Please fill in all fields"
+msgstr ""
+
+#: src/pages/Register.vue:103 src/pages/Register.vue:196
+#, fuzzy
+msgid "Create Account"
+msgstr "Account"
+
+#: src/pages/Register.vue:128
+msgid "Choose a username"
+msgstr ""
+
+#: src/pages/Register.vue:136
+msgid "Password (minimum {minLength} characters)"
+msgstr ""
+
+#: src/pages/Register.vue:144
+msgid "Create a password"
+msgstr ""
+
+#: src/pages/Register.vue:157
+msgid "Confirm Password"
+msgstr ""
+
+#: src/pages/Register.vue:164
+msgid "Confirm your password"
+msgstr ""
+
+#: src/pages/Register.vue:183
+msgid "I have read and accept the"
+msgstr ""
+
+#: src/pages/Register.vue:184
+msgid "Terms (Legal Notice)"
+msgstr ""
+
+#: src/pages/Register.vue:185
+msgid "and the"
+msgstr ""
+
+#: src/pages/Register.vue:197
+msgid "Creating..."
+msgstr ""
+
+#: src/pages/Register.vue:204
+msgid "Already have an account?"
+msgstr ""
+
+#: src/pages/Register.vue:213
+msgid "Save Your Recovery Code"
+msgstr ""
+
+#: src/pages/Register.vue:216
+msgid ""
+"This code is displayed only once. Save it securely to reset your password if "
+"you forget it. You will not be able to retrieve it later."
+msgstr ""
+
+#: src/pages/Register.vue:234
+msgid ""
+"Store this code in a safe place. Without it, you will not be able to recover "
+"your account."
+msgstr ""
+
+#: src/pages/Register.vue:245
+msgid "I have saved my recovery code"
+msgstr ""
+
+#: src/pages/Settings.vue:127
+#, fuzzy
+msgid "Your account"
+msgstr "Account"
+
+#: src/pages/Settings.vue:154
+msgid "Change username"
+msgstr ""
+
+#: src/pages/Settings.vue:159
+msgid "Your username has been updated."
+msgstr ""
+
+#: src/pages/Settings.vue:162
+msgid "Failed to change the username:"
+msgstr ""
+
+#: src/pages/Settings.vue:168
+msgid "Current password"
+msgstr ""
+
+#: src/pages/Settings.vue:182
+msgid "New password (minimum 12 characters)"
+msgstr ""
+
+#: src/pages/Settings.vue:204
+msgid "Change password"
+msgstr ""
+
+#: src/pages/Settings.vue:208
+msgid ""
+"Changing your password logs out all other devices. You stay logged in on "
+"this device."
+msgstr ""
+
+#: src/pages/Settings.vue:211
+msgid "Your password has been changed."
+msgstr ""
+
+#: src/pages/Settings.vue:214
+msgid "Failed to change the password:"
+msgstr ""
+
+#: src/pages/Settings.vue:217
+msgid "Your data"
+msgstr ""
+
+#: src/pages/Settings.vue:219
+msgid ""
+"Download a copy of all personal data stored about you: your account details, "
+"processing results, transactions, and corrections, in a machine-readable "
+"JSON document."
+msgstr ""
+
+#: src/pages/Settings.vue:222
+msgid "Download my data"
+msgstr ""
+
+#: src/pages/Settings.vue:226
+#, fuzzy
+msgid "Failed to export your data:"
+msgstr "Failed to load your transactions"
+
+#: src/pages/Settings.vue:229
+msgid "Share corrections"
+msgstr ""
+
+#: src/pages/Settings.vue:242
+msgid "Contribute my corrections to improve future categorization"
+msgstr ""
+
+#: src/pages/Settings.vue:246
+msgid ""
+"When enabled, the merchant names and categories of your corrections are "
+"shared anonymously to help improve future categorization for everyone."
+msgstr ""
+
+#: src/pages/Settings.vue:247
+msgid ""
+"Shared corrections contain no amounts, dates, or user information. You can "
+"change this setting at any time."
+msgstr ""
+
+#: src/pages/Settings.vue:250
+msgid ""
+"Shared corrections are anonymized and retained even if you turn sharing off "
+"or delete your account. You can ask for their removal when you request "
+"account deletion."
+msgstr ""
+
+#: src/pages/Settings.vue:254
+msgid "Sharing is enabled. Your future corrections will be contributed."
+msgstr ""
+
+#: src/pages/Settings.vue:257
+msgid ""
+"Sharing is disabled. This takes effect immediately for future corrections. "
+"Previously shared corrections remain anonymized; you can ask for their "
+"removal when you request account deletion."
+msgstr ""
+
+#: src/pages/Settings.vue:260
+msgid "Failed to update the sharing preference:"
+msgstr ""
+
+#: src/pages/Settings.vue:263
+#, fuzzy
+msgid "Delete account"
+msgstr "Account"
+
+#: src/pages/Settings.vue:265
+msgid ""
+"Scheduling deletion logs you out everywhere. Your account and all of your "
+"transactions and corrections are deleted after a 7-day grace period."
+msgstr ""
+
+#: src/pages/Settings.vue:266
+msgid ""
+"If you log in again before the grace period ends, the deletion is canceled "
+"and nothing is lost."
+msgstr ""
+
+#: src/pages/Settings.vue:271
+msgid "Confirm with your password"
+msgstr ""
+
+#: src/pages/Settings.vue:292
+msgid "Also remove the anonymized corrections I shared"
+msgstr ""
+
+#: src/pages/Settings.vue:300
+msgid "Schedule my account for deletion"
+msgstr ""
+
+#: src/pages/Settings.vue:305
+msgid ""
+"Machine learning models already trained on your shared corrections cannot be "
+"changed. New models reflect the absence of withdrawn data once they are made "
+"available and older models are deprecated."
+msgstr ""
+
+#: src/pages/Settings.vue:309
+msgid "Failed to schedule the account deletion:"
+msgstr ""
+
+#: src/pages/Transactions.vue:68
 msgid "Currency"
 msgstr "Currency"
 
-#: src/pages/Transactions.vue:98
+#: src/pages/Transactions.vue:70
 msgid "Type"
 msgstr "Type"
 
-#: src/pages/Transactions.vue:99
+#: src/pages/Transactions.vue:74 src/pages/Transactions.vue:224
 msgid "Confidence"
 msgstr "Confidence"
 
-#: src/pages/Transactions.vue:102
-msgid "Notice"
+#: src/pages/Transactions.vue:225
+msgid "Show the confidence column"
 msgstr ""
+
+#, fuzzy
+#~ msgid "Sum"
+#~ msgstr "Submit"
+
+#, fuzzy
+#~ msgid "Count"
+#~ msgstr "Amount"
+
+#~ msgid "Merchant"
+#~ msgstr "Merchant"
 
 #~ msgid "No results found"
 #~ msgstr "No results found"
@@ -978,9 +1486,6 @@ msgstr ""
 #, fuzzy
 #~ msgid "Cache data with expiry"
 #~ msgstr "Cache data"
-
-#~ msgid "Clear form"
-#~ msgstr "Clear form"
 
 #, fuzzy
 #~ msgid ""

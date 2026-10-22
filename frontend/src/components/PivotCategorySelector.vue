@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { useGettext } from 'vue3-gettext';
-import { usePivotStore } from '../stores/pivot.js';
-import { useCategoriesStore } from '../stores/categories.js';
+import { usePivotStore } from '../stores/pivot';
+import { useCategoriesStore } from '../stores/categories';
 
 const { $gettext } = useGettext();
 const pivotStore = usePivotStore();

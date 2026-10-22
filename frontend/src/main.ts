@@ -1,16 +1,17 @@
 import { createApp, type Plugin } from 'vue'
 import { createPinia } from 'pinia'
 import App from './App.vue'
-import router from './router/index.js'
+import router from './router/index'
 
 // Import Bootstrap CSS
 import 'bootstrap/dist/css/bootstrap.min.css'
 
 // Import custom CSS (after Bootstrap to ensure proper override)
 import './css/main.css'
+import './css/auth.css'
 
 // Import and install gettext
-import gettext from './js/gettext.js'
+import gettext from './js/gettext'
 
 // Import Bootstrap for popover support
 import * as bootstrapNs from 'bootstrap'
@@ -24,7 +25,8 @@ declare global {
 (globalThis as unknown as Window).bootstrap = bootstrapNs
 
 // Import and register popover directive
-import { popoverDirective } from './directives/popover.js'
+import { popoverDirective } from './directives/popover'
+import { logger } from './js/logger'
 
 // Create Vue app
 const app = createApp(App)
@@ -34,9 +36,9 @@ const pinia = createPinia()
 app.use(pinia)
 
 // Initialize categories store (load categories from API)
-import { useCategoriesStore } from './stores/categories.js'
+import { useCategoriesStore } from './stores/categories'
 const categoriesStore = useCategoriesStore()
-categoriesStore.loadCategories().catch(console.error)
+categoriesStore.loadCategories().catch((error: unknown) => logger.error('Failed to load categories:', error))
 
 // Install vue3-gettext
 app.use(gettext as unknown as Plugin)

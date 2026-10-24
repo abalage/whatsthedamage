@@ -208,8 +208,12 @@ npm run test          # Run Vitest tests
 - Keep the code simple and maintainable
 - Use descriptive variable and function names
 - Do not add comments unless absolutely necessary, the code should be self-explanatory
-- Never use `null`, always use `undefined` for optional values
 - Prefer functions over classes
+- **Nullability rule**: In code you write, model optional values with undefined only - never introduce null as a sentinel, default, or return value. 
+  Exceptions:
+  - If an external contract (API payload, third-party library, DB driver) explicitly requires `null`, produce/accept it only at the integration boundary, and normalize to undefined as soon as it enters app code.
+  - When guarding against values that may come from outside our code, checking `== null` / `!= null` (or a isNil-style helper) is allowed and preferred over checking each nullish value separately.
+  - Do not "fix" existing null-based code unless the task explicitly asks for it.
 - **API Communication**: Use `/api/v2` base URL or `VITE_API_BASE_URL` environment variable; use the typed client in `src/js/api.ts`
 - **Authentication**: Use the `auth` store for session state and CSRF tokens; do not store tokens yourself
 

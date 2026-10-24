@@ -1,14 +1,15 @@
 <script setup lang="ts">
-import { ref, onMounted, computed, watch } from 'vue';
+import { onMounted, computed, watch } from 'vue';
 import { useRoute, RouterLink } from 'vue-router';
-import { fetchAllTransactions } from '../js/api.js';
-import { buildResultQuery, extractResultId } from '../js/routeUtils.js';
-import { useFeedbackStore } from '../stores/feedback.js';
+import { buildResultQuery, extractResultId } from '../js/routeUtils';
+import { transformToResultsApiResponse } from '../js/resultsTransform';
+import { useApiData } from '../composables/useApiData';
+import { useDatasetStore, type DatasetEntry } from '../stores/dataset';
 import { useGettext } from 'vue3-gettext';
-import { usePivotStore } from '../stores/pivot.js';
-import { useCategoriesStore } from '../stores/categories.js';
-import type { Account, TransactionListItem, ResultsApiResponse } from '../types/api.js';
-import type { BreadcrumbItem } from '../composables/useBreadcrumbs.js'
+import { usePivotStore } from '../stores/pivot';
+import { useCategoriesStore } from '../stores/categories';
+import type { Account } from '../types/api';
+import type { BreadcrumbItem } from '../composables/useBreadcrumbs'
 import BarChart from '../components/charts/BarChart.vue';
 import PivotCategorySelector from '../components/PivotCategorySelector.vue';
 import PageHeader from '../components/layout/PageHeader.vue'
@@ -19,28 +20,14 @@ import ErrorState from '../components/layout/ErrorState.vue'
 // VueDataTable component
 import VueDataTable from '../components/data/VueDataTable.vue';
 import type { Column, AggregateRowConfig } from '../components/data/VueDataTable.vue';
-import { createMonthDate, getMonthKey } from '../js/dateUtils.js';
 
 const { $gettext } = useGettext();
-const feedback = useFeedbackStore();
 const route = useRoute();
+const datasetStore = useDatasetStore();
 const pivotStore = usePivotStore();
 const categoriesStore = useCategoriesStore();
 
 const resultId = computed(() => extractResultId(route.query as Record<string, unknown>));
-const isLoading = ref(true);
-const fetchedCount = ref(0);
-const totalTransactionCount = ref(0);
-
-// The unfiltered view fetches with a limit; warn when rows were left out
-const isTruncated = computed(() => totalTransactionCount.value > fetchedCount.value);
-
-// Helper to extract month key from transaction date (handles both ISO string and timestamp)
-// Uses the new utility function that handles both formats
-function getMonthKeyFromTxnDate(dateValue: string | undefined): string {
-  return getMonthKey(dateValue)
-}
-const error = ref<string | null>(null);
 
 // Breadcrumb items
 const breadcrumbItems = computed<BreadcrumbItem[]>(() => [
@@ -49,128 +36,44 @@ const breadcrumbItems = computed<BreadcrumbItem[]>(() => [
   { name: $gettext('Pivot Table'), active: true }
 ]);
 
-// Constants
-const ZERO = 0;
+// Fetch the dataset through the shared, cached store: navigating here
+// from Categories or Transactions resolves instantly
+const {
+  data: fetchResponse,
+  isLoading,
+  error,
+  fetchData: loadFetchedData
+} = useApiData<DatasetEntry>({
+  fetchFn: () => datasetStore.load(resultId.value ?? undefined)
+});
+
+const fetchedCount = computed(() => fetchResponse.value?.transactions.length ?? 0);
+const totalTransactionCount = computed(() => fetchResponse.value?.total_count ?? 0);
+
+// The unfiltered view fetches with a limit; warn when rows were left out
+const isTruncated = computed(() => totalTransactionCount.value > fetchedCount.value);
 
 /**
- * Transform flat transaction list into ResultsApiResponse format for pivot store
+ * Load the dataset and populate the pivot store from the transformed
+ * account/category/month aggregation
  */
-function transformToResultsApiResponse(
-  transactions: TransactionListItem[]
-): ResultsApiResponse {
-  // Group transactions by account
-  const accountsMap = new Map<string, TransactionListItem[]>();
-  for (const txn of transactions) {
-    const accountId = txn.account;
-    if (!accountsMap.has(accountId)) {
-      accountsMap.set(accountId, []);
-    }
-    accountsMap.get(accountId)!.push(txn);
-  }
-
-  // Build accounts array
-  const accounts: Account[] = [];
-  for (const [accountId, accountTransactions] of accountsMap) {
-    // Get account info from first transaction
-    const firstTxn = accountTransactions[0];
-    const account: Account = {
-      id: accountId,
-      name: accountId,
-      formatted_id: accountId,
-      currency: firstTxn.currency || '',
-      data: [],
-      metadata: null
-    };
-
-    // Group transactions by category_id and month (YYYY-MM)
-    const categoryMonthMap = new Map<string, Map<string, TransactionListItem[]>>();
-    for (const txn of accountTransactions) {
-      const categoryId = txn.category_id || 'uncategorized';
-      const monthKey = getMonthKeyFromTxnDate(txn.date);
-
-      if (!categoryMonthMap.has(categoryId)) {
-        categoryMonthMap.set(categoryId, new Map());
-      }
-      const monthMap = categoryMonthMap.get(categoryId)!;
-      if (!monthMap.has(monthKey)) {
-        monthMap.set(monthKey, []);
-      }
-      monthMap.get(monthKey)!.push(txn);
-    }
-
-    // Build aggregated rows
-    for (const [categoryId, monthMap] of categoryMonthMap) {
-      for (const [monthKey, monthTransactions] of monthMap) {
-        const totalAmount = monthTransactions.reduce((sum, txn) => sum + (txn.amount || 0), 0);
-        const monthDate = createMonthDate(monthKey);
-
-        if (!monthDate) {
-          continue; // Skip invalid dates
-        }
-
-        account.data!.push({
-          row_id: `${accountId}-${categoryId}-${monthKey}`,
-          category_id: categoryId,
-          total: {
-            display: totalAmount.toFixed(2),
-            raw: totalAmount
-          },
-          date: monthKey,  // ISO date string (YYYY-MM-DD)
-          details: monthTransactions.map(txn => ({
-            row_id: String(txn.id),
-            date: txn.date || '',  // ISO date string from API
-            amount: {
-              display: (txn.amount || 0).toFixed(2),
-              raw: txn.amount || 0
-            },
-            merchant: txn.original_partner || txn.partner || '',
-            currency: txn.currency || '',
-            account: txn.account,
-            type: txn.transaction_type || null,
-            confidence: txn.confidence || null,
-            notice: txn.notice || null,
-            category_id: txn.category_id || null,
-            month_id: monthKey
-          })),
-          is_calculated: false
-        });
-      }
-    }
-
-    accounts.push(account);
-  }
-
-  return {
-    accounts,
-    highlights: {}
-  };
-}
-
 const loadData = async () => {
-  try {
-    // Fetch the complete dataset, optionally filtered by result
-    const response = await fetchAllTransactions(resultId.value ?? undefined);
-    fetchedCount.value = response.transactions.length;
-    totalTransactionCount.value = response.total_count;
+  await loadFetchedData();
+  const entry = fetchResponse.value;
+  if (!entry) {
+    return;
+  }
 
-    // Transform to ResultsApiResponse format for pivot store
-    const resultsData = transformToResultsApiResponse(response.transactions);
+  // Transform to ResultsApiResponse format for pivot store
+  const resultsData = transformToResultsApiResponse(entry.transactions);
 
-    await categoriesStore.loadCategories();
-    await categoriesStore.loadCostOfLivingCategories();
-    pivotStore.setResultsData(resultsData);
-    pivotStore.loadSettings();
+  await categoriesStore.loadCategories();
+  await categoriesStore.loadCostOfLivingCategories();
+  pivotStore.setResultsData(resultsData);
 
-    // If no account is selected, select the first one
-    if (!selectedAccountId.value && resultsData.accounts.length > ZERO) {
-      pivotStore.setSelectedAccountId(resultsData.accounts[ZERO].id);
-    }
-
-    isLoading.value = false;
-  } catch (err) {
-    error.value = err instanceof Error ? err.message : 'Failed to load data';
-    feedback.showError('Failed to load Pivot data: ' + error.value);
-    isLoading.value = false;
+  // If no account is selected, select the first one
+  if (!selectedAccountId.value && resultsData.accounts.length > 0) {
+    pivotStore.setSelectedAccountId(resultsData.accounts[0].id);
   }
 };
 
@@ -194,24 +97,16 @@ const chartData = computed(() => {
     values: Object.fromEntries(
       Object.entries(month.categories).map(([catId, data]) => [
         catId,
-        data?.amount || ZERO
+        data?.amount || 0
       ])
     )
   }));
 });
 
-const trendlineValue = computed(() => pivotData.value?.mean ?? ZERO);
+const trendlineValue = computed(() => pivotData.value?.mean ?? 0);
 
 // Safe access to months for DataTable footer calculations
 const safeMonths = computed(() => pivotData.value?.months || []);
-
-// Handle selection changes from BarChart
-const handleSelectionChanged = (payload: { selectedIndices: number[]; selectedItems: Array<{ index: number; label: string; values: Record<string, number>; total: number }>; changedIndex: number; isSelected: boolean }) => {
-  console.log('Selection changed:', payload);
-  // Extension point for future functionality
-  // payload contains: selectedIndices, selectedItems, changedIndex, isSelected
-  // Could show additional details, filter data, etc.
-};
 
 // Use categories store to get proper display name with translation
 const getCategoryDisplayName = (categoryId: string): string => categoriesStore.getCategoryDisplayName(categoryId);
@@ -230,7 +125,7 @@ const tableColumns = computed<Column[]>(() => {
       title: $gettext('Summary of Categories'),
       class: 'text-nowrap text-end',
       sortable: true,
-      renderHtml: (value: unknown) => `${Math.abs(Number(value))}`
+      formatValue: (value: unknown) => `${Math.abs(Number(value))}`
     }
   ];
 
@@ -241,8 +136,8 @@ const tableColumns = computed<Column[]>(() => {
       title: getCategoryDisplayName(catId),
       class: 'text-nowrap text-end',
       sortable: true,
-      renderHtml: (value: unknown) => {
-        const amount = typeof value === 'number' ? value : (value as { amount: number } | null)?.amount ?? ZERO;
+      formatValue: (value: unknown) => {
+        const amount = typeof value === 'number' ? value : (value as { amount: number } | null)?.amount ?? 0;
         return `${Math.abs(amount)}`;
       }
     });
@@ -264,7 +159,7 @@ const tableData = computed<Record<string, unknown>[]>(() => {
 
     // Add category data for each selected category
     selectedCategories.value.forEach(catId => {
-      row[catId] = month.categories[catId]?.amount ?? ZERO;
+      row[catId] = month.categories[catId]?.amount ?? 0;
     });
 
     return row;
@@ -273,7 +168,7 @@ const tableData = computed<Record<string, unknown>[]>(() => {
 
 // Aggregate row configuration for the data table
 const aggregateRows = computed<AggregateRowConfig[]>(() => {
-  if (!pivotData.value || safeMonths.value.length === ZERO) return [];
+  if (!pivotData.value || safeMonths.value.length === 0) return [];
 
   return [
     {
@@ -281,7 +176,6 @@ const aggregateRows = computed<AggregateRowConfig[]>(() => {
       label: $gettext('Average'),
       type: 'custom',
       position: 'footer',
-      includeInExport: true,
       customCalculator: (data, columnKey) => {
         if (columnKey === 'month') return $gettext('Average');
         if (columnKey === 'total') return trendlineValue.value;
@@ -295,11 +189,6 @@ const aggregateRows = computed<AggregateRowConfig[]>(() => {
     }
   ];
 });
-
-// Auto-save settings
-watch(() => [pivotStore.selectedCategoryIds, pivotStore.showTrendline], () => {
-  pivotStore.saveSettings();
-}, { deep: true });
 
 // Header title reflects whether all transactions or a specific result is shown
 const headerTitle = computed(() =>
@@ -421,7 +310,6 @@ onMounted(() => loadData());
                 :title="$gettext('Summaries of selected categories')"
                 :show-trendline="pivotStore.showTrendline"
                 :selectable="true"
-                @selection-changed="handleSelectionChanged"
               />
             </div>
           </div>
@@ -443,8 +331,6 @@ onMounted(() => loadData());
               :aggregate-rows="aggregateRows"
               aggregate-footer-row-class="bg-surface-primary text-on-primary fw-bold"
               :page-size="25"
-              :csv-text="$gettext('Export CSV')"
-              :excel-text="$gettext('Export Excel')"
               :search-placeholder="$gettext('Search') + ': '"
               wrapper-class="w-auto"
               show-column-filters

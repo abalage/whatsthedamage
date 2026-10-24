@@ -10,7 +10,6 @@
  */
 interface AuthConfig {
   passwordMinLength: number;
-  recoveryCodeLength: number;
   usernameMaxLength: number;
 }
 
@@ -21,9 +20,6 @@ interface AuthConfig {
 const authConfig: AuthConfig = {
   // Minimum password length - should match backend PASSWORD_MIN_LENGTH
   passwordMinLength: 12,
-
-  // Recovery code length - should match backend RECOVERY_CODE_LENGTH
-  recoveryCodeLength: 16,
 
   // Maximum username length
   usernameMaxLength: 255,
@@ -44,16 +40,3 @@ export function getPasswordMinLength(): number {
   return authConfig.passwordMinLength;
 }
 
-/**
- * Get recovery code length from environment or use default.
- */
-function getRecoveryCodeLength(): number {
-  const envValue = import.meta.env.VITE_RECOVERY_CODE_LENGTH;
-  if (envValue) {
-    const parsed = parseInt(envValue, 10);
-    if (!isNaN(parsed) && parsed > 0) {
-      return parsed;
-    }
-  }
-  return authConfig.recoveryCodeLength;
-}

@@ -8,8 +8,8 @@ import { shallowMount, flushPromises, type VueWrapper } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
 import { reactive } from 'vue';
 import CategoryMonthsList from '../../src/pages/CategoryMonthsList.vue';
-import { fetchAggregatedTransactions } from '../../src/js/api.js';
-import type { AggregatedTransactionsResponse, TransactionListItem } from '../../src/types/api.js';
+import { fetchAggregatedTransactions } from '../../src/js/api';
+import type { AggregatedTransactionsResponse, TransactionListItem } from '../../src/types/api';
 
 const mockRoute = reactive<{ params: Record<string, unknown>; query: Record<string, unknown> }>({
   params: {},

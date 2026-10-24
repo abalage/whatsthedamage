@@ -7,9 +7,9 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { mount, flushPromises, type VueWrapper } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
 import Index from '../../src/pages/Index.vue';
-import { useAuthStore } from '../../src/stores/auth.js';
-import { fetchProcessingResults, fetchTransactionsByResult } from '../../src/js/api.js';
-import type { ProcessingResultListItem } from '../../src/types/api.js';
+import { useAuthStore } from '../../src/stores/auth';
+import { fetchProcessingResults, fetchTransactionsByResult } from '../../src/js/api';
+import type { ProcessingResultListItem } from '../../src/types/api';
 
 const mockPush = vi.fn();
 
@@ -153,7 +153,8 @@ describe('Index.vue result selector', () => {
     await wrapper.find('button').trigger('click');
 
     expect(mockPush).toHaveBeenCalledWith({ name: 'results', query: { resultId: 'r1' } });
-    expect(localStorage.getItem('selectedResultId')).toBe('r1');
+    // The selection persists via usePersistentRef in JSON format
+    expect(localStorage.getItem('selectedResultId')).toBe('"r1"');
   });
 
   it('navigates to /results without a query for "All Transactions"', async () => {
@@ -168,7 +169,8 @@ describe('Index.vue result selector', () => {
     await wrapper.find('button').trigger('click');
 
     expect(mockPush).toHaveBeenCalledWith({ name: 'results', query: {} });
-    expect(localStorage.getItem('selectedResultId')).toBe(null);
+    // The empty selection persists as JSON, same fallback as no stored value
+    expect(localStorage.getItem('selectedResultId')).toBe('""');
   });
 
   it('restores a persisted selection from localStorage', async () => {

@@ -20,6 +20,15 @@ const currentLocale = computed(() => localeStore.locale)
 </script>
 
 <template>
+  <!-- Deliberate workaround: :key remounts Layout on language switch.
+       vue3-gettext 4.0.0-beta.1 ships a self-contained bundle with its
+       own inlined Vue reactivity, so changing gettext.current does not
+       re-render components that used $gettext - the gettext object's
+       reactive reads are invisible to the app's render effects. Until
+       the library shares the app's reactivity, remounting Layout is
+       the only way to update all visible text. Pages must not capture
+       translated strings outside render/computed evaluation, so this
+       remount stays the single locale-switch mechanism. -->
   <Layout :key="currentLocale">
     <RouterView />
   </Layout>

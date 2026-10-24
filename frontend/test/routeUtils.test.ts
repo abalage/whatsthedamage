@@ -4,13 +4,9 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { buildResultQuery, extractResultId } from '../src/js/routeUtils.js';
+import { buildResultQuery, extractResultId } from '../src/js/routeUtils';
 
 describe('buildResultQuery', () => {
-  it('returns an empty query for a null resultId', () => {
-    expect(buildResultQuery(null)).toEqual({});
-  });
-
   it('returns an empty query for an undefined resultId', () => {
     expect(buildResultQuery(undefined)).toEqual({});
   });
@@ -34,18 +30,18 @@ describe('extractResultId', () => {
   });
 
   it('ignores the snake_case result_id key', () => {
-    expect(extractResultId({ result_id: 'r1' })).toBe(null);
+    expect(extractResultId({ result_id: 'r1' })).toBe(undefined);
   });
 
-  it('returns null when resultId is missing', () => {
-    expect(extractResultId({})).toBe(null);
+  it('returns undefined when resultId is missing', () => {
+    expect(extractResultId({})).toBe(undefined);
   });
 
-  it('returns null for an empty string value', () => {
-    expect(extractResultId({ resultId: '' })).toBe(null);
+  it('returns undefined for an empty string value', () => {
+    expect(extractResultId({ resultId: '' })).toBe(undefined);
   });
 
-  it('returns null for a null value', () => {
-    expect(extractResultId({ resultId: null })).toBe(null);
+  it('returns undefined for a null value', () => {
+    expect(extractResultId({ resultId: null })).toBe(undefined);
   });
 });

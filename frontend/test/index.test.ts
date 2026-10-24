@@ -4,7 +4,7 @@
  */
 
 import { describe, it, expect, vi } from 'vitest';
-import { clearForm } from '../src/js/index.js';
+import { clearForm } from '../src/js/index';
 
 describe('index.ts', () => {
   describe('clearForm', () => {

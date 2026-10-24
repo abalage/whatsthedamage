@@ -10,73 +10,19 @@ whatsthedamage/
 │   └── gunicorn_conf.py     # Gunicorn production configuration
 ├── docs/                    # Project documentation built by Sphinx
 ├── frontend/                # Vue 3 SPA Frontend (independent of backend)
-│   ├── src/
+│   ├── src/                 # TypeScript/Vue sources — see docs/frontend-architecture.md
 │   │   ├── main.ts          # Application entry point
 │   │   ├── App.vue          # Root Vue component
-│   │   ├── router/
-│   │   │   └── index.ts     # Vue Router configuration (with auth guards)
-│   │   ├── components/           # Reusable Vue components
-│   │   │   ├── Layout.vue
-│   │   │   ├── AuthLayout.vue     # Layout for auth pages (login/register)
-│   │   │   ├── ErrorDisplay.vue
-│   │   │   ├── PivotCategorySelector.vue
-│   │   │   ├── auth/       # Auth components (PasswordResetForm, RecoveryCodeDisplay)
-│   │   │   ├── charts/     # Chart components (BarChart, PieChart)
-│   │   │   ├── data/       # Data components (VueDataTable, TableLink, TableLinkWithPopover)
-│   │   │   └── layout/     # Layout helpers (BreadcrumbNavigation, ErrorState, LoadingState, PageHeader)
-│   │   ├── composables/    # Vue 3 composable functions
-│   │   ├── config/
-│   │   │   ├── auth-config.ts
-│   │   │   └── highlight-config.ts
-│   │   ├── css/
-│   │   │   └── main.css
-│   │   ├── directives/
-│   │   │   └── popover.ts
-│   │   ├── js/              # Utility functions and API client
-│   │   │   ├── api.ts          # Typed API client (processing, transactions, auth)
-│   │   │   ├── categoryTranslations.ts
-│   │   │   ├── dateUtils.ts
-│   │   │   ├── gettext.ts      # vue3-gettext i18n setup
-│   │   │   ├── routeUtils.ts
-│   │   │   ├── regression.ts
-│   │   │   ├── version.ts
-│   │   │   └── themes/         # Chart theme definitions
-│   │   ├── locales/         # gettext translation catalogs
-│   │   │   ├── en.po
-│   │   │   ├── hu.po / hu.mo
-│   │   │   └── messages.pot
-│   │   ├── pages/           # Page-level components (routes)
-│   │   │   ├── About.vue
-│   │   │   ├── Categories.vue
-│   │   │   ├── CategoryMonthsList.vue
-│   │   │   ├── CategoryMonthTransactions.vue
-│   │   │   ├── ForgotPassword.vue
-│   │   │   ├── Import.vue
-│   │   │   ├── Index.vue
-│   │   │   ├── Legal.vue
-│   │   │   ├── Login.vue
-│   │   │   ├── MonthCategoriesList.vue
-│   │   │   ├── PivotTable.vue
-│   │   │   ├── Privacy.vue
-│   │   │   ├── Register.vue
-│   │   │   ├── Statistics.vue
-│   │   │   └── Transactions.vue
-│   │   ├── stores/          # Pinia state management
-│   │   │   ├── auth.ts      # Authentication state
-│   │   │   ├── categories.ts
-│   │   │   ├── feedback.ts
-│   │   │   ├── form.ts
-│   │   │   ├── locale.ts
-│   │   │   ├── pivot.ts
-│   │   │   ├── statistical.ts
-│   │   │   └── theme.ts
-│   │   └── types/           # TypeScript type definitions
-│   │       ├── api.ts
-│   │       ├── auth.ts
-│   │       ├── pivot.ts
-│   │       └── index.ts
+│   │   ├── pages/           # Route-level components (one per route)
+│   │   ├── components/      # Reusable components (auth/, charts/, data/, layout/)
+│   │   ├── composables/     # Vue 3 composable functions
+│   │   ├── stores/          # Pinia stores (auth, dataset, categories, pivot, ...)
+│   │   ├── router/          # Vue Router configuration (with auth guards)
+│   │   ├── js/              # API client (api/ barrel: request, auth, transactions, processing) and utilities
+│   │   ├── types/           # TypeScript type definitions (api, auth, column, index)
+│   │   ├── locales/         # gettext catalogs (en.po, hu.po, messages.pot, translations.json)
+│   │   └── css/, directives/, config/
 │   ├── public/              # Static content
-│   │   └── favicon.ico
 │   ├── dist/                # Production build output
 │   ├── package.json
 │   ├── vite.config.js
@@ -232,8 +178,8 @@ Provide a simple block diagram (e.g., a C4 Model Level 1: System Context diagram
 ```
 [User] <--> [Frontend SPA (Vue 3)] <--> [REST API v2] <--> [ProcessingService] <--> [CSVProcessor] <--> [CsvFileHandler]
                                     |                        |
-                                    |                        +--> [TransactionPersistenceService] <--> [Repositories] <--> [Database (SQLAlchemy)]
-                                    +--> [Auth API] <--> [AuthenticationService] <--> [PasswordService / TokenService] <--> [Repositories]
+                                    |                        +--> [TransactionImportService] <--> [Repositories] <--> [Database (SQLAlchemy)]
+                                    +--> [Auth API] <--> [AccountService / AuthSessionService] <--> [PasswordService / CsrfService / TokenService] <--> [Repositories]
                                     |
                                     +--> [CLI Interface] <--> [ProcessingService]
 ```
@@ -246,7 +192,7 @@ Provide a simple block diagram (e.g., a C4 Model Level 1: System Context diagram
 The system follows a layered architecture with clear separation of concerns:
 - **Presentation Layer**: CLI and independent Frontend SPA (Vue 3) only
 - **API Layer**: REST API v2 interfaces (Flask) - API-only, no web templates, with authentication/CSRF decorators
-- **Service Layer**: Business logic services (ProcessingService, ValidationService, AuthenticationService, etc.)
+- **Service Layer**: Business logic services (ProcessingService, ValidationService, AccountService, AuthSessionService, etc.)
 - **Model Layer**: Data processing and domain logic (CSVProcessor, RowsProcessor, etc.)
 - **Persistence Layer**: SQLAlchemy ORM models and repositories for users, sessions, transactions, processing results, and corrections
 - **Configuration Layer**: Centralized configuration management
@@ -258,120 +204,22 @@ The system follows a layered architecture with clear separation of concerns:
 
 **Name**: Frontend SPA (Vue 3 Single Page Application)
 
-**Description**: Completely independent frontend application for interacting with whatsthedamage. The frontend communicates with the backend exclusively through REST API v2 endpoints, enabling independent development, deployment, and scaling. Built with Vue 3, TypeScript, and modern frontend tooling.
+**Description**: Completely independent frontend application for interacting with whatsthedamage. The frontend communicates with the backend exclusively through REST API v2 endpoints, enabling independent development, deployment, and scaling. Built with Vue 3, TypeScript, and modern frontend tooling. No server-side templates are used.
 
-**Technologies**:
-- **Framework**: Vue 3 with Composition API
-- **Type System**: TypeScript 5.x
-- **State Management**: Pinia (stores for auth, categories, feedback, form, locale, pivot, statistical preferences, theme)
-- **Routing**: Vue Router for client-side navigation with auth guards
-- **Build Tool**: Vite 8 with ESM modules and HMR
-- **UI Framework**: Bootstrap 5 with native HTML elements + Bootstrap classes
-- **Data Grid**: Custom `VueDataTable.vue` component (DataTables.net/jQuery removed)
-- **Charts**: chart.js with vue-chartjs (BarChart, PieChart components)
-- **i18n**: vue3-gettext with gettext catalogs (`.po`/`.mo` files)
+**Technologies**: Vue 3 (Composition API, `<script setup>`), strict TypeScript, Pinia (setup stores), Vue Router with meta-driven auth guards (`requiresAuth` / `requiresGuest` / `public`), Vite 8, Bootstrap 5 via native HTML elements + classes (no wrapper components), vue3-gettext (English/Hungarian), chart.js via vue-chartjs, and the custom `VueDataTable.vue` data grid (no DataTables.net/jQuery).
 
-**Deployment**: Independent static hosting or integrated with backend via Flask static serving
+**Key Features** (summary):
+- Session restored from cookies by a single global `router.beforeEach`; pages never re-initialize auth state
+- CSV import flow on the `/import` page driven by backend CSV profile definitions
+- Optional `resultId` query parameter filters transaction views (Categories, Transactions, Pivot, drilldowns) to a single processing result; unknown paths fall back to a catch-all NotFound route
+- Transaction views share a cached full-dataset store; `fetchAllTransactions` pages `/api/v2/transactions` in 2,000-row requests up to 50,000 rows (visible truncation warning beyond)
+- Inline correction of transaction attributes (category, merchant, notice) with per-transaction vs. "apply to future" merchant-rule persistence, undo (`POST /transactions/<id>/undo`), and corrected-cell highlighting
+- User settings: correction-sharing opt-in, username/password change, GDPR data export, scheduled account deletion
+- i18n (English/Hungarian) and multiple persisted themes
 
-**Key Features**:
-- Complete decoupling from backend - no server-side templates
-- API-only communication via REST API v2 endpoints
-- Independent build and deployment pipeline
-- CORS-enabled communication with backend
-- Client-side routing with Vue Router
-- User authentication: login, registration, and password reset with one-time recovery codes
-- Router guards (`requiresAuth` / `requiresGuest` / `public` route meta) with a global `beforeEach` navigation guard driven by the auth store
-- CSV import flow on the `/import` page
-- Optional `resultId` query parameter filters transaction views (Categories, Transactions, Pivot Table, drilldowns) to a single processing result; when absent, all transactions are shown
-- Unknown paths are redirected to the index page by a catch-all route
-- Transaction views fetch the complete dataset through `fetchAllTransactions`, which pages the `/api/v2/transactions` endpoint (2,000-row pages) until `total_count` rows are collected, capped at 50,000 rows with a visible truncation warning
-- Inline correction of transaction attributes on the Transactions page: the merchant, category, and notice cells are click-to-edit (`EditableTextCell.vue`, `EditableCategoryCell.vue`); the category cell offers a dropdown of the backend categories, and changes are persisted through `PUT /api/v2/transactions/<id>`. Merchant and category cells offer an "apply to future" toggle (default on, sent as `apply_to_future`): enabled corrections upsert a merchant rule for future uploads, disabled ones apply to the edited transaction only; notice corrections are always per-transaction
-- Corrections review on the Transactions page: corrected cells are highlighted through the `cellHighlightsByRowId` mechanism with the frontend-only `corrected` highlight type (resolved by `highlight-config.ts`, colored per theme via `--color-highlight-corrected`). VueDataTable's filter toolbar shows the "Clear all filters" button permanently and offers a `filter-actions` slot (plus a `cleared-filters` event) where the page adds toggle buttons: "Corrected" filters the table to corrected transactions (reset when filters are cleared), "Edit" shows an undo column (`UndoCorrectionCell.vue`) with a per-row button calling `POST /api/v2/transactions/<id>/undo`, and "Confidence" shows the confidence column. Undo restores the row's original values and deletes the merchant rule of the transaction's original partner (other existing rows keep their applied values; only future uploads stop being auto-corrected)
-- CSRF token handling for state-changing requests (fetched via `/api/v2/auth/csrf-token`)
-- State management with Pinia stores
-- Type-safe development with TypeScript
-- Hot Module Replacement (HMR) in development
+**Frontend architecture and conventions live in `docs/frontend-architecture.md`** — directory layout, the API layer (`js/api/`), stores, the three sanctioned async error/loading patterns, data grid extension via `#cell-<key>` slots, i18n/theming, build/deployment modes, and the quality gates. This document intentionally keeps only the basics above.
 
-**Composables Layer**:
-Reusable stateful logic encapsulated in composable functions using Vue 3's Composition API. Composables follow the principle of single responsibility and are used for cross-cutting concerns that don't require global state.
-
-**Key Composables**:
-- `useRouteParams.ts` - Type-safe route parameter extraction; reads `resultId` from route params or the query string so drilldown pages work with and without a result filter
-- `useResultQuery.ts` - Builds navigation queries carrying the optional `resultId` filter for drilldown links and breadcrumbs
-- `useApiData.ts` - API data fetching with loading/error states and feedback integration
-- `useBreadcrumbs.ts` - Dynamic breadcrumb navigation generation
-- `usePageTitle.ts` - Page title generation with i18n support and multiple format patterns
-- `useDrilldownData.ts` - Composed drilldown page logic that ties together route params, API fetching, page titles, and breadcrumbs
-- `useTransactionCorrections.ts` - Shared transaction correction persistence (save/undo), corrected-state predicates, and cell highlight maps for the transaction table pages
-
-**Design Principles**:
-- Each composable has a single, clear responsibility
-- Composables can be composed together to build complex functionality
-- Use for component-specific logic, not global state
-- Avoid wrapping Pinia stores in composables (use stores directly)
-
-**Usage Guidelines**:
-- Use Pinia stores for **global state** (theme, categories, feedback, locale, statistical preferences, auth, pivot)
-- Use composables for **component-specific logic** (data fetching, route handling, title generation)
-- Use native Vue 3 features (`ref`, `computed`, `watch`) for simple reactivity
-
-**Frontend Architecture**:
-```
-Frontend SPA (Vue 3)
-├── App.vue              # Root component
-├── router/              # Vue Router configuration with auth guards
-├── composables/         # Vue 3 composable functions
-│   ├── useRouteParams.ts    # Route parameter extraction
-│   ├── useResultQuery.ts    # resultId navigation query building
-│   ├── useApiData.ts        # API data fetching
-│   ├── useBreadcrumbs.ts    # Breadcrumb generation
-│   ├── usePageTitle.ts      # Page title generation
-│   ├── useTransactionCorrections.ts # Transaction correction persistence
-│   └── useDrilldownData.ts  # Drilldown page logic
-├── stores/              # Pinia state management (global state)
-│   ├── auth.ts           # Authentication state (login/logout, CSRF token)
-│   ├── form.ts           # Form state
-│   ├── locale.ts         # Locale/language state
-│   ├── statistical.ts    # Statistical analysis preferences
-│   ├── theme.ts          # Theme management
-│   ├── categories.ts     # Category definitions
-│   ├── pivot.ts          # Pivot table state
-│   └── feedback.ts       # User feedback/notifications
-├── components/           # Reusable Vue components
-│   ├── Layout.vue
-│   ├── AuthLayout.vue    # Layout for auth pages
-│   ├── ErrorDisplay.vue
-│   ├── PivotCategorySelector.vue
-│   ├── auth/             # PasswordResetForm, RecoveryCodeDisplay
-│   ├── charts/           # BarChart, PieChart
-│   ├── data/             # VueDataTable, TableLink, TableLinkWithPopover
-│   └── layout/           # BreadcrumbNavigation, ErrorState, LoadingState, PageHeader
-└── pages/                # Page-level components (routes)
-    ├── Index.vue
-    ├── Import.vue
-    ├── Login.vue / Register.vue / ForgotPassword.vue
-    ├── Categories.vue / Transactions.vue / PivotTable.vue / Statistics.vue
-    ├── CategoryMonthsList.vue / MonthCategoriesList.vue / CategoryMonthTransactions.vue
-    ├── About.vue / Legal.vue / Privacy.vue
-    └── ...
-```
-
-**API Communication**:
-- Development: Vite proxies `/api` to `http://localhost:5000/api/v2`
-- Production: Uses `/api/v2` base URL or configurable via `VITE_API_BASE_URL`
-- CORS-enabled for cross-origin requests
-
-**Bootstrap Usage**:
-- Bootstrap 5 CSS is imported globally for styling utilities and components
-- **Component Strategy**: Use native HTML elements with Bootstrap classes directly
-- Do NOT create wrapper components for Bootstrap elements
-- Theme colors are applied via semantic CSS variables (e.g., `bg-surface-primary`, `text-on-primary`)
-- Layout concerns belong in parent components
-
-**Deployment Modes**:
-1. **Integrated**: Backend serves frontend from `view/static/dist/` via `frontend_routes.py`
-2. **Standalone**: Frontend hosted separately on static hosting
-3. **Development**: Vite dev server (port 3000) with API proxy
+**Deployment**: Independent static hosting (standalone, CORS-enabled) or integrated with the backend via the Flask catch-all route (see 3.2.10).
 
 ### 3.2. Backend Services
 
@@ -499,6 +347,7 @@ Frontend SPA (Vue 3)
 **Key Features**:
 - Catch-all route for all non-API paths
 - Serves pre-built frontend from `view/static/dist/`
+- Refuses `.map` requests with 404 even when a stray source map file exists in the dist folder
 - Enables Vue Router client-side navigation
 - Supports direct URL access to drilldown pages (e.g., `/results?resultId=abc123`)
 - Supports opening links in new tabs
@@ -507,11 +356,11 @@ Frontend SPA (Vue 3)
 
 **Registration Note**: The catch-all route must be registered **AFTER** all API blueprints to ensure API routes take precedence.
 
-#### 3.2.11. AuthenticationService
+#### 3.2.11. AccountService / AuthSessionService
 
-**Name**: Authentication Service
+**Name**: Account and Session Services
 
-**Description**: Orchestrates user registration, login, logout, password reset, and session lifecycle. Coordinates PasswordService, TokenService, CsrfService, RecoveryCodeService, and the user/session repositories.
+**Description**: AccountService orchestrates user registration, login, password reset/change, and account-deletion scheduling. AuthSessionService owns the session lifecycle (create/validate/revoke) and CSRF token minting — every mint rotates the stored hash, so a newly issued token invalidates the previously issued one. Together they coordinate PasswordService, TokenService, CsrfService, RecoveryCodeService, and the user/session repositories.
 
 **Technologies**: Python
 
@@ -531,7 +380,7 @@ Frontend SPA (Vue 3)
 
 **Name**: Token Service
 
-**Description**: Session token generation and verification using Python's `secrets` module. Tokens are stored hashed (SHA-256) in DB session entities; the browser holds the opaque token in an HttpOnly, Secure, SameSite=Strict cookie.
+**Description**: Session token generation and verification using Python's `secrets` module. Tokens are stored hashed (SHA-256) in DB session entities; the browser holds the opaque token in an HttpOnly, Secure, SameSite=Lax (all configurable) cookie.
 
 **Technologies**: Python
 
@@ -541,7 +390,7 @@ Frontend SPA (Vue 3)
 
 **Name**: CSRF Service
 
-**Description**: Issues and validates CSRF tokens for state-changing requests. The frontend fetches a token via `GET /api/v2/auth/csrf-token` and sends it with mutating requests; the stored hash is verified server-side.
+**Description**: Issues and validates CSRF tokens for state-changing requests. The token is delivered to the SPA as a readable (deliberately not HttpOnly) `csrf_token` cookie, set by login, register, getMe, and `GET /api/v2/auth/csrf-token`, and cleared on logout; the SPA echoes it in the `X-CSRF-Token` header. Only the SHA-256 hash is stored server-side, and each mint rotates it (invalidating previously issued tokens). CSRF 403 responses carry machine-readable `code` values (`CSRF_SESSION_REQUIRED`, `CSRF_TOKEN_MISSING`, `CSRF_TOKEN_NOT_SET`, `CSRF_TOKEN_INVALID`) that the frontend's automatic retry branches on.
 
 **Technologies**: Python
 
@@ -657,7 +506,7 @@ Frontend SPA (Vue 3)
 
 **Type**: Database-backed session entities with cookie tokens
 
-**Purpose**: Manages authenticated user sessions between requests. Sessions are stored as `Session` entities in the database (including a CSRF token hash); the browser holds an opaque session token. No Flask session-based state is used for user identity.
+**Purpose**: Manages authenticated user sessions between requests. Sessions are stored as `Session` entities in the database (including a CSRF token hash); the browser holds the opaque session token in an HttpOnly, Secure, SameSite=Lax cookie and the CSRF token in a readable `csrf_token` cookie (see 3.2.14). No Flask session-based state is used for user identity.
 
 ## 5. External Integrations / APIs
 
@@ -695,17 +544,17 @@ Removed.
 - **API-First Design**: Contract defined via Pydantic models in `src/whatsthedamage/models/api/responses.py` and the OpenAPI 3.0 schema served at `/api/v2/openapi.json`
 - **Type Safety**: Backend Pydantic models mirror frontend TypeScript interfaces
 - **Validation**: Requests validated before processing; responses validated with Pydantic where models exist (e.g., `RecalculateApiResponse`), otherwise serialized via `jsonify`
-- **Service Layer**: Business logic delegated to services (ProcessingService, TransactionPersistenceService, CorrectionService, StatisticalAnalysisService, DrilldownResponseService, AuthenticationService)
+- **Service Layer**: Business logic delegated to services (ProcessingService, TransactionImportService, CorrectionService, StatisticalAnalysisService, DrilldownResponseService, AccountService, AuthSessionService)
 - **Dependency Injection**: Services injected via Flask extensions
 - **Authentication**: `require_authentication` / `optional_authentication` / `require_csrf` / `require_auth_and_csrf` decorators in `api/auth_decorators.py`
 
 **Key Components:**
-- `src/whatsthedamage/api/v2/endpoints.py`: Processing, transaction, and correction route handlers
+- `src/whatsthedamage/api/v2/endpoints/`: API v2 sub-blueprints by domain — `reference.py`, `processing_results.py`, `transactions.py`, `corrections.py`, `statistics.py`
 - `src/whatsthedamage/api/v2/auth/endpoints.py`: Authentication route handlers (auth blueprint, prefix `/api/v2/auth`)
 - `src/whatsthedamage/api/v2/schema.py`: OpenAPI 3.0 schema generator
 - `src/whatsthedamage/models/api/responses.py`: Pydantic response DTOs
-- `src/whatsthedamage/api/helpers.py`: Request validation and error handling utilities
-- `frontend/src/js/api.ts`: TypeScript API client with typed functions
+- `src/whatsthedamage/api/helpers.py`: Request validation and the shared error-response helpers (`create_error_response` / `json_error_response`)
+- `frontend/src/js/api.ts`: barrel re-exporting the API modules in `frontend/src/js/api/` (transport `request.ts`, plus `auth.ts`, `transactions.ts`, `processing.ts`)
 - `frontend/src/types/api.ts` / `frontend/src/types/auth.ts`: TypeScript interfaces
 
 **Endpoints:**
@@ -716,8 +565,11 @@ Removed.
 | POST | `/api/v2/auth/logout` | Terminate the current session |
 | GET | `/api/v2/auth/me` | Current user information |
 | PUT | `/api/v2/auth/me` | Update user settings (correction sharing opt-in) |
+| PUT | `/api/v2/auth/me/password` | Change password (current password required) |
+| GET | `/api/v2/auth/me/export` | GDPR data export (machine-readable document) |
+| DELETE | `/api/v2/auth/account` | Schedule account deletion (password confirmation, 7-day grace period) |
 | POST | `/api/v2/auth/reset-password` | Reset password using a recovery code |
-| GET | `/api/v2/auth/csrf-token` | Issue a CSRF token |
+| GET | `/api/v2/auth/csrf-token` | Mint a fresh CSRF token (delivered as a readable cookie) |
 | POST | `/api/v2/processing-results` | Process and import CSV transactions |
 | GET | `/api/v2/processing-results` | List processing results |
 | GET | `/api/v2/processing-results/<result_id>` | Processing result metadata |
@@ -760,12 +612,12 @@ The legacy drilldown endpoints (`/processing-results/<id>/accounts/...`) were re
 - Responses use validated Pydantic models where models exist; new endpoints should prefer the standard response envelope (`ApiEnvelope<T>`)
 - Frontend TypeScript interfaces match backend models 1:1
 - Contract tests verify response schema compliance
-- Error responses use consistent `{code, message, details?}` format
+- Error responses use the shared `{error, code?, retry_after?}` shape produced by `api/helpers.py`; the machine-readable `code` lets the frontend branch without parsing messages (e.g. the automatic CSRF retry on `CSRF_TOKEN_INVALID`)
 
 **Contract Testing:**
 - 15 contract tests in `tests/api/v2/test_contract.py`
 - Endpoint tests in `tests/api/v2/test_transaction_endpoints.py` and `tests/test_api_v2_endpoints.py`
-- Tests verify response structure, field types, and required fields
+- `make api-contract` dumps the OpenAPI component schemas to `frontend/test/fixtures/api-contract-schemas.json`; a backend pytest fails when the fixture goes stale, and `frontend/test/apiContract.test.ts` asserts the mirrored TypeScript types against it — backend contract changes surface at frontend gate time
 
 **Documentation:**
 - [API-First Architecture](docs/api-first-architecture.md)
@@ -796,12 +648,13 @@ The legacy drilldown endpoints (`/processing-results/<id>/accounts/...`) were re
 - `make test`: Run tests
 - `make backend`: Run Flask development server
 - `make frontend`: Start Vite development server
-- `make frontend-build:prod`: Build production frontend assets
+- `make frontend-build`: Build frontend assets (`npm run build:prod` from `frontend/` for the production bundle)
+- `make api-contract`: Regenerate the API contract fixture for the frontend contract tests
 - `make build`: Full stack build (Python + JavaScript)
 
 **Frontend Deployment Options**:
 1. **Standalone Deployment**: Frontend built with `npm run build:prod` and `dist/` directory hosted on static hosting. Backend API must be accessible via CORS.
-2. **Development Mode**: Vite dev server runs on port 3000 with `/api` proxy to `http://localhost:5000/api/v2`. Backend Flask server runs separately on port 5000.
+2. **Development Mode**: Vite dev server runs on port 3000 with the `/api/v2` proxy to `http://localhost:5000`. Backend Flask server runs separately on port 5000.
 
 **Production Security Configuration**:
 - CORS must remain restricted to the actual frontend origin in production
@@ -830,7 +683,7 @@ The legacy drilldown endpoints (`/processing-results/<id>/accounts/...`) were re
 
 **Key Security Tools/Practices**:
 - Argon2 password hashing with automatic rehash on login
-- CSRF token issuance (`/api/v2/auth/csrf-token`) and server-side hash verification on all state-changing requests
+- CSRF tokens delivered to the SPA as readable cookies (set on login/register/getMe/`GET /api/v2/auth/csrf-token`, rotated on every mint, cleared on logout) with server-side hash verification on all state-changing requests
 - Blueprint-level authentication middleware on all `/api/v2/*` routes with an explicit public allowlist (`api/middleware.py`)
 - Security headers on every response: CSP, HSTS, X-Frame-Options, X-Content-Type-Options, Referrer-Policy, and `Cache-Control: no-store` on API responses (`api/middleware.py`)
 - Rate limiting for login/registration/password reset plus general and heavy-endpoint API limits (`rate_limit_service.py`, configured in `config/auth_config.py` and `config/flask_config.py`)
@@ -886,6 +739,8 @@ The legacy drilldown endpoints (`/processing-results/<id>/accounts/...`) were re
 - Additional localization languages
 
 **Recent Architectural Improvements**:
+- **Frontend Security Remediation (2026-10)**: CSRF tokens moved from localStorage to readable cookies with per-mint rotation; machine-readable error `code` values on all CSRF 403s; formula-injection-prone CSV/XLS export and the `v-html` table rendering removed (replaced by escaped `formatValue`); sourcemaps excluded from production builds and refused by the backend catch-all
+- **Frontend Refactor (2026-10)**: VueDataTable decomposed into `useTable*` composables with `#cell-<key>` slot-based cell extension; `useApiData`/`useAsyncAction` error contracts standardized (three sanctioned async patterns); global Vue error handler (console-only); API contract fixture tests via `make api-contract`
 - **User Persistence Support**: Introduced SQLAlchemy 2.0 ORM with Alembic migrations. Users, sessions, transactions, processing results, and corrections are persisted in a relational database (default SQLite, configurable via `WHATSTHEDAMAGE_DATABASE_URI`), replacing cache-only processing results.
 - **Repository Pattern**: Added a dedicated data access layer (`models/repositories/`) with a generic `BaseRepository` and per-entity repositories; services no longer issue queries directly.
 - **Authentication & Authorization**: User registration, login, logout, and password reset with one-time recovery codes. Argon2 password hashing, DB-backed sessions, CSRF token verification, and per-endpoint rate limiting. Frontend gained auth pages (Login, Register, ForgotPassword), an auth Pinia store, and router guards.
@@ -921,7 +776,7 @@ The legacy drilldown endpoints (`/processing-results/<id>/accounts/...`) were re
 
 **Primary Contact/Team**: Balage Abalage
 
-**Date of Last Update**: 2026-09-29
+**Date of Last Update**: 2026-10-24
 
 ## 11. Glossary / Acronyms
 
@@ -939,7 +794,7 @@ The legacy drilldown endpoints (`/processing-results/<id>/accounts/...`) were re
 
 **Vue**: Progressive JavaScript framework used for the frontend SPA
 
-**Pinia**: State management library for Vue applications, used for managing auth, categories, feedback, form, locale, pivot, statistical preferences, and theme state
+**Pinia**: State management library for Vue applications, used for managing auth, dataset cache, categories, feedback, form, locale, pivot, statistical preferences, and theme state
 
 **Vite**: Modern build tool for frontend development with HMR (Hot Module Replacement)
 

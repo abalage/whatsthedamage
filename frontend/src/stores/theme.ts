@@ -4,21 +4,26 @@
  */
 
 import { defineStore } from 'pinia';
-import { ref, computed } from 'vue';
+import { computed } from 'vue';
 import {
   THEMES,
   getThemeById,
   getDefaultTheme,
   type Theme,
-} from '../js/themes/index.js';
+} from '../js/themes/index';
+import { clearPersisted, usePersistentRef } from '../composables/usePersistentRef';
 
 export type { Theme };
 
 const STORAGE_KEY = 'wtb-theme-preference';
 
 export const useThemeStore = defineStore('theme', () => {
-  // State - current theme ID
-  const currentThemeId = ref<string>('');
+  // State - current theme ID, persisted to localStorage
+  const currentThemeId = usePersistentRef<string>(
+    STORAGE_KEY,
+    getDefaultTheme().id,
+    (value): value is string => typeof value === 'string' && getThemeById(value) !== undefined
+  );
 
   // Getters
 
@@ -26,17 +31,7 @@ export const useThemeStore = defineStore('theme', () => {
    * Get the current theme object
    */
   const currentTheme = computed((): Theme => {
-    if (!currentThemeId.value) {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved && getThemeById(saved)) {
-        currentThemeId.value = saved;
-        return getThemeById(saved)!;
-      }
-      currentThemeId.value = getDefaultTheme().id;
-      return getDefaultTheme();
-    }
-    const theme = getThemeById(currentThemeId.value);
-    return theme ?? getDefaultTheme();
+    return getThemeById(currentThemeId.value) ?? getDefaultTheme();
   });
 
   /**
@@ -54,7 +49,6 @@ export const useThemeStore = defineStore('theme', () => {
     const theme = getThemeById(themeId);
     if (theme) {
       currentThemeId.value = themeId;
-      localStorage.setItem(STORAGE_KEY, themeId);
       applyTheme(theme);
     }
   }
@@ -125,26 +119,17 @@ export const useThemeStore = defineStore('theme', () => {
   }
 
   /**
-   * Initialize the theme store
-   * Loads saved preference or defaults to the first theme
+   * Initialize the theme store: apply the persisted (or default) theme
    */
   function initialize(): void {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved && getThemeById(saved)) {
-      currentThemeId.value = saved;
-      applyTheme(getThemeById(saved)!);
-    } else {
-      // No saved preference, use default
-      currentThemeId.value = getDefaultTheme().id;
-      applyTheme(getDefaultTheme());
-    }
+    applyTheme(currentTheme.value);
   }
 
   /**
    * Reset to default theme
    */
   function resetToDefault(): void {
-    localStorage.removeItem(STORAGE_KEY);
+    clearPersisted(STORAGE_KEY);
     setTheme(getDefaultTheme().id);
   }
 

@@ -4,25 +4,6 @@
  */
 
 /**
- * Response from statistical analysis API
- */
-interface StatisticalAnalysisResponse {
-  status: 'success' | 'error';
-  highlights: Record<string, string[]> | {};  // row_id -> array of highlight types
-  error?: string;
-}
-
-/**
- * Request payload for statistical analysis
- */
-interface StatisticalAnalysisRequest {
-  result_id: string;
-  algorithms: string[];
-  direction: 'columns' | 'rows';
-  use_default_directions?: boolean;
-}
-
-/**
  * Error with additional context
  */
 export class AppError extends Error {
@@ -31,3 +12,18 @@ export class AppError extends Error {
     this.name = 'AppError';
   }
 }
+
+/**
+ * Error body returned by API v2 endpoints on failures.
+ * `error` is the human-readable message; `code` is the
+ * machine-readable error code the frontend can branch on
+ * (e.g. CSRF_TOKEN_INVALID for the automatic CSRF retry).
+ */
+export interface ApiErrorBody {
+  error?: string;
+  message?: string;
+  detail?: string;
+  code?: string;
+  retry_after?: string;
+}
+

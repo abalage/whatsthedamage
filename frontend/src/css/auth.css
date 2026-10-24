@@ -1,0 +1,258 @@
+/* Shared styling for the authentication pages (Login, Register, Forgot Password).
+   Uses the semantic design tokens from main.css instead of hardcoded colors. */
+
+.auth-layout {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--color-surface-elevated);
+  padding: 2rem;
+}
+
+.auth-container {
+  width: 100%;
+  max-width: 400px;
+  background: var(--color-surface-base);
+  border-radius: var(--border-radius);
+  box-shadow: var(--box-shadow);
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.auth-header {
+  text-align: center;
+}
+
+.app-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--color-text-on-light);
+  margin: 0;
+}
+
+.auth-main {
+  flex: 1;
+}
+
+.auth-footer {
+  text-align: center;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--color-border-subtle);
+}
+
+.footer-text {
+  color: var(--color-text-secondary);
+  font-size: 0.875rem;
+  margin: 0;
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.auth-form .form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.auth-links {
+  text-align: center;
+  margin-top: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.auth-links a,
+.link-btn {
+  color: var(--color-text-primary);
+  text-decoration: none;
+}
+
+.auth-links a:hover,
+.link-btn:hover {
+  text-decoration: underline;
+}
+
+.link-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: inherit;
+  padding: 0;
+}
+
+.auth-error {
+  background-color: var(--color-status-danger-15);
+  color: var(--color-status-danger);
+  padding: 0.75rem;
+  border-radius: var(--border-radius);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.auth-error-close {
+  background: none;
+  border: none;
+  font-size: 1.25rem;
+  cursor: pointer;
+  color: var(--color-status-danger);
+  padding: 0;
+  line-height: 1;
+}
+
+.auth-error-close:hover {
+  opacity: 0.7;
+}
+
+.auth-instructions {
+  color: var(--color-text-secondary);
+  margin-bottom: 1rem;
+  line-height: 1.5;
+}
+
+.auth-hint {
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
+  margin-top: 0.25rem;
+}
+
+.auth-primary-btn {
+  width: 100%;
+  background-color: var(--color-surface-primary);
+  color: var(--color-text-on-primary);
+  border: none;
+  border-radius: 0.375rem;
+  padding: 0.75rem 1rem;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.auth-primary-btn:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.auth-primary-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.auth-valid {
+  color: var(--color-status-success);
+}
+
+.auth-invalid {
+  color: var(--color-status-danger);
+}
+
+.auth-checkbox {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.auth-checkbox label {
+  font-weight: normal;
+  cursor: pointer;
+}
+
+/* Recovery code display (registration and password reset) */
+
+.recovery-code-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.recovery-code-container h2 {
+  margin-top: 0;
+}
+
+.recovery-code-box {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  background-color: var(--color-surface-elevated);
+  border: 2px dashed var(--color-border-secondary);
+  border-radius: var(--border-radius);
+  padding: 1rem;
+  font-size: 1.25rem;
+  font-weight: bold;
+  letter-spacing: 0.1em;
+  word-break: break-all;
+}
+
+.recovery-code-box code {
+  font-family: monospace;
+  color: var(--color-text-on-light);
+  user-select: text;
+}
+
+.recovery-copy-btn {
+  background-color: var(--color-surface-secondary);
+  color: var(--color-text-on-dark);
+  border: none;
+  border-radius: 0.375rem;
+  padding: 0.25rem 0.75rem;
+  font-size: 0.875rem;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.recovery-copy-btn:hover {
+  opacity: 0.9;
+}
+
+.recovery-copy-success {
+  color: var(--color-status-success);
+  font-size: 0.875rem;
+  margin-top: 0.5rem;
+  text-align: center;
+}
+
+.auth-status-success {
+  background-color: var(--color-status-success-15);
+  padding: 1rem;
+  border-radius: var(--border-radius);
+  margin-bottom: 1.5rem;
+}
+
+.auth-status-warning {
+  background-color: var(--color-status-warning-15);
+  padding: 1rem;
+  border-radius: var(--border-radius);
+  margin-bottom: 1.5rem;
+}
+
+.auth-acknowledgment {
+  margin: 1.5rem 0;
+}
+
+.auth-acknowledgment label {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  cursor: pointer;
+  font-size: 0.9375rem;
+  line-height: 1.5;
+}
+
+.auth-acknowledgment input[type="checkbox"] {
+  margin-top: 0.25rem;
+}

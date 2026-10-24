@@ -14,8 +14,8 @@
 
 import { computed, nextTick, onMounted, ref } from 'vue'
 import { useGettext } from 'vue3-gettext'
-import { useCategoriesStore } from '../../stores/categories.js'
-import { UNCATEGORIZED } from '../../composables/useTransactionCorrections.js'
+import { useCategoriesStore } from '../../stores/categories'
+import { UNCATEGORIZED } from '../../composables/useTransactionCorrections'
 
 interface Props {
   /** Editor kind: category dropdown or free-text input */

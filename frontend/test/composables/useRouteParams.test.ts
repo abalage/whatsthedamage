@@ -6,7 +6,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { mount } from '@vue/test-utils';
 import { defineComponent, reactive, nextTick } from 'vue';
-import { useRouteParams } from '../../src/composables/useRouteParams.js';
+import { useRouteParams } from '../../src/composables/useRouteParams';
 
 const mockRoute = reactive<{ params: Record<string, unknown>; query: Record<string, unknown> }>({
   params: {},
@@ -25,11 +25,11 @@ const Harness = defineComponent({
   template: '<div />',
 });
 
-const mountHarness = (): { resultId: () => string | null; stringParams: () => Record<string, string | null> } => {
+const mountHarness = (): { resultId: () => string | undefined; stringParams: () => Record<string, string | undefined> } => {
   const wrapper = mount(Harness);
   const vm = wrapper.vm as unknown as {
-    resultId: string | null;
-    stringParams: Record<string, string | null>;
+    resultId: string | undefined;
+    stringParams: Record<string, string | undefined>;
   };
   return {
     resultId: () => vm.resultId,
@@ -51,7 +51,7 @@ describe('useRouteParams', () => {
 
   it('returns null when no resultId is present', () => {
     const harness = mountHarness();
-    expect(harness.resultId()).toBe(null);
+    expect(harness.resultId()).toBe(undefined);
   });
 
   it('includes the query resultId in stringParams for API calls', () => {
@@ -65,12 +65,12 @@ describe('useRouteParams', () => {
     });
   });
 
-  it('keeps resultId null in stringParams when absent', () => {
+  it('keeps resultId undefined in stringParams when absent', () => {
     mockRoute.params = { accountId: 'a1' };
     const harness = mountHarness();
     expect(harness.stringParams()).toEqual({
       accountId: 'a1',
-      resultId: null,
+      resultId: undefined,
     });
   });
 
@@ -81,6 +81,6 @@ describe('useRouteParams', () => {
 
     mockRoute.query = {};
     await nextTick();
-    expect(harness.resultId()).toBe(null);
+    expect(harness.resultId()).toBe(undefined);
   });
 });

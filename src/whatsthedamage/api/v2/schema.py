@@ -406,10 +406,12 @@ def get_openapi_schema() -> dict[str, Any]:
             },
             "/auth/csrf-token": {
                 "get": {
-                    "summary": "Get a new CSRF token",
+                    "summary": "Mint a new CSRF token",
                     "description": (
-                        "Mints a CSRF token for the current session. "
-                        "Send it in the X-CSRF-Token header on "
+                        "Mints a CSRF token for the current session "
+                        "and sets it as a readable (not HttpOnly) "
+                        "csrf_token cookie. Read the cookie and send "
+                        "its value in the X-CSRF-Token header on "
                         "state-changing requests (POST, PUT, DELETE)."
                     ),
                     "operationId": "getCsrfToken",
@@ -417,8 +419,8 @@ def get_openapi_schema() -> dict[str, Any]:
                     "security": _security(),
                     "responses": {
                         "200": _ok(
-                            "CSRF token generated",
-                            _ref("CsrfTokenResponse")
+                            "CSRF token cookie set",
+                            {"type": "object", "properties": {}}
                         ),
                         **_errors(**{"401": "Not authenticated"}),
                     },
@@ -1401,7 +1403,7 @@ def get_openapi_schema() -> dict[str, Any]:
                 "RegisterResponse": {
                     "type": "object",
                     "required": [
-                        "user", "recovery_code", "csrf_token"
+                        "user", "recovery_code", "session_expires_at"
                     ],
                     "properties": {
                         "user": _ref("UserSummary"),
@@ -1411,9 +1413,6 @@ def get_openapi_schema() -> dict[str, Any]:
                                 "One-time recovery code, displayed "
                                 "only once and not retrievable later"
                             )
-                        },
-                        "csrf_token": {
-                            "type": "string"
                         },
                         "session_expires_at": {
                             "type": "string",
@@ -1440,12 +1439,9 @@ def get_openapi_schema() -> dict[str, Any]:
                 },
                 "LoginResponse": {
                     "type": "object",
-                    "required": ["user", "csrf_token"],
+                    "required": ["user", "session_expires_at"],
                     "properties": {
                         "user": _ref("UserSummary"),
-                        "csrf_token": {
-                            "type": "string"
-                        },
                         "session_expires_at": {
                             "type": "string",
                             "format": "date-time"
@@ -1456,15 +1452,7 @@ def get_openapi_schema() -> dict[str, Any]:
                     "type": "object",
                     "required": ["user"],
                     "properties": {
-                        "user": _ref("UserDetail"),
-                        "csrf_token": {
-                            "type": "string",
-                            "nullable": True,
-                            "description": (
-                                "Present only when the session does "
-                                "not have a CSRF token yet"
-                            )
-                        }
+                        "user": _ref("UserDetail")
                     }
                 },
                 "UpdateMeRequest": {
@@ -1627,15 +1615,6 @@ def get_openapi_schema() -> dict[str, Any]:
                                 "New one-time recovery code, "
                                 "displayed only once"
                             )
-                        }
-                    }
-                },
-                "CsrfTokenResponse": {
-                    "type": "object",
-                    "required": ["csrf_token"],
-                    "properties": {
-                        "csrf_token": {
-                            "type": "string"
                         }
                     }
                 },

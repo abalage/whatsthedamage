@@ -293,6 +293,11 @@ footer {
   min-width: 300px;
 }
 
+/* Popover content is plain text; render detail-line breaks */
+.popover-wide .popover-body {
+  white-space: pre-line;
+}
+
 /* Theme switcher preview */
 .theme-preview {
   display: inline-block;

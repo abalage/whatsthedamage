@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { BreadcrumbItem } from '../../composables/useDrilldownData.js'
+import type { BreadcrumbItem } from '../../composables/useDrilldownData'
 
 defineProps<{
   items: BreadcrumbItem[]

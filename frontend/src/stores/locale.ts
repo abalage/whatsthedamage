@@ -1,23 +1,24 @@
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
 import { useGettext } from 'vue3-gettext'
+import { usePersistentRef } from '../composables/usePersistentRef'
+
+const LOCALE_KEY = 'locale'
 
 export const useLocaleStore = defineStore('locale', () => {
   const gettext = useGettext()
-  const locale = ref<string>(gettext.current)
+  const locale = usePersistentRef<string>(
+    LOCALE_KEY,
+    gettext.current,
+    (value): value is string => typeof value === 'string' && value in gettext.available
+  )
 
   const setLocale = (newLocale: string): void => {
     locale.value = newLocale
     gettext.current = newLocale
-    localStorage.setItem('locale', newLocale)
   }
 
   const loadLocale = (): void => {
-    const savedLocale = localStorage.getItem('locale')
-    if (savedLocale) {
-      locale.value = savedLocale
-      gettext.current = savedLocale
-    }
+    gettext.current = locale.value
   }
 
   /**

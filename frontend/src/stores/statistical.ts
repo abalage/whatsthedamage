@@ -1,19 +1,32 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
+import { clearPersisted, usePersistentRef } from '../composables/usePersistentRef'
+
+const ALGORITHMS_KEY = 'statisticalAlgorithms'
+const DIRECTION_KEY = 'statisticalDirection'
+
+const DEFAULT_ALGORITHMS = ['iqr', 'pareto']
+const DEFAULT_DIRECTION = 'columns'
 
 export const useStatisticalStore = defineStore('statistical', () => {
-  const algorithms = ref<string[]>(['iqr', 'pareto'])
-  const direction = ref<'rows' | 'columns'>('columns')
+  const algorithms = usePersistentRef<string[]>(
+    ALGORITHMS_KEY,
+    [...DEFAULT_ALGORITHMS],
+    (value): value is string[] => Array.isArray(value) && value.every(v => typeof v === 'string')
+  )
+  const direction = usePersistentRef<'rows' | 'columns'>(
+    DIRECTION_KEY,
+    DEFAULT_DIRECTION,
+    (value): value is 'rows' | 'columns' => value === 'rows' || value === 'columns'
+  )
   const highlights = ref<Record<string, string[]> | {}>({})
 
   const setAlgorithms = (newAlgorithms: string[]): void => {
     algorithms.value = newAlgorithms
-    localStorage.setItem('statisticalAlgorithms', JSON.stringify(newAlgorithms))
   }
 
   const setDirection = (newDirection: 'rows' | 'columns'): void => {
     direction.value = newDirection
-    localStorage.setItem('statisticalDirection', newDirection)
   }
 
   const setHighlights = (newHighlights: Record<string, string[]> | {}): void => {
@@ -21,27 +34,17 @@ export const useStatisticalStore = defineStore('statistical', () => {
   }
 
   const resetToDefaults = (): void => {
-    algorithms.value = ['iqr', 'pareto']
-    direction.value = 'columns'
+    algorithms.value = [...DEFAULT_ALGORITHMS]
+    direction.value = DEFAULT_DIRECTION
     highlights.value = {}
-    localStorage.removeItem('statisticalAlgorithms')
-    localStorage.removeItem('statisticalDirection')
+    clearPersisted(ALGORITHMS_KEY)
+    clearPersisted(DIRECTION_KEY)
   }
 
+  // Kept for compatibility with pages that call it on mount; the
+  // persisted refs already initialize from storage
   const loadFromStorage = (): void => {
-    const savedAlgorithms = localStorage.getItem('statisticalAlgorithms')
-    if (savedAlgorithms) {
-      try {
-        algorithms.value = JSON.parse(savedAlgorithms)
-      } catch (_e: unknown) { // eslint-disable-line @typescript-eslint/no-unused-vars
-        // Error parsing saved algorithms - will use defaults
-      }
-    }
-
-    const savedDirection = localStorage.getItem('statisticalDirection')
-    if (savedDirection === 'rows' || savedDirection === 'columns') {
-      direction.value = savedDirection
-    }
+    // Values were loaded during store initialization
   }
 
   return {

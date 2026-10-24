@@ -13,7 +13,7 @@ import {
   updateTransaction,
   undoTransaction,
   updateSharingPreference,
-} from '../src/js/api.js';
+} from '../src/js/api';
 
 const stubFetch = (data: unknown, ok = true): void => {
   vi.stubGlobal('fetch', vi.fn(async () => ({
@@ -119,12 +119,12 @@ describe('fetchAggregatedTransactions', () => {
 });
 
 describe('fetchProcessingResultMetadata', () => {
-  it('returns null without a request when resultId is undefined', async () => {
+  it('returns undefined without a request when resultId is undefined', async () => {
     stubFetch({});
 
     const result = await fetchProcessingResultMetadata(undefined);
 
-    expect(result).toBe(null);
+    expect(result).toBe(undefined);
     expect(globalThis.fetch).not.toHaveBeenCalled();
   });
 

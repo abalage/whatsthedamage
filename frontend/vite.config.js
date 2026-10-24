@@ -14,7 +14,9 @@ export default defineConfig({
     emptyOutDir: true,
     cssCodeSplit: true,
     minify: 'terser',
-    sourcemap: true,
+    // Sourcemaps stay out of production builds unless explicitly
+    // requested (they expose the original sources on the public site)
+    sourcemap: process.env.VITE_SOURCEMAPS === 'true',
     chunkSizeWarningLimit: 500,
     copyPublicDir: true,
     rollupOptions: {

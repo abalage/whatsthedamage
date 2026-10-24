@@ -1,6 +1,8 @@
 <script setup lang="ts">
-import { useFeedbackStore } from '../stores/feedback.js'
+import { useGettext } from 'vue3-gettext'
+import { useFeedbackStore } from '../stores/feedback'
 
+const { $gettext } = useGettext()
 const feedback = useFeedbackStore()
 
 const getAlertClass = (type: string) => {
@@ -27,11 +29,11 @@ const getIconClass = (type: string) => {
       role="alert"
     >
       <i :class="['bi', getIconClass(message.type), 'me-2']"></i>
-      {{ message.message }}
+      {{ $gettext(message.message) }}
       <button
         type="button"
         class="btn-close"
-        aria-label="Close"
+        :aria-label="$gettext('Close')"
         @click="feedback.dismissMessage(message.id)"
       ></button>
     </div>

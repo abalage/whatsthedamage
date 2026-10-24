@@ -7,6 +7,8 @@ from functools import wraps
 from typing import Any, Callable, Optional, Tuple, TypeVar
 from flask import current_app, request, jsonify, Response
 
+from whatsthedamage.api.helpers import json_error_response
+
 T = TypeVar('T')
 
 
@@ -118,19 +120,35 @@ def require_csrf(f: Callable[..., T]) -> Callable[..., Any]:
         # Get session from request context (set by @require_authentication)
         session = getattr(request, 'session', None)
         if not session:
-            return jsonify({'error': 'CSRF token requires authenticated session'}), 403
+            return json_error_response(
+                'CSRF token requires authenticated session',
+                403,
+                'CSRF_SESSION_REQUIRED'
+            )
 
         # Get CSRF token from header
         csrf_token = request.headers.get('X-CSRF-Token')
         if not csrf_token:
-            return jsonify({'error': 'CSRF token required for state-changing requests'}), 403
+            return json_error_response(
+                'CSRF token required for state-changing requests',
+                403,
+                'CSRF_TOKEN_MISSING'
+            )
 
         # Validate CSRF token
         if not session.csrf_token_hash:
-            return jsonify({'error': 'Session has no CSRF token'}), 403
+            return json_error_response(
+                'Session has no CSRF token',
+                403,
+                'CSRF_TOKEN_NOT_SET'
+            )
 
         if not auth_service.validate_csrf_token(csrf_token, session.csrf_token_hash):
-            return jsonify({'error': 'Invalid CSRF token'}), 403
+            return json_error_response(
+                'Invalid CSRF token',
+                403,
+                'CSRF_TOKEN_INVALID'
+            )
 
         return f(*args, **kwargs)
 

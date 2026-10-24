@@ -2,9 +2,9 @@
 import { ref, onMounted, computed, watch } from 'vue'
 import { useRoute, RouterLink } from 'vue-router'
 import { useGettext } from 'vue3-gettext'
-import { fetchAllTransactions, fetchProcessingResultMetadata } from '../js/api.js'
-import { buildResultQuery, extractResultId } from '../js/routeUtils.js'
-import { useCategoriesStore } from '../stores/categories.js'
+import { useDatasetStore, type DatasetEntry } from '../stores/dataset'
+import { useCategoriesStore } from '../stores/categories'
+import { useApiData } from '../composables/useApiData'
 import {
   useTransactionCorrections,
   editableCorrectionColumns,
@@ -12,24 +12,40 @@ import {
   merchantOf,
   correctedRowIds,
   UNCATEGORIZED
-} from '../composables/useTransactionCorrections.js'
-import { formatDateISO } from '../js/dateUtils.js'
+} from '../composables/useTransactionCorrections'
+import { formatDateISO } from '../js/dateUtils'
+import { buildResultQuery, extractResultId } from '../js/routeUtils'
 import VueDataTable from '../components/data/VueDataTable.vue'
 import ToggleFilterButton from '../components/data/ToggleFilterButton.vue'
+import ErrorState from '../components/layout/ErrorState.vue'
 import type { Column } from '../components/data/VueDataTable.vue'
-import type {
-  ProcessingResultMetadata,
-  TransactionListItem
-} from '../types/api.js'
+import type { TransactionListItem } from '../types/api'
 
 const { $gettext } = useGettext()
 const categoriesStore = useCategoriesStore()
+const datasetStore = useDatasetStore()
 const route = useRoute()
 
 // Optional resultId filter, carried in the query string
 const resultId = computed(() => extractResultId(route.query as Record<string, unknown>))
 
-const transactions = ref<TransactionListItem[]>([])
+// Shared, cached dataset load through the sanctioned page-load pattern;
+// errors render via ErrorState, no toast
+const {
+  data: fetchResponse,
+  isLoading,
+  error,
+  fetchData: loadResults
+} = useApiData<DatasetEntry>({
+  fetchFn: () => datasetStore.load(resultId.value ?? undefined)
+})
+
+const transactions = computed<TransactionListItem[]>(() => fetchResponse.value?.transactions ?? [])
+const metadata = computed(() => fetchResponse.value?.metadata)
+const totalTransactionCount = computed(() => fetchResponse.value?.total_count ?? 0)
+
+// The unfiltered view fetches with a limit; warn when rows were left out
+const isTruncated = computed(() => totalTransactionCount.value > transactions.value.length)
 
 // Persist corrections and undo them, refreshing the local row in place;
 // errors are rethrown so the editing cell can display them inline
@@ -82,36 +98,6 @@ const columns = computed<Column[]>(() => {
 
   return cols
 })
-
-const metadata = ref<ProcessingResultMetadata | null>(null)
-const totalTransactionCount = ref(0)
-const isLoading = ref(true)
-const error = ref<string | null>(null)
-
-// The unfiltered view fetches with a limit; warn when rows were left out
-const isTruncated = computed(() => totalTransactionCount.value > transactions.value.length)
-
-const loadResults = async () => {
-  try {
-    isLoading.value = true
-    error.value = null
-
-    // Fetch metadata only when scoped to a specific result
-    metadata.value = resultId.value
-      ? await fetchProcessingResultMetadata(resultId.value)
-      : null
-
-    // Fetch the complete dataset, optionally filtered by result
-    const response = await fetchAllTransactions(resultId.value ?? undefined)
-    transactions.value = response.transactions
-    totalTransactionCount.value = response.total_count
-
-    isLoading.value = false
-  } catch (err) {
-    error.value = err instanceof Error ? err.message : 'Failed to load results'
-    isLoading.value = false
-  }
-}
 
 // Flatten all transactions for the data table, optionally limited to
 // corrected transactions by the toolbar toggle
@@ -167,9 +153,7 @@ watch(resultId, () => {
     </div>
 
     <!-- Error State -->
-    <div v-else-if="error" class="bg-status-danger text-on-light alert">
-      {{ error }}
-    </div>
+    <ErrorState v-else-if="error" :message="error" />
 
     <!-- Main Content -->
     <div v-else-if="metadata || transactions.length > 0">

@@ -19,7 +19,7 @@ DOCKER_TAG ?= $(shell set -o pipefail; python3 -m setuptools_scm 2>/dev/null | s
 VERSION ?= $(shell set -o pipefail; python3 -m setuptools_scm 2>/dev/null || echo "v0.0.0")
 
 
-.PHONY: test lint lang clean mrproper image compile-deps update-deps compile-deps-secure help docs build backend frontend frontend-build backend-test frontend-test
+.PHONY: test lint lang clean mrproper image compile-deps update-deps compile-deps-secure help docs build backend frontend frontend-build backend-test frontend-test api-contract
 
 # =============================================================================
 # DEVELOPMENT TARGETS
@@ -91,6 +91,10 @@ lang: dev
 	$(PYTHON) scripts/extract_category_strings.py
 	cd frontend && $(NPM_RUN) gettext-extract
 	cd frontend && $(NPM_RUN) gettext-compile
+
+# Regenerate the API contract fixture for the frontend contract tests
+api-contract:
+	$(PYTHON) scripts/generate_api_contract.py
 
 # Build Sphinx documentation
 docs:

@@ -3,20 +3,15 @@
  * VueDataTable - A native Vue 3 data table component
  *
  * Replaces DataTables.net with pure Vue implementation.
- * Provides sorting, pagination, filtering, highlighting, and export.
+ * Provides sorting, pagination, filtering, and highlighting.
  *
  * Features:
  * - Sortable columns
  * - Pagination
  * - Global search/filtering
  * - Row highlighting
- * - CSV/Excel export
  * - Bootstrap 5 styling
  * - Fully reactive
- *
- * SECURITY NOTE: Custom render functions use v-html, which can execute
- * arbitrary HTML/JS. This is safe because data comes from user's own CSV files.
- * If used with untrusted data, disable custom render functions.
  *
  * Usage:
  *   <VueDataTable
@@ -31,11 +26,23 @@
  * results (e.g., { amount: 100 } becomes "[object Object]").
  */
 
-import { ref, computed, onUnmounted, type CSSProperties } from 'vue'
+import { computed, type CSSProperties } from 'vue'
 import { useGettext } from 'vue3-gettext'
 import { RouterLink } from 'vue-router'
-import type { Column, AggregateRowConfig } from '../../types/column.js'
-import { getCssClassesForHighlights, DEFAULT_HIGHLIGHT_CONFIG } from '../../config/highlight-config.ts'
+import type { Column, AggregateRowConfig } from '../../types/column'
+import { useTableSorting } from '../../composables/useTableSorting'
+import { useTableFiltering } from '../../composables/useTableFiltering'
+import { useTablePagination } from '../../composables/useTablePagination'
+import { useTableHighlight } from '../../composables/useTableHighlight'
+import {
+  AGGREGATE_CALCULATORS,
+  AGGREGATE_ROW_MARKER,
+  getDefaultLabelForType,
+  getEffectiveAggregateConfig,
+  isAggregateRow,
+  shouldIncludeColumn
+} from './tableAggregates'
+import TableCell from './TableCell.vue'
 
 export type { Column, AggregateRowConfig }
 
@@ -62,14 +69,6 @@ interface Props {
   showSearch?: boolean
   /** Search input placeholder. Default: "Search..." */
   searchPlaceholder?: string
-
-  // Export
-  /** Show export buttons. Default: true */
-  showExport?: boolean
-  /** CSV export button text. Default: "Export CSV" */
-  csvText?: string
-  /** Excel export button text. Default: "Export Excel" */
-  excelText?: string
 
   // Highlighting
   /** Cell-level highlights: row_id -> array of highlight types (for cell-level highlighting in pivot tables) */
@@ -131,42 +130,6 @@ const props = defineProps<Props>()
 const emit = defineEmits(['cleared-filters'])
 const { $gettext } = useGettext()
 
-// Type for aggregate calculation results
-type AggregateValue = number | string | null
-
-// Built-in aggregate calculators
-const AGGREGATE_CALCULATORS: Record<string, (data: Record<string, unknown>[], columnKey: string) => AggregateValue> = {
-  average: (data, columnKey) => {
-    const values = data.map(row => row[columnKey]).filter(v => v !== null && v !== undefined)
-    if (values.length === 0) return null
-    const numericValues = values.map(Number).filter(v => !Number.isNaN(v))
-    return numericValues.reduce((sum, val) => sum + val, 0) / numericValues.length
-  },
-  sum: (data, columnKey) => {
-    const numericValues = data.map(row => Number(row[columnKey])).filter(v => !Number.isNaN(v))
-    return numericValues.length > 0 ? numericValues.reduce((sum, val) => sum + val, 0) : null
-  },
-  min: (data, columnKey) => {
-    const numericValues = data.map(row => Number(row[columnKey])).filter(v => !Number.isNaN(v))
-    return numericValues.length > 0 ? Math.min(...numericValues) : null
-  },
-  max: (data, columnKey) => {
-    const numericValues = data.map(row => Number(row[columnKey])).filter(v => !Number.isNaN(v))
-    return numericValues.length > 0 ? Math.max(...numericValues) : null
-  },
-  count: (data, columnKey) => {
-    return data.filter(row => row[columnKey] !== null && row[columnKey] !== undefined).length
-  }
-}
-
-// Marker property to identify aggregate rows
-const AGGREGATE_ROW_MARKER = '_isAggregateRow'
-
-// Helper function to check if a row is an aggregate row (for template use)
-function isAggregateRow(row: Record<string, unknown>): boolean {
-  return row[AGGREGATE_ROW_MARKER] === true
-}
-
 // Computed aggregate row data
 const aggregateRowData = computed(() => {
   if (!props.aggregateRows?.length || !props.columns?.length) return []
@@ -206,11 +169,7 @@ const aggregateRowData = computed(() => {
       } else {
         // Built-in calculator
         const calculator = AGGREGATE_CALCULATORS[effectiveConfig.type || aggregateRow.type]
-        if (calculator) {
-          value = calculator(dataForCalculation, column.key)
-        } else {
-          value = null
-        }
+        value = calculator ? calculator(dataForCalculation, column.key) : null
       }
 
       // Apply formatter
@@ -221,7 +180,7 @@ const aggregateRowData = computed(() => {
     // Set row label for the first column (or as specified)
     if (props.columns.length > 0) {
       const firstColumnKey = props.columns[0].key
-      const label = aggregateRow.label || getDefaultLabelForType(aggregateRow.type)
+      const label = aggregateRow.label || getDefaultLabelForType(aggregateRow.type, $gettext)
       // Only set label if not already set by custom calculator
       if (row[firstColumnKey] === '' || row[firstColumnKey] == null) {
         row[firstColumnKey] = label
@@ -232,58 +191,15 @@ const aggregateRowData = computed(() => {
   })
 })
 
-// Helper: Check if column should be included in aggregate row
-function shouldIncludeColumn(aggregateRow: AggregateRowConfig, columnKey: string): boolean {
-  // If columns are explicitly specified, only include those
-  if (aggregateRow.columns) {
-    if (typeof aggregateRow.columns === 'function') {
-      return aggregateRow.columns(columnKey)
-    }
-    return aggregateRow.columns.includes(columnKey)
-  }
-
-  // If columns are explicitly excluded, exclude those
-  if (aggregateRow.excludeColumns && aggregateRow.excludeColumns.includes(columnKey)) {
-    return false
-  }
-
-  return true
-}
-
-// Helper: Get effective aggregate config (column-level overrides global)
-function getEffectiveAggregateConfig(aggregateRow: AggregateRowConfig, column: Column): {
-  type: string
-  customCalculator?: (data: Record<string, unknown>[]) => unknown
-  formatter?: (value: unknown) => string
-  enabled?: boolean
-  label?: string
-} {
-  const columnAggregate = column.aggregate
-
-  if (columnAggregate && columnAggregate.enabled === false) {
-    return { type: 'none' }
-  }
-
-  return {
-    type: columnAggregate?.type || aggregateRow.type,
-    customCalculator: columnAggregate?.customCalculator,
-    formatter: columnAggregate?.formatter,
-    enabled: columnAggregate?.enabled,
-    label: columnAggregate?.label
-  }
-}
-
-// Helper: Get default label for aggregate type
-function getDefaultLabelForType(type: string): string {
-  const labels: Record<string, string> = {
-    average: $gettext('Average'),
-    sum: $gettext('Sum'),
-    min: $gettext('Min'),
-    max: $gettext('Max'),
-    count: $gettext('Count'),
-    custom: $gettext('Aggregate')
-  }
-  return labels[type] || $gettext('Aggregate')
+/**
+ * Whether a cell needs the TableCell component (custom component or
+ * formatted value). Plain cells render inline for performance: mounting
+ * a component instance per plain cell measurably slows large tables.
+ * Body-row component cells are also rendered inline; TableCell remains
+ * for formatted cells and the aggregate rows.
+ */
+function needsCellComponent(column: Column): boolean {
+  return Boolean(column.component || column.formatValue)
 }
 
 // Separate aggregate rows for header and footer
@@ -303,376 +219,57 @@ const footerAggregateData = computed(() => {
   })
 })
 
-// State
-const currentPage = ref(1)
-const searchQuery = ref('')
-const sortColumn = ref<string | null>(null)
-const sortDirection = ref<'asc' | 'desc'>('asc')
-const columnFilters = ref<Record<string, string>>({})
+// State and behavior live in dedicated composables; this component is
+// the orchestration (props wiring, aggregate rows, template)
+const { sortColumn, sortDirection, ariaSortValue, handleSort, sortBy, sortData } = useTableSorting(
+  () => props.columns,
+  { onSortChange: () => pagination.reset() }
+)
 
-// ARIA sort attribute value (maps 'asc'/'desc' to 'ascending'/'descending' for accessibility)
-const ariaSortValue = computed(() => {
-  if (!sortColumn.value) return undefined
-  return sortDirection.value === 'asc' ? 'ascending' : 'descending'
-})
-
-// Debounced search timeout
-let searchTimeout: ReturnType<typeof setTimeout> | null = null
-
-// Pagination
-const pageSize = computed(() => props.pageSize ?? 25)
-const totalItems = computed(() => filteredData.value.length)
-const totalPages = computed(() => Math.ceil(totalItems.value / pageSize.value))
-
-/**
- * Generate smart pagination page numbers with ellipsis for large page counts.
- * Always shows: first page, last page, current page, and pages around current.
- */
-const paginationPages = computed(() => {
-  const pages: (number | string)[] = []
-  const maxVisible = 7
-  const half = Math.floor(maxVisible / 2)
-
-  if (totalPages.value <= maxVisible) {
-    // Show all pages if not too many
-    for (let i = 1; i <= totalPages.value; i++) {
-      pages.push(i)
-    }
-  } else {
-    // Always show first page
-    pages.push(1)
-
-    // Show pages around current page
-    let start = Math.max(2, currentPage.value - half)
-    let end = Math.min(totalPages.value - 1, currentPage.value + half)
-
-    // Adjust if we're at the edges
-    if (currentPage.value <= half + 1) {
-      end = maxVisible - 1
-    } else if (currentPage.value >= totalPages.value - half) {
-      start = totalPages.value - maxVisible + 2
-    }
-
-    // Add ellipsis if needed before middle pages
-    if (start > 2) {
-      pages.push('...')
-    }
-
-    // Add middle pages
-    for (let i = start; i <= end; i++) {
-      pages.push(i)
-    }
-
-    // Add ellipsis if needed after middle pages
-    if (end < totalPages.value - 1) {
-      pages.push('...')
-    }
-
-    // Always show last page
-    pages.push(totalPages.value)
-  }
-
-  return pages
-})
-
-/**
- * Compare two values for sorting.
- * Handles null/undefined, numbers, dates, and strings.
- */
-function compareValues(a: unknown, b: unknown): number {
-  // Handle null/undefined
-  if (a == null && b == null) return 0
-  if (a == null) return -1
-  if (b == null) return 1
-
-  // Numbers
-  if (typeof a === 'number' && typeof b === 'number') {
-    return a - b
-  }
-
-  // Dates (check both for Date instances)
-  if (a instanceof Date && b instanceof Date) {
-    return a.getTime() - b.getTime()
-  }
-  if (a instanceof Date) return -1
-  if (b instanceof Date) return 1
-
-  // Strings (fallback)
-  return String(a).localeCompare(String(b))
-}
-
-/**
- * Get display value for a cell.
- * Handles custom render functions and formatting.
- */
-function getDisplayValue(column: Column, value: unknown, row: Record<string, unknown>, index: number): string {
-  if (column.renderHtml) {
-    return column.renderHtml(value, row, index)
-  }
-  if (value == null) return ''
-  return String(value)
-}
-
-/**
- * Check if column uses HTML rendering (requires v-html)
- */
-function usesHtmlRendering(column: Column): boolean {
-  // If component is used, it handles its own rendering
-  if (column.component) return false
-  // Explicit renderHtml uses HTML
-  if (column.renderHtml) return true
-  return false
-}
+const {
+  searchQuery,
+  columnFilters,
+  handleSearch,
+  clearSearch,
+  search,
+  setColumnFilter,
+  clearColumnFilter,
+  clearColumnFilters,
+  filterData
+} = useTableFiltering(
+  () => props.columns,
+  { onFiltersChanged: () => pagination.reset() }
+)
 
 /**
  * Filter and sort data based on current state.
  */
-const filteredData = computed(() => {
-  let result = [...props.data]
+const filteredData = computed(() => sortData(filterData(props.data)))
 
-  // Apply column-specific filters
-  Object.entries(columnFilters.value).forEach(([key, value]) => {
-    if (value) {
-      const column = props.columns.find(c => c.key === key)
-      if (column && column.filterable !== false) {
-        // Fixed-choice filters match the raw value exactly; text filters
-        // fall back to case-insensitive substring matching
-        const matches = column.filterOptions
-          ? (row: Record<string, unknown>) => String(row[key]) === value
-          : (row: Record<string, unknown>) => String(row[key]).toLowerCase().includes(value.toLowerCase())
-        result = result.filter(matches)
-      }
-    }
-  })
+const pagination = useTablePagination(
+  () => filteredData.value.length,
+  () => props.pageSize ?? 25
+)
+const { currentPage, pageSize: itemsPerPage, totalItems, totalPages, paginationPages, goToPage } = pagination
 
-  // Apply global search filter
-  const query = searchQuery.value.toLowerCase()
-  if (query) {
-    result = result.filter(row => {
-      return props.columns.some(column => {
-        if (column.searchable === false) return false
-        const value = row[column.key]
-        return String(value).toLowerCase().includes(query)
-      })
-    })
-  }
-
-  // Apply sorting
-  if (sortColumn.value) {
-    const column = props.columns.find(c => c.key === sortColumn.value)
-    if (column) {
-      result.sort((a, b) => {
-        const aVal = a[column.key]
-        const bVal = b[column.key]
-        const comparison = compareValues(aVal, bVal)
-        return comparison * (sortDirection.value === 'asc' ? 1 : -1)
-      })
-    }
-  }
-
-  return result
-})
-
-/**
- * Clear all column filters
- */
-function clearColumnFilters(): void {
-  columnFilters.value = {}
-  currentPage.value = 1
-  emit('cleared-filters')
-}
-
-/**
- * Clear a specific column filter
- */
-function clearColumnFilter(key: string): void {
-  const newFilters = { ...columnFilters.value }
-  delete newFilters[key]
-  columnFilters.value = newFilters
-  currentPage.value = 1
-}
-
-/**
- * Set a column filter value
- */
-function setColumnFilter(key: string, value: string): void {
-  columnFilters.value = { ...columnFilters.value, [key]: value }
-  currentPage.value = 1
-}
+const { getCellHighlightClasses } = useTableHighlight(() => props.cellHighlightsByRowId)
 
 /**
  * Get paginated data for current page.
  */
 const paginatedData = computed(() => {
-  const start = (currentPage.value - 1) * pageSize.value
-  const end = start + pageSize.value
+  const start = (currentPage.value - 1) * itemsPerPage.value
+  const end = start + itemsPerPage.value
   return filteredData.value.slice(start, end)
 })
 
 /**
- * Get highlight CSS classes for a specific cell.
- * Uses the cell's row_id from the _rowIds mapping.
- * @param row - The table row data
- * @param columnKey - The column key for the cell
- * @returns Array of CSS class names (without 'highlight-' prefix)
+ * Clear all column filters and notify the page so it can reset its
+ * own toolbar filters as well.
  */
-function getCellHighlightClasses(row: Record<string, unknown>, columnKey: string): string[] {
-  // Check if cell-level highlighting is enabled
-  if (!props.cellHighlightsByRowId) return []
-
-  // Get the _rowIds mapping from the row
-  const rowIds = row._rowIds as Record<string, string> | undefined
-  if (!rowIds) return []
-
-  // Get the API row_id for this specific cell/column
-  const cellRowId = rowIds[columnKey]
-  if (!cellRowId) return []
-
-  // Get the highlight types for this cell's row_id
-  const highlightTypes = props.cellHighlightsByRowId[cellRowId]
-  if (!highlightTypes) return []
-
-  // Use the highlight config to resolve CSS classes
-  return getCssClassesForHighlights(highlightTypes, DEFAULT_HIGHLIGHT_CONFIG)
-}
-
-/**
- * Handle column sort click.
- */
-function handleSort(columnKey: string): void {
-  const column = props.columns.find(c => c.key === columnKey)
-  if (!column || column.sortable === false) return
-
-  if (sortColumn.value === columnKey) {
-    // Toggle direction
-    sortDirection.value = sortDirection.value === 'asc' ? 'desc' : 'asc'
-  } else {
-    // New column
-    sortColumn.value = columnKey
-    sortDirection.value = 'asc'
-  }
-  currentPage.value = 1 // Reset to first page when sorting changes
-}
-
-/**
- * Handle search input with debounce.
- */
-function handleSearch(query: string): void {
-  if (searchTimeout) {
-    clearTimeout(searchTimeout)
-  }
-  searchTimeout = setTimeout(() => {
-    searchQuery.value = query
-    currentPage.value = 1 // Reset to first page when searching
-  }, 300)
-}
-
-/**
- * Go to specific page.
- */
-function goToPage(page: number): void {
-  if (page < 1 || page > totalPages.value) return
-  currentPage.value = page
-}
-
-/**
- * Clear search and reset.
- */
-function clearSearch(): void {
-  searchQuery.value = ''
-  currentPage.value = 1
-}
-
-/**
- * Get export value for a cell (always returns plain text, no HTML)
- */
-function getExportValue(column: Column, value: unknown, row: Record<string, unknown>, index: number): string {
-  // For components, use the raw value (components can't be rendered in exports)
-  if (column.component) {
-    if (value == null) return ''
-    return String(value)
-  }
-  // For HTML rendering, get the HTML but strip tags for CSV/TSV
-  if (column.renderHtml) {
-    const html = column.renderHtml(value, row, index)
-    // Strip HTML tags for export
-    return html.replace(/<[^<>]*>/g, '')
-  }
-  if (value == null) return ''
-  return String(value)
-}
-
-/**
- * Get export rows including summary rows if configured.
- */
-function getExportRows(): string[][] {
-  const dataRows = filteredData.value.map((row, rowIndex) => {
-    return props.columns.map(column => {
-      const value = row[column.key]
-      return getExportValue(column, value, row, rowIndex)
-    })
-  })
-
-  // Add aggregate rows that should be included in export
-  const exportableAggregateRows = props.aggregateRows?.filter(ar => ar.includeInExport !== false) || []
-  if (exportableAggregateRows.length > 0) {
-    // Get the aggregate data for export
-    const aggregateRowsForExport = props.aggregateRows?.map((aggregateRow, aggregateIndex) => {
-      if (aggregateRow.includeInExport === false) return null
-
-      const rowData = aggregateRowData.value[aggregateIndex]
-      if (!rowData) return null
-
-      return props.columns.map(column => {
-        const value = rowData[column.key]
-        // Use export value (plain text, no HTML)
-        const displayValue = getExportValue(column, value, rowData, aggregateIndex)
-        return displayValue
-      })
-    }).filter(Boolean) as string[][]
-
-    dataRows.push(...aggregateRowsForExport)
-  }
-
-  return dataRows
-}
-
-/**
- * Export data to CSV.
- */
-function exportCSV(): void {
-  const headers = props.columns.map(c => c.title).join(',')
-  const rows = getExportRows()
-
-  const csv = [headers, ...rows.map(row => row.map(v => `"${v.replaceAll('"', '""')}"`).join(','))].join('\n')
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
-  const url = URL.createObjectURL(blob)
-  const link = document.createElement('a')
-  link.href = url
-  link.download = `${props.id || 'data'}-${new Date().toISOString().slice(0, 10)}.csv`
-  document.body.appendChild(link)
-  link.click()
-  link.remove()
-  URL.revokeObjectURL(url)
-}
-
-/**
- * Export data to Excel (XLSX format using TSV as fallback).
- */
-function exportExcel(): void {
-  const headers = props.columns.map(c => c.title).join('\t')
-  const rows = getExportRows()
-
-  const tsv = [headers, ...rows.map(row => row.join('\t'))].join('\n')
-  const blob = new Blob([tsv], { type: 'application/vnd.ms-excel;charset=utf-8;' })
-  const url = URL.createObjectURL(blob)
-  const link = document.createElement('a')
-  link.href = url
-  link.download = `${props.id || 'data'}-${new Date().toISOString().slice(0, 10)}.xlsx`
-  document.body.appendChild(link)
-  link.click()
-  link.remove()
-  URL.revokeObjectURL(url)
+function clearAllColumnFilters(): void {
+  clearColumnFilters()
+  emit('cleared-filters')
 }
 
 /**
@@ -688,30 +285,17 @@ const tableClasses = computed(() => {
 })
 
 /**
- * Clean up debounce timeout on unmount.
- */
-onUnmounted(() => {
-  if (searchTimeout) {
-    clearTimeout(searchTimeout)
-  }
-})
-
-/**
  * Public API
  */
 const tableApi: TableApi = {
-  refresh: () => { currentPage.value = 1 },
-  search: (query: string) => { searchQuery.value = query; currentPage.value = 1 },
-  sortBy: (key: string, direction?: 'asc' | 'desc') => {
-    sortColumn.value = key
-    sortDirection.value = direction ?? 'asc'
-    currentPage.value = 1
-  },
+  refresh: () => pagination.reset(),
+  search,
+  sortBy,
   goToPage: (page: number) => goToPage(page),
   getCurrentData: () => paginatedData.value,
   getFilteredData: () => filteredData.value,
   setColumnFilter: (key: string, value: string) => setColumnFilter(key, value),
-  clearColumnFilters: () => clearColumnFilters(),
+  clearColumnFilters: () => clearAllColumnFilters(),
   clearColumnFilter: (key: string) => clearColumnFilter(key),
 }
 
@@ -750,29 +334,11 @@ defineExpose(tableApi)
         class="btn bg-surface-base text-secondary border-secondary hover-bg-surface-secondary px-2 py-1 text-sm rounded-sm"
         type="button"
         :aria-label="$gettext('Clear all filters')"
-        @click="clearColumnFilters"
+        @click="clearAllColumnFilters"
       >
         {{ $gettext('Clear all filters') }}
       </button>
       <slot name="filter-actions"></slot>
-    </div>
-
-    <!-- Export buttons -->
-    <div v-if="showExport !== false" class="mb-3">
-      <div class="btn-group">
-        <button
-          class="btn bg-surface-secondary text-on-dark border-secondary px-2 py-1 text-sm rounded-sm"
-          @click="exportCSV"
-        >
-          {{ csvText ?? $gettext('Export CSV') }}
-        </button>
-        <button
-          class="btn bg-surface-secondary text-on-dark border-secondary px-2 py-1 text-sm rounded-sm"
-          @click="exportExcel"
-        >
-          {{ excelText ?? $gettext('Export Excel') }}
-        </button>
-      </div>
     </div>
 
     <!-- Table -->
@@ -869,24 +435,15 @@ defineExpose(tableApi)
                 ...getCellHighlightClasses(aggregateRow, column.key),
               ]"
             >
-              <template v-if="column.component && !isAggregateRow(aggregateRow)">
-                <component
-                  :is="column.component"
-                  v-bind="column.componentProps ? column.componentProps(aggregateRow[column.key], aggregateRow, aggregateIndex) : {}"
-                />
-              </template>
-              <template v-else-if="column.component">
-                <!-- For aggregate rows, display value as plain text instead of component -->
-                {{ getDisplayValue(column, aggregateRow[column.key], aggregateRow, aggregateIndex) }}
-              </template>
-              <template v-else-if="usesHtmlRendering(column)">
-                <!-- SECURITY: v-html used for custom render. Only enabled with renderHtml. -->
-                <!-- eslint-disable-next-line vue/no-v-html -->
-                <span v-html="getDisplayValue(column, aggregateRow[column.key], aggregateRow, aggregateIndex)" />
-              </template>
-              <template v-else>
-                {{ getDisplayValue(column, aggregateRow[column.key], aggregateRow, aggregateIndex) }}
-              </template>
+              <TableCell
+                v-if="needsCellComponent(column)"
+                :column="column"
+                :value="aggregateRow[column.key]"
+                :row="aggregateRow"
+                :index="aggregateIndex"
+                :as-text="isAggregateRow(aggregateRow)"
+              />
+              <template v-else>{{ aggregateRow[column.key] ?? '' }}</template>
             </td>
           </tr>
         </thead>
@@ -905,20 +462,29 @@ defineExpose(tableApi)
                 ...getCellHighlightClasses(row, column.key),
               ]"
             >
-              <template v-if="column.component">
-                <component
-                  :is="column.component"
-                  v-bind="column.componentProps ? column.componentProps(row[column.key], row, rowIndex) : {}"
-                />
-              </template>
-              <template v-else-if="usesHtmlRendering(column)">
-                <!-- SECURITY: v-html used for custom render. Only enabled with renderHtml. -->
-                <!-- eslint-disable-next-line vue/no-v-html -->
-                <span v-html="getDisplayValue(column, row[column.key], row, rowIndex)" />
-              </template>
-              <template v-else>
-                {{ getDisplayValue(column, row[column.key], row, rowIndex) }}
-              </template>
+              <!-- Extension point: a #cell-<key> slot wins over every
+                   built-in rendering. Use it for new custom cells
+                   instead of growing the column API. -->
+              <slot
+                v-if="$slots[`cell-${column.key}`]"
+                :name="`cell-${column.key}`"
+                :value="row[column.key]"
+                :row="row"
+                :index="rowIndex"
+              />
+              <component
+                :is="column.component"
+                v-else-if="column.component"
+                v-bind="column.componentProps ? column.componentProps(row[column.key], row, rowIndex) : {}"
+              />
+              <TableCell
+                v-else-if="needsCellComponent(column)"
+                :column="column"
+                :value="row[column.key]"
+                :row="row"
+                :index="rowIndex"
+              />
+              <template v-else>{{ row[column.key] ?? '' }}</template>
             </td>
           </tr>
           <tr v-if="paginatedData.length === 0">
@@ -942,24 +508,15 @@ defineExpose(tableApi)
                 ...getCellHighlightClasses(aggregateRow, column.key),
               ]"
             >
-              <template v-if="column.component && !isAggregateRow(aggregateRow)">
-                <component
-                  :is="column.component"
-                  v-bind="column.componentProps ? column.componentProps(aggregateRow[column.key], aggregateRow, aggregateIndex) : {}"
-                />
-              </template>
-              <template v-else-if="column.component">
-                <!-- For aggregate rows, display value as plain text instead of component -->
-                {{ getDisplayValue(column, aggregateRow[column.key], aggregateRow, aggregateIndex) }}
-              </template>
-              <template v-else-if="usesHtmlRendering(column)">
-                <!-- SECURITY: v-html used for custom render. Only enabled with renderHtml. -->
-                <!-- eslint-disable-next-line vue/no-v-html -->
-                <span v-html="getDisplayValue(column, aggregateRow[column.key], aggregateRow, aggregateIndex)" />
-              </template>
-              <template v-else>
-                {{ getDisplayValue(column, aggregateRow[column.key], aggregateRow, aggregateIndex) }}
-              </template>
+              <TableCell
+                v-if="needsCellComponent(column)"
+                :column="column"
+                :value="aggregateRow[column.key]"
+                :row="aggregateRow"
+                :index="aggregateIndex"
+                :as-text="isAggregateRow(aggregateRow)"
+              />
+              <template v-else>{{ aggregateRow[column.key] ?? '' }}</template>
             </td>
           </tr>
         </tfoot>
@@ -1028,7 +585,7 @@ defineExpose(tableApi)
         </li>
       </ul>
       <div class="text-center text-secondary small mt-2">
-        {{ $gettext('Showing') }} {{ (currentPage - 1) * pageSize + 1 }}-{{ Math.min(currentPage * pageSize, totalItems) }}
+        {{ $gettext('Showing') }} {{ (currentPage - 1) * itemsPerPage + 1 }}-{{ Math.min(currentPage * itemsPerPage, totalItems) }}
         {{ $gettext('of') }} {{ totalItems }} {{ $gettext('items') }}
       </div>
     </nav>

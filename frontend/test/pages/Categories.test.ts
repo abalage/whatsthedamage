@@ -8,9 +8,9 @@ import { shallowMount, flushPromises, type VueWrapper } from '@vue/test-utils';
 import { createPinia, setActivePinia, type Pinia } from 'pinia';
 import { reactive } from 'vue';
 import Categories from '../../src/pages/Categories.vue';
-import { fetchProcessingResultMetadata, fetchAllTransactions, recalculateStatistics } from '../../src/js/api.js';
-import { useStatisticalStore } from '../../src/stores/statistical.js';
-import type { ProcessingResultMetadata, TransactionListItem } from '../../src/types/api.js';
+import { fetchProcessingResultMetadata, fetchAllTransactions, recalculateStatistics } from '../../src/js/api';
+import { useStatisticalStore } from '../../src/stores/statistical';
+import type { ProcessingResultMetadata, TransactionListItem } from '../../src/types/api';
 
 const mockRoute = reactive<{ params: Record<string, unknown>; query: Record<string, unknown> }>({
   params: {},
@@ -103,7 +103,7 @@ describe('Categories.vue', () => {
   const mountPage = (): VueWrapper => shallowMount(Categories, { global: { plugins: [pinia] } });
 
   it('renders without error when resultId is undefined', async () => {
-    vi.mocked(fetchProcessingResultMetadata).mockResolvedValue(null);
+    vi.mocked(fetchProcessingResultMetadata).mockResolvedValue(undefined);
     vi.mocked(fetchAllTransactions).mockResolvedValue({
       transactions: [makeTransaction(1)],
       total_count: 1,
@@ -118,7 +118,7 @@ describe('Categories.vue', () => {
   });
 
   it('fetches all transactions without result_id when resultId is undefined', async () => {
-    vi.mocked(fetchProcessingResultMetadata).mockResolvedValue(null);
+    vi.mocked(fetchProcessingResultMetadata).mockResolvedValue(undefined);
     vi.mocked(fetchAllTransactions).mockResolvedValue({
       transactions: [makeTransaction(1)],
       total_count: 1,
@@ -130,7 +130,9 @@ describe('Categories.vue', () => {
     await flushPromises();
 
     expect(fetchAllTransactions).toHaveBeenCalledWith(undefined);
-    expect(fetchProcessingResultMetadata).not.toHaveBeenCalled();
+    // The shared dataset cache resolves metadata through the API helper,
+    // which returns null without a request when unscoped
+    expect(fetchProcessingResultMetadata).toHaveBeenCalledWith(undefined);
   });
 
   it('fetches filtered transactions and metadata when resultId is defined', async () => {
@@ -152,7 +154,7 @@ describe('Categories.vue', () => {
   });
 
   it('shows the "All Transactions" hint when no resultId is given', async () => {
-    vi.mocked(fetchProcessingResultMetadata).mockResolvedValue(null);
+    vi.mocked(fetchProcessingResultMetadata).mockResolvedValue(undefined);
     vi.mocked(fetchAllTransactions).mockResolvedValue({
       transactions: [makeTransaction(1)],
       total_count: 1,
@@ -167,7 +169,7 @@ describe('Categories.vue', () => {
   });
 
   it('groups transactions with an empty account under the unknown account', async () => {
-    vi.mocked(fetchProcessingResultMetadata).mockResolvedValue(null);
+    vi.mocked(fetchProcessingResultMetadata).mockResolvedValue(undefined);
     const withoutAccount = { ...makeTransaction(2), account: '' };
     vi.mocked(fetchAllTransactions).mockResolvedValue({
       transactions: [makeTransaction(1), withoutAccount],
@@ -186,7 +188,7 @@ describe('Categories.vue', () => {
   });
 
   it('shows the empty state when no transactions are found', async () => {
-    vi.mocked(fetchProcessingResultMetadata).mockResolvedValue(null);
+    vi.mocked(fetchProcessingResultMetadata).mockResolvedValue(undefined);
     vi.mocked(fetchAllTransactions).mockResolvedValue({
       transactions: [],
       total_count: 0,
@@ -201,7 +203,7 @@ describe('Categories.vue', () => {
   });
 
   it('shows a truncation warning when total_count exceeds the fetched rows', async () => {
-    vi.mocked(fetchProcessingResultMetadata).mockResolvedValue(null);
+    vi.mocked(fetchProcessingResultMetadata).mockResolvedValue(undefined);
     vi.mocked(fetchAllTransactions).mockResolvedValue({
       transactions: [makeTransaction(1)],
       total_count: 500,
@@ -217,7 +219,7 @@ describe('Categories.vue', () => {
   });
 
   it('renders popover amounts without currency next to the numbers', async () => {
-    vi.mocked(fetchProcessingResultMetadata).mockResolvedValue(null);
+    vi.mocked(fetchProcessingResultMetadata).mockResolvedValue(undefined);
     vi.mocked(fetchAllTransactions).mockResolvedValue({
       transactions: [makeTransaction(1)],
       total_count: 1,
@@ -243,7 +245,7 @@ describe('Categories.vue', () => {
   });
 
   it('recalculates statistics and stores highlights after loading transactions', async () => {
-    vi.mocked(fetchProcessingResultMetadata).mockResolvedValue(null);
+    vi.mocked(fetchProcessingResultMetadata).mockResolvedValue(undefined);
     vi.mocked(fetchAllTransactions).mockResolvedValue({
       transactions: [makeTransaction(1)],
       total_count: 1,
@@ -271,7 +273,7 @@ describe('Categories.vue', () => {
   });
 
   it('skips highlight loading when there are no transactions', async () => {
-    vi.mocked(fetchProcessingResultMetadata).mockResolvedValue(null);
+    vi.mocked(fetchProcessingResultMetadata).mockResolvedValue(undefined);
     vi.mocked(fetchAllTransactions).mockResolvedValue({
       transactions: [],
       total_count: 0,
@@ -286,7 +288,7 @@ describe('Categories.vue', () => {
   });
 
   it('builds cell IDs for each month column of a row', async () => {
-    vi.mocked(fetchProcessingResultMetadata).mockResolvedValue(null);
+    vi.mocked(fetchProcessingResultMetadata).mockResolvedValue(undefined);
     vi.mocked(fetchAllTransactions).mockResolvedValue({
       transactions: [makeTransaction(1)],
       total_count: 1,
@@ -303,7 +305,7 @@ describe('Categories.vue', () => {
   });
 
   it('sums monthly totals per category across transactions', async () => {
-    vi.mocked(fetchProcessingResultMetadata).mockResolvedValue(null);
+    vi.mocked(fetchProcessingResultMetadata).mockResolvedValue(undefined);
     vi.mocked(fetchAllTransactions).mockResolvedValue({
       transactions: [
         makeTransaction(1),
@@ -326,7 +328,7 @@ describe('Categories.vue', () => {
   });
 
   it('keeps month columns scoped to their own account', async () => {
-    vi.mocked(fetchProcessingResultMetadata).mockResolvedValue(null);
+    vi.mocked(fetchProcessingResultMetadata).mockResolvedValue(undefined);
     vi.mocked(fetchAllTransactions).mockResolvedValue({
       transactions: [
         makeTransaction(1),
@@ -349,7 +351,7 @@ describe('Categories.vue', () => {
   });
 
   it('groups transactions without a category under the uncategorized fallback', async () => {
-    vi.mocked(fetchProcessingResultMetadata).mockResolvedValue(null);
+    vi.mocked(fetchProcessingResultMetadata).mockResolvedValue(undefined);
     vi.mocked(fetchAllTransactions).mockResolvedValue({
       transactions: [{ ...makeTransaction(2), category_id: '' }],
       total_count: 1,
@@ -368,7 +370,7 @@ describe('Categories.vue', () => {
   });
 
   it('renders empty cells without links', async () => {
-    vi.mocked(fetchProcessingResultMetadata).mockResolvedValue(null);
+    vi.mocked(fetchProcessingResultMetadata).mockResolvedValue(undefined);
     vi.mocked(fetchAllTransactions).mockResolvedValue({
       transactions: [
         makeTransaction(1),
@@ -400,7 +402,7 @@ describe('Categories.vue', () => {
   });
 
   it('joins popover detail lines of all transactions of a cell', async () => {
-    vi.mocked(fetchProcessingResultMetadata).mockResolvedValue(null);
+    vi.mocked(fetchProcessingResultMetadata).mockResolvedValue(undefined);
     vi.mocked(fetchAllTransactions).mockResolvedValue({
       transactions: [
         makeTransaction(1),
@@ -425,6 +427,6 @@ describe('Categories.vue', () => {
     const props = januaryColumn.componentProps(rows[0]['month-2026-01'], rows[0]);
     expect(props.popoverContent).toContain('2026-01-15: -10.50 - Store');
     expect(props.popoverContent).toContain('2026-01-15: -10.50 - Market');
-    expect(props.popoverContent).toContain('<br>');
+    expect(props.popoverContent).toContain('\n');
   });
 });

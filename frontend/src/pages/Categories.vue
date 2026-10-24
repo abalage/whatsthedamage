@@ -1,25 +1,20 @@
 <script setup lang="ts">
 import { ref, onMounted, computed, watch } from 'vue'
-import {
-  fetchAllTransactions,
-  fetchProcessingResultMetadata,
-  recalculateStatistics
-} from '../js/api.js'
-import { buildResultQuery, extractResultId } from '../js/routeUtils.js'
-import { useFeedbackStore } from '../stores/feedback.js'
-import { useStatisticalStore } from '../stores/statistical.js'
-import { useCategoriesStore } from '../stores/categories.js'
+import { recalculateStatistics } from '../js/api'
+import { buildResultQuery, extractResultId } from '../js/routeUtils'
+import { useFeedbackStore } from '../stores/feedback'
+import { useApiData } from '../composables/useApiData'
+import { useDatasetStore } from '../stores/dataset'
+import { useStatisticalStore } from '../stores/statistical'
+import { useCategoriesStore } from '../stores/categories'
 import { useGettext } from 'vue3-gettext'
 import { useRoute, RouterLink } from 'vue-router'
-import type {
-  ProcessingResultMetadata,
-  TransactionListItem
-} from '../types/api.js'
+import type { ProcessingResultMetadata, TransactionListItem } from '../types/api'
 import VueDataTable from '../components/data/VueDataTable.vue'
 import TableLink from '../components/data/TableLink.vue'
 import TableLinkWithPopover from '../components/data/TableLinkWithPopover.vue'
 import type { Column } from '../components/data/VueDataTable.vue'
-import { formatMonthYear, createMonthDate, extractMonthKey, getMonthKey } from '../js/dateUtils.js'
+import { formatMonthYear, createMonthDate, extractMonthKey, getMonthKey } from '../js/dateUtils'
 
 // Helper function to format month key (YYYY-MM) to display format
 function formatMonthKey(monthKey: string): string {
@@ -34,17 +29,26 @@ function formatMonthKey(monthKey: string): string {
 const { $gettext } = useGettext()
 
 const feedback = useFeedbackStore()
+const datasetStore = useDatasetStore()
 const statisticalStore = useStatisticalStore()
 const categoriesStore = useCategoriesStore()
 const route = useRoute()
 
 // Optional resultId filter, carried in the query string
 const resultId = computed(() => extractResultId(route.query as Record<string, unknown>))
-const metadata = ref<ProcessingResultMetadata | null>(null)
+const metadata = ref<ProcessingResultMetadata | undefined>(undefined)
 const transactions = ref<TransactionListItem[]>([])
 const totalTransactionCount = ref(0)
-const isLoading = ref(true)
-const error = ref<string | null>(null)
+
+// Shared loading state around loadResults; errors render via the page
+const {
+  isLoading,
+  error,
+  fetchData: loadResultsData
+} = useApiData<void>({
+  // Deferred reference: loadResults is defined further below
+  fetchFn: () => loadResults()
+})
 
 // The unfiltered view fetches with a limit; warn when rows were left out
 const isTruncated = computed(() => totalTransactionCount.value > transactions.value.length)
@@ -150,30 +154,17 @@ function getCellDetailsString(
   categoryId: string,
   monthKey: string
 ): string {
-  return aggregate.cells.get(`${categoryId}|${monthKey}`)?.detailLines.join('<br>') ?? ''
+  return aggregate.cells.get(`${categoryId}|${monthKey}`)?.detailLines.join('\n') ?? ''
 }
 
 const loadResults = async () => {
-  try {
-    // Fetch metadata only when scoped to a specific result
-    metadata.value = resultId.value
-      ? await fetchProcessingResultMetadata(resultId.value)
-      : null
+  // Shared, cached dataset load: rows and metadata in one pass
+  const entry = await datasetStore.load(resultId.value ?? undefined)
+  metadata.value = entry.metadata
+  transactions.value = entry.transactions
+  totalTransactionCount.value = entry.total_count
 
-    // Fetch the complete dataset, optionally filtered by result
-    const response = await fetchAllTransactions(resultId.value ?? undefined)
-    transactions.value = response.transactions
-    totalTransactionCount.value = response.total_count
-
-    error.value = null
-    isLoading.value = false
-
-    await loadHighlights()
-  } catch (err) {
-    error.value = err instanceof Error ? err.message : 'Failed to load results'
-    feedback.showError('Failed to load results: ' + error.value)
-    isLoading.value = false
-  }
+  await loadHighlights()
 }
 
 // Fetch statistical highlights for the matrix cells from the recalculate
@@ -346,12 +337,12 @@ function getAccountHighlights(): Record<string, string[]> {
 }
 
 onMounted(() => {
-  loadResults()
+  loadResultsData()
 })
 
 // Reload when the resultId query filter changes while the page is reused
 watch(resultId, () => {
-  loadResults()
+  loadResultsData()
 })
 </script>
 
@@ -421,8 +412,6 @@ watch(resultId, () => {
               :data="rows"
               :columns="columns"
               :cell-highlights-by-row-id="getAccountHighlights()"
-              :csv-text="$gettext('Export CSV')"
-              :excel-text="$gettext('Export Excel')"
               wrapper-class="w-auto"
               show-column-filters
               show-pagination

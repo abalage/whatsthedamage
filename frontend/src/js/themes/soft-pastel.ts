@@ -3,7 +3,7 @@
  * Professional, calming, trustworthy with sage greens and teals
  */
 
-import type { Theme } from './theme.types.js';
+import type { Theme } from './theme.types';
 
 const softPastelTheme: Theme = {
   id: 'soft-pastel',

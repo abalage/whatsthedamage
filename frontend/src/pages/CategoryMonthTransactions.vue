@@ -1,19 +1,19 @@
 <script setup lang="ts">
 import { onMounted, computed, ref, watch } from 'vue'
 import { useGettext } from 'vue3-gettext'
-import { useCategoriesStore } from '../stores/categories.js'
-import { useDrilldownData } from '../composables/useDrilldownData.js'
+import { useCategoriesStore } from '../stores/categories'
+import { useDrilldownData } from '../composables/useDrilldownData'
 import { RouterLink } from 'vue-router'
 import BreadcrumbNavigation from '../components/layout/BreadcrumbNavigation.vue'
-import type { BreadcrumbItem } from '../composables/useBreadcrumbs.js'
+import type { BreadcrumbItem } from '../composables/useBreadcrumbs'
 import LoadingState from '../components/layout/LoadingState.vue'
 import ErrorState from '../components/layout/ErrorState.vue'
 import PageHeader from '../components/layout/PageHeader.vue'
 import VueDataTable from '../components/data/VueDataTable.vue'
 import ToggleFilterButton from '../components/data/ToggleFilterButton.vue'
 import type { Column, AggregateRowConfig } from '../components/data/VueDataTable.vue'
-import { fetchCategoryMonthTransactions } from '../js/api.js'
-import { useResultQuery } from '../composables/useResultQuery.js'
+import { fetchCategoryMonthTransactions } from '../js/api'
+import { useResultQuery } from '../composables/useResultQuery'
 import {
   useTransactionCorrections,
   editableCorrectionColumns,
@@ -21,9 +21,9 @@ import {
   merchantOf,
   correctedRowIds,
   UNCATEGORIZED
-} from '../composables/useTransactionCorrections.js'
-import type { TransactionListResponse } from '../types/api.js'
-import { formatMonthYear, formatDateISO, toEpoch } from '../js/dateUtils.js'
+} from '../composables/useTransactionCorrections'
+import type { TransactionListResponse } from '../types/api'
+import { formatMonthYear, formatDateISO, toEpoch } from '../js/dateUtils'
 import BarChart from '../components/charts/BarChart.vue'
 
 const { $gettext } = useGettext()
@@ -70,7 +70,6 @@ const {
       { name: categoryName && monthName ? `${categoryName} - ${monthName}` : $gettext('Transaction Details'), active: true }
     ]
   },
-  errorMessageKey: 'transactionsLoadError'
 })
 
 // Persist corrections and undo them, refreshing the local row in place;
@@ -101,13 +100,13 @@ const categoryFilterOptions = computed(() => {
 // Table columns; the edit-mode undo column is toggled from the toolbar
 const columns = computed<Column[]>(() => {
   const cols: Column[] = [
-    { key: 'date', title: $gettext('Date'), renderHtml: (value: unknown, row?: Record<string, unknown>) => String(((row as { date_display?: string })?.date_display) || value || '') },
+    { key: 'date', title: $gettext('Date'), formatValue: (value: unknown, row?: Record<string, unknown>) => String(((row as { date_display?: string })?.date_display) || value || '') },
     categoryColumn(categoryFilterOptions.value),
     merchantColumn(),
     {
       key: 'amount',
       title: $gettext('Amount'),
-      renderHtml: (value: unknown, row?: Record<string, unknown>) => String(((row as { amount_display?: string })?.amount_display) || value || '')
+      formatValue: (value: unknown, row?: Record<string, unknown>) => String(((row as { amount_display?: string })?.amount_display) || value || '')
     },
     noticeColumn()
   ]
@@ -154,7 +153,6 @@ const aggregateRows = computed<AggregateRowConfig[]>(() => {
       id: 'amount-sum',
       type: 'custom',
       position: 'footer',
-      includeInExport: true,
       class: 'fw-bold bg-surface-primary text-on-primary',
       customCalculator: (data, columnKey) => {
         if (columnKey === 'date') return $gettext('Total')
@@ -169,7 +167,6 @@ const aggregateRows = computed<AggregateRowConfig[]>(() => {
       id: 'amount-average',
       type: 'custom',
       position: 'footer',
-      includeInExport: true,
       class: 'fw-bold bg-surface-secondary text-on-dark',
       customCalculator: (data, columnKey) => {
         if (columnKey === 'date') return $gettext('Average')
@@ -249,8 +246,6 @@ watch(resultId, () => {
               :columns="columns"
               :aggregate-rows="aggregateRows"
               :cell-highlights-by-row-id="correctedCellHighlights"
-              :csv-text="$gettext('Export CSV')"
-              :excel-text="$gettext('Export Excel')"
               wrapper-class="w-auto"
               show-column-filters
               show-pagination

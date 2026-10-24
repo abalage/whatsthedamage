@@ -3,7 +3,7 @@
  * Woodpicker likes these colors
  */
 
-import type { Theme } from './theme.types.js';
+import type { Theme } from './theme.types';
 
 const pickerTheme: Theme = {
   id: 'picker',

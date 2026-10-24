@@ -3,13 +3,13 @@
  * Central registry that imports and exports all available themes
  */
 
-import type { Theme } from './theme.types.js';
-import greenDreamTheme from './green-dream.ts';
-import softPastelTheme from './soft-pastel.js';
-import earthTonesTheme from './earth-tones.js';
-import corporateTheme from './corporate.js';
-import pickerTheme from './picker.js';
-import balticBlueTheme from './baltic-blue.js';
+import type { Theme } from './theme.types';
+import greenDreamTheme from './green-dream';
+import softPastelTheme from './soft-pastel';
+import earthTonesTheme from './earth-tones';
+import corporateTheme from './corporate';
+import pickerTheme from './picker';
+import balticBlueTheme from './baltic-blue';
 
 /**
  * All available themes for the application
@@ -39,4 +39,4 @@ export function getDefaultTheme(): Theme {
 }
 
 // Re-export types
-export type { Theme } from './theme.types.js';
+export type { Theme } from './theme.types';

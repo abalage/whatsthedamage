@@ -3,7 +3,7 @@
  * Professional, banking, trustworthy with navy and forest green
  */
 
-import type { Theme } from './theme.types.js';
+import type { Theme } from './theme.types';
 
 const corporateTheme: Theme = {
   id: 'corporate',

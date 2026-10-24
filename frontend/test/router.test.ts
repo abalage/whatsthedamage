@@ -5,12 +5,11 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { createPinia, setActivePinia } from 'pinia';
-import router from '../src/router/index.js';
+import router from '../src/router/index';
 
 vi.mock('../src/js/api.js', () => ({
   getMe: vi.fn().mockResolvedValue({
     user: { id: 1, username: 'testuser', is_active: true, opt_in_sharing: false },
-    csrf_token: 'token',
   }),
 }));
 
@@ -67,21 +66,21 @@ describe('resultId query param routes', () => {
 });
 
 describe('unknown routes', () => {
-  it('redirects /results/<uuid> (removed legacy URL) to the index page', async () => {
+  it('shows the 404 page for /results/<uuid> (removed legacy URL)', async () => {
     await router.push('/results/123e4567-e89b-12d3-a456-426614174000');
-    expect(router.currentRoute.value.name).toBe('index');
+    expect(router.currentRoute.value.name).toBe('not-found');
   });
 
-  it('redirects /details (removed legacy URL) to the index page', async () => {
+  it('shows the 404 page for /details (removed legacy URL)', async () => {
     await router.push('/details');
-    expect(router.currentRoute.value.name).toBe('index');
+    expect(router.currentRoute.value.name).toBe('not-found');
   });
 
-  it('redirects arbitrary unknown paths to the index page', async () => {
+  it('shows the 404 page for arbitrary unknown paths', async () => {
     await router.push('/results/accounts');
-    expect(router.currentRoute.value.name).toBe('index');
+    expect(router.currentRoute.value.name).toBe('not-found');
 
     await router.push('/completely/unknown/path');
-    expect(router.currentRoute.value.name).toBe('index');
+    expect(router.currentRoute.value.name).toBe('not-found');
   });
 });

@@ -59,6 +59,28 @@ def api_app() -> Any:
                 os.environ['WHATSTHEDAMAGE_DATABASE_URI'] = previous_uri
 
 
+def csrf_token_from_response(response: Any) -> str:
+    """Extract the CSRF token from a response's Set-Cookie header.
+
+    The CSRF token is delivered as a readable cookie (not in the
+    response body), mirroring what the SPA's cookie reader does.
+
+    Args:
+        response: Flask response of an endpoint that mints a CSRF
+            token (register, login, getMe, /auth/csrf-token).
+
+    Returns:
+        The CSRF token value.
+
+    Raises:
+        AssertionError: When the response carries no csrf_token cookie.
+    """
+    for header in response.headers.getlist('Set-Cookie'):
+        if header.startswith('csrf_token='):
+            return header.split(';', 1)[0].split('=', 1)[1]
+    raise AssertionError('No csrf_token cookie in response headers')
+
+
 def _register_user(
     app: Flask, username: str, password: str = 'password-123456'
 ) -> AuthContext:
@@ -81,7 +103,7 @@ def _register_user(
     data = response.get_json()
     return AuthContext(
         client=client,
-        csrf_token=data['csrf_token'],
+        csrf_token=csrf_token_from_response(response),
         user_id=data['user']['id'],
         username=username
     )

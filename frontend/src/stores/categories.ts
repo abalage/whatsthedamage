@@ -7,9 +7,10 @@
 
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
-import type { CategoryDefinition } from '../types/api.js';
-import { fetchCategories, fetchCostOfLivingCategories } from '../js/api.js';
-import { useLocaleStore } from './locale.js';
+import type { CategoryDefinition } from '../types/api';
+import { fetchCategories, fetchCostOfLivingCategories } from '../js/api';
+import { logger } from '../js/logger';
+import { useLocaleStore } from './locale';
 
 /**
  * Store for managing category definitions and translations
@@ -35,7 +36,7 @@ export const useCategoriesStore = defineStore('categories', () => {
       categories.value = await fetchCategories();
     } catch (err) {
       error.value = err instanceof Error ? err.message : String(err);
-      console.error('Failed to load categories:', err);
+      logger.error('Failed to load categories:', err);
     } finally {
       isLoading.value = false;
     }
@@ -56,7 +57,7 @@ export const useCategoriesStore = defineStore('categories', () => {
       costOfLivingCategories.value = (await fetchCostOfLivingCategories()).map(cat => cat.id);
     } catch (err) {
       error.value = err instanceof Error ? err.message : String(err);
-      console.error('Failed to load cost of living categories:', err);
+      logger.error('Failed to load cost of living categories:', err);
     } finally {
       isLoading.value = false;
     }

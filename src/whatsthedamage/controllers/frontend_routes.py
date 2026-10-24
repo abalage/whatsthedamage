@@ -5,7 +5,7 @@ This module provides a catch-all route that serves the index.html
 for all non-API paths, enabling the Vue SPA to handle client-side routing.
 """
 
-from flask import Blueprint, Response, send_from_directory, current_app
+from flask import Blueprint, Response, send_from_directory, current_app, abort
 from pathlib import Path
 
 frontend_bp = Blueprint('frontend', __name__)
@@ -22,12 +22,23 @@ def serve_frontend(path: str = '') -> Response:
 
     Also serves static assets (js, css, images) from the dist directory.
 
+    Source maps are never served: a stray .map file in the dist
+    folder would expose the original sources publicly.
+
     Args:
         path: The requested path that didn't match any API route
 
     Returns:
         The index.html file or the requested static asset
+
+    Raises:
+        NotFound: When the path requests a source map.
     """
+    # Defense-in-depth: reject source map requests regardless of how
+    # the dist folder got populated
+    if path.endswith('.map'):
+        abort(404)
+
     # List of file extensions that should be served as static assets
     static_extensions = {
         '.js', '.css', '.ico', '.png', '.jpg', '.jpeg', '.gif',

@@ -8,13 +8,13 @@ import { shallowMount, flushPromises, type VueWrapper } from '@vue/test-utils';
 import { createPinia, setActivePinia, type Pinia } from 'pinia';
 import { reactive } from 'vue';
 import PivotTable from '../../src/pages/PivotTable.vue';
-import { usePivotStore } from '../../src/stores/pivot.js';
+import { usePivotStore } from '../../src/stores/pivot';
 import {
   fetchAllTransactions,
   fetchCategories,
   fetchCostOfLivingCategories,
-} from '../../src/js/api.js';
-import type { TransactionListItem } from '../../src/types/api.js';
+} from '../../src/js/api';
+import type { TransactionListItem } from '../../src/types/api';
 
 const mockRoute = reactive<{ params: Record<string, unknown>; query: Record<string, unknown> }>({
   params: {},
@@ -34,6 +34,7 @@ vi.mock('vue3-gettext', (): Record<string, unknown> => ({
 
 vi.mock('../../src/js/api.js', () => ({
   fetchAllTransactions: vi.fn(),
+  fetchProcessingResultMetadata: vi.fn(),
   fetchCategories: vi.fn(),
   fetchCostOfLivingCategories: vi.fn(),
 }));

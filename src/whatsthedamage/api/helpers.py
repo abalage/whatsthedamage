@@ -5,10 +5,10 @@ to avoid code duplication.
 """
 from __future__ import annotations
 
-from flask import request, current_app, Response
+from flask import request, current_app, Response, jsonify
 from werkzeug.exceptions import BadRequest
 from werkzeug.datastructures import FileStorage
-from typing import TYPE_CHECKING, Optional, cast
+from typing import TYPE_CHECKING, Any, Optional, cast
 
 from whatsthedamage.models.api.requests import ProcessingRequest
 
@@ -28,6 +28,61 @@ from whatsthedamage.services.transaction_import_service import (
 )
 
 
+
+
+def create_error_response(
+    message: str,
+    status_code: int = 400,
+    error_code: Optional[str] = None,
+    retry_after: Optional[int] = None
+) -> tuple[dict[str, Any], int]:
+    """Create a standardized error response.
+
+    Single error shape for all API failures: a human-readable
+    message, an optional machine-readable code, and an optional
+    retry_after hint for rate limiting.
+
+    Args:
+        message: Human-readable error message.
+        status_code: HTTP status code.
+        error_code: Machine-readable error code.
+        retry_after: Seconds to wait before retry (for rate limiting).
+
+    Returns:
+        Tuple of (error_dict, status_code).
+    """
+    error_dict: dict[str, Any] = {'error': message}
+    if error_code:
+        error_dict['code'] = error_code
+    if retry_after is not None:
+        error_dict['retry_after'] = str(retry_after)
+    return error_dict, status_code
+
+
+def json_error_response(
+    message: str,
+    status_code: int = 400,
+    error_code: Optional[str] = None,
+    retry_after: Optional[int] = None
+) -> tuple[Response, int]:
+    """Create a standardized JSON error response.
+
+    Wraps create_error_response with jsonify so views can return the
+    result directly: `return json_error_response(...)`.
+
+    Args:
+        message: Human-readable error message.
+        status_code: HTTP status code.
+        error_code: Machine-readable error code.
+        retry_after: Seconds to wait before retry (for rate limiting).
+
+    Returns:
+        Tuple of (Response, status_code), directly returnable from a view.
+    """
+    error_body, status_code = create_error_response(
+        message, status_code, error_code, retry_after
+    )
+    return jsonify(error_body), status_code
 
 
 def _get_file_upload_service() -> FileUploadService:

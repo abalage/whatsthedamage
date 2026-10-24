@@ -195,6 +195,17 @@ Inline/cell errors      → rethrow from the API wrapper (see
 Do not add a fourth pattern; the `dataset` store owns caching, so no
 client-side query library is introduced.
 
+Two auth store actions deliberately bypass `useAsyncAction` — do not
+"normalize" them back:
+
+- `logoutUser` clears local state in a `finally` regardless of the
+  outcome: a failed logout request must still drop the local user
+  (the session cookie may be gone either way), so there is no error
+  path for `run` to manage.
+- `initialize` treats a failed `getMe` as "not authenticated", not an
+  error: swallowing it is the intended contract, and a stale shared
+  `error` ref would make every guard-triggered boot look broken.
+
 ### Inventory
 
 - `useApiData` — fetching only: loading/error state, errors stored and
@@ -303,6 +314,9 @@ Place new tests in `frontend/test/` mirroring the source layout
 - No comments unless absolutely necessary; self-documenting names
 - Do not add DataTables.net/jQuery; use `VueDataTable.vue` and the existing
   chart components
+- Bootstrap 5 via native HTML elements + Bootstrap classes directly; do not
+  create wrapper components for Bootstrap elements; theme colors go through
+  semantic CSS variables (e.g. `bg-surface-primary`, `text-on-primary`)
 - Security: never log passwords, session tokens, CSRF tokens, or recovery
   codes; the API layer handles CSRF automatically — do not bypass it
 - Keep date exchange in ISO 8601 (YYYY-MM-DD or YYYY-MM-DDTHH:MM:SS)

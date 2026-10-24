@@ -219,7 +219,8 @@ export const useAuthStore = defineStore('auth', () => {
    *
    * The backend revokes all sessions and schedules the deletion after
    * a grace period; logging in before that cancels it. Local auth
-   * state is cleared regardless.
+   * state is cleared only on success: a failed request (e.g. wrong
+   * password) leaves the still-valid session intact.
    *
    * @param password - Current password confirming the deletion request
    * @param revokeSharedCorrections - Whether to also withdraw the
@@ -230,14 +231,12 @@ export const useAuthStore = defineStore('auth', () => {
     password: string,
     revokeSharedCorrections: boolean = false
   ): Promise<string> {
-    try {
-      const response = await run(() => deleteAccount(password, revokeSharedCorrections));
-      return response.scheduled_deletion_at;
-    } finally {
-      // All sessions are revoked server-side; drop local state too
-      user.value = null;
-      useDatasetStore().invalidateAll();
-    }
+    const response = await run(() => deleteAccount(password, revokeSharedCorrections));
+
+    // All sessions are revoked server-side; drop local state too
+    user.value = null;
+    useDatasetStore().invalidateAll();
+    return response.scheduled_deletion_at;
   }
 
   /**

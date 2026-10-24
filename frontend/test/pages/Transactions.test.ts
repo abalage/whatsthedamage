@@ -9,6 +9,7 @@ import { createPinia, setActivePinia } from 'pinia';
 import { reactive } from 'vue';
 import Transactions from '../../src/pages/Transactions.vue';
 import VueDataTable from '../../src/components/data/VueDataTable.vue';
+import ErrorState from '../../src/components/layout/ErrorState.vue';
 import EditableCell from '../../src/components/data/EditableCell.vue';
 import UndoCorrectionCell from '../../src/components/data/UndoCorrectionCell.vue';
 import { fetchProcessingResultMetadata, fetchAllTransactions, updateTransaction, undoTransaction, fetchCategories } from '../../src/js/api';
@@ -212,6 +213,17 @@ describe('Transactions.vue', () => {
     await flushPromises();
 
     expect(wrapper.text()).not.toContain('Too many transactions to display');
+  });
+
+  it('renders the shared error state when the load fails', async () => {
+    vi.mocked(fetchProcessingResultMetadata).mockResolvedValue(undefined);
+    vi.mocked(fetchAllTransactions).mockRejectedValue(new Error('Failed to load results'));
+
+    const wrapper = await mountPage();
+    await flushPromises();
+
+    expect((wrapper.findComponent(ErrorState).props() as { message?: string }).message)
+      .toBe('Failed to load results');
   });
 
   it('shows the corrected partner over the original partner', async () => {

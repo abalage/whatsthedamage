@@ -59,6 +59,32 @@ def create_error_response(
     return error_dict, status_code
 
 
+def json_error_response(
+    message: str,
+    status_code: int = 400,
+    error_code: Optional[str] = None,
+    retry_after: Optional[int] = None
+) -> tuple[Response, int]:
+    """Create a standardized JSON error response.
+
+    Wraps create_error_response with jsonify so views can return the
+    result directly: `return json_error_response(...)`.
+
+    Args:
+        message: Human-readable error message.
+        status_code: HTTP status code.
+        error_code: Machine-readable error code.
+        retry_after: Seconds to wait before retry (for rate limiting).
+
+    Returns:
+        Tuple of (Response, status_code), directly returnable from a view.
+    """
+    error_body, status_code = create_error_response(
+        message, status_code, error_code, retry_after
+    )
+    return jsonify(error_body), status_code
+
+
 def _get_file_upload_service() -> FileUploadService:
     """Get file upload service from app extensions (dependency injection)."""
     return cast(FileUploadService, current_app.extensions['file_upload_service'])

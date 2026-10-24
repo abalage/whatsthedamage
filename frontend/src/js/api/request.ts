@@ -99,14 +99,14 @@ function isInvalidCsrfTokenError(status: number, code: string | undefined): bool
 /**
  * Mint a fresh CSRF token from the backend. The backend sets the
  * token as a cookie; the new value is read back from it.
- * @returns The new CSRF token, or null when the refresh failed
+ * @returns The new CSRF token, or undefined when the refresh failed
  */
-async function refreshCsrfToken(): Promise<string | null> {
+async function refreshCsrfToken(): Promise<string | undefined> {
   try {
     await request(getApiUrl('/auth/csrf-token'))
-    return getCsrfToken() ?? null
+    return getCsrfToken()
   } catch {
-    return null
+    return undefined
   }
 }
 

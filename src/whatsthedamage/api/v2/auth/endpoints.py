@@ -31,7 +31,7 @@ from whatsthedamage.services.rate_limit_service import RateLimitService
 from whatsthedamage.config.auth_config import get_auth_config
 from whatsthedamage.models.database.user import User as UserDB
 from whatsthedamage.api.auth_decorators import require_auth_and_csrf
-from whatsthedamage.api.helpers import create_error_response
+from whatsthedamage.api.helpers import json_error_response
 from whatsthedamage.api.middleware import (
     PUBLIC_AUTH_ROUTES,
     get_client_ip,
@@ -311,28 +311,28 @@ def register() -> Tuple[Response, int]:
 
         data = request.get_json()
         if not data:
-            return jsonify(create_error_response(
+            return json_error_response(
                 "Request body is required",
                 400,
                 "MISSING_BODY"
-            )[0]), 400
+            )
 
         username = data.get('username')
         password = data.get('password')
 
         if not username or not isinstance(username, str):
-            return jsonify(create_error_response(
+            return json_error_response(
                 "Username is required",
                 400,
                 "MISSING_USERNAME"
-            )[0]), 400
+            )
 
         if not password or not isinstance(password, str):
-            return jsonify(create_error_response(
+            return json_error_response(
                 "Password is required",
                 400,
                 "MISSING_PASSWORD"
-            )[0]), 400
+            )
 
         ip_address = get_client_ip()
         user_agent = _get_user_agent()
@@ -368,17 +368,17 @@ def register() -> Tuple[Response, int]:
         return response, 201
 
     except UsernameExistsError as e:
-        return jsonify(create_error_response(
+        return json_error_response(
             str(e), 409, "USERNAME_EXISTS"
-        )[0]), 409
+        )
     except PasswordTooWeakError as e:
-        return jsonify(create_error_response(
+        return json_error_response(
             str(e), 422, "PASSWORD_TOO_WEAK"
-        )[0]), 422
+        )
     except ValueError as e:
-        return jsonify(create_error_response(
+        return json_error_response(
             str(e), 400, "VALIDATION_ERROR"
-        )[0]), 400
+        )
 
 
 @auth_bp.route('/login', methods=['POST'])
@@ -421,29 +421,29 @@ def login() -> Tuple[Response, int]:
     try:
         data = request.get_json()
         if not data:
-            return jsonify(create_error_response(
+            return json_error_response(
                 "Request body is required",
                 400,
                 "MISSING_BODY"
-            )[0]), 400
+            )
 
         username = data.get('username')
         password = data.get('password')
         remember_me = data.get('rememberMe') or data.get('remember_me', False)
 
         if not username or not isinstance(username, str):
-            return jsonify(create_error_response(
+            return json_error_response(
                 "Username is required",
                 400,
                 "MISSING_USERNAME"
-            )[0]), 400
+            )
 
         if not password or not isinstance(password, str):
-            return jsonify(create_error_response(
+            return json_error_response(
                 "Password is required",
                 400,
                 "MISSING_PASSWORD"
-            )[0]), 400
+            )
 
         # Check rate limiting
         rate_limit_exceeded, retry_after = _get_rate_limit_service().check_login_rate_limit(
@@ -489,30 +489,30 @@ def login() -> Tuple[Response, int]:
         return response, 200
 
     except InvalidCredentialsError:
-        return jsonify(create_error_response(
+        return json_error_response(
             "Invalid username or password", 401, "INVALID_CREDENTIALS"
-        )[0]), 401
+        )
     except AccountInactiveError:
-        return jsonify(create_error_response(
+        return json_error_response(
             "Account is inactive", 403, "ACCOUNT_INACTIVE"
-        )[0]), 403
+        )
     except AccountDeletionPendingError:
-        return jsonify(create_error_response(
+        return json_error_response(
             "Account is scheduled for deletion",
             403,
             "ACCOUNT_DELETION_PENDING"
-        )[0]), 403
+        )
     except ValueError:
-        return jsonify(create_error_response(
+        return json_error_response(
             "Login failed", 401, "AUTHENTICATION_FAILED"
-        )[0]), 401
+        )
     except Exception:
         logger.exception("Login failed with unexpected exception")
-        return jsonify(create_error_response(
+        return json_error_response(
             "Login failed",
             500,
             "INTERNAL_ERROR"
-        )[0]), 500
+        )
 
 
 @auth_bp.route('/logout', methods=['POST'])
@@ -550,11 +550,11 @@ def logout() -> Tuple[Response, int]:
             success = False
 
         if not success:
-            return jsonify(create_error_response(
+            return json_error_response(
                 "Session not found",
                 401,
                 "INVALID_SESSION"
-            )[0]), 401
+            )
 
         # Create response with cleared cookies
         response = jsonify({'message': 'Successfully logged out'})
@@ -565,11 +565,11 @@ def logout() -> Tuple[Response, int]:
 
     except Exception as e:
         logger.exception("Logout failed with unexpected exception")
-        return jsonify(create_error_response(
+        return json_error_response(
             "Logout failed",
             500,
             "INTERNAL_ERROR"
-        )[0]), 500
+        )
 
 
 @auth_bp.route('/me', methods=['GET'])
@@ -655,29 +655,29 @@ def update_me() -> Tuple[Response, int]:
     try:
         data = request.get_json(silent=True)
         if not data:
-            return jsonify(create_error_response(
+            return json_error_response(
                 "Request body is required",
                 400,
                 "VALIDATION_ERROR"
-            )[0]), 400
+            )
 
         if 'username' not in data and 'opt_in_sharing' not in data:
-            return jsonify(create_error_response(
+            return json_error_response(
                 "username or opt_in_sharing is required",
                 400,
                 "VALIDATION_ERROR"
-            )[0]), 400
+            )
 
         updated_user: Optional[UserDB] = None
 
         if 'opt_in_sharing' in data:
             opt_in_sharing = data['opt_in_sharing']
             if not isinstance(opt_in_sharing, bool):
-                return jsonify(create_error_response(
+                return json_error_response(
                     "opt_in_sharing must be a boolean",
                     400,
                     "VALIDATION_ERROR"
-                )[0]), 400
+                )
             updated_user = _get_account_service().update_opt_in_sharing(
                 cast(int, user.id), opt_in_sharing
             )
@@ -685,39 +685,39 @@ def update_me() -> Tuple[Response, int]:
         if 'username' in data:
             new_username = data['username']
             if not isinstance(new_username, str):
-                return jsonify(create_error_response(
+                return json_error_response(
                     "username must be a string",
                     400,
                     "VALIDATION_ERROR"
-                )[0]), 400
+                )
             updated_user = _get_account_service().update_username(
                 user, new_username
             )
 
         if updated_user is None:
-            return jsonify(create_error_response(
+            return json_error_response(
                 "User not found",
                 404,
                 "USER_NOT_FOUND"
-            )[0]), 404
+            )
 
         return jsonify({'user': _user_payload(updated_user)}), 200
 
     except UsernameExistsError as e:
-        return jsonify(create_error_response(
+        return json_error_response(
             str(e), 409, "USERNAME_EXISTS"
-        )[0]), 409
+        )
     except ValueError as e:
-        return jsonify(create_error_response(
+        return json_error_response(
             str(e), 400, "VALIDATION_ERROR"
-        )[0]), 400
+        )
     except Exception:
         logger.exception("User settings update failed with unexpected exception")
-        return jsonify(create_error_response(
+        return json_error_response(
             "Failed to update user settings",
             500,
             "INTERNAL_ERROR"
-        )[0]), 500
+        )
 
 
 @auth_bp.route('/me/password', methods=['PUT'])
@@ -759,18 +759,18 @@ def change_password() -> Tuple[Response, int]:
         new_password = data.get('new_password') if data else None
 
         if not current_password or not isinstance(current_password, str):
-            return jsonify(create_error_response(
+            return json_error_response(
                 "Current password is required",
                 400,
                 "MISSING_CURRENT_PASSWORD"
-            )[0]), 400
+            )
 
         if not new_password or not isinstance(new_password, str):
-            return jsonify(create_error_response(
+            return json_error_response(
                 "New password is required",
                 400,
                 "MISSING_NEW_PASSWORD"
-            )[0]), 400
+            )
 
         _get_account_service().change_password(
             user, current_password, new_password, session
@@ -779,24 +779,24 @@ def change_password() -> Tuple[Response, int]:
         return jsonify({'message': 'Password changed'}), 200
 
     except PasswordTooWeakError as e:
-        return jsonify(create_error_response(
+        return json_error_response(
             str(e), 422, "PASSWORD_TOO_WEAK"
-        )[0]), 422
+        )
     except InvalidPasswordError:
-        return jsonify(create_error_response(
+        return json_error_response(
             "Invalid current password", 401, "INVALID_CREDENTIALS"
-        )[0]), 401
+        )
     except ValueError as e:
-        return jsonify(create_error_response(
+        return json_error_response(
             str(e), 400, "VALIDATION_ERROR"
-        )[0]), 400
+        )
     except Exception:
         logger.exception("Password change failed with unexpected exception")
-        return jsonify(create_error_response(
+        return json_error_response(
             "Failed to change password",
             500,
             "INTERNAL_ERROR"
-        )[0]), 500
+        )
 
 
 @auth_bp.route('/me/export', methods=['GET'])
@@ -822,11 +822,11 @@ def export_me() -> Tuple[Response, int]:
     try:
         export_service = current_app.extensions.get('data_export_service')
         if export_service is None:
-            return jsonify(create_error_response(
+            return json_error_response(
                 "Data export is not available",
                 500,
                 "INTERNAL_ERROR"
-            )[0]), 500
+            )
 
         payload = export_service.build_export(
             cast(int, user.id), _user_payload(user)
@@ -840,11 +840,11 @@ def export_me() -> Tuple[Response, int]:
 
     except Exception:
         logger.exception("Data export failed with unexpected exception")
-        return jsonify(create_error_response(
+        return json_error_response(
             "Failed to export data",
             500,
             "INTERNAL_ERROR"
-        )[0]), 500
+        )
 
 
 @auth_bp.route('/account', methods=['DELETE'])
@@ -890,11 +890,11 @@ def delete_account() -> Tuple[Response, int]:
         data = request.get_json(silent=True)
         password = data.get('password') if data else None
         if not password or not isinstance(password, str):
-            return jsonify(create_error_response(
+            return json_error_response(
                 "Password is required",
                 400,
                 "MISSING_PASSWORD"
-            )[0]), 400
+            )
 
         revoke_shared_corrections = False
         if data and 'revoke_shared_corrections' in data:
@@ -902,21 +902,21 @@ def delete_account() -> Tuple[Response, int]:
                 data['revoke_shared_corrections']
             )
             if not isinstance(revoke_shared_corrections, bool):
-                return jsonify(create_error_response(
+                return json_error_response(
                     "revoke_shared_corrections must be a boolean",
                     400,
                     "VALIDATION_ERROR"
-                )[0]), 400
+                )
 
         retention_service = current_app.extensions.get(
             'retention_service'
         )
         if retention_service is None:
-            return jsonify(create_error_response(
+            return json_error_response(
                 "Account deletion is not available",
                 500,
                 "INTERNAL_ERROR"
-            )[0]), 500
+            )
 
         scheduled_deletion_at = cast(
             Any, retention_service
@@ -935,20 +935,20 @@ def delete_account() -> Tuple[Response, int]:
         return response, 200
 
     except InvalidPasswordError:
-        return jsonify(create_error_response(
+        return json_error_response(
             "Invalid password", 401, "INVALID_CREDENTIALS"
-        )[0]), 401
+        )
     except ValueError as e:
-        return jsonify(create_error_response(
+        return json_error_response(
             str(e), 400, "VALIDATION_ERROR"
-        )[0]), 400
+        )
     except Exception:
         logger.exception("Account deletion scheduling failed with unexpected exception")
-        return jsonify(create_error_response(
+        return json_error_response(
             "Failed to schedule account deletion",
             500,
             "INTERNAL_ERROR"
-        )[0]), 500
+        )
 
 
 @auth_bp.route('/reset-password', methods=['POST'])
@@ -1002,11 +1002,11 @@ def reset_password() -> Tuple[Response, int]:
     try:
         data = request.get_json()
         if not data:
-            return jsonify(create_error_response(
+            return json_error_response(
                 "Request body is required",
                 400,
                 "MISSING_BODY"
-            )[0]), 400
+            )
 
         username = data.get('username')
         recovery_code = data.get('recoveryCode')
@@ -1014,25 +1014,25 @@ def reset_password() -> Tuple[Response, int]:
 
         # Validate all fields are present and non-empty strings
         if not username or not isinstance(username, str) or not username.strip():
-            return jsonify(create_error_response(
+            return json_error_response(
                 "Username is required",
                 400,
                 "MISSING_USERNAME"
-            )[0]), 400
+            )
 
         if not recovery_code or not isinstance(recovery_code, str) or not recovery_code.strip():
-            return jsonify(create_error_response(
+            return json_error_response(
                 "Recovery code is required",
                 400,
                 "MISSING_RECOVERY_CODE"
-            )[0]), 400
+            )
 
         if not new_password or not isinstance(new_password, str) or not new_password.strip():
-            return jsonify(create_error_response(
+            return json_error_response(
                 "New password is required",
                 400,
                 "MISSING_NEW_PASSWORD"
-            )[0]), 400
+            )
 
         # Check rate limiting (by IP address only, since username may not be valid)
         rate_limit_exceeded, retry_after = _get_rate_limit_service().check_recovery_rate_limit(
@@ -1060,26 +1060,26 @@ def reset_password() -> Tuple[Response, int]:
         return jsonify(response_data), 200
 
     except PasswordTooWeakError as e:
-        return jsonify(create_error_response(
+        return json_error_response(
             str(e), 422, "PASSWORD_TOO_WEAK"
-        )[0]), 422
+        )
     except InvalidCredentialsError:
-        return jsonify(create_error_response(
+        return json_error_response(
             "Invalid username or recovery code",
             401,
             "INVALID_CREDENTIALS"
-        )[0]), 401
+        )
     except ValueError:
-        return jsonify(create_error_response(
+        return json_error_response(
             "Password reset failed", 401, "AUTHENTICATION_FAILED"
-        )[0]), 401
+        )
     except Exception as e:
         logger.exception("Password reset failed with unexpected exception")
-        return jsonify(create_error_response(
+        return json_error_response(
             "Password reset failed",
             500,
             "INTERNAL_ERROR"
-        )[0]), 500
+        )
 
 
 @auth_bp.route('/csrf-token', methods=['GET'])
@@ -1108,21 +1108,21 @@ def get_csrf_token() -> Tuple[Response, int]:
         # Require authenticated session
         session_token = request.cookies.get('session_token')
         if not session_token:
-            return jsonify(create_error_response(
+            return json_error_response(
                 "No session found",
                 401,
                 "NOT_AUTHENTICATED"
-            )[0]), 401
+            )
 
         # Validate session and mint a token whose hash is persisted, so the
         # delivered cookie actually validates on subsequent requests
         result = _get_auth_service().validate_session(session_token)
         if not result:
-            return jsonify(create_error_response(
+            return json_error_response(
                 "Invalid or expired session",
                 401,
                 "INVALID_SESSION"
-            )[0]), 401
+            )
 
         user, session = result
         csrf_token = _get_auth_service().refresh_csrf_token(session)
@@ -1131,8 +1131,8 @@ def get_csrf_token() -> Tuple[Response, int]:
         return response, 200
     except Exception as e:
         logger.exception("CSRF token generation failed with unexpected exception")
-        return jsonify(create_error_response(
+        return json_error_response(
             "Failed to generate CSRF token",
             500,
             "INTERNAL_ERROR"
-        )[0]), 500
+        )

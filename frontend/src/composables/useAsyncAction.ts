@@ -2,8 +2,9 @@
  * Composable wrapping an async action with loading and error state.
  *
  * Each call clears the previous error, sets the loading flag during
- * the action, and stores the error message (re-throwing it) on
- * failure. Pages use it to reduce their handlers to the success path.
+ * the action, and stores the error message while re-throwing it on
+ * failure. The rethrow lets callers run their failure handling at
+ * the call site; the stored message drives inline error display.
  * @module composables/useAsyncAction
  */
 
@@ -17,22 +18,22 @@ import { ref, type Ref } from 'vue'
 export function useAsyncAction(): {
   /** Whether the wrapped action is running */
   isLoading: Ref<boolean>
-  /** Error message of the last failed run, or null */
-  error: Ref<string | null>
+  /** Error message of the last failed run, or undefined */
+  error: Ref<string | undefined>
   /** Runs the action with loading/error handling */
-  run: <T>(action: () => Promise<T>) => Promise<T | undefined>
+  run: <T>(action: () => Promise<T>) => Promise<T>
 } {
   const isLoading = ref(false)
-  const error = ref<string | null>(null)
+  const error = ref<string | undefined>(undefined)
 
-  const run = async <T>(action: () => Promise<T>): Promise<T | undefined> => {
+  const run = async <T>(action: () => Promise<T>): Promise<T> => {
     isLoading.value = true
-    error.value = null
+    error.value = undefined
     try {
       return await action()
     } catch (err: unknown) {
       error.value = err instanceof Error ? err.message : String(err)
-      return undefined
+      throw err
     } finally {
       isLoading.value = false
     }

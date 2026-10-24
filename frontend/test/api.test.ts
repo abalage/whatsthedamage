@@ -119,12 +119,12 @@ describe('fetchAggregatedTransactions', () => {
 });
 
 describe('fetchProcessingResultMetadata', () => {
-  it('returns null without a request when resultId is undefined', async () => {
+  it('returns undefined without a request when resultId is undefined', async () => {
     stubFetch({});
 
     const result = await fetchProcessingResultMetadata(undefined);
 
-    expect(result).toBe(null);
+    expect(result).toBe(undefined);
     expect(globalThis.fetch).not.toHaveBeenCalled();
   });
 

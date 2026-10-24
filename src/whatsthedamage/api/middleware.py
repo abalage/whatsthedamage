@@ -14,6 +14,7 @@ from typing import Any, Optional
 from flask import Blueprint, Flask, Response, current_app, jsonify, request
 
 from whatsthedamage.api.auth_decorators import authenticate_request
+from whatsthedamage.api.helpers import create_error_response
 
 # v2 routes that intentionally remain public. They expose static
 # reference data (categories, CSV profiles, OpenAPI spec) that carries
@@ -83,11 +84,14 @@ def rate_limit_response(retry_after: int) -> Response:
     Returns:
         JSON 429 response.
     """
-    response = jsonify({
-        'error': f'Too many requests. Try again in {retry_after} seconds.',
-        'code': 'RATE_LIMIT_EXCEEDED',
-    })
-    response.status_code = 429
+    error_body, status_code = create_error_response(
+        f'Too many requests. Try again in {retry_after} seconds.',
+        429,
+        'RATE_LIMIT_EXCEEDED',
+        retry_after
+    )
+    response = jsonify(error_body)
+    response.status_code = status_code
     response.headers['Retry-After'] = str(retry_after)
     return response
 

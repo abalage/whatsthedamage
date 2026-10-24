@@ -27,9 +27,13 @@ declare global {
 // Import and register popover directive
 import { popoverDirective } from './directives/popover'
 import { logger } from './js/logger'
+import { installGlobalErrorHandlers } from './js/errorHandling'
 
 // Create Vue app
 const app = createApp(App)
+
+// Capture otherwise-unobserved errors (console-only, see js/errorHandling.ts)
+installGlobalErrorHandlers(app)
 
 // Install Pinia
 const pinia = createPinia()

@@ -21,7 +21,16 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { fetchAllTransactions, fetchProcessingResultMetadata } from '../js/api'
+import { logger } from '../js/logger'
 import type { ProcessingResultMetadata, TransactionListItem } from '../types/api'
+
+/**
+ * Logging threshold: datasets above this size approach the in-memory
+ * rendering ceiling of the current all-rows-in-memory design (see
+ * docs/frontend-architecture.md); sizes become observable in dev
+ * logs before the ceiling is hit.
+ */
+const SIZE_LOG_THRESHOLD = 20000
 
 /**
  * Cached dataset for one resultId (or the user's full history)
@@ -31,8 +40,8 @@ export interface DatasetEntry {
   transactions: TransactionListItem[]
   /** Total transaction count reported by the API */
   total_count: number
-  /** Processing result metadata, or null when unscoped */
-  metadata: ProcessingResultMetadata | null
+  /** Processing result metadata, or undefined when unscoped */
+  metadata: ProcessingResultMetadata | undefined
 }
 
 /**
@@ -81,6 +90,12 @@ export const useDatasetStore = defineStore('dataset', () => {
         metadata
       }
       entries.value.set(key, entry)
+      if (entry.transactions.length > SIZE_LOG_THRESHOLD) {
+        logger.debug(
+          `Dataset ${key} holds ${entry.transactions.length} transactions ` +
+          `(above the ${SIZE_LOG_THRESHOLD} in-memory ceiling guideline)`
+        )
+      }
       return entry
     })()
 

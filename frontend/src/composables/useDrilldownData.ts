@@ -41,26 +41,21 @@ export interface DrilldownPageConfig<T> {
   /**
    * Breadcrumb items - can be static or function that takes data and returns items
    */
-  breadcrumbItems?: BreadcrumbItem[] | ((data: T | null) => BreadcrumbItem[])
-  /**
-   * Error message key for i18n
-   */
-  errorMessageKey?: string
+  breadcrumbItems?: BreadcrumbItem[] | ((data: T | undefined) => BreadcrumbItem[])
 }
 
 /**
  * Result of useDrilldownData composable
  */
 export interface DrilldownResult<T> {
-  data: Ref<T | null>
+  data: Ref<T | undefined>
   isLoading: Ref<boolean>
-  error: Ref<string | null>
+  error: Ref<string | undefined>
   fetchData: () => Promise<void>
-  resultId: ComputedRef<string | null>
+  resultId: ComputedRef<string | undefined>
   accountId: ComputedRef<string | null>
   categoryId: ComputedRef<string | null>
   monthId: ComputedRef<string | null>
-  t: (key: string) => string
   pageTitle: ComputedRef<string>
   breadcrumbItems: ComputedRef<BreadcrumbItem[]>
 }
@@ -119,9 +114,7 @@ export function useDrilldownData<T>(
   }
 
   const { data, isLoading, error, fetchData: baseFetchData } = useApiData<T>({
-    fetchFn: createFetchFn(),
-    t,
-    errorMessageKey: config.errorMessageKey
+    fetchFn: createFetchFn()
   })
 
   const fetchData = async (): Promise<void> => {
@@ -168,7 +161,6 @@ export function useDrilldownData<T>(
     accountId,
     categoryId,
     monthId,
-    t,
     pageTitle,
     breadcrumbItems
   }

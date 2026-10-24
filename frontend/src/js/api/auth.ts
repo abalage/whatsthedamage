@@ -3,7 +3,6 @@
  * @module utils/api/auth
  */
 
-import { setCsrfToken } from '../csrfToken'
 import { getApiUrl, request } from './request'
 import type {
   RegisterRequest,
@@ -12,7 +11,6 @@ import type {
   LoginResponse,
   LogoutResponse,
   MeResponse,
-  CsrfTokenResponse,
   PasswordResetRequest,
   PasswordResetResponse,
   UpdateMeRequest,
@@ -65,8 +63,8 @@ export async function logout(): Promise<LogoutResponse> {
 }
 
 /**
- * Get current user information and CSRF token
- * @returns Promise with user info and CSRF token
+ * Get current user information
+ * @returns Promise with user info
  */
 export async function getMe(): Promise<MeResponse> {
   return request<MeResponse>(getApiUrl('/auth/me'))
@@ -87,15 +85,14 @@ export async function updateSharingPreference(optIn: boolean): Promise<UpdateMeR
 
 /**
  * Get a new CSRF token
- * The backend persists the token's hash, so the returned token is valid
- * for subsequent state-changing requests (it replaces the previously
- * issued one).
- * @returns Promise with CSRF token
+ *
+ * The backend mints a token and sets it as a readable cookie; this
+ * function just triggers the refresh. Read the token afterwards via
+ * getCsrfToken(). The minted token replaces any previously issued
+ * one for the session.
  */
-export async function fetchCsrfToken(): Promise<CsrfTokenResponse> {
-  const response = await request<CsrfTokenResponse>(getApiUrl('/auth/csrf-token'))
-  setCsrfToken(response.csrf_token)
-  return response
+export async function fetchCsrfToken(): Promise<void> {
+  await request(getApiUrl('/auth/csrf-token'))
 }
 
 /**

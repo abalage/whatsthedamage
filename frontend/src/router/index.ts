@@ -1,22 +1,13 @@
-import { createRouter, createWebHistory } from 'vue-router'
+import { createRouter, createWebHistory, type RouteComponent } from 'vue-router'
 import Index from '../pages/Index.vue'
 import About from '../pages/About.vue'
 import Legal from '../pages/Legal.vue'
 import Privacy from '../pages/Privacy.vue'
 import NotFound from '../pages/NotFound.vue'
-import Categories from '../pages/Categories.vue'
-import Transactions from '../pages/Transactions.vue'
-import Statistics from '../pages/Statistics.vue'
-import CategoryMonthsList from '../pages/CategoryMonthsList.vue'
-import MonthCategoriesList from '../pages/MonthCategoriesList.vue'
-import CategoryMonthTransactions from '../pages/CategoryMonthTransactions.vue'
-import PivotTable from '../pages/PivotTable.vue'
 import Login from '../pages/Login.vue'
 import Register from '../pages/Register.vue'
 import ForgotPassword from '../pages/ForgotPassword.vue'
 import Logout from '../pages/Logout.vue'
-import Import from '../pages/Import.vue'
-import Settings from '../pages/Settings.vue'
 import { useAuthStore } from '../stores/auth'
 
 const router = createRouter({
@@ -31,13 +22,13 @@ const router = createRouter({
     {
       path: '/import',
       name: 'import',
-      component: Import,
+      component: (): Promise<RouteComponent> => import('../pages/Import.vue'),
       meta: { requiresAuth: true }
     },
     {
       path: '/settings',
       name: 'settings',
-      component: Settings,
+      component: (): Promise<RouteComponent> => import('../pages/Settings.vue'),
       meta: { requiresAuth: true }
     },
     {
@@ -61,43 +52,43 @@ const router = createRouter({
     {
       path: '/results',
       name: 'results',
-      component: Categories,
+      component: (): Promise<RouteComponent> => import('../pages/Categories.vue'),
       meta: { requiresAuth: true }
     },
     {
       path: '/results/accounts/:accountId/categories/:categoryId/months',
       name: 'category-months',
-      component: CategoryMonthsList,
+      component: (): Promise<RouteComponent> => import('../pages/CategoryMonthsList.vue'),
       meta: { requiresAuth: true }
     },
     {
       path: '/results/accounts/:accountId/months/:monthId/categories',
       name: 'month-categories',
-      component: MonthCategoriesList,
+      component: (): Promise<RouteComponent> => import('../pages/MonthCategoriesList.vue'),
       meta: { requiresAuth: true }
     },
     {
       path: '/results/accounts/:accountId/categories/:categoryId/months/:monthId/transactions',
       name: 'category-month-transactions',
-      component: CategoryMonthTransactions,
+      component: (): Promise<RouteComponent> => import('../pages/CategoryMonthTransactions.vue'),
       meta: { requiresAuth: true }
     },
     {
       path: '/transactions',
       name: 'details',
-      component: Transactions,
+      component: (): Promise<RouteComponent> => import('../pages/Transactions.vue'),
       meta: { requiresAuth: true }
     },
     {
       path: '/pivot',
       name: 'pivot',
-      component: PivotTable,
+      component: (): Promise<RouteComponent> => import('../pages/PivotTable.vue'),
       meta: { requiresAuth: true }
     },
     {
       path: '/statistics',
       name: 'statistics',
-      component: Statistics,
+      component: (): Promise<RouteComponent> => import('../pages/Statistics.vue'),
       meta: { requiresAuth: true }
     },
     // Authentication routes

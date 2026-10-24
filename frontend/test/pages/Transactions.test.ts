@@ -103,7 +103,7 @@ describe('Transactions.vue', () => {
   const mountPage = (): VueWrapper => shallowMount(Transactions, { global: { plugins: [createPinia()] } });
 
   it('renders without error when resultId is undefined', async () => {
-    vi.mocked(fetchProcessingResultMetadata).mockResolvedValue(null);
+    vi.mocked(fetchProcessingResultMetadata).mockResolvedValue(undefined);
     vi.mocked(fetchAllTransactions).mockResolvedValue({
       transactions: [transaction],
       total_count: 1,
@@ -118,7 +118,7 @@ describe('Transactions.vue', () => {
   });
 
   it('fetches all transactions without result_id when resultId is undefined', async () => {
-    vi.mocked(fetchProcessingResultMetadata).mockResolvedValue(null);
+    vi.mocked(fetchProcessingResultMetadata).mockResolvedValue(undefined);
     vi.mocked(fetchAllTransactions).mockResolvedValue({
       transactions: [transaction],
       total_count: 1,
@@ -154,7 +154,7 @@ describe('Transactions.vue', () => {
   });
 
   it('shows the "All Transactions" hint when no resultId is given', async () => {
-    vi.mocked(fetchProcessingResultMetadata).mockResolvedValue(null);
+    vi.mocked(fetchProcessingResultMetadata).mockResolvedValue(undefined);
     vi.mocked(fetchAllTransactions).mockResolvedValue({
       transactions: [transaction],
       total_count: 1,
@@ -169,7 +169,7 @@ describe('Transactions.vue', () => {
   });
 
   it('shows the empty state when no transactions are found', async () => {
-    vi.mocked(fetchProcessingResultMetadata).mockResolvedValue(null);
+    vi.mocked(fetchProcessingResultMetadata).mockResolvedValue(undefined);
     vi.mocked(fetchAllTransactions).mockResolvedValue({
       transactions: [],
       total_count: 0,
@@ -184,7 +184,7 @@ describe('Transactions.vue', () => {
   });
 
   it('shows a truncation warning when total_count exceeds the fetched rows', async () => {
-    vi.mocked(fetchProcessingResultMetadata).mockResolvedValue(null);
+    vi.mocked(fetchProcessingResultMetadata).mockResolvedValue(undefined);
     vi.mocked(fetchAllTransactions).mockResolvedValue({
       transactions: [transaction],
       total_count: 500,
@@ -200,7 +200,7 @@ describe('Transactions.vue', () => {
   });
 
   it('shows no truncation warning when all rows fit in the limit', async () => {
-    vi.mocked(fetchProcessingResultMetadata).mockResolvedValue(null);
+    vi.mocked(fetchProcessingResultMetadata).mockResolvedValue(undefined);
     vi.mocked(fetchAllTransactions).mockResolvedValue({
       transactions: [transaction],
       total_count: 1,
@@ -215,7 +215,7 @@ describe('Transactions.vue', () => {
   });
 
   it('shows the corrected partner over the original partner', async () => {
-    vi.mocked(fetchProcessingResultMetadata).mockResolvedValue(null);
+    vi.mocked(fetchProcessingResultMetadata).mockResolvedValue(undefined);
     vi.mocked(fetchAllTransactions).mockResolvedValue({
       transactions: [{ ...transaction, partner: 'Corrected Store' }],
       total_count: 1,
@@ -243,7 +243,7 @@ describe('Transactions.vue inline editing', () => {
   const mountWithTransaction = async (
     txn: TransactionListItem
   ): Promise<VueWrapper> => {
-    vi.mocked(fetchProcessingResultMetadata).mockResolvedValue(null);
+    vi.mocked(fetchProcessingResultMetadata).mockResolvedValue(undefined);
     vi.mocked(fetchAllTransactions).mockResolvedValue({
       transactions: [txn],
       total_count: 1,
@@ -352,7 +352,7 @@ describe('Transactions.vue category filter', () => {
   });
 
   const mountWithCategories = async (): Promise<VueWrapper> => {
-    vi.mocked(fetchProcessingResultMetadata).mockResolvedValue(null);
+    vi.mocked(fetchProcessingResultMetadata).mockResolvedValue(undefined);
     vi.mocked(fetchAllTransactions).mockResolvedValue({
       transactions: [transaction],
       total_count: 1,
@@ -384,7 +384,7 @@ describe('Transactions.vue category filter', () => {
 
   it('offers no filter options before categories resolve', async () => {
     vi.mocked(fetchCategories).mockReturnValue(new Promise(() => undefined));
-    vi.mocked(fetchProcessingResultMetadata).mockResolvedValue(null);
+    vi.mocked(fetchProcessingResultMetadata).mockResolvedValue(undefined);
     vi.mocked(fetchAllTransactions).mockResolvedValue({
       transactions: [transaction],
       total_count: 1,
@@ -434,7 +434,7 @@ describe('Transactions.vue corrections review', () => {
   const mountWithTransactions = async (
     transactions: TransactionListItem[]
   ): Promise<VueWrapper> => {
-    vi.mocked(fetchProcessingResultMetadata).mockResolvedValue(null);
+    vi.mocked(fetchProcessingResultMetadata).mockResolvedValue(undefined);
     vi.mocked(fetchAllTransactions).mockResolvedValue({
       transactions,
       total_count: transactions.length,
@@ -529,7 +529,7 @@ describe('Transactions.vue toolbar toggles', () => {
   const mountWithTable = async (
     transactions: TransactionListItem[]
   ): Promise<VueWrapper> => {
-    vi.mocked(fetchProcessingResultMetadata).mockResolvedValue(null);
+    vi.mocked(fetchProcessingResultMetadata).mockResolvedValue(undefined);
     vi.mocked(fetchAllTransactions).mockResolvedValue({
       transactions,
       total_count: transactions.length,

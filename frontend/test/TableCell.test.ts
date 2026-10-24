@@ -33,16 +33,17 @@ describe('TableCell.vue', () => {
     expect(wrapper.text()).toBe('');
   });
 
-  it('renders custom HTML for renderHtml columns', () => {
+  it('renders the formatted value as escaped text for formatValue columns', () => {
     const column: Column = {
       key: 'name',
       title: 'Name',
-      renderHtml: (value: unknown) => `<strong>${String(value)}</strong>`
+      formatValue: (value: unknown) => `<strong>${String(value)}</strong>`
     };
     const wrapper = mount(TableCell, {
       props: { column, value: 'bold', row, index: 0 }
     });
-    expect(wrapper.html()).toContain('<strong>bold</strong>');
+    expect(wrapper.text()).toBe('<strong>bold</strong>');
+    expect(wrapper.html()).not.toContain('<strong>');
   });
 
   it('renders the column component with its computed props', () => {

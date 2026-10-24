@@ -79,7 +79,6 @@ export function sumAggregateRowConfig(
     id: 'total-sum',
     type: 'custom',
     position: 'footer',
-    includeInExport: true,
     class: 'fw-bold bg-surface-primary text-on-primary',
     customCalculator: (data: Record<string, unknown>[], columnKey: string): string | number => {
       if (columnKey === keyColumn) return gettext('Total')
@@ -106,7 +105,6 @@ export function averageAggregateRowConfig(
     id: 'total-average',
     type: 'custom',
     position: 'footer',
-    includeInExport: true,
     class: 'fw-bold bg-surface-secondary text-on-dark',
     customCalculator: (data: Record<string, unknown>[], columnKey: string): string | number | null => {
       if (columnKey === keyColumn) return gettext('Average')

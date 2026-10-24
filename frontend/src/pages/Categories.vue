@@ -36,20 +36,18 @@ const route = useRoute()
 
 // Optional resultId filter, carried in the query string
 const resultId = computed(() => extractResultId(route.query as Record<string, unknown>))
-const metadata = ref<ProcessingResultMetadata | null>(null)
+const metadata = ref<ProcessingResultMetadata | undefined>(undefined)
 const transactions = ref<TransactionListItem[]>([])
 const totalTransactionCount = ref(0)
 
-// Shared loading state around loadResults, with feedback on failure
+// Shared loading state around loadResults; errors render via the page
 const {
   isLoading,
   error,
   fetchData: loadResultsData
 } = useApiData<void>({
   // Deferred reference: loadResults is defined further below
-  fetchFn: () => loadResults(),
-  t: (key: string) => $gettext(key),
-  errorMessageKey: 'Failed to load results'
+  fetchFn: () => loadResults()
 })
 
 // The unfiltered view fetches with a limit; warn when rows were left out
@@ -156,7 +154,7 @@ function getCellDetailsString(
   categoryId: string,
   monthKey: string
 ): string {
-  return aggregate.cells.get(`${categoryId}|${monthKey}`)?.detailLines.join('<br>') ?? ''
+  return aggregate.cells.get(`${categoryId}|${monthKey}`)?.detailLines.join('\n') ?? ''
 }
 
 const loadResults = async () => {
@@ -414,8 +412,6 @@ watch(resultId, () => {
               :data="rows"
               :columns="columns"
               :cell-highlights-by-row-id="getAccountHighlights()"
-              :csv-text="$gettext('Export CSV')"
-              :excel-text="$gettext('Export Excel')"
               wrapper-class="w-auto"
               show-column-filters
               show-pagination

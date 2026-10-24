@@ -100,7 +100,6 @@ class TestOpenApiSchemaStructure:
             "UpdateMeResponse",
             "ResetPasswordRequest",
             "ResetPasswordResponse",
-            "CsrfTokenResponse",
             "ProcessingRequest",
             "ProcessingResultListItem",
             "ProcessingResultCreated",

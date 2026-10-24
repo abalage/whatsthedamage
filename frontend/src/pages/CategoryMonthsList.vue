@@ -34,8 +34,9 @@ const categoriesStore = useCategoriesStore()
 // Optional resultId filter, carried in the query string
 const resultQuery = useResultQuery()
 
-// Table columns
-const columns: Column[] = [
+// Table columns (computed so translated titles follow locale changes
+// without remounting the page)
+const columns = computed<Column[]>(() => [
   {
     key: 'month',
     title: $gettext('Month'),
@@ -58,9 +59,9 @@ const columns: Column[] = [
   {
     key: 'total',
     title: $gettext('Total'),
-    renderHtml: (value: unknown, row?: Record<string, unknown>) => String(((row as { total_display?: string })?.total_display) || value || '')
+    formatValue: (value: unknown, row?: Record<string, unknown>) => String(((row as { total_display?: string })?.total_display) || value || '')
   }
-]
+])
 
 // Extract month_id from row data
 function extractMonthIdFromData(row: Record<string, unknown>): string {
@@ -110,7 +111,6 @@ const {
     { name: $gettext('Categories'), to: { name: 'results', query: resultQuery() } },
     { name: data ? categoriesStore.getCategoryDisplayName(data.category_id || '') : $gettext('Category Details'), active: true }
   ],
-  errorMessageKey: 'categoryMonthsLoadError'
 })
 
 // Table data: one row per month group of the category
@@ -209,8 +209,6 @@ watch(resultId, () => {
               :columns="columns"
               :aggregate-rows="aggregateRows"
               :cell-highlights-by-row-id="cellHighlightsByRowId"
-              :csv-text="$gettext('Export CSV')"
-              :excel-text="$gettext('Export Excel')"
               wrapper-class="w-auto"
               show-column-filters
               show-pagination

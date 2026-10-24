@@ -76,7 +76,7 @@ frontend/backend shipping.
 
 - **Priority:** High (top finding)
 - **Category:** Security
-- **Status:** `todo`
+- **Status:** `done`
 - **Evidence:**
   - `frontend/src/js/tableExport.ts` — `exportCsv` (quote escaping only) and
     `exportExcel` (raw `row.join('\t')`, no escaping at all)
@@ -100,7 +100,7 @@ frontend/backend shipping.
 
 - **Priority:** High
 - **Category:** Security
-- **Status:** `todo`
+- **Status:** `done`
 - **Evidence:**
   - `frontend/src/js/csrfToken.ts` — module-level variable backed by
     `localStorage` under key `csrfToken`
@@ -158,7 +158,7 @@ frontend/backend shipping.
 
 - **Priority:** Medium
 - **Category:** Security + maintainability
-- **Status:** `todo`
+- **Status:** `done`
 - **Evidence:**
   - `frontend/src/types/column.ts` — `renderHtml?: (…) => string`
   - `frontend/src/components/data/TableCell.vue:59` — `v-html` rendering
@@ -186,7 +186,7 @@ frontend/backend shipping.
 
 - **Priority:** Medium
 - **Category:** Security
-- **Status:** `todo`
+- **Status:** `done`
 - **Evidence:**
   - `frontend/src/directives/popover.ts` — `html: options.html !== false`
   - `frontend/src/components/data/TableLinkWithPopover.vue` — passes
@@ -212,7 +212,7 @@ frontend/backend shipping.
 
 - **Priority:** Medium (compounds with growth)
 - **Category:** Extendability / performance
-- **Status:** `todo`
+- **Status:** `done`
 - **Evidence:**
   - `frontend/src/router/index.ts` — all 17+ pages statically imported
   - Build output at review time: a single ~556 KB `dist/js/main.js` plus
@@ -234,7 +234,7 @@ frontend/backend shipping.
 
 - **Priority:** Medium
 - **Category:** Security
-- **Status:** `todo`
+- **Status:** `done`
 - **Correction (backend review, 2026-10-22):** The original finding said
   "add CSP for integrated mode". That is **already implemented** — the
   backend registers an `after_request` hook
@@ -293,7 +293,7 @@ frontend/backend shipping.
 
 - **Priority:** Medium
 - **Category:** Maintainability / observability
-- **Status:** `todo`
+- **Status:** `done`
 - **Evidence:**
   - No `app.config.errorHandler`, `onErrorCaptured`, or
     `unhandledrejection` listener anywhere in `src/`
@@ -349,7 +349,7 @@ frontend/backend shipping.
 
 - **Priority:** Medium
 - **Category:** Extendability / robustness (frontend + backend)
-- **Status:** `todo`
+- **Status:** `done`
 - **Evidence:**
   - `frontend/src/js/api/request.ts` — `isInvalidCsrfTokenError` matches
     `/invalid csrf token/i` against the parsed error **message string**
@@ -403,7 +403,7 @@ frontend/backend shipping.
 
 - **Priority:** High (enabling refactor for E2 and future grid features)
 - **Category:** Maintainability
-- **Status:** `todo` — **largest single work item; do not mix with other
+- **Status:** `done` — **largest single work item; do not mix with other
   findings. Split into reviewable milestones.**
 
 - **Evidence:**
@@ -434,7 +434,7 @@ frontend/backend shipping.
 
 - **Priority:** Medium
 - **Category:** Extendability
-- **Status:** `todo`
+- **Status:** `done`
 - **Evidence:**
   - `frontend/src/types/column.ts` — `renderHtml`, `component`,
     `componentProps`, `filterChoices`, class/classFn, aggregate config;
@@ -458,7 +458,7 @@ frontend/backend shipping.
 
 - **Priority:** Low
 - **Category:** Maintainability
-- **Status:** `todo`
+- **Status:** `done`
 - **Evidence:**
   - `frontend/src/pages/Index.vue` — raw `localStorage`
     get/set/remove for the selected result, bypassing `usePersistentRef`
@@ -476,7 +476,7 @@ frontend/backend shipping.
 
 - **Priority:** Low (cost of change is small; only a handful of consumers)
 - **Category:** Maintainability
-- **Status:** `todo` (split into M4a/M4b/M4c below; can be worked separately)
+- **Status:** `done` (split into M4a/M4b/M4c below; can be worked separately)
 - **Evidence (verified 2026-10-22, deeper than the first pass):**
   The problem is not two overlapping composables — it is **five**
   coexisting async error/loading conventions:
@@ -519,7 +519,7 @@ frontend/backend shipping.
 
 ### M4a: Fix `useAsyncAction` contract (store + rethrow)
 
-- **Status:** `todo`
+- **Status:** `done`
 - **DECISION:** store the error message as today, then **rethrow** (the
   semantics `withLoading` in the auth store already has). Return type
   becomes an honest `Promise<T>`. Update Settings.vue accordingly — its
@@ -535,7 +535,7 @@ frontend/backend shipping.
 
 ### M4b: Decouple `useApiData` (fetching only, single error channel)
 
-- **Status:** `todo`
+- **Status:** `done`
 - **DECISION:**
   1. Remove the feedback-store push and the `t`/`errorMessageKey`
      coupling. Return `data`, `isLoading`, `error`; pages already render
@@ -553,7 +553,7 @@ frontend/backend shipping.
 
 ### M4c: Auth store adopts `useAsyncAction`; document the three patterns
 
-- **Status:** `todo` (depends on M4a)
+- **Status:** `done` (depends on M4a)
 - **DECISION:**
   1. Replace the auth store's internal `withLoading` with
      `useAsyncAction` once its contract matches (store + rethrow) —
@@ -571,7 +571,7 @@ frontend/backend shipping.
 
 - **Priority:** Low (drift risk grows with API churn)
 - **Category:** Maintainability
-- **Status:** `todo`
+- **Status:** `done`
 - **Evidence:**
   - `frontend/src/types/api.ts`, `frontend/src/types/auth.ts` mirror
     backend Pydantic models with no sync mechanism
@@ -601,7 +601,7 @@ frontend/backend shipping.
 
 - **Priority:** Low
 - **Category:** Extendability / UX
-- **Status:** `todo` (verify before changing)
+- **Status:** `done` (verify before changing)
 - **Evidence:**
   - `frontend/src/App.vue` — `<Layout :key="currentLocale">` forces a
     full subtree remount on language switch, discarding table state,
@@ -621,7 +621,7 @@ frontend/backend shipping.
 
 - **Priority:** Low (today) / watch item
 - **Category:** Extendability / scaling
-- **Status:** `todo` (documentation task first)
+- **Status:** `done` (documentation task first)
 - **Evidence:**
   - `frontend/src/stores/dataset.ts` — complete transaction list per
     resultId cached in reactive arrays; the module doc itself notes
@@ -656,3 +656,46 @@ frontend/backend shipping.
   - Runtime memory for E5 was not measured; the ceiling is theoretical.
 - Findings intentionally **not** scheduled: none rejected at review time; M6 (subsumed by S1) and M2-B (out of scope) were rejected during planning — see their sections
   Record any rejection here with a reason.
+
+## Implementation record (2026-10-24, all phases)
+
+All findings were implemented and all quality gates pass (backend:
+pytest 769 passed, ruff, vulture, mypy; frontend: eslint, tsc, knip,
+Vitest 397 passed). Decisions taken during implementation, each
+confirmed by the user where the plan allowed a fork:
+
+- **S2:** the CSRF cookie uses `Path=/`, not the `Path=/api/v2`
+  written in the DECISION — `document.cookie` cannot read a cookie
+  scoped to /api/v2 from SPA pages served outside it. Same-host
+  relaxation on localhost matches the session cookie policy.
+- **S3:** five real `renderHtml` consumers existed (all producing
+  plain text, contradicting the "zero consumers" evidence). Chosen
+  over the plan's sanitize fallback: the field became
+  `formatValue`, rendered escaped; v-html is fully removed.
+- **M4a:** Settings.vue keeps five `useAsyncAction` instances
+  (per-form error alerts preserved) instead of one shared instance.
+- **M3:** the null → undefined migration was confirmed and done for
+  `extractResultId`/`buildResultQuery`, `useApiData`, dataset
+  metadata, and the `resultId` carried through
+  `useRouteParams`/`useDrilldownData`.
+- **E4:** dropping the Layout `:key` was verified and does NOT work:
+  vue3-gettext 4.0.0-beta.1 ships a self-contained bundle with its
+  own inlined Vue reactivity, so language changes cannot re-render in
+  place. The remount is kept and documented as a deliberate
+  workaround in `App.vue`; the two setup-time-captured column
+  definitions were made computed anyway.
+- **M5:** mechanism chosen: `make api-contract` regenerates
+  `frontend/test/fixtures/api-contract-schemas.json` from the
+  backend OpenAPI components; a backend pytest fails when the
+  fixture goes stale, and the frontend
+  `test/apiContract.test.ts` asserts every field of the mirrored
+  TS types exists in the fixture. A backend rename was demonstrated
+  to break the frontend test.
+- Open manual checks (not executable in the dev environment):
+  - S2: multi-tab rotation check (cookie sharing makes it work by
+    construction, but no e2e run was performed).
+  - S4: visual check of the Categories month-cell popover with
+    `\n`-joined, `pre-line`-rendered detail lines.
+  - S5b-2: full browser exercise of login/import/tables/charts
+    under `SPA_CSP` (headers and built assets were verified
+    statically; the built HTML contains no inline scripts).

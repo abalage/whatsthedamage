@@ -29,13 +29,12 @@ export interface RegisterRequest {
 
 /**
  * Response from successful registration.
- * Contains user data, recovery code (displayed once), and session info.
- * Note: sessionToken removed for security - only available in HttpOnly cookie
+ * Contains user data and recovery code (displayed once). The session
+ * and CSRF tokens are only available in cookies set by the backend.
  */
 export interface RegisterResponse {
   user: User;
   recovery_code: string;
-  csrf_token: string;
   session_expires_at: string;
 }
 
@@ -50,12 +49,11 @@ export interface LoginRequest {
 
 /**
  * Response from successful login.
- * Contains user data and session info.
- * Note: sessionToken removed for security - only available in HttpOnly cookie
+ * Contains user data. The session and CSRF tokens are only available
+ * in cookies set by the backend.
  */
 export interface LoginResponse {
   user: User;
-  csrf_token: string;
   session_expires_at: string;
 }
 
@@ -68,20 +66,11 @@ export interface LogoutResponse {
 
 /**
  * Response from /auth/me endpoint.
- * Contains current user info and a CSRF token, or null when the session
- * already has one (the client keeps the token it holds).
+ * Contains current user info. A fresh CSRF cookie is set when the
+ * session does not have a token yet.
  */
 export interface MeResponse {
   user: User;
-  csrf_token: string | null;
-}
-
-/**
- * Response from /auth/csrf-token endpoint.
- * Contains only a CSRF token.
- */
-export interface CsrfTokenResponse {
-  csrf_token: string;
 }
 
 /**

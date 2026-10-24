@@ -1,0 +1,1000 @@
+{
+  "AccountDeletionRequest": {
+    "properties": {
+      "password": {
+        "description": "Current password confirming the deletion request",
+        "format": "password",
+        "type": "string"
+      },
+      "revoke_shared_corrections": {
+        "description": "Also withdraw the user's shared correction contributions when the account is deleted (GDPR Art. 7(3)); default false",
+        "type": "boolean"
+      }
+    },
+    "required": [
+      "password"
+    ],
+    "type": "object"
+  },
+  "AccountDeletionResponse": {
+    "properties": {
+      "message": {
+        "type": "string"
+      },
+      "scheduled_deletion_at": {
+        "description": "UTC timestamp after which the retention job deletes the account; logging in before it cancels the deletion",
+        "format": "date-time",
+        "type": "string"
+      }
+    },
+    "required": [
+      "message",
+      "scheduled_deletion_at"
+    ],
+    "type": "object"
+  },
+  "AggregatedTransactionsResponse": {
+    "properties": {
+      "account": {
+        "nullable": true,
+        "type": "string"
+      },
+      "category_id": {
+        "nullable": true,
+        "type": "string"
+      },
+      "group_by": {
+        "enum": [
+          "category",
+          "month",
+          "account",
+          "category_month"
+        ],
+        "type": "string"
+      },
+      "groups": {
+        "additionalProperties": {
+          "items": {
+            "$ref": "#/components/schemas/TransactionApiResponse"
+          },
+          "type": "array"
+        },
+        "description": "Group key to transactions in the group",
+        "type": "object"
+      },
+      "highlights": {
+        "additionalProperties": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "description": "Group key to statistical highlight types",
+        "type": "object"
+      },
+      "month": {
+        "example": "2026-09",
+        "nullable": true,
+        "type": "string"
+      },
+      "result_id": {
+        "nullable": true,
+        "type": "string"
+      },
+      "total_count": {
+        "type": "integer"
+      }
+    },
+    "required": [
+      "group_by",
+      "groups",
+      "highlights"
+    ],
+    "type": "object"
+  },
+  "CategoryDefinition": {
+    "properties": {
+      "default_name": {
+        "description": "Default display name",
+        "example": "Grocery",
+        "type": "string"
+      },
+      "id": {
+        "description": "Unique category identifier",
+        "example": "grocery",
+        "type": "string"
+      },
+      "patterns": {
+        "description": "Regex patterns",
+        "items": {
+          "type": "string"
+        },
+        "type": "array"
+      }
+    },
+    "required": [
+      "id",
+      "default_name",
+      "patterns"
+    ],
+    "type": "object"
+  },
+  "ChangePasswordRequest": {
+    "properties": {
+      "current_password": {
+        "description": "Current password confirming the change",
+        "format": "password",
+        "type": "string"
+      },
+      "new_password": {
+        "description": "New password (minimum 12 characters)",
+        "format": "password",
+        "type": "string"
+      }
+    },
+    "required": [
+      "current_password",
+      "new_password"
+    ],
+    "type": "object"
+  },
+  "CorrectionApiResponse": {
+    "properties": {
+      "corrected_category_id": {
+        "nullable": true,
+        "type": "string"
+      },
+      "corrected_partner": {
+        "nullable": true,
+        "type": "string"
+      },
+      "created_at": {
+        "format": "date-time",
+        "type": "string"
+      },
+      "id": {
+        "type": "integer"
+      },
+      "original_partner": {
+        "type": "string"
+      },
+      "updated_at": {
+        "format": "date-time",
+        "type": "string"
+      },
+      "user_id": {
+        "type": "integer"
+      }
+    },
+    "required": [
+      "id",
+      "user_id",
+      "original_partner"
+    ],
+    "type": "object"
+  },
+  "CreateCorrectionRequest": {
+    "properties": {
+      "corrected_category_id": {
+        "nullable": true,
+        "type": "string"
+      },
+      "corrected_partner": {
+        "nullable": true,
+        "type": "string"
+      },
+      "original_partner": {
+        "type": "string"
+      }
+    },
+    "required": [
+      "original_partner"
+    ],
+    "type": "object"
+  },
+  "CreateTransactionRequest": {
+    "properties": {
+      "account": {
+        "type": "string"
+      },
+      "amount": {
+        "type": "number"
+      },
+      "apply_to_future": {
+        "description": "Whether provided partner/category values upsert a merchant rule applied to future uploads (default: true)",
+        "type": "boolean"
+      },
+      "category_id": {
+        "nullable": true,
+        "type": "string"
+      },
+      "confidence": {
+        "nullable": true,
+        "type": "number"
+      },
+      "currency": {
+        "type": "string"
+      },
+      "date": {
+        "format": "date",
+        "type": "string"
+      },
+      "notice": {
+        "nullable": true,
+        "type": "string"
+      },
+      "original_partner": {
+        "type": "string"
+      },
+      "partner": {
+        "nullable": true,
+        "type": "string"
+      },
+      "transaction_type": {
+        "type": "string"
+      }
+    },
+    "required": [
+      "date",
+      "transaction_type",
+      "original_partner",
+      "amount",
+      "currency",
+      "account"
+    ],
+    "type": "object"
+  },
+  "CsvProfile": {
+    "properties": {
+      "csv_config": {
+        "properties": {
+          "date_attribute_format": {
+            "type": "string"
+          },
+          "delimiter": {
+            "type": "string"
+          },
+          "dialect": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "description": {
+        "type": "string"
+      },
+      "id": {
+        "example": "otp-hu",
+        "type": "string"
+      },
+      "name": {
+        "example": "OTP Bank",
+        "type": "string"
+      },
+      "version": {
+        "type": "string"
+      }
+    },
+    "required": [
+      "id",
+      "name",
+      "csv_config"
+    ],
+    "type": "object"
+  },
+  "DataExportResponse": {
+    "description": "Machine-readable export of the user's personal data (account, processing results, transactions, corrections)",
+    "properties": {
+      "account": {
+        "$ref": "#/components/schemas/UserDetail"
+      },
+      "corrections": {
+        "items": {
+          "type": "object"
+        },
+        "type": "array"
+      },
+      "generated_at": {
+        "format": "date-time",
+        "type": "string"
+      },
+      "processing_results": {
+        "items": {
+          "type": "object"
+        },
+        "type": "array"
+      },
+      "transactions": {
+        "items": {
+          "type": "object"
+        },
+        "type": "array"
+      }
+    },
+    "required": [
+      "generated_at",
+      "account"
+    ],
+    "type": "object"
+  },
+  "ErrorResponse": {
+    "properties": {
+      "code": {
+        "description": "HTTP status code",
+        "type": "integer"
+      },
+      "details": {
+        "description": "Additional error details for debugging",
+        "type": "object"
+      },
+      "message": {
+        "description": "Human-readable error description",
+        "type": "string"
+      }
+    },
+    "required": [
+      "code",
+      "message"
+    ],
+    "type": "object"
+  },
+  "ListCorrectionsResponse": {
+    "properties": {
+      "corrections": {
+        "items": {
+          "$ref": "#/components/schemas/CorrectionApiResponse"
+        },
+        "type": "array"
+      },
+      "limit": {
+        "type": "integer"
+      },
+      "offset": {
+        "type": "integer"
+      },
+      "total_count": {
+        "type": "integer"
+      }
+    },
+    "type": "object"
+  },
+  "ListTransactionsResponse": {
+    "properties": {
+      "limit": {
+        "type": "integer"
+      },
+      "offset": {
+        "type": "integer"
+      },
+      "total_count": {
+        "type": "integer"
+      },
+      "transactions": {
+        "items": {
+          "$ref": "#/components/schemas/TransactionApiResponse"
+        },
+        "type": "array"
+      }
+    },
+    "type": "object"
+  },
+  "LoginRequest": {
+    "properties": {
+      "password": {
+        "format": "password",
+        "type": "string"
+      },
+      "remember_me": {
+        "default": false,
+        "type": "boolean"
+      },
+      "username": {
+        "type": "string"
+      }
+    },
+    "required": [
+      "username",
+      "password"
+    ],
+    "type": "object"
+  },
+  "LoginResponse": {
+    "properties": {
+      "session_expires_at": {
+        "format": "date-time",
+        "type": "string"
+      },
+      "user": {
+        "$ref": "#/components/schemas/UserSummary"
+      }
+    },
+    "required": [
+      "user",
+      "session_expires_at"
+    ],
+    "type": "object"
+  },
+  "MeResponse": {
+    "properties": {
+      "user": {
+        "$ref": "#/components/schemas/UserDetail"
+      }
+    },
+    "required": [
+      "user"
+    ],
+    "type": "object"
+  },
+  "MessageResponse": {
+    "properties": {
+      "message": {
+        "example": "Transaction deleted successfully",
+        "type": "string"
+      }
+    },
+    "required": [
+      "message"
+    ],
+    "type": "object"
+  },
+  "ProcessingRequest": {
+    "properties": {
+      "category_filter": {
+        "example": "grocery",
+        "type": "string"
+      },
+      "config_file": {
+        "description": "Optional YAML config",
+        "format": "binary",
+        "type": "string"
+      },
+      "csv_file": {
+        "description": "CSV file",
+        "format": "binary",
+        "type": "string"
+      },
+      "csv_profile_id": {
+        "example": "otp-hu",
+        "type": "string"
+      },
+      "date_format": {
+        "example": "%Y.%m.%d",
+        "type": "string"
+      },
+      "end_date": {
+        "example": "2024-12-31",
+        "format": "date",
+        "type": "string"
+      },
+      "ml_enabled": {
+        "default": false,
+        "type": "boolean"
+      },
+      "start_date": {
+        "example": "2024-01-01",
+        "format": "date",
+        "type": "string"
+      }
+    },
+    "required": [
+      "csv_file"
+    ],
+    "type": "object"
+  },
+  "ProcessingResultCreated": {
+    "properties": {
+      "created_at": {
+        "format": "date-time",
+        "type": "string"
+      },
+      "csv_profile_id": {
+        "nullable": true,
+        "type": "string"
+      },
+      "end_date": {
+        "format": "date",
+        "nullable": true,
+        "type": "string"
+      },
+      "message": {
+        "type": "string"
+      },
+      "ml_enabled": {
+        "type": "boolean"
+      },
+      "processing_time": {
+        "description": "Processing duration in seconds",
+        "type": "number"
+      },
+      "result_id": {
+        "description": "UUID of the created processing result",
+        "type": "string"
+      },
+      "row_count": {
+        "description": "Number of aggregated rows",
+        "type": "integer"
+      },
+      "start_date": {
+        "format": "date",
+        "nullable": true,
+        "type": "string"
+      },
+      "transactions_count": {
+        "description": "Number of persisted transactions",
+        "type": "integer"
+      },
+      "user_id": {
+        "type": "integer"
+      }
+    },
+    "required": [
+      "result_id",
+      "row_count"
+    ],
+    "type": "object"
+  },
+  "ProcessingResultListItem": {
+    "properties": {
+      "created_at": {
+        "description": "When the processing result was created",
+        "format": "date-time",
+        "nullable": true,
+        "type": "string"
+      },
+      "csv_profile_id": {
+        "description": "CSV profile ID used for processing",
+        "example": "otp-hu",
+        "nullable": true,
+        "type": "string"
+      },
+      "end_date": {
+        "format": "date",
+        "nullable": true,
+        "type": "string"
+      },
+      "id": {
+        "description": "Unique identifier for the processing result",
+        "example": "550e8400-e29b-41d4-a716-446655440000",
+        "type": "string"
+      },
+      "ml_enabled": {
+        "nullable": true,
+        "type": "boolean"
+      },
+      "processing_time": {
+        "description": "Processing duration in seconds",
+        "nullable": true,
+        "type": "number"
+      },
+      "row_count": {
+        "description": "Number of aggregated rows",
+        "nullable": true,
+        "type": "integer"
+      },
+      "start_date": {
+        "format": "date",
+        "nullable": true,
+        "type": "string"
+      },
+      "transaction_end_date": {
+        "description": "Latest date among the transactions linked to this result",
+        "format": "date",
+        "nullable": true,
+        "type": "string"
+      },
+      "transaction_start_date": {
+        "description": "Earliest date among the transactions linked to this result",
+        "format": "date",
+        "nullable": true,
+        "type": "string"
+      }
+    },
+    "required": [
+      "id"
+    ],
+    "type": "object"
+  },
+  "ProcessingResultMetadata": {
+    "properties": {
+      "created_at": {
+        "format": "date-time",
+        "nullable": true,
+        "type": "string"
+      },
+      "csv_profile_id": {
+        "nullable": true,
+        "type": "string"
+      },
+      "end_date": {
+        "format": "date",
+        "nullable": true,
+        "type": "string"
+      },
+      "ml_enabled": {
+        "nullable": true,
+        "type": "boolean"
+      },
+      "processing_time": {
+        "nullable": true,
+        "type": "number"
+      },
+      "result_id": {
+        "type": "string"
+      },
+      "row_count": {
+        "type": "integer"
+      },
+      "start_date": {
+        "format": "date",
+        "nullable": true,
+        "type": "string"
+      },
+      "transaction_end_date": {
+        "description": "Latest date among the transactions linked to this result",
+        "format": "date",
+        "nullable": true,
+        "type": "string"
+      },
+      "transaction_start_date": {
+        "description": "Earliest date among the transactions linked to this result",
+        "format": "date",
+        "nullable": true,
+        "type": "string"
+      },
+      "transactions_url": {
+        "description": "Link to the transactions endpoint filtered by this result",
+        "type": "string"
+      },
+      "user_id": {
+        "type": "integer"
+      }
+    },
+    "required": [
+      "result_id"
+    ],
+    "type": "object"
+  },
+  "RecalculateApiResponse": {
+    "properties": {
+      "algorithms": {
+        "items": {
+          "type": "string"
+        },
+        "type": "array"
+      },
+      "direction": {
+        "type": "string"
+      },
+      "highlights": {
+        "description": "Statistical highlights keyed by cell ID '{account}|{month}|{category}'",
+        "type": "object"
+      },
+      "result_id": {
+        "description": "Processing result identifier (null = all user transactions)",
+        "type": [
+          "string",
+          "null"
+        ]
+      },
+      "status": {
+        "default": "success",
+        "type": "string"
+      }
+    },
+    "type": "object"
+  },
+  "RecalculateStatisticsRequest": {
+    "properties": {
+      "algorithms": {
+        "items": {
+          "type": "string"
+        },
+        "type": "array"
+      },
+      "direction": {
+        "enum": [
+          "rows",
+          "columns"
+        ],
+        "type": "string"
+      },
+      "result_id": {
+        "description": "Optional processing result to scope to. Omitted = all user transactions.",
+        "type": "string"
+      }
+    },
+    "required": [
+      "algorithms",
+      "direction"
+    ],
+    "type": "object"
+  },
+  "RegisterRequest": {
+    "properties": {
+      "password": {
+        "format": "password",
+        "type": "string"
+      },
+      "username": {
+        "type": "string"
+      }
+    },
+    "required": [
+      "username",
+      "password"
+    ],
+    "type": "object"
+  },
+  "RegisterResponse": {
+    "properties": {
+      "recovery_code": {
+        "description": "One-time recovery code, displayed only once and not retrievable later",
+        "type": "string"
+      },
+      "session_expires_at": {
+        "format": "date-time",
+        "type": "string"
+      },
+      "user": {
+        "$ref": "#/components/schemas/UserSummary"
+      }
+    },
+    "required": [
+      "user",
+      "recovery_code",
+      "session_expires_at"
+    ],
+    "type": "object"
+  },
+  "ResetPasswordRequest": {
+    "properties": {
+      "new_password": {
+        "format": "password",
+        "type": "string"
+      },
+      "recovery_code": {
+        "type": "string"
+      },
+      "username": {
+        "type": "string"
+      }
+    },
+    "required": [
+      "username",
+      "recovery_code",
+      "new_password"
+    ],
+    "type": "object"
+  },
+  "ResetPasswordResponse": {
+    "properties": {
+      "new_recovery_code": {
+        "description": "New one-time recovery code, displayed only once",
+        "type": "string"
+      },
+      "user": {
+        "$ref": "#/components/schemas/UserDetail"
+      }
+    },
+    "required": [
+      "user",
+      "new_recovery_code"
+    ],
+    "type": "object"
+  },
+  "TransactionApiResponse": {
+    "properties": {
+      "account": {
+        "type": "string"
+      },
+      "amount": {
+        "type": "number"
+      },
+      "category_id": {
+        "nullable": true,
+        "type": "string"
+      },
+      "confidence": {
+        "nullable": true,
+        "type": "number"
+      },
+      "created_at": {
+        "format": "date-time",
+        "type": "string"
+      },
+      "currency": {
+        "type": "string"
+      },
+      "date": {
+        "format": "date-time",
+        "type": "string"
+      },
+      "deduplication_hash": {
+        "type": "string"
+      },
+      "id": {
+        "type": "integer"
+      },
+      "notice": {
+        "nullable": true,
+        "type": "string"
+      },
+      "original_category_id": {
+        "description": "Category value before the first user correction",
+        "nullable": true,
+        "type": "string"
+      },
+      "original_notice": {
+        "description": "Notice value before the first user correction",
+        "nullable": true,
+        "type": "string"
+      },
+      "original_partner": {
+        "type": "string"
+      },
+      "partner": {
+        "nullable": true,
+        "type": "string"
+      },
+      "result_id": {
+        "nullable": true,
+        "type": "string"
+      },
+      "transaction_type": {
+        "type": "string"
+      },
+      "updated_at": {
+        "format": "date-time",
+        "type": "string"
+      },
+      "user_id": {
+        "type": "integer"
+      }
+    },
+    "required": [
+      "id",
+      "user_id",
+      "date",
+      "transaction_type",
+      "original_partner",
+      "amount",
+      "currency",
+      "account",
+      "deduplication_hash"
+    ],
+    "type": "object"
+  },
+  "UpdateCorrectionRequest": {
+    "properties": {
+      "corrected_category_id": {
+        "nullable": true,
+        "type": "string"
+      },
+      "corrected_partner": {
+        "nullable": true,
+        "type": "string"
+      }
+    },
+    "type": "object"
+  },
+  "UpdateMeRequest": {
+    "description": "At least one of username or opt_in_sharing must be present",
+    "properties": {
+      "opt_in_sharing": {
+        "description": "Whether the user opts in to sharing corrections (merchant names and categories, anonymized)",
+        "type": "boolean"
+      },
+      "username": {
+        "description": "New unique username (right to rectification)",
+        "maxLength": 255,
+        "type": "string"
+      }
+    },
+    "type": "object"
+  },
+  "UpdateMeResponse": {
+    "properties": {
+      "user": {
+        "$ref": "#/components/schemas/UserDetail"
+      }
+    },
+    "required": [
+      "user"
+    ],
+    "type": "object"
+  },
+  "UpdateTransactionRequest": {
+    "properties": {
+      "apply_to_future": {
+        "description": "Whether partner/category corrections upsert a merchant rule applied to future uploads (default: true)",
+        "type": "boolean"
+      },
+      "category_id": {
+        "nullable": true,
+        "type": "string"
+      },
+      "confidence": {
+        "nullable": true,
+        "type": "number"
+      },
+      "notice": {
+        "nullable": true,
+        "type": "string"
+      },
+      "partner": {
+        "nullable": true,
+        "type": "string"
+      }
+    },
+    "type": "object"
+  },
+  "UserDetail": {
+    "properties": {
+      "created_at": {
+        "format": "date-time",
+        "type": "string"
+      },
+      "id": {
+        "type": "integer"
+      },
+      "is_active": {
+        "type": "boolean"
+      },
+      "last_login_at": {
+        "format": "date-time",
+        "nullable": true,
+        "type": "string"
+      },
+      "opt_in_sharing": {
+        "type": "boolean"
+      },
+      "opted_in_at": {
+        "description": "UTC timestamp of the most recent sharing opt-in (GDPR Art. 7(1))",
+        "format": "date-time",
+        "nullable": true,
+        "type": "string"
+      },
+      "opted_out_at": {
+        "description": "UTC timestamp of the most recent sharing opt-out",
+        "format": "date-time",
+        "nullable": true,
+        "type": "string"
+      },
+      "scheduled_deletion_at": {
+        "description": "UTC timestamp after which the retention job deletes the account",
+        "format": "date-time",
+        "nullable": true,
+        "type": "string"
+      },
+      "username": {
+        "type": "string"
+      }
+    },
+    "required": [
+      "id",
+      "username",
+      "created_at"
+    ],
+    "type": "object"
+  },
+  "UserSummary": {
+    "properties": {
+      "created_at": {
+        "format": "date-time",
+        "type": "string"
+      },
+      "id": {
+        "type": "integer"
+      },
+      "username": {
+        "type": "string"
+      }
+    },
+    "required": [
+      "id",
+      "username",
+      "created_at"
+    ],
+    "type": "object"
+  }
+}

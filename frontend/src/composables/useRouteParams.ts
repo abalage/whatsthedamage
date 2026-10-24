@@ -10,7 +10,7 @@ import { extractResultId } from '../js/routeUtils'
 /**
  * String-only route parameters type
  */
-export type StringRouteParams = Record<string, string | null>
+export type StringRouteParams = Record<string, string | undefined>
 
 /**
  * Extracts common route parameters with type safety
@@ -18,7 +18,7 @@ export type StringRouteParams = Record<string, string | null>
  * @returns Object with computed refs for resultId, accountId, categoryId, and monthId
  */
 export function useRouteParams(): {
-  resultId: ComputedRef<string | null>
+  resultId: ComputedRef<string | undefined>
   accountId: ComputedRef<string | null>
   categoryId: ComputedRef<string | null>
   monthId: ComputedRef<string | null>
@@ -50,14 +50,14 @@ export function useRouteParams(): {
   const convertParamsToString = (params: Record<string, string | string[] | null>): StringRouteParams => {
     const stringParams: StringRouteParams = {}
     for (const [key, value] of Object.entries(params)) {
-      if (value === null) {
-        stringParams[key] = null
+      if (value == null) {
+        stringParams[key] = undefined
       } else if (Array.isArray(value)) {
-        stringParams[key] = value.length > 0 ? value[0] : null
+        stringParams[key] = value.length > 0 ? value[0] : undefined
       } else if (typeof value === 'string') {
         stringParams[key] = value
       } else {
-        stringParams[key] = null
+        stringParams[key] = undefined
       }
     }
     return stringParams

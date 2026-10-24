@@ -44,9 +44,7 @@ const {
   error,
   fetchData: loadFetchedData
 } = useApiData<DatasetEntry>({
-  fetchFn: () => datasetStore.load(resultId.value ?? undefined),
-  t: (key: string) => $gettext(key),
-  errorMessageKey: 'Failed to load Pivot data'
+  fetchFn: () => datasetStore.load(resultId.value ?? undefined)
 });
 
 const fetchedCount = computed(() => fetchResponse.value?.transactions.length ?? 0);
@@ -127,7 +125,7 @@ const tableColumns = computed<Column[]>(() => {
       title: $gettext('Summary of Categories'),
       class: 'text-nowrap text-end',
       sortable: true,
-      renderHtml: (value: unknown) => `${Math.abs(Number(value))}`
+      formatValue: (value: unknown) => `${Math.abs(Number(value))}`
     }
   ];
 
@@ -138,7 +136,7 @@ const tableColumns = computed<Column[]>(() => {
       title: getCategoryDisplayName(catId),
       class: 'text-nowrap text-end',
       sortable: true,
-      renderHtml: (value: unknown) => {
+      formatValue: (value: unknown) => {
         const amount = typeof value === 'number' ? value : (value as { amount: number } | null)?.amount ?? 0;
         return `${Math.abs(amount)}`;
       }
@@ -178,7 +176,6 @@ const aggregateRows = computed<AggregateRowConfig[]>(() => {
       label: $gettext('Average'),
       type: 'custom',
       position: 'footer',
-      includeInExport: true,
       customCalculator: (data, columnKey) => {
         if (columnKey === 'month') return $gettext('Average');
         if (columnKey === 'total') return trendlineValue.value;
@@ -334,8 +331,6 @@ onMounted(() => loadData());
               :aggregate-rows="aggregateRows"
               aggregate-footer-row-class="bg-surface-primary text-on-primary fw-bold"
               :page-size="25"
-              :csv-text="$gettext('Export CSV')"
-              :excel-text="$gettext('Export Excel')"
               :search-placeholder="$gettext('Search') + ': '"
               wrapper-class="w-auto"
               show-column-filters

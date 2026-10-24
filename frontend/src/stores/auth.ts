@@ -2,16 +2,17 @@
  * Authentication store for managing user authentication state.
  *
  * Uses Pinia for state management. Handles login, logout, registration,
- * and session management. The CSRF token lives in the shared
- * js/csrfToken.ts holder (persisted there); this store only refreshes
- * and clears it alongside authentication state.
+ * and session management. The CSRF token is delivered by the backend as
+ * a readable cookie (see js/csrfToken.ts); this store only ensures one
+ * exists after login and initialization.
  */
 
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import type { User } from '../types/auth';
 import { register, login, logout, getMe, fetchCsrfToken, updateSharingPreference, updateUsername, changePassword, exportMyData, deleteAccount } from '../js/api';
-import { setCsrfToken, getCsrfToken } from '../js/csrfToken';
+import { getCsrfToken } from '../js/csrfToken';
+import { useAsyncAction } from '../composables/useAsyncAction';
 import { useDatasetStore } from './dataset';
 import type { DataExportResponse } from '../types/auth';
 
@@ -28,40 +29,19 @@ import type { DataExportResponse } from '../types/auth';
  * - recoveryCodeAcknowledged: Whether user has acknowledged saving recovery code
  */
 export const useAuthStore = defineStore('auth', () => {
+  // Shared loading/error state for auth actions (useAsyncAction
+  // stores the error and rethrows; the store exposes both)
+  const { isLoading, error, run } = useAsyncAction();
+
   // State
   const user = ref<User | null>(null);
-  const isLoading = ref<boolean>(false);
   const isInitialized = ref<boolean>(false);
-  const error = ref<string | null>(null);
   const recoveryCode = ref<string | null>(null);
   const showRecoveryCode = ref<boolean>(false);
   const recoveryCodeAcknowledged = ref<boolean>(false);
 
   // Computed properties
   const isAuthenticated = computed(() => user.value !== null);
-
-  /**
-   * Run an action with the shared loading/error wrapper.
-   *
-   * Sets isLoading during the action; stores the error message and
-   * re-throws on failure.
-   *
-   * @param action - Async action to run
-   * @returns Promise with the action's result
-   */
-  async function withLoading<T>(action: () => Promise<T>): Promise<T> {
-    isLoading.value = true;
-    error.value = null;
-
-    try {
-      return await action();
-    } catch (err: unknown) {
-      error.value = err instanceof Error ? err.message : String(err);
-      throw err;
-    } finally {
-      isLoading.value = false;
-    }
-  }
 
   /**
    * Initialize auth state by checking current session.
@@ -72,22 +52,24 @@ export const useAuthStore = defineStore('auth', () => {
     if (isInitialized.value || isLoading.value) return;
 
     isLoading.value = true;
-    error.value = null;
+    error.value = undefined;
 
     try {
       const response = await getMe();
       user.value = response.user;
-      if (response.csrf_token) {
-        setCsrfToken(response.csrf_token);
-      } else if (!getCsrfToken()) {
-        // The session has a token but this client does not (fresh
-        // storage); mint one via the explicit token endpoint
-        await refreshCsrfToken();
+      if (!getCsrfToken()) {
+        // The session may already have a token the browser does not
+        // (fresh cookie store); mint one via the explicit endpoint
+        try {
+          await refreshCsrfToken();
+        } catch {
+          // A failed mint does not deauthenticate; the next
+          // state-changing request retries via the 403 path
+        }
       }
     } catch {
       // Not authenticated - clear any existing state
       user.value = null;
-      setCsrfToken(undefined);
       // The session expired or belongs to nobody; cached datasets
       // may belong to a previous user
       useDatasetStore().invalidateAll();
@@ -109,12 +91,11 @@ export const useAuthStore = defineStore('auth', () => {
     showRecoveryCode.value = false;
     recoveryCodeAcknowledged.value = false;
 
-    return withLoading(async () => {
+    return run(async () => {
       const response = await register(username, password);
       user.value = response.user;
       recoveryCode.value = response.recovery_code;
       showRecoveryCode.value = true;
-      setCsrfToken(response.csrf_token);
 
       return { user: response.user, recoveryCode: response.recovery_code };
     });
@@ -129,10 +110,9 @@ export const useAuthStore = defineStore('auth', () => {
    * @returns Promise with authenticated user
    */
   async function loginUser(username: string, password: string, rememberMe: boolean = false): Promise<User> {
-    return withLoading(async () => {
+    return run(async () => {
       const response = await login(username, password, rememberMe);
       user.value = response.user;
-      setCsrfToken(response.csrf_token);
       // Defensive: a cached dataset could belong to a previous session
       useDatasetStore().invalidateAll();
 
@@ -145,14 +125,13 @@ export const useAuthStore = defineStore('auth', () => {
    */
   async function logoutUser(): Promise<void> {
     isLoading.value = true;
-    error.value = null;
+    error.value = undefined;
 
     try {
       await logout();
     } finally {
       // Clear state regardless of success
       user.value = null;
-      setCsrfToken(undefined);
       // Cached datasets belong to the logged-out user
       useDatasetStore().invalidateAll();
       isLoading.value = false;
@@ -163,7 +142,7 @@ export const useAuthStore = defineStore('auth', () => {
    * Clear the current error message.
    */
   function clearError(): void {
-    error.value = null;
+    error.value = undefined;
   }
 
   /**
@@ -183,7 +162,7 @@ export const useAuthStore = defineStore('auth', () => {
    * @returns Promise with the updated user
    */
   async function setOptInSharing(optIn: boolean): Promise<User> {
-    return withLoading(async () => {
+    return run(async () => {
       const response = await updateSharingPreference(optIn);
       if (user.value) {
         user.value = response.user;
@@ -199,7 +178,7 @@ export const useAuthStore = defineStore('auth', () => {
    * @returns Promise with the updated user
    */
   async function changeUsername(username: string): Promise<User> {
-    return withLoading(async () => {
+    return run(async () => {
       const response = await updateUsername(username);
       if (user.value) {
         user.value = response.user;
@@ -221,7 +200,7 @@ export const useAuthStore = defineStore('auth', () => {
     currentPassword: string,
     newPassword: string
   ): Promise<void> {
-    return withLoading(async () => {
+    return run(async () => {
       await changePassword(currentPassword, newPassword);
     });
   }
@@ -232,7 +211,7 @@ export const useAuthStore = defineStore('auth', () => {
    * @returns Promise with the machine-readable export document
    */
   async function exportData(): Promise<DataExportResponse> {
-    return exportMyData();
+    return run(() => exportMyData());
   }
 
   /**
@@ -251,35 +230,22 @@ export const useAuthStore = defineStore('auth', () => {
     password: string,
     revokeSharedCorrections: boolean = false
   ): Promise<string> {
-    isLoading.value = true;
-    error.value = null;
-
     try {
-      const response = await deleteAccount(password, revokeSharedCorrections);
+      const response = await run(() => deleteAccount(password, revokeSharedCorrections));
       return response.scheduled_deletion_at;
-    } catch (err: unknown) {
-      error.value = err instanceof Error ? err.message : String(err);
-      throw err;
     } finally {
       // All sessions are revoked server-side; drop local state too
       user.value = null;
-      setCsrfToken(undefined);
       useDatasetStore().invalidateAll();
-      isLoading.value = false;
     }
   }
 
   /**
-   * Mint a fresh CSRF token from the backend and persist it.
-   * The new token supersedes any previously issued one for this session.
+   * Mint a fresh CSRF token from the backend.
+   * The new cookie supersedes any previously issued one for this session.
    */
   async function refreshCsrfToken(): Promise<void> {
-    try {
-      await fetchCsrfToken();
-    } catch {
-      // If we can't get a new CSRF token, just clear it
-      setCsrfToken(undefined);
-    }
+    await fetchCsrfToken();
   }
 
   // Return the public API

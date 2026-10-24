@@ -50,7 +50,6 @@ const mountTable = (): VueWrapper =>
       columns,
       showColumnFilters: true,
       showSearch: false,
-      showExport: false,
       showPagination: false,
     },
   });
@@ -160,7 +159,6 @@ describe('VueDataTable filter toolbar', () => {
         columns,
         showColumnFilters: true,
         showSearch: false,
-        showExport: false,
         showPagination: false,
       },
       slots: {
@@ -171,5 +169,27 @@ describe('VueDataTable filter toolbar', () => {
     const toggle = wrapper.find('button.test-toggle');
     expect(toggle.exists()).toBe(true);
     expect(toggle.text()).toBe('Toggle');
+  });
+});
+
+describe('VueDataTable cell slots', () => {
+  it('renders a #cell-<key> slot with the row context and wins over built-in rendering', () => {
+    const wrapper = mount(VueDataTable, {
+      props: {
+        id: 'cell-slot-table',
+        data: rows,
+        columns: [...columns, { key: 'amount', title: 'Amount' }],
+        showColumnFilters: false,
+        showSearch: false,
+        showPagination: false,
+      },
+      slots: {
+        'cell-amount': '<span class="custom-amount">{{ String(value ?? "none").toUpperCase() }}</span>',
+      },
+    });
+
+    const cells = wrapper.findAll('tbody .custom-amount');
+    expect(cells).toHaveLength(2);
+    expect(cells[0].text()).toBe('NONE');
   });
 });

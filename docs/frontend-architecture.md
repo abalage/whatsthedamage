@@ -43,7 +43,7 @@ frontend/
     │   ├── api.ts          # Barrel re-exporting js/api/*
     │   ├── api/            # request.ts (transport), auth.ts, transactions.ts, processing.ts
     │   ├── themes/         # Theme definitions + picker
-    │   └── ...             # csrfToken, dateUtils, gettext, logger, resultsTransform, routeUtils, tableExport
+    │   └── ...             # csrfToken, dateUtils, gettext, logger, resultsTransform, routeUtils
     ├── directives/popover.ts
     ├── config/             # auth-config.ts, highlight-config.ts
     ├── types/              # api.ts, auth.ts, column.ts, index.ts (AppError)
@@ -136,7 +136,7 @@ All stores use Pinia's setup (function) syntax, not options syntax.
 
 | Store | Responsibility |
 |---|---|
-| `auth` | User session, login/logout/register, recovery code state; delegates CSRF token storage to `js/csrfToken.ts` |
+| `auth` | User session, login/logout/register, recovery code state; ensures a CSRF cookie exists |
 | `dataset` | Cached fetch of the user's complete transaction dataset + result metadata, keyed by `resultId`. Categories, Transactions, and Pivot pages share it so navigation between them is render-only |
 | `categories` | Category definitions loaded at bootstrap; maps `category_id` to display names |
 | `pivot` | Pivot selections and chart preferences (persisted) |
@@ -152,21 +152,63 @@ Conventions:
   JSON-serialized, validated on read) — not ad-hoc `localStorage` calls
 - Cross-store communication happens through store methods, not direct
   mutation of foreign state (e.g. auth store calls dataset store on logout)
-- CSRF tokens are stored only in `js/csrfToken.ts`; the auth store refreshes
-  and clears it
+- The CSRF token is delivered by the backend as a readable cookie
+  (set on login/register/getMe//auth/csrf-token, cleared on logout);
+  `js/csrfToken.ts` reads it from `document.cookie` and the API client
+  echoes it in the X-CSRF-Token header, retrying once on a 403 with
+  `code: CSRF_TOKEN_INVALID`
+
+### Dataset scaling ceiling (watch item)
+
+The `dataset` store holds the complete transaction list per result
+scope in reactive memory — potentially tens of thousands of rows —
+because VueDataTable paginates client-side and the pages share the
+cache. This is a deliberate ceiling: it keeps navigation between
+Categories, Transactions, and Pivot render-only and avoids a
+server-pagination surface. The store logs a debug message once a
+dataset exceeds 20 000 rows so real-world sizes become observable
+before the ceiling hurts.
+
+Break-glass plan when evidence shows real users exceed the ceiling:
+switch to server-side pagination on `/api/v2/transactions`
+(offset/limit are already supported) plus windowed (virtualized)
+rendering in VueDataTable, dropping the full-list cache in favor of
+page caches. Do not attempt that refactor without evidence — the
+current design is correct for the observed data sizes.
 
 ## Composables (`src/composables/`)
 
 Pages compose these instead of duplicating logic:
 
-- `useApiData` — fetching with loading/error state
+### Async error/loading patterns (sanctioned — pick by use case)
+
+```text
+Page-load data          → useApiData (data/isLoading/error; page renders
+                           ErrorState; no toast; optional onError hook)
+User-triggered command  → useAsyncAction (store error + rethrow; page
+                           decides presentation and catches at the call site)
+Inline/cell errors      → rethrow from the API wrapper (see
+                           useTransactionCorrections); the owning cell
+                           displays it
+```
+
+Do not add a fourth pattern; the `dataset` store owns caching, so no
+client-side query library is introduced.
+
+### Inventory
+
+- `useApiData` — fetching only: loading/error state, errors stored and
+  rendered by the page
 - `useAsyncAction` — wraps async handlers: clears prior error, sets loading,
   stores and re-throws errors, so pages only handle the success path
+  (used by Settings and the auth store)
 - `useDrilldownData` + `useAggregatedGroups` — drilldown pages
   (MonthCategoriesList, CategoryMonthsList) rendering
   `AggregatedTransactionsResponse` groups with totals and highlighting
+- `useTableSorting`, `useTableFiltering`, `useTablePagination`,
+  `useTableHighlight` — state/behavior composables backing VueDataTable
 - `useTransactionCorrections` — category/merchant/notice corrections shared
-  by transaction table pages
+  by transaction table pages; rethrows so editable cells display errors
 - `useFormWithNavigation` — form submission UX: translates messages, shows
   feedback, navigates to results (the form store keeps only state and the
   API call)
@@ -180,9 +222,16 @@ Pages compose these instead of duplicating logic:
 
 - **`components/data/VueDataTable.vue`** — the custom data grid (no
   DataTables.net/jQuery). Sorting, pagination, global search, row
-  highlighting, CSV/Excel export, Bootstrap 5 styling. Custom cell renderers
-  use `v-html` — acceptable here because data comes from the user's own
-  CSVs; never enable custom renderers for untrusted data
+  highlighting, Bootstrap 5 styling. Custom cells render Vue
+  components or escaped plain text (`formatValue`); there is no
+  v-html rendering in the table. Sorting/filtering/pagination/highlight
+  state lives in `composables/useTable{Sorting,Filtering,Pagination,Highlight}.ts`
+- **Extending cell rendering:** prefer a scoped `#cell-<key>` slot on
+  VueDataTable (slot props: `value`, `row`, `index`) over growing the
+  `component`/`componentProps` indirection; the slot wins over every
+  built-in rendering. Do not add new per-capability flags to
+  `types/column.ts` when a slot can express the cell. Existing
+  `component`-based columns keep working unchanged
 - **`components/data/`** also provides `EditableCell`, `UndoCorrectionCell`,
   `TableLink`, `TableLinkWithPopover`, `TableCell`, `ToggleFilterButton`,
   and `tableAggregates.ts`
@@ -208,13 +257,23 @@ Pages compose these instead of duplicating logic:
 
 - Dev server: port 3000, proxies `/api/v2` to `http://localhost:5000`
   (`vite.config.js`). Run via `make frontend` or `npm run dev` in `frontend/`
-- Production build: `vite build` → `frontend/dist/` (terser minify, sourcemaps,
+- Production build: `vite build` → `frontend/dist/` (terser minify,
   `js/[name].js` and `css/[name].[ext]` outputs). `npm run build:prod` sets
-  `VITE_API_BASE_URL=/api/v2`
+  `VITE_API_BASE_URL=/api/v2`. Sourcemaps are omitted by default; build
+  with `VITE_SOURCEMAPS=true` to include them (the backend catch-all
+  refuses to serve `.map` files regardless)
 - Integrated mode: the backend serves the frontend from
-  `src/whatsthedamage/view/static/dist/` via a catch-all route
+  `src/whatsthedamage/view/static/dist/` via a catch-all route, and sets
+  the CSP on every SPA response (`SPA_CSP` in
+  `src/whatsthedamage/api/middleware.py`): `default-src 'self';
+  script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self'
+  data:; font-src 'self'; connect-src 'self'; frame-ancestors 'none'`
 - Standalone mode: host `dist/` separately; set `VITE_API_BASE_URL` and
-  enable CORS on the backend
+  enable CORS on the backend. The CSP then comes from the static host,
+  not Flask — configure the same policy there (host header or a
+  `<meta http-equiv="Content-Security-Policy">` tag in the hosted
+  `index.html`, with `connect-src` extended to the API origin, e.g.
+  `connect-src 'self' https://api.example.com`)
 
 ## Testing and quality gates
 

@@ -106,7 +106,6 @@ describe('Register.vue', () => {
     vi.mocked(register).mockResolvedValue({
       user: testUser,
       recovery_code: 'ABCD-EFGH-IJKL-MNOP',
-      csrf_token: 'token',
       session_expires_at: '2026-10-20T12:00:00Z'
     });
 

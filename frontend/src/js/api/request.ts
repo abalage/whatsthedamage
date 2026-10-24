@@ -5,9 +5,8 @@
  * @module utils/api/request
  */
 
-import { AppError } from '../../types/index'
-import { getCsrfToken, setCsrfToken } from '../csrfToken'
-import type { CsrfTokenResponse } from '../../types/auth'
+import { AppError, type ApiErrorBody } from '../../types/index'
+import { getCsrfToken } from '../csrfToken'
 
 // API base URL configuration
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '/api/v2'
@@ -54,45 +53,58 @@ function buildHeaders(options: RequestInit): Record<string, string> {
 }
 
 /**
- * Extract the error message from an error response body.
- * @param response - Non-OK fetch response
- * @returns Promise with the error message
+ * Parsed fields of an error response body
  */
-async function parseApiError(response: Response): Promise<string> {
+interface ParsedApiError {
+  /** Human-readable error message */
+  message: string
+  /** Machine-readable error code, when the backend provides one */
+  code?: string
+}
+
+/**
+ * Extract the error message and code from an error response body.
+ * @param response - Non-OK fetch response
+ * @returns Promise with the parsed message and optional code
+ */
+async function parseApiError(response: Response): Promise<ParsedApiError> {
   let message = response.statusText || 'Request failed'
+  let code: string | undefined
   try {
-    const errorData: Record<string, unknown> = await response.json()
+    const errorData = await response.json() as ApiErrorBody
     const extracted = errorData.error ?? errorData.message ?? errorData.detail
     if (typeof extracted === 'string') {
       message = extracted
     }
+    if (typeof errorData.code === 'string') {
+      code = errorData.code
+    }
   } catch {
     // No JSON body; keep the status text fallback
   }
-  return message
+  return { message, code }
 }
 
 /**
  * Whether an error response is a rejected CSRF token (the sent token
  * no longer matches the hash stored for the session)
  * @param status - HTTP status of the response
- * @param message - Parsed error message
+ * @param code - Machine-readable error code from the response body
  * @returns Whether the failure is an invalid CSRF token
  */
-function isInvalidCsrfTokenError(status: number, message: string): boolean {
-  return status === 403 && /invalid csrf token/i.test(message)
+function isInvalidCsrfTokenError(status: number, code: string | undefined): boolean {
+  return status === 403 && code === 'CSRF_TOKEN_INVALID'
 }
 
 /**
- * Mint a fresh CSRF token from the backend and store it for the next
- * state-changing request.
+ * Mint a fresh CSRF token from the backend. The backend sets the
+ * token as a cookie; the new value is read back from it.
  * @returns The new CSRF token, or null when the refresh failed
  */
 async function refreshCsrfToken(): Promise<string | null> {
   try {
-    const response = await request<CsrfTokenResponse>(getApiUrl('/auth/csrf-token'))
-    setCsrfToken(response.csrf_token)
-    return response.csrf_token
+    await request(getApiUrl('/auth/csrf-token'))
+    return getCsrfToken() ?? null
   } catch {
     return null
   }
@@ -128,8 +140,8 @@ export async function request<T>(
   }
 
   if (!response.ok) {
-    const message = await parseApiError(response)
-    if (allowCsrfRetry && isInvalidCsrfTokenError(response.status, message)) {
+    const { message, code } = await parseApiError(response)
+    if (allowCsrfRetry && isInvalidCsrfTokenError(response.status, code)) {
       const refreshedToken = await refreshCsrfToken()
       if (refreshedToken) {
         return request<T>(url, options, false)

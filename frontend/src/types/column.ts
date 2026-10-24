@@ -33,10 +33,11 @@ key: string
 /** Display title */
 title: string
 /**
-   * Custom HTML rendering function. Returns HTML string for v-html.
-   * SECURITY: Only use with trusted content. HTML will be rendered as-is.
+   * Plain-text value formatter.
+   * Returns the display text for the cell; the output is rendered
+   * escaped (never interpreted as HTML).
    */
-renderHtml?: (value: unknown, row?: Record<string, unknown>, index?: number) => string
+formatValue?: (value: unknown, row?: Record<string, unknown>, index?: number) => string
 /**
    * Vue component to render in cell.
    * Enables SPA navigation, custom components, etc.
@@ -93,8 +94,6 @@ columns?: string[] | ((columnKey: string) => boolean)
 excludeColumns?: string[]
 /** CSS classes for this row */
 class?: string | string[]
-/** Whether to include in CSV/Excel exports (default: true) */
-includeInExport?: boolean
 /** Custom calculation function (when type is 'custom') */
 customCalculator?: (data: Record<string, unknown>[], columnKey: string) => unknown
 /** Custom formatter for the summary value (optional) */

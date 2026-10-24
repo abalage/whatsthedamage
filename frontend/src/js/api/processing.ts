@@ -84,11 +84,11 @@ export async function fetchProcessingResults(): Promise<ProcessingResultListItem
 /**
  * Fetch processing result metadata
  * @param resultId - Result ID, or undefined to skip the lookup
- * @returns Promise with ProcessingResultMetadata, or null when no resultId is given
+ * @returns Promise with ProcessingResultMetadata, or undefined when no resultId is given
  */
-export async function fetchProcessingResultMetadata(resultId?: string): Promise<ProcessingResultMetadata | null> {
+export async function fetchProcessingResultMetadata(resultId?: string): Promise<ProcessingResultMetadata | undefined> {
   if (!resultId) {
-    return null
+    return undefined
   }
   return request<ProcessingResultMetadata>(getApiUrl(`/processing-results/${encodeURIComponent(resultId)}`))
 }

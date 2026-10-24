@@ -53,11 +53,12 @@ async function handleToggle(event: Event): Promise<void> {
   const newValue = target.checked
   justEnabled.value = false
   justDisabled.value = false
-  const result = await runToggle(() => authStore.setOptInSharing(newValue))
-  if (result !== undefined) {
+  try {
+    await runToggle(() => authStore.setOptInSharing(newValue))
     justEnabled.value = newValue
     justDisabled.value = !newValue
-  } else {
+  } catch {
+    // Rejected state is restored; the error shows via updateError
     target.checked = !newValue
   }
 }
@@ -68,54 +69,62 @@ async function handleChangeUsername(): Promise<void> {
     return
   }
   usernameChanged.value = false
-  const result = await runChangeUsername(() =>
-    authStore.changeUsername(trimmed)
-  )
-  if (result !== undefined) {
+  try {
+    await runChangeUsername(() => authStore.changeUsername(trimmed))
     newUsername.value = ''
     usernameChanged.value = true
+  } catch {
+    // The error shows via usernameError
   }
 }
 
 async function handleChangePassword(): Promise<void> {
   passwordChanged.value = false
-  const result = await runChangePassword(() =>
-    authStore.changeUserPassword(currentPassword.value, newPassword.value)
-  )
-  if (result !== undefined) {
+  try {
+    await runChangePassword(() =>
+      authStore.changeUserPassword(currentPassword.value, newPassword.value)
+    )
     currentPassword.value = ''
     newPassword.value = ''
     passwordChanged.value = true
+  } catch {
+    // The error shows via passwordError
   }
 }
 
 async function handleExport(): Promise<void> {
-  await runExport(async () => {
-    const data = await authStore.exportData()
-    const blob = new Blob([JSON.stringify(data, null, 2)], {
-      type: 'application/json'
+  try {
+    await runExport(async () => {
+      const data = await authStore.exportData()
+      const blob = new Blob([JSON.stringify(data, null, 2)], {
+        type: 'application/json'
+      })
+      const url = URL.createObjectURL(blob)
+      const anchor = document.createElement('a')
+      anchor.href = url
+      anchor.download = 'whatsthedamage-export.json'
+      document.body.appendChild(anchor)
+      anchor.click()
+      anchor.remove()
+      URL.revokeObjectURL(url)
     })
-    const url = URL.createObjectURL(blob)
-    const anchor = document.createElement('a')
-    anchor.href = url
-    anchor.download = 'whatsthedamage-export.json'
-    document.body.appendChild(anchor)
-    anchor.click()
-    anchor.remove()
-    URL.revokeObjectURL(url)
-  })
+  } catch {
+    // The error shows via exportError
+  }
 }
 
 async function handleDeleteAccount(): Promise<void> {
-  const result = await runDeleteAccount(() =>
-    authStore.requestAccountDeletion(
-      deletePassword.value,
-      revokeSharedCorrections.value
+  try {
+    await runDeleteAccount(() =>
+      authStore.requestAccountDeletion(
+        deletePassword.value,
+        revokeSharedCorrections.value
+      )
     )
-  )
-  if (result !== undefined) {
     deletePassword.value = ''
     await router.push({ name: 'login' })
+  } catch {
+    // The error shows via deleteError
   }
 }
 </script>

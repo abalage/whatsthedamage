@@ -9,6 +9,8 @@ from datetime import datetime, timedelta, UTC
 
 from flask import Flask
 
+from tests.api.v2.conftest import csrf_token_from_response
+
 
 PASSWORD = 'password-123456'
 
@@ -34,7 +36,7 @@ def _register(app: Flask, username: str, password: str = PASSWORD):
     )
     assert response.status_code == 201, response.get_json()
     data = response.get_json()
-    return client, data['csrf_token'], data['user']['id']
+    return client, csrf_token_from_response(response), data['user']['id']
 
 
 def _request_deletion(client, csrf_token: str, password: str = PASSWORD):

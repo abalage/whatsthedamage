@@ -8,7 +8,7 @@ revocation).
 
 from flask import Flask
 
-from tests.api.v2.conftest import AuthContext
+from tests.api.v2.conftest import AuthContext, csrf_token_from_response
 
 
 PASSWORD = 'password-123456'
@@ -165,7 +165,7 @@ class TestChangePassword:
             json={'username': 'alice', 'password': PASSWORD}
         )
         assert register.status_code == 201
-        csrf_token = register.get_json()['csrf_token']
+        csrf_token = csrf_token_from_response(register)
 
         # A second session from another client
         other_client = api_app.test_client()

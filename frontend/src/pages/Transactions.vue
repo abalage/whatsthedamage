@@ -84,7 +84,7 @@ const columns = computed<Column[]>(() => {
   return cols
 })
 
-const metadata = ref<ProcessingResultMetadata | null>(null)
+const metadata = ref<ProcessingResultMetadata | undefined>(undefined)
 const totalTransactionCount = ref(0)
 const isLoading = ref(true)
 const error = ref<string | null>(null)

@@ -47,7 +47,7 @@ describe('useDatasetStore', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     setActivePinia(createPinia());
-    vi.mocked(fetchProcessingResultMetadata).mockResolvedValue(null);
+    vi.mocked(fetchProcessingResultMetadata).mockResolvedValue(undefined);
   });
 
   it('fetches the dataset once and serves repeated loads from the cache', async () => {
@@ -61,14 +61,14 @@ describe('useDatasetStore', () => {
     // Same cached entry (the reactive Map may wrap it in a proxy)
     expect(second).toStrictEqual(first);
     expect(first.transactions).toHaveLength(2);
-    expect(first.metadata).toBeNull();
+    expect(first.metadata).toBeUndefined();
   });
 
   it('caches per result scope', async () => {
     vi.mocked(fetchAllTransactions).mockImplementation(async (resultId?: string) =>
       makeResponse(resultId === 'r1' ? [1] : [1, 2])
     );
-    vi.mocked(fetchProcessingResultMetadata).mockResolvedValue(null);
+    vi.mocked(fetchProcessingResultMetadata).mockResolvedValue(undefined);
 
     const store = useDatasetStore();
     await store.load('r1');

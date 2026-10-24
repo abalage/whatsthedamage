@@ -33,8 +33,9 @@ const statisticalStore = useStatisticalStore()
 // Optional resultId filter, carried in the query string
 const resultQuery = useResultQuery()
 
-// Table columns
-const columns: Column[] = [
+// Table columns (computed so translated titles follow locale changes
+// without remounting the page)
+const columns = computed<Column[]>(() => [
   {
     key: 'category_id',
     title: $gettext('Category'),
@@ -58,9 +59,9 @@ const columns: Column[] = [
   {
     key: 'total',
     title: $gettext('Total'),
-    renderHtml: (value: unknown, row?: Record<string, unknown>) => String(((row as { total_display?: string })?.total_display) || value || '')
+    formatValue: (value: unknown, row?: Record<string, unknown>) => String(((row as { total_display?: string })?.total_display) || value || '')
   }
-]
+])
 
 // Extract category_id from row data
 function extractCategoryIdFromData(row: Record<string, unknown>): string {
@@ -107,7 +108,6 @@ const {
       { name: monthName, active: true }
     ]
   },
-  errorMessageKey: 'monthCategoriesLoadError'
 })
 
 // Extract account currency from first transaction
@@ -214,8 +214,6 @@ watch(resultId, () => {
               :columns="columns"
               :aggregate-rows="aggregateRows"
               :cell-highlights-by-row-id="cellHighlightsByRowId"
-              :csv-text="$gettext('Export CSV')"
-              :excel-text="$gettext('Export Excel')"
               wrapper-class="w-auto"
               show-column-filters
               show-pagination

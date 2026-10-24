@@ -209,20 +209,6 @@ msgstr "Keresés törlése"
 msgid "Clear all filters"
 msgstr "Szűrők törlése"
 
-#: src/components/data/VueDataTable.vue:584 src/pages/Categories.vue:426
-#: src/pages/CategoryMonthsList.vue:212
-#: src/pages/CategoryMonthTransactions.vue:252
-#: src/pages/MonthCategoriesList.vue:217 src/pages/PivotTable.vue:342
-msgid "Export CSV"
-msgstr "Mentés CSV-be"
-
-#: src/components/data/VueDataTable.vue:590 src/pages/Categories.vue:427
-#: src/pages/CategoryMonthsList.vue:213
-#: src/pages/CategoryMonthTransactions.vue:253
-#: src/pages/MonthCategoriesList.vue:218 src/pages/PivotTable.vue:343
-msgid "Export Excel"
-msgstr "Mentés Excelbe"
-
 #: src/components/data/VueDataTable.vue:651
 #: src/components/data/VueDataTable.vue:669
 msgid "Filter by"

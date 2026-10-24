@@ -8,6 +8,7 @@ import { useGettext } from 'vue3-gettext'
 import { fetchProcessingResults, fetchTransactionsByResult } from '../js/api'
 import { logger } from '../js/logger'
 import { buildResultQuery } from '../js/routeUtils'
+import { usePersistentRef } from '../composables/usePersistentRef'
 import type { ProcessingResultListItem } from '../types/api'
 
 const { $gettext } = useGettext()
@@ -22,9 +23,12 @@ const processingResults = ref<ProcessingResultListItem[]>([])
 const totalTransactionCount = ref(0)
 
 // Empty string means "All Transactions" (no result_id filter)
-const selectedResultId = ref('')
-
 const SELECTED_RESULT_STORAGE_KEY = 'selectedResultId'
+const selectedResultId = usePersistentRef<string>(
+  SELECTED_RESULT_STORAGE_KEY,
+  '',
+  (value): value is string => typeof value === 'string'
+)
 
 const hasNoTransactions = computed(() =>
   processingResults.value.length === 0 && totalTransactionCount.value === 0
@@ -66,11 +70,14 @@ const sortResultsByNewest = (results: ProcessingResultListItem[]): ProcessingRes
 }
 
 const restoreSelectedResult = (): void => {
-  const stored = localStorage.getItem(SELECTED_RESULT_STORAGE_KEY)
-  selectedResultId.value =
-    stored !== null && processingResults.value.some(result => result.id === stored)
-      ? stored
-      : ''
+  // The persisted id may reference a result that no longer exists;
+  // fall back to "All Transactions" in that case
+  if (
+    selectedResultId.value &&
+    !processingResults.value.some(result => result.id === selectedResultId.value)
+  ) {
+    selectedResultId.value = ''
+  }
 }
 
 const loadProcessingResults = async (): Promise<void> => {
@@ -100,11 +107,7 @@ const loadProcessingResults = async (): Promise<void> => {
 }
 
 const viewResults = (): void => {
-  if (selectedResultId.value) {
-    localStorage.setItem(SELECTED_RESULT_STORAGE_KEY, selectedResultId.value)
-  } else {
-    localStorage.removeItem(SELECTED_RESULT_STORAGE_KEY)
-  }
+  // The persisted ref already saved the selection
   router.push({ name: 'results', query: buildResultQuery(selectedResultId.value) })
 }
 

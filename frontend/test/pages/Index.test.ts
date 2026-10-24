@@ -153,7 +153,8 @@ describe('Index.vue result selector', () => {
     await wrapper.find('button').trigger('click');
 
     expect(mockPush).toHaveBeenCalledWith({ name: 'results', query: { resultId: 'r1' } });
-    expect(localStorage.getItem('selectedResultId')).toBe('r1');
+    // The selection persists via usePersistentRef in JSON format
+    expect(localStorage.getItem('selectedResultId')).toBe('"r1"');
   });
 
   it('navigates to /results without a query for "All Transactions"', async () => {
@@ -168,7 +169,8 @@ describe('Index.vue result selector', () => {
     await wrapper.find('button').trigger('click');
 
     expect(mockPush).toHaveBeenCalledWith({ name: 'results', query: {} });
-    expect(localStorage.getItem('selectedResultId')).toBe(null);
+    // The empty selection persists as JSON, same fallback as no stored value
+    expect(localStorage.getItem('selectedResultId')).toBe('""');
   });
 
   it('restores a persisted selection from localStorage', async () => {

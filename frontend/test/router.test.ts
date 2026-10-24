@@ -10,7 +10,6 @@ import router from '../src/router/index';
 vi.mock('../src/js/api.js', () => ({
   getMe: vi.fn().mockResolvedValue({
     user: { id: 1, username: 'testuser', is_active: true, opt_in_sharing: false },
-    csrf_token: 'token',
   }),
 }));
 

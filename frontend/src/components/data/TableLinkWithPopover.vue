@@ -36,7 +36,7 @@ interface Props {
   class?: string | string[]
   /** Link content (text) */
   children?: string
-  /** Popover content (HTML or text) */
+  /** Popover content (plain text; newlines render as line breaks) */
   popoverContent?: string
   /** Popover placement: 'top', 'right', 'bottom', 'left' */
   popoverPlacement?: string
@@ -62,8 +62,6 @@ const popoverOptions = computed(() => {
   return {
     content: props.popoverContent,
     placement: props.popoverPlacement || 'top',
-    html: true,
-    sanitize: true,
     customClass: props.popoverCustomClass,
     trigger: 'hover focus'
   }

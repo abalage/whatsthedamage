@@ -11,7 +11,7 @@ docs/ux/
 ├── personas/
 │   ├── _template.md       # Copy this for a new persona
 │   └── peter-selfhoster.md
-└── stories/
+└── epics/
     ├── README.md          # ID scheme, priority and status definitions
     ├── A-discover-signup.md
     ├── B-first-import.md

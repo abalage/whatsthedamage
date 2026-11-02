@@ -1,6 +1,7 @@
-# User Stories
+# Epics & user stories
 
-Stories are grouped into epics (one file each) named `<letter>-<slug>.md`.
+Each file in this directory is one epic named `<letter>-<slug>.md`; the user stories
+live inside their epic file.
 
 ## Epics
 

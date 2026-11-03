@@ -264,6 +264,25 @@ Two auth store actions deliberately bypass `useAsyncAction` — do not
   corporate, earth-tones, green-dream, soft-pastel). The theme store applies
   them and persists the choice to localStorage
 
+## Screen sizes
+
+The frontend uses a responsive design. Supported screen sizes may vary depending on devices. Use these sizes as references.
+
+Desktop:
+  - 1920×1080 [baseline, default]
+  - 1536×864
+  - 1366×768
+
+Mobile:
+  - 360×800
+  - 390×844 [default]
+  - 393×873
+
+Tablet:
+  - 768×1024 [default]
+  - 810×1080
+  - 820×1180
+
 ## Build, dev, and deployment modes
 
 - Dev server: port 3000, proxies `/api/v2` to `http://localhost:5000`

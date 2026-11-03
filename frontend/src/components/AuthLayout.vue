@@ -7,14 +7,23 @@
 -->
 
 <script setup lang="ts">
-// No script logic needed for this layout component
+import { computed } from 'vue';
+import { useRoute } from 'vue-router';
+import { buildRedirectQuery, safeRedirectParam } from '../js/routeUtils';
+
+const route = useRoute();
+
+// Preserve a pending post-login redirect when bouncing back to the landing page
+const redirectQuery = computed(() => buildRedirectQuery(safeRedirectParam(route.query)));
 </script>
 
 <template>
   <div class="auth-layout">
     <div class="auth-container">
       <div class="auth-header">
-        <h1 class="app-title">What's the Damage</h1>
+        <h1 class="app-title">
+          <router-link class="app-title-link" :to="{ name: 'landing', query: redirectQuery }">What's the Damage</router-link>
+        </h1>
       </div>
 
       <main class="auth-main">

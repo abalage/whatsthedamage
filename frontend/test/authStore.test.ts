@@ -79,3 +79,39 @@ describe('auth store account deletion', () => {
     expect((fetchMock.mock.calls[0][1] as RequestInit).method).toBe('DELETE');
   });
 });
+
+describe('auth store recovery code regeneration', () => {
+  it('returns the new code and does not touch the registration recovery state', async () => {
+    const fetchMock = vi.fn(async (_url?: unknown, _init?: RequestInit): Promise<FetchResponse> =>
+      makeResponse({ new_recovery_code: 'ABCD-EFGH-IJKL-MNOP' })
+    );
+    vi.stubGlobal('fetch', fetchMock);
+
+    const authStore = useAuthStore();
+    authStore.user = user;
+
+    const code = await authStore.regenerateUserRecoveryCode('correct-password');
+
+    expect(code).toBe('ABCD-EFGH-IJKL-MNOP');
+    // The registration-specific state must remain untouched
+    expect(authStore.recoveryCode).toBeNull();
+    expect(authStore.showRecoveryCode).toBe(false);
+    expect(String(fetchMock.mock.calls[0][0])).toContain('/api/v2/auth/me/recovery-code');
+    expect((fetchMock.mock.calls[0][1] as RequestInit).method).toBe('POST');
+    const body = JSON.parse((fetchMock.mock.calls[0][1] as RequestInit).body as string);
+    expect(body).toEqual({ password: 'correct-password' });
+  });
+
+  it('propagates errors from the API', async () => {
+    const fetchMock = vi.fn(async (): Promise<FetchResponse> =>
+      makeResponse({ message: 'Invalid current password', code: 'INVALID_CREDENTIALS' }, false, 401)
+    );
+    vi.stubGlobal('fetch', fetchMock);
+
+    const authStore = useAuthStore();
+    authStore.user = user;
+
+    await expect(authStore.regenerateUserRecoveryCode('wrong-password')).rejects.toThrow('Invalid current password');
+    expect(authStore.error).toBe('Invalid current password');
+  });
+});

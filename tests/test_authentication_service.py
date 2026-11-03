@@ -958,3 +958,102 @@ class TestAccountServiceUpdateOptInSharing:
 
         assert result is None
         mock_user_repository.find_by_id.assert_not_called()
+
+
+class TestRegenerateRecoveryCode:
+    """Tests for AccountService.regenerate_recovery_code."""
+
+    def test_success_returns_formatted_code(
+        self, account_service, mock_user_repository, mock_recovery_code_service
+    ):
+        """Valid password returns the new formatted recovery code."""
+        password_service = account_service.password_service
+        mock_user = Mock(
+            id=1,
+            username='testuser',
+            password_hash=password_service.hash_password('correct-password'),
+            recovery_code_hash=password_service.hash_password('OLD-CODE'),
+            is_active=True
+        )
+        mock_current_session = Mock(id=42)
+        mock_user_repository.update_credentials.return_value = True
+        mock_recovery_code_service.generate_code.return_value = 'NEWRAWCODE123456'
+        mock_recovery_code_service.format_code.return_value = 'NEWR-AWCO-DE12-3456'
+
+        result = account_service.regenerate_recovery_code(
+            mock_user, 'correct-password', mock_current_session
+        )
+
+        assert result == 'NEWR-AWCO-DE12-3456'
+        mock_user_repository.update_credentials.assert_called_once()
+        call_kwargs = mock_user_repository.update_credentials.call_args
+        assert call_kwargs.kwargs.get('new_recovery_code_hash') is not None
+        assert call_kwargs.kwargs.get('new_password_hash') is None
+
+    def test_revokes_other_sessions(
+        self, account_service, mock_user_repository, mock_recovery_code_service
+    ):
+        """All sessions except the current one are revoked."""
+        password_service = account_service.password_service
+        mock_user = Mock(
+            id=1,
+            username='testuser',
+            password_hash=password_service.hash_password('correct-password'),
+            recovery_code_hash=password_service.hash_password('OLD-CODE'),
+            is_active=True
+        )
+        mock_current_session = Mock(id=42)
+        mock_user_repository.update_credentials.return_value = True
+
+        with patch.object(
+            account_service.session_service, 'revoke_all_sessions_except',
+            return_value=2
+        ) as mock_revoke:
+            account_service.regenerate_recovery_code(
+                mock_user, 'correct-password', mock_current_session
+            )
+
+        mock_revoke.assert_called_once_with(1, 42)
+
+    def test_wrong_password_raises(
+        self, account_service, mock_user_repository
+    ):
+        """A wrong password raises InvalidPasswordError."""
+        from whatsthedamage.services.auth_errors import InvalidPasswordError
+
+        password_service = account_service.password_service
+        mock_user = Mock(
+            id=1,
+            username='testuser',
+            password_hash=password_service.hash_password('correct-password'),
+            recovery_code_hash=password_service.hash_password('OLD-CODE'),
+            is_active=True
+        )
+        mock_current_session = Mock(id=42)
+
+        with pytest.raises(InvalidPasswordError):
+            account_service.regenerate_recovery_code(
+                mock_user, 'wrong-password', mock_current_session
+            )
+
+        mock_user_repository.update_credentials.assert_not_called()
+
+    def test_repository_update_failure_raises(
+        self, account_service, mock_user_repository, mock_recovery_code_service
+    ):
+        """When the repository update fails, ValueError is raised."""
+        password_service = account_service.password_service
+        mock_user = Mock(
+            id=1,
+            username='testuser',
+            password_hash=password_service.hash_password('correct-password'),
+            recovery_code_hash=password_service.hash_password('OLD-CODE'),
+            is_active=True
+        )
+        mock_current_session = Mock(id=42)
+        mock_user_repository.update_credentials.return_value = False
+
+        with pytest.raises(ValueError, match="User not found"):
+            account_service.regenerate_recovery_code(
+                mock_user, 'correct-password', mock_current_session
+            )

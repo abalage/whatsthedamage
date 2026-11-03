@@ -432,3 +432,73 @@ class AccountService:
                 "sessions_revoked": revoked
             }}
         )
+
+    def regenerate_recovery_code(
+        self,
+        user: UserDB,
+        password: str,
+        current_session: SessionDB
+    ) -> str:
+        """Regenerate the user's recovery code while logged in.
+
+        Verifies the current password, generates a new recovery code,
+        stores its hash (invalidating the old code), and revokes all
+        other sessions of the user. The current session stays valid.
+
+        Args:
+            user: The authenticated user requesting the regeneration.
+            password: Current password for confirmation.
+            current_session: The session the request was made from;
+                it is kept active.
+
+        Returns:
+            The new formatted recovery code, displayed only once.
+
+        Raises:
+            InvalidPasswordError: If the current password is
+                incorrect.
+        """
+        if not self.password_service.verify_password(
+            password, cast(str, user.password_hash)
+        ):
+            self.logger.warning(
+                "Recovery code regeneration failed: invalid password",
+                extra={"context": {
+                    "action": "recovery_code_regen",
+                    "status": "failed",
+                    "reason": "invalid_password",
+                    "user_id": user.id
+                }}
+            )
+            raise InvalidPasswordError("Invalid current password")
+
+        new_raw_code = self.recovery_code_service.generate_code()
+        new_formatted_recovery_code = self.recovery_code_service.format_code(
+            new_raw_code
+        )
+        new_recovery_code_hash = self.password_service.hash_password(
+            new_raw_code
+        )
+
+        updated = self.user_repository.update_credentials(
+            cast(int, user.id),
+            new_recovery_code_hash=new_recovery_code_hash
+        )
+        if not updated:
+            raise ValueError("User not found")
+
+        revoked = self.session_service.revoke_all_sessions_except(
+            cast(int, user.id), cast(int, current_session.id)
+        )
+
+        self.logger.info(
+            "Recovery code regenerated",
+            extra={"context": {
+                "action": "recovery_code_regen",
+                "status": "success",
+                "user_id": user.id,
+                "sessions_revoked": revoked
+            }}
+        )
+
+        return new_formatted_recovery_code

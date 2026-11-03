@@ -56,6 +56,10 @@ class TestOpenApiSchemaStructure:
             "/auth/login",
             "/auth/logout",
             "/auth/me",
+            "/auth/me/password",
+            "/auth/me/recovery-code",
+            "/auth/me/export",
+            "/auth/account",
             "/auth/reset-password",
             "/auth/csrf-token",
             "/processing-results",
@@ -98,8 +102,14 @@ class TestOpenApiSchemaStructure:
             "MeResponse",
             "UpdateMeRequest",
             "UpdateMeResponse",
+            "ChangePasswordRequest",
+            "AccountDeletionRequest",
+            "AccountDeletionResponse",
+            "DataExportResponse",
             "ResetPasswordRequest",
             "ResetPasswordResponse",
+            "RegenerateRecoveryCodeRequest",
+            "RegenerateRecoveryCodeResponse",
             "ProcessingRequest",
             "ProcessingResultListItem",
             "ProcessingResultCreated",
@@ -148,6 +158,10 @@ class TestOpenApiSchemaContent:
         assert "post" in paths["/auth/logout"]
         assert "get" in paths["/auth/me"]
         assert "put" in paths["/auth/me"]
+        assert "put" in paths["/auth/me/password"]
+        assert "post" in paths["/auth/me/recovery-code"]
+        assert "get" in paths["/auth/me/export"]
+        assert "delete" in paths["/auth/account"]
         assert "post" in paths["/auth/reset-password"]
         assert "get" in paths["/auth/csrf-token"]
 
@@ -268,6 +282,10 @@ class TestOpenApiSchemaContent:
             ("/corrections", "post"),
             ("/auth/logout", "post"),
             ("/auth/me", "put"),
+            ("/auth/me/password", "put"),
+            ("/auth/me/recovery-code", "post"),
+            ("/auth/me/export", "get"),
+            ("/auth/account", "delete"),
         ]
         for path, method in protected:
             operation = paths[path][method]

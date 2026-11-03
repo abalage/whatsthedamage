@@ -243,3 +243,40 @@ class RateLimitService:
             if key in self.storage:
                 del self.storage[key]
 
+    def check_recovery_regen_rate_limit(
+        self,
+        user_id: int,
+        ip_address: str
+    ) -> Tuple[bool, int]:
+        """Check if rate limit is exceeded for recovery code regeneration.
+
+        Tracks attempts per user+IP combination to prevent brute-forcing
+        the password via the authenticated regeneration endpoint. Uses
+        the same configuration as login and recovery rate limiting.
+
+        Args:
+            user_id: Authenticated user identifier.
+            ip_address: Client IP address.
+
+        Returns:
+            Tuple of (is_rate_limited, retry_after_seconds).
+        """
+        key = f"recovery-regen:{user_id}:{ip_address}"
+        return self._check_bucket(
+            key, self.max_attempts, self.window_seconds
+        )
+
+    def reset_recovery_regen_rate_limit(
+        self, user_id: int, ip_address: str
+    ) -> None:
+        """Reset the rate limit counter for recovery code regeneration.
+
+        Args:
+            user_id: Authenticated user identifier.
+            ip_address: Client IP address to reset.
+        """
+        key = f"recovery-regen:{user_id}:{ip_address}"
+        with self.lock:
+            if key in self.storage:
+                del self.storage[key]
+

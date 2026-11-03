@@ -10,7 +10,7 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import type { User } from '../types/auth';
-import { register, login, logout, getMe, fetchCsrfToken, updateSharingPreference, updateUsername, changePassword, exportMyData, deleteAccount } from '../js/api';
+import { register, login, logout, getMe, fetchCsrfToken, updateSharingPreference, updateUsername, changePassword, exportMyData, deleteAccount, regenerateRecoveryCode } from '../js/api';
 import { getCsrfToken } from '../js/csrfToken';
 import { useAsyncAction } from '../composables/useAsyncAction';
 import { useDatasetStore } from './dataset';
@@ -240,6 +240,25 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   /**
+   * Regenerate the current user's recovery code while logged in.
+   *
+   * The old recovery code is invalidated server-side and all other
+   * sessions are revoked; the current session stays valid. The new
+   * code is returned to the caller for one-time display — it is NOT
+   * stored in the shared recoveryCode state (that belongs to the
+   * registration flow).
+   *
+   * @param password - Current password confirming the regeneration
+   * @returns Promise with the new formatted recovery code
+   */
+  async function regenerateUserRecoveryCode(password: string): Promise<string> {
+    return run(async () => {
+      const response = await regenerateRecoveryCode(password);
+      return response.new_recovery_code;
+    });
+  }
+
+  /**
    * Mint a fresh CSRF token from the backend.
    * The new cookie supersedes any previously issued one for this session.
    */
@@ -271,6 +290,7 @@ export const useAuthStore = defineStore('auth', () => {
     changeUsername,
     changeUserPassword,
     exportData,
-    requestAccountDeletion
+    requestAccountDeletion,
+    regenerateUserRecoveryCode
   };
 });

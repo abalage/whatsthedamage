@@ -709,6 +709,31 @@
     ],
     "type": "object"
   },
+  "RegenerateRecoveryCodeRequest": {
+    "properties": {
+      "password": {
+        "description": "Current password confirming the regeneration",
+        "format": "password",
+        "type": "string"
+      }
+    },
+    "required": [
+      "password"
+    ],
+    "type": "object"
+  },
+  "RegenerateRecoveryCodeResponse": {
+    "properties": {
+      "new_recovery_code": {
+        "description": "New one-time recovery code, displayed only once; the old code is invalidated",
+        "type": "string"
+      }
+    },
+    "required": [
+      "new_recovery_code"
+    ],
+    "type": "object"
+  },
   "RegisterRequest": {
     "properties": {
       "password": {

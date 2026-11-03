@@ -179,21 +179,23 @@ class SqlAlchemyUserRepository(SqlAlchemyBaseRepository[UserDB]):
                 return True
             return False
 
-    def update_password_and_recovery_code(
+    def update_credentials(
         self,
         user_id: int,
-        new_password_hash: str,
-        new_recovery_code_hash: str
+        new_password_hash: Optional[str] = None,
+        new_recovery_code_hash: Optional[str] = None,
     ) -> bool:
-        """Atomic update of both password and recovery code hashes for a user.
+        """Atomically update password and/or recovery code hashes for a user.
 
-        Updates both the password hash and recovery code hash in a single
+        Only the provided (non-None) fields are updated, in a single
         database transaction to ensure atomicity.
 
         Args:
             user_id: User identifier.
-            new_password_hash: New Argon2id hashed password.
-            new_recovery_code_hash: New Argon2id hashed recovery code.
+            new_password_hash: New Argon2id hashed password, or None to
+                leave unchanged.
+            new_recovery_code_hash: New Argon2id hashed recovery code, or
+                None to leave unchanged.
 
         Returns:
             True if update was successful, False if user not found.
@@ -206,10 +208,36 @@ class SqlAlchemyUserRepository(SqlAlchemyBaseRepository[UserDB]):
                 UserDB.id == user_id
             ).first()
             if user:
-                user.password_hash = cast(Any, new_password_hash)
-                user.recovery_code_hash = cast(Any, new_recovery_code_hash)
+                if new_password_hash is not None:
+                    user.password_hash = cast(Any, new_password_hash)
+                if new_recovery_code_hash is not None:
+                    user.recovery_code_hash = cast(Any, new_recovery_code_hash)
                 return True
             return False
+
+    def update_password_and_recovery_code(
+        self,
+        user_id: int,
+        new_password_hash: str,
+        new_recovery_code_hash: str
+    ) -> bool:
+        """Atomic update of both password and recovery code hashes for a user.
+
+        Delegates to update_credentials with both fields set.
+
+        Args:
+            user_id: User identifier.
+            new_password_hash: New Argon2id hashed password.
+            new_recovery_code_hash: New Argon2id hashed recovery code.
+
+        Returns:
+            True if update was successful, False if user not found.
+        """
+        return self.update_credentials(
+            user_id,
+            new_password_hash=new_password_hash,
+            new_recovery_code_hash=new_recovery_code_hash,
+        )
 
     def schedule_deletion(
         self,

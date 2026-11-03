@@ -109,6 +109,23 @@ export interface PasswordResetResponse {
 }
 
 /**
+ * Request body for regenerating the recovery code while logged in
+ * via POST /auth/me/recovery-code.
+ */
+export interface RegenerateRecoveryCodeRequest {
+  password: string;
+}
+
+/**
+ * Response from successful recovery code regeneration.
+ * Contains the new recovery code (displayed once; the old one is
+ * invalidated).
+ */
+export interface RegenerateRecoveryCodeResponse {
+  new_recovery_code: string;
+}
+
+/**
  * Request body for scheduling account deletion via DELETE /auth/account.
  */
 export interface AccountDeletionRequest {

@@ -183,4 +183,26 @@ describe('ForgotPassword.vue', () => {
     expect(vm.isLoading).toBe(false);
     expect(vm.error).toBe(null);
   });
+
+  it('renders the recovery-code display with all required structural elements on success', async () => {
+    vi.mocked(resetPassword).mockResolvedValue({
+      user: { id: 1, username: 'testuser', is_active: true, opt_in_sharing: false },
+      new_recovery_code: 'NEW-ABCD-EFGH-IJKL-MN'
+    });
+
+    const wrapper = mount(ForgotPassword, mountOptions);
+    const vm = wrapper.vm as unknown as ForgotPasswordVm;
+
+    await vm.handleResetPassword('testuser', 'ABCD-EFGH-IJKL-MNOP', 'new_secure_password_1234');
+    await new Promise(setImmediate);
+    await wrapper.vm.$nextTick();
+
+    const html = wrapper.html();
+    expect(html).toContain('recovery-code-container');
+    expect(html).toContain('recovery-code-box');
+    expect(html).toContain('NEW-ABCD-EFGH-IJKL-MN');
+    expect(html).toContain('auth-status-warning');
+    expect(html).toContain('auth-acknowledgment');
+    expect(html).toContain('auth-primary-btn');
+  });
 });

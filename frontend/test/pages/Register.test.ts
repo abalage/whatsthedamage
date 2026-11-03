@@ -128,4 +128,35 @@ describe('Register.vue', () => {
 
     expect(mockPush).toHaveBeenCalledWith({ name: 'login', query: { registered: 'true' } });
   });
+
+  it('renders the recovery-code screen with all required structural elements', async () => {
+    vi.mocked(register).mockResolvedValue({
+      user: testUser,
+      recovery_code: 'ABCD-EFGH-IJKL-MNOP',
+      session_expires_at: '2026-10-20T12:00:00Z'
+    });
+
+    const wrapper = mount(Register, {
+      global: {
+        plugins: [createPinia()],
+        stubs: { RouterLink: { template: '<a><slot /></a>' } }
+      }
+    });
+    const vm = wrapper.vm as unknown as RegisterVm;
+    vm.username = 'user';
+    vm.password = 'long-enough-password';
+    vm.confirmPassword = 'long-enough-password';
+    vm.termsAccepted = true;
+
+    await vm.handleRegister();
+    await wrapper.vm.$nextTick();
+
+    const html = wrapper.html();
+    expect(html).toContain('recovery-code-container');
+    expect(html).toContain('recovery-code-box');
+    expect(html).toContain('ABCD-EFGH-IJKL-MNOP');
+    expect(html).toContain('auth-status-warning');
+    expect(html).toContain('auth-acknowledgment');
+    expect(html).toContain('auth-primary-btn');
+  });
 });

@@ -256,3 +256,42 @@
 .auth-acknowledgment input[type="checkbox"] {
   margin-top: 0.25rem;
 }
+
+/* Desktop: compact vertical spacing so the recovery-code screen fits without scrolling */
+@media (min-width: 768px) {
+  .auth-layout {
+    padding: 1rem;
+  }
+
+  .auth-container {
+    padding: 1.5rem;
+    gap: 1rem;
+  }
+
+  .auth-footer {
+    margin-top: 0.5rem;
+    padding-top: 0.5rem;
+  }
+
+  .recovery-code-container {
+    gap: 0.75rem;
+  }
+
+  .recovery-code-box {
+    padding: 0.75rem;
+  }
+
+  .auth-status-success {
+    padding: 0.75rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .auth-status-warning {
+    padding: 0.75rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .auth-acknowledgment {
+    margin: 0.75rem 0;
+  }
+}

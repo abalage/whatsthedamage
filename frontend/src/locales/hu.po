@@ -24,7 +24,7 @@ msgid "Clear error"
 msgstr "Hiba törlése"
 
 #: src/components/auth/PasswordResetForm.vue:92 src/pages/Login.vue:97
-#: src/pages/Register.vue:121 src/pages/Settings.vue:132
+#: src/pages/Register.vue:121 src/pages/Settings.vue:173
 msgid "Username"
 msgstr "Felhasználónév"
 
@@ -92,63 +92,63 @@ msgstr "Megjegyzés:"
 msgid "Password must be at least {minLength} characters long."
 msgstr "A jelszónak legalább {minLength} karakter hosszúnak kell lennie."
 
-#: src/components/auth/RecoveryCodeDisplay.vue:72
+#: src/components/auth/RecoveryCodeDisplay.vue:37
 msgid "Password Reset Successful!"
 msgstr "A jelszó visszaállítása sikeres!"
 
-#: src/components/auth/RecoveryCodeDisplay.vue:75
+#: src/components/auth/RecoveryCodeDisplay.vue:38
 msgid "Your password has been successfully reset."
 msgstr "Jelszavát sikeresen visszaállította."
 
-#: src/components/auth/RecoveryCodeDisplay.vue:77 src/pages/Register.vue:233
-msgid "Important:"
-msgstr "Fontos:"
-
-#: src/components/auth/RecoveryCodeDisplay.vue:78
+#: src/components/auth/RecoveryCodeDisplay.vue:39
 msgid ""
 "A new recovery code has been generated. You must save it as you will not be "
 "able to see it again."
 msgstr "Új helyreállító kód készült. Mentse el, mert többé nem fogja látni."
 
-#: src/components/auth/RecoveryCodeDisplay.vue:88 src/pages/Register.vue:224
+#: src/components/auth/RecoveryCodeDisplay.vue:40 src/pages/Settings.vue:301
+msgid "I have saved my new recovery code in a secure location"
+msgstr "Elmentettem az új helyreállító kódomat egy biztonságos helyre"
+
+#: src/components/auth/RecoveryCodeDisplay.vue:41 src/pages/Register.vue:254
+msgid "Continue to Login"
+msgstr "Folytatás a bejelentkezéshez"
+
+#: src/components/auth/RecoveryCodeDisplay.vue:98 src/pages/Register.vue:233
+msgid "Important:"
+msgstr "Fontos:"
+
+#: src/components/auth/RecoveryCodeDisplay.vue:109 src/pages/Register.vue:224
 msgid "Copy to clipboard"
 msgstr "Másolás a vágólapra"
 
-#: src/components/auth/RecoveryCodeDisplay.vue:91 src/pages/Register.vue:227
+#: src/components/auth/RecoveryCodeDisplay.vue:112 src/pages/Register.vue:227
 msgid "Copy"
 msgstr "Másolás"
 
-#: src/components/auth/RecoveryCodeDisplay.vue:92
+#: src/components/auth/RecoveryCodeDisplay.vue:113
 msgid "Copied!"
 msgstr "Kimásolva!"
 
-#: src/components/auth/RecoveryCodeDisplay.vue:96
+#: src/components/auth/RecoveryCodeDisplay.vue:117
 msgid "Recovery code copied to clipboard!"
 msgstr "A helyreállító kód a vágólapra másolva!"
 
-#: src/components/auth/RecoveryCodeDisplay.vue:102
+#: src/components/auth/RecoveryCodeDisplay.vue:123
 msgid "WARNING: SAVE THIS CODE NOW!"
 msgstr "FIGYELMEZTETÉS: MENTSE EL A KÓDOT MOST!"
 
-#: src/components/auth/RecoveryCodeDisplay.vue:103
+#: src/components/auth/RecoveryCodeDisplay.vue:124
 msgid "You will not be able to retrieve it later."
 msgstr "Később nem lesz lehetősége lekérdezni."
 
-#: src/components/auth/RecoveryCodeDisplay.vue:106
+#: src/components/auth/RecoveryCodeDisplay.vue:127
 msgid ""
 "Without this recovery code, you will not be able to reset your password if "
 "you forget it again."
 msgstr ""
 
-#: src/components/auth/RecoveryCodeDisplay.vue:116
-msgid "I have saved my new recovery code in a secure location"
-msgstr "Elmentettem az új helyreállító kódomat egy biztonságos helyre"
-
-#: src/components/auth/RecoveryCodeDisplay.vue:126 src/pages/Register.vue:254
-msgid "Continue to Login"
-msgstr "Folytatás a bejelentkezéshez"
-
-#: src/components/auth/RecoveryCodeDisplay.vue:132
+#: src/components/auth/RecoveryCodeDisplay.vue:153
 msgid "Back to Login"
 msgstr "Vissza a bejelentkezéshez"
 
@@ -192,87 +192,87 @@ msgstr ""
 msgid "Undo"
 msgstr ""
 
-#: src/components/data/VueDataTable.vue:546
+#: src/components/data/VueDataTable.vue:313
 msgid "Search..."
 msgstr "Keresés..."
 
-#: src/components/data/VueDataTable.vue:548 src/pages/PivotTable.vue:344
+#: src/components/data/VueDataTable.vue:315 src/pages/PivotTable.vue:334
 msgid "Search"
 msgstr "Keresés"
 
-#: src/components/data/VueDataTable.vue:555
+#: src/components/data/VueDataTable.vue:322
 msgid "Clear search"
 msgstr "Keresés törlése"
 
-#: src/components/data/VueDataTable.vue:569
-#: src/components/data/VueDataTable.vue:572
+#: src/components/data/VueDataTable.vue:336
+#: src/components/data/VueDataTable.vue:339
 msgid "Clear all filters"
 msgstr "Szűrők törlése"
 
-#: src/components/data/VueDataTable.vue:651
-#: src/components/data/VueDataTable.vue:669
+#: src/components/data/VueDataTable.vue:400
+#: src/components/data/VueDataTable.vue:418
 msgid "Filter by"
 msgstr "Szűrő"
 
-#: src/components/data/VueDataTable.vue:654
+#: src/components/data/VueDataTable.vue:403
 msgid "All"
 msgstr ""
 
-#: src/components/data/VueDataTable.vue:668
+#: src/components/data/VueDataTable.vue:417
 msgid "Filter"
 msgstr "Szűrő"
 
-#: src/components/data/VueDataTable.vue:724
-#: src/pages/CategoryMonthsList.vue:239 src/pages/MonthCategoriesList.vue:244
-#: src/pages/PivotTable.vue:355 src/pages/PivotTable.vue:360
+#: src/components/data/VueDataTable.vue:492
+#: src/pages/CategoryMonthsList.vue:237 src/pages/MonthCategoriesList.vue:242
+#: src/pages/PivotTable.vue:345 src/pages/PivotTable.vue:350
 msgid "No data available"
 msgstr "Nincs adat"
 
-#: src/components/data/VueDataTable.vue:763
+#: src/components/data/VueDataTable.vue:533
 msgid "First page"
 msgstr "Első oldal"
 
-#: src/components/data/VueDataTable.vue:766
+#: src/components/data/VueDataTable.vue:536
 msgid "First"
 msgstr "Első"
 
-#: src/components/data/VueDataTable.vue:773
+#: src/components/data/VueDataTable.vue:543
 msgid "Previous page"
 msgstr "Előző oldal"
 
-#: src/components/data/VueDataTable.vue:776
+#: src/components/data/VueDataTable.vue:546
 msgid "Previous"
 msgstr "Előző"
 
-#: src/components/data/VueDataTable.vue:789
+#: src/components/data/VueDataTable.vue:559
 msgid "Page"
 msgstr "Oldal"
 
-#: src/components/data/VueDataTable.vue:800
+#: src/components/data/VueDataTable.vue:570
 msgid "Next page"
 msgstr "Következő oldal"
 
-#: src/components/data/VueDataTable.vue:803
+#: src/components/data/VueDataTable.vue:573
 msgid "Next"
 msgstr "Következő"
 
-#: src/components/data/VueDataTable.vue:810
+#: src/components/data/VueDataTable.vue:580
 msgid "Last page"
 msgstr "Utolsó oldal"
 
-#: src/components/data/VueDataTable.vue:813
+#: src/components/data/VueDataTable.vue:583
 msgid "Last"
 msgstr "Utolsó"
 
-#: src/components/data/VueDataTable.vue:818
+#: src/components/data/VueDataTable.vue:588
 msgid "Showing"
 msgstr "Mutatás"
 
-#: src/components/data/VueDataTable.vue:819
+#: src/components/data/VueDataTable.vue:589
 msgid "of"
 msgstr ""
 
-#: src/components/data/VueDataTable.vue:819
+#: src/components/data/VueDataTable.vue:589
 msgid "items"
 msgstr "elemek"
 
@@ -284,20 +284,20 @@ msgstr "Bezárás"
 msgid "Tell me I didn't spend that much…"
 msgstr "Mondd hogy nem költöttem sokat…"
 
-#: src/components/Layout.vue:123 src/pages/Categories.vue:364
-#: src/pages/CategoryMonthsList.vue:109
+#: src/components/Layout.vue:123 src/pages/Categories.vue:353
+#: src/pages/CategoryMonthsList.vue:110
 #: src/pages/CategoryMonthTransactions.vue:68
-#: src/pages/MonthCategoriesList.vue:105 src/pages/PivotTable.vue:33
-#: src/pages/Transactions.vue:155
+#: src/pages/MonthCategoriesList.vue:106 src/pages/PivotTable.vue:34
+#: src/pages/Transactions.vue:141
 msgid "Home"
 msgstr "Kezdőlap"
 
-#: src/components/Layout.vue:126 src/pages/Index.vue:159
-#: src/pages/Index.vue:195
+#: src/components/Layout.vue:126 src/pages/Index.vue:162
+#: src/pages/Index.vue:198
 msgid "Import CSV"
 msgstr "CSV importálása"
 
-#: src/components/Layout.vue:129 src/pages/Settings.vue:125
+#: src/components/Layout.vue:129 src/pages/Settings.vue:166
 msgid "Settings"
 msgstr ""
 
@@ -382,8 +382,8 @@ msgstr "Adatvédelem"
 msgid "Legal"
 msgstr "Jognyilatkozat"
 
-#: src/components/layout/LoadingState.vue:10 src/pages/Categories.vue:371
-#: src/pages/Transactions.vue:164
+#: src/components/layout/LoadingState.vue:10 src/pages/Categories.vue:360
+#: src/pages/Transactions.vue:150
 msgid "loading"
 msgstr "betöltés"
 
@@ -435,55 +435,55 @@ msgstr "nincs kiválasztva, kattints a kiválasztáshoz"
 msgid "Default category"
 msgstr "Alapértelmezett kategória"
 
-#: src/composables/useFormWithNavigation.ts:49
+#: src/composables/useFormWithNavigation.ts:51
 msgid "CSV file is required"
 msgstr "A CSV fájl megadása kötelező"
 
-#: src/composables/useFormWithNavigation.ts:51
+#: src/composables/useFormWithNavigation.ts:53
 msgid "Please upload a valid CSV file"
 msgstr "Kérjük, töltsön fel érvényes CSV fájlt"
 
-#: src/composables/useFormWithNavigation.ts:53
+#: src/composables/useFormWithNavigation.ts:55
 msgid "Please upload a valid YAML configuration file"
 msgstr "Kérjük, töltsön fel érvényes YAML konfigurációs fájlt"
 
-#: src/composables/useFormWithNavigation.ts:55
+#: src/composables/useFormWithNavigation.ts:57
 msgid "Please enter a valid start date"
 msgstr "Kérjük, adjon meg érvényes kezdő dátumot"
 
-#: src/composables/useFormWithNavigation.ts:57
+#: src/composables/useFormWithNavigation.ts:59
 msgid "Please enter a valid end date"
 msgstr "Kérjük, adjon meg érvényes záró dátumot"
 
-#: src/composables/useFormWithNavigation.ts:59
+#: src/composables/useFormWithNavigation.ts:61
 msgid "End date must be after start date"
 msgstr "A záró dátum a kezdő dátum után kell legyen"
 
-#: src/composables/useFormWithNavigation.ts:69
+#: src/composables/useFormWithNavigation.ts:71
 msgid "Please login to process transactions"
 msgstr "A tranzakciók feldolgozásához jelentkezzen be"
 
-#: src/composables/useFormWithNavigation.ts:78
+#: src/composables/useFormWithNavigation.ts:80
 msgid "Please fix the form errors before submitting"
 msgstr "Kérjük, a beküldés előtt javítsa az űrlap hibáit"
 
-#: src/composables/useFormWithNavigation.ts:81
+#: src/composables/useFormWithNavigation.ts:83
 msgid "Backend error: No result ID returned"
 msgstr "Háttérrendszeri hiba: nem érkezett eredményazonosító"
 
-#: src/composables/useFormWithNavigation.ts:87
+#: src/composables/useFormWithNavigation.ts:89
 msgid "Error processing transactions"
 msgstr "Hiba a tranzakciók feldolgozása során"
 
-#: src/composables/useFormWithNavigation.ts:93
+#: src/composables/useFormWithNavigation.ts:95
 msgid "Transactions processed successfully"
 msgstr "A tranzakciók feldolgozása sikeres"
 
-#: src/composables/useTransactionCorrections.ts:216
+#: src/composables/useTransactionCorrections.ts:226
 msgid "Transaction updated"
 msgstr "Tranzakció frissítve"
 
-#: src/composables/useTransactionCorrections.ts:226
+#: src/composables/useTransactionCorrections.ts:237
 msgid "Corrections undone"
 msgstr "Javítások visszavonva"
 
@@ -649,9 +649,9 @@ msgid ""
 "grouped by transaction categories."
 msgstr ""
 
-#: src/pages/About.vue:22 src/pages/Categories.vue:407
-#: src/pages/PivotTable.vue:35 src/pages/PivotTable.vue:204
-#: src/pages/PivotTable.vue:205
+#: src/pages/About.vue:22 src/pages/Categories.vue:396
+#: src/pages/PivotTable.vue:36 src/pages/PivotTable.vue:196
+#: src/pages/PivotTable.vue:197
 msgid "Pivot Table"
 msgstr "Pivot Tábla"
 
@@ -791,97 +791,97 @@ msgstr ""
 msgid "blog post."
 msgstr ""
 
-#: src/pages/Categories.vue:198
+#: src/pages/Categories.vue:187
 msgid "Failed to load highlights"
 msgstr ""
 
-#: src/pages/Categories.vue:209 src/pages/Categories.vue:365
-#: src/pages/Categories.vue:387 src/pages/CategoryMonthsList.vue:110
+#: src/pages/Categories.vue:198 src/pages/Categories.vue:354
+#: src/pages/Categories.vue:376 src/pages/CategoryMonthsList.vue:111
 #: src/pages/CategoryMonthTransactions.vue:69
-#: src/pages/MonthCategoriesList.vue:106 src/pages/PivotTable.vue:34
-#: src/pages/Transactions.vue:156
+#: src/pages/MonthCategoriesList.vue:107 src/pages/PivotTable.vue:35
+#: src/pages/Transactions.vue:142
 msgid "Categories"
 msgstr "Kategóriák"
 
-#: src/pages/Categories.vue:373 src/pages/Transactions.vue:166
+#: src/pages/Categories.vue:362 src/pages/Transactions.vue:152
 msgid "Loading results"
 msgstr "Eredmények betöltése"
 
-#: src/pages/Categories.vue:383 src/pages/PivotTable.vue:228
-#: src/pages/Transactions.vue:178
+#: src/pages/Categories.vue:372 src/pages/PivotTable.vue:220
+#: src/pages/Transactions.vue:162
 msgid "Too many transactions to display"
 msgstr "Túl sok tranzakció a megjelenítéshez"
 
-#: src/pages/Categories.vue:383 src/pages/PivotTable.vue:228
-#: src/pages/Transactions.vue:178
+#: src/pages/Categories.vue:372 src/pages/PivotTable.vue:220
+#: src/pages/Transactions.vue:162
 msgid "showing"
 msgstr "megjelenítve"
 
-#: src/pages/Categories.vue:383 src/pages/PivotTable.vue:228
-#: src/pages/Transactions.vue:178
+#: src/pages/Categories.vue:372 src/pages/PivotTable.vue:220
+#: src/pages/Transactions.vue:162
 msgid "Select a result to see the rest."
 msgstr "Válassz egy eredményt a többi megtekintéséhez."
 
-#: src/pages/Categories.vue:388 src/pages/Index.vue:178
-#: src/pages/PivotTable.vue:205 src/pages/Transactions.vue:183
+#: src/pages/Categories.vue:377 src/pages/Index.vue:181
+#: src/pages/PivotTable.vue:197 src/pages/Transactions.vue:167
 msgid "All Transactions"
 msgstr "Összes tranzakció"
 
-#: src/pages/Categories.vue:395
+#: src/pages/Categories.vue:384
 msgid "Back to Form"
 msgstr "Vissza az űrlapra"
 
-#: src/pages/Categories.vue:401 src/pages/CategoryMonthTransactions.vue:278
-#: src/pages/Transactions.vue:157 src/pages/Transactions.vue:182
-#: src/pages/Transactions.vue:197
+#: src/pages/Categories.vue:390 src/pages/CategoryMonthTransactions.vue:273
+#: src/pages/Transactions.vue:143 src/pages/Transactions.vue:166
+#: src/pages/Transactions.vue:181
 msgid "Transactions"
 msgstr "Tranzakciók"
 
-#: src/pages/Categories.vue:415 src/pages/CategoryMonthsList.vue:200
-#: src/pages/CategoryMonthTransactions.vue:240
-#: src/pages/MonthCategoriesList.vue:205 src/pages/PivotTable.vue:248
-#: src/pages/Transactions.vue:69
+#: src/pages/Categories.vue:404 src/pages/CategoryMonthsList.vue:200
+#: src/pages/CategoryMonthTransactions.vue:237
+#: src/pages/MonthCategoriesList.vue:205 src/pages/PivotTable.vue:240
+#: src/pages/Transactions.vue:85
 msgid "Account"
 msgstr "Számla"
 
-#: src/pages/Categories.vue:438 src/pages/CategoryMonthTransactions.vue:292
-#: src/pages/Transactions.vue:235
+#: src/pages/Categories.vue:425 src/pages/CategoryMonthTransactions.vue:287
+#: src/pages/Transactions.vue:219
 msgid "No transactions found"
 msgstr "Nem találtam tranzakciót"
 
-#: src/pages/Categories.vue:440
+#: src/pages/Categories.vue:427
 msgid "Please upload a CSV file first."
 msgstr "Előbb tölts fel egy CSV fájlt."
 
-#: src/pages/CategoryMonthsList.vue:41 src/pages/PivotTable.vue:121
+#: src/pages/CategoryMonthsList.vue:42 src/pages/PivotTable.vue:119
 msgid "Month"
 msgstr "Hónap"
 
-#: src/pages/CategoryMonthsList.vue:60
-#: src/pages/CategoryMonthTransactions.vue:160
-#: src/pages/MonthCategoriesList.vue:60 src/pages/PivotTable.vue:294
+#: src/pages/CategoryMonthsList.vue:61
+#: src/pages/CategoryMonthTransactions.vue:158
+#: src/pages/MonthCategoriesList.vue:61 src/pages/PivotTable.vue:286
 msgid "Total"
 msgstr "Összeg"
 
-#: src/pages/CategoryMonthsList.vue:111 src/pages/CategoryMonthsList.vue:224
+#: src/pages/CategoryMonthsList.vue:112 src/pages/CategoryMonthsList.vue:222
 msgid "Category Details"
 msgstr "Kategória részletei"
 
 #: src/pages/CategoryMonthsList.vue:161
-#: src/pages/CategoryMonthTransactions.vue:109
-#: src/pages/CategoryMonthTransactions.vue:198 src/pages/Transactions.vue:67
+#: src/pages/CategoryMonthTransactions.vue:108
+#: src/pages/CategoryMonthTransactions.vue:195 src/pages/Transactions.vue:83
 msgid "Amount"
 msgstr "Összeg"
 
 #: src/pages/CategoryMonthsList.vue:190
-#: src/pages/CategoryMonthTransactions.vue:229
-#: src/pages/MonthCategoriesList.vue:195 src/pages/PivotTable.vue:236
-#: src/pages/Transactions.vue:190
+#: src/pages/CategoryMonthTransactions.vue:226
+#: src/pages/MonthCategoriesList.vue:195 src/pages/PivotTable.vue:228
+#: src/pages/Transactions.vue:174
 msgid "Back to Categories"
 msgstr "Vissza a kategóriákhoz"
 
 #: src/pages/CategoryMonthsList.vue:200
-#: src/pages/CategoryMonthTransactions.vue:240
+#: src/pages/CategoryMonthTransactions.vue:237
 #: src/pages/MonthCategoriesList.vue:205
 msgid "Unknown"
 msgstr ""
@@ -890,28 +890,28 @@ msgstr ""
 msgid "Transaction Details"
 msgstr "Tranzakció részletek"
 
-#: src/pages/CategoryMonthTransactions.vue:104 src/pages/Transactions.vue:64
+#: src/pages/CategoryMonthTransactions.vue:103 src/pages/Transactions.vue:80
 msgid "Date"
 msgstr "Dátum"
 
-#: src/pages/CategoryMonthTransactions.vue:175 src/pages/PivotTable.vue:178
-#: src/pages/PivotTable.vue:183
+#: src/pages/CategoryMonthTransactions.vue:172 src/pages/PivotTable.vue:176
+#: src/pages/PivotTable.vue:180
 msgid "Average"
 msgstr "Átlag"
 
-#: src/pages/CategoryMonthTransactions.vue:262 src/pages/Transactions.vue:214
+#: src/pages/CategoryMonthTransactions.vue:257 src/pages/Transactions.vue:198
 msgid "Corrected"
 msgstr ""
 
-#: src/pages/CategoryMonthTransactions.vue:263 src/pages/Transactions.vue:215
+#: src/pages/CategoryMonthTransactions.vue:258 src/pages/Transactions.vue:199
 msgid "Show only transactions with corrections"
 msgstr "Csak a javított tranzakciók megjelenítése"
 
-#: src/pages/CategoryMonthTransactions.vue:267 src/pages/Transactions.vue:219
+#: src/pages/CategoryMonthTransactions.vue:262 src/pages/Transactions.vue:203
 msgid "Edit"
 msgstr ""
 
-#: src/pages/CategoryMonthTransactions.vue:268 src/pages/Transactions.vue:220
+#: src/pages/CategoryMonthTransactions.vue:263 src/pages/Transactions.vue:204
 msgid "Show the column with correction actions"
 msgstr ""
 
@@ -1032,39 +1032,39 @@ msgstr "Töltse fel a bankszámlája exportált előzményeit tartalmazó CSV f�
 msgid "Learn more about how the application works"
 msgstr ""
 
-#: src/pages/Index.vue:127
+#: src/pages/Index.vue:130
 msgid "Loading"
 msgstr "Betöltés"
 
-#: src/pages/Index.vue:129
+#: src/pages/Index.vue:132
 msgid "Loading your transactions"
 msgstr "Tranzakciók betöltése"
 
-#: src/pages/Index.vue:135
+#: src/pages/Index.vue:138
 msgid "Failed to load your transactions"
 msgstr "Nem sikerült betölteni a tranzakcióidat"
 
-#: src/pages/Index.vue:144
+#: src/pages/Index.vue:147
 msgid "Try again"
 msgstr "Próbáld újra"
 
-#: src/pages/Index.vue:153
+#: src/pages/Index.vue:156
 msgid "Welcome"
 msgstr ""
 
-#: src/pages/Index.vue:156
+#: src/pages/Index.vue:159
 msgid "You have no transactions yet."
 msgstr "Még nincsenek tranzakcióid."
 
-#: src/pages/Index.vue:169
+#: src/pages/Index.vue:172
 msgid "Your Transactions"
 msgstr "Saját tranzakciók"
 
-#: src/pages/Index.vue:172
+#: src/pages/Index.vue:175
 msgid "Select Result"
 msgstr "Eredmény kiválasztása"
 
-#: src/pages/Index.vue:189
+#: src/pages/Index.vue:192
 msgid "View Transactions"
 msgstr "Tranzakciók megtekintése"
 
@@ -1117,15 +1117,15 @@ msgstr "Elfelejtette a jelszavát?"
 msgid "Logging out..."
 msgstr "Kijelentkezés..."
 
-#: src/pages/MonthCategoriesList.vue:40
+#: src/pages/MonthCategoriesList.vue:41
 msgid "Category"
 msgstr "Kategória"
 
-#: src/pages/MonthCategoriesList.vue:103
+#: src/pages/MonthCategoriesList.vue:104
 msgid "Month Details"
 msgstr "Hónap részletei"
 
-#: src/pages/MonthCategoriesList.vue:229
+#: src/pages/MonthCategoriesList.vue:227
 msgid "Category Distribution"
 msgstr "Kategória eloszlás"
 
@@ -1137,51 +1137,51 @@ msgstr "A keresett oldal nem található."
 msgid "Back to Home"
 msgstr "Vissza a kezdőlapra"
 
-#: src/pages/PivotTable.vue:127
+#: src/pages/PivotTable.vue:125
 msgid "Summary of Categories"
 msgstr "Kategóriák összegzése"
 
-#: src/pages/PivotTable.vue:245
+#: src/pages/PivotTable.vue:237
 msgid "Select Account"
 msgstr "Számla kiválasztása"
 
-#: src/pages/PivotTable.vue:262
+#: src/pages/PivotTable.vue:254
 msgid "No categories found in the data"
 msgstr "Nem találtunk kategóriákat"
 
-#: src/pages/PivotTable.vue:266
+#: src/pages/PivotTable.vue:258
 msgid "Please select at least one category to see calculations"
 msgstr "Legalább egy kategóriát ki kell választani a számításokhoz"
 
-#: src/pages/PivotTable.vue:273
+#: src/pages/PivotTable.vue:265
 msgid "Summary"
 msgstr "Összegzés"
 
-#: src/pages/PivotTable.vue:279
+#: src/pages/PivotTable.vue:271
 msgid "Selected Categories"
 msgstr "Kiválasztott kategóriák"
 
-#: src/pages/PivotTable.vue:286
+#: src/pages/PivotTable.vue:278
 msgid "Months Analyzed"
 msgstr "Elemzett hónapok"
 
-#: src/pages/PivotTable.vue:290
+#: src/pages/PivotTable.vue:282
 msgid "Average Monthly"
 msgstr "Havi átlag"
 
-#: src/pages/PivotTable.vue:307
+#: src/pages/PivotTable.vue:299
 msgid "Monthly breakdown of selected categories"
 msgstr "Kiválasztott kategóriák havi lebontása"
 
-#: src/pages/PivotTable.vue:312
+#: src/pages/PivotTable.vue:304
 msgid "Show trendline"
 msgstr "Trendvonal mutatása"
 
-#: src/pages/PivotTable.vue:318
+#: src/pages/PivotTable.vue:310
 msgid "Summaries of selected categories"
 msgstr "Kiválasztott kategóriák összegzései"
 
-#: src/pages/PivotTable.vue:331
+#: src/pages/PivotTable.vue:323
 msgid "Detailed Monthly Data"
 msgstr "Részletes havi adatok"
 
@@ -1271,161 +1271,206 @@ msgstr ""
 msgid "I have saved my recovery code"
 msgstr "Elmentettem a helyreállító kódomat"
 
-#: src/pages/Settings.vue:127
+#: src/pages/Settings.vue:168
 msgid "Your account"
 msgstr "Az Ön fiókja"
 
-#: src/pages/Settings.vue:154
+#: src/pages/Settings.vue:195
 msgid "Change username"
 msgstr ""
 
-#: src/pages/Settings.vue:159
+#: src/pages/Settings.vue:200
 msgid "Your username has been updated."
 msgstr ""
 
-#: src/pages/Settings.vue:162
+#: src/pages/Settings.vue:203
 msgid "Failed to change the username:"
 msgstr ""
 
-#: src/pages/Settings.vue:168
+#: src/pages/Settings.vue:209
 msgid "Current password"
 msgstr ""
 
-#: src/pages/Settings.vue:182
+#: src/pages/Settings.vue:223
 msgid "New password (minimum 12 characters)"
 msgstr ""
 
-#: src/pages/Settings.vue:204
+#: src/pages/Settings.vue:245
 msgid "Change password"
 msgstr ""
 
-#: src/pages/Settings.vue:208
+#: src/pages/Settings.vue:249
 msgid ""
 "Changing your password logs out all other devices. You stay logged in on "
 "this device."
 msgstr ""
 
-#: src/pages/Settings.vue:211
+#: src/pages/Settings.vue:252
 msgid "Your password has been changed."
 msgstr ""
 
-#: src/pages/Settings.vue:214
+#: src/pages/Settings.vue:255
 msgid "Failed to change the password:"
 msgstr ""
 
-#: src/pages/Settings.vue:217
+#: src/pages/Settings.vue:258
+#, fuzzy
+msgid "Recovery code"
+msgstr "Helyreállító kód"
+
+#: src/pages/Settings.vue:261
+msgid ""
+"Generate a new recovery code if you have lost yours. The old code stops "
+"working immediately, and all other sessions are logged out."
+msgstr ""
+
+#: src/pages/Settings.vue:266 src/pages/Settings.vue:362
+msgid "Confirm with your password"
+msgstr ""
+
+#: src/pages/Settings.vue:283
+#, fuzzy
+msgid "Generate new recovery code"
+msgstr "Érvénytelen felhasználónév vagy helyreállító kód"
+
+#: src/pages/Settings.vue:288
+msgid "Your recovery code has been regenerated. The old code no longer works."
+msgstr ""
+
+#: src/pages/Settings.vue:291
+#, fuzzy
+msgid "Failed to regenerate the recovery code:"
+msgstr "Érvénytelen felhasználónév vagy helyreállító kód"
+
+#: src/pages/Settings.vue:298
+#, fuzzy
+msgid "New Recovery Code Generated"
+msgstr "Helyreállító kód"
+
+#: src/pages/Settings.vue:299
+msgid "Your old recovery code no longer works. Save the new one now."
+msgstr ""
+
+#: src/pages/Settings.vue:300
+#, fuzzy
+msgid ""
+"This new recovery code is displayed only once. You will not be able to see "
+"it again."
+msgstr "Új helyreállító kód készült. Mentse el, mert többé nem fogja látni."
+
+#: src/pages/Settings.vue:302
+msgid "Done"
+msgstr ""
+
+#: src/pages/Settings.vue:308
 msgid "Your data"
 msgstr ""
 
-#: src/pages/Settings.vue:219
+#: src/pages/Settings.vue:310
 msgid ""
 "Download a copy of all personal data stored about you: your account details, "
 "processing results, transactions, and corrections, in a machine-readable "
 "JSON document."
 msgstr ""
 
-#: src/pages/Settings.vue:222
+#: src/pages/Settings.vue:313
 msgid "Download my data"
 msgstr ""
 
-#: src/pages/Settings.vue:226
+#: src/pages/Settings.vue:317
 msgid "Failed to export your data:"
 msgstr "Nem sikerült exportálni az adatait:"
 
-#: src/pages/Settings.vue:229
+#: src/pages/Settings.vue:320
 msgid "Share corrections"
 msgstr ""
 
-#: src/pages/Settings.vue:242
+#: src/pages/Settings.vue:333
 msgid "Contribute my corrections to improve future categorization"
 msgstr ""
 
-#: src/pages/Settings.vue:246
+#: src/pages/Settings.vue:337
 msgid ""
 "When enabled, the merchant names and categories of your corrections are "
 "shared anonymously to help improve future categorization for everyone."
 msgstr ""
 
-#: src/pages/Settings.vue:247
+#: src/pages/Settings.vue:338
 msgid ""
 "Shared corrections contain no amounts, dates, or user information. You can "
 "change this setting at any time."
 msgstr ""
 
-#: src/pages/Settings.vue:250
+#: src/pages/Settings.vue:341
 msgid ""
 "Shared corrections are anonymized and retained even if you turn sharing off "
 "or delete your account. You can ask for their removal when you request "
 "account deletion."
 msgstr ""
 
-#: src/pages/Settings.vue:254
+#: src/pages/Settings.vue:345
 msgid "Sharing is enabled. Your future corrections will be contributed."
 msgstr ""
 
-#: src/pages/Settings.vue:257
+#: src/pages/Settings.vue:348
 msgid ""
 "Sharing is disabled. This takes effect immediately for future corrections. "
 "Previously shared corrections remain anonymized; you can ask for their "
 "removal when you request account deletion."
 msgstr ""
 
-#: src/pages/Settings.vue:260
+#: src/pages/Settings.vue:351
 msgid "Failed to update the sharing preference:"
 msgstr ""
 
-#: src/pages/Settings.vue:263
+#: src/pages/Settings.vue:354
 msgid "Delete account"
 msgstr "Fiók törlése"
 
-#: src/pages/Settings.vue:265
+#: src/pages/Settings.vue:356
 msgid ""
 "Scheduling deletion logs you out everywhere. Your account and all of your "
 "transactions and corrections are deleted after a 7-day grace period."
 msgstr ""
 
-#: src/pages/Settings.vue:266
+#: src/pages/Settings.vue:357
 msgid ""
 "If you log in again before the grace period ends, the deletion is canceled "
 "and nothing is lost."
 msgstr ""
 
-#: src/pages/Settings.vue:271
-msgid "Confirm with your password"
-msgstr ""
-
-#: src/pages/Settings.vue:292
+#: src/pages/Settings.vue:383
 msgid "Also remove the anonymized corrections I shared"
 msgstr ""
 
-#: src/pages/Settings.vue:300
+#: src/pages/Settings.vue:391
 msgid "Schedule my account for deletion"
 msgstr ""
 
-#: src/pages/Settings.vue:305
+#: src/pages/Settings.vue:396
 msgid ""
 "Machine learning models already trained on your shared corrections cannot be "
 "changed. New models reflect the absence of withdrawn data once they are made "
 "available and older models are deprecated."
 msgstr ""
 
-#: src/pages/Settings.vue:309
+#: src/pages/Settings.vue:400
 msgid "Failed to schedule the account deletion:"
 msgstr ""
 
-#: src/pages/Transactions.vue:68
+#: src/pages/Transactions.vue:84
 msgid "Currency"
 msgstr "Deviza"
 
-#: src/pages/Transactions.vue:70
+#: src/pages/Transactions.vue:86
 msgid "Type"
 msgstr "Típus"
 
-#: src/pages/Transactions.vue:74 src/pages/Transactions.vue:224
+#: src/pages/Transactions.vue:90 src/pages/Transactions.vue:208
 msgid "Confidence"
 msgstr "Bizonyosság"
 
-#: src/pages/Transactions.vue:225
+#: src/pages/Transactions.vue:209
 msgid "Show the confidence column"
 msgstr ""
 

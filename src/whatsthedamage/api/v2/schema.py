@@ -351,6 +351,40 @@ def get_openapi_schema() -> dict[str, Any]:
                     },
                 }
             },
+            "/auth/me/recovery-code": {
+                "post": {
+                    "summary": "Regenerate the current user's recovery "
+                               "code",
+                    "description": (
+                        "Verifies the current password, generates a "
+                        "new recovery code (invalidating the old one), "
+                        "and revokes all other sessions. The current "
+                        "session stays valid. The new code is displayed "
+                        "only once. Requires the X-CSRF-Token header. "
+                        "Rate limited to 5 attempts per 15 minutes per "
+                        "user and IP combination."
+                    ),
+                    "operationId": "regenerateRecoveryCode",
+                    "tags": ["Authentication"],
+                    "security": _security(),
+                    "requestBody": _body("RegenerateRecoveryCodeRequest"),
+                    "responses": {
+                        "200": _ok(
+                            "Recovery code regenerated",
+                            _ref("RegenerateRecoveryCodeResponse")
+                        ),
+                        **_errors(
+                            **{
+                                "400": "Validation error",
+                                "401": "Not authenticated or invalid "
+                                       "password",
+                                "403": "Invalid or missing CSRF token",
+                                "429": "Too many regeneration attempts",
+                            }
+                        ),
+                    },
+                }
+            },
             "/auth/me/export": {
                 "get": {
                     "summary": "Export all personal data of the "
@@ -1614,6 +1648,33 @@ def get_openapi_schema() -> dict[str, Any]:
                             "description": (
                                 "New one-time recovery code, "
                                 "displayed only once"
+                            )
+                        }
+                    }
+                },
+                "RegenerateRecoveryCodeRequest": {
+                    "type": "object",
+                    "required": ["password"],
+                    "properties": {
+                        "password": {
+                            "type": "string",
+                            "format": "password",
+                            "description": (
+                                "Current password confirming the "
+                                "regeneration"
+                            )
+                        }
+                    }
+                },
+                "RegenerateRecoveryCodeResponse": {
+                    "type": "object",
+                    "required": ["new_recovery_code"],
+                    "properties": {
+                        "new_recovery_code": {
+                            "type": "string",
+                            "description": (
+                                "New one-time recovery code, displayed "
+                                "only once; the old code is invalidated"
                             )
                         }
                     }

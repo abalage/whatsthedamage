@@ -211,3 +211,65 @@ class TestRateLimitServiceRecovery:
         assert is_rate_limited is True
         # Retry after should be approximately 60 seconds (the window)
         assert retry_after <= 60
+
+
+class TestRateLimitServiceRecoveryRegen:
+    """Tests for recovery code regeneration rate limiting."""
+
+    def test_first_attempt_not_limited(self, rate_limit_service):
+        """First regeneration attempt is not rate limited."""
+        is_rate_limited, retry_after = (
+            rate_limit_service.check_recovery_regen_rate_limit(
+                user_id=1, ip_address='127.0.0.1'
+            )
+        )
+        assert is_rate_limited is False
+        assert retry_after == 0
+
+    def test_exceeded_after_max_attempts(self, rate_limit_service):
+        """After 5 attempts the 6th is rate limited."""
+        for _ in range(5):
+            rate_limit_service.check_recovery_regen_rate_limit(
+                user_id=1, ip_address='127.0.0.1'
+            )
+
+        is_rate_limited, retry_after = (
+            rate_limit_service.check_recovery_regen_rate_limit(
+                user_id=1, ip_address='127.0.0.1'
+            )
+        )
+        assert is_rate_limited is True
+        assert retry_after > 0
+
+    def test_different_user_not_affected(self, rate_limit_service):
+        """Rate limit is scoped per user+IP."""
+        for _ in range(5):
+            rate_limit_service.check_recovery_regen_rate_limit(
+                user_id=1, ip_address='127.0.0.1'
+            )
+
+        is_rate_limited, _ = rate_limit_service.check_recovery_regen_rate_limit(
+            user_id=2, ip_address='127.0.0.1'
+        )
+        assert is_rate_limited is False
+
+    def test_reset_clears_bucket(self, rate_limit_service):
+        """Resetting the bucket allows new attempts."""
+        for _ in range(5):
+            rate_limit_service.check_recovery_regen_rate_limit(
+                user_id=1, ip_address='127.0.0.1'
+            )
+
+        is_rate_limited, _ = rate_limit_service.check_recovery_regen_rate_limit(
+            user_id=1, ip_address='127.0.0.1'
+        )
+        assert is_rate_limited is True
+
+        rate_limit_service.reset_recovery_regen_rate_limit(
+            user_id=1, ip_address='127.0.0.1'
+        )
+
+        is_rate_limited, _ = rate_limit_service.check_recovery_regen_rate_limit(
+            user_id=1, ip_address='127.0.0.1'
+        )
+        assert is_rate_limited is False

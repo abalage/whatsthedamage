@@ -149,7 +149,7 @@ describe('Settings.vue', () => {
 
     wrapper.find('#deleteAccountPassword').setValue('password-123456');
     await wrapper.vm.$nextTick();
-    await wrapper.findAll('form')[2].trigger('submit.prevent');
+    await wrapper.find('[data-testid="delete-account-form"]').trigger('submit.prevent');
 
     expect(spy).toHaveBeenCalledWith('password-123456', false);
     expect(mockPush).toHaveBeenCalledWith({ name: 'login' });
@@ -164,7 +164,7 @@ describe('Settings.vue', () => {
     wrapper.find('#deleteAccountPassword').setValue('password-123456');
     await wrapper.find('#revokeSharedCorrections').setValue(true);
     await wrapper.vm.$nextTick();
-    await wrapper.findAll('form')[2].trigger('submit.prevent');
+    await wrapper.find('[data-testid="delete-account-form"]').trigger('submit.prevent');
 
     expect(spy).toHaveBeenCalledWith('password-123456', true);
   });
@@ -186,7 +186,7 @@ describe('Settings.vue', () => {
 
     wrapper.find('#deleteAccountPassword').setValue('wrong-password');
     await wrapper.vm.$nextTick();
-    await wrapper.findAll('form')[2].trigger('submit.prevent');
+    await wrapper.find('[data-testid="delete-account-form"]').trigger('submit.prevent');
     await wrapper.vm.$nextTick();
 
     expect(wrapper.html()).toContain('Failed to schedule the account deletion:');
@@ -212,7 +212,7 @@ describe('Settings.vue', () => {
 
     wrapper.find('#newUsername').setValue('renamed');
     await wrapper.vm.$nextTick();
-    await wrapper.findAll('form')[0].trigger('submit.prevent');
+    await wrapper.find('[data-testid="username-form"]').trigger('submit.prevent');
 
     expect(spy).toHaveBeenCalledWith('renamed');
   });
@@ -226,7 +226,7 @@ describe('Settings.vue', () => {
     wrapper.find('#currentPassword').setValue('password-123456');
     wrapper.find('#newPassword').setValue('new-password-456789');
     await wrapper.vm.$nextTick();
-    await wrapper.findAll('form')[1].trigger('submit.prevent');
+    await wrapper.find('[data-testid="password-form"]').trigger('submit.prevent');
 
     expect(spy).toHaveBeenCalledWith('password-123456', 'new-password-456789');
   });
@@ -246,5 +246,82 @@ describe('Settings.vue', () => {
     await wrapper.find('button.btn.btn-secondary.mb-3').trigger('click');
 
     expect(spy).toHaveBeenCalled();
+  });
+
+  it('renders the recovery code section', () => {
+    const wrapper = mountSettings();
+    const html = wrapper.html();
+
+    expect(html).toContain('Recovery code');
+    expect(html).toContain('Generate new recovery code');
+  });
+
+  it('disables the recovery code button until a password is entered', async () => {
+    const wrapper = mountSettings();
+    const button = wrapper
+      .find('[data-testid="recovery-code-form"] button[type="submit"]')
+      .element as HTMLButtonElement;
+
+    expect(button.disabled).toBe(true);
+
+    await wrapper.find('#recoveryPassword').setValue('password-123456');
+    expect(button.disabled).toBe(false);
+  });
+
+  it('calls the store action when the recovery code form is submitted', async () => {
+    const wrapper = mountSettings();
+    const spy = vi
+      .spyOn(useAuthStore(), 'regenerateUserRecoveryCode')
+      .mockResolvedValue('ABCD-EFGH-IJKL-MNOP');
+
+    await wrapper.find('#recoveryPassword').setValue('password-123456');
+    await wrapper.find('[data-testid="recovery-code-form"]').trigger('submit.prevent');
+    await wrapper.vm.$nextTick();
+
+    expect(spy).toHaveBeenCalledWith('password-123456');
+  });
+
+  it('shows the new recovery code after successful regeneration', async () => {
+    const wrapper = mountSettings();
+    vi.spyOn(useAuthStore(), 'regenerateUserRecoveryCode')
+      .mockResolvedValue('ABCD-EFGH-IJKL-MNOP');
+
+    await wrapper.find('#recoveryPassword').setValue('password-123456');
+    await wrapper.find('[data-testid="recovery-code-form"]').trigger('submit.prevent');
+    await wrapper.vm.$nextTick();
+
+    expect(wrapper.html()).toContain('New Recovery Code Generated');
+    expect(wrapper.html()).toContain('ABCD-EFGH-IJKL-MNOP');
+  });
+
+  it('shows an error when regeneration fails', async () => {
+    const wrapper = mountSettings();
+    vi.spyOn(useAuthStore(), 'regenerateUserRecoveryCode')
+      .mockRejectedValue(new Error('Invalid current password'));
+
+    await wrapper.find('#recoveryPassword').setValue('wrong-password');
+    await wrapper.find('[data-testid="recovery-code-form"]').trigger('submit.prevent');
+    await wrapper.vm.$nextTick();
+
+    expect(wrapper.html()).toContain('Failed to regenerate the recovery code:');
+    expect(wrapper.html()).toContain('Invalid current password');
+  });
+
+  it('shows the success message after the recovery code display is acknowledged', async () => {
+    const wrapper = mountSettings();
+    vi.spyOn(useAuthStore(), 'regenerateUserRecoveryCode')
+      .mockResolvedValue('ABCD-EFGH-IJKL-MNOP');
+
+    await wrapper.find('#recoveryPassword').setValue('password-123456');
+    await wrapper.find('[data-testid="recovery-code-form"]').trigger('submit.prevent');
+    await wrapper.vm.$nextTick();
+
+    // Acknowledge the checkbox in the RecoveryCodeDisplay
+    const checkbox = wrapper.find('.auth-acknowledgment input[type="checkbox"]');
+    await checkbox.setValue(true);
+    await wrapper.find('.auth-primary-btn').trigger('click');
+    await wrapper.vm.$nextTick();
+
+    expect(wrapper.html()).toContain('Your recovery code has been regenerated.');
   });
 });

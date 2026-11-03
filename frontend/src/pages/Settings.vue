@@ -4,6 +4,7 @@ import { useGettext } from 'vue3-gettext'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import { useAsyncAction } from '../composables/useAsyncAction'
+import { RecoveryCodeDisplay } from '../components/auth'
 
 const { $gettext } = useGettext()
 const router = useRouter()
@@ -33,6 +34,37 @@ const {
   run: runChangePassword
 } = useAsyncAction()
 const passwordChanged = ref(false)
+
+const recoveryPassword = ref('')
+const {
+  isLoading: isRegenerating,
+  error: recoveryError,
+  run: runRegenerateRecovery
+} = useAsyncAction()
+const newRecoveryCode = ref<string | undefined>(undefined)
+const showNewRecoveryCode = ref(false)
+const recoveryCodeRegenerated = ref(false)
+
+async function handleRegenerateRecoveryCode(): Promise<void> {
+  recoveryCodeRegenerated.value = false
+  showNewRecoveryCode.value = false
+  try {
+    const code = await runRegenerateRecovery(() =>
+      authStore.regenerateUserRecoveryCode(recoveryPassword.value)
+    )
+    recoveryPassword.value = ''
+    newRecoveryCode.value = code
+    showNewRecoveryCode.value = true
+  } catch {
+    // The error shows via recoveryError
+  }
+}
+
+function handleRecoveryCodeDone(): void {
+  showNewRecoveryCode.value = false
+  newRecoveryCode.value = undefined
+  recoveryCodeRegenerated.value = true
+}
 
 const {
   isLoading: isExporting,
@@ -135,7 +167,7 @@ async function handleDeleteAccount(): Promise<void> {
 
     <h2>{{ $gettext('Your account') }}</h2>
 
-    <form class="mb-3" @submit.prevent="handleChangeUsername">
+    <form class="mb-3" data-testid="username-form" @submit.prevent="handleChangeUsername">
       <div class="mb-3">
         <label class="form-label" for="newUsername">
           {{ $gettext('Username') }}
@@ -171,7 +203,7 @@ async function handleDeleteAccount(): Promise<void> {
       {{ $gettext('Failed to change the username:') }} {{ usernameError }}
     </div>
 
-    <form class="mb-3" @submit.prevent="handleChangePassword">
+    <form class="mb-3" data-testid="password-form" @submit.prevent="handleChangePassword">
       <div class="mb-3">
         <label class="form-label" for="currentPassword">
           {{ $gettext('Current password') }}
@@ -222,6 +254,56 @@ async function handleDeleteAccount(): Promise<void> {
     <div v-if="passwordError" class="alert alert-danger" role="alert">
       {{ $gettext('Failed to change the password:') }} {{ passwordError }}
     </div>
+
+    <h2 class="mt-5">{{ $gettext('Recovery code') }}</h2>
+
+    <template v-if="!showNewRecoveryCode">
+      <p>{{ $gettext('Generate a new recovery code if you have lost yours. The old code stops working immediately, and all other sessions are logged out.') }}</p>
+
+      <form class="mb-3" data-testid="recovery-code-form" @submit.prevent="handleRegenerateRecoveryCode">
+        <div class="mb-3">
+          <label class="form-label" for="recoveryPassword">
+            {{ $gettext('Confirm with your password') }}
+          </label>
+          <input
+            id="recoveryPassword"
+            v-model="recoveryPassword"
+            class="form-control"
+            type="password"
+            autocomplete="current-password"
+            :disabled="isRegenerating"
+            required
+          >
+        </div>
+        <button
+          type="submit"
+          class="btn btn-secondary"
+          :disabled="isRegenerating || recoveryPassword.length === 0"
+        >
+          {{ $gettext('Generate new recovery code') }}
+        </button>
+      </form>
+
+      <div v-if="recoveryCodeRegenerated" class="alert alert-success" role="status">
+        {{ $gettext('Your recovery code has been regenerated. The old code no longer works.') }}
+      </div>
+      <div v-if="recoveryError" class="alert alert-danger" role="alert">
+        {{ $gettext('Failed to regenerate the recovery code:') }} {{ recoveryError }}
+      </div>
+    </template>
+
+    <template v-else-if="newRecoveryCode">
+      <RecoveryCodeDisplay
+        :recovery-code="newRecoveryCode"
+        :title="$gettext('New Recovery Code Generated')"
+        :instructions="$gettext('Your old recovery code no longer works. Save the new one now.')"
+        :warning-text="$gettext('This new recovery code is displayed only once. You will not be able to see it again.')"
+        :acknowledge-label="$gettext('I have saved my new recovery code in a secure location')"
+        :continue-label="$gettext('Done')"
+        :show-back-link="false"
+        @continue="handleRecoveryCodeDone"
+      />
+    </template>
 
     <h2 class="mt-5">{{ $gettext('Your data') }}</h2>
 
@@ -274,7 +356,7 @@ async function handleDeleteAccount(): Promise<void> {
     <p>{{ $gettext('Scheduling deletion logs you out everywhere. Your account and all of your transactions and corrections are deleted after a 7-day grace period.') }}</p>
     <p>{{ $gettext('If you log in again before the grace period ends, the deletion is canceled and nothing is lost.') }}</p>
 
-    <form class="mb-3" @submit.prevent="handleDeleteAccount">
+    <form class="mb-3" data-testid="delete-account-form" @submit.prevent="handleDeleteAccount">
       <div class="mb-3">
         <label class="form-label" for="deleteAccountPassword">
           {{ $gettext('Confirm with your password') }}

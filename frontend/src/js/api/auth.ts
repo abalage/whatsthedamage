@@ -19,7 +19,9 @@ import type {
   AccountDeletionResponse,
   ChangePasswordRequest,
   ChangePasswordResponse,
-  DataExportResponse
+  DataExportResponse,
+  RegenerateRecoveryCodeRequest,
+  RegenerateRecoveryCodeResponse
 } from '../../types/auth'
 
 /**
@@ -178,4 +180,22 @@ export async function changePassword(
  */
 export async function exportMyData(): Promise<DataExportResponse> {
   return request<DataExportResponse>(getApiUrl('/auth/me/export'))
+}
+
+/**
+ * Regenerate the current user's recovery code while logged in
+ * @param password - Current password confirming the regeneration
+ * @returns Promise with the new recovery code (displayed once)
+ */
+export async function regenerateRecoveryCode(
+  password: string
+): Promise<RegenerateRecoveryCodeResponse> {
+  const requestData: RegenerateRecoveryCodeRequest = { password }
+  return request<RegenerateRecoveryCodeResponse>(
+    getApiUrl('/auth/me/recovery-code'),
+    {
+      method: 'POST',
+      body: JSON.stringify(requestData)
+    }
+  )
 }

@@ -334,6 +334,65 @@ class TestUserRepository:
         assert unchanged_user.password_hash == original_password_hash
         assert unchanged_user.recovery_code_hash == original_recovery_hash
 
+    def test_update_credentials_recovery_code_only(
+        self, user_repository, password_service
+    ):
+        """update_credentials with only recovery_code_hash leaves password unchanged."""
+        password_hash = password_service.hash_password('old_password')
+        recovery_code_hash = password_service.hash_password('OLD-CODE-1234')
+
+        user = user_repository.create(
+            username='credsuser1',
+            password_hash=password_hash,
+            recovery_code_hash=recovery_code_hash
+        )
+
+        new_recovery_code_hash = password_service.hash_password('NEW-CODE-5678')
+        result = user_repository.update_credentials(
+            user_id=user.id,
+            new_recovery_code_hash=new_recovery_code_hash
+        )
+
+        assert result is True
+        updated_user = user_repository.find_by_id(user.id)
+        assert updated_user.password_hash == password_hash
+        assert updated_user.recovery_code_hash == new_recovery_code_hash
+
+    def test_update_credentials_password_only(
+        self, user_repository, password_service
+    ):
+        """update_credentials with only password_hash leaves recovery code unchanged."""
+        password_hash = password_service.hash_password('old_password')
+        recovery_code_hash = password_service.hash_password('OLD-CODE-1234')
+
+        user = user_repository.create(
+            username='credsuser2',
+            password_hash=password_hash,
+            recovery_code_hash=recovery_code_hash
+        )
+
+        new_password_hash = password_service.hash_password('new_password')
+        result = user_repository.update_credentials(
+            user_id=user.id,
+            new_password_hash=new_password_hash
+        )
+
+        assert result is True
+        updated_user = user_repository.find_by_id(user.id)
+        assert updated_user.password_hash == new_password_hash
+        assert updated_user.recovery_code_hash == recovery_code_hash
+
+    def test_update_credentials_user_not_found(
+        self, user_repository, password_service
+    ):
+        """update_credentials returns False for a non-existent user."""
+        new_recovery_code_hash = password_service.hash_password('NEW-CODE')
+        result = user_repository.update_credentials(
+            user_id=99999,
+            new_recovery_code_hash=new_recovery_code_hash
+        )
+        assert result is False
+
 
 class TestSessionRepository:
     """Tests for SessionRepository operations."""

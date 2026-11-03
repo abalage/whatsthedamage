@@ -18,7 +18,8 @@ export {
   deleteAccount,
   updateUsername,
   changePassword,
-  exportMyData
+  exportMyData,
+  regenerateRecoveryCode
 } from './api/auth'
 export {
   fetchTransactionsByResult,

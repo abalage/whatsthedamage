@@ -7,6 +7,7 @@ Provides REST API endpoints for user authentication including:
 - Current user (GET /api/v2/auth/me)
 - Update account data (PUT /api/v2/auth/me)
 - Change password (PUT /api/v2/auth/me/password)
+- Regenerate recovery code (POST /api/v2/auth/me/recovery-code)
 - Data export (GET /api/v2/auth/me/export)
 - Account deletion (DELETE /api/v2/auth/account)
 - CSRF token (GET /api/v2/auth/csrf-token)
@@ -794,6 +795,98 @@ def change_password() -> Tuple[Response, int]:
         logger.exception("Password change failed with unexpected exception")
         return json_error_response(
             "Failed to change password",
+            500,
+            "INTERNAL_ERROR"
+        )
+
+
+@auth_bp.route('/me/recovery-code', methods=['POST'])
+@require_auth_and_csrf
+def regenerate_recovery_code() -> Tuple[Response, int]:
+    """Regenerate the current user's recovery code while logged in.
+
+    Verifies the current password, generates a new recovery code,
+    invalidates the old one, and revokes all other sessions. The
+    current session stays valid. Requires authentication and CSRF
+    protection.
+
+    Request JSON:
+        {
+            "password": "string"
+        }
+
+    Request Headers:
+        X-CSRF-Token: Valid CSRF token for the current session
+
+    Response JSON:
+        {
+            "new_recovery_code": "ABCD-EFGH-IJKL-MNOP"
+        }
+
+    Status Codes:
+        200: Recovery code regenerated
+        400: Missing password
+        401: Not authenticated or wrong current password
+        403: Invalid or missing CSRF token
+        429: Too many regeneration attempts (rate limited)
+
+    Rate Limiting:
+        Limited to 5 attempts per 15 minutes per user+IP combination.
+        Returns 429 with Retry-After header when limit is exceeded.
+
+    Security:
+        - The new recovery code is displayed only once and must be
+          saved by the user.
+        - The old recovery code is invalidated immediately.
+        - All other sessions are revoked; the current session stays
+          valid.
+    """
+    user = cast(UserDB, request.user)  # type: ignore[attr-defined]
+    session = cast(Any, request.session)  # type: ignore[attr-defined]
+
+    try:
+        data = request.get_json(silent=True)
+        password = data.get('password') if data else None
+
+        if not password or not isinstance(password, str):
+            return json_error_response(
+                "Password is required",
+                400,
+                "MISSING_PASSWORD"
+            )
+
+        rate_limit_exceeded, retry_after = (
+            _get_rate_limit_service().check_recovery_regen_rate_limit(
+                user_id=cast(int, user.id),
+                ip_address=get_client_ip()
+            )
+        )
+        if rate_limit_exceeded:
+            return rate_limit_response(retry_after), 429
+
+        new_recovery_code = _get_account_service().regenerate_recovery_code(
+            user, password, session
+        )
+
+        _get_rate_limit_service().reset_recovery_regen_rate_limit(
+            user_id=cast(int, user.id),
+            ip_address=get_client_ip()
+        )
+
+        return jsonify({'new_recovery_code': new_recovery_code}), 200
+
+    except InvalidPasswordError:
+        return json_error_response(
+            "Invalid current password", 401, "INVALID_CREDENTIALS"
+        )
+    except ValueError as e:
+        return json_error_response(
+            str(e), 400, "VALIDATION_ERROR"
+        )
+    except Exception:
+        logger.exception("Recovery code regeneration failed with unexpected exception")
+        return json_error_response(
+            "Failed to regenerate recovery code",
             500,
             "INTERNAL_ERROR"
         )

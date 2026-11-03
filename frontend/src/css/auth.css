@@ -34,6 +34,16 @@
   margin: 0;
 }
 
+.app-title-link {
+  color: inherit;
+  text-decoration: none;
+}
+
+.app-title-link:hover {
+  color: inherit;
+  text-decoration: underline;
+}
+
 .auth-main {
   flex: 1;
 }

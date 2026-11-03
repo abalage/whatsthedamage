@@ -9,18 +9,18 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#: src/components/auth/PasswordResetForm.vue:83 src/pages/Login.vue:88
-#: src/pages/Register.vue:112
+#: src/components/auth/PasswordResetForm.vue:83 src/pages/Login.vue:91
+#: src/pages/Register.vue:116
 #, fuzzy
 msgid "Clear error"
 msgstr "Clear form"
 
-#: src/components/auth/PasswordResetForm.vue:92 src/pages/Login.vue:97
-#: src/pages/Register.vue:121 src/pages/Settings.vue:173
+#: src/components/auth/PasswordResetForm.vue:92 src/pages/Login.vue:100
+#: src/pages/Register.vue:125 src/pages/Settings.vue:173
 msgid "Username"
 msgstr ""
 
-#: src/components/auth/PasswordResetForm.vue:99 src/pages/Login.vue:104
+#: src/components/auth/PasswordResetForm.vue:99 src/pages/Login.vue:107
 msgid "Enter your username"
 msgstr ""
 
@@ -44,7 +44,7 @@ msgstr ""
 msgid "Enter new password"
 msgstr ""
 
-#: src/components/auth/PasswordResetForm.vue:138 src/pages/Register.vue:150
+#: src/components/auth/PasswordResetForm.vue:138 src/pages/Register.vue:154
 msgid "characters"
 msgstr ""
 
@@ -56,17 +56,17 @@ msgstr ""
 msgid "Confirm new password"
 msgstr ""
 
-#: src/components/auth/PasswordResetForm.vue:157 src/pages/Register.vue:170
+#: src/components/auth/PasswordResetForm.vue:157 src/pages/Register.vue:174
 msgid "Passwords match"
 msgstr ""
 
-#: src/components/auth/PasswordResetForm.vue:158 src/pages/Register.vue:47
-#: src/pages/Register.vue:170
+#: src/components/auth/PasswordResetForm.vue:158 src/pages/Register.vue:51
+#: src/pages/Register.vue:174
 msgid "Passwords do not match"
 msgstr ""
 
 #: src/components/auth/PasswordResetForm.vue:168
-#: src/pages/ForgotPassword.vue:88
+#: src/pages/ForgotPassword.vue:92
 msgid "Reset Password"
 msgstr ""
 
@@ -100,20 +100,20 @@ msgstr ""
 msgid "I have saved my new recovery code in a secure location"
 msgstr ""
 
-#: src/components/auth/RecoveryCodeDisplay.vue:41 src/pages/Register.vue:254
+#: src/components/auth/RecoveryCodeDisplay.vue:41 src/pages/Register.vue:258
 msgid "Continue to Login"
 msgstr ""
 
-#: src/components/auth/RecoveryCodeDisplay.vue:98 src/pages/Register.vue:233
+#: src/components/auth/RecoveryCodeDisplay.vue:98 src/pages/Register.vue:237
 #, fuzzy
 msgid "Important:"
 msgstr "Import CSV"
 
-#: src/components/auth/RecoveryCodeDisplay.vue:109 src/pages/Register.vue:224
+#: src/components/auth/RecoveryCodeDisplay.vue:109 src/pages/Register.vue:228
 msgid "Copy to clipboard"
 msgstr ""
 
-#: src/components/auth/RecoveryCodeDisplay.vue:112 src/pages/Register.vue:227
+#: src/components/auth/RecoveryCodeDisplay.vue:112 src/pages/Register.vue:231
 msgid "Copy"
 msgstr ""
 
@@ -277,7 +277,23 @@ msgstr ""
 msgid "Close"
 msgstr ""
 
-#: src/components/Layout.vue:116
+#: src/components/FeatureSlideshow.vue:87
+msgid "Feature highlights"
+msgstr ""
+
+#: src/components/FeatureSlideshow.vue:111
+msgid "Previous slide"
+msgstr ""
+
+#: src/components/FeatureSlideshow.vue:123
+msgid "Go to slide {n}"
+msgstr ""
+
+#: src/components/FeatureSlideshow.vue:131
+msgid "Next slide"
+msgstr ""
+
+#: src/components/Layout.vue:116 src/pages/Landing.vue:81
 msgid "Tell me I didn't spend that much…"
 msgstr ""
 
@@ -298,7 +314,7 @@ msgstr "Import CSV"
 msgid "Settings"
 msgstr ""
 
-#: src/components/Layout.vue:132
+#: src/components/Layout.vue:132 src/pages/Landing.vue:103
 msgid "About"
 msgstr "About"
 
@@ -354,7 +370,7 @@ msgstr ""
 msgid "Reset to defaults"
 msgstr "Reset to defaults"
 
-#: src/components/Layout.vue:203
+#: src/components/Layout.vue:203 src/pages/Landing.vue:61
 msgid "Languages"
 msgstr "Languages"
 
@@ -362,8 +378,9 @@ msgstr "Languages"
 msgid "Themes"
 msgstr ""
 
-#: src/components/Layout.vue:246 src/pages/ForgotPassword.vue:105
-#: src/pages/Login.vue:76 src/pages/Login.vue:139 src/pages/Register.vue:205
+#: src/components/Layout.vue:246 src/pages/ForgotPassword.vue:109
+#: src/pages/Landing.vue:95 src/pages/Login.vue:79 src/pages/Login.vue:142
+#: src/pages/Register.vue:209
 msgid "Login"
 msgstr ""
 
@@ -371,11 +388,11 @@ msgstr ""
 msgid "Logout"
 msgstr ""
 
-#: src/components/Layout.vue:271
+#: src/components/Layout.vue:271 src/pages/Landing.vue:104
 msgid "Privacy"
 msgstr "Privacy"
 
-#: src/components/Layout.vue:272
+#: src/components/Layout.vue:272 src/pages/Landing.vue:105
 msgid "Legal"
 msgstr "Legal"
 
@@ -926,29 +943,30 @@ msgstr ""
 msgid "Show the column with correction actions"
 msgstr ""
 
-#: src/pages/ForgotPassword.vue:58
+#: src/pages/ForgotPassword.vue:62
 msgid "Too many attempts. Please try again later."
 msgstr ""
 
-#: src/pages/ForgotPassword.vue:61
+#: src/pages/ForgotPassword.vue:65
 msgid "Invalid username or recovery code"
 msgstr ""
 
-#: src/pages/ForgotPassword.vue:91
+#: src/pages/ForgotPassword.vue:95
 msgid ""
 "Enter your username and the recovery code you saved during registration to "
 "reset your password."
 msgstr ""
 
-#: src/pages/ForgotPassword.vue:104
+#: src/pages/ForgotPassword.vue:108
 msgid "Remember your password?"
 msgstr ""
 
-#: src/pages/ForgotPassword.vue:108 src/pages/Login.vue:157
+#: src/pages/ForgotPassword.vue:112 src/pages/Login.vue:160
 msgid "Don't have an account?"
 msgstr ""
 
-#: src/pages/ForgotPassword.vue:109 src/pages/Login.vue:158
+#: src/pages/ForgotPassword.vue:113 src/pages/Landing.vue:98
+#: src/pages/Login.vue:161
 msgid "Register"
 msgstr ""
 
@@ -1082,6 +1100,65 @@ msgstr "Select Result"
 msgid "View Transactions"
 msgstr "View Transactions"
 
+#: src/pages/Landing.vue:28
+msgid "Self-hosted"
+msgstr ""
+
+#: src/pages/Landing.vue:29
+msgid ""
+"Runs on your own machine. No telemetry, no accounts on third-party servers."
+msgstr ""
+
+#: src/pages/Landing.vue:33
+msgid "Your data stays local"
+msgstr ""
+
+#: src/pages/Landing.vue:34
+msgid "Your bank exports never leave your machine. Nothing is sent anywhere."
+msgstr ""
+
+#: src/pages/Landing.vue:39
+msgid "Screenshot of the transactions page"
+msgstr ""
+
+#: src/pages/Landing.vue:43
+msgid "Automatic categorization"
+msgstr ""
+
+#: src/pages/Landing.vue:44
+msgid "Import a CSV export and transactions are categorized automatically."
+msgstr ""
+
+#: src/pages/Landing.vue:49
+msgid "Screenshot of the statistics report"
+msgstr ""
+
+#: src/pages/Landing.vue:53
+msgid "Insightful reports"
+msgstr ""
+
+#: src/pages/Landing.vue:54
+msgid ""
+"See where your money went with category and monthly reports, pivot tables, "
+"and statistics."
+msgstr ""
+
+#: src/pages/Landing.vue:84
+msgid "Self-hosted. No telemetry. Your data never leaves your machine."
+msgstr ""
+
+#: src/pages/Landing.vue:88
+msgid "Import your bank CSV exports and get them categorized automatically"
+msgstr ""
+
+#: src/pages/Landing.vue:89
+msgid "Reports, pivot tables, and statistics show where your money went"
+msgstr ""
+
+#: src/pages/Landing.vue:90
+msgid "Everything runs locally — nothing is uploaded or shared"
+msgstr ""
+
 #: src/pages/Legal.vue:17
 msgid "Legal Notice"
 msgstr ""
@@ -1090,40 +1167,40 @@ msgstr ""
 msgid "Effective Date:"
 msgstr ""
 
-#: src/pages/Login.vue:36
+#: src/pages/Login.vue:39
 msgid "Username and password are required"
 msgstr ""
 
-#: src/pages/Login.vue:83
+#: src/pages/Login.vue:86
 #, fuzzy
 msgid "Try again in"
 msgstr "Try again"
 
-#: src/pages/Login.vue:83
+#: src/pages/Login.vue:86
 msgid "minutes"
 msgstr ""
 
-#: src/pages/Login.vue:112
+#: src/pages/Login.vue:115
 msgid "Password"
 msgstr ""
 
-#: src/pages/Login.vue:119
+#: src/pages/Login.vue:122
 msgid "Enter your password"
 msgstr ""
 
-#: src/pages/Login.vue:129
+#: src/pages/Login.vue:132
 msgid "Remember me"
 msgstr ""
 
-#: src/pages/Login.vue:140
+#: src/pages/Login.vue:143
 msgid "Logging in..."
 msgstr ""
 
-#: src/pages/Login.vue:146
+#: src/pages/Login.vue:149
 msgid "login attempts remaining"
 msgstr ""
 
-#: src/pages/Login.vue:154
+#: src/pages/Login.vue:157
 msgid "Forgot password?"
 msgstr ""
 
@@ -1206,85 +1283,85 @@ msgstr "Categories"
 msgid "Detailed Monthly Data"
 msgstr "Details for Month"
 
-#: src/pages/Privacy.vue:22 src/pages/Register.vue:186
+#: src/pages/Privacy.vue:22 src/pages/Register.vue:190
 #, fuzzy
 msgid "Privacy Policy"
 msgstr "Privacy"
 
-#: src/pages/Register.vue:49
+#: src/pages/Register.vue:53
 msgid "Password must be at least {minLength} characters"
 msgstr ""
 
-#: src/pages/Register.vue:51
+#: src/pages/Register.vue:55
 msgid "Please accept the Terms and the Privacy Policy to continue"
 msgstr ""
 
-#: src/pages/Register.vue:53
+#: src/pages/Register.vue:57
 msgid "Please fill in all fields"
 msgstr ""
 
-#: src/pages/Register.vue:103 src/pages/Register.vue:196
+#: src/pages/Register.vue:107 src/pages/Register.vue:200
 #, fuzzy
 msgid "Create Account"
 msgstr "Account"
 
-#: src/pages/Register.vue:128
+#: src/pages/Register.vue:132
 msgid "Choose a username"
 msgstr ""
 
-#: src/pages/Register.vue:136
+#: src/pages/Register.vue:140
 msgid "Password (minimum {minLength} characters)"
 msgstr ""
 
-#: src/pages/Register.vue:144
+#: src/pages/Register.vue:148
 msgid "Create a password"
 msgstr ""
 
-#: src/pages/Register.vue:157
+#: src/pages/Register.vue:161
 msgid "Confirm Password"
 msgstr ""
 
-#: src/pages/Register.vue:164
+#: src/pages/Register.vue:168
 msgid "Confirm your password"
 msgstr ""
 
-#: src/pages/Register.vue:183
+#: src/pages/Register.vue:187
 msgid "I have read and accept the"
 msgstr ""
 
-#: src/pages/Register.vue:184
+#: src/pages/Register.vue:188
 msgid "Terms (Legal Notice)"
 msgstr ""
 
-#: src/pages/Register.vue:185
+#: src/pages/Register.vue:189
 msgid "and the"
 msgstr ""
 
-#: src/pages/Register.vue:197
+#: src/pages/Register.vue:201
 msgid "Creating..."
 msgstr ""
 
-#: src/pages/Register.vue:204
+#: src/pages/Register.vue:208
 msgid "Already have an account?"
 msgstr ""
 
-#: src/pages/Register.vue:213
+#: src/pages/Register.vue:217
 msgid "Save Your Recovery Code"
 msgstr ""
 
-#: src/pages/Register.vue:216
+#: src/pages/Register.vue:220
 msgid ""
 "This code is displayed only once. Save it securely to reset your password if "
 "you forget it. You will not be able to retrieve it later."
 msgstr ""
 
-#: src/pages/Register.vue:234
+#: src/pages/Register.vue:238
 msgid ""
 "Store this code in a safe place. Without it, you will not be able to recover "
 "your account."
 msgstr ""
 
-#: src/pages/Register.vue:245
+#: src/pages/Register.vue:249
 msgid "I have saved my recovery code"
 msgstr ""
 

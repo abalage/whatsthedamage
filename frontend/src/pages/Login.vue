@@ -6,16 +6,19 @@
 -->
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { useGettext } from 'vue3-gettext';
 import { useAuthStore } from '../stores/auth';
 import AuthLayout from '../components/AuthLayout.vue';
+import { buildRedirectQuery, safeRedirectParam } from '../js/routeUtils';
 
 const { $gettext } = useGettext();
 const router = useRouter();
 const route = useRoute();
 const authStore = useAuthStore();
+
+const redirectQuery = computed(() => buildRedirectQuery(safeRedirectParam(route.query)));
 
 // Form state
 const username = ref('');
@@ -48,7 +51,7 @@ async function handleLogin() {
     );
 
     // Redirect based on query parameter or to home
-    const redirect = route.query.redirect as string | undefined;
+    const redirect = safeRedirectParam(route.query);
     if (redirect && redirect !== '/login') {
       await router.push(redirect);
     } else {
@@ -151,11 +154,11 @@ function clearError() {
     <!-- Links -->
     <div class="auth-links">
       <p>
-        <router-link to="/forgot-password" @click="clearError">{{ $gettext('Forgot password?') }}</router-link>
+        <router-link :to="{ name: 'forgot-password', query: redirectQuery }" @click="clearError">{{ $gettext('Forgot password?') }}</router-link>
       </p>
       <p>
         {{ $gettext("Don't have an account?") }}
-        <router-link to="/register" @click="clearError">{{ $gettext('Register') }}</router-link>
+        <router-link :to="{ name: 'register', query: redirectQuery }" @click="clearError">{{ $gettext('Register') }}</router-link>
       </p>
     </div>
   </AuthLayout>

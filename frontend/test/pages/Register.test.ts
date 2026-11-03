@@ -15,6 +15,7 @@ const mockPush = vi.fn();
 
 vi.mock('vue-router', () => ({
   useRouter: (): { push: (location: unknown) => Promise<unknown> } => ({ push: mockPush }),
+  useRoute: (): { query: Record<string, unknown> } => ({ query: {} }),
   RouterLink: { template: '<a><slot /></a>' }
 }));
 

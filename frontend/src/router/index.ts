@@ -91,6 +91,15 @@ const router = createRouter({
       component: (): Promise<RouteComponent> => import('../pages/Statistics.vue'),
       meta: { requiresAuth: true }
     },
+    // Public landing page for unauthenticated visitors (trust message,
+    // feature slideshow, Login/Register CTAs). Authenticated users are
+    // redirected to / by the requiresGuest guard branch.
+    {
+      path: '/landing',
+      name: 'landing',
+      component: (): Promise<RouteComponent> => import('../pages/Landing.vue'),
+      meta: { requiresGuest: true, public: true, bare: true }
+    },
     // Authentication routes
     {
       path: '/login',
@@ -139,9 +148,10 @@ router.beforeEach(async (to) => {
 
   // Check if route requires authentication
   if (to.meta.requiresAuth && !authStore.isAuthenticated) {
-    // Save the route the user was trying to visit for redirect after login
+    // Send the visitor to the public landing page, preserving the route
+    // they were trying to visit so it can be restored after login
     return {
-      name: 'login',
+      name: 'landing',
       query: { redirect: to.fullPath }
     };
   }

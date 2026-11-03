@@ -75,15 +75,20 @@ drives access control:
 
 | Meta flag | Meaning |
 |---|---|
-| `requiresAuth: true` | Redirect unauthenticated users to `/login` with `?redirect=<fullPath>` |
+| `requiresAuth: true` | Redirect unauthenticated users to `/landing` with `?redirect=<fullPath>` |
 | `requiresGuest: true` | Redirect authenticated users to `/` |
 | `public: true` | No auth requirements |
+| `bare: true` | Render without the `Layout` chrome (navbar/footer), so `min-height: 100vh` fills exactly the viewport |
 
 Key authenticated routes: `/` (Index), `/import`, `/settings`, `/results`
 (Categories), `/results/accounts/:accountId/...` drilldowns,
 `/transactions`, `/pivot`, `/statistics`. Auth pages: `/login`,
 `/register`, `/forgot-password`, `/logout`. Catch-all `/:pathMatch(.*)*`
-renders NotFound.
+renders NotFound. Public pages: `/about`, `/legal`, `/privacy`, and
+`/landing` — the unauthenticated landing page (trust message, feature
+slideshow via `components/FeatureSlideshow.vue`, language switcher, and
+Login/Register CTAs that preserve `?redirect=`; bare, and `requiresGuest`
+so authenticated users are sent to `/`).
 
 A single global `router.beforeEach` guard:
 

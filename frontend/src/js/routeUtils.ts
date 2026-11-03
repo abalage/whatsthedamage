@@ -27,3 +27,30 @@ export function extractResultId(source: Record<string, unknown>): string | undef
   }
   return undefined
 }
+
+/**
+ * Extract a safe in-app redirect target from a route query.
+ * Only same-app paths (starting with a single "/") are accepted;
+ * external URLs and protocol-relative URLs are rejected.
+ * @param source - Object containing route query values
+ * @returns The redirect path, or undefined when absent or unsafe
+ */
+export function safeRedirectParam(source: Record<string, unknown>): string | undefined {
+  const value = source.redirect
+  if (typeof value !== 'string' || value === '') {
+    return undefined
+  }
+  if (!value.startsWith('/') || value.startsWith('//')) {
+    return undefined
+  }
+  return value
+}
+
+/**
+ * Build a location query carrying an optional redirect target
+ * @param redirect - Redirect path (see safeRedirectParam), or undefined
+ * @returns Query object for router navigation (empty when no redirect)
+ */
+export function buildRedirectQuery(redirect: string | undefined): { redirect?: string } {
+  return redirect ? { redirect } : {}
+}

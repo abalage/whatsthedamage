@@ -9,6 +9,7 @@ import 'bootstrap/dist/css/bootstrap.min.css'
 // Import custom CSS (after Bootstrap to ensure proper override)
 import './css/main.css'
 import './css/auth.css'
+import './css/landing.css'
 
 // Import and install gettext
 import gettext from './js/gettext'

@@ -6,16 +6,20 @@
 -->
 
 <script setup lang="ts">
-import { ref } from 'vue';
-import { useRouter } from 'vue-router';
+import { computed, ref } from 'vue';
+import { useRouter, useRoute } from 'vue-router';
 import { useGettext } from 'vue3-gettext';
 import { useAuthStore } from '../stores/auth';
 import AuthLayout from '../components/AuthLayout.vue';
 import { getPasswordMinLength } from '../config/auth-config';
+import { buildRedirectQuery, safeRedirectParam } from '../js/routeUtils';
 
 const { $gettext } = useGettext();
 const router = useRouter();
+const route = useRoute();
 const authStore = useAuthStore();
+
+const redirectQuery = computed(() => buildRedirectQuery(safeRedirectParam(route.query)));
 
 const minPasswordLength = getPasswordMinLength();
 
@@ -78,8 +82,8 @@ function handleAcknowledgeAndProceed() {
   recoveryCodeAcknowledged.value = true;
   authStore.acknowledgeRecoveryCode();
 
-  // Redirect to login
-  router.push({ name: 'login', query: { registered: 'true' } });
+  // Redirect to login, preserving any pending redirect target
+  router.push({ name: 'login', query: { registered: 'true', ...redirectQuery.value } });
 }
 
 /**
@@ -202,7 +206,7 @@ async function copyRecoveryCode() {
       <div class="auth-links">
         <p>
           {{ $gettext('Already have an account?') }}
-          <router-link to="/login" @click="authStore.clearError">{{ $gettext('Login') }}</router-link>
+          <router-link :to="{ name: 'login', query: redirectQuery }" @click="authStore.clearError">{{ $gettext('Login') }}</router-link>
         </p>
       </div>
     </template>

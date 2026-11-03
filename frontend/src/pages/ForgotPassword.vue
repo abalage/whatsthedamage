@@ -8,16 +8,20 @@
 -->
 
 <script setup lang="ts">
-import { ref } from 'vue';
-import { useRouter } from 'vue-router';
+import { computed, ref } from 'vue';
+import { useRouter, useRoute } from 'vue-router';
 import { useGettext } from 'vue3-gettext';
 import { resetPassword } from '../js/api';
 import type { PasswordResetResponse } from '../types/auth';
 import AuthLayout from '../components/AuthLayout.vue';
 import { PasswordResetForm, RecoveryCodeDisplay } from '../components/auth';
+import { buildRedirectQuery, safeRedirectParam } from '../js/routeUtils';
 
 const { $gettext } = useGettext();
 const router = useRouter();
+const route = useRoute();
+
+const redirectQuery = computed(() => buildRedirectQuery(safeRedirectParam(route.query)));
 
 // Page state
 const newRecoveryCode = ref<string | null>(null);
@@ -77,7 +81,7 @@ function clearError() {
  * Handle acknowledgment and navigation to login.
  */
 function handleContinue() {
-  router.push({ name: 'login' });
+  router.push({ name: 'login', query: redirectQuery.value });
 }
 </script>
 
@@ -102,11 +106,11 @@ function handleContinue() {
       <div class="auth-links">
         <p>
           {{ $gettext('Remember your password?') }}
-          <router-link to="/login" @click="clearError">{{ $gettext('Login') }}</router-link>
+          <router-link :to="{ name: 'login', query: redirectQuery }" @click="clearError">{{ $gettext('Login') }}</router-link>
         </p>
         <p>
           {{ $gettext("Don't have an account?") }}
-          <router-link to="/register" @click="clearError">{{ $gettext('Register') }}</router-link>
+          <router-link :to="{ name: 'register', query: redirectQuery }" @click="clearError">{{ $gettext('Register') }}</router-link>
         </p>
       </div>
     </template>

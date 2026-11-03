@@ -12,6 +12,7 @@ User persistence and authentication release. Processing results and transactions
 - **Optional result_id**: `result_id` is optional across transaction views; when omitted, all of the user's transactions are shown (12a520d).
 
 ### Added
+- **Public Landing Page**: New `/landing` page for unauthenticated visitors with the trust message (self-hosted, no telemetry, data never leaves your machine), a feature slideshow (message + screenshot slides, auto-advance with manual controls and `prefers-reduced-motion` support), an on-page language switcher, and Login/Register buttons; unauthenticated access to protected routes now redirects there with `?redirect=<fullPath>` preserved through the auth flow (#137).
 - **User Management**: Registration, login, logout, and password reset endpoints under `/api/v2/auth` (ad3488c, 7d568d6).
 - **Password Recovery**: One-time recovery codes for password reset, with frontend flow to display and redeem them (7d568d6).
 - **Security Services**: Argon2 password hashing (argon2-cffi), DB-backed sessions with hashed tokens, CSRF token protection, and per-endpoint rate limiting (ad3488c).

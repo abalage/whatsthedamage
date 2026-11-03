@@ -6,6 +6,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { createPinia, setActivePinia } from 'pinia';
 import router from '../src/router/index';
+import { getMe } from '../src/js/api.js';
 
 vi.mock('../src/js/api.js', () => ({
   getMe: vi.fn().mockResolvedValue({
@@ -26,6 +27,10 @@ vi.mock('vue-router', async (importOriginal): Promise<Record<string, unknown>> =
 
 beforeEach(() => {
   setActivePinia(createPinia());
+  // Restore the default (authenticated) mock; individual tests override it
+  vi.mocked(getMe).mockResolvedValue({
+    user: { id: 1, username: 'testuser', is_active: true, opt_in_sharing: false },
+  });
 });
 
 describe('resultId query param routes', () => {
@@ -62,6 +67,37 @@ describe('resultId query param routes', () => {
     const resolved = router.resolve('/results/accounts/a1/categories/c1/months?resultId=r1');
     expect(resolved.name).toBe('category-months');
     expect(resolved.query.resultId).toBe('r1');
+  });
+});
+
+describe('landing page guard', () => {
+  it('resolves the /landing route', () => {
+    const resolved = router.resolve('/landing');
+    expect(resolved.name).toBe('landing');
+  });
+
+  it('redirects unauthenticated users from a requiresAuth route to /landing, preserving the target in redirect', async () => {
+    vi.mocked(getMe).mockRejectedValue(new Error('not authenticated'));
+
+    await router.push('/import');
+    expect(router.currentRoute.value.name).toBe('landing');
+    expect(router.currentRoute.value.query.redirect).toBe('/import');
+  });
+
+  it('lets unauthenticated users visit /landing directly without a redirect', async () => {
+    vi.mocked(getMe).mockRejectedValue(new Error('not authenticated'));
+
+    await router.push('/landing');
+    expect(router.currentRoute.value.name).toBe('landing');
+    expect(router.currentRoute.value.query.redirect).toBeUndefined();
+  });
+
+  it('redirects authenticated users away from /landing to /', async () => {
+    // Navigate away first: re-pushing the current route is a no-op and
+    // would not re-run the guard
+    await router.push('/about');
+    await router.push('/landing');
+    expect(router.currentRoute.value.name).toBe('index');
   });
 });
 

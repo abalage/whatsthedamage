@@ -27,3 +27,16 @@ export interface ApiErrorBody {
   retry_after?: string;
 }
 
+/**
+ * One slide of the landing page feature slideshow.
+ * Message slides show a title/text; image slides show a screenshot
+ * served from frontend/public (CSP img-src 'self').
+ */
+export interface FeatureSlide {
+  type: 'message' | 'image';
+  title?: string;
+  text?: string;
+  src?: string;
+  alt?: string;
+}
+

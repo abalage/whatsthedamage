@@ -156,7 +156,7 @@ describe('ForgotPassword.vue', () => {
 
     vm.handleContinue();
 
-    expect(mockPush).toHaveBeenCalledWith({ name: 'login' });
+    expect(mockPush).toHaveBeenCalledWith({ name: 'login', query: {} });
   });
 
   it('clears error when clearError is called', async () => {

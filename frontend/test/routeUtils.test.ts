@@ -4,7 +4,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { buildResultQuery, extractResultId } from '../src/js/routeUtils';
+import { buildRedirectQuery, buildResultQuery, extractResultId, safeRedirectParam } from '../src/js/routeUtils';
 
 describe('buildResultQuery', () => {
   it('returns an empty query for an undefined resultId', () => {
@@ -43,5 +43,35 @@ describe('extractResultId', () => {
 
   it('returns undefined for a null value', () => {
     expect(extractResultId({ resultId: null })).toBe(undefined);
+  });
+});
+
+describe('safeRedirectParam', () => {
+  it('returns the redirect path for a same-app path', () => {
+    expect(safeRedirectParam({ redirect: '/import' })).toBe('/import');
+  });
+
+  it('returns undefined when redirect is missing, empty, or not a string', () => {
+    expect(safeRedirectParam({})).toBe(undefined);
+    expect(safeRedirectParam({ redirect: '' })).toBe(undefined);
+    expect(safeRedirectParam({ redirect: null })).toBe(undefined);
+    expect(safeRedirectParam({ redirect: ['/import'] })).toBe(undefined);
+    expect(safeRedirectParam({ redirect: 42 })).toBe(undefined);
+  });
+
+  it('rejects external and protocol-relative URLs', () => {
+    expect(safeRedirectParam({ redirect: 'https://evil.example.com' })).toBe(undefined);
+    expect(safeRedirectParam({ redirect: '//evil.example.com' })).toBe(undefined);
+    expect(safeRedirectParam({ redirect: 'evil.example.com' })).toBe(undefined);
+  });
+});
+
+describe('buildRedirectQuery', () => {
+  it('returns an empty query for an undefined redirect', () => {
+    expect(buildRedirectQuery(undefined)).toEqual({});
+  });
+
+  it('returns the redirect query for a provided redirect', () => {
+    expect(buildRedirectQuery('/import')).toEqual({ redirect: '/import' });
   });
 });

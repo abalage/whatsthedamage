@@ -96,25 +96,25 @@ const router = createRouter({
       path: '/login',
       name: 'login',
       component: Login,
-      meta: { requiresGuest: true, public: true }
+      meta: { requiresGuest: true, public: true, bare: true }
     },
     {
       path: '/register',
       name: 'register',
       component: Register,
-      meta: { requiresGuest: true, public: true }
+      meta: { requiresGuest: true, public: true, bare: true }
     },
     {
       path: '/forgot-password',
       name: 'forgot-password',
       component: ForgotPassword,
-      meta: { requiresGuest: true, public: true }
+      meta: { requiresGuest: true, public: true, bare: true }
     },
     {
       path: '/logout',
       name: 'logout',
       component: Logout,
-      meta: { public: true }
+      meta: { public: true, bare: true }
     },
     // Catch-all: 404 page for unknown paths (including removed legacy URLs)
     {

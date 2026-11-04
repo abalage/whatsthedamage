@@ -7,7 +7,13 @@ revocation, CSRF protection, and rate limiting.
 
 from flask import Flask
 
-from tests.api.v2.conftest import AuthContext, csrf_token_from_response
+from tests.api.v2.conftest import (
+    AuthContext,
+    confirm_registration,
+    csrf_token_from_response,
+    register_pending,
+    register_user,
+)
 
 
 PASSWORD = 'password-123456'
@@ -52,12 +58,12 @@ class TestRegenerateRecoveryCode:
     def test_old_code_invalidated(self, api_app: Flask):
         """The original recovery code no longer works after regeneration."""
         client = api_app.test_client()
-        register = client.post(
-            '/api/v2/auth/register',
-            json={'username': 'alice', 'password': PASSWORD}
+        pending = register_pending(client, 'alice', PASSWORD)
+        original_code = pending['recovery_code']
+        register = confirm_registration(
+            client, pending['pending_token'], pending['recovery_code']
         )
-        assert register.status_code == 201
-        original_code = register.get_json()['recovery_code']
+        assert register.status_code == 200
         csrf_token = csrf_token_from_response(register)
 
         regen = client.post(
@@ -111,11 +117,7 @@ class TestRegenerateRecoveryCode:
     def test_requires_csrf_token(self, api_app: Flask):
         """A valid session without a CSRF header is rejected."""
         client = api_app.test_client()
-        register = client.post(
-            '/api/v2/auth/register',
-            json={'username': 'alice', 'password': PASSWORD}
-        )
-        assert register.status_code == 201
+        register_user(client, 'alice', PASSWORD)
 
         response = client.post(
             '/api/v2/auth/me/recovery-code',
@@ -139,11 +141,7 @@ class TestRegenerateRecoveryCode:
     def test_other_sessions_revoked(self, api_app: Flask):
         """All other sessions of the user are revoked on regeneration."""
         client = api_app.test_client()
-        register = client.post(
-            '/api/v2/auth/register',
-            json={'username': 'alice', 'password': PASSWORD}
-        )
-        assert register.status_code == 201
+        register = register_user(client, 'alice', PASSWORD)
         csrf_token = csrf_token_from_response(register)
 
         other_client = api_app.test_client()

@@ -10,7 +10,10 @@ from datetime import datetime, timedelta, UTC
 from unittest.mock import Mock, MagicMock, patch
 
 from whatsthedamage.services.account_service import AccountService
-from whatsthedamage.services.auth_errors import UsernameExistsError
+from whatsthedamage.services.auth_errors import (
+    InvalidCredentialsError,
+    UsernameExistsError,
+)
 from whatsthedamage.services.auth_session_service import AuthSessionService
 from whatsthedamage.services.password_service import PasswordService
 from whatsthedamage.services.token_service import TokenService
@@ -23,8 +26,15 @@ def mock_user_repository():
     """Create a mock UserRepository for testing."""
     mock = Mock()
     mock.find_by_username.return_value = None
+    # Login and password reset look up confirmed users only; alias the
+    # same mock so tests can stub either name
+    mock.find_confirmed_by_username = mock.find_by_username
     mock.find_by_id.return_value = None
     mock.create.return_value = Mock(id=1, username='testuser')
+    mock.create_pending.return_value = Mock(id=1, username='testuser')
+    mock.find_pending_by_token_hash.return_value = None
+    mock.confirm_pending.return_value = True
+    mock.delete_expired_pending.return_value = 0
     mock.update_last_login.return_value = None
     return mock
 
@@ -53,9 +63,10 @@ def mock_session_repository():
 def mock_recovery_code_service():
     """Create a mock RecoveryCodeService for testing."""
     mock = Mock()
-    mock.generate_code.return_value = 'ABCDEFGHIJKLMNOP'
-    mock.format_code.return_value = 'ABCD-EFGH-IJKL-MNOP'
-    mock.parse_code.return_value = 'ABCDEFGHIJKLMNOP'
+    mock.generate_code.return_value = 'ABCDEFGHJKLMNPQR'
+    mock.format_code.return_value = 'ABCD-EFGH-JKLM-NPQR'
+    # parse_code must actually parse so wrong echoed codes fail verification
+    mock.parse_code.side_effect = RecoveryCodeService().parse_code
     return mock
 
 
@@ -87,26 +98,28 @@ def account_service(
         ),
         recovery_code_service=mock_recovery_code_service,
         session_service=auth_session_service,
-        password_min_length=12
+        token_service=TokenService(),
+        password_min_length=12,
+        pending_ttl_seconds=1800
     )
 
 
 class TestAccountServiceRegistration:
-    """Tests for user registration functionality."""
+    """Tests for two-phase registration (pending + confirm)."""
 
-    def test_register_user_success(self, account_service, mock_user_repository, mock_session_repository):
-        """Test successful user registration."""
-        # Setup mocks
+    def test_create_pending_registration_success(
+        self, account_service, mock_user_repository, mock_session_repository
+    ):
+        """Phase 1 creates a pending row but no session."""
         mock_user_repository.find_by_username.return_value = None
-        mock_user_repository.create.return_value = Mock(
+        mock_user_repository.create_pending.return_value = Mock(
             id=1,
             username='newuser',
             created_at=datetime.now(UTC)
         )
 
-        # Register user
-        user, recovery_code, session_token, session_expiry, csrf_token = (
-            account_service.register_user(
+        pending_token, recovery_code, expires_at = (
+            account_service.create_pending_registration(
                 username='newuser',
                 password='secure_password_1234',
                 ip_address='127.0.0.1',
@@ -114,54 +127,164 @@ class TestAccountServiceRegistration:
             )
         )
 
-        # Assertions
-        assert user is not None
+        assert len(pending_token) > 0
+        assert recovery_code == 'ABCD-EFGH-JKLM-NPQR'
+        assert expires_at > datetime.now(UTC)
+        assert mock_user_repository.create_pending.called
+        # No session is created at phase 1
+        assert not mock_session_repository.create.called
+        # Only the token hash is passed to the repository
+        call_kwargs = mock_user_repository.create_pending.call_args.kwargs
+        assert call_kwargs['pending_token_hash'] != pending_token
+        assert len(call_kwargs['pending_token_hash']) == 64
+
+    def test_create_pending_registration_confirmed_username_taken(
+        self, account_service, mock_user_repository
+    ):
+        """A confirmed account holding the username blocks registration."""
+        mock_user_repository.find_by_username.return_value = Mock(
+            id=1,
+            username='existing',
+            registration_confirmed_at=datetime.now(UTC)
+        )
+
+        with pytest.raises(UsernameExistsError, match="already exists"):
+            account_service.create_pending_registration(
+                username='existing',
+                password='secure_password_1234'
+            )
+
+    def test_create_pending_registration_unexpired_pending_taken(
+        self, account_service, mock_user_repository
+    ):
+        """An unexpired pending registration holding the username blocks."""
+        mock_user_repository.find_by_username.return_value = Mock(
+            id=1,
+            username='existing',
+            registration_confirmed_at=None
+        )
+        mock_user_repository.create_pending.side_effect = ValueError(
+            "Username 'existing' already exists"
+        )
+
+        with pytest.raises(UsernameExistsError, match="already exists"):
+            account_service.create_pending_registration(
+                username='existing',
+                password='secure_password_1234'
+            )
+
+    def test_create_pending_registration_empty_username(self, account_service):
+        """Test registration with empty username."""
+        with pytest.raises(ValueError, match="Username cannot be empty"):
+            account_service.create_pending_registration(
+                username='',
+                password='secure_password_1234'
+            )
+
+    def test_create_pending_registration_long_username(self, account_service):
+        """Test registration with username exceeding 255 characters."""
+        with pytest.raises(ValueError, match="cannot exceed 255 characters"):
+            account_service.create_pending_registration(
+                username='a' * 256,
+                password='secure_password_1234'
+            )
+
+    def test_create_pending_registration_short_password(self, account_service):
+        """Test registration with password too short."""
+        with pytest.raises(ValueError, match="Password must be at least 12 characters"):
+            account_service.create_pending_registration(
+                username='newuser',
+                password='short'
+            )
+
+    def _pending_user_mock(self):
+        """Build a pending user mock whose recovery code hash matches the mock service."""
+        password_service = PasswordService(
+            time_cost=2, memory_cost=16384, parallelism=1
+        )
+        return Mock(
+            id=1,
+            username='newuser',
+            recovery_code_hash=password_service.hash_password('ABCDEFGHJKLMNPQR')
+        )
+
+    def test_confirm_registration_success(
+        self, account_service, mock_user_repository, mock_session_repository
+    ):
+        """Phase 2 with the correct echoed code commits the account and creates a session."""
+        pending_user = self._pending_user_mock()
+        mock_user_repository.find_pending_by_token_hash.return_value = pending_user
+        mock_user_repository.confirm_pending.return_value = True
+        mock_user_repository.find_by_id.return_value = Mock(
+            id=1,
+            username='newuser',
+            created_at=datetime.now(UTC)
+        )
+
+        user, session_token, session_expiry, csrf_token = (
+            account_service.confirm_registration(
+                pending_token='the-pending-token',
+                recovery_code='ABCD-EFGH-JKLM-NPQR',
+                ip_address='127.0.0.1',
+                user_agent='Test Agent'
+            )
+        )
+
         assert user.username == 'newuser'
-        assert len(recovery_code) == 19  # Formatted recovery code (16 chars + 3 hyphens)
         assert len(session_token) > 0
         assert session_expiry > datetime.now(UTC)
         assert len(csrf_token) > 0
-        assert mock_user_repository.create.called
+        assert mock_user_repository.confirm_pending.called
         assert mock_session_repository.create.called
-        # The returned token must match the hash persisted with the session
         assert account_service.session_service.validate_csrf_token(
             csrf_token,
             mock_session_repository.create.call_args.kwargs['csrf_token_hash']
         )
 
-    def test_register_user_duplicate_username(self, account_service, mock_user_repository):
-        """Test registration with duplicate username."""
-        mock_user_repository.find_by_username.return_value = Mock(id=1, username='existing')
+    def test_confirm_registration_wrong_code(
+        self, account_service, mock_user_repository, mock_session_repository
+    ):
+        """Phase 2 with a mismatched recovery code is rejected and commits nothing."""
+        mock_user_repository.find_pending_by_token_hash.return_value = (
+            self._pending_user_mock()
+        )
 
-        with pytest.raises(ValueError, match="already exists"):
-            account_service.register_user(
-                username='existing',
-                password='secure_password_1234'
+        with pytest.raises(InvalidCredentialsError):
+            account_service.confirm_registration(
+                pending_token='the-pending-token',
+                recovery_code='XXXX-XXXX-XXXX-XXXX'
             )
 
-    def test_register_user_empty_username(self, account_service):
-        """Test registration with empty username."""
-        with pytest.raises(ValueError, match="Username cannot be empty"):
-            account_service.register_user(
-                username='',
-                password='secure_password_1234'
+        assert not mock_user_repository.confirm_pending.called
+        assert not mock_session_repository.create.called
+
+    def test_confirm_registration_unknown_or_expired_token(self, account_service):
+        """Phase 2 with an unknown/expired token is rejected."""
+        mock_user_repository = account_service.user_repository
+        mock_user_repository.find_pending_by_token_hash.return_value = None
+
+        with pytest.raises(InvalidCredentialsError):
+            account_service.confirm_registration(
+                pending_token='no-such-token',
+                recovery_code='ABCD-EFGH-JKLM-NPQR'
             )
 
-    def test_register_user_long_username(self, account_service):
-        """Test registration with username exceeding 255 characters."""
-        with pytest.raises(ValueError, match="cannot exceed 255 characters"):
-            account_service.register_user(
-                username='a' * 256,
-                password='secure_password_1234'
+    def test_confirm_registration_race_loses(
+        self, account_service, mock_user_repository, mock_session_repository
+    ):
+        """When the guarded confirm update loses a race, no session is created."""
+        mock_user_repository.find_pending_by_token_hash.return_value = (
+            self._pending_user_mock()
+        )
+        mock_user_repository.confirm_pending.return_value = False
+
+        with pytest.raises(InvalidCredentialsError):
+            account_service.confirm_registration(
+                pending_token='the-pending-token',
+                recovery_code='ABCD-EFGH-JKLM-NPQR'
             )
 
-    def test_register_user_short_password(self, account_service):
-        """Test registration with password too short."""
-        with pytest.raises(ValueError, match="Password must be at least 12 characters"):
-            account_service.register_user(
-                username='newuser',
-                password='short'
-            )
+        assert not mock_session_repository.create.called
 
 
 class TestAccountServiceLogin:
@@ -621,7 +744,7 @@ class TestAccountServicePasswordReset:
         """Test successful password reset with valid recovery code."""
         # Setup mock user with recovery code hash
         password_service = account_service.password_service
-        recovery_code_raw = 'ABCDEFGHIJKLMNOP'
+        recovery_code_raw = 'ABCDEFGHJKLMNPQR'
         recovery_code_hash = password_service.hash_password(recovery_code_raw)
         password_hash = password_service.hash_password('old_password')
 
@@ -636,19 +759,19 @@ class TestAccountServicePasswordReset:
         mock_user_repository.find_by_id.return_value = mock_user
         mock_user_repository.update_password_and_recovery_code.return_value = True
         mock_recovery_code_service.parse_code.return_value = recovery_code_raw
-        mock_recovery_code_service.generate_code.return_value = 'NEWABCDEFGHIJKLMN'
-        mock_recovery_code_service.format_code.return_value = 'NEW-ABCD-EFGH-IJKL-MN'
+        mock_recovery_code_service.generate_code.return_value = '2NEWABCD3EFGHJKL'
+        mock_recovery_code_service.format_code.return_value = '2NEW-ABCD-3EFG-HJKL'
 
         # Reset password
         user, new_formatted_recovery_code = account_service.reset_password_with_recovery_code(
             username='testuser',
-            recovery_code='ABCD-EFGH-IJKL-MNOP',
+            recovery_code='ABCD-EFGH-JKLM-NPQR',
             new_password='new_secure_password_1234'
         )
 
         assert user is not None
         assert user.id == 1
-        assert new_formatted_recovery_code == 'NEW-ABCD-EFGH-IJKL-MN'
+        assert new_formatted_recovery_code == '2NEW-ABCD-3EFG-HJKL'
         assert mock_user_repository.update_password_and_recovery_code.called
         assert mock_session_repository.revoke_by_user_id.called
         assert mock_user_repository.update_last_login.called
@@ -662,7 +785,7 @@ class TestAccountServicePasswordReset:
         with pytest.raises(ValueError, match="Invalid username or recovery code"):
             account_service.reset_password_with_recovery_code(
                 username='nonexistent',
-                recovery_code='ABCD-EFGH-IJKL-MNOP',
+                recovery_code='ABCD-EFGH-JKLM-NPQR',
                 new_password='new_secure_password_1234'
             )
 
@@ -694,7 +817,7 @@ class TestAccountServicePasswordReset:
     ):
         """Test password reset with password too short."""
         password_service = account_service.password_service
-        recovery_code_raw = 'ABCDEFGHIJKLMNOP'
+        recovery_code_raw = 'ABCDEFGHJKLMNPQR'
         recovery_code_hash = password_service.hash_password(recovery_code_raw)
 
         mock_user = Mock(
@@ -710,7 +833,7 @@ class TestAccountServicePasswordReset:
         with pytest.raises(ValueError, match="Password must be at least 12 characters"):
             account_service.reset_password_with_recovery_code(
                 username='testuser',
-                recovery_code='ABCD-EFGH-IJKL-MNOP',
+                recovery_code='ABCD-EFGH-JKLM-NPQR',
                 new_password='short'
             )
 
@@ -719,7 +842,7 @@ class TestAccountServicePasswordReset:
     ):
         """Test that a new recovery code is generated after password reset."""
         password_service = account_service.password_service
-        recovery_code_raw = 'ABCDEFGHIJKLMNOP'
+        recovery_code_raw = 'ABCDEFGHJKLMNPQR'
         recovery_code_hash = password_service.hash_password(recovery_code_raw)
 
         mock_user = Mock(
@@ -733,25 +856,25 @@ class TestAccountServicePasswordReset:
         mock_user_repository.find_by_id.return_value = mock_user
         mock_user_repository.update_password_and_recovery_code.return_value = True
         mock_recovery_code_service.parse_code.return_value = recovery_code_raw
-        mock_recovery_code_service.generate_code.return_value = 'NEWABCDEFGHIJKLMN'
-        mock_recovery_code_service.format_code.return_value = 'NEW-ABCD-EFGH-IJKL-MN'
+        mock_recovery_code_service.generate_code.return_value = '2NEWABCD3EFGHJKL'
+        mock_recovery_code_service.format_code.return_value = '2NEW-ABCD-3EFG-HJKL'
 
         user, new_formatted_recovery_code = account_service.reset_password_with_recovery_code(
             username='testuser',
-            recovery_code='ABCD-EFGH-IJKL-MNOP',
+            recovery_code='ABCD-EFGH-JKLM-NPQR',
             new_password='new_secure_password_1234'
         )
 
         # Verify new recovery code was generated
         assert mock_recovery_code_service.generate_code.called
-        assert new_formatted_recovery_code == 'NEW-ABCD-EFGH-IJKL-MN'
+        assert new_formatted_recovery_code == '2NEW-ABCD-3EFG-HJKL'
 
     def test_reset_password_with_recovery_code_invalidates_sessions(
         self, account_service, mock_user_repository, mock_session_repository, mock_recovery_code_service
     ):
         """Test that all user sessions are invalidated on password reset."""
         password_service = account_service.password_service
-        recovery_code_raw = 'ABCDEFGHIJKLMNOP'
+        recovery_code_raw = 'ABCDEFGHJKLMNPQR'
         recovery_code_hash = password_service.hash_password(recovery_code_raw)
 
         mock_user = Mock(
@@ -766,12 +889,12 @@ class TestAccountServicePasswordReset:
         mock_user_repository.update_password_and_recovery_code.return_value = True
         mock_session_repository.revoke_by_user_id.return_value = 3
         mock_recovery_code_service.parse_code.return_value = recovery_code_raw
-        mock_recovery_code_service.generate_code.return_value = 'NEWABCDEFGHIJKLMN'
-        mock_recovery_code_service.format_code.return_value = 'NEW-ABCD-EFGH-IJKL-MN'
+        mock_recovery_code_service.generate_code.return_value = '2NEWABCD3EFGHJKL'
+        mock_recovery_code_service.format_code.return_value = '2NEW-ABCD-3EFG-HJKL'
 
         account_service.reset_password_with_recovery_code(
             username='testuser',
-            recovery_code='ABCD-EFGH-IJKL-MNOP',
+            recovery_code='ABCD-EFGH-JKLM-NPQR',
             new_password='new_secure_password_1234'
         )
 
@@ -783,7 +906,7 @@ class TestAccountServicePasswordReset:
     ):
         """Test password reset accepts formatted recovery code with hyphens."""
         password_service = account_service.password_service
-        recovery_code_raw = 'ABCDEFGHIJKLMNOP'
+        recovery_code_raw = 'ABCDEFGHJKLMNPQR'
         recovery_code_hash = password_service.hash_password(recovery_code_raw)
 
         mock_user = Mock(
@@ -797,13 +920,13 @@ class TestAccountServicePasswordReset:
         mock_user_repository.find_by_id.return_value = mock_user
         mock_user_repository.update_password_and_recovery_code.return_value = True
         mock_recovery_code_service.parse_code.return_value = recovery_code_raw
-        mock_recovery_code_service.generate_code.return_value = 'NEWABCDEFGHIJKLMN'
-        mock_recovery_code_service.format_code.return_value = 'NEW-ABCD-EFGH-IJKL-MN'
+        mock_recovery_code_service.generate_code.return_value = '2NEWABCD3EFGHJKL'
+        mock_recovery_code_service.format_code.return_value = '2NEW-ABCD-3EFG-HJKL'
 
         # Call with formatted recovery code (with hyphens)
         user, new_formatted_recovery_code = account_service.reset_password_with_recovery_code(
             username='testuser',
-            recovery_code='ABCD-EFGH-IJKL-MNOP',
+            recovery_code='ABCD-EFGH-JKLM-NPQR',
             new_password='new_secure_password_1234'
         )
 
@@ -816,7 +939,7 @@ class TestAccountServicePasswordReset:
     ):
         """Test password reset accepts unformatted recovery code without hyphens."""
         password_service = account_service.password_service
-        recovery_code_raw = 'ABCDEFGHIJKLMNOP'
+        recovery_code_raw = 'ABCDEFGHJKLMNPQR'
         recovery_code_hash = password_service.hash_password(recovery_code_raw)
 
         mock_user = Mock(
@@ -830,25 +953,25 @@ class TestAccountServicePasswordReset:
         mock_user_repository.find_by_id.return_value = mock_user
         mock_user_repository.update_password_and_recovery_code.return_value = True
         mock_recovery_code_service.parse_code.return_value = recovery_code_raw
-        mock_recovery_code_service.generate_code.return_value = 'NEWABCDEFGHIJKLMN'
-        mock_recovery_code_service.format_code.return_value = 'NEW-ABCD-EFGH-IJKL-MN'
+        mock_recovery_code_service.generate_code.return_value = '2NEWABCD3EFGHJKL'
+        mock_recovery_code_service.format_code.return_value = '2NEW-ABCD-3EFG-HJKL'
 
         # Call with unformatted recovery code (no hyphens)
         user, new_formatted_recovery_code = account_service.reset_password_with_recovery_code(
             username='testuser',
-            recovery_code='ABCDEFGHIJKLMNOP',
+            recovery_code='ABCDEFGHJKLMNPQR',
             new_password='new_secure_password_1234'
         )
 
         assert user is not None
-        assert new_formatted_recovery_code == 'NEW-ABCD-EFGH-IJKL-MN'
+        assert new_formatted_recovery_code == '2NEW-ABCD-3EFG-HJKL'
 
     def test_reset_password_with_recovery_code_old_code_invalidated(
         self, account_service, mock_user_repository, mock_session_repository, mock_recovery_code_service
     ):
         """Test that old recovery code is invalidated after password reset."""
         password_service = account_service.password_service
-        old_recovery_code_raw = 'ABCDEFGHIJKLMNOP'
+        old_recovery_code_raw = 'ABCDEFGHJKLMNPQR'
         old_recovery_code_hash = password_service.hash_password(old_recovery_code_raw)
         password_hash = password_service.hash_password('old_password')
 
@@ -867,13 +990,13 @@ class TestAccountServicePasswordReset:
         mock_user_repository.find_by_id.return_value = mock_user
         mock_user_repository.update_password_and_recovery_code.return_value = True
         mock_recovery_code_service.parse_code.return_value = old_recovery_code_raw
-        mock_recovery_code_service.generate_code.return_value = 'NEWABCDEFGHIJKLMN'
-        mock_recovery_code_service.format_code.return_value = 'NEW-ABCD-EFGH-IJKL-MN'
+        mock_recovery_code_service.generate_code.return_value = '2NEWABCD3EFGHJKL'
+        mock_recovery_code_service.format_code.return_value = '2NEW-ABCD-3EFG-HJKL'
 
         # Reset password
         user, new_formatted_recovery_code = account_service.reset_password_with_recovery_code(
             username='testuser',
-            recovery_code='ABCD-EFGH-IJKL-MNOP',
+            recovery_code='ABCD-EFGH-JKLM-NPQR',
             new_password='new_secure_password_1234'
         )
 
@@ -894,7 +1017,7 @@ class TestAccountServicePasswordReset:
     ):
         """Test that appropriate error is raised when update fails."""
         password_service = account_service.password_service
-        recovery_code_raw = 'ABCDEFGHIJKLMNOP'
+        recovery_code_raw = 'ABCDEFGHJKLMNPQR'
         recovery_code_hash = password_service.hash_password(recovery_code_raw)
 
         mock_user = Mock(
@@ -913,7 +1036,7 @@ class TestAccountServicePasswordReset:
         with pytest.raises(ValueError, match="Invalid username or recovery code"):
             account_service.reset_password_with_recovery_code(
                 username='testuser',
-                recovery_code='ABCD-EFGH-IJKL-MNOP',
+                recovery_code='ABCD-EFGH-JKLM-NPQR',
                 new_password='new_secure_password_1234'
             )
 

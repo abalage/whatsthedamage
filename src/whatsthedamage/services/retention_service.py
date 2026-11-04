@@ -180,6 +180,9 @@ class RetentionService:
 
         accounts_deleted = self._purge_due_deletions(now)
         inactive_accounts_deleted = self._purge_inactive_users(now)
+        pending_registrations_deleted = (
+            self.user_repository.delete_expired_pending(now)
+        )
         expired_sessions_deleted = (
             self.session_repository.cleanup_expired_and_revoked()
         )
@@ -193,10 +196,21 @@ class RetentionService:
                 }}
             )
 
+        if pending_registrations_deleted:
+            self.logger.info(
+                "Expired pending registrations deleted",
+                extra={"context": {
+                    "action": "retention_purge",
+                    "status": "pending_registrations_deleted",
+                    "pending_registrations_deleted": pending_registrations_deleted
+                }}
+            )
+
         result = {
             'accounts_deleted': accounts_deleted,
             'inactive_accounts_deleted': inactive_accounts_deleted,
             'expired_sessions_deleted': expired_sessions_deleted,
+            'pending_registrations_deleted': pending_registrations_deleted,
         }
         self.logger.info(
             "Retention purge completed",

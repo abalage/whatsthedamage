@@ -9,7 +9,7 @@ from datetime import datetime, timedelta, UTC
 
 from flask import Flask
 
-from tests.api.v2.conftest import csrf_token_from_response
+from tests.api.v2.conftest import csrf_token_from_response, register_user
 
 
 PASSWORD = 'password-123456'
@@ -30,11 +30,7 @@ def _register(app: Flask, username: str, password: str = PASSWORD):
         Tuple of (client, csrf_token, user_id).
     """
     client = app.test_client()
-    response = client.post(
-        '/api/v2/auth/register',
-        json={'username': username, 'password': password}
-    )
-    assert response.status_code == 201, response.get_json()
+    response = register_user(client, username, password)
     data = response.get_json()
     return client, csrf_token_from_response(response), data['user']['id']
 

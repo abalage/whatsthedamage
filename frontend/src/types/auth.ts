@@ -28,13 +28,33 @@ export interface RegisterRequest {
 }
 
 /**
- * Response from successful registration.
- * Contains user data and recovery code (displayed once). The session
- * and CSRF tokens are only available in cookies set by the backend.
+ * Response from phase 1 of two-phase registration (POST /auth/register).
+ * Creates a pending registration only: no user account, no session, no
+ * cookies. The pending token authorizes the confirm call; the recovery
+ * code is displayed once.
  */
 export interface RegisterResponse {
-  user: User;
+  pending_token: string;
   recovery_code: string;
+  expires_at: string;
+}
+
+/**
+ * Request body for phase 2 of registration (POST /auth/register/confirm).
+ * The recovery code is echoed back as proof that it was saved.
+ */
+export interface RegisterConfirmRequest {
+  pending_token: string;
+  recovery_code: string;
+}
+
+/**
+ * Response from successful registration confirmation.
+ * Contains user data; the session and CSRF tokens are only available
+ * in cookies set by the backend.
+ */
+export interface RegisterConfirmResponse {
+  user: User;
   session_expires_at: string;
 }
 

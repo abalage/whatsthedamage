@@ -1,7 +1,8 @@
 """Authentication API endpoints.
 
 Provides REST API endpoints for user authentication including:
-- Registration (POST /api/v2/auth/register)
+- Two-phase registration (POST /api/v2/auth/register,
+  POST /api/v2/auth/register/confirm)
 - Login (POST /api/v2/auth/login)
 - Logout (POST /api/v2/auth/logout)
 - Current user (GET /api/v2/auth/me)
@@ -266,10 +267,16 @@ def _user_payload(user: UserDB) -> dict[str, Any]:
 
 @auth_bp.route('/register', methods=['POST'])
 def register() -> Tuple[Response, int]:
-    """Register a new user account.
+    """Start a two-phase registration (phase 1: create pending registration).
 
-    Creates a new user with username and password. Generates a recovery
-    code that is displayed only once. Creates an initial session.
+    Creates a pending registration row holding the username, the hashed
+    password, and the hashed recovery code - but no confirmed account
+    and no session. Returns a one-time pending token and the one-time
+    recovery code. The account is committed only by
+    POST /api/v2/auth/register/confirm after the user proves possession
+    of the recovery code. Pending registrations expire after the
+    configured TTL (default 30 minutes) and are purged by the retention
+    job, so abandoned registrations never become committed accounts.
 
     Request JSON:
         {
@@ -279,22 +286,19 @@ def register() -> Tuple[Response, int]:
 
     Response JSON:
         {
-            "user": {
-                "id": int,
-                "username": "string",
-                "created_at": "ISO8601 timestamp"
-            },
+            "pending_token": "string",
             "recovery_code": "string",
-            "session_expires_at": "ISO8601 timestamp"
+            "expires_at": "ISO8601 timestamp"
         }
 
     Set-Cookie:
-        session_token (HttpOnly), csrf_token (readable)
+        none
 
     Status Codes:
-        201: Successfully registered
+        201: Pending registration created
         400: Validation error (missing fields, invalid input)
-        409: Username already exists
+        409: Username already exists (confirmed account or unexpired
+            pending registration holds it)
         422: Password too weak
         429: Registration rate limit exceeded
 
@@ -338,11 +342,124 @@ def register() -> Tuple[Response, int]:
         ip_address = get_client_ip()
         user_agent = _get_user_agent()
 
-        # Register user
-        user, recovery_code, session_token, session_expiry, csrf_token = (
-            _get_account_service().register_user(
+        # Create pending registration (no user account, no session yet)
+        pending_token, recovery_code, expires_at = (
+            _get_account_service().create_pending_registration(
                 username=username.strip(),
                 password=password,
+                ip_address=ip_address,
+                user_agent=user_agent
+            )
+        )
+
+        response_data: dict[str, Any] = {
+            'pending_token': pending_token,
+            'recovery_code': recovery_code,
+            'expires_at': expires_at.isoformat()
+        }
+
+        return jsonify(response_data), 201
+
+    except UsernameExistsError as e:
+        return json_error_response(
+            str(e), 409, "USERNAME_EXISTS"
+        )
+    except PasswordTooWeakError as e:
+        return json_error_response(
+            str(e), 422, "PASSWORD_TOO_WEAK"
+        )
+    except ValueError as e:
+        return json_error_response(
+            str(e), 400, "VALIDATION_ERROR"
+        )
+
+
+@auth_bp.route('/register/confirm', methods=['POST'])
+def register_confirm() -> Tuple[Response, int]:
+    """Confirm a pending registration (phase 2: commit the account).
+
+    Verifies the pending token and that the echoed recovery code matches
+    the stored hash - cryptographic proof that the user saved the code
+    shown at phase 1 - then marks the registration as confirmed and
+    creates the initial session. This is the only call that turns a
+    pending row into an authenticated account.
+
+    The pending_token travels in the request body, not in a cookie, so a
+    cross-origin attacker cannot read it (same-origin policy) and CSRF
+    is structurally impossible; no CSRF token is therefore required on
+    this endpoint. It is still rate limited per IP.
+
+    Request JSON:
+        {
+            "pending_token": "string",
+            "recovery_code": "string"
+        }
+
+    Response JSON:
+        {
+            "user": {
+                "id": int,
+                "username": "string",
+                "created_at": "ISO8601 timestamp"
+            },
+            "session_expires_at": "ISO8601 timestamp"
+        }
+
+    Set-Cookie:
+        session_token (HttpOnly), csrf_token (readable)
+
+    Status Codes:
+        200: Registration confirmed, session created
+        400: Validation error (missing fields)
+        401: Invalid, expired, or already-used pending token, or
+            recovery code mismatch
+        429: Registration rate limit exceeded
+
+    Note:
+        The recovery code is never returned by this endpoint; it was
+        shown exactly once at phase 1.
+    """
+    try:
+        # Check rate limiting (per IP, before any validation work)
+        rate_limit_exceeded, retry_after = _get_rate_limit_service().check_register_rate_limit(
+            ip_address=get_client_ip()
+        )
+        if rate_limit_exceeded:
+            return rate_limit_response(retry_after), 429
+
+        data = request.get_json(silent=True)
+        if not data:
+            return json_error_response(
+                "Request body is required",
+                400,
+                "MISSING_BODY"
+            )
+
+        pending_token = data.get('pending_token')
+        recovery_code = data.get('recovery_code')
+
+        if not pending_token or not isinstance(pending_token, str):
+            return json_error_response(
+                "Pending token is required",
+                400,
+                "MISSING_PENDING_TOKEN"
+            )
+
+        if not recovery_code or not isinstance(recovery_code, str):
+            return json_error_response(
+                "Recovery code is required",
+                400,
+                "MISSING_RECOVERY_CODE"
+            )
+
+        ip_address = get_client_ip()
+        user_agent = _get_user_agent()
+
+        # Confirm registration and create the initial session
+        user, session_token, session_expiry, csrf_token = (
+            _get_account_service().confirm_registration(
+                pending_token=pending_token,
+                recovery_code=recovery_code,
                 ip_address=ip_address,
                 user_agent=user_agent
             )
@@ -357,7 +474,6 @@ def register() -> Tuple[Response, int]:
                 'username': user.username,
                 'created_at': created_at_str
             },
-            'recovery_code': recovery_code,
             'session_expires_at': session_expiry.isoformat()
         }
 
@@ -366,15 +482,13 @@ def register() -> Tuple[Response, int]:
         response = _set_session_cookie(response, session_token, session_expiry)
         response = _set_csrf_cookie(response, csrf_token)
 
-        return response, 201
+        return response, 200
 
-    except UsernameExistsError as e:
+    except InvalidCredentialsError:
         return json_error_response(
-            str(e), 409, "USERNAME_EXISTS"
-        )
-    except PasswordTooWeakError as e:
-        return json_error_response(
-            str(e), 422, "PASSWORD_TOO_WEAK"
+            "Invalid or expired registration",
+            401,
+            "REGISTRATION_INVALID"
         )
     except ValueError as e:
         return json_error_response(

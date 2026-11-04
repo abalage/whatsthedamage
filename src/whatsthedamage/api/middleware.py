@@ -30,6 +30,7 @@ PUBLIC_V2_ROUTES: frozenset[str] = frozenset({
 # Auth routes that must be reachable without a session.
 PUBLIC_AUTH_ROUTES: frozenset[str] = frozenset({
     '/api/v2/auth/register',
+    '/api/v2/auth/register/confirm',
     '/api/v2/auth/login',
     '/api/v2/auth/reset-password',
     '/api/v2/auth/csrf-token',

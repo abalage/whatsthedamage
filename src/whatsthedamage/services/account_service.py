@@ -1,12 +1,12 @@
 """Account service.
 
-Implements account-level authentication operations: registration,
-login, password reset and change, username rectification, and the
-sharing opt-in. Session lifecycle (creation, validation, revocation)
-lives in the AuthSessionService.
+Implements account-level authentication operations: two-phase
+registration (pending + confirm), login, password reset and change,
+username rectification, and the sharing opt-in. Session lifecycle
+(creation, validation, revocation) lives in the AuthSessionService.
 """
 
-from datetime import datetime, UTC
+from datetime import datetime, timedelta, UTC
 from typing import Optional, Tuple, cast
 
 from whatsthedamage.models.database.session import Session as SessionDB
@@ -25,6 +25,7 @@ from whatsthedamage.services.auth_errors import (
 from whatsthedamage.services.auth_session_service import AuthSessionService
 from whatsthedamage.services.password_service import PasswordService
 from whatsthedamage.services.recovery_code_service import RecoveryCodeService
+from whatsthedamage.services.token_service import TokenService
 from whatsthedamage.utils.date_converter import DateConverter
 from whatsthedamage.utils.logging import get_logger
 
@@ -37,7 +38,9 @@ class AccountService:
         password_service: Service for password hashing.
         recovery_code_service: Service for recovery code generation.
         session_service: Service for the session lifecycle.
+        token_service: Service for pending-token generation/hashing.
         password_min_length: Minimum password length.
+        pending_ttl_seconds: Lifetime of a pending registration.
         logger: Logger instance for audit logging.
     """
 
@@ -47,7 +50,9 @@ class AccountService:
         password_service: PasswordService,
         recovery_code_service: RecoveryCodeService,
         session_service: AuthSessionService,
-        password_min_length: int = 12
+        token_service: TokenService,
+        password_min_length: int = 12,
+        pending_ttl_seconds: int = 1800
     ) -> None:
         """Initialize AccountService.
 
@@ -57,43 +62,37 @@ class AccountService:
             recovery_code_service: Service for recovery code
                 generation.
             session_service: Service for the session lifecycle.
+            token_service: Service for pending-token
+                generation/hashing.
             password_min_length: Minimum password length.
+            pending_ttl_seconds: Lifetime of a pending registration
+                in seconds (default 1800 = 30 minutes).
         """
         self.user_repository = user_repository
         self.password_service = password_service
         self.recovery_code_service = recovery_code_service
         self.session_service = session_service
+        self.token_service = token_service
         self.password_min_length = password_min_length
+        self.pending_ttl_seconds = pending_ttl_seconds
         self.logger = get_logger(__name__)
 
-    def register_user(
-        self,
-        username: str,
-        password: str,
-        ip_address: Optional[str] = None,
-        user_agent: Optional[str] = None
-    ) -> Tuple[UserDB, str, str, datetime, str]:
-        """Register a new user account.
-
-        Creates a new user with hashed password and recovery code.
-        Also creates an initial session for the user.
+    def _validate_registration_inputs(
+        self, username: str, password: str
+    ) -> str:
+        """Validate username and password for registration.
 
         Args:
-            username: Unique username for the new user.
-            password: Plain text password (minimum length enforced).
-            ip_address: Client IP address.
-            user_agent: Client user agent.
+            username: Desired username.
+            password: Plain text password.
 
         Returns:
-            Tuple of (user, recovery_code, session_token, session_expiry,
-            csrf_token).
+            The stripped username.
 
         Raises:
-            UsernameExistsError: If the username is already taken.
+            ValueError: If the username is empty or too long.
             PasswordTooWeakError: If the password is too short.
-            ValueError: If the username is invalid.
         """
-        # Validate inputs
         if not username or not username.strip():
             raise ValueError("Username cannot be empty")
         if len(username) > 255:
@@ -102,10 +101,46 @@ class AccountService:
             raise PasswordTooWeakError(
                 f"Password must be at least {self.password_min_length} characters"
             )
+        return username.strip()
 
-        # Check if username exists
+    def create_pending_registration(
+        self,
+        username: str,
+        password: str,
+        ip_address: Optional[str] = None,
+        user_agent: Optional[str] = None
+    ) -> Tuple[str, str, datetime]:
+        """Create a pending registration (phase 1 of two-phase registration).
+
+        Stores a pending user row (registration_confirmed_at NULL) with
+        hashed password and recovery code, but creates neither a session
+        nor a confirmed account. Returns a one-time pending token and the
+        one-time recovery code; the account is committed only by
+        confirm_registration() after the user proves possession of the
+        recovery code. Pending rows expire after pending_ttl_seconds and
+        are purged by the retention job.
+
+        Args:
+            username: Unique username for the new user.
+            password: Plain text password (minimum length enforced).
+            ip_address: Client IP address (audit only).
+            user_agent: Client user agent (audit only).
+
+        Returns:
+            Tuple of (pending_token, formatted_recovery_code,
+            pending_expires_at).
+
+        Raises:
+            UsernameExistsError: If the username is held by a confirmed
+                account or an unexpired pending registration.
+            PasswordTooWeakError: If the password is too short.
+            ValueError: If the username is invalid.
+        """
+        username = self._validate_registration_inputs(username, password)
+
+        # Check if username is held by a confirmed account
         existing_user = self.user_repository.find_by_username(username)
-        if existing_user:
+        if existing_user and existing_user.registration_confirmed_at is not None:
             raise UsernameExistsError(f"Username '{username}' already exists")
 
         # Generate recovery code
@@ -116,23 +151,117 @@ class AccountService:
         password_hash = self.password_service.hash_password(password)
         recovery_code_hash = self.password_service.hash_password(recovery_code)
 
-        # Create user
-        user = self.user_repository.create(
-            username=username.strip(),
-            password_hash=password_hash,
-            recovery_code_hash=recovery_code_hash
+        # Generate the one-time pending token (only its hash is stored)
+        pending_token, pending_token_hash = (
+            self.token_service.generate_token_and_hash()
         )
+        pending_expires_at = datetime.now(UTC) + timedelta(
+            seconds=self.pending_ttl_seconds
+        )
+
+        # Create the pending row; an expired pending row holding the
+        # same username is reused in place by the repository
+        try:
+            pending_user = self.user_repository.create_pending(
+                username=username,
+                password_hash=password_hash,
+                recovery_code_hash=recovery_code_hash,
+                pending_token_hash=pending_token_hash,
+                pending_expires_at=pending_expires_at
+            )
+        except ValueError as e:
+            raise UsernameExistsError(str(e))
+
+        self.logger.info(
+            "Pending registration created",
+            extra={"context": {
+                "action": "registration_pending",
+                "status": "created",
+                "user_id": pending_user.id,
+                "pending_expires_at": pending_expires_at.isoformat()
+            }}
+        )
+
+        return pending_token, formatted_recovery_code, pending_expires_at
+
+    def confirm_registration(
+        self,
+        pending_token: str,
+        recovery_code: str,
+        ip_address: Optional[str] = None,
+        user_agent: Optional[str] = None
+    ) -> Tuple[UserDB, str, datetime, str]:
+        """Confirm a pending registration (phase 2 of two-phase registration).
+
+        Verifies the pending token and that the echoed recovery code
+        matches the stored hash - proof that the user actually saved the
+        code shown at phase 1 - then marks the row as confirmed and
+        creates the initial session. The account becomes a real,
+        authenticated account only here.
+
+        Args:
+            pending_token: The one-time pending token from phase 1.
+            recovery_code: The recovery code echoed back by the client
+                (formatted or raw).
+            ip_address: Client IP address.
+            user_agent: Client user agent.
+
+        Returns:
+            Tuple of (user, session_token, session_expiry, csrf_token).
+
+        Raises:
+            InvalidCredentialsError: If the token is unknown, expired,
+                already used, or the recovery code does not match.
+        """
+        token_hash = self.token_service.hash_token(pending_token)
+        user = self.user_repository.find_pending_by_token_hash(
+            token_hash, datetime.now(UTC)
+        )
+        if not user:
+            raise InvalidCredentialsError("Invalid or expired registration")
+
+        parsed_recovery_code = self.recovery_code_service.parse_code(recovery_code)
+        if not self.password_service.verify_password(
+            parsed_recovery_code, cast(str, user.recovery_code_hash)
+        ):
+            self.logger.warning(
+                "Registration confirmation failed: recovery code mismatch",
+                extra={"context": {
+                    "action": "registration_confirm",
+                    "status": "failed",
+                    "reason": "recovery_code_mismatch"
+                }}
+            )
+            raise InvalidCredentialsError("Invalid or expired registration")
+
+        # Guarded update: only the first of racing confirmations wins
+        if not self.user_repository.confirm_pending(
+            cast(int, user.id), datetime.now(UTC)
+        ):
+            raise InvalidCredentialsError("Invalid or expired registration")
+
+        confirmed_user = self.user_repository.find_by_id(cast(int, user.id))
+        assert confirmed_user is not None, "User should exist after confirmation"
 
         # Create initial session
         session_token, session_expiry, csrf_token = (
             self.session_service.create_session(
-                cast(int, user.id),
+                cast(int, confirmed_user.id),
                 ip_address=ip_address,
                 user_agent=user_agent
             )
         )
 
-        return user, formatted_recovery_code, session_token, session_expiry, csrf_token
+        self.logger.info(
+            "Registration confirmed",
+            extra={"context": {
+                "action": "registration_confirm",
+                "status": "success",
+                "user_id": confirmed_user.id
+            }}
+        )
+
+        return confirmed_user, session_token, session_expiry, csrf_token
 
     def login_user(
         self,
@@ -159,13 +288,14 @@ class AccountService:
 
         Raises:
             InvalidCredentialsError: If username or password is
-                incorrect.
+                incorrect. Pending registrations are treated as unknown
+                usernames.
             AccountInactiveError: If the user is inactive.
             AccountDeletionPendingError: If the account's deletion
                 grace period has elapsed.
         """
-        # Find user
-        user = self.user_repository.find_by_username(username)
+        # Find confirmed user; pending registrations never match
+        user = self.user_repository.find_confirmed_by_username(username)
         if not user:
             raise InvalidCredentialsError("Invalid username or password")
 
@@ -236,11 +366,12 @@ class AccountService:
         Raises:
             InvalidCredentialsError: If the username or recovery code
                 is wrong. Uses a generic message to prevent username
-                enumeration attacks.
+                enumeration attacks. Pending registrations are treated
+                as unknown usernames.
             PasswordTooWeakError: If the new password is too short.
         """
-        # Find user by username
-        user = self.user_repository.find_by_username(username)
+        # Find confirmed user by username; pending registrations never match
+        user = self.user_repository.find_confirmed_by_username(username)
         if not user:
             self.logger.warning("Password reset attempt failed: username not found", extra={"context": {"action": "password_reset", "status": "failed", "reason": "username_not_found"}})
             raise InvalidCredentialsError("Invalid username or recovery code")

@@ -53,6 +53,7 @@ class TestOpenApiSchemaStructure:
 
         expected_paths = [
             "/auth/register",
+            "/auth/register/confirm",
             "/auth/login",
             "/auth/logout",
             "/auth/me",
@@ -96,7 +97,9 @@ class TestOpenApiSchemaStructure:
             "UserSummary",
             "UserDetail",
             "RegisterRequest",
-            "RegisterResponse",
+            "PendingRegistrationResponse",
+            "RegisterConfirmRequest",
+            "RegisterConfirmResponse",
             "LoginRequest",
             "LoginResponse",
             "MeResponse",

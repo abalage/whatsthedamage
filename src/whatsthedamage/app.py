@@ -150,7 +150,9 @@ def _init_auth_services(app: Flask, service_container: ServiceContainer) -> Serv
         password_service=password_service,
         recovery_code_service=recovery_code_service,
         session_service=auth_session_service,
-        password_min_length=auth_config.PASSWORD_MIN_LENGTH
+        token_service=token_service,
+        password_min_length=auth_config.PASSWORD_MIN_LENGTH,
+        pending_ttl_seconds=auth_config.REGISTRATION_PENDING_TTL_SECONDS
     )
 
     # Store services in app extensions
@@ -312,7 +314,9 @@ def _register_cli_commands(app: Flask) -> None:
             f"{result['inactive_accounts_deleted']} "
             'inactive account(s) deleted, '
             f"{result['expired_sessions_deleted']} "
-            'expired session(s) deleted'
+            'expired session(s) deleted, '
+            f"{result['pending_registrations_deleted']} "
+            'expired pending registration(s) deleted'
         )
 
 

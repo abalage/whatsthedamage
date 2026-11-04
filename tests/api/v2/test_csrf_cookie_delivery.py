@@ -1,9 +1,10 @@
 """Functional tests for CSRF token cookie delivery.
 
 The CSRF token is delivered as a readable (not HttpOnly) cookie on
-register, login, /auth/me (when the session has no token yet), and
-/auth/csrf-token; logout clears it. Response bodies no longer carry
-a csrf_token field.
+registration confirm, login, /auth/me (when the session has no token
+yet), and /auth/csrf-token; logout clears it. The phase-1 register
+endpoint sets no cookies. Response bodies no longer carry a
+csrf_token field.
 
 The test client's host is 'localhost', where cookie attributes are
 deliberately relaxed (SameSite=Lax, not Secure) to work across the
@@ -13,7 +14,12 @@ is covered by a dedicated test.
 
 from flask import Flask
 
-from tests.api.v2.conftest import csrf_token_from_response
+from tests.api.v2.conftest import (
+    confirm_registration,
+    csrf_token_from_response,
+    register_pending,
+    register_user,
+)
 
 
 PASSWORD = 'password-123456'
@@ -54,34 +60,44 @@ def _assert_no_csrf_cookie(response) -> None:
 
 
 def _register(api_app: Flask):
-    """Register a user and return (client, csrf_token).
+    """Register a user (both phases) and return (client, csrf_token).
 
     Args:
         api_app: Flask application with a temporary database.
 
     Returns:
-        Tuple of (test client, CSRF token from the cookie).
+        Tuple of (test client, CSRF token from the confirm cookie).
     """
     client = api_app.test_client()
-    response = client.post(
-        '/api/v2/auth/register',
-        json={'username': 'alice', 'password': PASSWORD}
-    )
-    assert response.status_code == 201, response.get_json()
+    response = register_user(client, 'alice', PASSWORD)
     return client, csrf_token_from_response(response)
 
 
 class TestCsrfCookieDelivery:
     """Tests for the csrf_token cookie on the auth endpoints."""
 
-    def test_register_sets_readable_cookie(self, api_app: Flask):
-        """Register sets a readable csrf_token cookie, not a body field."""
+    def test_register_phase1_sets_no_cookies(self, api_app: Flask):
+        """Phase-1 register creates a pending registration and sets no cookies."""
         client = api_app.test_client()
         response = client.post(
             '/api/v2/auth/register',
             json={'username': 'alice', 'password': PASSWORD}
         )
         assert response.status_code == 201
+        assert response.headers.getlist('Set-Cookie') == []
+        body = response.get_json()
+        assert 'pending_token' in body
+        assert 'recovery_code' in body
+        assert 'user' not in body
+
+    def test_register_confirm_sets_readable_cookie(self, api_app: Flask):
+        """Confirm sets a readable csrf_token cookie, not a body field."""
+        client = api_app.test_client()
+        pending = register_pending(client, 'alice', PASSWORD)
+        response = confirm_registration(
+            client, pending['pending_token'], pending['recovery_code']
+        )
+        assert response.status_code == 200
 
         header = _csrf_cookie_header(response)
         assert 'HttpOnly' not in header
@@ -177,12 +193,16 @@ class TestCsrfCookieDelivery:
     def test_non_localhost_host_uses_secure_cookie(self, api_app: Flask):
         """Away from localhost the cookie is Secure with the configured policy."""
         client = api_app.test_client()
+        pending = register_pending(client, 'alice', PASSWORD)
         response = client.post(
-            '/api/v2/auth/register',
-            json={'username': 'alice', 'password': PASSWORD},
+            '/api/v2/auth/register/confirm',
+            json={
+                'pending_token': pending['pending_token'],
+                'recovery_code': pending['recovery_code']
+            },
             headers={'Host': 'example.com'}
         )
-        assert response.status_code == 201
+        assert response.status_code == 200
 
         header = _csrf_cookie_header(response)
         assert 'HttpOnly' not in header

@@ -40,6 +40,7 @@ def mock_user_repository():
     mock.find_inactive_since.return_value = []
     mock.schedule_deletion.return_value = True
     mock.cancel_deletion.return_value = True
+    mock.delete_expired_pending.return_value = 0
     return mock
 
 
@@ -162,7 +163,8 @@ class TestPurge:
         assert result == {
             'accounts_deleted': 1,
             'inactive_accounts_deleted': 0,
-            'expired_sessions_deleted': 0
+            'expired_sessions_deleted': 0,
+            'pending_registrations_deleted': 0
         }
         uow = mock_unit_of_work.__enter__.return_value
         uow.purge_user.assert_called_once_with(
@@ -195,7 +197,8 @@ class TestPurge:
         assert result == {
             'accounts_deleted': 0,
             'inactive_accounts_deleted': 1,
-            'expired_sessions_deleted': 0
+            'expired_sessions_deleted': 0,
+            'pending_registrations_deleted': 0
         }
         uow = mock_unit_of_work.__enter__.return_value
         uow.purge_user.assert_called_once_with(

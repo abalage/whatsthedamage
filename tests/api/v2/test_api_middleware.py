@@ -21,6 +21,7 @@ PUBLIC_RULES = {
     '/api/v2/csv-profiles/<profile_id>',
     '/api/v2/openapi.json',
     '/api/v2/auth/register',
+    '/api/v2/auth/register/confirm',
     '/api/v2/auth/login',
     '/api/v2/auth/reset-password',
     '/api/v2/auth/csrf-token',

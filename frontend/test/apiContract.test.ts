@@ -17,6 +17,7 @@ import schemas from './fixtures/api-contract-schemas.json';
 import type {
   User,
   RegisterResponse,
+  RegisterConfirmResponse,
   LoginResponse,
   MeResponse,
   DataExportResponse
@@ -68,11 +69,18 @@ describe('API contract (frontend types vs backend OpenAPI fixture)', () => {
     expectBackendProvidesAllFields('UserDetail', fields);
   });
 
-  it('RegisterResponse mirrors RegisterResponse', () => {
+  it('RegisterResponse mirrors PendingRegistrationResponse', () => {
     const fields: Array<keyof RegisterResponse> = [
-      'user', 'recovery_code', 'session_expires_at'
+      'pending_token', 'recovery_code', 'expires_at'
     ];
-    expectBackendProvidesAllFields('RegisterResponse', fields);
+    expectBackendProvidesAllFields('PendingRegistrationResponse', fields);
+  });
+
+  it('RegisterConfirmResponse mirrors RegisterConfirmResponse', () => {
+    const fields: Array<keyof RegisterConfirmResponse> = [
+      'user', 'session_expires_at'
+    ];
+    expectBackendProvidesAllFields('RegisterConfirmResponse', fields);
   });
 
   it('LoginResponse mirrors LoginResponse', () => {

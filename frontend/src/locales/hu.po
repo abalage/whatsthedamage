@@ -19,12 +19,12 @@ msgstr ""
 "X-Generator: Poedit 3.6\n"
 
 #: src/components/auth/PasswordResetForm.vue:83 src/pages/Login.vue:91
-#: src/pages/Register.vue:116
+#: src/pages/Register.vue:130
 msgid "Clear error"
 msgstr "Hiba törlése"
 
 #: src/components/auth/PasswordResetForm.vue:92 src/pages/Login.vue:100
-#: src/pages/Register.vue:125 src/pages/Settings.vue:173
+#: src/pages/Register.vue:139 src/pages/Settings.vue:173
 msgid "Username"
 msgstr "Felhasználónév"
 
@@ -54,7 +54,7 @@ msgstr "Új jelszó"
 msgid "Enter new password"
 msgstr "Adja meg az új jelszót"
 
-#: src/components/auth/PasswordResetForm.vue:138 src/pages/Register.vue:154
+#: src/components/auth/PasswordResetForm.vue:138 src/pages/Register.vue:168
 msgid "characters"
 msgstr "karakter"
 
@@ -66,12 +66,12 @@ msgstr "Új jelszó megerősítése"
 msgid "Confirm new password"
 msgstr "Erősítse meg az új jelszót"
 
-#: src/components/auth/PasswordResetForm.vue:157 src/pages/Register.vue:174
+#: src/components/auth/PasswordResetForm.vue:157 src/pages/Register.vue:188
 msgid "Passwords match"
 msgstr "A jelszavak egyeznek"
 
-#: src/components/auth/PasswordResetForm.vue:158 src/pages/Register.vue:51
-#: src/pages/Register.vue:174
+#: src/components/auth/PasswordResetForm.vue:158 src/pages/Register.vue:54
+#: src/pages/Register.vue:188
 msgid "Passwords do not match"
 msgstr "A jelszavak nem egyeznek"
 
@@ -110,19 +110,19 @@ msgstr "Új helyreállító kód készült. Mentse el, mert többé nem fogja l�
 msgid "I have saved my new recovery code in a secure location"
 msgstr "Elmentettem az új helyreállító kódomat egy biztonságos helyre"
 
-#: src/components/auth/RecoveryCodeDisplay.vue:41 src/pages/Register.vue:258
+#: src/components/auth/RecoveryCodeDisplay.vue:41
 msgid "Continue to Login"
 msgstr "Folytatás a bejelentkezéshez"
 
-#: src/components/auth/RecoveryCodeDisplay.vue:98 src/pages/Register.vue:237
+#: src/components/auth/RecoveryCodeDisplay.vue:98 src/pages/Register.vue:251
 msgid "Important:"
 msgstr "Fontos:"
 
-#: src/components/auth/RecoveryCodeDisplay.vue:109 src/pages/Register.vue:228
+#: src/components/auth/RecoveryCodeDisplay.vue:109 src/pages/Register.vue:242
 msgid "Copy to clipboard"
 msgstr "Másolás a vágólapra"
 
-#: src/components/auth/RecoveryCodeDisplay.vue:112 src/pages/Register.vue:231
+#: src/components/auth/RecoveryCodeDisplay.vue:112 src/pages/Register.vue:245
 msgid "Copy"
 msgstr "Másolás"
 
@@ -296,11 +296,11 @@ msgstr "Ugrás a(z) {n}. diára"
 msgid "Next slide"
 msgstr "Következő dia"
 
-#: src/components/Layout.vue:116 src/pages/Landing.vue:81
+#: src/components/Layout.vue:112 src/pages/Landing.vue:65
 msgid "Tell me I didn't spend that much…"
 msgstr "Mondd hogy nem költöttem sokat…"
 
-#: src/components/Layout.vue:123 src/pages/Categories.vue:353
+#: src/components/Layout.vue:119 src/pages/Categories.vue:353
 #: src/pages/CategoryMonthsList.vue:110
 #: src/pages/CategoryMonthTransactions.vue:68
 #: src/pages/MonthCategoriesList.vue:106 src/pages/PivotTable.vue:34
@@ -308,94 +308,90 @@ msgstr "Mondd hogy nem költöttem sokat…"
 msgid "Home"
 msgstr "Kezdőlap"
 
-#: src/components/Layout.vue:126 src/pages/Index.vue:162
+#: src/components/Layout.vue:122 src/pages/Index.vue:162
 #: src/pages/Index.vue:198
 msgid "Import CSV"
 msgstr "CSV importálása"
 
-#: src/components/Layout.vue:129 src/pages/Settings.vue:166
+#: src/components/Layout.vue:125 src/pages/Settings.vue:166
 msgid "Settings"
 msgstr ""
 
-#: src/components/Layout.vue:132 src/pages/Landing.vue:103
+#: src/components/Layout.vue:128 src/pages/Landing.vue:87
 msgid "About"
 msgstr "A programról"
 
-#: src/components/Layout.vue:136
+#: src/components/Layout.vue:132
 msgid "Analytics"
 msgstr "Analitika"
 
-#: src/components/Layout.vue:140
+#: src/components/Layout.vue:136
 msgid "Analysis direction"
 msgstr "Vizsgálat iránya"
 
-#: src/components/Layout.vue:151
+#: src/components/Layout.vue:147
 msgid "columns"
 msgstr "oszlopok"
 
-#: src/components/Layout.vue:152
+#: src/components/Layout.vue:148
 msgid "rows"
 msgstr "sorok"
 
-#: src/components/Layout.vue:156
+#: src/components/Layout.vue:152
 msgid "Algorithms"
 msgstr "Algoritmusok"
 
-#: src/components/Layout.vue:169
+#: src/components/Layout.vue:165
 msgid "IQR Outlier Detection"
 msgstr "Interkvartilis terjedelem (IQR)"
 
-#: src/components/Layout.vue:170
+#: src/components/Layout.vue:166
 msgid "Pareto analysis"
 msgstr "Pareto-elv"
 
-#: src/components/Layout.vue:174
+#: src/components/Layout.vue:170
 msgid "Legend"
 msgstr "Színjegyzék"
 
-#: src/components/Layout.vue:179
+#: src/components/Layout.vue:175
 msgid "Marked outlier by IQR"
 msgstr "IQR által kívülállónak jelölt érték"
 
-#: src/components/Layout.vue:180
+#: src/components/Layout.vue:176
 msgid "Marked outlier by Pareto principle"
 msgstr "Pareto-elv által megjelölt érték"
 
-#: src/components/Layout.vue:181
+#: src/components/Layout.vue:177
 msgid "Excluded from statistics"
 msgstr "Statisztikából kihagyott értékek"
 
-#: src/components/Layout.vue:182
+#: src/components/Layout.vue:178
 msgid "Matched by multiple algorithms"
 msgstr "Több algoritmus is megjelölte"
 
-#: src/components/Layout.vue:196 src/pages/Import.vue:190
+#: src/components/Layout.vue:192 src/pages/Import.vue:190
 msgid "Reset to defaults"
 msgstr "Alapértelmezés helyreállítása"
 
-#: src/components/Layout.vue:203 src/pages/Landing.vue:61
-msgid "Languages"
-msgstr "Nyelvek"
-
-#: src/components/Layout.vue:224
+#: src/components/Layout.vue:208
 msgid "Themes"
 msgstr "Témák"
 
-#: src/components/Layout.vue:246 src/pages/ForgotPassword.vue:109
-#: src/pages/Landing.vue:95 src/pages/Login.vue:79 src/pages/Login.vue:142
-#: src/pages/Register.vue:209
+#: src/components/Layout.vue:230 src/pages/ForgotPassword.vue:109
+#: src/pages/Landing.vue:79 src/pages/Login.vue:79 src/pages/Login.vue:142
+#: src/pages/Register.vue:223
 msgid "Login"
 msgstr "Bejelentkezés"
 
-#: src/components/Layout.vue:249
+#: src/components/Layout.vue:233
 msgid "Logout"
 msgstr "Kijelentkezés"
 
-#: src/components/Layout.vue:271 src/pages/Landing.vue:104
+#: src/components/Layout.vue:255 src/pages/Landing.vue:88
 msgid "Privacy"
 msgstr "Adatvédelem"
 
-#: src/components/Layout.vue:272 src/pages/Landing.vue:105
+#: src/components/Layout.vue:256 src/pages/Landing.vue:89
 msgid "Legal"
 msgstr "Jognyilatkozat"
 
@@ -407,6 +403,10 @@ msgstr "betöltés"
 #: src/components/layout/LoadingState.vue:12
 msgid "Loading data"
 msgstr "Adatok betöltése"
+
+#: src/components/LocaleSwitcher.vue:28 src/components/LocaleSwitcher.vue:43
+msgid "Languages"
+msgstr "Nyelvek"
 
 #: src/components/PivotCategorySelector.vue:35
 msgid "Select Categories"
@@ -956,7 +956,7 @@ msgstr "Emlékszik a jelszavára?"
 msgid "Don't have an account?"
 msgstr "Nincs fiókja?"
 
-#: src/pages/ForgotPassword.vue:113 src/pages/Landing.vue:98
+#: src/pages/ForgotPassword.vue:113 src/pages/Landing.vue:82
 #: src/pages/Login.vue:161
 msgid "Register"
 msgstr "Regisztráció"
@@ -1086,47 +1086,47 @@ msgstr "Eredmény kiválasztása"
 msgid "View Transactions"
 msgstr "Tranzakciók megtekintése"
 
-#: src/pages/Landing.vue:28
+#: src/pages/Landing.vue:27
 msgid "Self-hosted"
 msgstr "Saját szerveren fut"
 
-#: src/pages/Landing.vue:29
+#: src/pages/Landing.vue:28
 msgid ""
 "Runs on your own machine. No telemetry, no accounts on third-party servers."
-msgstr ""
-"A saját gépén fut. Nincs telemetria, nincs fiók külső szervereken."
+msgstr "A saját gépén fut. Nincs telemetria, nincs fiók külső szervereken."
 
-#: src/pages/Landing.vue:33
+#: src/pages/Landing.vue:32
 msgid "Your data stays local"
 msgstr "Adatai helyben maradnak"
 
-#: src/pages/Landing.vue:34
+#: src/pages/Landing.vue:33
 msgid "Your bank exports never leave your machine. Nothing is sent anywhere."
 msgstr ""
 "A banki exportjai soha nem hagyják el a gépét. Semmi sem kerül kiküldésre."
 
-#: src/pages/Landing.vue:39
+#: src/pages/Landing.vue:38
 msgid "Screenshot of the transactions page"
 msgstr "Képernyőkép a tranzakciók oldaláról"
 
-#: src/pages/Landing.vue:43
+#: src/pages/Landing.vue:42
 msgid "Automatic categorization"
 msgstr "Automatikus kategorizálás"
 
-#: src/pages/Landing.vue:44
+#: src/pages/Landing.vue:43
 msgid "Import a CSV export and transactions are categorized automatically."
 msgstr ""
-"Importáljon egy CSV exportot, és a tranzakciók automatikusan kategorizálódnak."
+"Importáljon egy CSV exportot, és a tranzakciók automatikusan "
+"kategorizálódnak."
 
-#: src/pages/Landing.vue:49
+#: src/pages/Landing.vue:48
 msgid "Screenshot of the statistics report"
 msgstr "Képernyőkép a statisztikai jelentésről"
 
-#: src/pages/Landing.vue:53
+#: src/pages/Landing.vue:52
 msgid "Insightful reports"
 msgstr "Informatív jelentések"
 
-#: src/pages/Landing.vue:54
+#: src/pages/Landing.vue:53
 msgid ""
 "See where your money went with category and monthly reports, pivot tables, "
 "and statistics."
@@ -1134,21 +1134,22 @@ msgstr ""
 "Nézze meg, mire ment el a pénze kategória- és havi jelentésekkel, "
 "kimutatásokkal és statisztikákkal."
 
-#: src/pages/Landing.vue:84
+#: src/pages/Landing.vue:68
 msgid "Self-hosted. No telemetry. Your data never leaves your machine."
 msgstr ""
 "Saját szerveren fut. Nincs telemetria. Adatai soha nem hagyják el a gépét."
 
-#: src/pages/Landing.vue:88
+#: src/pages/Landing.vue:72
 msgid "Import your bank CSV exports and get them categorized automatically"
-msgstr "Importálja banki CSV exportjait, és azok automatikusan kategorizálódnak"
+msgstr ""
+"Importálja banki CSV exportjait, és azok automatikusan kategorizálódnak"
 
-#: src/pages/Landing.vue:89
+#: src/pages/Landing.vue:73
 msgid "Reports, pivot tables, and statistics show where your money went"
 msgstr ""
 "A jelentések, kimutatások és statisztikák megmutatják, mire ment el a pénze"
 
-#: src/pages/Landing.vue:90
+#: src/pages/Landing.vue:74
 msgid "Everything runs locally — nothing is uploaded or shared"
 msgstr "Minden helyben fut — semmi sem kerül feltöltésre vagy megosztásra"
 
@@ -1269,73 +1270,73 @@ msgstr "Kiválasztott kategóriák összegzései"
 msgid "Detailed Monthly Data"
 msgstr "Részletes havi adatok"
 
-#: src/pages/Privacy.vue:22 src/pages/Register.vue:190
+#: src/pages/Privacy.vue:22 src/pages/Register.vue:204
 msgid "Privacy Policy"
 msgstr "Adatvédelmi tájékoztató"
 
-#: src/pages/Register.vue:53
+#: src/pages/Register.vue:56
 msgid "Password must be at least {minLength} characters"
 msgstr "A jelszónak legalább {minLength} karakter hosszúnak kell lennie"
 
-#: src/pages/Register.vue:55
+#: src/pages/Register.vue:58
 msgid "Please accept the Terms and the Privacy Policy to continue"
 msgstr ""
 "A folytatáshoz fogadja el a felhasználási feltételeket és az adatvédelmi "
 "tájékoztatót"
 
-#: src/pages/Register.vue:57
+#: src/pages/Register.vue:60
 msgid "Please fill in all fields"
 msgstr "Kérjük, töltsön ki minden mezőt"
 
-#: src/pages/Register.vue:107 src/pages/Register.vue:200
+#: src/pages/Register.vue:121 src/pages/Register.vue:214
 msgid "Create Account"
 msgstr "Fiók létrehozása"
 
-#: src/pages/Register.vue:132
+#: src/pages/Register.vue:146
 msgid "Choose a username"
 msgstr "Válasszon felhasználónevet"
 
-#: src/pages/Register.vue:140
+#: src/pages/Register.vue:154
 msgid "Password (minimum {minLength} characters)"
 msgstr "Jelszó (legalább {minLength} karakter)"
 
-#: src/pages/Register.vue:148
+#: src/pages/Register.vue:162
 msgid "Create a password"
 msgstr "Válasszon jelszót"
 
-#: src/pages/Register.vue:161
+#: src/pages/Register.vue:175
 msgid "Confirm Password"
 msgstr "Jelszó megerősítése"
 
-#: src/pages/Register.vue:168
+#: src/pages/Register.vue:182
 msgid "Confirm your password"
 msgstr "Erősítse meg a jelszavát"
 
-#: src/pages/Register.vue:187
+#: src/pages/Register.vue:201
 msgid "I have read and accept the"
 msgstr "Elolvastam és elfogadom a"
 
-#: src/pages/Register.vue:188
+#: src/pages/Register.vue:202
 msgid "Terms (Legal Notice)"
 msgstr "feltételeket (Jogi közlemény)"
 
-#: src/pages/Register.vue:189
+#: src/pages/Register.vue:203
 msgid "and the"
 msgstr "és az"
 
-#: src/pages/Register.vue:201
+#: src/pages/Register.vue:215
 msgid "Creating..."
 msgstr "Létrehozás..."
 
-#: src/pages/Register.vue:208
+#: src/pages/Register.vue:222
 msgid "Already have an account?"
 msgstr "Már van fiókja?"
 
-#: src/pages/Register.vue:217
+#: src/pages/Register.vue:231
 msgid "Save Your Recovery Code"
 msgstr "Mentse el a helyreállító kódját"
 
-#: src/pages/Register.vue:220
+#: src/pages/Register.vue:234
 msgid ""
 "This code is displayed only once. Save it securely to reset your password if "
 "you forget it. You will not be able to retrieve it later."
@@ -1343,7 +1344,7 @@ msgstr ""
 "Ez a kód csak egyszer jelenik meg. Mentse el biztonságosan, hogy elfelejtett "
 "jelszó esetén visszaállíthassa. Később nem lesz lehetősége lekérdezni."
 
-#: src/pages/Register.vue:238
+#: src/pages/Register.vue:252
 msgid ""
 "Store this code in a safe place. Without it, you will not be able to recover "
 "your account."
@@ -1351,9 +1352,13 @@ msgstr ""
 "Tárolja a kódot biztonságos helyen. Enélkül nem lesz lehetősége "
 "visszaállítani a fiókját."
 
-#: src/pages/Register.vue:249
+#: src/pages/Register.vue:263
 msgid "I have saved my recovery code"
 msgstr "Elmentettem a helyreállító kódomat"
+
+#: src/pages/Register.vue:272
+msgid "Continue"
+msgstr "Folytatás"
 
 #: src/pages/Settings.vue:168
 msgid "Your account"

@@ -34,6 +34,9 @@ class AuthConfig:
             retention job purges a user's personal data.
         ACCOUNT_DELETION_GRACE_DAYS: Grace period (in days) between an
             account deletion request and the actual purge.
+        REGISTRATION_PENDING_TTL_SECONDS: Lifetime of a pending
+            registration (two-phase registration) before it expires
+            and is purged.
     """
 
     # Flask session configuration
@@ -139,6 +142,12 @@ class AuthConfig:
     ACCOUNT_DELETION_GRACE_DAYS: int = int(os.getenv(
         'WHATSTHEDAMAGE_ACCOUNT_DELETION_GRACE_DAYS',
         '7'
+    ))
+
+    # Two-phase registration configuration
+    REGISTRATION_PENDING_TTL_SECONDS: int = int(os.getenv(
+        'WHATSTHEDAMAGE_REGISTRATION_PENDING_TTL_SECONDS',
+        '1800'  # 30 minutes
     ))
 
 

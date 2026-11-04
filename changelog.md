@@ -5,6 +5,7 @@
 User persistence and authentication release. Processing results and transactions are now stored per user in a relational database instead of the cache-only session flow.
 
 ### BREAKING CHANGES
+- **Two-Phase Registration**: `POST /api/v2/auth/register` no longer creates an account or a session; it creates a pending registration and returns `{ pending_token, recovery_code, expires_at }` without setting cookies. The account is committed only by the new `POST /api/v2/auth/register/confirm`, which requires the recovery code to be echoed back and sets the session/CSRF cookies on success. Pending registrations expire after 30 minutes (`WHATSTHEDAMAGE_REGISTRATION_PENDING_TTL_SECONDS`) and are purged by the retention job, so abandoned registrations never become committed accounts.
 - **Authentication Required**: All transaction, processing result, and correction endpoints now require an authenticated user; data is scoped per user account (ad3488c).
 - **New Date Protocol**: Transaction dates are stored as datetime values and months are addressed as `YYYY-MM` in API contracts and drilldown keys (9836ac7).
 - **API Restructuring**: `POST /api/v2/process` renamed to `POST /api/v2/processing-results`; results endpoints moved under `/api/v2/processing-results` (9836ac7).

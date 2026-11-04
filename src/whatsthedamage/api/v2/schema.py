@@ -195,25 +195,64 @@ def get_openapi_schema() -> dict[str, Any]:
         "paths": {
             "/auth/register": {
                 "post": {
-                    "summary": "Register a new user account",
+                    "summary": "Start a two-phase registration",
                     "description": (
-                        "Creates a user with username and password, "
-                        "generates a one-time recovery code, and "
-                        "creates an initial session."
+                        "Creates a pending registration (no account, "
+                        "no session) holding the username, the hashed "
+                        "password, and the hashed recovery code. Returns "
+                        "a one-time pending token and the one-time "
+                        "recovery code. The account is committed only by "
+                        "/auth/register/confirm after the user proves "
+                        "possession of the recovery code. Pending "
+                        "registrations expire and are purged by the "
+                        "retention job."
                     ),
                     "operationId": "register",
                     "tags": ["Authentication"],
                     "requestBody": _body("RegisterRequest"),
                     "responses": {
                         "201": _ok(
-                            "User registered",
-                            _ref("RegisterResponse")
+                            "Pending registration created",
+                            _ref("PendingRegistrationResponse")
                         ),
                         **_errors(
                             **{
                                 "400": "Validation error",
                                 "409": "Username already exists",
                                 "422": "Password too weak",
+                                "429": "Registration rate limit exceeded",
+                            }
+                        ),
+                    },
+                }
+            },
+            "/auth/register/confirm": {
+                "post": {
+                    "summary": "Confirm a pending registration",
+                    "description": (
+                        "Verifies the pending token and that the echoed "
+                        "recovery code matches the stored hash, then "
+                        "commits the account and creates an initial "
+                        "session. The pending token travels in the "
+                        "request body (not a cookie), so CSRF is "
+                        "structurally impossible and no CSRF token is "
+                        "required. Rate limited per IP."
+                    ),
+                    "operationId": "registerConfirm",
+                    "tags": ["Authentication"],
+                    "requestBody": _body("RegisterConfirmRequest"),
+                    "responses": {
+                        "200": _ok(
+                            "Registration confirmed, session created",
+                            _ref("RegisterConfirmResponse")
+                        ),
+                        **_errors(
+                            **{
+                                "400": "Validation error",
+                                "401": "Invalid, expired, or already-used "
+                                       "pending token, or recovery code "
+                                       "mismatch",
+                                "429": "Registration rate limit exceeded",
                             }
                         ),
                     },
@@ -1434,13 +1473,20 @@ def get_openapi_schema() -> dict[str, Any]:
                         }
                     }
                 },
-                "RegisterResponse": {
+                "PendingRegistrationResponse": {
                     "type": "object",
                     "required": [
-                        "user", "recovery_code", "session_expires_at"
+                        "pending_token", "recovery_code", "expires_at"
                     ],
                     "properties": {
-                        "user": _ref("UserSummary"),
+                        "pending_token": {
+                            "type": "string",
+                            "description": (
+                                "One-time token authorizing the "
+                                "/auth/register/confirm call; only its "
+                                "hash is stored server-side"
+                            )
+                        },
                         "recovery_code": {
                             "type": "string",
                             "description": (
@@ -1448,6 +1494,37 @@ def get_openapi_schema() -> dict[str, Any]:
                                 "only once and not retrievable later"
                             )
                         },
+                        "expires_at": {
+                            "type": "string",
+                            "format": "date-time",
+                            "description": (
+                                "UTC timestamp after which the pending "
+                                "registration expires"
+                            )
+                        }
+                    }
+                },
+                "RegisterConfirmRequest": {
+                    "type": "object",
+                    "required": ["pending_token", "recovery_code"],
+                    "properties": {
+                        "pending_token": {
+                            "type": "string"
+                        },
+                        "recovery_code": {
+                            "type": "string",
+                            "description": (
+                                "The recovery code echoed back from "
+                                "phase 1, proving it was saved"
+                            )
+                        }
+                    }
+                },
+                "RegisterConfirmResponse": {
+                    "type": "object",
+                    "required": ["user", "session_expires_at"],
+                    "properties": {
+                        "user": _ref("UserSummary"),
                         "session_expires_at": {
                             "type": "string",
                             "format": "date-time"

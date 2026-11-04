@@ -437,6 +437,29 @@
     ],
     "type": "object"
   },
+  "PendingRegistrationResponse": {
+    "properties": {
+      "expires_at": {
+        "description": "UTC timestamp after which the pending registration expires",
+        "format": "date-time",
+        "type": "string"
+      },
+      "pending_token": {
+        "description": "One-time token authorizing the /auth/register/confirm call; only its hash is stored server-side",
+        "type": "string"
+      },
+      "recovery_code": {
+        "description": "One-time recovery code, displayed only once and not retrievable later",
+        "type": "string"
+      }
+    },
+    "required": [
+      "pending_token",
+      "recovery_code",
+      "expires_at"
+    ],
+    "type": "object"
+  },
   "ProcessingRequest": {
     "properties": {
       "category_filter": {
@@ -734,6 +757,38 @@
     ],
     "type": "object"
   },
+  "RegisterConfirmRequest": {
+    "properties": {
+      "pending_token": {
+        "type": "string"
+      },
+      "recovery_code": {
+        "description": "The recovery code echoed back from phase 1, proving it was saved",
+        "type": "string"
+      }
+    },
+    "required": [
+      "pending_token",
+      "recovery_code"
+    ],
+    "type": "object"
+  },
+  "RegisterConfirmResponse": {
+    "properties": {
+      "session_expires_at": {
+        "format": "date-time",
+        "type": "string"
+      },
+      "user": {
+        "$ref": "#/components/schemas/UserSummary"
+      }
+    },
+    "required": [
+      "user",
+      "session_expires_at"
+    ],
+    "type": "object"
+  },
   "RegisterRequest": {
     "properties": {
       "password": {
@@ -747,27 +802,6 @@
     "required": [
       "username",
       "password"
-    ],
-    "type": "object"
-  },
-  "RegisterResponse": {
-    "properties": {
-      "recovery_code": {
-        "description": "One-time recovery code, displayed only once and not retrievable later",
-        "type": "string"
-      },
-      "session_expires_at": {
-        "format": "date-time",
-        "type": "string"
-      },
-      "user": {
-        "$ref": "#/components/schemas/UserSummary"
-      }
-    },
-    "required": [
-      "user",
-      "recovery_code",
-      "session_expires_at"
     ],
     "type": "object"
   },

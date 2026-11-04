@@ -10,7 +10,11 @@ from typing import Any
 
 from flask import Flask, request
 
-from tests.api.v2.conftest import AuthContext, csrf_token_from_response
+from tests.api.v2.conftest import (
+    AuthContext,
+    csrf_token_from_response,
+    register_user,
+)
 
 
 PASSWORD = 'password-123456'
@@ -52,11 +56,7 @@ class TestCsrfErrorCodesFunctional:
     ):
         """A session whose stored hash was cleared reports CSRF_TOKEN_NOT_SET."""
         client = api_app.test_client()
-        register = client.post(
-            '/api/v2/auth/register',
-            json={'username': 'alice', 'password': PASSWORD}
-        )
-        assert register.status_code == 201
+        register = register_user(client, 'alice', PASSWORD)
         csrf_token = csrf_token_from_response(register)
 
         from whatsthedamage.models.database.session import Session as SessionDB

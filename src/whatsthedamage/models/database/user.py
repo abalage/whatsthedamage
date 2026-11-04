@@ -49,6 +49,16 @@ class User(Base):
             job deletes the account (nullable; set by the account
             deletion request, cleared by logging in during the grace
             period).
+        registration_confirmed_at: UTC timestamp of registration
+            confirmation (nullable). NULL means the row is a pending
+            registration that has not yet confirmed possession of the
+            recovery code; such rows are not authenticated and are
+            deleted by the retention job after pending_expires_at.
+        pending_token_hash: SHA-256 hash of the one-time pending token
+            issued by POST /auth/register (nullable; only set on
+            pending rows, cleared on confirmation).
+        pending_expires_at: UTC timestamp after which a pending
+            registration expires (nullable; only set on pending rows).
         sessions: One-to-many relationship with Session model.
         processing_results: One-to-many relationship with ProcessingResult model.
         corrections: One-to-many relationship with Correction model.
@@ -71,6 +81,9 @@ class User(Base):
     opted_out_at = Column(DateTime, nullable=True)
     revoke_shared_corrections = Column(Boolean, nullable=False, default=False)
     scheduled_deletion_at = Column(DateTime, nullable=True)
+    registration_confirmed_at = Column(DateTime, nullable=True)
+    pending_token_hash = Column(Text, nullable=True, unique=True, index=True)
+    pending_expires_at = Column(DateTime, nullable=True)
 
     # Relationship to sessions (one-to-many)
     sessions = relationship(

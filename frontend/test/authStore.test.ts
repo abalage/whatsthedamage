@@ -115,3 +115,142 @@ describe('auth store recovery code regeneration', () => {
     expect(authStore.error).toBe('Invalid current password');
   });
 });
+
+describe('auth store two-phase registration', () => {
+  const pendingResponse = {
+    pending_token: 'pending-token-123',
+    recovery_code: 'ABCD-EFGH-JKLM-NPQR',
+    expires_at: '2026-11-04T14:00:00Z'
+  };
+
+  beforeEach(() => {
+    sessionStorage.clear();
+  });
+
+  it('phase 1 stores pending state without authenticating and persists it to sessionStorage', async () => {
+    const fetchMock = vi.fn(async (_url?: unknown, _init?: RequestInit): Promise<FetchResponse> => makeResponse(pendingResponse));
+    vi.stubGlobal('fetch', fetchMock);
+
+    const authStore = useAuthStore();
+    const result = await authStore.register('newuser', 'long-enough-password');
+
+    expect(result).toEqual({ pendingToken: 'pending-token-123', recoveryCode: 'ABCD-EFGH-JKLM-NPQR' });
+    expect(authStore.isAuthenticated).toBe(false);
+    expect(authStore.user).toBeNull();
+    expect(authStore.showRecoveryCode).toBe(true);
+    expect(authStore.pendingToken).toBe('pending-token-123');
+    expect(authStore.recoveryCode).toBe('ABCD-EFGH-JKLM-NPQR');
+    expect(sessionStorage.getItem('pending_registration_token')).toBe('pending-token-123');
+    expect(sessionStorage.getItem('pending_registration_recovery_code')).toBe('ABCD-EFGH-JKLM-NPQR');
+    expect(String(fetchMock.mock.calls[0][0])).toContain('/api/v2/auth/register');
+    const body = JSON.parse((fetchMock.mock.calls[0][1] as RequestInit).body as string);
+    expect(body).toEqual({ username: 'newuser', password: 'long-enough-password' });
+  });
+
+  it('phase 2 confirms with the echoed code, authenticates, and clears all copies of the code', async () => {
+    let confirmBody: string | undefined;
+    const fetchMock = vi.fn(async (_url?: unknown, init?: RequestInit): Promise<FetchResponse> => {
+      const url = String(_url);
+      if (url.includes('/auth/register/confirm')) {
+        confirmBody = init?.body as string;
+        return makeResponse({ user, session_expires_at: '2026-11-04T14:00:00Z' });
+      }
+      return makeResponse(pendingResponse);
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const authStore = useAuthStore();
+    await authStore.register('newuser', 'long-enough-password');
+    const confirmed = await authStore.confirmRegistration();
+
+    expect(confirmed.username).toBe('testuser');
+    expect(authStore.isAuthenticated).toBe(true);
+    expect(authStore.recoveryCode).toBeNull();
+    expect(authStore.showRecoveryCode).toBe(false);
+    expect(authStore.pendingToken).toBeUndefined();
+    expect(sessionStorage.getItem('pending_registration_token')).toBeNull();
+    expect(sessionStorage.getItem('pending_registration_recovery_code')).toBeNull();
+
+    expect(JSON.parse(confirmBody ?? '')).toEqual({
+      pending_token: 'pending-token-123',
+      recovery_code: 'ABCD-EFGH-JKLM-NPQR'
+    });
+  });
+
+  it('phase 2 failure clears the pending state so the user can register again', async () => {
+    const fetchMock = vi.fn(async (_url?: unknown): Promise<FetchResponse> => {
+      const url = String(_url);
+      if (url.includes('/auth/register/confirm')) {
+        return makeResponse({ error: 'Invalid or expired registration', code: 'REGISTRATION_INVALID' }, false, 401);
+      }
+      return makeResponse(pendingResponse);
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const authStore = useAuthStore();
+    await authStore.register('newuser', 'long-enough-password');
+
+    await expect(authStore.confirmRegistration()).rejects.toThrow();
+    expect(authStore.error).toBeTruthy();
+    expect(authStore.showRecoveryCode).toBe(false);
+    expect(authStore.pendingToken).toBeUndefined();
+    expect(authStore.recoveryCode).toBeNull();
+    expect(sessionStorage.getItem('pending_registration_token')).toBeNull();
+  });
+
+  it('initialize rehydrates a pending registration from sessionStorage when not authenticated', async () => {
+    sessionStorage.setItem('pending_registration_token', 'stored-token');
+    sessionStorage.setItem('pending_registration_recovery_code', 'STORED-CODE-1234-ABCD');
+    const fetchMock = vi.fn(async (): Promise<FetchResponse> =>
+      makeResponse({ error: 'No session found', code: 'NOT_AUTHENTICATED' }, false, 401)
+    );
+    vi.stubGlobal('fetch', fetchMock);
+
+    const authStore = useAuthStore();
+    await authStore.initialize();
+
+    expect(authStore.isAuthenticated).toBe(false);
+    expect(authStore.showRecoveryCode).toBe(true);
+    expect(authStore.pendingToken).toBe('stored-token');
+    expect(authStore.recoveryCode).toBe('STORED-CODE-1234-ABCD');
+  });
+
+  it('initialize clears stale pending state when a confirmed session exists', async () => {
+    sessionStorage.setItem('pending_registration_token', 'stored-token');
+    sessionStorage.setItem('pending_registration_recovery_code', 'STORED-CODE-1234-ABCD');
+    const fetchMock = vi.fn(async (): Promise<FetchResponse> => makeResponse({ user }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    const authStore = useAuthStore();
+    await authStore.initialize();
+
+    expect(authStore.isAuthenticated).toBe(true);
+    expect(authStore.showRecoveryCode).toBe(false);
+    expect(authStore.pendingToken).toBeUndefined();
+    expect(authStore.recoveryCode).toBeNull();
+    expect(sessionStorage.getItem('pending_registration_token')).toBeNull();
+  });
+
+  it('logout clears the pending registration state', async () => {
+    const fetchMock = vi.fn(async (_url?: unknown): Promise<FetchResponse> => {
+      const url = String(_url);
+      if (url.includes('/auth/logout')) {
+        return makeResponse({ message: 'Successfully logged out' });
+      }
+      return makeResponse(pendingResponse);
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const authStore = useAuthStore();
+    await authStore.register('newuser', 'long-enough-password');
+    expect(authStore.showRecoveryCode).toBe(true);
+
+    await authStore.logout();
+
+    expect(authStore.showRecoveryCode).toBe(false);
+    expect(authStore.pendingToken).toBeUndefined();
+    expect(authStore.recoveryCode).toBeNull();
+    expect(sessionStorage.getItem('pending_registration_token')).toBeNull();
+    expect(sessionStorage.getItem('pending_registration_recovery_code')).toBeNull();
+  });
+});

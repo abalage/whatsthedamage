@@ -4,7 +4,6 @@ import { useRoute, RouterLink } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import { useStatisticalStore } from '../stores/statistical'
 import { useFeedbackStore } from '../stores/feedback'
-import { useThemeStore } from '../stores/theme'
 import { useGettext } from 'vue3-gettext'
 import LocaleSwitcher from './LocaleSwitcher.vue'
 import { recalculateStatistics } from '../js/api'
@@ -16,7 +15,6 @@ const route = useRoute()
 const authStore = useAuthStore()
 const statisticalStore = useStatisticalStore()
 const feedback = useFeedbackStore()
-const themeStore = useThemeStore()
 
 const isRecalculating = ref(false)
 
@@ -195,36 +193,6 @@ const resetToDefaults = async () => {
                 </ul>
               </li>
               <LocaleSwitcher variant="navbar" />
-              <li class="nav-item dropdown">
-                <button
-                  id="themeDropdown"
-                  class="nav-link dropdown-toggle"
-                  type="button"
-                  data-bs-toggle="dropdown"
-                  aria-expanded="false"
-                  @keydown.enter.prevent="($event.currentTarget as HTMLButtonElement).click()"
-                  @keydown.space.prevent="($event.currentTarget as HTMLButtonElement).click()"
-                >
-                  {{ $gettext('Themes') }}
-                </button>
-                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="themeDropdown">
-                  <li v-for="theme in themeStore.allThemes" :key="theme.id">
-                    <button
-                      :class="{ 'active': themeStore.currentThemeId === theme.id }"
-                      class="dropdown-item"
-                      type="button"
-                      @click.prevent="themeStore.setTheme(theme.id)"
-                      @keydown.enter.prevent="themeStore.setTheme(theme.id)"
-                      @keydown.space.prevent="themeStore.setTheme(theme.id)"
-                    >
-                      <span class="theme-preview" :style="{ backgroundColor: theme.colors.surface.primary, color: theme.colors.text.onPrimary }">
-                        &nbsp;&nbsp;&nbsp;
-                      </span>
-                      {{ theme.name }}
-                    </button>
-                  </li>
-                </ul>
-              </li>
               <li class="nav-item">
                 <RouterLink v-if="!authStore.isAuthenticated" to="login" class="nav-link">
                   {{ $gettext('Login') }}

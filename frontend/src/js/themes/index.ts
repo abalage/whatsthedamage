@@ -4,24 +4,13 @@
  */
 
 import type { Theme } from './theme.types';
-import greenDreamTheme from './green-dream';
-import softPastelTheme from './soft-pastel';
-import earthTonesTheme from './earth-tones';
-import corporateTheme from './corporate';
-import pickerTheme from './picker';
 import balticBlueTheme from './baltic-blue';
 
 /**
- * All available themes for the application
- * Add new themes by importing them above and adding to this array
+ * The single application theme - do not add new themes
  */
 export const THEMES: Theme[] = [
-  balticBlueTheme,
-  greenDreamTheme,
-  softPastelTheme,
-  earthTonesTheme,
-  corporateTheme,
-  pickerTheme
+  balticBlueTheme
 ];
 
 /**

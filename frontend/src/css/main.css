@@ -2,55 +2,57 @@
 /* Simplified with semantic design tokens - NO legacy code */
 
 :root {
-  /* Surface colors */
-  --color-surface-primary: #28a745;
-  --color-surface-secondary: #6c757d;
-  --color-surface-elevated: #f8f9fa;
+  /* Surface colors (Baltic Blue fallback values, overwritten by the theme store) */
+  --color-surface-primary: #05668d;
+  --color-surface-secondary: #427aa1;
+  --color-surface-elevated: #ebf2fa;
   --color-surface-base: #ffffff;
-  --color-surface-primary-10: rgba(40, 167, 69, 0.10);
+  --color-surface-primary-10: rgba(5, 102, 141, 0.10);
 
   /* Text colors */
-  --color-text-primary: #28a745;
-  --color-text-secondary: #6c757d;
+  --color-text-primary: #05668d;
+  --color-text-secondary: #427aa1;
   --color-text-on-primary: #ffffff;
   --color-text-on-dark: #ffffff;
-  --color-text-on-light: #212529;
-  --color-text-on-light-05: rgba(33, 37, 41, 0.05);
-  --color-text-on-light-10: rgba(33, 37, 41, 0.10);
+  --color-text-on-light: #1a2a3a;
+  --color-text-on-light-05: rgba(26, 42, 58, 0.05);
+  --color-text-on-light-10: rgba(26, 42, 58, 0.10);
 
   /* Border colors */
-  --color-border-primary: #28a745;
-  --color-border-secondary: #6c757d;
-  --color-border-subtle: #dee2e6;
+  --color-border-primary: #05668d;
+  --color-border-secondary: #427aa1;
+  --color-border-subtle: #9bb8c8;
 
   /* Status colors */
-  --color-status-success: #28a745;
-  --color-status-warning: #ffc107;
-  --color-status-danger: #dc3545;
-  --color-status-info: #0d6efd;
-  --color-status-success-15: rgba(40, 167, 69, 0.15);
-  --color-status-warning-15: rgba(255, 193, 7, 0.15);
-  --color-status-danger-15: rgba(220, 53, 69, 0.15);
-  --color-status-info-15: rgba(13, 110, 253, 0.15);
+  --color-status-success: #679436;
+  --color-status-warning: #a5be00;
+  --color-status-danger: #e74c3c;
+  --color-status-info: #2980b9;
+  --color-status-success-15: rgba(103, 148, 54, 0.15);
+  --color-status-warning-15: rgba(165, 190, 0, 0.15);
+  --color-status-danger-15: rgba(231, 76, 60, 0.15);
+  --color-status-info-15: rgba(41, 128, 185, 0.15);
 
   /* Highlight colors */
-  --color-highlight-outlier: #ffe6e6;
-  --color-highlight-pareto: #e6ffe6;
-  --color-highlight-excluded: #f0f0f0;
-  --color-highlight-multiple: #ffff99;
-  --color-highlight-corrected: #cce4ff;
+  --color-highlight-outlier: #679436;
+  --color-highlight-pareto: #a5be00;
+  --color-highlight-excluded: #b2b2b2;
+  --color-highlight-multiple: #e74c3c;
+  --color-highlight-corrected: #8ecae6;
 
   /* Chart colors */
-  --chart-color-1: #0d6efd;
-  --chart-color-2: #6610f2;
-  --chart-color-3: #dc3545;
-  --chart-color-4: #fd7e14;
-  --chart-color-5: #ffc107;
-  --chart-color-6: #198754;
-  --chart-color-7: #20c997;
-  --chart-color-8: #0dcaf0;
-  --chart-color-9: #6f42c1;
-  --chart-color-10: #d63384;
+  --chart-color-1: #05668d;
+  --chart-color-2: #427aa1;
+  --chart-color-3: #93b7d2;
+  --chart-color-4: #679436;
+  --chart-color-5: #a5be00;
+  --chart-color-6: #1a4d68;
+  --chart-color-7: #346187;
+  --chart-color-8: #74a5ca;
+  --chart-color-9: #527a2c;
+  --chart-color-10: #8ab300;
+  --chart-color-11: #003d56;
+  --chart-color-12: #5da0c8;
 
   /* Layout tokens */
   --border-radius: 0.5rem;
@@ -296,17 +298,6 @@ footer {
 /* Popover content is plain text; render detail-line breaks */
 .popover-wide .popover-body {
   white-space: pre-line;
-}
-
-/* Theme switcher preview */
-.theme-preview {
-  display: inline-block;
-  width: 1em;
-  height: 1em;
-  border-radius: 0.25rem;
-  margin-right: 0.5rem;
-  border: 1px solid var(--color-border-subtle);
-  vertical-align: middle;
 }
 
 /* Feedback/Alert box shadow using theme shadow */

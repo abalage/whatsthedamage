@@ -42,7 +42,7 @@ frontend/
     ├── js/
     │   ├── api.ts          # Barrel re-exporting js/api/*
     │   ├── api/            # request.ts (transport), auth.ts, transactions.ts, processing.ts
-    │   ├── themes/         # Theme definitions + picker
+    │   ├── themes/         # Single default theme (Baltic Blue) definition
     │   └── ...             # csrfToken, dateUtils, gettext, logger, resultsTransform, routeUtils
     ├── directives/popover.ts
     ├── config/             # auth-config.ts, highlight-config.ts
@@ -149,7 +149,7 @@ All stores use Pinia's setup (function) syntax, not options syntax.
 | `form` | Import-form state, validation error codes; no navigation side effects |
 | `feedback` | Global success/error/info/warning message queue (id, type, timestamp, autoDismiss) |
 | `locale` | Current gettext locale, persisted |
-| `theme` | Theme id, persisted to localStorage; applies CSS custom properties |
+| `theme` | Applies the single default theme (Baltic Blue) as CSS custom properties |
 
 Conventions:
 
@@ -265,9 +265,13 @@ Two auth store actions deliberately bypass `useAsyncAction` — do not
   functions; run the extraction/compile scripts (see `package.json`
   `gettext-extract` / `gettext-compile`, or `make lang` from the repo root)
   and translate manually — do not machine-edit `.po` translations blindly
-- Themes are TypeScript modules in `src/js/themes/` (baltic-blue,
-  corporate, earth-tones, green-dream, soft-pastel). The theme store applies
-  them and persists the choice to localStorage
+- There is exactly one theme: **Baltic Blue** (`src/js/themes/baltic-blue.ts`,
+  registered in `src/js/themes/index.ts`). The theme store applies its colors
+  as semantic CSS custom properties; `main.css` `:root` mirrors the same
+  values as fallback. Do not add new themes or reintroduce a theme picker —
+  style via the semantic CSS variables the default theme defines. Note: the
+  store still writes `--chart-color-N` variables and dispatches a
+  `theme-changed` event, but nothing consumes them; leave the engine as is.
 
 ## Screen sizes
 
@@ -339,8 +343,9 @@ Place new tests in `frontend/test/` mirroring the source layout
 - Do not add DataTables.net/jQuery; use `VueDataTable.vue` and the existing
   chart components
 - Bootstrap 5 via native HTML elements + Bootstrap classes directly; do not
-  create wrapper components for Bootstrap elements; theme colors go through
-  semantic CSS variables (e.g. `bg-surface-primary`, `text-on-primary`)
+  create wrapper components for Bootstrap elements; always use the default
+  theme's semantic CSS variables (e.g. `bg-surface-primary`,
+  `text-on-primary`) — never hardcode colors
 - Security: never log passwords, session tokens, CSRF tokens, or recovery
   codes; the API layer handles CSRF automatically — do not bypass it
 - Keep date exchange in ISO 8601 (YYYY-MM-DD or YYYY-MM-DDTHH:MM:SS)

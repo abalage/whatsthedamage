@@ -296,11 +296,11 @@ msgstr "Ugrás a(z) {n}. diára"
 msgid "Next slide"
 msgstr "Következő dia"
 
-#: src/components/Layout.vue:112 src/pages/Landing.vue:65
+#: src/components/Layout.vue:110 src/pages/Landing.vue:65
 msgid "Tell me I didn't spend that much…"
 msgstr "Mondd hogy nem költöttem sokat…"
 
-#: src/components/Layout.vue:119 src/pages/Categories.vue:353
+#: src/components/Layout.vue:117 src/pages/Categories.vue:353
 #: src/pages/CategoryMonthsList.vue:110
 #: src/pages/CategoryMonthTransactions.vue:68
 #: src/pages/MonthCategoriesList.vue:106 src/pages/PivotTable.vue:34
@@ -308,90 +308,86 @@ msgstr "Mondd hogy nem költöttem sokat…"
 msgid "Home"
 msgstr "Kezdőlap"
 
-#: src/components/Layout.vue:122 src/pages/Index.vue:162
+#: src/components/Layout.vue:120 src/pages/Index.vue:162
 #: src/pages/Index.vue:198
 msgid "Import CSV"
 msgstr "CSV importálása"
 
-#: src/components/Layout.vue:125 src/pages/Settings.vue:166
+#: src/components/Layout.vue:123 src/pages/Settings.vue:166
 msgid "Settings"
 msgstr ""
 
-#: src/components/Layout.vue:128 src/pages/Landing.vue:87
+#: src/components/Layout.vue:126 src/pages/Landing.vue:87
 msgid "About"
 msgstr "A programról"
 
-#: src/components/Layout.vue:132
+#: src/components/Layout.vue:130
 msgid "Analytics"
 msgstr "Analitika"
 
-#: src/components/Layout.vue:136
+#: src/components/Layout.vue:134
 msgid "Analysis direction"
 msgstr "Vizsgálat iránya"
 
-#: src/components/Layout.vue:147
+#: src/components/Layout.vue:145
 msgid "columns"
 msgstr "oszlopok"
 
-#: src/components/Layout.vue:148
+#: src/components/Layout.vue:146
 msgid "rows"
 msgstr "sorok"
 
-#: src/components/Layout.vue:152
+#: src/components/Layout.vue:150
 msgid "Algorithms"
 msgstr "Algoritmusok"
 
-#: src/components/Layout.vue:165
+#: src/components/Layout.vue:163
 msgid "IQR Outlier Detection"
 msgstr "Interkvartilis terjedelem (IQR)"
 
-#: src/components/Layout.vue:166
+#: src/components/Layout.vue:164
 msgid "Pareto analysis"
 msgstr "Pareto-elv"
 
-#: src/components/Layout.vue:170
+#: src/components/Layout.vue:168
 msgid "Legend"
 msgstr "Színjegyzék"
 
-#: src/components/Layout.vue:175
+#: src/components/Layout.vue:173
 msgid "Marked outlier by IQR"
 msgstr "IQR által kívülállónak jelölt érték"
 
-#: src/components/Layout.vue:176
+#: src/components/Layout.vue:174
 msgid "Marked outlier by Pareto principle"
 msgstr "Pareto-elv által megjelölt érték"
 
-#: src/components/Layout.vue:177
+#: src/components/Layout.vue:175
 msgid "Excluded from statistics"
 msgstr "Statisztikából kihagyott értékek"
 
-#: src/components/Layout.vue:178
+#: src/components/Layout.vue:176
 msgid "Matched by multiple algorithms"
 msgstr "Több algoritmus is megjelölte"
 
-#: src/components/Layout.vue:192 src/pages/Import.vue:190
+#: src/components/Layout.vue:190 src/pages/Import.vue:190
 msgid "Reset to defaults"
 msgstr "Alapértelmezés helyreállítása"
 
-#: src/components/Layout.vue:208
-msgid "Themes"
-msgstr "Témák"
-
-#: src/components/Layout.vue:230 src/pages/ForgotPassword.vue:109
+#: src/components/Layout.vue:198 src/pages/ForgotPassword.vue:109
 #: src/pages/Landing.vue:79 src/pages/Login.vue:79 src/pages/Login.vue:142
 #: src/pages/Register.vue:223
 msgid "Login"
 msgstr "Bejelentkezés"
 
-#: src/components/Layout.vue:233
+#: src/components/Layout.vue:201
 msgid "Logout"
 msgstr "Kijelentkezés"
 
-#: src/components/Layout.vue:255 src/pages/Landing.vue:88
+#: src/components/Layout.vue:223 src/pages/Landing.vue:88
 msgid "Privacy"
 msgstr "Adatvédelem"
 
-#: src/components/Layout.vue:256 src/pages/Landing.vue:89
+#: src/components/Layout.vue:224 src/pages/Landing.vue:89
 msgid "Legal"
 msgstr "Jognyilatkozat"
 
@@ -1562,6 +1558,9 @@ msgstr "Bizonyosság"
 #: src/pages/Transactions.vue:209
 msgid "Show the confidence column"
 msgstr ""
+
+#~ msgid "Themes"
+#~ msgstr "Témák"
 
 #~ msgid "Sum"
 #~ msgstr "Summa"

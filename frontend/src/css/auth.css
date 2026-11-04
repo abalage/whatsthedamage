@@ -9,6 +9,7 @@
   justify-content: center;
   background-color: var(--color-surface-elevated);
   padding: 2rem;
+  position: relative;
 }
 
 .auth-container {

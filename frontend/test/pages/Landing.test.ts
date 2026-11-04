@@ -173,7 +173,7 @@ describe('Landing.vue', () => {
   it('switches the interface language via the locale buttons', async () => {
     const wrapper = mountLanding();
     const localeStore = useLocaleStore();
-    const buttons = wrapper.findAll('.landing-locale-switch button');
+    const buttons = wrapper.findAll('.locale-switch button');
 
     expect(buttons).toHaveLength(2);
     await buttons[1].trigger('click');

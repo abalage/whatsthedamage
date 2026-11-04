@@ -5,6 +5,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { mount } from '@vue/test-utils';
+import { createPinia, setActivePinia } from 'pinia';
 import ForgotPassword from '../../src/pages/ForgotPassword.vue';
 import { resetPassword } from '../../src/js/api';
 
@@ -34,8 +35,10 @@ vi.mock('../../src/js/api.js', () => ({
 
 // Mock gettext: translations pass the key through unchanged
 vi.mock('vue3-gettext', (): Record<string, unknown> => ({
-  useGettext: (): { $gettext: (key: string) => string } => ({
-    $gettext: (key: string): string => key
+  useGettext: (): Record<string, unknown> => ({
+    $gettext: (key: string): string => key,
+    current: 'en',
+    available: { en: 'English', hu: 'Magyar' }
   })
 }));
 
@@ -50,11 +53,14 @@ describe('ForgotPassword.vue', () => {
     vi.clearAllMocks();
     vi.mocked(resetPassword).mockReset();
     mockPush.mockClear();
+    setActivePinia(createPinia());
+    localStorage.clear();
   });
 
   const mountOptions = {
     attachTo: document.body,
     global: {
+      plugins: [createPinia()],
       stubs: {
         RouterLink: { template: '<a><slot /></a>' }
       }

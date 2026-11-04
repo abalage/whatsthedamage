@@ -10,33 +10,6 @@
   position: relative;
 }
 
-.landing-locale-switch {
-  position: absolute;
-  top: 1rem;
-  right: 1rem;
-  display: flex;
-  gap: 0.5rem;
-  z-index: 1;
-}
-
-.landing-locale-switch button {
-  background: var(--color-surface-base);
-  border: 1px solid var(--color-border-subtle);
-  border-radius: var(--border-radius);
-  box-shadow: var(--box-shadow);
-  padding: 0.25rem 0.75rem;
-  font-size: 0.875rem;
-  cursor: pointer;
-  color: var(--color-text-on-light);
-  transition: var(--transition);
-}
-
-.landing-locale-switch button.active {
-  background-color: var(--color-surface-primary);
-  border-color: var(--color-surface-primary);
-  color: var(--color-text-on-primary);
-}
-
 .landing-content {
   flex: 1;
   display: grid;

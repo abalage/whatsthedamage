@@ -5,12 +5,22 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { mount } from '@vue/test-utils';
+import { createPinia, setActivePinia } from 'pinia';
 import AuthLayout from '../../src/components/AuthLayout.vue';
+import { useLocaleStore } from '../../src/stores/locale';
 
 const mockRoute: { query: Record<string, unknown> } = { query: {} };
 
 vi.mock('vue-router', (): Record<string, unknown> => ({
   useRoute: (): { query: Record<string, unknown> } => mockRoute
+}));
+
+vi.mock('vue3-gettext', (): Record<string, unknown> => ({
+  useGettext: (): Record<string, unknown> => ({
+    $gettext: (key: string): string => key,
+    current: 'en',
+    available: { en: 'English', hu: 'Magyar' }
+  })
 }));
 
 const RouterLinkStub = {
@@ -22,11 +32,16 @@ const RouterLinkStub = {
 const mountLayout = (): ReturnType<typeof mount> =>
   mount(AuthLayout, {
     slots: { default: '<p>content</p>' },
-    global: { stubs: { RouterLink: RouterLinkStub } }
+    global: {
+      plugins: [createPinia()],
+      stubs: { RouterLink: RouterLinkStub }
+    }
   });
 
 describe('AuthLayout.vue', () => {
   beforeEach(() => {
+    setActivePinia(createPinia());
+    localStorage.clear();
     mockRoute.query = {};
   });
 
@@ -54,5 +69,23 @@ describe('AuthLayout.vue', () => {
     const wrapper = mountLayout();
 
     expect(wrapper.findComponent(RouterLinkStub).props('to')).toEqual({ name: 'landing', query: {} });
+  });
+
+  it('renders the language switcher', () => {
+    const wrapper = mountLayout();
+
+    expect(wrapper.find('.locale-switch').exists()).toBe(true);
+    expect(wrapper.findAll('.locale-switch button')).toHaveLength(2);
+  });
+
+  it('switches the interface language from the auth layout', async () => {
+    const wrapper = mountLayout();
+    const localeStore = useLocaleStore();
+    const buttons = wrapper.findAll('.locale-switch button');
+
+    await buttons[1].trigger('click');
+    expect(localeStore.locale).toBe('hu');
+    await buttons[0].trigger('click');
+    expect(localeStore.locale).toBe('en');
   });
 });

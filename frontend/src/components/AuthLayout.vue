@@ -9,6 +9,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { useRoute } from 'vue-router';
+import LocaleSwitcher from './LocaleSwitcher.vue';
 import { buildRedirectQuery, safeRedirectParam } from '../js/routeUtils';
 
 const route = useRoute();
@@ -19,6 +20,7 @@ const redirectQuery = computed(() => buildRedirectQuery(safeRedirectParam(route.
 
 <template>
   <div class="auth-layout">
+    <LocaleSwitcher />
     <div class="auth-container">
       <div class="auth-header">
         <h1 class="app-title">

@@ -2,11 +2,11 @@
 import { ref, computed } from 'vue'
 import { useRoute, RouterLink } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
-import { useLocaleStore } from '../stores/locale'
 import { useStatisticalStore } from '../stores/statistical'
 import { useFeedbackStore } from '../stores/feedback'
 import { useThemeStore } from '../stores/theme'
 import { useGettext } from 'vue3-gettext'
+import LocaleSwitcher from './LocaleSwitcher.vue'
 import { recalculateStatistics } from '../js/api'
 import { extractResultId } from '../js/routeUtils'
 import { APP_VERSION } from '../js/version'
@@ -14,7 +14,6 @@ import { APP_VERSION } from '../js/version'
 const { $gettext } = useGettext()
 const route = useRoute()
 const authStore = useAuthStore()
-const localeStore = useLocaleStore()
 const statisticalStore = useStatisticalStore()
 const feedback = useFeedbackStore()
 const themeStore = useThemeStore()
@@ -102,9 +101,6 @@ const resetToDefaults = async () => {
   }
 }
 
-const setLocale = (locale: string) => {
-  localeStore.setLocale(locale)
-}
 </script>
 
 <template>
@@ -198,19 +194,7 @@ const setLocale = (locale: string) => {
                   </li>
                 </ul>
               </li>
-              <li class="nav-item dropdown">
-                <button id="langDropdown" class="nav-link dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" @keydown.enter.prevent="($event.currentTarget as HTMLButtonElement).click()" @keydown.space.prevent="($event.currentTarget as HTMLButtonElement).click()">
-                  {{ $gettext('Languages') }}
-                </button>
-                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="langDropdown">
-                  <li>
-                    <button class="dropdown-item" type="button" @click.prevent="setLocale('en')" @keydown.enter.prevent="setLocale('en')" @keydown.space.prevent="setLocale('en')">🇬🇧 English</button>
-                  </li>
-                  <li>
-                    <button class="dropdown-item" type="button" @click.prevent="setLocale('hu')" @keydown.enter.prevent="setLocale('hu')" @keydown.space.prevent="setLocale('hu')">🇭🇺 Magyar</button>
-                  </li>
-                </ul>
-              </li>
+              <LocaleSwitcher variant="navbar" />
               <li class="nav-item dropdown">
                 <button
                   id="themeDropdown"

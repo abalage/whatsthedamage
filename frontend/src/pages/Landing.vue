@@ -12,13 +12,12 @@ import { computed } from 'vue';
 import { useRoute } from 'vue-router';
 import { useGettext } from 'vue3-gettext';
 import FeatureSlideshow from '../components/FeatureSlideshow.vue';
-import { useLocaleStore } from '../stores/locale';
+import LocaleSwitcher from '../components/LocaleSwitcher.vue';
 import { buildRedirectQuery, safeRedirectParam } from '../js/routeUtils';
 import type { FeatureSlide } from '../types';
 
 const { $gettext } = useGettext();
 const route = useRoute();
-const localeStore = useLocaleStore();
 
 const redirectQuery = computed(() => buildRedirectQuery(safeRedirectParam(route.query)));
 
@@ -58,22 +57,7 @@ const slides = computed<FeatureSlide[]>(() => [
 
 <template>
   <div class="landing-layout">
-    <div class="landing-locale-switch" role="group" :aria-label="$gettext('Languages')">
-      <button
-        type="button"
-        :class="{ active: localeStore.locale === 'en' }"
-        @click="localeStore.setLocale('en')"
-      >
-        EN
-      </button>
-      <button
-        type="button"
-        :class="{ active: localeStore.locale === 'hu' }"
-        @click="localeStore.setLocale('hu')"
-      >
-        HU
-      </button>
-    </div>
+    <LocaleSwitcher />
 
     <div class="landing-content">
       <section class="landing-pitch">

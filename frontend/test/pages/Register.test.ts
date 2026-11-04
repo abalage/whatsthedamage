@@ -20,8 +20,10 @@ vi.mock('vue-router', () => ({
 }));
 
 vi.mock('vue3-gettext', (): Record<string, unknown> => ({
-  useGettext: (): { $gettext: (key: string) => string } => ({
-    $gettext: (key: string): string => key
+  useGettext: (): Record<string, unknown> => ({
+    $gettext: (key: string): string => key,
+    current: 'en',
+    available: { en: 'English', hu: 'Magyar' }
   })
 }));
 

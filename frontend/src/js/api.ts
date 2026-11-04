@@ -9,6 +9,7 @@
 
 export {
   register,
+  confirmRegistration,
   login,
   logout,
   getMe,

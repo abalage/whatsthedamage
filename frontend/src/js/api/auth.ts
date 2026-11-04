@@ -7,6 +7,8 @@ import { getApiUrl, request } from './request'
 import type {
   RegisterRequest,
   RegisterResponse,
+  RegisterConfirmRequest,
+  RegisterConfirmResponse,
   LoginRequest,
   LoginResponse,
   LogoutResponse,
@@ -25,14 +27,42 @@ import type {
 } from '../../types/auth'
 
 /**
- * Register a new user
+ * Start a two-phase registration (phase 1)
+ *
+ * Creates a pending registration and returns the one-time pending
+ * token and recovery code. No account and no session exist yet; no
+ * cookies are set.
  * @param username - User's username
  * @param password - User's password
- * @returns Promise with registration response
+ * @returns Promise with the pending registration response
  */
 export async function register(username: string, password: string): Promise<RegisterResponse> {
   const requestData: RegisterRequest = { username, password }
   return request<RegisterResponse>(getApiUrl('/auth/register'), {
+    method: 'POST',
+    body: JSON.stringify(requestData)
+  })
+}
+
+/**
+ * Confirm a pending registration (phase 2)
+ *
+ * Echoes the recovery code back as proof that it was saved; the backend
+ * commits the account and sets the session/CSRF cookies only when the
+ * code matches.
+ * @param pendingToken - The pending token from phase 1
+ * @param recoveryCode - The recovery code echoed back
+ * @returns Promise with the confirmed user and session expiry
+ */
+export async function confirmRegistration(
+  pendingToken: string,
+  recoveryCode: string
+): Promise<RegisterConfirmResponse> {
+  const requestData: RegisterConfirmRequest = {
+    pending_token: pendingToken,
+    recovery_code: recoveryCode
+  }
+  return request<RegisterConfirmResponse>(getApiUrl('/auth/register/confirm'), {
     method: 'POST',
     body: JSON.stringify(requestData)
   })

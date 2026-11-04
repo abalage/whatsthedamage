@@ -10,11 +10,39 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import type { User } from '../types/auth';
-import { register, login, logout, getMe, fetchCsrfToken, updateSharingPreference, updateUsername, changePassword, exportMyData, deleteAccount, regenerateRecoveryCode } from '../js/api';
+import { register, confirmRegistration, login, logout, getMe, fetchCsrfToken, updateSharingPreference, updateUsername, changePassword, exportMyData, deleteAccount, regenerateRecoveryCode } from '../js/api';
 import { getCsrfToken } from '../js/csrfToken';
 import { useAsyncAction } from '../composables/useAsyncAction';
 import { useDatasetStore } from './dataset';
 import type { DataExportResponse } from '../types/auth';
+
+// sessionStorage keys for the pending registration. sessionStorage (not
+// localStorage) is deliberate: the recovery code must survive a page
+// reload while the registration is pending, but must never outlive the
+// tab. Both keys are removed as soon as the registration is confirmed,
+// fails, or the user logs out.
+const PENDING_TOKEN_KEY = 'pending_registration_token';
+const PENDING_RECOVERY_CODE_KEY = 'pending_registration_recovery_code';
+
+function readSessionValue(key: string): string | undefined {
+  try {
+    return sessionStorage.getItem(key) ?? undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function writeSessionValue(key: string, value: string | undefined): void {
+  try {
+    if (value === undefined) {
+      sessionStorage.removeItem(key);
+    } else {
+      sessionStorage.setItem(key, value);
+    }
+  } catch {
+    // Storage unavailable: pending state lives in memory only
+  }
+}
 
 /**
  * Use the authentication store.
@@ -24,9 +52,9 @@ import type { DataExportResponse } from '../types/auth';
  * - isAuthenticated: Whether user is logged in
  * - isLoading: Loading state for auth operations
  * - error: Current error message
- * - recoveryCode: Recovery code shown after registration
+ * - pendingToken: One-time token of the pending registration (phase 1)
+ * - recoveryCode: Recovery code shown after registration phase 1
  * - showRecoveryCode: Whether to display recovery code
- * - recoveryCodeAcknowledged: Whether user has acknowledged saving recovery code
  */
 export const useAuthStore = defineStore('auth', () => {
   // Shared loading/error state for auth actions (useAsyncAction
@@ -36,12 +64,24 @@ export const useAuthStore = defineStore('auth', () => {
   // State
   const user = ref<User | null>(null);
   const isInitialized = ref<boolean>(false);
+  const pendingToken = ref<string | undefined>(undefined);
   const recoveryCode = ref<string | null>(null);
   const showRecoveryCode = ref<boolean>(false);
-  const recoveryCodeAcknowledged = ref<boolean>(false);
 
   // Computed properties
   const isAuthenticated = computed(() => user.value !== null);
+
+  /**
+   * Clear all pending-registration state, including the sessionStorage
+   * copies of the pending token and recovery code.
+   */
+  function clearPendingState(): void {
+    pendingToken.value = undefined;
+    recoveryCode.value = null;
+    showRecoveryCode.value = false;
+    writeSessionValue(PENDING_TOKEN_KEY, undefined);
+    writeSessionValue(PENDING_RECOVERY_CODE_KEY, undefined);
+  }
 
   /**
    * Initialize auth state by checking current session.
@@ -57,6 +97,8 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       const response = await getMe();
       user.value = response.user;
+      // A confirmed session supersedes any leftover pending registration
+      clearPendingState();
       if (!getCsrfToken()) {
         // The session may already have a token the browser does not
         // (fresh cookie store); mint one via the explicit endpoint
@@ -73,6 +115,17 @@ export const useAuthStore = defineStore('auth', () => {
       // The session expired or belongs to nobody; cached datasets
       // may belong to a previous user
       useDatasetStore().invalidateAll();
+      // Rehydrate an unfinished pending registration so a page reload
+      // on the recovery-code screen shows the code again
+      const storedToken = readSessionValue(PENDING_TOKEN_KEY);
+      const storedCode = readSessionValue(PENDING_RECOVERY_CODE_KEY);
+      if (storedToken !== undefined && storedCode !== undefined) {
+        pendingToken.value = storedToken;
+        recoveryCode.value = storedCode;
+        showRecoveryCode.value = true;
+      } else {
+        clearPendingState();
+      }
       // Don't set error for 401 (not authenticated)
     } finally {
       isLoading.value = false;
@@ -81,24 +134,59 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   /**
-   * Register a new user account.
+   * Start a two-phase registration (phase 1).
+   *
+   * Creates a pending registration only; the account is committed by
+   * confirmRegistration() after the user acknowledges the recovery code.
    *
    * @param username - User's desired username
    * @param password - User's password
-   * @returns Promise with user and recovery code
+   * @returns Promise with the pending token and recovery code
    */
-  async function registerUser(username: string, password: string): Promise<{ user: User; recoveryCode: string }> {
+  async function registerUser(username: string, password: string): Promise<{ pendingToken: string; recoveryCode: string }> {
     showRecoveryCode.value = false;
-    recoveryCodeAcknowledged.value = false;
 
     return run(async () => {
       const response = await register(username, password);
-      user.value = response.user;
+      pendingToken.value = response.pending_token;
       recoveryCode.value = response.recovery_code;
       showRecoveryCode.value = true;
+      writeSessionValue(PENDING_TOKEN_KEY, response.pending_token);
+      writeSessionValue(PENDING_RECOVERY_CODE_KEY, response.recovery_code);
 
-      return { user: response.user, recoveryCode: response.recovery_code };
+      return { pendingToken: response.pending_token, recoveryCode: response.recovery_code };
     });
+  }
+
+  /**
+   * Confirm the pending registration (phase 2).
+   *
+   * Echoes the stored recovery code back to the backend; the account is
+   * committed and the session started only when the code matches. On
+   * success all copies of the recovery code are cleared immediately; on
+   * failure the pending state is cleared as well (the token is invalid,
+   * expired, or the code mismatched) so the user can register again.
+   *
+   * @returns Promise with the confirmed user
+   */
+  async function confirmUserRegistration(): Promise<User> {
+    const token = pendingToken.value;
+    const code = recoveryCode.value;
+    if (token === undefined || code === null) {
+      throw new Error('No pending registration to confirm');
+    }
+
+    try {
+      return await run(async () => {
+        const response = await confirmRegistration(token, code);
+        user.value = response.user;
+        clearPendingState();
+        return response.user;
+      });
+    } catch (e) {
+      clearPendingState();
+      throw e;
+    }
   }
 
   /**
@@ -132,6 +220,7 @@ export const useAuthStore = defineStore('auth', () => {
     } finally {
       // Clear state regardless of success
       user.value = null;
+      clearPendingState();
       // Cached datasets belong to the logged-out user
       useDatasetStore().invalidateAll();
       isLoading.value = false;
@@ -143,16 +232,6 @@ export const useAuthStore = defineStore('auth', () => {
    */
   function clearError(): void {
     error.value = undefined;
-  }
-
-  /**
-   * Acknowledge that the recovery code has been saved.
-   *
-   * This must be called before allowing the user to proceed after registration.
-   */
-  function acknowledgeRecoveryCode(): void {
-    recoveryCodeAcknowledged.value = true;
-    showRecoveryCode.value = false;
   }
 
   /**
@@ -274,17 +353,18 @@ export const useAuthStore = defineStore('auth', () => {
     isLoading,
     isInitialized,
     error,
+    pendingToken,
     recoveryCode,
     showRecoveryCode,
-    recoveryCodeAcknowledged,
 
     // Actions
     initialize,
     register: registerUser,
+    confirmRegistration: confirmUserRegistration,
     login: loginUser,
     logout: logoutUser,
     clearError,
-    acknowledgeRecoveryCode,
+    clearPendingState,
     refreshCsrfToken,
     setOptInSharing,
     changeUsername,

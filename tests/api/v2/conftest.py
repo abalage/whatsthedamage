@@ -81,6 +81,71 @@ def csrf_token_from_response(response: Any) -> str:
     raise AssertionError('No csrf_token cookie in response headers')
 
 
+def register_pending(
+    client: Any, username: str, password: str = 'password-123456'
+) -> dict[str, Any]:
+    """Phase 1 of registration: create a pending registration.
+
+    Args:
+        client: Flask test client.
+        username: Username to register.
+        password: Password for the new account.
+
+    Returns:
+        The pending registration payload (pending_token,
+        recovery_code, expires_at).
+    """
+    response = client.post(
+        '/api/v2/auth/register',
+        json={'username': username, 'password': password}
+    )
+    assert response.status_code == 201, response.get_json()
+    return response.get_json()
+
+
+def confirm_registration(
+    client: Any, pending_token: str, recovery_code: str, **kwargs: Any
+) -> Any:
+    """Phase 2 of registration: confirm a pending registration.
+
+    Args:
+        client: Flask test client.
+        pending_token: The pending token from phase 1.
+        recovery_code: The recovery code echoed back (proof of saving).
+        **kwargs: Extra keyword arguments forwarded to client.post
+            (e.g. headers).
+
+    Returns:
+        The Flask response of the confirm call.
+    """
+    return client.post(
+        '/api/v2/auth/register/confirm',
+        json={'pending_token': pending_token, 'recovery_code': recovery_code},
+        **kwargs
+    )
+
+
+def register_user(
+    client: Any, username: str, password: str = 'password-123456'
+) -> Any:
+    """Run the full two-phase registration and return the confirm response.
+
+    Args:
+        client: Flask test client.
+        username: Username to register.
+        password: Password for the new account.
+
+    Returns:
+        The 200 confirm response (user + session cookies set).
+    """
+    pending = register_pending(client, username, password)
+    response = confirm_registration(
+        client, pending['pending_token'], pending['recovery_code']
+    )
+    assert response.status_code == 200, response.get_json()
+    return response
+
+
 def _register_user(
     app: Flask, username: str, password: str = 'password-123456'
 ) -> AuthContext:
@@ -95,11 +160,7 @@ def _register_user(
         AuthContext with the authenticated client and CSRF token.
     """
     client = app.test_client()
-    response = client.post(
-        '/api/v2/auth/register',
-        json={'username': username, 'password': password}
-    )
-    assert response.status_code == 201, response.get_json()
+    response = register_user(client, username, password)
     data = response.get_json()
     return AuthContext(
         client=client,

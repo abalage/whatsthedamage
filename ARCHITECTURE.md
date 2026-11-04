@@ -360,7 +360,7 @@ The system follows a layered architecture with clear separation of concerns:
 
 **Name**: Account and Session Services
 
-**Description**: AccountService orchestrates user registration, login, password reset/change, and account-deletion scheduling. AuthSessionService owns the session lifecycle (create/validate/revoke) and CSRF token minting — every mint rotates the stored hash, so a newly issued token invalidates the previously issued one. Together they coordinate PasswordService, TokenService, CsrfService, RecoveryCodeService, and the user/session repositories.
+**Description**: AccountService orchestrates two-phase registration (a pending row is committed only when the client echoes the one-time recovery code via `/auth/register/confirm`), login, password reset/change, and account-deletion scheduling. AuthSessionService owns the session lifecycle (create/validate/revoke) and CSRF token minting — every mint rotates the stored hash, so a newly issued token invalidates the previously issued one. Together they coordinate PasswordService, TokenService, CsrfService, RecoveryCodeService, and the user/session repositories.
 
 **Technologies**: Python
 

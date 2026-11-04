@@ -394,6 +394,115 @@ class TestUserRepository:
         assert result is False
 
 
+class TestUserRepositoryPending:
+    """Tests for the two-phase registration (pending) repository methods."""
+
+    def _create_pending(self, user_repository, username='pendinguser', expires_in_seconds=1800, token_hash='token-hash-1'):
+        """Create a pending registration row and return it."""
+        return user_repository.create_pending(
+            username=username,
+            password_hash='pw-hash',
+            recovery_code_hash='rc-hash',
+            pending_token_hash=token_hash,
+            pending_expires_at=datetime.now(UTC) + timedelta(seconds=expires_in_seconds)
+        )
+
+    def test_create_pending_stores_pending_row(self, user_repository):
+        """A pending row has registration_confirmed_at NULL and token fields set."""
+        user = self._create_pending(user_repository)
+        assert user.registration_confirmed_at is None
+        assert user.pending_token_hash == 'token-hash-1'
+        assert user.pending_expires_at is not None
+
+    def test_find_confirmed_by_username_excludes_pending(self, user_repository):
+        """Pending rows are invisible to the confirmed-only lookup."""
+        self._create_pending(user_repository, username='pendingonly')
+        assert user_repository.find_confirmed_by_username('pendingonly') is None
+        assert user_repository.find_by_username('pendingonly') is not None
+
+    def test_create_pending_confirmed_username_raises(self, user_repository, password_service):
+        """A username held by a confirmed account cannot be re-registered."""
+        user_repository.create(
+            username='taken',
+            password_hash='pw',
+            recovery_code_hash='rc'
+        )
+        with pytest.raises(ValueError, match="already exists"):
+            self._create_pending(user_repository, username='taken')
+
+    def test_create_pending_unexpired_pending_raises(self, user_repository):
+        """A username held by an unexpired pending row cannot be re-registered."""
+        self._create_pending(user_repository, username='held')
+        with pytest.raises(ValueError, match="already exists"):
+            user_repository.create_pending(
+                username='held',
+                password_hash='pw2',
+                recovery_code_hash='rc2',
+                pending_token_hash='token-hash-2',
+                pending_expires_at=datetime.now(UTC) + timedelta(seconds=1800)
+            )
+
+    def test_create_pending_expired_pending_row_is_reused(self, user_repository):
+        """An expired pending row holding the username is reused in place."""
+        first = self._create_pending(user_repository, username='reuse', expires_in_seconds=-10)
+        second = user_repository.create_pending(
+            username='reuse',
+            password_hash='pw2',
+            recovery_code_hash='rc2',
+            pending_token_hash='token-hash-new',
+            pending_expires_at=datetime.now(UTC) + timedelta(seconds=1800)
+        )
+        assert second.id == first.id
+        assert second.pending_token_hash == 'token-hash-new'
+        assert user_repository.find_by_username('reuse').id == first.id
+
+    def test_create_pending_integrity_error_becomes_value_error(self, user_repository):
+        """A unique-constraint violation at flush surfaces as ValueError (409 upstream)."""
+        from unittest.mock import MagicMock, patch
+        from sqlalchemy.exc import IntegrityError
+
+        session = MagicMock()
+        session.query.return_value.filter.return_value.first.return_value = None
+        session.flush.side_effect = IntegrityError("INSERT INTO users ...", {}, Exception("unique"))
+        with patch.object(user_repository, '_get_session', return_value=session):
+            with pytest.raises(ValueError, match="already exists"):
+                self._create_pending(user_repository)
+
+    def test_find_pending_by_token_hash_excludes_expired(self, user_repository):
+        """Expired pending rows are not found by token hash."""
+        self._create_pending(user_repository, expires_in_seconds=-10)
+        found = user_repository.find_pending_by_token_hash('token-hash-1', datetime.now(UTC))
+        assert found is None
+
+    def test_confirm_pending_marks_row_confirmed(self, user_repository):
+        """confirm_pending sets registration_confirmed_at and clears token fields."""
+        user = self._create_pending(user_repository)
+        now = datetime.now(UTC)
+        assert user_repository.confirm_pending(user.id, now) is True
+        confirmed = user_repository.find_by_id(user.id)
+        assert confirmed.registration_confirmed_at is not None
+        assert confirmed.pending_token_hash is None
+        assert confirmed.pending_expires_at is None
+        # Second confirm loses the race
+        assert user_repository.confirm_pending(user.id, now) is False
+
+    def test_confirm_pending_expired_row_not_confirmed(self, user_repository):
+        """A row that expired before the confirm timestamp is not confirmed."""
+        user = self._create_pending(user_repository, expires_in_seconds=60)
+        later = datetime.now(UTC) + timedelta(seconds=120)
+        assert user_repository.confirm_pending(user.id, later) is False
+        assert user_repository.find_by_id(user.id).registration_confirmed_at is None
+
+    def test_delete_expired_pending(self, user_repository):
+        """Only expired pending rows are deleted."""
+        self._create_pending(user_repository, username='expired', expires_in_seconds=-10, token_hash='tok-expired')
+        self._create_pending(user_repository, username='fresh', expires_in_seconds=1800, token_hash='tok-fresh')
+        deleted = user_repository.delete_expired_pending(datetime.now(UTC))
+        assert deleted == 1
+        assert user_repository.find_by_username('expired') is None
+        assert user_repository.find_by_username('fresh') is not None
+
+
 class TestSessionRepository:
     """Tests for SessionRepository operations."""
 

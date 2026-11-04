@@ -36,11 +36,11 @@ All endpoints are under the `/api/v2` path.
 
 Authentication uses session cookies. A successful register or login sets an opaque `session_token` cookie (HttpOnly, Secure, SameSite=Strict) backed by a database session. State-changing requests (POST, PUT, DELETE on protected endpoints) must additionally send the `X-CSRF-Token` header.
 
-### Register
+### Register (two-phase)
 
-Create a new user account. Registration generates a one-time recovery code and creates an initial session.
+Registration is two-phase: `POST /auth/register` creates only a **pending registration** (no account, no session, no cookies) and returns a one-time pending token plus the one-time recovery code. The account is committed only by `POST /auth/register/confirm` when the client echoes the recovery code, proving it was saved. Pending registrations expire after the configured TTL (default 30 minutes, `WHATSTHEDAMAGE_REGISTRATION_PENDING_TTL_SECONDS`) and are physically deleted by the retention purge job, so abandoned registrations never become committed accounts.
 
-**Endpoint:**
+**Endpoint (phase 1):**
 ```
 POST /api/v2/auth/register
 ```
@@ -61,6 +61,52 @@ curl -X POST http://localhost:5000/api/v2/auth/register \
   -d '{"username": "alice", "password": "correct-horse-battery-staple"}'
 ```
 
+**Response (phase 1):**
+```json
+{
+  "pending_token": "9f3c...",
+  "recovery_code": "XXXX-XXXX-XXXX-XXXX",
+  "expires_at": "2026-09-29T10:30:00"
+}
+```
+
+The `recovery_code` is displayed only once. It cannot be retrieved later and must be saved by the user.
+
+**Status Codes (phase 1):**
+- `201` - Pending registration created
+- `400` - Validation error (missing fields, invalid input)
+- `409` - Username already exists (held by a confirmed account or an unexpired pending registration)
+- `422` - Password too weak
+- `429` - Registration rate limit exceeded
+
+---
+
+### Register Confirm (phase 2)
+
+Commit the pending registration and create the initial session. The pending token travels in the request **body** (not a cookie), so CSRF is structurally impossible and no `X-CSRF-Token` header is required; the endpoint is still rate limited per IP.
+
+**Endpoint:**
+```
+POST /api/v2/auth/register/confirm
+```
+
+**Content-Type:** `application/json`
+
+**Request Body:**
+
+| Field | Required | Type | Description |
+|-------|----------|------|-------------|
+| `pending_token` | Yes | string | The pending token from phase 1 |
+| `recovery_code` | Yes | string | The recovery code echoed back (proof it was saved) |
+
+**Curl Example:**
+```bash
+curl -X POST http://localhost:5000/api/v2/auth/register/confirm \
+  -H "Content-Type: application/json" \
+  -c cookies.txt \
+  -d '{"pending_token": "9f3c...", "recovery_code": "XXXX-XXXX-XXXX-XXXX"}'
+```
+
 **Response:**
 ```json
 {
@@ -69,19 +115,17 @@ curl -X POST http://localhost:5000/api/v2/auth/register \
     "username": "alice",
     "created_at": "2026-09-29T10:00:00"
   },
-  "recovery_code": "XXXX-XXXX-XXXX",
-  "csrf_token": "eyJhbGciOi...",
   "session_expires_at": "2026-09-29T18:00:00"
 }
 ```
 
-The `recovery_code` is displayed only once. It cannot be retrieved later and must be saved by the user.
+On success the `session_token` (HttpOnly) and `csrf_token` (readable) cookies are set. The recovery code is never returned by this endpoint.
 
 **Status Codes:**
-- `201` - Successfully registered
-- `400` - Validation error (missing fields, invalid input)
-- `409` - Username already exists
-- `422` - Password too weak
+- `200` - Registration confirmed, session created
+- `400` - Validation error (missing fields)
+- `401` - Invalid, expired, or already-used pending token, or recovery code mismatch (`REGISTRATION_INVALID`)
+- `429` - Registration rate limit exceeded
 
 ---
 
@@ -1278,7 +1322,8 @@ open http://localhost:5000/api/v2/openapi.json
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| `POST` | `/api/v2/auth/register` | Register a new user account |
+| `POST` | `/api/v2/auth/register` | Start a two-phase registration (pending) |
+| `POST` | `/api/v2/auth/register/confirm` | Confirm registration (commits account, sets session) |
 | `POST` | `/api/v2/auth/login` | Authenticate and create a session |
 | `POST` | `/api/v2/auth/logout` | Revoke the current session |
 | `GET` | `/api/v2/auth/me` | Get current user information |

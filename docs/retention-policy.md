@@ -14,6 +14,7 @@ in-app Legal Notice and Privacy Policy.
 | Data category | Content | Retention |
 |---|---|---|
 | Account data | username, Argon2id password hash, Argon2id recovery code hash, consent timestamps (sharing opt-in/opt-out), timestamps | Lifetime of the account; deleted with the account |
+| Pending registrations | username, Argon2id password hash, Argon2id recovery code hash, pending token hash, expiry timestamp (rows with `registration_confirmed_at` NULL) | At most 30 minutes (`WHATSTHEDAMAGE_REGISTRATION_PENDING_TTL_SECONDS`); expired rows are physically deleted by the retention job. They are not accounts: they cannot log in or reset passwords, and are never returned by any authenticated endpoint |
 | Sessions | hashed session tokens, CSRF token hashes, IP address, user agent | Until expiry/revocation; expired and revoked rows are physically deleted by the daily retention job; deleted with the account |
 | Processing results | import metadata bound to the account | 6 months after last login, or with the account |
 | Transactions | date, type, original partner, amount, currency, account, category, partner, notice | 6 months after last login, or with the account |

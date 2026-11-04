@@ -29,7 +29,10 @@ const password = ref('');
 const confirmPassword = ref('');
 const termsAccepted = ref(false);
 const isSubmitting = ref(false);
-const showRecoveryCode = ref(false);
+const isConfirming = ref(false);
+// The recovery-code screen is driven by the auth store (not a local
+// ref) so it survives the locale-change remount and page reloads while
+// the registration is pending
 const recoveryCodeAcknowledged = ref(false);
 
 // Computed properties
@@ -63,10 +66,8 @@ async function handleRegister() {
   authStore.clearError();
 
   try {
+    // Phase 1: creates the pending registration and shows the recovery code
     await authStore.register(username.value.trim(), password.value);
-
-    // Show recovery code
-    showRecoveryCode.value = true;
     recoveryCodeAcknowledged.value = false;
   } catch {
     // Error is already set in the store
@@ -76,14 +77,27 @@ async function handleRegister() {
 }
 
 /**
- * Acknowledge recovery code and proceed to login.
+ * Acknowledge the recovery code and confirm the registration.
+ *
+ * Phase 2 echoes the recovery code to the backend, which commits the
+ * account and starts the session only when the code matches. On success
+ * the user is authenticated and sent to the app; on failure the pending
+ * state is cleared and the form is shown again with the error.
  */
-function handleAcknowledgeAndProceed() {
+async function handleAcknowledgeAndProceed() {
+  if (isConfirming.value) return;
   recoveryCodeAcknowledged.value = true;
-  authStore.acknowledgeRecoveryCode();
+  authStore.clearError();
+  isConfirming.value = true;
 
-  // Redirect to login, preserving any pending redirect target
-  router.push({ name: 'login', query: { registered: 'true', ...redirectQuery.value } });
+  try {
+    await authStore.confirmRegistration();
+    router.push({ name: 'index', query: redirectQuery.value });
+  } catch {
+    // Error is already set in the store; pending state is cleared
+  } finally {
+    isConfirming.value = false;
+  }
 }
 
 /**
@@ -103,7 +117,7 @@ async function copyRecoveryCode() {
 <template>
   <AuthLayout>
     <!-- Registration form -->
-    <template v-if="!showRecoveryCode">
+    <template v-if="!authStore.showRecoveryCode">
       <h2>{{ $gettext('Create Account') }}</h2>
 
       <form class="auth-form" @submit.prevent="handleRegister">
@@ -252,10 +266,10 @@ async function copyRecoveryCode() {
 
         <button
           class="auth-primary-btn"
-          :disabled="!recoveryCodeAcknowledged || !authStore.recoveryCode"
+          :disabled="!recoveryCodeAcknowledged || !authStore.recoveryCode || isConfirming"
           @click="handleAcknowledgeAndProceed"
         >
-          {{ $gettext('Continue to Login') }}
+          {{ $gettext('Continue') }}
         </button>
       </div>
     </template>

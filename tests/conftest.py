@@ -411,7 +411,7 @@ def auth_service(user_repository, session_repository, password_service, token_se
     )
 
 
-def account_service(user_repository, password_service, recovery_code_service, auth_service):
+def account_service(user_repository, password_service, recovery_code_service, auth_service, token_service):
     """Create an AccountService for testing."""
     from whatsthedamage.services.account_service import AccountService
     return AccountService(
@@ -419,5 +419,7 @@ def account_service(user_repository, password_service, recovery_code_service, au
         password_service=password_service,
         recovery_code_service=recovery_code_service,
         session_service=auth_service,
-        password_min_length=12
+        token_service=token_service,
+        password_min_length=12,
+        pending_ttl_seconds=1800
     )

@@ -8,7 +8,11 @@ revocation).
 
 from flask import Flask
 
-from tests.api.v2.conftest import AuthContext, csrf_token_from_response
+from tests.api.v2.conftest import (
+    AuthContext,
+    csrf_token_from_response,
+    register_user,
+)
 
 
 PASSWORD = 'password-123456'
@@ -73,11 +77,7 @@ class TestUsernameChange:
     def test_requires_csrf_token(self, api_app: Flask):
         """A valid session without a CSRF header is rejected."""
         client = api_app.test_client()
-        register = client.post(
-            '/api/v2/auth/register',
-            json={'username': 'alice', 'password': PASSWORD}
-        )
-        assert register.status_code == 201
+        register_user(client, 'alice', PASSWORD)
 
         response = client.put(
             '/api/v2/auth/me',
@@ -160,11 +160,7 @@ class TestChangePassword:
     def test_revokes_other_sessions(self, api_app: Flask):
         """All other sessions of the user are revoked."""
         client = api_app.test_client()
-        register = client.post(
-            '/api/v2/auth/register',
-            json={'username': 'alice', 'password': PASSWORD}
-        )
-        assert register.status_code == 201
+        register = register_user(client, 'alice', PASSWORD)
         csrf_token = csrf_token_from_response(register)
 
         # A second session from another client
